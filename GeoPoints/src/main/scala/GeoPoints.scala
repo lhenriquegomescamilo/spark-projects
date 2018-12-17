@@ -15,7 +15,11 @@ object GeoPoints {
                      output_type: String = "csv", ndays: Int = 30) {
     // First of all, we load the cross-deviced audience
     val path_in = "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
-    val cross_deviced = spark.read.format("csv").load(path_in).select("device", "device_type").distinct()
+    val cross_deviced = spark.read.format("csv").load(path_in)
+                                  .withColumnRenamed("_c0", "index")
+                                  .withColumnRenamed("_c1", "device")
+                                  .withColumnRenamed("_c2", "device_type")
+                                  .select("device", "device_type").distinct()
     
     // Now we load the data from SafeGraph
     val path_sg = "/data/geo/safegraph/"
@@ -31,7 +35,7 @@ object GeoPoints {
                           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     
     val geodata = hdfs_files.map(file => spark.read.format("csv").option("header", "true").load(file))
-                            .reduce((df1, df2) => df1.union(df2))
+                             .reduce((df1, df2) => df1.union(df2))
     
     // Here we perform the join between both datasets
     val geo_points = geodata.join(cross_deviced, cross_deviced.col("device")===geodata.col("ad_id"))
