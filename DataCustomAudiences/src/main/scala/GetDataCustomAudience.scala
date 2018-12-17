@@ -12,7 +12,8 @@ object GetDataCustomAudience {
   def process_day_parquet(spark: SparkSession, day:String, columns: Seq[String], 
                           countries: Seq[String], event_types: Seq[String]) = {
       // Here we read the data into DataFrames and select the proper columns
-      val data = spark.read.format("csv").option("sep", "\t").option("header", "true").load("/data/eventqueue/%s/*.tsv.gz".format(day))
+      val data = spark.read.format("csv").option("sep", "\t").option("header", "true")
+                                         .load("/data/eventqueue/%s/*.tsv.gz".format(day))
       val by_columns = data.select(columns.head, columns.tail: _*).na.fill("")
       
       // Here we filter by country and event_type

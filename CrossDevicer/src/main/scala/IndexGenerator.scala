@@ -5,9 +5,8 @@ import org.apache.spark.sql.functions.{split, lit, explode, col}
 import org.apache.spark.sql.SaveMode
 
 object IndexGenerator {
-    def main(args: Array[String]) {
-        val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
-        
+  
+    def generate_index(spark: SparkSession) {
         // First we obtain the data from DrawBridge
         val db_data = spark.read.format("csv").load("/data/crossdevice/2018-11-15/*.gz")
         // Now we obtain a dataframe with only two columns: index (the device_id), and the device type
@@ -24,6 +23,12 @@ object IndexGenerator {
                            .select("index", "index_type", "device", "device_type")
         index.coalesce(120).write.mode(SaveMode.Overwrite).format("parquet")
                                 .partitionBy("index_type", "device_type")
-                                .save("/datascience/crossdevice")                           
+                                .save("/datascience/crossdevice")
+    }
+  
+    def main(args: Array[String]) {
+        val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
+        
+        generate_index(spark)                
     }
 }
