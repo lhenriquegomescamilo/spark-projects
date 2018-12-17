@@ -50,7 +50,7 @@ object GeoPoints {
   def get_geo_points(spark: SparkSession, audience_name: String) {
     // First of all, we load the cross-deviced audience
     val path_in = "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
-    val cross_deviced = spark.read.format("parquet").load(path_in).select("device", "device_type").distinct()
+    val cross_deviced = spark.read.format("csv").load(path_in).select("device", "device_type").distinct()
     
     // Now we load the data from SafeGraph
     val path_sg = "/data/geo/safegraph/2018/12/*/*.gz"
@@ -60,6 +60,7 @@ object GeoPoints {
     
     // Here we perform the join between both datasets
     val geo_points = geo_data.join(cross_deviced, cross_deviced.col("device")===geo_data.col("ad_id"))
+                             .select("device", "device_type", "utc_timestamp", "latitude", "longitude")
     
     // Finally, we save all the information in a new folder
     val path_out = "/datascience/geo/geopoints/%s".format(audience_name)
