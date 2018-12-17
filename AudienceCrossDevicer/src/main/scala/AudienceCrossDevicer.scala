@@ -7,7 +7,7 @@ import org.apache.spark.sql.SaveMode
  * This object receives an audience and cross-device it using a cross-deviced index.
  * The result is stored in a new folder.
  */
-class AudienceCrossDevicer{
+object AudienceCrossDevicer {
   /**
    * This method generates the cross device of a given audience. It takes the audience given
    * by parameters, then loads the Cross-Device Index and performs a join. Also, it allows 
