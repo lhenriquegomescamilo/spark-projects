@@ -13,10 +13,11 @@ object Random {
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Random").getOrCreate()
 
-    val udfFilter = udf((lat: String,lon: String) => (abs(lat.cast("float"))*100).cast("int")*100000) + (abs(lon.cast("float")*100).cast("int")))
+    val udfFilter = udf((lat: String,lon: String) => (abs(lat.cast("float"))*100).cast("int")*100000+
+                                                      (abs(lon.cast("float")*100).cast("int")))
     val audience_name = "danone_20261"
     val geopoints = spark.read.format("parquet").load("/datascience/geo/geopoints/%s".format(audience_name))
-    val geocodes = geopoints.withColumn("geocode", udfFilter(col("latitude"),col("longitude")))
+    val geocodes = geopoints.withColumn("geocode", udfFilter((col("latitude"),col("longitude"))))
     val counts = geocodes.groupBy("geocode").count()
     counts.write.format("csv").option("sep", ",").save("/datascience/geo/counts/%s".format(audience_name))
 
