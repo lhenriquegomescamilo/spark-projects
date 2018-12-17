@@ -43,9 +43,13 @@ object GeoPoints {
     cross_deviced.write.format("csv").mode(SaveMode.Overwrite).save(output_path)
   }
   
+  /**
+   * This method obtains the list of geopoints (latitude, longitude, and timestamp) for a given set of 
+   * madids. The idea is to load all the madids at the beginning. These madids are 
+   */
   def get_geo_points(spark: SparkSession, audience_name: String) {
     // First of all, we load the cross-deviced audience
-    val path_in = "/datascience/audiences/crossdeviced/%s".format(audience_name)
+    val path_in = "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
     val cross_deviced = spark.read.format("parquet").load(path_in).select("device", "device_type").distinct()
     
     // Now we load the data from SafeGraph

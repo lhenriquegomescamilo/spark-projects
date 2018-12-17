@@ -1,5 +1,4 @@
 spark-submit\
-  --class GetPoints\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\
