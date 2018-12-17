@@ -13,8 +13,6 @@ object Random {
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Random").getOrCreate()
 
-//    val udfFilter = udf((lat: String,lon: String) => (abs(lat.cast("float"))*100).cast("int")*100000+
-//                                                      (abs(lon.cast("float")*100).cast("int")))
     val audiencias = List("danone_20261","danone_35936","danone_35928")
     for (audience_name <- audiencias)
     {
@@ -24,5 +22,5 @@ object Random {
       val counts = geocodes.groupBy("geocode").count()
       counts.write.format("csv").option("sep", ",").save("/datascience/geo/counts/%s".format(audience_name))
     }
-}
+  }
 }

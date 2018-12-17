@@ -3,6 +3,7 @@ import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.functions.broadcast
+import org.apache.hadoop.fs.Path
 
 object keywordIngestion {
     def main(args: Array[String]) {
@@ -20,7 +21,11 @@ object keywordIngestion {
         val daysCount = Days.daysBetween(start, end).getDays()
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-        val dfs = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format)).filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/keyword_ingestion/%s.csv".format(day)))).map(x => spark.read.format("csv").load("/datascience/keyword_ingestion/%s.csv".format(x))).
+        val dfs = (0 until daysCount).map(start.plusDays(_))
+                                     .map(_.toString(format))
+                                     .filter(day => fs.exists(new Path("/datascience/keyword_ingestion/%s.csv".format(day))))
+                                     .map(x => spark.read.format("csv").load("/datascience/keyword_ingestion/%s.csv".format(x)))
+
         val df = dfs.reduce(_ union _).withColumnRenamed("_c0", "url").withColumnRenamed("_c1", "content_keys").withColumnRenamed("_c2", "count").withColumnRenamed("_c3", "country")
 
         // Levantamos el dataframe que tiene toda la data de los usuarios con sus urls
