@@ -12,6 +12,7 @@ object Random {
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Random").getOrCreate()
     
-    
+    val df = spark.read.format("parquet").load("/datascience/geo/geopoints/devices_58192")
+    df.write.format("csv").option("sep", ",").save("/datascience/geo/geopoints/hcode")
   }
 }
