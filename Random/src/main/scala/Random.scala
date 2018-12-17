@@ -22,7 +22,7 @@ object Random {
       val geocodes = geopoints.withColumn("geocode", abs(col("latitude").cast("float")*100).cast("int")*100000+
                                                             (abs(col("longitude").cast("float")*100).cast("int")))
       val counts = geocodes.groupBy("geocode").count()
-      counts.write.format("csv").option("sep", ",").save("/datascience/geo/counts/%s".format(audience_name)
+      counts.write.format("csv").option("sep", ",").save("/datascience/geo/counts/%s".format(audience_name))
     }
 }
 }
