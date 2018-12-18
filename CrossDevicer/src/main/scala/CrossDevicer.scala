@@ -1,8 +1,8 @@
 package main.scala
 
 import org.joda.time.{ Days, DateTime }
-import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.{ DataFrame, SparkSession, SQLContext}
+import org.apache.spark.{ SparkConf, SparkContext }
+import org.apache.spark.sql.{ DataFrame, SparkSession, SQLContext, SaveMode }
 import org.apache.spark.sql.functions.{ udf, col, lit, size, collect_list, concat_ws }
 import org.apache.spark.sql.Column
 
@@ -74,16 +74,16 @@ object CrossDevicer {
   def main(Args: Array[String]) {
     // Parse the parameters
     val options = nextOption(Map(), Args.toList)
-    val nDays   = if (options.contains('nDays)) options('nDays) else 30
-    val from    = if (options.contains('from)) options('from) else 1
+    val nDays = if (options.contains('nDays)) options('nDays) else 30
+    val from = if (options.contains('from)) options('from) else 1
 
     // First we obtain the Spark session
     val conf = new SparkConf().setAppName("Get data for custom audiences")
-                              .setJars(Seq("/home/rely/spark-projects/CrossDevicer/target/scala-2.11/cross-devicer_2.11-1.0.jar"))
+      .setJars(Seq("/home/rely/spark-projects/CrossDevicer/target/scala-2.11/cross-devicer_2.11-1.0.jar"))
     val sc = new SparkContext(conf)
     val sqlContext = new SQLContext(sc);
     val spark = sqlContext.sparkSession
-    
+
     // Now we can get event data
     val events_data = get_event_data(spark, nDays, from)
 
@@ -126,10 +126,9 @@ object CrossDevicer {
     // new segments.
     val joint = index.join(new_segments, index.col("index") === new_segments.col("device_id"))
       .groupBy("device", "device_type").agg(flatten(collect_list("new_segment")).alias("new_segment"))
-      //.withColumnRenamed("UDF(collect_list(new_segment, 0, 0))", "money")
       .withColumn("new_segment", concat_ws(",", col("new_segment")))
       .select("device", "device_type", "new_segment").distinct()
 
-    joint.write.format("csv").option("sep", "\t").save("/datascience/audiences/crossdeviced/taxo")
+    joint.write.format("csv").mode(SaveMode.Overwrite).option("sep", "\t").save("/datascience/audiences/crossdeviced/taxo")
   }
 }
