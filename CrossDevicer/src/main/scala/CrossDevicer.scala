@@ -40,7 +40,7 @@ object CrossDevicer {
 
     // Finally, we load all the data
     val events_data = spark.read.option("basePath", "/datascience/data_audiences_p/").parquet(paths: _*)
-      .select("device_id", "device_type", "country", "third_party")
+      .select("device_id", "country", "third_party")
       .dropDuplicates("device_id")
 
     events_data
