@@ -1,4 +1,4 @@
-name := "Data for Custom Audiences"
+name := "Cross Devicer"
 
 version := "1.0"
 
