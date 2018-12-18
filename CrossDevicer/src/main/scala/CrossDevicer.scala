@@ -1,7 +1,8 @@
 package main.scala
 
 import org.joda.time.{ Days, DateTime }
-import org.apache.spark.sql.{ DataFrame, SparkSession }
+import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.{ DataFrame, SparkSession, SQLContext}
 import org.apache.spark.sql.functions.{ udf, col, lit, size, collect_list, concat_ws }
 import org.apache.spark.sql.Column
 
@@ -74,11 +75,15 @@ object CrossDevicer {
     // Parse the parameters
     val options = nextOption(Map(), Args.toList)
     val nDays   = if (options.contains('nDays)) options('nDays) else 30
-    val from    = if (options.contains('from)) options('from) else 30
+    val from    = if (options.contains('from)) options('from) else 1
 
     // First we obtain the Spark session
-    val spark = SparkSession.builder.appName("Get data for custom audiences").getOrCreate()
-
+    val conf = new SparkConf().setAppName("Get data for custom audiences")
+                              .setJars(Seq("/home/rely/spark-projects/DataCustomAudiences/target/scala-2.11/data-for-custom-audiences_2.11-1.0.jar"))
+    val sc = new SparkContext(conf)
+    val sqlContext = new SQLContext(sc);
+    val spark = sqlContext.sparkSession
+    
     // Now we can get event data
     val events_data = get_event_data(spark, nDays, from)
 
