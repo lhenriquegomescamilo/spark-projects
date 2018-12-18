@@ -26,14 +26,23 @@ object keywordIngestion {
                                      .filter(day => fs.exists(new Path("/datascience/keyword_ingestion/%s.csv".format(day))))
                                      .map(x => spark.read.format("csv").load("/datascience/keyword_ingestion/%s.csv".format(x)))
 
-        val df = dfs.reduce(_ union _).withColumnRenamed("_c0", "url").withColumnRenamed("_c1", "content_keys").withColumnRenamed("_c2", "count").withColumnRenamed("_c3", "country")
+        val df = dfs.reduce(_ union _).withColumnRenamed("_c0", "url")
+                                      .withColumnRenamed("_c1", "content_keys")
+                                      .withColumnRenamed("_c2", "count")
+                                      .withColumnRenamed("_c3", "country")
 
         // Levantamos el dataframe que tiene toda la data de los usuarios con sus urls
         val udfFilter = udf((segments: Seq[String]) => segments.filter(token => !(token.matches("\\d*"))))
 
         val today = DateTime.now().toString("yyyyMMdd")
 
-        val df_audiences = spark.read.parquet("/datascience/data_audiences_p/day=%s".format(today)).select("device_id","event_type","all_segments","url","device_type","country").withColumn("url_keys", regexp_replace($"url", """https*://""", "")).withColumn("url_keys", regexp_replace($"url_keys", """[/,=&\.\(\) \|]""", " , ")).withColumn("url_keys", regexp_replace($"url_keys", """%..""", " , ")).withColumn("url_keys", split($"url_keys"," , ")).withColumn("url_keys", udfFilter($"url_keys"))
+        val df_audiences = spark.read.parquet("/datascience/data_audiences_p/day=%s".format(today))
+                                      .select("device_id","event_type","all_segments","url","device_type","country")
+                                      .withColumn("url_keys", regexp_replace($"url", """https*://""", ""))
+                                      .withColumn("url_keys", regexp_replace($"url_keys", """[/,=&\.\(\) \|]""", " , "))
+                                      .withColumn("url_keys", regexp_replace($"url_keys", """%..""", " , "))
+                                      .withColumn("url_keys", split($"url_keys"," , "))
+                                      .withColumn("url_keys", udfFilter($"url_keys"))
         // Hacemos el join entre nuestra data y la data de las urls con keywords.
         val joint = df_audiences.join(broadcast(df),Seq("url"),"left_outer")
         // Guardamos la data en formato parquet
