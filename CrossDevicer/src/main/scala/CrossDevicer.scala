@@ -79,7 +79,7 @@ object CrossDevicer {
 
     // First we obtain the Spark session
     val conf = new SparkConf().setAppName("Get data for custom audiences")
-                              .setJars(Seq("/home/rely/spark-projects/DataCustomAudiences/target/scala-2.11/data-for-custom-audiences_2.11-1.0.jar"))
+                              .setJars(Seq("/home/rely/spark-projects/CrossDevicer/target/scala-2.11/cross-devicer_2.11-1.0.jar"))
     val sc = new SparkContext(conf)
     val sqlContext = new SQLContext(sc);
     val spark = sqlContext.sparkSession
