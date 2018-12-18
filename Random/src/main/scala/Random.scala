@@ -16,7 +16,7 @@ object Random {
     val audiencias = List("danone_20261","danone_35936","danone_35928")
     for (audience_name <- audiencias)
     {
-      val geopoints = spark.read.format("parquet").load("/datascience/geo/geopoints/%s".format(audience_name))
+      val geopoints = spark.read.format("csv").load("/datascience/geo/geopoints/%s".format(audience_name))
       val geocodes = geopoints.withColumn("geocode", abs(col("latitude").cast("float")*100).cast("int")*100000+
                                                             (abs(col("longitude").cast("float")*100).cast("int")))
       val counts = geocodes.groupBy("geocode").count()
