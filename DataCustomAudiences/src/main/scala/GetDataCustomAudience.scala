@@ -39,10 +39,10 @@ object GetDataCustomAudience {
         Usage: GetDataCustomAudience.jar ndays
         - ndays: number of days to be downloaded from today.
       """
-    if (args.length == 0) println(usage)
+    //if (args.length == 0) println(usage)
     
     // First we parse the parameters
-    val ndays = args(0).toInt
+    val ndays = if (args.length > 0) args(0).toInt else 1
     
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Get data for custom audiences").getOrCreate()
