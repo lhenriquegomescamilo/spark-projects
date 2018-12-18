@@ -125,7 +125,7 @@ object CrossDevicer {
     // Finally, we perform the cross-device and keep only the new devices with their types and the
     // new segments.
     val joint = index.join(new_segments, index.col("index") === new_segments.col("device_id"))
-      .groupBy("device").agg(flatten(collect_list("new_segment")))
+      .groupBy("device", "device_type").agg(flatten(collect_list("new_segment").alias("new_segment")))
       .withColumn("new_segment", concat_ws(",", col("new_segment")))
       .select("device", "device_type", "new_segment").distinct()
 
