@@ -16,7 +16,7 @@ object GeoPoints {
     // First of all, we load the cross-deviced audience
     val path_in = "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
     val cross_deviced = spark.read.format("csv").load(path_in)
-                                  .withColumnRenamed("_c0", "index")
+                                  .withColumnRenamed("_c0", "index").withColumn("index", upper(col("index")))
                                   .withColumnRenamed("_c1", "device")
                                   .withColumnRenamed("_c2", "device_type")
                                   .select("device", "device_type").distinct()
@@ -36,9 +36,10 @@ object GeoPoints {
     
     val geodata = hdfs_files.map(file => spark.read.format("csv").option("header", "true").load(file))
                              .reduce((df1, df2) => df1.union(df2))
+                             .withColumn("ad_id", upper(col("ad_id")))
     
     // Here we perform the join between both datasets
-    val geo_points = geodata.join(cross_deviced, cross_deviced.col("device")===geodata.col("ad_id"))
+    val geo_points = geodata.join(cross_deviced, cross_deviced.col("index")===geodata.col("ad_id"))
                              .select("device", "device_type", "utc_timestamp", "latitude", "longitude")
     
     // Finally, we save all the information in a new folder

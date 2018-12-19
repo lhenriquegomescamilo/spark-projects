@@ -8,6 +8,17 @@ object GetDataCustomAudience {
    * Given a day as a string, this method downloads the data from the eventqueue, keeps only the 
    * given set of columns, and filters it to keep only the given countries and event_types.
    * After that, it stores the results in parquet format with the given day as a partition.
+   * 
+   * @param spark: Spark session that will be used to get the data.
+   * @param day: day to be downloaded in the following format: YYYY/MM/DD. String.
+   * @param columns: list of columns to be downloaded.
+   * @param countries: list of countries to be considered.
+   * @param event_types: list of event types to be considered.
+   * 
+   * As a result, this function downloads the DataFrame and stores it into a parquet
+   * file that has a partition on the day, and the country. It also repartitions the
+   * DataFrame before storing it, so that every folder has only 40 files. The 
+   * directory where the data is stored is /datascience/data_audiences_p.
    */
   def process_day_parquet(spark: SparkSession, day:String, columns: Seq[String], 
                           countries: Seq[String], event_types: Seq[String]) = {
@@ -32,7 +43,32 @@ object GetDataCustomAudience {
            .parquet("/datascience/data_audiences_p/".format(day))
   }
   
-      
+  /**
+   * This method downloads the data for the last N days for building audiences.
+   * Basically, this method prepares all the meta-data, columns, event types,
+   * and countries to be considered. It also configures the dates that will be
+   * downloaded. It starts downloading data from the actual day minus 1 
+   * (yesterday).
+   * 
+   * @param spark: Spark session that will be used to get the data.
+   * @param nDays: number of days to be downloaded. Integer.
+   */
+  def download_data(spark: SparkSession, nDays: Int): Unit = {
+    // Here we set the list of values that will be considered
+    val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive")
+    val countries = List("AR", "MX", "CL", "CO", "PE", "US", "BR", "UY", "EC", "BO")
+    val columns = List("device_id", "event_type", "country", "segments", "third_party", 
+                       "all_segments", "url", "title", "category", "activable", "device_type")
+    
+    // Now we get the list of days to be downloaded
+    val format = "yyyy/MM/dd"
+    val end   = DateTime.now.minusDays(1)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    
+    // Now we download the data
+    days.foreach(day => process_day_parquet(spark, day, columns, countries, event_types))
+  }
+  
   def main(args: Array[String]) {    
     val usage = """
         Error while reading the parameters
@@ -42,25 +78,12 @@ object GetDataCustomAudience {
     //if (args.length == 0) println(usage)
     
     // First we parse the parameters
-    val ndays = if (args.length > 0) args(0).toInt else 1
+    val nDays = if (args.length > 0) args(0).toInt else 1
     
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Get data for custom audiences").getOrCreate()
     
-    // Here we set the list of values that will be considered
-    val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive")
-    val countries = List("AR", "MX", "CL", "CO", "PE", "US", "BR", "UY", "EC", "BO")
-    val columns = List("device_id", "event_type", "country", "segments", "third_party", 
-                       "all_segments", "url", "title", "category", "activable", "device_type")
-    
-    // Now we get the list of days to be downloaded
-    val format = "yyyy/MM/dd"
-    val start = DateTime.now.minusDays(1+ndays)
-    val end   = DateTime.now.minusDays(1)
-    val daysCount = Days.daysBetween(start, end).getDays()
-    val days = (0 until daysCount).map(end.minusDays(_)).map(_.toString(format))
-    
-    // Now we download the data
-    days.foreach(day => process_day_parquet(spark, day, columns, countries, event_types))
+    // Finally, we download the data
+    download_data(spark, nDays)
   }
 }
