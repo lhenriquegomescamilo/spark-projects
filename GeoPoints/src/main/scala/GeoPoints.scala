@@ -19,7 +19,7 @@ object GeoPoints {
                                   .withColumnRenamed("_c1", "device")
                                   .withColumnRenamed("_c2", "device_type")
                                   .withColumn("device_u", upper(col("device")))
-                                  .select("device", "device_type").distinct()
+                                  .select("device_u", "device", "device_type").distinct()
     
     // Now we load the data from SafeGraph
     val path_sg = "/data/geo/safegraph/"
