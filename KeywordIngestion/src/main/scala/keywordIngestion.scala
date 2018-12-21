@@ -68,3 +68,5 @@ object keywordIngestion {
               .format("csv")
               .option("sep", "\t")
               .save("/datascience/data_keywords_elastic/%s".format(today))
+    }
+  }
