@@ -56,8 +56,8 @@ object keywordIngestion {
         val udfCountry = udf((country: String) =>  "c_"+country)
         val udfXp = udf((segments: Seq[String], et:String) => if (et == "xp") segments :+ "xp"
                                                                 else segments)
-        val udfJoin = udf((L: Seq[String]) => if (L.length > 0) L.reduce((seg1, seg2) => seg1+","+seg2)
-                                                                else L)
+        val udfJoin = udf((lista: Seq[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2)
+                                                                else "")
 
         val to_csv = joint.select("device_id","url_keys","content_keys","all_segments","event_type","country")
                           .withColumn("all_segments", udfAs(col("all_segments")))
@@ -71,6 +71,6 @@ object keywordIngestion {
               .write.mode(SaveMode.Overwrite)
               .format("csv")
               .option("sep", "\t")
-              .save("/datascience/data_keywords_elastic/%s".format(today))
+              .save("/datascience/data_keywords_elastic/%s.csv".format(today))
     }
   }
