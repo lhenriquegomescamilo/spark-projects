@@ -16,6 +16,7 @@ object keywordIngestion {
 
         ////////////////////// ACTUAL EXECUTION ////////////////////////
         // Levantamos la data de las urls con sus keywords asociadas provenientes del scrapping
+        // usando 10 dias para atras.
         val format = "yyyy-MM-dd"
         val start = DateTime.now.minusDays(10)
         val end   = DateTime.now.minusDays(1)
@@ -48,14 +49,16 @@ object keywordIngestion {
         // Hacemos el join entre nuestra data y la data de las urls con keywords.
         val joint = df_audiences.join(broadcast(df),Seq("url"),"left_outer")
         // Guardamos la data en formato parquet
-        joint.write.format("parquet").mode(SaveMode.Overwrite).save("/datascience/data_keywords_p/%s".format(today))
+        joint.write.format("parquet").mode(SaveMode.Overwrite).save("/datascience/data_keywords_p/%s.parquet".format(today))
 
         // Armamos el archivo que se utilizara para ingestar en elastic
         val udfAs = udf((segments: Seq[String]) => segments.map(token => "as_"+token))
         val udfCountry = udf((country: String) =>  "c_"+country)
         val udfXp = udf((segments: Seq[String], et:String) => if (et == "xp") segments :+ "xp"
                                                                 else segments)
-        val udfJoin = udf((L: Seq[String]) => L.reduce((seg1, seg2) => seg1+","+seg2))
+        val udfJoin = udf((L: Seq[String]) => if (L.length > 0) L.reduce((seg1, seg2) => seg1+","+seg2)
+                                                                else segments)
+        )
 
         val to_csv = joint.select("device_id","url_keys","content_keys","all_segments","event_type","country")
                           .withColumn("all_segments", udfAs(col("all_segments")))
