@@ -40,11 +40,11 @@ object keywordIngestion {
 
         val df_audiences = spark.read.parquet("/datascience/data_audiences_p/day=%s".format(today))
                                       .select("device_id","event_type","all_segments","url","device_type","country")
-                                      .withColumn("url_keys", regexp_replace($"url", """https*://""", ""))
-                                      .withColumn("url_keys", regexp_replace($"url_keys", """[/,=&\.\(\) \|]""", " , "))
-                                      .withColumn("url_keys", regexp_replace($"url_keys", """%..""", " , "))
-                                      .withColumn("url_keys", split($"url_keys"," , "))
-                                      .withColumn("url_keys", udfFilter($"url_keys"))
+                                      .withColumn("url_keys", regexp_replace(col("url"), """https*://""", ""))
+                                      .withColumn("url_keys", regexp_replace(col("url_keys"), """[/,=&\.\(\) \|]""", " , "))
+                                      .withColumn("url_keys", regexp_replace(col("url_keys"), """%..""", " , "))
+                                      .withColumn("url_keys", split(col("url_keys")," , "))
+                                      .withColumn("url_keys", udfFilter(col("url_keys")))
         // Hacemos el join entre nuestra data y la data de las urls con keywords.
         val joint = df_audiences.join(broadcast(df),Seq("url"),"left_outer")
         // Guardamos la data en formato parquet
@@ -58,11 +58,11 @@ object keywordIngestion {
         val udfJoin = udf((L: Seq[String]) => L.reduce((seg1, seg2) => seg1+","+seg2))
 
         val to_csv = joint.select("device_id","url_keys","content_keys","all_segments","event_type","country")
-                          .withColumn("all_segments", udfAs($"all_segments"))
-                          .withColumn("all_segments",udfXp($"all_segments",$"event_type"))
-                          .withColumn("country",udfCountry($"country"))
-                          .withColumn("all_segments",udfJoin($"all_segments"))
-                          .withColumn("url_keys",udfJoin($"url_keys"))
+                          .withColumn("all_segments", udfAs(col("all_segments")))
+                          .withColumn("all_segments",udfXp(col("all_segments"),col("event_type")))
+                          .withColumn("country",udfCountry(col("country")))
+                          .withColumn("all_segments",udfJoin(col("all_segments")))
+                          .withColumn("url_keys",udfJoin(col("url_keys")))
                           .select("device_id","url_keys","content_keys","all_segments","country")
 
         to_csv.repartition(100)
