@@ -58,7 +58,6 @@ object keywordIngestion {
                                                                 else segments)
         val udfJoin = udf((L: Seq[String]) => if (L.length > 0) L.reduce((seg1, seg2) => seg1+","+seg2)
                                                                 else segments)
-        )
 
         val to_csv = joint.select("device_id","url_keys","content_keys","all_segments","event_type","country")
                           .withColumn("all_segments", udfAs(col("all_segments")))
