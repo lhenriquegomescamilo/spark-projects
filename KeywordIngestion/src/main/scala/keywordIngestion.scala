@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col,abs,udf}
+import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split}
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
@@ -11,7 +11,7 @@ object keywordIngestion {
     def main(args: Array[String]) {
         /// Configuracion spark
         val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()
-        val conf = sc.hadoopConfiguration
+        val conf = spark.sparkContext.hadoopConfiguration
         val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
         ////////////////////// ACTUAL EXECUTION ////////////////////////
