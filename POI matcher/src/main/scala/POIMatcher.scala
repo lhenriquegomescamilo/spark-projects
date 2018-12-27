@@ -20,7 +20,7 @@ object POIMatcher {
                                   .select("ad_id", "id_type", "latitude", "longitude")
                                   .withColumnRenamed("latitude", "latitude_user")
                                   .withColumnRenamed("longitude", "longitude_user")
-                                  .withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
+                                  .withColumn("geocode", ((abs(col("latitude_user").cast("float"))*10).cast("int")*10000)+(abs(col("longitude_user").cast("float")*100).cast("int")))
 
     df_safegraph
   }
