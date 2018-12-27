@@ -25,9 +25,10 @@ object AudienceCrossDevicer {
    * As a result, this method stores the cross-deviced audience in /datascience/audiences/crossdeviced
    * using the same name as the one sent by parameter.
    */
-  def cross_device(spark: SparkSession, audience_name: String, index_filter: String){
+  def cross_device(spark: SparkSession, path_audience: String, index_filter: String){
     // First we get the audience. Also, we transform the device id to be upper case.
-    val path_audience = "/datascience/audiences/output/%s".format(audience_name)
+    //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
+    val audience_name = path_audience.split("/").last
     val audience = spark.read.format("csv").option("sep", " ").load(path_audience)
                                                               .withColumnRenamed("_c0", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
