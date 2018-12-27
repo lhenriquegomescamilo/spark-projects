@@ -72,7 +72,7 @@ object POIMatcher {
     val sc = spark.sparkContext
 
     val safegraph_days = 30
-    val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test.csv"
+    val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
     val output_file = "/datascience/geo/MX/specific_POIs"
 
     match_POI(spark, safegraph_days, POI_file_name, output_file)
