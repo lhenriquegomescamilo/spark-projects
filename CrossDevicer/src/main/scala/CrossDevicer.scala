@@ -36,7 +36,7 @@ object CrossDevicer {
     val days = (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
 
     // Now we obtain the list of files to be loaded
-    val paths = days.map(day => "/datascience/data_audiences_p/day=%s".format(day.replace("-", "*")))
+    val paths = days.map(day => "/datascience/data_audiences_p/day=%s".format(day.replace("-", "")))
 
     // Finally, we load all the data
     val events_data = spark.read.option("basePath", "/datascience/data_audiences_p/").parquet(paths: _*)
