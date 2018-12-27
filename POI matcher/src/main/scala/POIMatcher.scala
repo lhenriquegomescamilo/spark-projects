@@ -42,6 +42,9 @@ object POIMatcher {
   }
 
   def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, output_file: String) = {
+    val df_users = get_safegraph_data(spark, safegraph_days)
+    val df_pois_final = get_POI_coordinates(spark, POI_file_name)
+
     //joining datasets by geocode (added broadcast to force..broadcasting)
     val joint = df_users.join(broadcast(df_pois_final),Seq("geocode")).
         withColumn("longitude_poi", round(col("longitude_poi").cast("float"),4)).
