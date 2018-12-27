@@ -30,7 +30,7 @@ object POIMatcher {
     val df_pois = spark.read.option("header", "true").option("delimiter", ",").csv(file_name)
 
     //creating geocodes for bus stops
-    val df_pois_parsed = df_bondis.withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
+    val df_pois_parsed = df_pois.withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
 
     // Here we rename the columns
     val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "geocode")
