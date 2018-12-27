@@ -41,7 +41,7 @@ object AudienceCrossDevicer {
                                               
     // Here we do the cross-device per se.
     val cross_deviced = db_data.join(audience, db_data.col("index")===audience.col("device_id"))
-                               .select("index", "device", "device_type")
+                               //.select("index", "device", "device_type")
     
     // Finally, we store the result obtained.
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
