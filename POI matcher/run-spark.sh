@@ -7,4 +7,4 @@ spark-submit\
   --executor-cores 4\
   --queue default\
   --conf spark.yarn.maxAppAttempts=1\
-  /home/rely/spark-projects/ShareThisUSIngester/target/scala-2.11/sharethis-us-ingester_2.11-1.0.jar
+  /home/rely/spark-projects/target/scala-2.12/spark-projects_2.12-0.1.0-SNAPSHOT.jar
