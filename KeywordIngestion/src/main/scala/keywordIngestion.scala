@@ -39,7 +39,7 @@ object keywordIngestion {
         // Levantamos el dataframe que tiene toda la data de los usuarios con sus urls
         val udfFilter = udf((segments: Seq[String]) => segments.filter(token => !(token.matches("\\d*"))))
 
-        val df_audiences = spark.read.parquet("/datascience/data_audiences_p/day=20181219".format(today))
+        val df_audiences = spark.read.parquet("/datascience/data_audiences_p/day=%s".format(today))
                                       .select("device_id","event_type","all_segments","url","device_type","country")
                                       .withColumn("url_keys", regexp_replace(col("url"), """https*://""", ""))
                                       .withColumn("url_keys", regexp_replace(col("url_keys"), """[/,=&\.\(\) \|]""", " , "))
