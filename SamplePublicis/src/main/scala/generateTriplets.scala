@@ -37,7 +37,7 @@ object generateTriplets {
         **/
         val df = spark.read.format("parquet").load("/datascience/data_audiences_p/")
                                              .filter("day > %s AND country = 'MX' AND event_type <> 'xp'".format(end.toString(format)))
-                                             .select("device_id","day","segments"))
+                                             .select("device_id","day","segments")
 
         val taxo_general = spark.read.format("csv").option("sep","\t")
                                                     .option("header","True")
