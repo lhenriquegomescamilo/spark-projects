@@ -73,7 +73,7 @@ object generateTriplets {
                              .withColumn("geo_segments", udfDropDuplicates(col("geo_segments")))
         //val triplets = df.withColumn("segments",explode(col("segments"))).sort(desc("day")).dropDuplicates(Seq("device_id", "segments"))
 
-        triplets.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save("/datascience/data_publicis_organica")
+        userSegments.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save("/datascience/data_publicis/organic")
 
     }
 }
