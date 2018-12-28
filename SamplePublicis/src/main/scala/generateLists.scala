@@ -54,7 +54,13 @@ object generateLists {
                     .write.format("csv").mode(SaveMode.Overwrite).save("/datascience/data_publicis_organica_join_geo")
 
 
+        val join_final = join_general.join(join_geo,Seq("device_id"),"left_outer")
+                                      .withColumnRenamed("collect_list(general_segments)","general_segments")
+                                      .withColumnRenamed("collect_list(geo_segments)","geo_segments")
+                                      .withColumn("geo_segments", stringify(col("geo_segments")))
+                                      .withColumn("general_segments", stringify(col("general_segments")))
 
+        join_final.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/data_publicis_organica_join_final")
 
     }
   }
