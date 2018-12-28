@@ -48,10 +48,10 @@ object generateLists {
         /// Guardo ambos join en disco para que despues spark haga un hashJoin en lugar de un broadcast join (Son dataframes muy grandes)
         join_general.withColumnRenamed("collect_list(general_segments)","general_segments")
                     .withColumn("general_segments", stringify(col("general_segments")))
-                    .write.format("csv").mode(SaveMode.Overwrite).save("/datascience/data_publicis_organica_join_general")
+                    .write.format("csv").option("header","True").mode(SaveMode.Overwrite).save("/datascience/data_publicis_organica_join_general")
         join_geo.withColumnRenamed("collect_list(geo_segments)","geo_segments")
                     .withColumn("geo_segments", stringify(col("geo_segments")))
-                    .write.format("csv").mode(SaveMode.Overwrite).save("/datascience/data_publicis_organica_join_geo")
+                    .write.format("csv").option("header","True").mode(SaveMode.Overwrite).save("/datascience/data_publicis_organica_join_geo")
 
 
         val join_final = join_general.join(join_geo,Seq("device_id"),"left_outer")
@@ -60,7 +60,7 @@ object generateLists {
                                       .withColumn("geo_segments", stringify(col("geo_segments")))
                                       .withColumn("general_segments", stringify(col("general_segments")))
 
-        join_final.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/data_publicis_organica_join_final")
+        join_final.write.format("csv").option("header","True").mode(SaveMode.Overwrite).save("/datascience/data_publicis_organica_join_final")
 
     }
   }

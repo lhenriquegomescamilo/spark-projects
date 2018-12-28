@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{explode,desc,lit,size,concat}
+import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list}
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
@@ -32,9 +32,9 @@ object generateTriplets {
                                           .withColumn("day",lit(x))
                                           .select("device_id","day","segments"))
 
-        val df = dfs.reduce(_ union _)
+        val df = dfs.reduce((df1,df2) => df1.union(df2))
 
-        val triplets = df.withColumn("segments",explode(col("segments"))).dropDuplicates(Seq("device_id", "segments"))
+        val triplets = df.withColumn("segments",explode(col("segments"))).sort(desc("day")).dropDuplicates(Seq("device_id", "segments"))
 
         triplets.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/data_publicis_organica_triplets")
 
