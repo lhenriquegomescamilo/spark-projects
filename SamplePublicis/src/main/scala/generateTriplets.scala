@@ -22,7 +22,7 @@ object generateTriplets {
         val end   = DateTime.now.minusDays(0)
 
         val daysCount = Days.daysBetween(start, end).getDays()
-        val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format
+        val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
         val dfs = (0 until daysCount).map(start.plusDays(_))
                                       .map(_.toString(format)).reverse
