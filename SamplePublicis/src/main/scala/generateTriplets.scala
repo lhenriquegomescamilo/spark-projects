@@ -1,10 +1,7 @@
 package main.scala
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf}
-import org.apache.spark.sql.SaveMode
-import org.joda.time.Days
-import org.joda.time.DateTime
-import org.apache.spark.sql.functions.broadcast
+import org.apache.spark.sql.{SparkSession, Row, SaveMode}
+import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast}
+import org.joda.time.{Days,DateTime}
 import org.apache.hadoop.fs.Path
 
 object generateTriplets {
