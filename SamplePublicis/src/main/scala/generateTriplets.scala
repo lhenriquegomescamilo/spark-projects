@@ -24,7 +24,6 @@ object generateTriplets {
         val daysCount = Days.daysBetween(start, end).getDays()
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-        /**
         val dfs = (0 until daysCount).map(start.plusDays(_))
                                       .map(_.toString(format)).reverse
                                       .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_audiences_p/day=%s".format(day))))
@@ -34,11 +33,11 @@ object generateTriplets {
                                           .select("device_id","day","segments"))
 
         val df = dfs.reduce((df1,df2) => df1.union(df2))
-        **/
+        /**
         val df = spark.read.format("parquet").load("/datascience/data_audiences_p/")
-                                             .filter("day > %s AND country = 'MX' AND event_type <> 'xp'".format(end.toString(format)))
+                                             .filter("day > %s AND country = 'MX' AND event_type <> 'xp'".format(start.toString(format)))
                                              .select("device_id","day","segments")
-
+        **/
         val taxo_general = spark.read.format("csv").option("sep","\t")
                                                     .option("header","True")
                                                     .load("/datascience/taxo_general.csv")
