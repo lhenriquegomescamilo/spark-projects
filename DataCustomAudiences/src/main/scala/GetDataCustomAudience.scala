@@ -52,8 +52,9 @@ object GetDataCustomAudience {
    * 
    * @param spark: Spark session that will be used to get the data.
    * @param nDays: number of days to be downloaded. Integer.
+   * @param from: number of days to be skipped. Integer.
    */
-  def download_data(spark: SparkSession, nDays: Int): Unit = {
+  def download_data(spark: SparkSession, nDays: Int, from: Int): Unit = {
     // Here we set the list of values that will be considered
     val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive")
     val countries = List("AR", "MX", "CL", "CO", "PE", "US", "BR", "UY", "EC", "BO")
@@ -62,20 +63,42 @@ object GetDataCustomAudience {
     
     // Now we get the list of days to be downloaded
     val format = "yyyy/MM/dd"
-    val end   = DateTime.now.minusDays(1)
+    val end   = DateTime.now.minusDays(from)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we download the data
     days.foreach(day => process_day_parquet(spark, day, columns, countries, event_types))
   }
   
-  def main(args: Array[String]) {    
-    val usage = """
-        Error while reading the parameters
-        Usage: GetDataCustomAudience.jar ndays
-        - ndays: number of days to be downloaded from today.
-      """
-    //if (args.length == 0) println(usage)
+  type OptionMap = Map[Symbol, Int]
+
+  /**
+   * This method parses the parameters sent.
+   */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--from" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toInt), tail)
+    }
+  }
+
+  /**
+   * This method performs the whole execution. It takes up to two parameters:
+   *    - nDays: number of days to be downloaded.
+   *    - from: number of days to be skipped starting from today. Meaning, if it is one, 
+   *    - the current day is skipped, and it will start downloading from yesterday.
+   * Once all the parameters are processed, it starts the SparkSession and continues 
+   * with the download process.
+   */
+  def main(args: Array[String]) { 
+    // Parse the parameters
+    val options = nextOption(Map(), Args.toList)
+    val nDays = if (options.contains('nDays)) options('nDays) else 1
+    val from = if (options.contains('from)) options('from) else 1
     
     // First we parse the parameters
     val nDays = if (args.length > 0) args(0).toInt else 1
@@ -84,6 +107,6 @@ object GetDataCustomAudience {
     val spark = SparkSession.builder.appName("Get data for custom audiences").getOrCreate()
     
     // Finally, we download the data
-    download_data(spark, nDays)
+    download_data(spark, nDays, from)
   }
 }
