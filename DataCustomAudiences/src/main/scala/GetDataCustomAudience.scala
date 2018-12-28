@@ -100,9 +100,6 @@ object GetDataCustomAudience {
     val nDays = if (options.contains('nDays)) options('nDays) else 1
     val from = if (options.contains('from)) options('from) else 1
     
-    // First we parse the parameters
-    val nDays = if (args.length > 0) args(0).toInt else 1
-    
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Get data for custom audiences").getOrCreate()
     
