@@ -15,7 +15,7 @@ object generateTriplets {
 
         /// Este job se encarga de armar triplets de la pinta < dev_id, day, segment > ordenados por fecha y sin duplicados (segment y device_id
         val format = "yyyyMMdd"
-        val start = DateTime.now.minusDays(5)
+        val start = DateTime.now.minusDays(30)
         val end   = DateTime.now.minusDays(0)
 
         val daysCount = Days.daysBetween(start, end).getDays()
