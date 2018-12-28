@@ -54,7 +54,7 @@ object generateTriplets {
         val udfGeoSegments = udf((segments: Seq[String]) => segments.filter(segment => taxo_geo_b.value.contains(segment)))
         val udfAddDay = udf((segments: Seq[String], day: String) => segments.map(segment => (segment, day)))
         val udfFlattenLists = udf((listOfLists: Seq[Seq[Row]]) => listOfLists.flatMap(list => list)) 
-        vval udfDropDuplicates = udf((segments: Seq[Row]) => segments.map(row => (row(0).asInstanceOf[String], row(1).asInstanceOf[String]))
+        val udfDropDuplicates = udf((segments: Seq[Row]) => segments.map(row => (row(0).asInstanceOf[String], row(1).asInstanceOf[String]))
                                                                      .groupBy(row => row._1)
                                                                      .map(row => row._2.sorted.last).toList
                                                                      .map(tuple => "%s:%s".format(tuple._1, tuple._2))
