@@ -56,7 +56,8 @@ object generateTriplets {
 
         val udfGralSegments = udf((segments: Seq[String]) => segments.filter(segment => taxo_general_b.value.contains(segment)))
         val udfGeoSegments = udf((segments: Seq[String]) => segments.filter(segment => taxo_geo_b.value.contains(segment)))
-        val udfFlattenLists = udf((listOfLists: Seq[Seq[String]], day: String) => listOfLists.flatMap(list => list.map(e => (e, day)))) 
+        val udfAddDay = udf((segments: Seq[String], day: String) => segments.map(segment => (segment, day)))
+        val udfFlattenLists = udf((listOfLists: Seq[Seq[String]]) => listOfLists.flatMap(list => list)) 
         val udfDropDuplicates = udf((segments: Seq[(String, String)]) => segments.groupBy(_._1)
                                                                                  .map(_._2.sorted.last).toList
                                                                                  .map(tuple => "%s:%s".format(tuple._1, tuple._2))
@@ -64,11 +65,13 @@ object generateTriplets {
 
         val userSegments = df.withColumn("gral_segments", udfGralSegments(col("segments")))
                              .withColumn("geo_segments", udfGeoSegments(col("segments")))
+                             .withColumn("gral_segments", udfAddDay(col("gral_segments"), col("day")))
+                             .withColumn("geo_segments", udfAddDay(col("geo_segments"), col("day")))
                              .groupBy("device_id")
                              .agg(collect_list("gral_segments") as "gral_segments",
                                   collect_list("geo_segments") as "geo_segments")
-                             .withColumn("gral_segments", udfFlattenLists(col("gral_segments"), col("day")))
-                             .withColumn("geo_segments", udfFlattenLists(col("geo_segments"), col("day")))
+                             .withColumn("gral_segments", udfFlattenLists(col("gral_segments")))
+                             .withColumn("geo_segments", udfFlattenLists(col("geo_segments")))
                              .withColumn("gral_segments", udfDropDuplicates(col("gral_segments")))
                              .withColumn("geo_segments", udfDropDuplicates(col("geo_segments")))
         //val triplets = df.withColumn("segments",explode(col("segments"))).sort(desc("day")).dropDuplicates(Seq("device_id", "segments"))
