@@ -45,7 +45,7 @@ object GetDataPartnerID {
   /**
    * This method downloads the data for the last N days for building audiences.
    * Basically, this method prepares all the meta-data, columns, event types,
-   * and countries to be considered. It also configures the dates that will be
+   * to be considered. It also configures the dates that will be
    * downloaded. It starts downloading data from the actual day minus 1 
    * (yesterday).
    * 
@@ -66,7 +66,7 @@ object GetDataPartnerID {
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we download the data
-    days.foreach(day => process_day_parquet(spark, day, columns, countries, event_types))
+    days.foreach(day => process_day_parquet(spark, day, columns, event_types))
   }
   
   type OptionMap = Map[Symbol, Int]
