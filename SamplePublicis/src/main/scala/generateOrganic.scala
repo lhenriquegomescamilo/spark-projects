@@ -5,11 +5,19 @@ import org.joda.time.{Days,DateTime}
 import org.apache.hadoop.fs.Path
 
 object generateOrganic {
-    def generate_organic(spark:SparkSession,days:Seq[String]){
-
+    def generate_organic(spark:SparkSession,ndays:String){
         val sc = spark.sparkContext
         val conf = sc.hadoopConfiguration
         val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+        /// Lista de dias con los que se generara el sample
+        val format = "yyyyMMdd"
+        val start = DateTime.now.minusDays(ndays)
+        val end   = DateTime.now.minusDays(0)
+
+        val daysCount = Days.daysBetween(start, end).getDays()
+        val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+        
         
         /// Leemos la data de data_audiences_p con la cual generaremos el sample.
         val dfs = days.reverse
@@ -82,15 +90,7 @@ object generateOrganic {
         /// Parseo de parametros
         val ndays = if (args.length > 0) args(0).toInt else 30
 
-        /// Lista de dias con los que se generara el sample
-        val format = "yyyyMMdd"
-        val start = DateTime.now.minusDays(ndays)
-        val end   = DateTime.now.minusDays(0)
-
-        val daysCount = Days.daysBetween(start, end).getDays()
-        val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-        
-        generate_organic(spark,days)
+        generate_organic(spark,ndays)
 
     }
 }
