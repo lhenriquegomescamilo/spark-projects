@@ -43,7 +43,7 @@ object IndexGenerator {
                          .drop("collect_list(device)")
 
 
-        index.coalesce(200).write.mode(SaveMode.Overwrite).format("parquet")
+        index_xd.coalesce(200).write.mode(SaveMode.Overwrite).format("parquet")
                                 .save("/datascience/crossdevice/list_index")
     }
 
