@@ -5,7 +5,7 @@ import org.joda.time.{Days,DateTime}
 import org.apache.hadoop.fs.Path
 
 object generateModeled {
-    def generate_modeled(spark:SparkSession,ndays:String){
+    def generate_modeled(spark:SparkSession,ndays:Int){
 
         val sc = spark.sparkContext
         val conf = sc.hadoopConfiguration

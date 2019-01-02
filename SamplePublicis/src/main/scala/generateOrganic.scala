@@ -5,7 +5,7 @@ import org.joda.time.{Days,DateTime}
 import org.apache.hadoop.fs.Path
 
 object generateOrganic {
-    def generate_organic(spark:SparkSession,ndays:String){
+    def generate_organic(spark:SparkSession,ndays:Int){
         val sc = spark.sparkContext
         val conf = sc.hadoopConfiguration
         val fs = org.apache.hadoop.fs.FileSystem.get(conf)
