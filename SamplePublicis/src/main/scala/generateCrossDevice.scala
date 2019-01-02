@@ -25,6 +25,8 @@ object generateCrossDevice {
                               .withColumnRenamed("_c2","geo_segments")
 
       val joint = organic.join(index_xd,Seq("device_id"),"left_outer")
+                        .withColumn("android",concat_ws(",", col("android")))
+                        .withColumn("ios",concat_ws(",", col("ios")))
 
       joint.write.format("csv")
                   .mode(SaveMode.Overwrite)
