@@ -43,7 +43,7 @@ object generateLists {
         val join_general = triplets.join(broadcast(taxo_general), Seq("segments"))
                                     .withColumn("general_segments",concat(col("segments"),lit(":"),col("day")))
                                     .groupBy("device_id")
-                                    .agg(collect_list("general_segments"))
+                                    .agg(collect_list("general_segments"), collect_list("geo_segments"))
 
         /// Guardo ambos join en disco para que despues spark haga un hashJoin en lugar de un broadcast join (Son dataframes muy grandes)
         join_general.withColumnRenamed("collect_list(general_segments)","general_segments")

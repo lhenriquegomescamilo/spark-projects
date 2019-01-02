@@ -8,7 +8,7 @@ object IndexGenerator {
   
     def generate_index(spark: SparkSession) {
         // First we obtain the data from DrawBridge
-        val db_data = spark.read.format("csv").load("/data/crossdevice/2018-11-15/*.gz")
+        val db_data = spark.read.format("csv").load("/data/crossdevice/2018-12-21/*.gz")
         // Now we obtain a dataframe with only two columns: index (the device_id), and the device type
         val index = db_data.withColumn("all_devices", split(col("_c0"), "\\|")) // Primero obtenemos el listado de devices
                            .withColumn("index", explode(col("all_devices"))) // Now we generate the index column for every device in the list
@@ -23,7 +23,7 @@ object IndexGenerator {
                            .select("index", "index_type", "device", "device_type")
         index.coalesce(120).write.mode(SaveMode.Overwrite).format("parquet")
                                 .partitionBy("index_type", "device_type")
-                                .save("/datascience/crossdevice")
+                                .save("/datascience/crossdevice/double_index")
     }
   
     def main(args: Array[String]) {
