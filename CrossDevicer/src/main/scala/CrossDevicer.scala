@@ -120,7 +120,7 @@ object CrossDevicer {
       .filter(size(col("new_segment")) > 0)
 
     // Now we load the cross-device index
-    val index = spark.read.format("parquet").load("/datascience/crossdevice")
+    val index = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
 
     // Finally, we perform the cross-device and keep only the new devices with their types and the
     // new segments.

@@ -1,12 +1,12 @@
 package main.scala
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{split, lit, explode, col}
+import org.apache.spark.sql.functions.{split, lit, explode, col, concat}
 import org.apache.spark.sql.SaveMode
 
 object IndexGenerator {
   
-    def generate_index(spark: SparkSession) {
+    def generate_index_double(spark: SparkSession) {
         // First we obtain the data from DrawBridge
         val db_data = spark.read.format("csv").load("/data/crossdevice/2018-12-21/*.gz")
         // Now we obtain a dataframe with only two columns: index (the device_id), and the device type
@@ -26,9 +26,27 @@ object IndexGenerator {
                                 .save("/datascience/crossdevice/double_index")
     }
   
+    def generate_index_lists(spark: SparkSession) {
+        val df = spark.read.format("parquet").load("/datascience/crossdevice")
+                                          .filter("index_type = 'c' and device_type in ('a','i')")
+                                          .withColumn("device",concat(col("device_type"),col("device")))
+                                          .groupBy("index")
+                                          .agg(collect_list("device"))
+
+        val udfDevice = udf((segments: Seq[String], device_type: String) => segments.filter(segment => segment.charAt(0) == device_type)
+                                                            .map(segment => segment.substring(1,segment.length)))
+
+        val index_xd = df.withColumn("android",udfAndroid(col("collect_list(device)")))
+                        .withColumn("ios",udfIos(col("collect_list(device)")))
+                        .withColumn("android",udfString(col("android")))
+                        .withColumn("ios",udfString(col("ios")))
+                        .withColumnRenamed("index","device_id")
+                        .drop("collect_list(device)")
+    }
+
     def main(args: Array[String]) {
         val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
         
-        generate_index(spark)                
+        generate_index_double(spark)                
     }
 }
