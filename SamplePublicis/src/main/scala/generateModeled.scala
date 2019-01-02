@@ -19,7 +19,6 @@ object generateModeled {
         val daysCount = Days.daysBetween(start, end).getDays()
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
         
-
         /// Leemos la data de data_audiences_p con la cual generaremos el sample.
         val dfs = days.reverse
                         .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_audiences_p/day=%s".format(day))))
@@ -78,7 +77,7 @@ object generateModeled {
         /// Parseo de parametros
         val ndays = if (args.length > 0) args(0).toInt else 30
 
-        generate_modeled(spark,days)
+        generate_modeled(spark,ndays)
 
     }
 }
