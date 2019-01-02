@@ -4,13 +4,13 @@ import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_w
 import org.joda.time.{Days,DateTime}
 
 object generateCrossDevice {
-    def generate_organic_xd(spark:SparkSession):Unit{
+    def generate_organic_xd(spark:SparkSession){
       val df = spark.read.format("parquet").load("/datascience/crossdevice")
                                           .filter("index_type = 'c' and device_type in ('a','i')")
                                           .withColumn("device",concat($"device_type",$"device"))
                                           .groupBy("index")
                                           .agg(collect_list("device"))
-                                          
+
       val udfAndroid = udf((segments: Seq[String]) => segments.filter(segment => segment.charAt(0) == 'a'))
       val udfIos = udf((segments: Seq[String]) => segments.filter(segment => segment.charAt(0) == 'i'))
 
