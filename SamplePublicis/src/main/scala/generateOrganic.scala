@@ -5,7 +5,7 @@ import org.joda.time.{Days,DateTime}
 import org.apache.hadoop.fs.Path
 
 object generateOrganic {
-    def generate_organic(spark:SparkSession,sc:sparkContext,fs:FileSystem,days=Seq[String]){
+    def generate_organic(spark:SparkSession,sc:sparkContext,fs:FileSystem,days:Seq[String]){
         /// Leemos la data de data_audiences_p con la cual generaremos el sample.
         val dfs = days.reverse
                         .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_audiences_p/day=%s".format(day))))
