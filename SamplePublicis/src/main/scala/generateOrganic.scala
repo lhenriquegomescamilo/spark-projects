@@ -90,7 +90,7 @@ object generateOrganic {
         val daysCount = Days.daysBetween(start, end).getDays()
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
         
-        generate_organic(spark,sc,fs,days)
+        generate_organic(spark,days)
 
     }
 }
