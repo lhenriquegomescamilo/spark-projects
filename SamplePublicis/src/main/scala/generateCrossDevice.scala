@@ -7,15 +7,15 @@ object generateCrossDevice {
     def generate_organic_xd(spark:SparkSession){
       val df = spark.read.format("parquet").load("/datascience/crossdevice")
                                           .filter("index_type = 'c' and device_type in ('a','i')")
-                                          .withColumn("device",concat($"device_type",$"device"))
+                                          .withColumn("device",concat(col("device_type"),col("device")))
                                           .groupBy("index")
                                           .agg(collect_list("device"))
 
       val udfAndroid = udf((segments: Seq[String]) => segments.filter(segment => segment.charAt(0) == 'a'))
       val udfIos = udf((segments: Seq[String]) => segments.filter(segment => segment.charAt(0) == 'i'))
 
-      val index_xd = df.withColumn("android",udfAndroid($"collect_list(device)"))
-                        .withColumn("ios",udfIos($"collect_list(device)"))
+      val index_xd = df.withColumn("android",udfAndroid(col("collect_list(device)")))
+                        .withColumn("ios",udfIos(col("collect_list(device)")))
                         .withColumnRenamed("index","device_id")
 
       val organic = spark.read.format("csv").option("sep", "\t")
