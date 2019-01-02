@@ -36,11 +36,11 @@ object IndexGenerator {
         val udfDevice = udf((segments: Seq[String], device_type: String) => segments.filter(segment => segment.charAt(0) == device_type)
                                                             .map(segment => segment.substring(1,segment.length)))
 
-        val index_xd = df.withColumn("android",udfAndroid(col("collect_list(device)"), lit("a")))
-                        .withColumn("ios",udfIos(col("collect_list(device)"), lit("i")))
-                        .withColumn("cookies",udfIos(col("collect_list(device)"), lit("c")))
-                        .withColumnRenamed("index","device_id")
-                        .drop("collect_list(device)")
+        val index_xd = df.withColumn("android",udfDevice(col("collect_list(device)"), lit("a")))
+                         .withColumn("ios",     udfDevice(col("collect_list(device)"), lit("i")))
+                         .withColumn("cookies", udfDevice(col("collect_list(device)"), lit("c")))
+                         .withColumnRenamed("index","device_id")
+                         .drop("collect_list(device)")
 
 
         index.coalesce(200).write.mode(SaveMode.Overwrite).format("parquet")
