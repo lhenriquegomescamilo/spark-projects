@@ -1,7 +1,7 @@
 package main.scala
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{split, lit, explode, col, concat}
+import org.apache.spark.sql.functions.{split, lit, explode, col, concat, collect_list}
 import org.apache.spark.sql.SaveMode
 
 object IndexGenerator {
@@ -27,8 +27,8 @@ object IndexGenerator {
     }
   
     def generate_index_lists(spark: SparkSession) {
-        val df = spark.read.format("parquet").load("/datascience/crossdevice")
-                                          .filter("index_type = 'c' and device_type in ('a','i')")
+        val df = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
+                                          .filter("index_type = 'c'")
                                           .withColumn("device",concat(col("device_type"),col("device")))
                                           .groupBy("index")
                                           .agg(collect_list("device"))
@@ -36,12 +36,15 @@ object IndexGenerator {
         val udfDevice = udf((segments: Seq[String], device_type: String) => segments.filter(segment => segment.charAt(0) == device_type)
                                                             .map(segment => segment.substring(1,segment.length)))
 
-        val index_xd = df.withColumn("android",udfAndroid(col("collect_list(device)")))
-                        .withColumn("ios",udfIos(col("collect_list(device)")))
-                        .withColumn("android",udfString(col("android")))
-                        .withColumn("ios",udfString(col("ios")))
+        val index_xd = df.withColumn("android",udfAndroid(col("collect_list(device)"), lit("a")))
+                        .withColumn("ios",udfIos(col("collect_list(device)"), lit("i")))
+                        .withColumn("cookies",udfIos(col("collect_list(device)"), lit("c")))
                         .withColumnRenamed("index","device_id")
                         .drop("collect_list(device)")
+
+
+        index.coalesce(200).write.mode(SaveMode.Overwrite).format("parquet")
+                                .save("/datascience/crossdevice/list_index")
     }
 
     def main(args: Array[String]) {
