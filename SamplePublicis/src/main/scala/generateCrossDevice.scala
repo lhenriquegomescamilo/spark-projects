@@ -11,8 +11,10 @@ object generateCrossDevice {
                                           .groupBy("index")
                                           .agg(collect_list("device"))
 
-      val udfAndroid = udf((segments: Seq[String]) => segments.filter(segment => segment.charAt(0) == 'a'))
-      val udfIos = udf((segments: Seq[String]) => segments.filter(segment => segment.charAt(0) == 'i'))
+      val udfAndroid = udf((segments: Seq[String]) => segments.filter(segment => segment.charAt(0) == 'a')
+                                                                .map(segment => segment.substring(1,segment.length)))
+      val udfIos = udf((segments: Seq[String]) => segments.filter(segment => segment.charAt(0) == 'i')
+                                                            .map(segment => segment.substring(1,segment.length)))
 
       val index_xd = df.withColumn("android",udfAndroid(col("collect_list(device)")))
                         .withColumn("ios",udfIos(col("collect_list(device)")))
