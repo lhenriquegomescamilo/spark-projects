@@ -17,6 +17,7 @@ object generateCrossDevice {
                                                             .map(segment => segment.substring(1,segment.length)))
         val udfString = udf((lista: Seq[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2)
                                                               else "")
+                                                              
         val index_xd = df.withColumn("android",udfAndroid(col("collect_list(device)")))
                         .withColumn("ios",udfIos(col("collect_list(device)")))
                         .withColumn("android",udfString(col("android")))
@@ -31,9 +32,7 @@ object generateCrossDevice {
                               .withColumnRenamed("_c2","geo_segments")
 
         val joint = organic.join(index_xd,Seq("device_id"),"left_outer")
-                        .withColumn("android",concat_ws(",", col("android")))
-                        .withColumn("ios",concat_ws(",", col("ios")))
-
+                        
         joint.write.format("csv")
                     .mode(SaveMode.Overwrite)
                     .save("/datascience/data_publicis/organic_xd")
