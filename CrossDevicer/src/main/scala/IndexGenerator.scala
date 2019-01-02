@@ -1,7 +1,7 @@
 package main.scala
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{split, lit, explode, col, concat, collect_list}
+import org.apache.spark.sql.functions.{split, lit, explode, col, concat, collect_list, udf}
 import org.apache.spark.sql.SaveMode
 
 object IndexGenerator {
