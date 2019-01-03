@@ -7,11 +7,13 @@ import org.apache.hadoop.fs.Path
 object generateSample {
     def generate_sample(spark:SparkSession){
 
-        val organic = spark.read.format("csv").option("sep", "\t")
-                                .load("/datascience/data_publicis/organic")
+        val organic_xd = spark.read.format("csv")
+                                .load("/datascience/data_publicis/organic_xd")
                                 .withColumnRenamed("_c0","device_id")
                                 .withColumnRenamed("_c1","general_segments")
                                 .withColumnRenamed("_c2","geo_segments")
+                                .withColumnRenamed("_c3","android")
+                                .withColumnRenamed("_c4","ios")
         
         val modeled = spark.read.format("csv").option("sep", "\t")
                                 .load("/datascience/data_publicis/modeled")
