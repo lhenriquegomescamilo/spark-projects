@@ -4,7 +4,7 @@ import org.joda.time.DateTime
 import org.apache.spark.sql.SaveMode
 
 object dataGCBA {
-    def process_day(spark:SparkSession day:String){
+    def process_day(spark:SparkSession, day:String){
         val df = spark.read.format("csv").option("sep","\t").option("header",true)
                         .load("/data/eventqueue/%s/*.tsv.gz".format(day))
                         .select("id_partner","event_type","url")
