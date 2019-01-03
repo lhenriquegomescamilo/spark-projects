@@ -34,7 +34,7 @@ object AudienceCrossDevicer {
                                                               .withColumn("device_id", upper(col("device_id")))
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
-    val db_data = spark.read.format("parquet").load("/datascience/crossdevice")
+    val db_data = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
                                               .filter(index_filter)
                                               .withColumn("index", upper(col("index")))
                                               .select("index", "device", "device_type")

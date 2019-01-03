@@ -5,7 +5,8 @@ import org.joda.time.{Days,DateTime}
 
 object generateCrossDevice {
     def generate_organic_xd(spark:SparkSession){
-        val df = spark.read.format("parquet").load("/datascience/crossdevice")
+    /**
+        val df = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
                                           .filter("index_type = 'c' and device_type in ('a','i')")
                                           .withColumn("device",concat(col("device_type"),col("device")))
                                           .groupBy("index")
@@ -24,6 +25,8 @@ object generateCrossDevice {
                         .withColumn("ios",udfString(col("ios")))
                         .withColumnRenamed("index","device_id")
                         .drop("collect_list(device)")
+**/
+        val index_xd = spark.read.format("parquet").load("/datascience/crossdevice/list_index")
 
         val organic = spark.read.format("csv").option("sep", "\t")
                               .load("/datascience/data_publicis/organic")
