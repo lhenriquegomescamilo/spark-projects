@@ -21,8 +21,10 @@ object generateSample {
                                 .withColumnRenamed("_c1","modeled_segments")
         
         val sample = organic_xd.join(modeled,Seq("device_id"),"left_outer")
+                                .withColumn("device_id",sha2(col("device_id"), 256))
         
         sample.write.format("csv").option("sep", "\t")
+                            .option("header",true)
                             .mode(SaveMode.Overwrite)
                             .save("/datascience/data_publicis/sample_publicis")
 
