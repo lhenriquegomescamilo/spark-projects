@@ -19,3 +19,4 @@ object dataGCBA {
 
         process_day(spark,today)
     }
+}
