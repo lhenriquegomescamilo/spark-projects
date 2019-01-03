@@ -20,7 +20,7 @@ object generateSample {
                                 .withColumnRenamed("_c0","device_id")
                                 .withColumnRenamed("_c1","modeled_segments")
         
-        val sample = organic.join(modeled,Seq("device_id"),"left_outer")
+        val sample = organic_xd.join(modeled,Seq("device_id"),"left_outer")
         
         sample.write.format("csv").option("sep", "\t")
                             .mode(SaveMode.Overwrite)
