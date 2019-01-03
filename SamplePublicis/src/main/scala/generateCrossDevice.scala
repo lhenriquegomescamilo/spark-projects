@@ -25,6 +25,10 @@ object generateCrossDevice {
                         .withColumnRenamed("index","device_id")
                         .drop("collect_list(device)")
 
+        index_xd.write.format("parquet").option("header",true)
+                                        .mode(SaveMode.Overwrite)
+                                        .save("/datascience/crossdevice/list_index")
+/**
         val organic = spark.read.format("csv").option("sep", "\t")
                               .load("/datascience/data_publicis/organic")
                               .withColumnRenamed("_c0","device_id")
@@ -35,7 +39,7 @@ object generateCrossDevice {
                         
         joint.write.format("csv")
                     .mode(SaveMode.Overwrite)
-                    .save("/datascience/data_publicis/organic_xd")
+                    .save("/datascience/data_publicis/organic_xd")**/
     }
     def main(args: Array[String]) {
         /// Configuracion spark
