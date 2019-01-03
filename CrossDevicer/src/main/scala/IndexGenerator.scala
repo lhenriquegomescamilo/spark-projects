@@ -50,6 +50,7 @@ object IndexGenerator {
     def main(args: Array[String]) {
         val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
         
-        generate_index_double(spark)                
+        generate_index_double(spark)
+        generate_index_lists(spark)     
     }
 }
