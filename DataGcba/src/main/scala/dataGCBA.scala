@@ -18,3 +18,4 @@ object dataGCBA {
         val today = DateTime.now().toString("yyyy/MM/dd")
 
         process_day(spark,today)
+    }
