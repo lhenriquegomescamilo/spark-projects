@@ -34,7 +34,7 @@ object POIMatcherVariable {
             System.exit(1)
         }
 
-        //example: val safegraph_days = 30
+        //example: val cantDays = 30
         var cantDays = 1
         try {
             cantDays = args(0).toInt
@@ -47,7 +47,7 @@ object POIMatcherVariable {
             System.exit(1)
         }
 
-        //example: val output_file = "/datascience/geo/MX/specific_POIs"
+        //example: val output_path = "/datascience/geo/MX/specific_POIs"
         val output_path = args(1);
         
         if (Option(output_path).getOrElse("").isEmpty) {
@@ -131,7 +131,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
      */
 
   def match_POI(spark: SparkSession, cantDays: Integer, POI_file_name: String, output_path: String) = {
-    val df_users = get_safegraph_data(spark, safegraph_days)
+    val df_users = get_safegraph_data(spark, cantDays)
     val df_pois_final = get_POI_coordinates(spark, POI_file_name)
 
     //joining datasets by geocode (added broadcast to force..broadcasting)
@@ -154,7 +154,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     //storing result
     val sqlDF = spark.sql(query)
-    sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
+    sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_path)
   }
 
 
@@ -162,11 +162,11 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
     val sc = spark.sparkContext
 
-    //val safegraph_days = 30
+    //val cantDays = 30
     //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
-    //val output_file = "/datascience/geo/MX/specific_POIs"
+    //val output_path = "/datascience/geo/MX/specific_POIs"
 
-    match_POI(spark, safegraph_days, POI_file_name, output_file)
+    match_POI(spark, cantDays, POI_file_name, output_path)
   }
 }
 }
