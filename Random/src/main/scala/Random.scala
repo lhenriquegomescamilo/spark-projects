@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col,abs}
+import org.apache.spark.sql.functions.{col, count}
 import org.apache.spark.sql.SaveMode
 
 
@@ -13,14 +13,16 @@ object Random {
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Random").getOrCreate()
 
-    val audiencias = List("danone_20261","danone_35936","danone_35928")
-    for (audience_name <- audiencias)
+    val taxo = spark.read.format("csv").option("sep", "\t").load("/datascience/audiences/crossdeviced/taxo")
+    taxo.cache()
+    val audiencias = "5205, 5208, 5203, 5202, 5243, 5298, 5299, 5262, 5303, 5308, 5242, 5309, 5310, 5290, 5291, 5295, 5296".split(", ").toList
+
+    for (audience_xd <- audiencias)
     {
-      val geopoints = spark.read.format("csv").load("/datascience/geo/geopoints/%s".format(audience_name))
-      val geocodes = geopoints.withColumn("geocode", abs(col("latitude").cast("float")*100).cast("int")*100000+
-                                                            (abs(col("longitude").cast("float")*100).cast("int")))
-      val counts = geocodes.groupBy("geocode").count()
-      counts.write.format("csv").option("sep", ",").save("/datascience/geo/counts/%s".format(audience_name))
+      val counts = taxo.filter("_c2 LIKE '%" + audience_xd + "%'")
+                       .groupBy("_c1")
+                       .agg( count(col("_c0")) ).collect()
+      println("%s,%s,%s,%s".format(audience_xd, counts(0)(1), counts(1)(1), counts(2)(1)))
     }
   }
 }
