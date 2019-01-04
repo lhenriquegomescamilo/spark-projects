@@ -7,7 +7,16 @@ import org.apache.spark.sql.SaveMode
 object IndexGenerator {
   
     /**
-    * 
+    * This method generates an index with 4 columns: index, index_type, device, device_type.
+    * The index is a device_id that will be used to match a given audience. The index_type
+    * specifies the type of the device_id in the index column.
+    * The device is the device_id associated to the given index. This is the device_id that
+    * will be returned as a result of the cross-device. The device_type is the type of device
+    * in the device column.
+    *
+    * @param spark: Spark Session that will be used to read the DataFrames.
+    *
+    * As a result it stores a DataFrame as a Parquet folder in /datascience/crossdevice/double_index.
     **/
     def generate_index_double(spark: SparkSession) {
         // This is the path to the last DrawBridge id
@@ -27,7 +36,7 @@ object IndexGenerator {
                            .filter("index_type != 'd' AND device_type != 'd'")
                            .select("index", "index_type", "device", "device_type")
 
-        // 
+        // We don't want more than 120 files per folder
         index.coalesce(120).write.mode(SaveMode.Overwrite).format("parquet")
                                 .partitionBy("index_type", "device_type")
                                 .save("/datascience/crossdevice/double_index")
