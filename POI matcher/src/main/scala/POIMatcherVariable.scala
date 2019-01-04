@@ -35,7 +35,7 @@ object POIMatcherVariable {
         }
 
         //example: val safegraph_days = 30
-        var safegraph_days = 1
+        var cantDays = 1
         try {
             cantDays = args(0).toInt
         } catch {
@@ -63,17 +63,13 @@ object POIMatcherVariable {
 
 
         
-        if (Option(poi_path).getOrElse("").isEmpty) {
+        if (Option(POI_file_name).getOrElse("").isEmpty) {
             println("Invalid POI file parameter.")
             System.exit(1)
         }
 
 
-    
-    
-        val since = 3
-
-
+////////////////////// ACTUAL EXECUTION ////////////////////////
 /**
 This method reads the safegraph data, selects the columns "ad_id" (device id), "id_type" (user id), "latitude", "longitude", creates a geocode for each row and future spatial operations and finally removes duplicates users that were detected in the same location (i.e. the same user in different lat long coordinates will be conserved, but the same user in same lat long coordinates will be dropped).
 
@@ -114,7 +110,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val df_pois = spark.read.option("header", "true").option("delimiter", ",").csv(file_name)
 
     //creating geocodes the POIs
-    val df_pois_parsed = df_pois.withColumn("radius", ($"radius".cast("float"))).withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
+    val df_pois_parsed = df_pois.withColumn("radius", (col("radius").cast("float"))).withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
 
     // Here we rename the columns
     val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "radius","geocode")
@@ -134,7 +130,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
    @param return df_pois_final: dataframe created from the one provided by the user containing the POIS: contains the geocode and renamed columns.   
      */
 
-  def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, output_file: String) = {
+  def match_POI(spark: SparkSession, cantDays: Integer, POI_file_name: String, output_path: String) = {
     val df_users = get_safegraph_data(spark, safegraph_days)
     val df_pois_final = get_POI_coordinates(spark, POI_file_name)
 
