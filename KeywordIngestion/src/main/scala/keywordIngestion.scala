@@ -17,7 +17,7 @@ object keywordIngestion {
       val udfJoin = udf((lista: Seq[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2)
                                                               else "")
 
-      val joint = spark.read.format("parquet").load("/datascience/data_keywords_p/%s.parquet".format(today))
+      val joint = spark.read.format("parquet").load("/datascience/data_keywords_p/%s".format(today))
       
       val to_csv = joint.select("device_id","url_keys","content_keys","all_segments","event_type","country")
                         .withColumn("all_segments", udfAs(col("all_segments")))
@@ -74,7 +74,7 @@ object keywordIngestion {
       // Hacemos el join entre nuestra data y la data de las urls con keywords.
       val joint = df_audiences.join(broadcast(df),Seq("url"),"left_outer")
       // Guardamos la data en formato parquet
-      joint.write.format("parquet").mode(SaveMode.Overwrite).save("/datascience/data_keywords_p/%s.parquet".format(today))
+      joint.write.format("parquet").mode(SaveMode.Overwrite).save("/datascience/data_keywords_p/%s".format(today))
 
 
     }
