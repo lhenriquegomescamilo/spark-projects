@@ -30,7 +30,8 @@ object POIMatcher {
             System.exit(1)
         }
 
-        var cantDays = 1
+        //example: val safegraph_days = 30
+        var safegraph_days = 1
         try {
             cantDays = args(0).toInt
         } catch {
@@ -42,13 +43,30 @@ object POIMatcher {
             System.exit(1)
         }
 
+        //example: val output_file = "/datascience/geo/MX/specific_POIs"
         val output_path = args(1);
-        val query = args(2)
+        
         if (Option(output_path).getOrElse("").isEmpty) {
             println("Invalid output file parameter.")
             System.exit(1)
+        }        
+
+
+        val country = args(2);
+
+        //example: val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
+        val POI_file_name = args(3);
+
+
+        
+        if (Option(poi_path).getOrElse("").isEmpty) {
+            println("Invalid POI file parameter.")
+            System.exit(1)
         }
 
+
+    
+    
         val since = 3
 
 
@@ -65,7 +83,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
   def get_safegraph_data(spark: SparkSession, days: Integer) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // This is the country we are going to filter on
-    val country = "mexico"
+    
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
     val df_safegraph = spark.read.option("header", "true").csv("/data/geo/safegraph/2018/12/*/*.gz")
@@ -88,14 +106,14 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
      */
 
   def get_POI_coordinates(spark: SparkSession, file_name: String) = {
-    // Loading POIs. The format of the file is Name, Latitude, Longitude
+    // Loading POIs. The format of the file is Name, Latitude, Longitude,Radius
     val df_pois = spark.read.option("header", "true").option("delimiter", ",").csv(file_name)
 
     //creating geocodes the POIs
-    val df_pois_parsed = df_pois.withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
+    val df_pois_parsed = df_pois.withColumn("radius", ($"radius".cast("float"))).withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
 
     // Here we rename the columns
-    val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "geocode")
+    val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "radius","geocode")
 
     //renaming columns based on list
     val df_pois_final = df_pois_parsed.toDF(columnsRenamed_poi: _*)
@@ -132,7 +150,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
                 FROM joint 
                 WHERE ((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
                 COS(RADIANS(longitude_user) - RADIANS(longitude_poi)) +
-                SIN(RADIANS(latitude_user)) * SIN(RADIANS(latitude_poi))))) < 50.0"""
+                SIN(RADIANS(latitude_user)) * SIN(RADIANS(latitude_poi))))) < radius"""
 
     //storing result
     val sqlDF = spark.sql(query)
@@ -144,9 +162,9 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
     val sc = spark.sparkContext
 
-    val safegraph_days = 30
-    val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
-    val output_file = "/datascience/geo/MX/specific_POIs"
+    //val safegraph_days = 30
+    //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
+    //val output_file = "/datascience/geo/MX/specific_POIs"
 
     match_POI(spark, safegraph_days, POI_file_name, output_file)
   }
