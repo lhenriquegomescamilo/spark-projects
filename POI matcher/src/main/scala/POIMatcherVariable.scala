@@ -173,3 +173,4 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     match_POI(spark, safegraph_days, POI_file_name, output_file)
   }
 }
+}
