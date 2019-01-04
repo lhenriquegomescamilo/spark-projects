@@ -14,7 +14,11 @@ import org.apache.spark.sql.SaveMode
 
    The current method will provide the basis for future more customizable geolocation jobs. 
      */
-object POIMatcher {
+object POIMatcherVariable {
+
+    def main(args: Array[String]) {
+        val spark = SparkSession.builder.appName("POI matcher with variables").getOrCreate()
+
    
    /////////////////////////// PARAMETER PARSING ////////////////////////
 
