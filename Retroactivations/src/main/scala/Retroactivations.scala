@@ -36,7 +36,7 @@ object GetDataPartnerID {
                           .withColumn("segments", split(col("segments"), "\u0001"))
       
       // store the results.
-      ready.coalesce(50).write.mode("append")
+      ready.coalesce(200).write.mode("append")
            .partitionBy("id_partner", "day")
            .parquet("/datascience/data_partner_p/".format(day))
 
