@@ -48,7 +48,7 @@ object keywordIngestion {
 
       val daysCount = Days.daysBetween(start, end).getDays()
       val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-      val today = DateTime.now().toString("yyyyMMdd")
+      val today = end.toString("yyyyMMdd")
 
       val dfs = (0 until daysCount).map(start.plusDays(_))
                                    .map(_.toString(format))
