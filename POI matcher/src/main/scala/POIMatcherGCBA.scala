@@ -101,7 +101,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     //storing result
     val sqlDF = spark.sql(query)
-    sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_path)
+    sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
   }
 
 
