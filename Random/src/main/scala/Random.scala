@@ -24,11 +24,11 @@ object Random {
       .map(_.toString(format))
       .map(x => spark.read.format("csv").option("sep", "\t")
                       .option("header", "true")
-                      .load("/data/eventqueue/%s/*.tsv.gz".format(x)))
+                      .load("/data/eventqueue/%s/*.tsv.gz".format(x))
+                      .filter("d17 is not null and country = 'US'")
+                      .select("d17","device_id"))
 
-    val df = dfs.reduce(_ union _).filter("d17 is not null and country = 'US'")
-                                  .select("d17","device_id")
-                                  .dropDuplicates()
+    val df = dfs.reduce(_ union _).dropDuplicates()
 
     df.write.format("csv").option("sep", "\t")
                     .option("header",true)
