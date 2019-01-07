@@ -10,19 +10,27 @@ import org.apache.spark.sql.SaveMode
  */
 object Random {
   def main(args: Array[String]) {
-    // First we obtain the Spark session
-    val spark = SparkSession.builder.appName("Random").getOrCreate()
+    val format = "yyyy/MM/dd"
+    val start = DateTime.now.minusDays(15)
+    val end   = DateTime.now.minusDays(0)
 
-    val taxo = spark.read.format("csv").option("sep", "\t").load("/datascience/audiences/crossdeviced/taxo")
-    taxo.cache()
-    val audiencias = "5205, 5208, 5203, 5202, 5243, 5298, 5299, 5262, 5303, 5308, 5242, 5309, 5310, 5290, 5291, 5295, 5296".split(", ").toList
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-    for (audience_xd <- audiencias)
-    {
-      val counts = taxo.filter("_c2 LIKE '%" + audience_xd + "%'")
-                       .groupBy("_c1")
-                       .agg( count(col("_c0")) ).collect()
-      println("%s,%s,%s,%s".format(audience_xd, counts(0)(1), counts(1)(1), counts(2)(1)))
-    }
+    val dfs = (0 until daysCount).map(start.plusDays(_))
+      .map(_.toString(format))
+      .map(x => spark.read.format("csv").option("sep", "\t")
+                      .option("header", "true")
+                      .load("/data/eventqueue/%s/*.tsv.gz".format(today)))
+
+    val df = dfs.reduce(_ union _).filter("d17 is not null and country = 'US'")
+                                  .select("d17","device_id")
+                                  .dropDuplicates()
+
+    df.write.format("csv").option("sep", "\t")
+                    .option("header",true)
+                    .mode(SaveMode.Overwrite)
+                    .save("/datascience/matching_estid")
+
   }
 }
