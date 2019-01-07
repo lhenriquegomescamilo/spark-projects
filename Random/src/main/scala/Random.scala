@@ -15,7 +15,7 @@ object Random {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     val format = "yyyy/MM/dd"
     val start = DateTime.now.minusDays(15)
-    val end   = DateTime.now.minusDays(0)
+    val end   = DateTime.now.minusDays(15)
 
     val daysCount = Days.daysBetween(start, end).getDays()
     val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
@@ -25,15 +25,16 @@ object Random {
       .map(x => spark.read.format("csv").option("sep", "\t")
                       .option("header", "true")
                       .load("/data/eventqueue/%s/*.tsv.gz".format(x))
-                      .filter("d17 is not null and country = 'US'")
-                      .select("d17","device_id"))
+                      .filter("d17 is not null and country = 'US' and event_type is sync")
+                      .select("d17","device_id")
+                      .dropDuplicates())
 
-    val df = dfs.reduce(_ union _).dropDuplicates()
+    val df = dfs.reduce(_ union _)
 
     df.write.format("csv").option("sep", "\t")
                     .option("header",true)
                     .mode(SaveMode.Overwrite)
-                    .save("/datascience/matching_estid")
+                    .save("/datascience/matching_estid_2")
 
   }
 }
