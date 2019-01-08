@@ -25,7 +25,7 @@ object Random {
       .map(x => spark.read.format("csv").option("sep", "\t")
                       .option("header", "true")
                       .load("/data/eventqueue/%s/*.tsv.gz".format(x))
-                      .filter("d17 is not null and country = 'US' and event_type is sync")
+                      .filter("d17 is not null and country = 'US'")
                       .select("d17","device_id")
                       .dropDuplicates())
 
