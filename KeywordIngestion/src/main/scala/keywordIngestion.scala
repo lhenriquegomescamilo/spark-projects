@@ -17,6 +17,8 @@ object keywordIngestion {
       val udfJoin = udf((lista: Seq[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2)
                                                               else "")
 
+      val joint = spark.read.format("parquet").load("/datascience/data_keywords_p/%s".format(today))
+      
       val to_csv = joint.select("device_id","url_keys","content_keys","all_segments","event_type","country")
                         .withColumn("all_segments", udfAs(col("all_segments")))
                         .withColumn("all_segments",udfXp(col("all_segments"),col("event_type")))
@@ -46,7 +48,7 @@ object keywordIngestion {
 
       val daysCount = Days.daysBetween(start, end).getDays()
       val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-      val today = DateTime.now().toString("yyyyMMdd")
+      val today = end.toString("yyyyMMdd")
 
       val dfs = (0 until daysCount).map(start.plusDays(_))
                                    .map(_.toString(format))
@@ -72,7 +74,7 @@ object keywordIngestion {
       // Hacemos el join entre nuestra data y la data de las urls con keywords.
       val joint = df_audiences.join(broadcast(df),Seq("url"),"left_outer")
       // Guardamos la data en formato parquet
-      joint.write.format("parquet").mode(SaveMode.Overwrite).save("/datascience/data_keywords_p/%s.parquet".format(today))
+      joint.write.format("parquet").mode(SaveMode.Overwrite).save("/datascience/data_keywords_p/%s".format(today))
 
 
     }
@@ -80,7 +82,7 @@ object keywordIngestion {
       /// Configuracion spark
       val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()
       val ndays = if (args.length > 0) args(0).toInt else 10
-      val today = DateTime.now().toString("yyyyMMdd")
+      val today = DateTime.now().minusDays(1).toString("yyyyMMdd")
       
       get_data_for_queries(spark,ndays,today)
       get_data_for_elastic(spark,today)
