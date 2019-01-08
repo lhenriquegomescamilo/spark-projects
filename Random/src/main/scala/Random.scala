@@ -15,7 +15,7 @@ object Random {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     val format = "yyyy/MM/dd"
     val start = DateTime.now.minusDays(15)
-    val end   = DateTime.now.minusDays(15)
+    val end   = DateTime.now.minusDays(30)
 
     val daysCount = Days.daysBetween(start, end).getDays()
     val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
@@ -25,7 +25,7 @@ object Random {
       .map(x => spark.read.format("csv").option("sep", "\t")
                       .option("header", "true")
                       .load("/data/eventqueue/%s/*.tsv.gz".format(x))
-                      .filter("d17 is not null and country = 'US'")
+                      .filter("d17 is not null and country = 'US' and event_type is sync")
                       .select("d17","device_id")
                       .dropDuplicates())
 
