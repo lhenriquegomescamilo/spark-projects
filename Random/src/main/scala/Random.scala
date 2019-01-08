@@ -14,8 +14,8 @@ object Random {
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     val format = "yyyy/MM/dd"
-    val start = DateTime.now.minusDays(15)
-    val end   = DateTime.now.minusDays(30)
+    val start = DateTime.now.minusDays(30)
+    val end   = DateTime.now.minusDays(15)
 
     val daysCount = Days.daysBetween(start, end).getDays()
     val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
