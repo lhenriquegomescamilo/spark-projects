@@ -138,35 +138,35 @@ object GetAudience {
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
 
-    try{
-      val queries = getQueriesFromFile(spark, file)
-      
-      // Move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/in_progress/
-      srcPath = new Path(actual_path)
-      destPath = new Path("/datascience/devicer/in_progress/%s".format(file))
-      hdfs.copyFromLocalFile(srcPath, destPath)
-      actual_path = "/datascience/devicer/in_progress/%s".format(file)
-      
-      // Here we obtain three parameters that are supposed to be equal for every query in the file
-      val partner_id = queries(0)._3.toString
-      val since = queries(0)._4.toString.toInt
-      val nDays = queries(0)._5.toString.toInt
+    //try{
+    val queries = getQueriesFromFile(spark, file)
+    
+    // Move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/in_progress/
+    srcPath = new Path(actual_path)
+    destPath = new Path("/datascience/devicer/in_progress/%s".format(file))
+    hdfs.copyFromLocalFile(srcPath, destPath)
+    actual_path = "/datascience/devicer/in_progress/%s".format(file)
+    
+    // Here we obtain three parameters that are supposed to be equal for every query in the file
+    val partner_id = queries(0)._3.toString
+    val since = queries(0)._4.toString.toInt
+    val nDays = queries(0)._5.toString.toInt
 
-      // If the partner id is set, then we will use the data_partner_p pipeline, otherwise it is going to be data_audiences_p
-      val path = if (partner_id.length > 0) "/datascience/data_partner_p/id_partner=%s".format(partner_id) else "/datascience/data_audiences_p/"
-      val basePath = if (partner_id.length > 0) "/datascience/data_partner_p/" else "/datascience/data_audiences_p/"
-      // Now we finally get the data that will be used
-      val data = getDataPipeline(spark, basePath, path, since, nDays)
+    // If the partner id is set, then we will use the data_partner_p pipeline, otherwise it is going to be data_audiences_p
+    val path = if (partner_id.length > 0) "/datascience/data_partner_p/id_partner=%s".format(partner_id) else "/datascience/data_audiences_p/"
+    val basePath = if (partner_id.length > 0) "/datascience/data_partner_p/" else "/datascience/data_audiences_p/"
+    // Now we finally get the data that will be used
+    val data = getDataPipeline(spark, basePath, path, since, nDays)
 
-      // Lastly we store the audience applying the filters
-      val file_name = file.split("/").last.split(".")(0)
-      getAudience(data, queries.map(tuple => (tuple._1.toString, tuple._2.toString)), file_name)
+    // Lastly we store the audience applying the filters
+    val file_name = file.split("/").last.split(".")(0)
+    getAudience(data, queries.map(tuple => (tuple._1.toString, tuple._2.toString)), file_name)
 
-      // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
-      srcPath = new Path(actual_path)
-      destPath = new Path("/datascience/devicer/done/%s".format(file))
-      hdfs.copyFromLocalFile(srcPath, destPath)
-    }
+    // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
+    srcPath = new Path(actual_path)
+    destPath = new Path("/datascience/devicer/done/%s".format(file))
+    hdfs.copyFromLocalFile(srcPath, destPath)
+    /**}
     catch {
       case e: Exception => {
         // If there is an error in the file, move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/errors/
@@ -174,7 +174,7 @@ object GetAudience {
         destPath = new Path("/datascience/devicer/error/%s".format(file))
         hdfs.copyFromLocalFile(srcPath, destPath)
       }
-    }
+    }**/
   }
 
 
