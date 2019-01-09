@@ -36,11 +36,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we obtain the list of hdfs folders to be read
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
     val path = "/data/geo/safegraph/"
     val hdfs_files = days.map(day => path+"%s/*.gz".format(day))
-                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .dropDuplicates("ad_id","latitude","longitude")
                                   .filter("country = '%s'".format(country))
@@ -101,14 +98,18 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     //using vincenty formula to calculate distance between user/device location and the POI
     //currently the distance is hardcoded to 50 m. 
     joint.createOrReplaceTempView("joint")
-    val query = """SELECT ad_id,name,id_type,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
-                COS(RADIANS(longitude_user) - RADIANS(longitude_poi)) +
-                SIN(RADIANS(latitude_user)) * SIN(RADIANS(latitude_poi))))) as distance
-                FROM joint 
+    val query = """SELECT ad_id,name,id_type,distance
+                FROM (
+                  SELECT ad_id, name, id_type, radius,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
+                  COS(RADIANS(longitude_user) - RADIANS(longitude_poi)) +
+                  SIN(RADIANS(latitude_user)) * SIN(RADIANS(latitude_poi))))) as distance
+                  FROM joint 
+                )
                 WHERE distance < radius"""
 
     //storing result
     val sqlDF = spark.sql(query)
+    val filtered = 
     sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
   }
 
@@ -124,7 +125,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value.toInt), tail)
       case "--country" :: value :: tail =>
-        nextOption(map ++ Map('country -> value.toInt), tail)
+        nextOption(map ++ Map('country -> value.toString), tail)
       case "--poi_file" :: value :: tail =>
         nextOption(map ++ Map('poi_file -> value.toString), tail)
       case "--output" :: value :: tail =>
