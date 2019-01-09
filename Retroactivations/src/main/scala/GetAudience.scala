@@ -167,11 +167,13 @@ object GetAudience {
       destPath = new Path("/datascience/devicer/done/%s".format(file))
       hdfs.copyFromLocalFile(srcPath, destPath)
     }
-    catch{
-      // If there is an error in the file, move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/errors/
-      srcPath = new Path(actual_path)
-      destPath = new Path("/datascience/devicer/error/%s".format(file))
-      hdfs.copyFromLocalFile(srcPath, destPath)
+    catch {
+      case e: Exception => {
+        // If there is an error in the file, move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/errors/
+        srcPath = new Path(actual_path)
+        destPath = new Path("/datascience/devicer/error/%s".format(file))
+        hdfs.copyFromLocalFile(srcPath, destPath)
+      }
     }
   }
 
