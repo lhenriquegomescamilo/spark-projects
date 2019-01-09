@@ -61,13 +61,13 @@ object GetAudience {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
     val filesReady  = fs.listStatus(new Path(pathToProcess))
-                        .map(x => pathToProcess + x.getPath.toString.split("/").last)
+                        .map(x => x.getPath.toString.split("/").last)
                         .toList
     
     // Now we get the list of files that have been processed already
     val pathDone = "/datascience/devicer/done/"
     val filesDone   = fs.listStatus(new Path(pathDone))
-                        .map(x => pathDone + x.getPath.toString.split("/").last)
+                        .map(x => x.getPath.toString.split("/").last)
                         .toList
 
     // Finally we return the ones that have not been processed yet
@@ -139,7 +139,7 @@ object GetAudience {
     var destPath = new Path("/datascience")
 
     //try{
-    val queries = getQueriesFromFile(spark, file)
+    val queries = getQueriesFromFile(spark, actual_path)
     
     // Move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/in_progress/
     srcPath = new Path(actual_path)
