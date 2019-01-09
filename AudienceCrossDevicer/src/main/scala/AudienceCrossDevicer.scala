@@ -29,7 +29,7 @@ object AudienceCrossDevicer {
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
     val audience_name = path_audience.split("/").last
-    val audience = spark.read.format("csv").option("sep", " ").load(path_audience)
+    val audience = spark.read.format("csv").option("sep", "\t").load(path_audience)
                                                               .withColumnRenamed("_c0", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
     
