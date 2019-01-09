@@ -21,19 +21,25 @@ object POIMatcher {
 This method reads the safegraph data, selects the columns "ad_id" (device id), "id_type" (user id), "latitude", "longitude", creates a geocode for each row and future spatial operations and finally removes duplicates users that were detected in the same location (i.e. the same user in different lat long coordinates will be conserved, but the same user in same lat long coordinates will be dropped).
 
    @param spark: Spark session that will be used to load the data.
-   @param days: parameter to define the number of days. Currently not used, hardcoded to the whole month of december 2018. 
+   @param nDays: parameter to define the number of days. Currently not used, hardcoded to the whole month of december 2018. 
    @param country: country from with to filter the data, it is currently hardcoded to Mexico
-   @param return df_safegraph: dataframe created with the safegraph data, filtered by the desired country, extracting the columns user id, device id, latitude and longitude removing duplicate users that have repeated locations and with added geocode.
+   @return df_safegraph: dataframe created with the safegraph data, filtered by the desired country, extracting the columns user id, device id, latitude and longitude removing duplicate users that have repeated locations and with added geocode.
 
  */
 
-  def get_safegraph_data(spark: SparkSession, days: Integer) = {
+  def get_safegraph_data(spark: SparkSession, nDays: Integer, country: String, since: Integer = 1) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
-    // This is the country we are going to filter on
-    val country = "mexico"
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
-    val df_safegraph = spark.read.option("header", "true").csv("/data/geo/safegraph/2018/12/*/*.gz")
+    val format = "yyyy/MM/dd"
+    val end   = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/data/geo/safegraph/"
+    val hdfs_files = days.map(day => path+"/%s/*.gz".format(day))
+                         .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .dropDuplicates("ad_id","latitude","longitude")
                                   .filter("country = '%s'".format(country))
                                   .select("ad_id", "id_type", "latitude", "longitude")
@@ -58,9 +64,10 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     //creating geocodes the POIs
     val df_pois_parsed = df_pois.withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
+                                .withColumn("radius", (col("radius").cast("float")))
 
     // Here we rename the columns
-    val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "geocode")
+    val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "radius", "geocode")
 
     //renaming columns based on list
     val df_pois_final = df_pois_parsed.toDF(columnsRenamed_poi: _*)
@@ -89,15 +96,14 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
         withColumn("latitude_user", round(col("latitude_user").cast("float"),4))
 
 
-
     //using vincenty formula to calculate distance between user/device location and the POI
     //currently the distance is hardcoded to 50 m. 
     joint.createOrReplaceTempView("joint")
-    val query = """SELECT ad_id,name,id_type
-                FROM joint 
-                WHERE ((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
+    val query = """SELECT ad_id,name,id_type,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
                 COS(RADIANS(longitude_user) - RADIANS(longitude_poi)) +
-                SIN(RADIANS(latitude_user)) * SIN(RADIANS(latitude_poi))))) < 50.0"""
+                SIN(RADIANS(latitude_user)) * SIN(RADIANS(latitude_poi))))) as distance
+                FROM joint 
+                WHERE distance < radius"""
 
     //storing result
     val sqlDF = spark.sql(query)
