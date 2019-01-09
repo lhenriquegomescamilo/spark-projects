@@ -36,9 +36,11 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we obtain the list of hdfs folders to be read
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
     val path = "/data/geo/safegraph/"
-    val hdfs_files = days.map(day => path+"/%s/*.gz".format(day))
-                         .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val hdfs_files = days.map(day => path+"%s/*.gz".format(day))
+                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .dropDuplicates("ad_id","latitude","longitude")
                                   .filter("country = '%s'".format(country))
@@ -84,8 +86,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
    @param return df_pois_final: dataframe created from the one provided by the user containing the POIS: contains the geocode and renamed columns.   
      */
 
-  def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, output_file: String) = {
-    val df_users = get_safegraph_data(spark, safegraph_days)
+  def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, country: String, output_file: String) = {
+    val df_users = get_safegraph_data(spark, safegraph_days, country)
     val df_pois_final = get_POI_coordinates(spark, POI_file_name)
 
     //joining datasets by geocode (added broadcast to force..broadcasting)
@@ -110,15 +112,42 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
   }
 
+  type OptionMap = Map[Symbol, Any]
+
+  /**
+   * This method parses the parameters sent.
+   */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--country" :: value :: tail =>
+        nextOption(map ++ Map('country -> value.toInt), tail)
+      case "--poi_file" :: value :: tail =>
+        nextOption(map ++ Map('poi_file -> value.toString), tail)
+      case "--output" :: value :: tail =>
+        nextOption(map ++ Map('output -> value.toString), tail)
+    }
+  }
 
   def main(args: Array[String]) {
+    // Parse the parameters
+    val options = nextOption(Map(), args.toList)
+    val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
+    val country = if (options.contains('country)) options('country).toString else "mexico"
+    val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
+    val output_file = if (options.contains('output)) options('output).toString else ""
+
+    // Start Spark Session
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
-    val sc = spark.sparkContext
 
-    val safegraph_days = 30
-    val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
-    val output_file = "/datascience/geo/MX/specific_POIs"
+    // chequear que el POI_file_name este especificado y el output_file tambien
 
-    match_POI(spark, safegraph_days, POI_file_name, output_file)
+    //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
+    //val output_file = "/datascience/geo/MX/specific_POIs"
+
+    match_POI(spark, safegraph_days, POI_file_name, country, output_file)
   }
 }
