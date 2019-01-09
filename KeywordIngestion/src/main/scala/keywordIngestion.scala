@@ -90,7 +90,7 @@ object keywordIngestion {
       
       val format = "yyyyMMdd"
       val start = DateTime.now.minusDays(30)
-      val end   = DateTime.now.minusDays(1)
+      val end   = DateTime.now.minusDays(2)
 
       val daysCount = Days.daysBetween(start, end).getDays()
       val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
