@@ -149,8 +149,8 @@ object GetAudience {
       
       // Here we obtain three parameters that are supposed to be equal for every query in the file
       val partner_id = queries(0)._3.toString
-      val since = queries(0)._4.toInt
-      val nDays = queries(0)._5.toInt
+      val since = queries(0)._4.toString.toInt
+      val nDays = queries(0)._5.toString.toInt
 
       // If the partner id is set, then we will use the data_partner_p pipeline, otherwise it is going to be data_audiences_p
       val path = if (partner_id.length > 0) "/datascience/data_partner_p/id_partner=%s".format(partner_id) else "/datascience/data_audiences_p/"
