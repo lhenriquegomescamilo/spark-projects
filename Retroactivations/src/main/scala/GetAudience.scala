@@ -141,7 +141,7 @@ object GetAudience {
 
     try{
       val queries = getQueriesFromFile(spark, actual_path)
-    catch {
+    } catch {
       case e: Exception => {
         errors = true
         println(e.toString())
