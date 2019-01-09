@@ -61,13 +61,13 @@ object GetAudience {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
     val filesReady  = fs.listStatus(new Path(pathToProcess))
-                        .map(x => pathToProcess + x.getPath.toString.split("/").last)
+                        .map(x => x.getPath.toString.split("/").last)
                         .toList
     
     // Now we get the list of files that have been processed already
     val pathDone = "/datascience/devicer/done/"
     val filesDone   = fs.listStatus(new Path(pathDone))
-                        .map(x => pathDone + x.getPath.toString.split("/").last)
+                        .map(x => x.getPath.toString.split("/").last)
                         .toList
 
     // Finally we return the ones that have not been processed yet
