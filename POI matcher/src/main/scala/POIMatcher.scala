@@ -112,7 +112,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
   }
 
-  type OptionMap = Map[Symbol, Int]
+  type OptionMap = Map[Symbol, Any]
 
   /**
    * This method parses the parameters sent.
@@ -133,10 +133,10 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
   def main(args: Array[String]) {
     // Parse the parameters
     val options = nextOption(Map(), args.toList)
-    val safegraph_days = if (options.contains('nDays)) options('nDays) else 30
-    val country = if (options.contains('country)) options('country) else "mexico"
-    val POI_file_name = if (options.contains('poi_file)) options('poi_file) else ""
-    val output_file = if (options.contains('poi_file)) options('poi_file) else ""
+    val safegraph_days = if (options.contains('nDays)) options('nDays).toInt else 30
+    val country = if (options.contains('country)) options('country).toString else "mexico"
+    val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
+    val output_file = if (options.contains('poi_file)) options('poi_file).toString else ""
 
     // Start Spark Session
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
