@@ -86,8 +86,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
    @param return df_pois_final: dataframe created from the one provided by the user containing the POIS: contains the geocode and renamed columns.   
      */
 
-  def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, output_file: String) = {
-    val df_users = get_safegraph_data(spark, safegraph_days)
+  def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, country: String, output_file: String) = {
+    val df_users = get_safegraph_data(spark, safegraph_days, country)
     val df_pois_final = get_POI_coordinates(spark, POI_file_name)
 
     //joining datasets by geocode (added broadcast to force..broadcasting)
@@ -118,9 +118,10 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val sc = spark.sparkContext
 
     val safegraph_days = 30
+    val country = "mexico"
     val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
     val output_file = "/datascience/geo/MX/specific_POIs"
 
-    match_POI(spark, safegraph_days, POI_file_name, output_file)
+    match_POI(spark, safegraph_days, POI_file_name, country, output_file)
   }
 }
