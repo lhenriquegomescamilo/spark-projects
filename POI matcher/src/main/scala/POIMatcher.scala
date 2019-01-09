@@ -117,7 +117,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
     val sc = spark.sparkContext
 
-    val safegraph_days = 30
+    val safegraph_days = 2
     val country = "mexico"
     val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
     val output_file = "/datascience/geo/MX/specific_POIs"
