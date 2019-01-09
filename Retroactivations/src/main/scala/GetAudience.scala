@@ -135,8 +135,8 @@ object GetAudience {
     val hdfs = FileSystem.get(hadoopConf)
 
     var actual_path = "/datascience/devicer/to_process/%s".format(file)
-    var srcPath = new Path("")
-    var destPath = new Path("")
+    var srcPath = new Path("/datascience")
+    var destPath = new Path("/datascience")
 
     try{
       val queries = getQueriesFromFile(spark, file)
