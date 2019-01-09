@@ -137,17 +137,16 @@ object GetAudience {
     var actual_path = "/datascience/devicer/to_process/%s".format(file)
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
-    var errors = false
+    var queries = List()
 
     try{
       val queries = getQueriesFromFile(spark, actual_path)
     } catch {
       case e: Exception => {
-        errors = true
         println(e.toString())
       }
     }
-    if (errors) {
+    if (queries.length()==0) {
       // If there is an error in the file, move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/errors/
       srcPath = new Path(actual_path)
       destPath = new Path("/datascience/devicer/error/%s".format(file))
