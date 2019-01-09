@@ -26,6 +26,7 @@ object keywordIngestion {
                         .withColumn("all_segments",udfJoin(col("all_segments")))
                         .withColumn("url_keys",udfJoin(col("url_keys")))
                         .select("device_id","url_keys","content_keys","all_segments","country")
+                        
       
       
      
@@ -73,7 +74,7 @@ object keywordIngestion {
                                     .withColumn("day", lit(today))
       
       // Hacemos el join entre nuestra data y la data de las urls con keywords.
-      val joint = df_audiences.join(broadcast(df),Seq("url"),"left_outer")
+      val joint = df_audiences.join(broadcast(df),Seq("url"),"left_outer").na.fill("")
       // Guardamos la data en formato parquet
       joint.write.format("parquet")
                   .mode("append")
