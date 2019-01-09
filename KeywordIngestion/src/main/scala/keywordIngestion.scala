@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split}
+import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split,lit}
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
