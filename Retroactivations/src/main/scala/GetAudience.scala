@@ -139,7 +139,7 @@ object GetAudience {
     var destPath = new Path("/datascience")
 
     //try{
-    val queries = getQueriesFromFile(spark, file)
+    val queries = getQueriesFromFile(spark, actual_path)
     
     // Move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/in_progress/
     srcPath = new Path(actual_path)
