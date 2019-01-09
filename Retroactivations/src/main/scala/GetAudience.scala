@@ -6,7 +6,7 @@ import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.spark.sql.{ SaveMode, DataFrame }
 import org.apache.hadoop.conf.Configuration
-import org.apache.commons.io.IOUtils
+
 
 
 /*
@@ -134,7 +134,7 @@ object GetAudience {
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
 
-    var actual_path = "hdfs://rely-hdfs/datascience/devicer/to_process/%s".format(file)
+    var actual_path = "/datascience/devicer/to_process/%s".format(file)
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
 
@@ -142,10 +142,10 @@ object GetAudience {
     val queries = getQueriesFromFile(spark, actual_path)
     
     // Move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/in_progress/
-    srcPath = hdfs.create(new Path(actual_path))
-    destPath = hdfs.create(new Path("hdfs://rely-hdfs/datascience/devicer/in_progress/%s".format(file)))
-    IOUtils.copy(srcPath, destPath)
-    actual_path = "hdfs://rely-hdfs/datascience/devicer/in_progress/%s".format(file)
+    srcPath = new Path(actual_path)
+    destPath = new Path("/datascience/devicer/in_progress/%s".format(file))
+    hdfs.rename(srcPath, destPath)
+    actual_path = "/datascience/devicer/in_progress/%s".format(file)
     
     // Here we obtain three parameters that are supposed to be equal for every query in the file
     val partner_id = queries(0)._3.toString
@@ -163,9 +163,9 @@ object GetAudience {
     getAudience(data, queries.map(tuple => (tuple._1.toString, tuple._2.toString)), file_name)
 
     // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
-    srcPath = hdfs.create(new Path(actual_path))
-    destPath = hdfs.create(new Path("hdfs://rely-hdfs/datascience/devicer/done/%s".format(file)))
-    hdfs.copyFromLocalFile(srcPath, destPath)
+    srcPath = new Path(actual_path)
+    destPath = new Path("/datascience/devicer/done/%s".format(file))
+    hdfs.rename(srcPath, destPath)
     /**}
     catch {
       case e: Exception => {
