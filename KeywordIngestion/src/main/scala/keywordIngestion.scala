@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split}
+import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split,lit}
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
@@ -26,6 +26,7 @@ object keywordIngestion {
                         .withColumn("all_segments",udfJoin(col("all_segments")))
                         .withColumn("url_keys",udfJoin(col("url_keys")))
                         .select("device_id","url_keys","content_keys","all_segments","country")
+                        
       
       
      
@@ -73,7 +74,7 @@ object keywordIngestion {
                                     .withColumn("day", lit(today))
       
       // Hacemos el join entre nuestra data y la data de las urls con keywords.
-      val joint = df_audiences.join(broadcast(df),Seq("url"),"left_outer")
+      val joint = df_audiences.join(broadcast(df),Seq("url"),"left_outer").na.fill("")
       // Guardamos la data en formato parquet
       joint.write.format("parquet")
                   .mode("append")
@@ -85,11 +86,11 @@ object keywordIngestion {
       /// Configuracion spark
       val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()
       val ndays = if (args.length > 0) args(0).toInt else 10
-      val today = DateTime.now().minusDays(1).toString("yyyyMMdd")
-      /**
+      //val today = DateTime.now().minusDays(1).toString("yyyyMMdd")
+      
       val format = "yyyyMMdd"
       val start = DateTime.now.minusDays(30)
-      val end   = DateTime.now.minusDays(1)
+      val end   = DateTime.now.minusDays(2)
 
       val daysCount = Days.daysBetween(start, end).getDays()
       val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
@@ -97,8 +98,8 @@ object keywordIngestion {
       for(day <- days){
         get_data_for_queries(spark,ndays,day)
       }
-      */
-      get_data_for_queries(spark,ndays,today)
+      
+      //get_data_for_queries(spark,ndays,today)
       //get_data_for_elastic(spark,today)
     }
   }
