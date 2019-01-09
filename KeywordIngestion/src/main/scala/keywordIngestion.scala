@@ -91,7 +91,7 @@ object keywordIngestion {
       val daysCount = Days.daysBetween(start, end).getDays()
       val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-      for(var day <- days){
+      for(day <- days){
         get_data_for_queries(spark,ndays,day)
       }
       //get_data_for_queries(spark,ndays,today)
