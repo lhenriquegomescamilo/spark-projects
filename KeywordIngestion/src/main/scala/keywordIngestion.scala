@@ -86,20 +86,21 @@ object keywordIngestion {
       /// Configuracion spark
       val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()
       val ndays = if (args.length > 0) args(0).toInt else 10
-      val today = DateTime.now().minusDays(2).toString("yyyyMMdd")
-      /**
-      val format = "yyyyMMdd"
-      val start = DateTime.now.minusDays(30)
-      val end   = DateTime.now.minusDays(1)
+      //val today = DateTime.now().minusDays(2).toString("yyyyMMdd")
+      
+      //val format = "yyyyMMdd"
+      //val start = DateTime.now.minusDays(30)
+      //val end   = DateTime.now.minusDays(1)
 
-      val daysCount = Days.daysBetween(start, end).getDays()
-      val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+      //val daysCount = Days.daysBetween(start, end).getDays()
+      //val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-      for(day <- days){
-        get_data_for_queries(spark,ndays,day)
+      for(day <- 4 to 30){
+        val today = DateTime.now().minusDays(day).toString("yyyyMMdd")
+        get_data_for_queries(spark,ndays,today)
       }
-      */
-      get_data_for_queries(spark,ndays,today)
+      
+      //get_data_for_queries(spark,ndays,today)
       //get_data_for_elastic(spark,today)
     }
   }
