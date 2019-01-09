@@ -131,18 +131,21 @@ object GetAudience {
   * the file_name is extracted from the file path.
   **/
   def processFile(spark: SparkSession, file: String) {
-    try{
-      val hadoopConf = new Configuration()
-      val hdfs = FileSystem.get(hadoopConf)
+    val hadoopConf = new Configuration()
+    val hdfs = FileSystem.get(hadoopConf)
 
-      val actual_path = "/datascience/devicer/to_process/%s".format(file)
+    var actual_path = "/datascience/devicer/to_process/%s".format(file)
+    var srcPath = new Path("")
+    var destPath = new Path("")
+
+    try{
       val queries = getQueriesFromFile(spark, file)
       
       // Move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/in_progress/
-      val srcPath = new Path(actual_path)
-      val destPath = new Path("/datascience/devicer/in_progress/%s".format(file))
+      srcPath = new Path(actual_path)
+      destPath = new Path("/datascience/devicer/in_progress/%s".format(file))
       hdfs.copyFromLocalFile(srcPath, destPath)
-      val actual_path = "/datascience/devicer/in_progress/%s".format(file)
+      actual_path = "/datascience/devicer/in_progress/%s".format(file)
       
       // Here we obtain three parameters that are supposed to be equal for every query in the file
       val partner_id = queries(0)._3.toString
@@ -160,15 +163,15 @@ object GetAudience {
       getAudience(data, queries.map(tuple => (tuple._1.toString, tuple._2.toString)), file_name)
 
       // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
-      val srcPath_2 = new Path(actual_path)
-      val destPath_2 = new Path("/datascience/devicer/done/%s".format(file))
-      hdfs.copyFromLocalFile(srcPath_2, destPath_2)
+      srcPath = new Path(actual_path)
+      destPath = new Path("/datascience/devicer/done/%s".format(file))
+      hdfs.copyFromLocalFile(srcPath, destPath)
     }
     catch{
       // If there is an error in the file, move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/errors/
-      val srcPath_3 = new Path(actual_path)
-      val destPath_3 = new Path("/datascience/devicer/error/%s".format(file))
-      hdfs.copyFromLocalFile(srcPath_3, destPath_3)
+      srcPath = new Path(actual_path)
+      destPath = new Path("/datascience/devicer/error/%s".format(file))
+      hdfs.copyFromLocalFile(srcPath, destPath)
     }
   }
 
