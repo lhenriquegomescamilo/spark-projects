@@ -36,11 +36,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we obtain the list of hdfs folders to be read
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
     val path = "/data/geo/safegraph/"
     val hdfs_files = days.map(day => path+"%s/*.gz".format(day))
-                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .dropDuplicates("ad_id","latitude","longitude")
                                   .filter("country = '%s'".format(country))
