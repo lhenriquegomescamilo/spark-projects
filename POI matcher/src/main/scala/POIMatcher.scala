@@ -124,7 +124,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value.toInt), tail)
       case "--country" :: value :: tail =>
-        nextOption(map ++ Map('country -> value.toInt), tail)
+        nextOption(map ++ Map('country -> value.toString), tail)
       case "--poi_file" :: value :: tail =>
         nextOption(map ++ Map('poi_file -> value.toString), tail)
       case "--output" :: value :: tail =>
