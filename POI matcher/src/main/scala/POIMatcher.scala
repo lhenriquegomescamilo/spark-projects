@@ -124,9 +124,11 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value.toInt), tail)
       case "--country" :: value :: tail =>
-        nextOption(map ++ Map('from -> value.toInt), tail)
+        nextOption(map ++ Map('country -> value.toInt), tail)
       case "--poi_file" :: value :: tail =>
-        nextOption(map ++ Map('from -> value.toString), tail)
+        nextOption(map ++ Map('poi_file -> value.toString), tail)
+      case "--output" :: value :: tail =>
+        nextOption(map ++ Map('output -> value.toString), tail)
     }
   }
 
@@ -136,7 +138,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
     val country = if (options.contains('country)) options('country).toString else "mexico"
     val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
-    val output_file = if (options.contains('poi_file)) options('poi_file).toString else ""
+    val output_file = if (options.contains('output)) options('output).toString else ""
 
     // Start Spark Session
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
