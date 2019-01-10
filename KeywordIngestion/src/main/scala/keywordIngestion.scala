@@ -86,7 +86,8 @@ object keywordIngestion {
       /// Configuracion spark
       val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()
       val ndays = if (args.length > 0) args(0).toInt else 10
-      val today = DateTime.now().minusDays(11).toString("yyyyMMdd")
+      val actual_day = (args.length > 1) args(1).toInt
+      val today = DateTime.now().minusDays(actual_day).toString("yyyyMMdd")
       /**
       val format = "yyyyMMdd"
       val start = DateTime.now.minusDays(30)
