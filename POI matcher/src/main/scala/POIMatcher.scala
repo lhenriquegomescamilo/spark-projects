@@ -98,7 +98,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     //using vincenty formula to calculate distance between user/device location and the POI
     //currently the distance is hardcoded to 50 m. 
     joint.createOrReplaceTempView("joint")
-    val query = """SELECT ad_id,name,id_type,distance
+    val query = """SELECT ad_id,name,id_type,distance,utc_timestamp
                 FROM (
                   SELECT ad_id, name, id_type, radius,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
                   COS(RADIANS(longitude_user) - RADIANS(longitude_poi)) +

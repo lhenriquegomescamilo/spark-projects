@@ -80,7 +80,10 @@ object generateOrganic {
                             .withColumn("gral_segments", udfDropDuplicates(col("gral_segments")))
                             .withColumn("geo_segments", udfDropDuplicates(col("geo_segments")))
 
-        userSegments.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save("/datascience/data_publicis/organic")
+        userSegments.write.format("csv").option("sep", "\t")
+                            .option("header",true)
+                            .mode(SaveMode.Overwrite)
+                            .save("/datascience/data_publicis/organic")
 
     }
     def main(args: Array[String]) {
