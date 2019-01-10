@@ -6,7 +6,6 @@ import org.apache.hadoop.fs.Path
 
 object generateSample {
     def generate_sample(spark:SparkSession){
-
         val organic_xd = spark.read.format("csv")
                                 .load("/datascience/data_publicis/organic_xd")
                                 .withColumnRenamed("_c0","device_id")

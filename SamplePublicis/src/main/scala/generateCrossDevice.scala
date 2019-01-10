@@ -30,10 +30,7 @@ object generateCrossDevice {
 
         val organic = spark.read.format("csv").option("sep", "\t")
                               .load("/datascience/data_publicis/organic")
-                              .withColumnRenamed("_c0","device_id")
-                              .withColumnRenamed("_c1","general_segments")
-                              .withColumnRenamed("_c2","geo_segments")
-
+                              
         val joint = organic.join(index_xd,Seq("device_id"),"left_outer")
                         
         joint.write.format("csv")
