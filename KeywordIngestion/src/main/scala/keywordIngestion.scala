@@ -38,14 +38,14 @@ object keywordIngestion {
 
     }
 
-    def get_data_for_queries(spark:SparkSession,ndays:Int,today:String){
+    def get_data_for_queries(spark:SparkSession,ndays:Int,today:String,since:Int){
       
       val conf = spark.sparkContext.hadoopConfiguration
       val fs = org.apache.hadoop.fs.FileSystem.get(conf)
       
       val format = "yyyy-MM-dd"
-      val start = DateTime.now.minusDays(ndays)
-      val end   = DateTime.now.minusDays(1)
+      val start = DateTime.now.minusDays(since+ndays)
+      val end   = DateTime.now.minusDays(since)
 
       val daysCount = Days.daysBetween(start, end).getDays()
       val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
@@ -86,21 +86,11 @@ object keywordIngestion {
       /// Configuracion spark
       val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()
       val ndays = if (args.length > 0) args(0).toInt else 10
-      val actual_day = args(1).toInt
-      val today = DateTime.now().minusDays(actual_day).toString("yyyyMMdd")
-      /**
-      val format = "yyyyMMdd"
-      val start = DateTime.now.minusDays(30)
-      val end   = DateTime.now.minusDays(1)
-
-      val daysCount = Days.daysBetween(start, end).getDays()
-      val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
-      for(day <- 4 to 30){
-        get_data_for_queries(spark,ndays,day)
-      }
-      */
-      get_data_for_queries(spark,ndays,today)
-      //get_data_for_elastic(spark,today)
+      val since = if (args.length > 1) args(1).toInt else 1
+      
+      val today = DateTime.now().minusDays(1).toString("yyyyMMdd")
+      
+      get_data_for_queries(spark,ndays,today,since)
+      get_data_for_elastic(spark,today)
     }
   }
