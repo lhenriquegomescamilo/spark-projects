@@ -25,18 +25,17 @@ object Random {
                                   .option("header", "true")
                                   .load("/datascience/matching_estid")
 
-    val db_index = spark.read.format("parquet")
-                             .load("/datascience/crossdevice/double_index/")
-                             .filter("device_type IN ('a', 'i')")
-                             .withColumnRenamed("device", "device_id")
+    //val db_index = spark.read.format("parquet")
+    //                         .load("/datascience/crossdevice/double_index/")
+    //                         .filter("device_type IN ('a', 'i')")
+    //                         .withColumnRenamed("device", "device_id")
 
     val joint = data_us.join(estid_mapping, Seq("d17"))
-                       .join(db_index, Seq("device_id"))
                        .select("device_id", "city")
 
     joint.write
          .mode(SaveMode.Overwrite)
-         .save("/datascience/custom/madidsFromShareThisWithGEO")
+         .save("/datascience/custom/shareThisWithGEO")
   }
 
   def getEstIdsMatching(spark: SparkSession) = {
