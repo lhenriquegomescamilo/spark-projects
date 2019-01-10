@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split,lit}
+import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split,lit,explode}
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
@@ -19,6 +19,11 @@ object GenerateTriplets {
    * 
    */
     def generate_triplets_segments(spark:SparkSession,ndays:Int){
+        /// Configuraciones de spark
+        val sc = spark.sparkContext
+        val conf = sc.hadoopConfiguration
+        val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+        
         /// Obtenemos la data de los ultimos ndays
         val format = "yyyyMMdd"
         val start = DateTime.now.minusDays(ndays)
@@ -53,6 +58,11 @@ object GenerateTriplets {
    * 
    */
     def generate_triplets_keywords(spark:SparkSession,ndays:Int){
+        /// Configuraciones de spark
+        val sc = spark.sparkContext
+        val conf = sc.hadoopConfiguration
+        val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+        
         /// Obtenemos la data de los ultimos ndays
         val format = "yyyyMMdd"
         val start = DateTime.now.minusDays(ndays)
@@ -89,8 +99,12 @@ object GenerateTriplets {
     def main(args: Array[String]) {
         /// Configuracion spark
         val spark = SparkSession.builder.appName("Get triplets: keywords and segments").getOrCreate()
-        generate_triplets_segments(spark)
-        generate_triplets_keywords(spark)
+
+        // Parseo de parametros
+        val ndays = if (args.length > 0) args(0).toInt else 30
+        
+        generate_triplets_segments(spark,ndays)
+        generate_triplets_keywords(spark,ndays)
     
     }
   }
