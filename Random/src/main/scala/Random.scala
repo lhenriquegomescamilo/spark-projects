@@ -11,8 +11,34 @@ import org.apache.spark.sql.SaveMode
  * to run quick fixes, or tests.
  */
 object Random {
-  def main(args: Array[String]) {
-    val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
+  def getMadidsFromShareThisWithGEO(spark: SparkSession) {
+    val data_us = spark.read.format("csv").option("sep", ",")
+                            .load("/datascience/test_us/loading/*.json")
+                            .filter("_c2 is not null")
+                            .withColumnRenamed("_c0", "d17")
+                            .withColumnRenamed("_c5", "city")
+                            .select("d17", "city")
+                            .distinct()
+
+    val estid_mapping = spark.read.format("csv")
+                                  .option("sep", "\t")
+                                  .option("header", "true")
+                                  .load("/datascience/matching_estid")
+
+    val db_index = spark.read.format("parquet")
+                             .load("/datascience/crossdevice/double_index/")
+                             .filter("device_type IN ('a', 'i')")
+
+    val joint = data_us.join(estid_mapping, Seq("d17"))
+                       .join(db_index, Seq("device_id"))
+                       .select("device_id", "city")
+
+    joint.write
+         .mode(SaveMode.Overwrite)
+         .save("/datascience/custom/madidsFromShareThisWithGEO")
+  }
+
+  def getEstIdsMatching(spark: SparkSession) = {
     val format = "yyyy/MM/dd"
     val start = DateTime.now.minusDays(30)
     val end   = DateTime.now.minusDays(15)
@@ -35,6 +61,10 @@ object Random {
                     .option("header",true)
                     .mode(SaveMode.Overwrite)
                     .save("/datascience/matching_estid_2")
+  }
 
+  def main(args: Array[String]) {
+    val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
+    getMadidsFromShareThisWithGEO(spark)
   }
 }

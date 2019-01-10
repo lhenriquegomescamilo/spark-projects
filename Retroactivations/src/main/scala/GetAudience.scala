@@ -143,18 +143,19 @@ object GetAudience {
       val queries = getQueriesFromFile(spark, actual_path)
     } catch {
       case e: Exception => {
+        println(file)
         println(e.toString())
       }
     }
     if (queries.length==0) {
       // If there is an error in the file, move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/errors/
       srcPath = new Path(actual_path)
-      destPath = new Path("/datascience/devicer/error/%s".format(file))
+      destPath = new Path("/datascience/devicer/errors/")
       hdfs.rename(srcPath, destPath)
     } else {
       // Move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/in_progress/
       srcPath = new Path(actual_path)
-      destPath = new Path("/datascience/devicer/in_progress/%s".format(file))
+      destPath = new Path("/datascience/devicer/in_progress/")
       hdfs.rename(srcPath, destPath)
       actual_path = "/datascience/devicer/in_progress/%s".format(file)
       
@@ -175,7 +176,7 @@ object GetAudience {
 
       // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
       srcPath = new Path(actual_path)
-      destPath = new Path("/datascience/devicer/done/%s".format(file))
+      destPath = new Path("/datascience/devicer/done/")
       hdfs.rename(srcPath, destPath)
     }
   }
