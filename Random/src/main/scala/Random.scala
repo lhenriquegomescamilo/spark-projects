@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast,sha2}
+import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast,upper,sha2}
 import org.joda.time.{Days,DateTime}
 import org.apache.spark.sql.functions.{col, count}
 import org.apache.spark.sql.SaveMode
@@ -25,17 +25,29 @@ object Random {
                                   .option("header", "true")
                                   .load("/datascience/matching_estid")
 
-    //val db_index = spark.read.format("parquet")
-    //                         .load("/datascience/crossdevice/double_index/")
-    //                         .filter("device_type IN ('a', 'i')")
-    //                         .withColumnRenamed("device", "device_id")
-
     val joint = data_us.join(estid_mapping, Seq("d17"))
                        .select("device_id", "city")
 
     joint.write
          .mode(SaveMode.Overwrite)
          .save("/datascience/custom/shareThisWithGEO")
+  }
+
+  def getCrossDevice(spark: SparkSession) {
+    val db_index = spark.read.format("parquet")
+                             .load("/datascience/crossdevice/double_index/")
+                             .filter("device_type IN ('a', 'i')")
+                             .withColumn("index", upper(col("index")))
+
+    val st_data = spark.read.format("parquet")
+                            .load("/datascience/custom/shareThisWithGEO")
+                            .withColumn("device_id", upper(col("device_id")))
+
+    val cross_deviced = db_data.join(audience, db_data.col("index")===audience.col("device_id")).select("device", "device_type", "city")
+
+    cross_deviced.write
+                 .mode(SaveMode.Overwrite)
+                 .save("/datascience/custom/madidsShareThisWithGEO")
   }
 
   def getEstIdsMatching(spark: SparkSession) = {
@@ -65,6 +77,6 @@ object Random {
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getMadidsFromShareThisWithGEO(spark)
+    getCrossDevice(spark)
   }
 }
