@@ -41,7 +41,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .dropDuplicates("ad_id","latitude","longitude")
                                   .filter("country = '%s'".format(country))
-                                  .select("ad_id", "id_type", "latitude", "longitude")
+                                  .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
                                   .withColumnRenamed("latitude", "latitude_user")
                                   .withColumnRenamed("longitude", "longitude_user")
                                   .withColumn("geocode", ((abs(col("latitude_user").cast("float"))*10).cast("int")*10000)+(abs(col("longitude_user").cast("float")*100).cast("int")))
@@ -98,7 +98,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     //using vincenty formula to calculate distance between user/device location and the POI
     //currently the distance is hardcoded to 50 m. 
     joint.createOrReplaceTempView("joint")
-    val query = """SELECT ad_id,name,id_type,distance,utc_timestamp
+    val query = """SELECT ad_id,name,id_type,utc_timestamp,distance
                 FROM (
                   SELECT ad_id, name, id_type, utc_timestamp, radius,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
                   COS(RADIANS(longitude_user) - RADIANS(longitude_poi)) +
