@@ -140,13 +140,13 @@ object GetAudience {
     var queries: List[(Any, Any, Any, Any, Any)] = List()
     var errorMessage = ""
 
-    //try{
-    queries = getQueriesFromFile(spark, actual_path)
-    /**} catch {
+    try{
+      queries = getQueriesFromFile(spark, actual_path)
+    } catch {
       case e: Throwable => {
         errorMessage = e.toString()
       }
-    }**/
+    }
     if (queries.length==0) {
       // If there is an error in the file, move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/errors/
       println("DEVICER LOG: The devicer process failed on "+file+"\nThe error was: "+errorMessage)
