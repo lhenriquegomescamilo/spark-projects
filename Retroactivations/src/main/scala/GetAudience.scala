@@ -138,17 +138,18 @@ object GetAudience {
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
     var queries: List[(Any, Any, Any, Any, Any)] = List()
+    var errorMessage = ""
 
     try{
       val queries = getQueriesFromFile(spark, actual_path)
     } catch {
       case e: Exception => {
-        println(file)
-        println(e.toString())
+        errorMessage = e.toString()
       }
     }
     if (queries.length==0) {
       // If there is an error in the file, move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/errors/
+      println("DEVICER LOG: The devicer process failed on "+file+"\nThe error was: "+errorMessage)
       srcPath = new Path(actual_path)
       destPath = new Path("/datascience/devicer/errors/")
       hdfs.rename(srcPath, destPath)
