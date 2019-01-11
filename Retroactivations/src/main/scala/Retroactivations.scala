@@ -32,7 +32,7 @@ object GetDataPartnerID {
       // transform the multi-value columns into lists
       val ready = filtered.withColumn("day", lit(day.replace("/", "")))
                           .withColumn("all_segments", split(col("all_segments"), "\u0001"))
-                          .withColumn("third_party", split(col("third_party"), "\u0001"))
+                          .withColumn("first_party", split(col("third_party"), "\u0001"))
                           .withColumn("segments", split(col("segments"), "\u0001"))
       
       // store the results.
@@ -58,7 +58,7 @@ object GetDataPartnerID {
     val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive")
 
 
-    val columns = """event_type, device_type, segments, first_party, all_segments, url, referer, 
+    val columns = """id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
                      search_keyword, tags, track_code, campaign_name, campaign_id, site_id, 
                      placement_id, advertiser_name, advertiser_id, app_name, installed_apps, 
                      version, country""".replace("\n", "").replace(" ", "").split(",").toList
