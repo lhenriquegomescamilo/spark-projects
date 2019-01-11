@@ -36,7 +36,7 @@ object GetDataPartnerID {
                           .withColumn("segments", split(col("segments"), "\u0001"))
       
       // store the results.
-      ready.coalesce(200).write.mode("append")
+      ready.write.mode("append")
            .partitionBy("id_partner", "day")
            .parquet("/datascience/data_partner_p/".format(day))
 
@@ -58,7 +58,8 @@ object GetDataPartnerID {
     val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive")
 
 
-    val columns = List("id_partner", "event_type", "device_id", "device_type", "country", "segments", "all_segments", "third_party", "d11", "url")
+    val columns = "event_type, device_type, segments, first_party, all_segments, url, referer, search_keyword, tags, track_code, campaign_name, 
+                   campaign_id, site_id, placement_id, advertiser_name, advertiser_id, app_name, installed_apps, version, country".replace("\n", "").replace(" ", "").split(",").toList
     
     // Now we get the list of days to be downloaded
     val format = "yyyy/MM/dd"
