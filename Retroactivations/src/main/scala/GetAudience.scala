@@ -141,7 +141,7 @@ object GetAudience {
     var errorMessage = ""
 
     //try{
-    val queries = getQueriesFromFile(spark, actual_path)
+    queries = getQueriesFromFile(spark, actual_path)
     /**} catch {
       case e: Throwable => {
         errorMessage = e.toString()
