@@ -8,6 +8,20 @@ import org.apache.spark.sql.functions.broadcast
 import org.apache.hadoop.fs.Path
 
 object keywordIngestion {
+
+    /**
+   * Este metodo se encarga de generar un archivo de la pinta <device_id, url_keywords, content_keys, all_segments, country>
+   * utilizando la data ubicada en data_keywords_p. Siendo url_keywords y content_keywords listas de keywords separadas por ','
+   * y all_segments una lista de segmentos tambien separada por ','.
+   * La diferencia principal con el metodo get_data_for_queries es que este 
+   * metodo formatea los datos para que puedan ser ingestados en elastic (se agrega c_ al country, as_ a cada segmento)
+   * Una vez generado el dataframe se lo guarda en formato tsv dentro de /datascience/data_keywords_elastic/
+   * Los parametros que recibe son:
+   * 
+   * @param spark: Spark session object que sera utilizado para cargar los DataFrames.
+   * @param today: Es un string con el dia actual (se utilizara el dia como nombre de archivo al guardar).
+   * 
+   */
     def get_data_for_elastic(spark:SparkSession, today:String){
       // Armamos el archivo que se utilizara para ingestar en elastic
       val udfAs = udf((segments: Seq[String]) => segments.map(token => "as_"+token))
@@ -16,9 +30,10 @@ object keywordIngestion {
                                                               else segments)
       val udfJoin = udf((lista: Seq[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2)
                                                               else "")
-
+      /// Leemos la data del dia actual previamente generada
       val joint = spark.read.format("parquet").load("/datascience/data_keywords_p/day=%s".format(today))
       
+      /// Formateamos la data en formato elastic
       val to_csv = joint.select("device_id","url_keys","content_keys","all_segments","event_type","country")
                         .withColumn("all_segments", udfAs(col("all_segments")))
                         .withColumn("all_segments",udfXp(col("all_segments"),col("event_type")))
@@ -37,12 +52,26 @@ object keywordIngestion {
             .save("/datascience/data_keywords_elastic/%s.csv".format(today))
 
     }
+    /**
+   * Este metodo se encarga de generar un archivo de la pinta <device_id, url_keywords, content_keys, all_segments, country>.
+   * Para armar este dataframe se utiliza la data de las keywords subidas diariamente (se utilizan los ultimos ndays y el parametro since para levantar la data)
+   * la cual tiene la pinta < url, keywords >. Luego se lee la data del dia actual desde data_audience_p 
+   * < device_id","event_type","all_segments","url","device_type","country>  y se hace un join entre ambos dataframes para quedarse con las keywords.
+   * Finalmente se procesan y filtran las keywords. Una vez generado el dataframe se lo guarda en formato parquet dentro de
+   * /datascience/data_keywords_p/.
 
+   * Los parametros que recibe son:
+   * 
+   * @param spark: Spark session object que sera utilizado para cargar los DataFrames.
+   * @param ndays: Un entero que representa la cantidad de dias a utilizar para leer la data de keywords.
+   * @param today: Es un string con el dia actual en formato yyyyMMdd (se utilizara el dia como nombre de archivo al guardar).
+   * @param since: Un entero que representa desde cuantos dias hacia atras comenzara a leerse la data de kywords.
+   */
     def get_data_for_queries(spark:SparkSession,ndays:Int,today:String,since:Int){
       
       val conf = spark.sparkContext.hadoopConfiguration
       val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-      
+      /// Leemos la data de keywords de ndays hacia atras
       val format = "yyyy-MM-dd"
       val start = DateTime.now.minusDays(since+ndays)
       val end   = DateTime.now.minusDays(since)

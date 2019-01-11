@@ -80,6 +80,7 @@ object GenerateTriplets {
 
         /// Obtenemos las keywords del contenido de la url 
         val df_content_keys = df.select("device_id","content_keys")
+                                .withColumn("content_keys",split(col("content_keys"),","))
                                 .withColumnRenamed("content_keys","feature")
                                 .withColumn("count",lit(1))
         
@@ -104,7 +105,6 @@ object GenerateTriplets {
         val ndays = if (args.length > 0) args(0).toInt else 30
         
         //generate_triplets_segments(spark,ndays)
-        generate_triplets_keywords(spark,ndays)
-    
+        generate_triplets_keywords(spark,ndays) 
     }
   }
