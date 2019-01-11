@@ -79,22 +79,22 @@ object GenerateTriplets {
         val df = dfs.reduce((df1,df2) => df1.union(df2))
 
         /// Obtenemos las keywords del contenido de la url 
-        val df_content_keys = df.withColumn("content_keys",explode(col("content_keys")))
+        val df_content_keys = df.select("device_id","content_keys")
                                 .withColumnRenamed("content_keys","feature")
                                 .withColumn("count",lit(1))
         
         /// Obtenemos las keywords provenientes de la url                             
-        val df_url_keys = df.withColumn("url_keys",explode(col("url_keys")))
+        val df_url_keys = df.select("device_id","url_keys")
                             .withColumnRenamed("url_keys","feature")
                             .withColumn("count",lit(1))
         
         /// Unimos ambas keywords y las guardamos
-        df_content_keys.unionAll(df_url_keys)
-                        .write.format("parquet")
-                        .option("header",true)
-                        .mode(SaveMode.Overwrite)
-                        .save("/datascience/data_demo/triplets_keywords")
-      
+        val union = df_content_keys.unionAll(df_url_keys).withColumn("feature",explode(col("feature")))
+                        
+        union.write.format("parquet").option("header",true)
+                                    .mode(SaveMode.Overwrite)
+                                    .save("/datascience/data_demo/triplets_keywords")
+
     }
     def main(args: Array[String]) {
         /// Configuracion spark
@@ -103,7 +103,7 @@ object GenerateTriplets {
         // Parseo de parametros
         val ndays = if (args.length > 0) args(0).toInt else 30
         
-        generate_triplets_segments(spark,ndays)
+        //generate_triplets_segments(spark,ndays)
         generate_triplets_keywords(spark,ndays)
     
     }
