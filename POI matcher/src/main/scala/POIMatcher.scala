@@ -100,7 +100,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     joint.createOrReplaceTempView("joint")
     val query = """SELECT ad_id,name,id_type,distance,utc_timestamp
                 FROM (
-                  SELECT ad_id, name, id_type, radius,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
+                  SELECT ad_id, name, id_type, utc_timestamp, radius,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
                   COS(RADIANS(longitude_user) - RADIANS(longitude_poi)) +
                   SIN(RADIANS(latitude_user)) * SIN(RADIANS(latitude_poi))))) as distance
                   FROM joint 
