@@ -34,6 +34,8 @@ object GetDataPartnerID {
                           .withColumn("all_segments", split(col("all_segments"), "\u0001"))
                           .withColumn("first_party", split(col("third_party"), "\u0001"))
                           .withColumn("segments", split(col("segments"), "\u0001"))
+                          .withColumn("tags", split(col("tags"), "\u0001"))
+                          .withColumn("app_installed", split(col("app_installed"), "\u0001"))
       
       // store the results.
       ready.write.mode("append")
@@ -52,7 +54,7 @@ object GetDataPartnerID {
    * @param spark: Spark session that will be used to get the data.
    * @param nDays: number of days to be downloaded. Integer.
    * @param from: number of days to be skipped. Integer.
-   */
+   **/
   def download_data(spark: SparkSession, nDays: Int, from: Int): Unit = {
     // Here we set the list of values that will be considered
     val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive")
@@ -60,7 +62,7 @@ object GetDataPartnerID {
 
     val columns = """id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
                      search_keyword, tags, track_code, campaign_name, campaign_id, site_id, 
-                     placement_id, advertiser_name, advertiser_id, app_name, installed_apps, 
+                     placement_id, advertiser_name, advertiser_id, app_name, app_installed, 
                      version, country""".replace("\n", "").replace(" ", "").split(",").toList
     
     // Now we get the list of days to be downloaded
