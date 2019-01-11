@@ -172,7 +172,7 @@ object GetAudience {
       val data = getDataPipeline(spark, basePath, path, nDays, since)
 
       // Lastly we store the audience applying the filters
-      val file_name = file.split(".")(0)
+      val file_name = file.replace(".json", "")
       getAudience(data, queries.map(tuple => (tuple._1.toString, tuple._2.toString)), file_name)
 
       // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
