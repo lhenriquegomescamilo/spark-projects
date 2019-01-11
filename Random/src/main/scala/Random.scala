@@ -43,7 +43,7 @@ object Random {
                             .load("/datascience/custom/shareThisWithGEO")
                             .withColumn("device_id", upper(col("device_id")))
 
-    val cross_deviced = db_data.join(audience, db_data.col("index")===audience.col("device_id")).select("device", "device_type", "city")
+    val cross_deviced = db_index.join(st_data, db_index.col("index")===st_data.col("device_id")).select("device", "device_type", "city")
 
     cross_deviced.write
                  .mode(SaveMode.Overwrite)
