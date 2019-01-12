@@ -32,7 +32,7 @@ object GetDataPartnerID {
       // transform the multi-value columns into lists
       val ready = filtered.withColumn("day", lit(day.replace("/", "")))
                           .withColumn("all_segments", split(col("all_segments"), "\u0001"))
-                          .withColumn("first_party", split(col("third_party"), "\u0001"))
+                          .withColumn("first_party", split(col("first_party"), "\u0001"))
                           .withColumn("segments", split(col("segments"), "\u0001"))
                           .withColumn("tags", split(col("tags"), "\u0001"))
                           .withColumn("app_installed", split(col("app_installed"), "\u0001"))
