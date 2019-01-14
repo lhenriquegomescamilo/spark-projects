@@ -67,17 +67,19 @@ object HomeJobs {
     // Parse the parameters
     val options = nextOption(Map(), args.toList)
     val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
+    val HourFrom = if (options.contains('HourFrom)) options('HourFrom).toString.toInt else 19
+    val HourTo = if (options.contains('HourTo)) options('HourTo).toString.toInt else 6
     val country = if (options.contains('country)) options('country).toString else "mexico"
     val output_file = if (options.contains('output)) options('output).toString else ""
 
     // Start Spark Session
     val spark = SparkSession.builder.appName("HomeJobs creator").getOrCreate()
 
-    //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
+    
     //val output_file = "/datascience/geo/MX/specific_POIs"
 
 
-    get_homejobs(spark, safegraph_days, country, output_file)
+    get_homejobs(spark, safegraph_days, country, HourFrom, HourTo, output_file)
   }
 }
 
