@@ -128,7 +128,7 @@ object GetAudience {
       done.write.format("csv")
                 .option("sep", " ")
                 .mode("append")
-                .save("/datascience/devicer/processed/"+fileName+"_grouped"))
+                .save("/datascience/devicer/processed/"+fileName+"_grouped")
     }
     //data.unpersist()
   }
