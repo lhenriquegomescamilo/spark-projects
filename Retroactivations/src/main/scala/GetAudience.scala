@@ -109,7 +109,7 @@ object GetAudience {
   * the file_name is extracted from the file path.
   **/
   def getAudience(data: DataFrame, queries: List[(String, String)], fileName: String) = {
-    data.cache()
+    //data.cache()
     val results = queries.map(query => data.filter(query._1)
                                            .select("device_type", "device_id")
                                            .withColumn("segmentIds", lit(query._2)))
@@ -117,7 +117,7 @@ object GetAudience {
                                                 .option("sep", " ")
                                                 .mode("append")
                                                 .save("/datascience/devicer/processed/"+fileName))
-    data.unpersist()
+    //data.unpersist()
   }
   
   /**
