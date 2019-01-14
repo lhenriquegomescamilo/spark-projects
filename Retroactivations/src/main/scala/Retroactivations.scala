@@ -60,7 +60,7 @@ object GetDataPartnerID {
     val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive")
 
 
-    val columns = """id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
+    val columns = """device_id, id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
                      search_keyword, tags, track_code, campaign_name, campaign_id, site_id, 
                      placement_id, advertiser_name, advertiser_id, app_name, app_installed, 
                      version, country""".replace("\n", "").replace(" ", "").split(",").toList
