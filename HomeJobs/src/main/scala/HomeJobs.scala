@@ -3,7 +3,7 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour}
+import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime}
 import org.apache.spark.sql.SaveMode
 
 object HomeJobs {
@@ -35,6 +35,29 @@ object HomeJobs {
   }
 
 
+  type OptionMap = Map[Symbol, Any]
+
+  /**
+   * This method parses the parameters sent.
+   */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--country" :: value :: tail =>
+        nextOption(map ++ Map('country -> value.toString), tail)
+      case "--output" :: value :: tail =>
+        nextOption(map ++ Map('output -> value.toString), tail)
+    }
+  }
+
+
+  def get_homejobs(spark: SparkSession, safegraph_days: Integer, country: String, output_file: String) = {
+    val df_users = get_safegraph_data(spark, safegraph_days, country)
+    df_users.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
+  }
 
   def main(args: Array[String]) {
     // Parse the parameters
@@ -49,7 +72,8 @@ object HomeJobs {
     //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
     //val output_file = "/datascience/geo/MX/specific_POIs"
 
-    match_POI(spark, safegraph_days, country, output_file)
+
+    get_homejobs(spark, safegraph_days, country, output_file)
   }
 }
 
