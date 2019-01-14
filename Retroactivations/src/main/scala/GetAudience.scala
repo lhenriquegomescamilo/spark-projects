@@ -122,7 +122,7 @@ object GetAudience {
                            .option("sep", " ")
                            .load("/datascience/devicer/processed/"+fileName)
                            .distinct()
-      done.groupby("_col0", "_col1")
+      done.groupBy("_col0", "_col1")
           .agg(collect_list("_col2") as "segments")
           .withColumn("segments", concat_ws(",", col("segments")))
       done.write.format("csv")
