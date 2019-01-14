@@ -46,6 +46,10 @@ object HomeJobs {
       case Nil => map
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--HourTo" :: value :: tail =>
+        nextOption(map ++ Map('HourTo -> value.toInt), tail)
+      case "--HourFrom" :: value :: tail =>
+        nextOption(map ++ Map('HourFrom -> value.toInt), tail)
       case "--country" :: value :: tail =>
         nextOption(map ++ Map('country -> value.toString), tail)
       case "--output" :: value :: tail =>
@@ -54,8 +58,8 @@ object HomeJobs {
   }
 
 
-  def get_homejobs(spark: SparkSession, safegraph_days: Integer, country: String, output_file: String) = {
-    val df_users = get_safegraph_data(spark, safegraph_days, country)
+  def get_homejobs(spark: SparkSession, safegraph_days: Integer, HourFrom: Integer, HourTo: Integer, country: String, output_file: String) = {
+    val df_users = get_safegraph_data(spark, safegraph_days, country,HourFrom,HourTo)
     df_users.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
   }
 
