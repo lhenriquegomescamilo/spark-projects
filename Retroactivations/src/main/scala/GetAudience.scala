@@ -108,7 +108,7 @@ object GetAudience {
   * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
   * the file_name is extracted from the file path.
   **/
-  def getAudience(data: DataFrame, queries: List[(String, String)], fileName: String) = {
+  def getAudience(spark: SparkSession, data: DataFrame, queries: List[(String, String)], fileName: String) = {
     //data.cache()
     val results = queries.map(query => data.filter(query._1)
                                            .select("device_type", "device_id")
@@ -188,7 +188,7 @@ object GetAudience {
 
       // Lastly we store the audience applying the filters
       val file_name = file.replace(".json", "")
-      getAudience(data, queries.map(tuple => (tuple._1.toString, tuple._2.toString)), file_name)
+      getAudience(spark, data, queries.map(tuple => (tuple._1.toString, tuple._2.toString)), file_name)
 
       // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
       srcPath = new Path(actual_path)
