@@ -1,7 +1,7 @@
 package main.scala
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{lit, length, split, col}
+import org.apache.spark.sql.functions.{lit, length, split, col, concat_ws, collect_list}
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.spark.sql.{ SaveMode, DataFrame }
@@ -117,6 +117,19 @@ object GetAudience {
                                                 .option("sep", " ")
                                                 .mode("append")
                                                 .save("/datascience/devicer/processed/"+fileName))
+    if (results.length > 1) {
+      val done = spark.read.format("csv")
+                           .option("sep", " ")
+                           .load("/datascience/devicer/processed/"+fileName)
+                           .distinct()
+      done.groupby("_col0", "_col1")
+          .agg(collect_list("_col2") as "segments")
+          .withColumn("segments", concat_ws(",", col("segments")))
+      done.write.format("csv")
+                .option("sep", " ")
+                .mode("append")
+                .save("/datascience/devicer/processed/"+fileName+"_grouped"))
+    }
     //data.unpersist()
   }
   
