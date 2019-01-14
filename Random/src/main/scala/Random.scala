@@ -18,14 +18,16 @@ object Random {
                             .withColumnRenamed("_c0", "d17")
                             .withColumnRenamed("_c5", "city")
                             .select("d17", "city")
-                            .distinct()
+    data_us.persist()
+    println("LOGGING RANDOM: Total number of records: %s".format(data_us.count()))
 
     val estid_mapping = spark.read.format("csv")
                                   .option("sep", "\t")
                                   .option("header", "true")
                                   .load("/datascience/matching_estid")
 
-    val joint = data_us.join(estid_mapping, Seq("d17"))
+    val joint = data_us.distinct()
+                       .join(estid_mapping, Seq("d17"))
                        .select("device_id", "city")
 
     joint.write
