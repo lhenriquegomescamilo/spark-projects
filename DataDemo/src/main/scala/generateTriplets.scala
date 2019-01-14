@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split,lit,explode}
+import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split,lit,explode,length}
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
@@ -91,10 +91,12 @@ object GenerateTriplets {
         
         /// Unimos ambas keywords y las guardamos
         val union = df_content_keys.unionAll(df_url_keys).withColumn("feature",explode(col("feature")))
-                        
-        union.write.format("parquet").option("header",true)
-                                    .mode(SaveMode.Overwrite)
-                                    .save("/datascience/data_demo/triplets_keywords")
+
+        /// Filtramos las palabras que tiene longitud menor a 3 y guardamos
+        union.where(length(col("feature")) > 3)
+            .write.format("parquet").option("header",true)
+            .mode(SaveMode.Overwrite)
+            .save("/datascience/data_demo/triplets_keywords")
 
     }
     def main(args: Array[String]) {
