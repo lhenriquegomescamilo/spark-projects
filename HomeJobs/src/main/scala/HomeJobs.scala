@@ -24,10 +24,12 @@ object HomeJobs {
     val path = "/data/geo/safegraph/"
     val hdfs_files = days.map(day => path+"%s/*.gz".format(day))
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
-                                  .dropDuplicates("ad_id","latitude","longitude")
                                   .filter("country = '%s'".format(country))
                                   .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
-                                                         .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp")))).withColumn("Hour", date_format(col("Time"), "HH")).withColumn("Weekday", date_format(col("Time"), "EEE")).filter(col("Hour") > HourFrom || col("Hour") < HourTo)
+                                                         .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+                                                         .withColumn("Hour", date_format(col("Time"), "HH"))
+                                                         .withColumn("Weekday", date_format(col("Time"), "EEE"))
+                                                         .filter(col("Hour") > HourFrom || col("Hour") < HourTo)
                                                        
                                   
 
@@ -58,7 +60,7 @@ object HomeJobs {
   }
 
 
-  def get_homejobs(spark: SparkSession, safegraph_days: Integer, HourFrom: Integer, HourTo: Integer, country: String, output_file: String) = {
+  def get_homejobs(spark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, output_file: String) = {
     val df_users = get_safegraph_data(spark, safegraph_days, country,HourFrom,HourTo)
     df_users.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
   }
