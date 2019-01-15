@@ -78,8 +78,23 @@ object Random {
                     .save("/datascience/matching_estid_2")
   }
 
+  def process_geo(spark: SparkSession) {
+    val path = "/datascience/test_us/loading/"
+    val data = spark.read.csv(path).withColumnRenamed("_c0", "estid")
+                                  .withColumnRenamed("_c1", "utc_timestamp")
+                                  .withColumnRenamed("_c2", "latitude")
+                                  .withColumnRenamed("_c3", "longitude")
+                                  .withColumnRenamed("_c4", "zipcode")
+                                  .withColumnRenamed("_c5", "city")
+                                  .withColumn("day", lit(DateTime.now.toString("yyyyMMdd")))
+    data.write.format("parquet")
+              .mode("append")
+              .partitionBy("day")
+              .save("/datascience/geo/US/")
+  }
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getCrossDevice(spark)
+    process_geo(spark)
   }
 }
