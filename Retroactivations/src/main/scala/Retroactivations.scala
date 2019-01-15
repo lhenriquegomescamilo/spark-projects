@@ -17,7 +17,7 @@ object GetDataPartnerID {
    * As a result, this function downloads the DataFrame and stores it into a parquet
    * file that has a partition on the day. It also repartitions the
    * DataFrame before storing it, so that every folder has only 5 files. The 
-   * directory where the data is stored is /datascience/data_partner_p/.
+   * directory where the data is stored is /datascience/data_partner/.
    */
   def process_day_parquet(spark: SparkSession, day:String, columns: Seq[String], 
                             event_types: Seq[String]) = {
@@ -40,7 +40,7 @@ object GetDataPartnerID {
       // store the results.
       ready.write.mode("append")
            .partitionBy("id_partner", "day")
-           .parquet("/datascience/data_partner_p/".format(day))
+           .parquet("/datascience/data_partner/".format(day))
 
   }
   
