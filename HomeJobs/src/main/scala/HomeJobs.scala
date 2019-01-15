@@ -10,9 +10,17 @@ object HomeJobs {
 
   def get_safegraph_data(spark: SparkSession, nDays: Integer, country: String, since: Integer = 1, HourTo : Integer = 6, HourFrom : Integer = 19 ) = {
 
-    val format = "yyyy/MM/dd"
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
     val end   = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days.map(day => path+"/day=%s".format(day))
+                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     
     //dictionary for timezones
     val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
