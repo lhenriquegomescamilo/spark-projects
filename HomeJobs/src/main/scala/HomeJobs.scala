@@ -14,13 +14,9 @@ object HomeJobs {
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val format = "yyyyMMdd"
+    val format = "yyyy/MM/dd"
     val end   = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days.map(day => path+"/day=%s".format(day))
-                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     
     //dictionary for timezones
     val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
@@ -30,8 +26,8 @@ object HomeJobs {
 
     // Now we obtain the list of hdfs folders to be read
     val path = "/data/geo/safegraph/"
-    val hdfs_files = days.map(day => path+"%s/*.gz".format(day)).filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
+    val hdfs_files = days.map(day => path+"%s/*.gz".format(day))
+    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*).filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
                                   .filter("country = '%s'".format(country))
                                   .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
                                                          .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
