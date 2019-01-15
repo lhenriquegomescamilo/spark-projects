@@ -22,7 +22,7 @@ object HomeJobs {
 
     // Now we obtain the list of hdfs folders to be read
     val path = "/data/geo/safegraph/"
-    val hdfs_files = days.map(day => path+"%s/*.gz".format(day))
+    val hdfs_files = days.map(day => path+"%s/*.gz".format(day)).filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .filter("country = '%s'".format(country))
                                   .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
@@ -30,8 +30,8 @@ object HomeJobs {
                                                          .withColumn("Hour", date_format(col("Time"), "HH"))
                                                          .withColumn("Weekday", date_format(col("Time"), "EEE"))
                                                          .filter(col("Hour") > HourFrom || col("Hour") < HourTo)
-                                                       
-                                  
+
+
 
     df_safegraph
   }
