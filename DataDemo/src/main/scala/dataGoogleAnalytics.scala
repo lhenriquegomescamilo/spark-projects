@@ -52,11 +52,16 @@ object DataGoogleAnalytics {
         val joint = df.join(broadcast(distributions),Seq("url"))
 
         /// Agrupamos por device_id y sacamos algunas estadisticas para cada segmento (promedio, desvio estandar y cantidad)
+        ///  Aclaracion: Se renombran las columnas al final para que no haya errores al gurdar en formato parquet.
         val statistics = joint.groupBy("device_id")
                                 .agg(mean("2"), mean("3"), mean("4"), mean("5"), mean("6"), mean("7"), mean("8"), mean("9"),
                                     stddev("2"), stddev("3"), stddev("4"), stddev("5"), stddev("6"), stddev("7"), stddev("8"), stddev("9"),
                                     count("2"), count("3"), count("4"), count("5"), count("6"), count("7"), count("8"), count("9"))
                                 .na.fill(0)
+                                .toDF("device_id","mean_2","mean_3","mean_4","mean_5","mean_6","mean_7","mean_8","mean_9", 
+                                        "std_2","std_3","std_4","std_5","std_6","std_7","std_8","std_9",
+                                        "count_2","count_3","count_4","count_5","count_6","count_7","count_8","count_9") 
+                                
         /// Las guardamos en formato parquet
         statistics.write.format("parquet")
                 .mode(SaveMode.Overwrite)
