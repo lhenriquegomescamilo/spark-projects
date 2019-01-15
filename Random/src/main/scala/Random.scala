@@ -44,6 +44,7 @@ object Random {
     val st_data = spark.read.format("parquet")
                             .load("/datascience/custom/shareThisWithGEO")
                             .withColumn("device_id", upper(col("device_id")))
+    println("LOGGING RANDOM: Total number of records with GEO and device id: %s".format(st_data.count()))
 
     val cross_deviced = db_index.join(st_data, db_index.col("index")===st_data.col("device_id")).select("device", "device_type", "city")
 
@@ -79,6 +80,6 @@ object Random {
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getMadidsFromShareThisWithGEO(spark)
+    getCrossDevice(spark)
   }
 }
