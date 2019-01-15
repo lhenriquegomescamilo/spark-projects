@@ -1,3 +1,4 @@
+: '
 spark-submit\
  --class "main.scala.GetDataPartnerID"\
  --master yarn\
@@ -9,7 +10,7 @@ spark-submit\
  --queue spark\
  --conf spark.yarn.maxAppAttempts=1\
  /home/rely/spark-projects/Retroactivations/target/scala-2.11/retroactivations-by-partner-id_2.11-1.0.jar --from 1 --nDays 25
-
+'
 
 
 spark-submit\

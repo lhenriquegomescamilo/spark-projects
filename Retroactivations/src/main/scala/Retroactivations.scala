@@ -57,7 +57,7 @@ object GetDataPartnerID {
    **/
   def download_data(spark: SparkSession, nDays: Int, from: Int): Unit = {
     // Here we set the list of values that will be considered
-    val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive")
+    val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive", "xd", "xd_xp")
 
 
     val columns = """device_id, id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
