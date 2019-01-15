@@ -38,7 +38,7 @@ object HomeJobs {
                                                          .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
                                                          .withColumn("Hour", date_format(col("Time"), "HH"))
                                                          .withColumn("Weekday", date_format(col("Time"), "EEE"))
-                                                         .filter(col("Hour") > HourFrom && col("Hour") < HourTo)
+                                                         .filter(col("Hour") >= HourFrom && col("Hour") <= HourTo)
 
 
 
