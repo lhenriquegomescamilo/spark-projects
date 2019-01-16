@@ -4,6 +4,8 @@ import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_w
 import org.joda.time.{Days,DateTime}
 import org.apache.spark.sql.functions.{col, count}
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.ml.attribute.Attribute
+import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
 
 
 /**
@@ -93,8 +95,24 @@ object Random {
               .save("/datascience/geo/US/")
   }
 
+  def generate_index(spark:SparkSession){
+    val df = spark.read.format("parquet").load("/datascience/data_demo/triplets_segments").limit(50000)
+    val indexer1 = new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
+    val indexed1 = indexer1.fit(df).transform(df)
+    val indexer2 = new StringIndexer().setInputCol("feature").setOutputCol("featureIndex")
+    val indexed2 = indexer2.fit(indexed1).transform(indexed1)
+
+    val tempDF = indexed2.withColumn("deviceIndex",indexed2("deviceIndex").cast("long"))
+                        .withColumn("featureIndex",indexed2("featureIndex").cast("long"))
+                        .withColumn("count",indexed2("count").cast("double"))
+                        
+    tempDF.write.format("parquet")
+                 .mode(SaveMode.Overwrite)
+                 .save("/datascience/data_demo/triplets_segments_indexed")  
+  }
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    process_geo(spark)
+    generate_index(spark)
   }
 }
