@@ -182,18 +182,20 @@ object ShareThisUSIngester {
 
 
   def process_geo(spark: SparkSession, files: List[String]) {
-    val data = spark.read.csv(files:_*).select("_c0", "_c4", "_c5", "_c6", "_c7", "_c8")
-                                        .withColumnRenamed("_c0", "estid")
-                                        .withColumnRenamed("_c4", "latitude")
-                                        .withColumnRenamed("_c5", "longitude")
-                                        .withColumnRenamed("_c6", "zipcode")
-                                        .withColumnRenamed("_c7", "city")
-                                        .withColumnRenamed("_c8", "utc_timestamp")
-                                        .withColumn("day", lit(DateTime.now.toString("yyyyMMdd")))
-    data.write.format("parquet")
-              .mode("append")
-              .partitionBy("day")
-              .save("/datascience/geo/US/")
+    if (files.length>0) {
+      val data = spark.read.csv(files:_*).select("_c0", "_c4", "_c5", "_c6", "_c7", "_c8")
+                                          .withColumnRenamed("_c0", "estid")
+                                          .withColumnRenamed("_c4", "latitude")
+                                          .withColumnRenamed("_c5", "longitude")
+                                          .withColumnRenamed("_c6", "zipcode")
+                                          .withColumnRenamed("_c7", "city")
+                                          .withColumnRenamed("_c8", "utc_timestamp")
+                                          .withColumn("day", lit(DateTime.now.toString("yyyyMMdd")))
+      data.write.format("parquet")
+                .mode("append")
+                .partitionBy("day")
+                .save("/datascience/geo/US/")
+    }
   }
 
   def process_urls(spark: SparkSession) {
