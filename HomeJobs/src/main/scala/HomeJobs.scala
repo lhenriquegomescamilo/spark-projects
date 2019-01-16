@@ -74,7 +74,7 @@ object HomeJobs {
    val df_users = get_safegraph_data(spark, safegraph_days, country,HourFrom,HourTo)
 
 
-    val df_count  = df_pois.groupBy(col("ad_id"),round(col("latitude"),3),round(col("longitude"),3)).agg(count(col("latitude")).as("freq"),round(avg(col("latitude")),4).as("avg_latitude"),(round(avg(col("longitude")),4)).as("avg_longitude")).select("ad_id","freq","avg_latitude","avg_longitude")
+    val df_count  = df_users.groupBy(col("ad_id"),round(col("latitude"),3),round(col("longitude"),3)).agg(count(col("latitude")).as("freq"),round(avg(col("latitude")),4).as("avg_latitude"),(round(avg(col("longitude")),4)).as("avg_longitude")).select("ad_id","freq","avg_latitude","avg_longitude")
 
 
     val df_distinct = df_count.groupBy(col("ad_id").agg(max(col("total")))).select(col("ad_id")).join(df_count, Seq("ad_id"),"inner")                              
