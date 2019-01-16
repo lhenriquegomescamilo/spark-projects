@@ -178,9 +178,9 @@ object GetAudience {
       val since = queries(0)._4.toString.toInt
       val nDays = queries(0)._5.toString.toInt
 
-      // If the partner id is set, then we will use the data_partner_p pipeline, otherwise it is going to be data_audiences_p
-      val path = if (partner_id.length > 0) "/datascience/data_partner_p/id_partner=%s".format(partner_id) else "/datascience/data_audiences_p/"
-      val basePath = if (partner_id.length > 0) "/datascience/data_partner_p/" else "/datascience/data_audiences_p/"
+      // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
+      val path = if (partner_id.length > 0) "/datascience/data_partner/id_partner=%s".format(partner_id) else "/datascience/data_audiences_p/"
+      val basePath = if (partner_id.length > 0) "/datascience/data_partner/" else "/datascience/data_audiences_p/"
       println("DEVICER LOG: Parameters obtained for file %s:\n\tbase_path: %s\n\tpath: %s\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d".format(file, basePath, path, partner_id, since, nDays))
 
       // Now we finally get the data that will be used
