@@ -92,7 +92,7 @@ object HomeJobs {
                         col("ad_id")
                         )
                         .agg(
-                            max(col("total"))
+                            max(col("freq"))
                             )
                           .select(col("ad_id"))
                           .join(df_count, Seq("ad_id"),"inner")        
