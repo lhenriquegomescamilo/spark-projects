@@ -3,7 +3,8 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime}
+import org.apache.spark.sql.functions._
+//import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime, avg, count}
 import org.apache.spark.sql.SaveMode
 
 object HomeJobs {
@@ -70,8 +71,35 @@ object HomeJobs {
 
 
   def get_homejobs(spark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, output_file: String) = {
-    val df_users = get_safegraph_data(spark, safegraph_days, country,HourFrom,HourTo)
-    df_users.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
+    //getting the users with the required columns
+   val df_users = get_safegraph_data(spark, safegraph_days, country,HourFrom,HourTo)
+
+
+    val df_count  = 
+                    df_users.groupBy(
+                        col("ad_id"),round(col("latitude"),3),round(col("longitude"),3)
+                                    )
+                                      .agg(
+                                            count(col("latitude")).as("freq"),
+                                            round(avg(col("latitude")),4).as("avg_latitude"),
+                                            round(avg(col("longitude")),4).as("avg_longitude")
+                                          )
+                                            .select("ad_id","freq","avg_latitude","avg_longitude")
+
+
+    
+      val df_distinct = df_count.groupBy(
+                        col("ad_id")
+                        )
+                        .agg(
+                            max(col("freq"))
+                            )
+                          .select(col("ad_id"))
+                          .join(df_count, Seq("ad_id"),"inner")        
+
+
+    df_distinct.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
+
   }
 
   def main(args: Array[String]) {
