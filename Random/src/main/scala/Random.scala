@@ -125,7 +125,7 @@ object Random {
                   .drop("device_type")
 
     val joint = xd.join(broadcast(xd_users),Seq("index")) 
-    joint.select("segments_xd","android","ios").write.format("csv").option("sep","\t").save("/datascience/data_leo")
+    joint.select("segments_xd","device","index").write.format("csv").option("sep","\t").save("/datascience/data_leo")
   
   }
 
