@@ -171,9 +171,17 @@ object Random {
     df_final.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/labeled_points")
   }
 
+  def getXD(spark: SparkSession) {
+    val data = spark.read.format("csv").option("sep", "\t").load("/datascience/devicer/processed/am_wall").select("_c1").withColumnRenamed("_c1", "index")
+    val index = spark.read.format("parquet").load("/datascience/crossdevice/double_index").filter("index_type = 'c'")
+    val joint = data.join(index, Seq("index"))
+
+    joint.select("device", "device_type").write.format("csv").save("/datascience/audiences/crossdeviced/am_wall")
+  }
+
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getTestSet(spark)
+    getXD(spark)
   }
 }
