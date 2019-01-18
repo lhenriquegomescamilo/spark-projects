@@ -15,8 +15,16 @@ object dataGCBA {
     def main(args: Array[String]) {
         /// Configuracion spark
         val spark = SparkSession.builder.appName("Data GCBA Process").getOrCreate()
-        val today = DateTime.now().toString("yyyy/MM/dd")
 
-        process_day(spark,today)
+//        val today = DateTime.now().toString("yyyy/MM/dd")
+        val format = "yyyy/MM/dd"
+        val start = DateTime.now.minusDays(15)
+        val end   = DateTime.now.minusDays(0)    
+        val today = DateTime.now().toString("yyyyMMdd")
+        val daysCount = Days.daysBetween(start, end).getDays()
+        val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+        days.foreach(day => process_day(spark,day))
+        //process_day(spark,today)
     }
 }
