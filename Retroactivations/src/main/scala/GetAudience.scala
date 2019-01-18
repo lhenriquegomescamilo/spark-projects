@@ -126,7 +126,7 @@ object GetAudience {
           .agg(collect_list("_c2") as "segments")
           .withColumn("segments", concat_ws(",", col("segments")))
           .write.format("csv")
-                .option("sep", " ")
+                .option("sep", "\t")
                 .mode("append")
                 .save("/datascience/devicer/processed/"+fileName+"_grouped")
     }
