@@ -46,6 +46,11 @@ object GetAudience {
     df
   }
 
+
+  def getFilesIdPartners(spark: SparkSession, partnerIds: List[Int]): List[String] = {
+
+  }
+
   /**
   * This method gets all the files to be processed from the folder /datascience/devicer/to_process/
   * and also it removes from the list all the files that have been already processed (which are 
