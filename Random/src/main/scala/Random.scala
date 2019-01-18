@@ -132,8 +132,13 @@ object Random {
   
   }
 
+  def generate_test(spark: SparkSession) {
+    val df = spark.read.parquet("/datascience/data_demo/triplets_segments/part-06761-36693c74-c327-43a6-9482-2e83c0ead518-c000.snappy.parquet")
+    df.limit(10000).write.save("/datascience/data_demo/test_triplets/")
+  }
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    generate_data_leo(spark)
+    generate_test(spark)
   }
 }
