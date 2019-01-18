@@ -15,7 +15,8 @@ object dataGCBA {
     def main(args: Array[String]) {
         /// Configuracion spark
         val spark = SparkSession.builder.appName("Data GCBA Process").getOrCreate()
-        val today = DateTime.now().toString("yyyy/MM/dd")
+        //val today = DateTime.now().toString("yyyy/MM/dd")
+        val today = "2019/01/03"
 
         process_day(spark,today)
     }
