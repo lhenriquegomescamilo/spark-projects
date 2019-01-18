@@ -1,11 +1,12 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast,upper,sha2}
+import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast,upper,sha2, count, max}
 import org.joda.time.{Days,DateTime}
-import org.apache.spark.sql.functions.{col, count}
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.ml.attribute.Attribute
 import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.regression.LabeledPoint
 
 
 /**
@@ -132,8 +133,47 @@ object Random {
   
   }
 
+  def generate_test(spark: SparkSession) {
+    val df = spark.read.parquet("/datascience/data_demo/triplets_segments/part-06761-36693c74-c327-43a6-9482-2e83c0ead518-c000.snappy.parquet")
+    
+    val gt_male = spark.read.format("csv").option("sep"," ").load("/datascience/devicer/processed/ground_truth_male")
+                                          .withColumn("label",lit(1))
+                                          .withColumnRenamed("_c1","device_id")
+                                          .select("device_id","label")
+    val gt_female = spark.read.format("csv").option("sep"," ").load("/datascience/devicer/processed/ground_truth_female")
+                                          .withColumn("label",lit(0))
+                                          .withColumnRenamed("_c1","device_id")
+                                          .select("device_id","label")
+    val gt = gt_male.unionAll(gt_female)
+
+    val joint = gt.join(df, Seq("device_id"))
+    joint.limit(10000).write.save("/datascience/data_demo/test/")
+  }
+
+  def getTestSet(spark: SparkSession) {
+    val data = spark.read.format("parquet").load("/datascience/data_demo/test")
+
+    val indexer1 = new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
+    val indexed1 = indexer1.fit(data).transform(data)
+    val indexer2 = new StringIndexer().setInputCol("feature").setOutputCol("featureIndex")
+    val indexed_data = indexer2.fit(indexed1).transform(indexed1)
+
+    val maximo = indexed_data.agg(max("featureIndex")).collect()(0)(0).toString.toDouble.toInt
+
+    val grouped_data = indexed_data.groupBy("device_id","label").agg(collect_list("featureIndex").as("features"),collect_list("count").as("counts"))
+
+    val udfLabeledPoint = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
+                                                LabeledPoint(label, Vectors.sparse(features.length, 
+                                                                                   features.toList.map(f => f.toInt).toArray, 
+                                                                                   counts.toList.map(f => f.toDouble).toArray)))
+
+    val df_final = grouped_data.withColumn("points", udfLabeledPoint(col("label"), col("features"), col("counts"),lit(maximo)))
+    df_final.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/labeled_points")
+  }
+
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    generate_data_leo(spark)
+    getTestSet(spark)
   }
 }
