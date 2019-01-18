@@ -168,7 +168,7 @@ object Random {
                                                                                    counts.map(f => f.toDouble))))
 
     val df_final = grouped_data.withColumn("points", udfLabeledPoint(col("label"), col("features"), col("counts"),lit(maximo)))
-    df_final.write.save("/datascience/data_demo/labeled_points")
+    df_final.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/labeled_points")
   }
 
 
