@@ -134,7 +134,19 @@ object Random {
 
   def generate_test(spark: SparkSession) {
     val df = spark.read.parquet("/datascience/data_demo/triplets_segments/part-06761-36693c74-c327-43a6-9482-2e83c0ead518-c000.snappy.parquet")
-    df.limit(10000).write.save("/datascience/data_demo/test_triplets/")
+    
+    val gt_male = spark.read.format("csv").option("sep"," ").load("/datascience/devicer/processed/ground_truth_male")
+                                          .withColumn("label",lit(1))
+                                          .withColumnRenamed("_c1","device_id")
+                                          .select("device_id","label")
+    val gt_female = spark.read.format("csv").option("sep"," ").load("/datascience/devicer/processed/ground_truth_female")
+                                          .withColumn("label",lit(0))
+                                          .withColumnRenamed("_c1","device_id")
+                                          .select("device_id","label")
+    val gt = gt_male.unionAll(gt_female)
+
+    val joint = gt.join(df, Seq("device_id"))
+    joint.limit(10000).write.save("/datascience/data_demo/test/")
   }
 
   def main(args: Array[String]) {
