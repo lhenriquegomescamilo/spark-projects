@@ -114,7 +114,7 @@ object GetAudience {
                                            .select("device_type", "device_id")
                                            .withColumn("segmentIds", lit(query._2)))
     results.foreach(dataframe => dataframe.write.format("csv")
-                                                .option("sep", " ")
+                                                .option("sep", "\t")
                                                 .mode("append")
                                                 .save("/datascience/devicer/processed/"+fileName))
     if (results.length > 1) {
