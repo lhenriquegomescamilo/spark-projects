@@ -110,9 +110,30 @@ object Random {
                  .mode(SaveMode.Overwrite)
                  .save("/datascience/data_demo/triplets_segments_indexed")  
   }
+  
+  def generate_data_leo(spark:SparkSession){
+    val xd_users = spark.read.format("parquet")
+                        .load("/datascience/crossdevice/double_index")
+                        .filter("device_type = 'c'")
+                        .limit(2000)
+
+    val xd = spark.read.format("csv").option("sep","\t")
+                  .load("/datascience/audiences/crossdeviced/taxo")
+                  .withColumnRenamed("_c0","index")
+                  .withColumnRenamed("_c1","device_type")
+                  .withColumnRenamed("_c2","segments_xd")
+                  .drop("device_type")
+
+    val joint = xd.join(broadcast(xd_users),Seq("index")) 
+    joint.select("segments_xd","device","index").write.format("csv")
+                                          .option("sep","\t")
+                                          .mode(SaveMode.Overwrite)
+                                          .save("/datascience/data_leo")
+  
+  }
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    generate_index(spark)
+    generate_data_leo(spark)
   }
 }

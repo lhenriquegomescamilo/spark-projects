@@ -9,7 +9,13 @@ import org.apache.spark.sql.SaveMode
 
 object HomeJobs {
 
-  def get_safegraph_data(spark: SparkSession, nDays: Integer, country: String, since: Integer = 1, HourTo : Integer = 6, HourFrom : Integer = 19 ) = {
+  def get_safegraph_data(spark: SparkSession, 
+                          nDays: Integer, 
+                          country: String, 
+                          since: Integer = 1, 
+                          HourTo : Integer = 6, 
+                          HourFrom : Integer = 19 
+                          UseType: String) = {
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -32,14 +38,24 @@ object HomeJobs {
    val hdfs_files = days.map(day => path+"%s/".format(day))
                             .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
 
-
+    
+      
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .filter("country = '%s'".format(country))
                                   .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
                                                          .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
                                                          .withColumn("Hour", date_format(col("Time"), "HH"))
                                                          .withColumn("Weekday", date_format(col("Time"), "EEE"))
-                                                         .filter(col("Hour") >= HourFrom || col("Hour") <= HourTo)
+                                                         .filter(
+                                                          if (UseType=="home") { 
+                                                            col("Hour") >= HourFrom || col("Hour") <= HourTo 
+                                                                                } 
+                                                         else {
+                                                          (col("Hour") <= HourFrom && col("Hour") >= HourTo ) 
+                                                          && 
+                                                          !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_* ) 
+                                                        }
+                                                      )
 
 
 
@@ -65,12 +81,21 @@ object HomeJobs {
       case "--country" :: value :: tail =>
         nextOption(map ++ Map('country -> value.toString), tail)
       case "--output" :: value :: tail =>
+        nextOption(map ++ Map('UseType -> value.toString), tail)
+      case "--output" :: value :: tail =>
         nextOption(map ++ Map('output -> value.toString), tail)
+        
     }
   }
 
 
-  def get_homejobs(spark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, output_file: String) = {
+  def get_homejobs(spark: SparkSession,
+                    safegraph_days: Integer,  
+                    country: String, 
+                    HourFrom: Integer, 
+                    HourTo: Integer, 
+                    UseType: String,
+                    output_file: String) = {
     //getting the users with the required columns
    val df_users = get_safegraph_data(spark, safegraph_days, country,HourFrom,HourTo)
 
