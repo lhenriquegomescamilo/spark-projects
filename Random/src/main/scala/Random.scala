@@ -163,7 +163,7 @@ object Random {
     val grouped_data = indexed_data.groupBy("device_id","label").agg(collect_list("featureIndex").as("features"),collect_list("count").as("counts"))
 
     val udfLabeledPoint = udf((label: Int, features: Array[Double], counts:Array[Int], maximo:Int) => 
-                                                LabeledPoint(label, Vectors.sparse(maximo, 
+                                                (label, Vectors.sparse(maximo, 
                                                                                    features.map(f => f.toInt), 
                                                                                    counts.map(f => f.toDouble))))
 
