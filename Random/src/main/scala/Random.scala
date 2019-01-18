@@ -1,11 +1,12 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast,upper,sha2}
+import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast,upper,sha2, count}
 import org.joda.time.{Days,DateTime}
-import org.apache.spark.sql.functions.{col, count}
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.ml.attribute.Attribute
 import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.regression.LabeledPoint
 
 
 /**
@@ -149,8 +150,30 @@ object Random {
     joint.limit(10000).write.save("/datascience/data_demo/test/")
   }
 
+  def getTestSet(spark: SparkSession) {
+    val data = spark.read.format("parquet").load("/datascience/data_demo/test")
+
+    val indexer1 = new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
+    val indexed1 = indexer1.fit(data).transform(data)
+    val indexer2 = new StringIndexer().setInputCol("feature").setOutputCol("featureIndex")
+    val indexed_data = indexer2.fit(indexed1).transform(indexed1)
+
+    val maximo = indexed_data.agg(max("featureIndex")).collect()(0)(0).toString.toDouble.toInt
+
+    val grouped_data = indexed_data.groupBy("device_id","label").agg(collect_list("featureIndex").as("features"),collect_list("count").as("counts"))
+
+    val udfLabeledPoint = udf((label: Int, features: Array[Double], counts:Array[Int], maximo:Int) => 
+                                                LabeledPoint(label, Vectors.sparse(maximo, 
+                                                                                   features.map(f => f.toInt), 
+                                                                                   counts.map(f => f.toDouble))))
+
+    val df_final = grouped_data.withColumn("points", udfLabeledPoint(col("label"), col("features"), col("counts"),lit(maximo)))
+    df_final.write.save("/datascience/data_demo/labeled_points")
+  }
+
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    generate_test(spark)
+    generate_getTestSettest(spark)
   }
 }
