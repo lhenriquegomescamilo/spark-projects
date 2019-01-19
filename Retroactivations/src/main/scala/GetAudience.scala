@@ -47,8 +47,69 @@ object GetAudience {
   }
 
 
-  def getFilesIdPartners(spark: SparkSession, partnerIds: List[Int]): List[String] = {
+  /**
+  * This method returns a DataFrame with the data from the audiences data pipeline, for the interval
+  * of days specified. Basically, this method loads the given path as a base path, then it
+  * also loads the every DataFrame for the days specified, and merges them as a single
+  * DataFrame that will be returned.
+  *
+  * @param spark: Spark Session that will be used to load the data from HDFS.
+  * @param nDays: number of days that will be read.
+  * @param since: number of days ago from where the data is going to be read.
+  * 
+  * @return a DataFrame with the information coming from the data read.
+  **/
+  def getDataAudiences(spark: SparkSession,
+                       nDays: Int = 30, since: Int = 1): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
 
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end   = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences_p"
+    
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days.map(day => path+"/day=%s".format(day))
+                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
+
+    df
+  }
+
+  /**
+  * This method returns a DataFrame with the data from the partner data pipeline, for the interval
+  * of days specified. Basically, this method loads the given path as a base path, then it
+  * also loads the every DataFrame for the days specified, and merges them as a single
+  * DataFrame that will be returned.
+  *
+  * @param spark: Spark Session that will be used to load the data from HDFS.
+  * @param partnerIds: List of id partners from which we are going to load the data.
+  * @param nDays: number of days that will be read.
+  * @param since: number of days ago from where the data is going to be read.
+  * 
+  * @return a DataFrame with the information coming from the data read.
+  **/
+  def getDataIdPartners(spark: SparkSession, partnerIds: List[String],
+                         nDays: Int = 30, since: Int = 1):): List[String] = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end   = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_partner/"
+    
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = partnerIds.flatMap(partner => days.map(day => path+"id_partner="+partner+"/day=%s".format(day)))
+                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
+
+    df
   }
 
   /**
@@ -179,17 +240,14 @@ object GetAudience {
       actual_path = "/datascience/devicer/in_progress/%s".format(file)
       
       // Here we obtain three parameters that are supposed to be equal for every query in the file
-      val partner_id = queries(0)._3.toString
+      val partner_ids = queries(0)._3.toString
       val since = queries(0)._4.toString.toInt
       val nDays = queries(0)._5.toString.toInt
+      println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d".format(file, partner_ids, since, nDays))
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
-      val path = if (partner_id.length > 0) "/datascience/data_partner/id_partner=%s".format(partner_id) else "/datascience/data_audiences_p/"
-      val basePath = if (partner_id.length > 0) "/datascience/data_partner/" else "/datascience/data_audiences_p/"
-      println("DEVICER LOG: Parameters obtained for file %s:\n\tbase_path: %s\n\tpath: %s\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d".format(file, basePath, path, partner_id, since, nDays))
-
       // Now we finally get the data that will be used
-      val data = getDataPipeline(spark, basePath, path, nDays, since)
+      val data = if (partner_ids.length>0) getDataIdPartners(spark, partner_ids.split(",", -1), nDays, since) else getDataAudiences(spark, nDays, since)
 
       // Lastly we store the audience applying the filters
       val file_name = file.replace(".json", "")
