@@ -247,7 +247,8 @@ object GetAudience {
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
       // Now we finally get the data that will be used
-      val data = if (partner_ids.length>0) getDataIdPartners(spark, partner_ids.split(",", -1), nDays, since) else getDataAudiences(spark, nDays, since)
+      val ids = partner_ids.split(",", -1).toList
+      val data = if (partner_ids.length>0) getDataIdPartners(spark, ids, nDays, since) else getDataAudiences(spark, nDays, since)
 
       // Lastly we store the audience applying the filters
       val file_name = file.replace(".json", "")
