@@ -93,7 +93,7 @@ object GetAudience {
   * @return a DataFrame with the information coming from the data read.
   **/
   def getDataIdPartners(spark: SparkSession, partnerIds: List[String],
-                         nDays: Int = 30, since: Int = 1):): List[String] = {
+                         nDays: Int = 30, since: Int = 1): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
