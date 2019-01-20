@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast,upper,sha2, count, max}
+import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast,upper,sha2, count, max, split}
 import org.joda.time.{Days,DateTime}
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.ml.attribute.Attribute
