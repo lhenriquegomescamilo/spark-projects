@@ -185,7 +185,8 @@ object Random {
                          .load("/data/crossdevice/tapad/Retargetly_ids_full_*")
     val devices = data.withColumn("ids", split(col("_c2"), "\t"))
                       .withColumn("device", explode(col("ids")))
-                      .withColumn("device_type", split(col("device"), "="))
+                      .withColumn("device_type", split(col("device"), "=").getItem(0))
+                      .withColumn("device", split(col("device"), "=").getItem(1))
                       .withColumnRenamed("_c0", "HOUSEHOLD_CLUSTER_ID")
                       .withColumnRenamed("_c1", "INDIVIDUAL_CLUSTER_ID")
                       .select("HOUSEHOLD_CLUSTER_ID", "INDIVIDUAL_CLUSTER_ID", "device", "device_type")
@@ -193,8 +194,18 @@ object Random {
     devices.write.format("parquet").save("/datascience/custom/tapad_index/")
   }
 
+  def getTapadNumbers(spark: SparkSession) {
+    val data = spark.read.load("/datascience/custom/tapad_index")
+    println("LOGGER RANDOM")
+    data.groupBy("device_type").count().collect().foreach(println)
+    println("LOGGER RANDOM: HOUSEHOLD_CLUSTER_ID: %d".format(data.select("HOUSEHOLD_CLUSTER_ID").distinct().count()))
+    println("LOGGER RANDOM: INDIVIDUAL_CLUSTER_ID: %d".format(data.select("INDIVIDUAL_CLUSTER_ID").distinct().count()))
+    println("LOGGER RANDOM: Number of devices: %d".format(data.count()))
+  }
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     getTapadIndex(spark)
+    getTapadNumbers(spark)
   }
 }
