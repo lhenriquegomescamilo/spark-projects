@@ -179,9 +179,22 @@ object Random {
     joint.select("device", "device_type").write.format("csv").save("/datascience/audiences/crossdeviced/am_wall")
   }
 
+  def getTapadIndex(spark: SparkSession) {
+    val data = spark.read.format("csv")
+                         .option("sep", ";")
+                         .load("/data/crossdevice/tapad/Retargetly_ids_full_*")
+    val devices = data.withColumn("ids", split(col("_c2"), "\t"))
+                      .withColumn("device", explode(col("ids")))
+                      .withColumn("device_type", split(col("device"), "="))
+                      .withColumnRenamed("_c0", "HOUSEHOLD_CLUSTER_ID")
+                      .withColumnRenamed("_c1", "INDIVIDUAL_CLUSTER_ID")
+                      .select("HOUSEHOLD_CLUSTER_ID", "INDIVIDUAL_CLUSTER_ID", "device", "device_type")
+
+    devices.write.format("parquet").save("/datascience/custom/tapad_index/")
+  }
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getXD(spark)
+    getTapadIndex(spark)
   }
 }
