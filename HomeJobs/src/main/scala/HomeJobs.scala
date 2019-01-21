@@ -3,61 +3,29 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions._
-//import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime, avg, count}
+import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime}
 import org.apache.spark.sql.SaveMode
 
 object HomeJobs {
 
-  def get_safegraph_data(spark: SparkSession, 
-                          nDays: Integer, 
-                          country: String, 
-                          since: Integer = 1, 
-                          HourTo : Integer = 6, 
-                          HourFrom : Integer = 19 
-                          UseType: String) = {
-
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-    // Get the days to be loaded
+   def get_safegraph_data(spark: SparkSession, nDays: Integer, country: String, since: Integer = 1) = {
+    //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
+    // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
+    // Also we generate a new column call 'geocode' that will be used for the join
     val format = "yyyy/MM/dd"
     val end   = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
-    //dictionary for timezones
-    val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
-    
-    //setting timezone depending on country
-    spark.conf.set("spark.sql.session.timeZone", timezone(country))
-
     // Now we obtain the list of hdfs folders to be read
     val path = "/data/geo/safegraph/"
-      // Now we obtain the list of hdfs folders to be read
-
-   val hdfs_files = days.map(day => path+"%s/".format(day))
-                            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
-
-    
-      
+    val hdfs_files = days.map(day => path+"%s/*.gz".format(day))
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
+                                  .dropDuplicates("ad_id","latitude","longitude")
                                   .filter("country = '%s'".format(country))
                                   .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
-                                                         .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-                                                         .withColumn("Hour", date_format(col("Time"), "HH"))
-                                                         .withColumn("Weekday", date_format(col("Time"), "EEE"))
-                                                         .filter(
-                                                          if (UseType=="home") { 
-                                                            col("Hour") >= HourFrom || col("Hour") <= HourTo 
-                                                                                } 
-                                                         else {
-                                                          (col("Hour") <= HourFrom && col("Hour") >= HourTo ) 
-                                                          && 
-                                                          !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_* ) 
-                                                        }
-                                                      )
-
-
+                                  .withColumnRenamed("latitude", "latitude_user")
+                                  .withColumnRenamed("longitude", "longitude_user")
+                                  .withColumn("geocode", ((abs(col("latitude_user").cast("float"))*10).cast("int")*10000)+(abs(col("longitude_user").cast("float")*100).cast("int")))
 
     df_safegraph
   }
@@ -80,51 +48,51 @@ object HomeJobs {
         nextOption(map ++ Map('HourFrom -> value.toInt), tail)
       case "--country" :: value :: tail =>
         nextOption(map ++ Map('country -> value.toString), tail)
-      case "--output" :: value :: tail =>
+      case "--UseType" :: value :: tail =>
         nextOption(map ++ Map('UseType -> value.toString), tail)
       case "--output" :: value :: tail =>
         nextOption(map ++ Map('output -> value.toString), tail)
-        
     }
   }
 
 
-  def get_homejobs(spark: SparkSession,
-                    safegraph_days: Integer,  
-                    country: String, 
-                    HourFrom: Integer, 
-                    HourTo: Integer, 
-                    UseType: String,
-                    output_file: String) = {
-    //getting the users with the required columns
-   val df_users = get_safegraph_data(spark, safegraph_days, country,HourFrom,HourTo)
+  def get_homejobs(spark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, UseType:String, output_file: String) = {
+    val df_users = get_safegraph_data(spark, safegraph_days, country,HourFrom,HourTo)
+
+    val geo_hour = df_users.select("ad_id", "id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
+                                            .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+                                            .withColumn("Hour", date_format(col("Time"), "HH"))
+                                                .filter(
+                                                    if (UseType=="home") { 
+                                                                col("Hour") >= HourFrom || col("Hour") <= HourTo 
+                                                                            } 
+                                                    else {
+                                                          (col("Hour") <= HourFrom && col("Hour") >= HourTo ) && 
+                                                                !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_*) })
+
+    val df_count  = geo_hour.groupBy($"ad_id",$"geocode")
+                        .agg(count($"latitude_user").as("freq"),
+                            round(avg($"latitude_user"),4).as("avg_latitude"),
+                            (round(avg($"longitude_user"),4)).as("avg_longitude"))
+                    .select("ad_id","freq","geocode","avg_latitude","avg_longitude")
 
 
-    val df_count  = 
-                    df_users.groupBy(
-                        col("ad_id"),round(col("latitude"),3),round(col("longitude"),3)
-                                    )
-                                      .agg(
-                                            count(col("latitude")).as("freq"),
-                                            round(avg(col("latitude")),4).as("avg_latitude"),
-                                            round(avg(col("longitude")),4).as("avg_longitude")
-                                          )
-                                            .select("ad_id","freq","avg_latitude","avg_longitude")
+    case class Record(ad_id: String, freq: BigInt, geocode: Integer,avg_latitude: Double, avg_longitude:Double)
+
+    val dataset_users = df_count.as[Record].groupByKey(_.ad_id).reduceGroups((x, y) => if (x.freq > y.freq) x else y)
+
+    val final_users = dataset_users.map(
+                            row =>  (row._2.ad_id,
+                                    row._2.freq,
+                                    row._2.geocode,
+                                    row._2.avg_latitude,
+                                    row._2.avg_longitude )).toDF("ad_id","freq","geocode","avg_latitude","avg_longitude")
 
 
-    
-      val df_distinct = df_count.groupBy(
-                        col("ad_id")
-                        )
-                        .agg(
-                            max(col("freq"))
-                            )
-                          .select(col("ad_id"))
-                          .join(df_count, Seq("ad_id"),"inner")        
 
 
-    df_distinct.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
 
+    final_users.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
   }
 
   def main(args: Array[String]) {
@@ -134,6 +102,7 @@ object HomeJobs {
     val HourFrom = if (options.contains('HourFrom)) options('HourFrom).toString.toInt else 19
     val HourTo = if (options.contains('HourTo)) options('HourTo).toString.toInt else 6
     val country = if (options.contains('country)) options('country).toString else "mexico"
+    val UseType = if (options.contains('UseType)) options('UseType).toString else "home"
     val output_file = if (options.contains('output)) options('output).toString else ""
 
     // Start Spark Session
