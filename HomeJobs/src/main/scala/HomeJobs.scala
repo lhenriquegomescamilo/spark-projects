@@ -121,7 +121,7 @@ object HomeJobs {
     //val output_file = "/datascience/geo/MX/specific_POIs"
 
 
-    get_homejobs(spark, safegraph_days, country, HourFrom, HourTo, output_file)
+    get_homejobs(spark, safegraph_days, country, HourFrom, HourTo,UseType,  output_file)
   }
 }
 
