@@ -5,6 +5,7 @@ import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime,count, avg}
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.SQLImplicits._
 
 
 
@@ -19,8 +20,6 @@ object HomeJobs {
     val end   = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
-    import spark.implicits._
-
     // Now we obtain the list of hdfs folders to be read
     val path = "/data/geo/safegraph/"
     val hdfs_files = days.map(day => path+"%s/*.gz".format(day))
@@ -63,7 +62,7 @@ object HomeJobs {
 
   def get_homejobs(spark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, UseType:String, output_file: String) = {
     val df_users = get_safegraph_data(spark, safegraph_days, country)
-    import spark.implicits._
+
     val geo_hour = df_users.select("ad_id", "id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
                                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
                                             .withColumn("Hour", date_format(col("Time"), "HH"))
@@ -81,7 +80,7 @@ object HomeJobs {
                             (round(avg(col("longitude_user")),4)).as("avg_longitude"))
                     .select("ad_id","freq","geocode","avg_latitude","avg_longitude")
 
-    import spark.implicits._
+    
     case class Record(ad_id: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
 
     val dataset_users = df_count.as[Record].groupByKey(_.ad_id).reduceGroups((x, y) => if (x.freq > y.freq) x else y)
@@ -112,7 +111,7 @@ object HomeJobs {
 
     // Start Spark Session
     val spark = SparkSession.builder.appName("HomeJobs creator").getOrCreate()
-    import spark.implicits._
+    
 
     
     //val output_file = "/datascience/geo/MX/specific_POIs"
