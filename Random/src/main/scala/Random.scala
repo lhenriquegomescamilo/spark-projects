@@ -6,7 +6,7 @@ import org.apache.spark.sql.SaveMode
 import org.apache.spark.ml.attribute.Attribute
 import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
 //import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.ml.linalg.Vector
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 
 
@@ -164,12 +164,12 @@ object Random {
     val grouped_data = indexed_data.groupBy("device_id","label").agg(collect_list("featureIndex").as("features"),collect_list("count").as("counts"))
 
     val udfLabeledPoint = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
-                                                LabeledPoint(label, Vector.sparse(features.length, 
+                                                LabeledPoint(label, Vectors.sparse(features.length, 
                                                                                    features.toList.map(f => f.toInt).toArray, 
                                                                                    counts.toList.map(f => f.toDouble).toArray)))
 
     val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
-                                            Vector.sparse(features.length, 
+                                            Vectors.sparse(features.length, 
                                                             features.toList.map(f => f.toInt).toArray, 
                                                             counts.toList.map(f => f.toDouble).toArray))
 
