@@ -77,8 +77,8 @@ object HomeJobs {
                             (round(avg(col("longitude_user")),4)).as("avg_longitude"))
                     .select("ad_id","freq","geocode","avg_latitude","avg_longitude")
 
-    import spark.implicits._
-    case class Record(ad_id: String, freq: BigInt, geocode: Integer,avg_latitude: Double, avg_longitude:Double)
+
+    case class Record(ad_id: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
 
     val dataset_users = df_count.as[Record].groupByKey(_.ad_id).reduceGroups((x, y) => if (x.freq > y.freq) x else y)
 
@@ -109,7 +109,7 @@ object HomeJobs {
     // Start Spark Session
     val spark = SparkSession.builder.appName("HomeJobs creator").getOrCreate()
 
-    import spark.implicits._
+
 
     
     //val output_file = "/datascience/geo/MX/specific_POIs"
