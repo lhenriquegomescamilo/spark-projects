@@ -6,7 +6,7 @@ import org.apache.spark.sql.SaveMode
 import org.apache.spark.ml.attribute.Attribute
 import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
 //import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.ml.Vectors
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 
 
