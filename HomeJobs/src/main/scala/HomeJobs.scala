@@ -5,7 +5,7 @@ import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime,count, avg}
 import org.apache.spark.sql.SaveMode
-import org.apache.spark.sqlContext.implicits._
+
 
 
 
@@ -110,8 +110,8 @@ object HomeJobs {
 
     // Start Spark Session
     val spark = SparkSession.builder.appName("HomeJobs creator").getOrCreate()
-
-
+    import spark.implicits._
+    case class Record(ad_id: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
 
     
     //val output_file = "/datascience/geo/MX/specific_POIs"
