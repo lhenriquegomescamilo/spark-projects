@@ -16,7 +16,7 @@ val data = spark.read.parquet("/datascience/data_demo/triplets_segments/part-067
 
 object LookAlike {
   def getData(spark: SparkSession): DataFrame = {
-    val data = spark.read.parquet("/datascience/data_demo/triplets_segments/")
+    val data: DataFrame = spark.read.parquet("/datascience/data_demo/triplets_segments/")
     data
   }
 
