@@ -1,3 +1,4 @@
+package main.scala
 import org.apache.spark.sql.SparkSession
 import org.joda.time.Days
 import org.joda.time.DateTime
