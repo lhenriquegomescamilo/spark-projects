@@ -257,19 +257,19 @@ object Random {
     val users = getDataAudiences(spark, 40, 15).select("device_id", "country").distinct()
 
     val joint = data.join(users, Seq("device_id"))
-    joint.cache()
+    //joint.cache()
     // Total matching
-    println("\n\nLOGGER TOTAL MATCHING: %s\n\n".format(joint.count()))
+    //println("\n\nLOGGER TOTAL MATCHING: %s\n\n".format(joint.count()))
     // Devices count by country
-    joint.groupBy("country").count().collect().foreach(println)
+    //joint.groupBy("country").count().collect().foreach(println)
     // Individuals per country
-    println("\n\nLOGGER TOTAL MATCHING: %s\n\n".format(joint.select("INDIVIDUAL_CLUSTER_ID").distinct().count()))
+    //println("\n\nLOGGER TOTAL MATCHING: %s\n\n".format(joint.select("INDIVIDUAL_CLUSTER_ID").distinct().count()))
 
     // Device types per country
-    val total_joint = data.join(joint, Seq("INDIVIDUAL_CLUSTER_ID"))
+    val total_joint = data.join(joint.select("INDIVIDUAL_CLUSTER_ID", "country").distinct(), Seq("INDIVIDUAL_CLUSTER_ID"))
     total_joint.cache()
     // Total matching
-    println("\n\nLOGGER TOTAL MATCHING: %s\n\n".format(total_joint.count()))
+    println("\n\nTotal devices matched: %s\n\n".format(total_joint.count()))
     // Devices count by country
     total_joint.groupBy("country", "device_type").count().collect().foreach(println)
   }
