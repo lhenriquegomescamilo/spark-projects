@@ -5,6 +5,7 @@ import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime,count, avg}
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.implicits._
 
 object HomeJobs {
 
