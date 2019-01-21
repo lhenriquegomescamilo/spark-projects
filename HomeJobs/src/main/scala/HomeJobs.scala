@@ -57,7 +57,7 @@ object HomeJobs {
   }
 
 
-  def get_homejobs(spark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, UseType:String, output_file: String) = {
+  def get_homejobs(subspark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, UseType:String, output_file: String) = {
     val df_users = get_safegraph_data(spark, safegraph_days, country)
 
     val geo_hour = df_users.select("ad_id", "id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
@@ -78,8 +78,9 @@ object HomeJobs {
                     .select("ad_id","freq","geocode","avg_latitude","avg_longitude")
 
      
-    val sparkito = SparkSession.builder.appName("get_homejobs").getOrCreate()
-    import sparkito.implicits._
+    
+    import subspark.implicits._
+    
     case class Record(ad_id: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
 
     val dataset_users = df_count.as[Record].groupByKey(_.ad_id).reduceGroups((x, y) => if (x.freq > y.freq) x else y)
