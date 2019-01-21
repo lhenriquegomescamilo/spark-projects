@@ -1,6 +1,8 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast,upper,sha2, count, max, split}
+import org.apache.spark.sql.functions.{explode, desc, lit, size, concat, col, concat_ws,
+                                       collect_list, udf, broadcast, upper, sha2, count, 
+                                       max, avg, min, median, split}
 import org.joda.time.{Days,DateTime}
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.ml.attribute.Attribute
@@ -206,10 +208,17 @@ object Random {
   def getTapadNumbers(spark: SparkSession) {
     val data = spark.read.load("/datascience/custom/tapad_index")
     println("LOGGER RANDOM")
-    data.groupBy("device_type").count().collect().foreach(println)
-    println("LOGGER RANDOM: HOUSEHOLD_CLUSTER_ID: %d".format(data.select("HOUSEHOLD_CLUSTER_ID").distinct().count()))
-    println("LOGGER RANDOM: INDIVIDUAL_CLUSTER_ID: %d".format(data.select("INDIVIDUAL_CLUSTER_ID").distinct().count()))
-    println("LOGGER RANDOM: Number of devices: %d".format(data.count()))
+    //data.groupBy("device_type").count().collect().foreach(println)
+    //println("LOGGER RANDOM: HOUSEHOLD_CLUSTER_ID: %d".format(data.select("HOUSEHOLD_CLUSTER_ID").distinct().count()))
+    //println("LOGGER RANDOM: INDIVIDUAL_CLUSTER_ID: %d".format(data.select("INDIVIDUAL_CLUSTER_ID").distinct().count()))
+    //println("LOGGER RANDOM: Number of devices: %d".format(data.count()))
+    val counts_id = data.groupBy("INDIVIDUAL_CLUSTER_ID", "device_type").count()
+                        .select("device_type").agg(count(col("device_type")), 
+                                                   median(col("device_type")), 
+                                                   avg(col("device_type")),
+                                                   min(col("device_type")),
+                                                   max(col("device_type")))
+    counts_id.collect().foreach(println)
   }
 
   def main(args: Array[String]) {
