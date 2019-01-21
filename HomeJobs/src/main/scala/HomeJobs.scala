@@ -10,7 +10,7 @@ import org.apache.spark.sql.SaveMode
 object HomeJobs {
 
    def get_safegraph_data(spark: SparkSession, nDays: Integer, country: String, since: Integer = 1) = {
-    import spark.implcits._
+    import spark.implicits._
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
@@ -59,7 +59,7 @@ object HomeJobs {
 
 
   def get_homejobs(spark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, UseType:String, output_file: String) = {
-    import spark.implcits._
+    import spark.implicits._
     val df_users = get_safegraph_data(spark, safegraph_days, country)
 
     val geo_hour = df_users.select("ad_id", "id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
@@ -113,7 +113,7 @@ object HomeJobs {
 
     // Start Spark Session
     val spark = SparkSession.builder.appName("HomeJobs creator").getOrCreate()
-    import spark.implcits._
+    import spark.implicits._
     
 
     
