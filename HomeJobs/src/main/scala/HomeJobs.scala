@@ -57,7 +57,7 @@ object HomeJobs {
 
 
   def get_homejobs(spark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, UseType:String, output_file: String) = {
-    val df_users = get_safegraph_data(spark, safegraph_days, country,HourFrom,HourTo)
+    val df_users = get_safegraph_data(spark, safegraph_days, country)
 
     val geo_hour = df_users.select("ad_id", "id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
                                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
