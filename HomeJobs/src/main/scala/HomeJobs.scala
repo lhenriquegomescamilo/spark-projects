@@ -10,6 +10,7 @@ import org.apache.spark.sql.SaveMode
 object HomeJobs {
 
    def get_safegraph_data(spark: SparkSession, nDays: Integer, country: String, since: Integer = 1) = {
+    import spark.implcits._
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
@@ -57,8 +58,9 @@ object HomeJobs {
   }
 
 
-  def get_homejobs(subspark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, UseType:String, output_file: String) = {
-    val df_users = get_safegraph_data(subspark, safegraph_days, country)
+  def get_homejobs(spark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, UseType:String, output_file: String) = {
+    import spark.implcits._
+    val df_users = get_safegraph_data(spark, safegraph_days, country)
 
     val geo_hour = df_users.select("ad_id", "id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
                                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -79,8 +81,7 @@ object HomeJobs {
 
      
     
-    import subspark.implicits._
-    
+       
     case class Record(ad_id: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
 
     val dataset_users = df_count.as[Record].groupByKey(_.ad_id).reduceGroups((x, y) => if (x.freq > y.freq) x else y)
@@ -100,6 +101,7 @@ object HomeJobs {
   }
 
   def main(args: Array[String]) {
+    
     // Parse the parameters
     val options = nextOption(Map(), args.toList)
     val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
@@ -111,6 +113,7 @@ object HomeJobs {
 
     // Start Spark Session
     val spark = SparkSession.builder.appName("HomeJobs creator").getOrCreate()
+    import spark.implcits._
     
 
     
