@@ -15,12 +15,20 @@ object HomeJobs {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
+   
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
     val format = "yyyy/MM/dd"
     val end   = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we obtain the list of hdfs folders to be read
     val path = "/data/geo/safegraph/"
+
+    // Now we obtain the list of hdfs folders to be read
+
      val hdfs_files = days.map(day => path+"%s/".format(day))
                             .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
 
@@ -64,6 +72,12 @@ object HomeJobs {
   def get_homejobs(spark: SparkSession,safegraph_days: Integer,  country: String, HourFrom: Integer, HourTo: Integer, UseType:String, output_file: String) = {
     import spark.implicits._
     val df_users = get_safegraph_data(spark, safegraph_days, country)
+
+    //dictionary for timezones
+    val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
+    
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
     val geo_hour = df_users.select("ad_id", "id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
                                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
