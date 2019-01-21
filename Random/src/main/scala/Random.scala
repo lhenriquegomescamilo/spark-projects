@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions.{explode, desc, lit, size, concat, col, concat_ws, collect_list, udf, broadcast, upper, sha2, count, max, avg, min, median, split}
+import org.apache.spark.sql.functions.{explode, desc, lit, size, concat, col, concat_ws, collect_list, udf, broadcast, upper, sha2, count, max, avg, min, split}
 import org.joda.time.{Days,DateTime}
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.ml.attribute.Attribute
@@ -212,7 +212,6 @@ object Random {
     //println("LOGGER RANDOM: Number of devices: %d".format(data.count()))
     val counts_id = data.groupBy("INDIVIDUAL_CLUSTER_ID", "device_type").count()
                         .select("device_type").agg(count(col("device_type")), 
-                                                   median(col("device_type")), 
                                                    avg(col("device_type")),
                                                    min(col("device_type")),
                                                    max(col("device_type")))
