@@ -70,10 +70,10 @@ object HomeJobs {
                                                           (col("Hour") <= HourFrom && col("Hour") >= HourTo ) && 
                                                                 !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_*) })
 
-    val df_count  = geo_hour.groupBy($"ad_id",$"geocode")
-                        .agg(count($"latitude_user").as("freq"),
-                            round(avg($"latitude_user"),4).as("avg_latitude"),
-                            (round(avg($"longitude_user"),4)).as("avg_longitude"))
+    val df_count  = geo_hour.groupBy(col("ad_id"),col("geocode"))
+                        .agg(count(col("latitude_user")).as("freq"),
+                            round(avg(col("latitude_user")),4).as("avg_latitude"),
+                            (round(avg(col("longitude_user")),4)).as("avg_longitude"))
                     .select("ad_id","freq","geocode","avg_latitude","avg_longitude")
 
 
