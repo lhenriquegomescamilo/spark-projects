@@ -257,7 +257,21 @@ object Random {
     val users = getDataAudiences(spark, 40, 15).select("device_id", "country").distinct()
 
     val joint = data.join(users, Seq("device_id"))
+    joint.cache()
+    // Total matching
+    println("\n\nLOGGER TOTAL MATCHING: %s\n\n".format(joint.count()))
+    // Devices count by country
     joint.groupBy("country").count().collect().foreach(println)
+    // Individuals per country
+    println("\n\nLOGGER TOTAL MATCHING: %s\n\n".format(joint.select("INDIVIDUAL_CLUSTER_ID").distinct().count()))
+
+    // Device types per country
+    val total_joint = data.join(joint, Seq("INDIVIDUAL_CLUSTER_ID"))
+    total_joint.cache()
+    // Total matching
+    println("\n\nLOGGER TOTAL MATCHING: %s\n\n".format(total_joint.count()))
+    // Devices count by country
+    total_joint.groupBy("country", "device_type").count().collect().foreach(println)
   }
 
 
