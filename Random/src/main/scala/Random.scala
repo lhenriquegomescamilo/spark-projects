@@ -211,12 +211,54 @@ object Random {
     //println("LOGGER RANDOM: INDIVIDUAL_CLUSTER_ID: %d".format(data.select("INDIVIDUAL_CLUSTER_ID").distinct().count()))
     //println("LOGGER RANDOM: Number of devices: %d".format(data.count()))
     val counts_id = data.groupBy("INDIVIDUAL_CLUSTER_ID", "device_type").count()
-                        .select("device_type").agg(count(col("device_type")), 
-                                                   avg(col("device_type")),
-                                                   min(col("device_type")),
-                                                   max(col("device_type")))
+                        .groupBy("device_type").agg(count(col("count")), 
+                                                    avg(col("count")),
+                                                    min(col("count")),
+                                                    max(col("count")))
     counts_id.collect().foreach(println)
   }
+
+  /**
+  * This method returns a DataFrame with the data from the audiences data pipeline, for the interval
+  * of days specified. Basically, this method loads the given path as a base path, then it
+  * also loads the every DataFrame for the days specified, and merges them as a single
+  * DataFrame that will be returned.
+  *
+  * @param spark: Spark Session that will be used to load the data from HDFS.
+  * @param nDays: number of days that will be read.
+  * @param since: number of days ago from where the data is going to be read.
+  * 
+  * @return a DataFrame with the information coming from the data read.
+  **/
+  def getDataAudiences(spark: SparkSession,
+                       nDays: Int = 30, since: Int = 1): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end   = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences_p"
+    
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days.map(day => path+"/day=%s".format(day))
+                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
+
+    df
+  }
+
+  def getTapadOverlap(spark: SparkSession) {
+    val data = spark.read.load("/datascience/custom/tapad_index")
+                         .withColumnRenamed("device", "device_id")
+    val users = getDataAudiences(spark, 40, 15).select("device_id", "country").distinct()
+
+    val joint = data.join(users, Seq("device_id"))
+    joint.groupBy("country").count().collect().foreach(println)
+  }
+
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
