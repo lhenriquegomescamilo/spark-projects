@@ -8,11 +8,6 @@ import org.apache.spark.sql.functions.{ sum, col }
 import org.apache.spark.sql.{ SaveMode, DataFrame, Row, SparkSession }
 import org.apache.spark.rdd.RDD
 
-// Load and parse the data
-val data = spark.read.parquet("/datascience/data_demo/triplets_segments/part-06748-36693c74-c327-43a6-9482-2e83c0ead518-c000.snappy.parquet").limit(10000)
-
-
-
 
 object LookAlike {
   def getData(spark: SparkSession): DataFrame = {
