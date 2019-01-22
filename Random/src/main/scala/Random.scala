@@ -171,7 +171,7 @@ object Random {
     //                                                                             counts.toList.map(f => f.toDouble).toArray)))
 
     val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
-                                                                Vectors.sparse(features.length, 
+                                                                Vectors.sparse(maximo, 
                                                                 (features.toList.map(f => f.toInt) zip counts.toList.map(f => f.toDouble)).toSeq.distinct.sortWith((e1,e2) => e1._1 < e2._1).toSeq))
 //                                                                                features.toList.map(f => f.toInt).toArray, 
 //                                                                                counts.toList.map(f => f.toDouble).toArray))
