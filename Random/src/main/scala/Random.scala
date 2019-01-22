@@ -157,7 +157,7 @@ object Random {
     val gt = gt_male.unionAll(gt_female)
 
     val joint = gt.join(df, Seq("device_id"))
-    joint.write.save("/datascience/data_demo/test/")
+    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test/")
   }
 
   def getTestSet(spark: SparkSession) {
