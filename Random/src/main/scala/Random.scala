@@ -128,7 +128,8 @@ object Random {
                   .drop("device_type")
 
     val joint = xd.join(broadcast(xd_users),Seq("index")) 
-    joint.select("segments_xd","device","index").write.format("csv")
+    joint.select("segments_xd","device","index").limit(200000)
+                                          .write.format("csv")
                                           .option("sep","\t")
                                           .mode(SaveMode.Overwrite)
                                           .save("/datascience/data_leo")
@@ -280,6 +281,7 @@ object Random {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
     //getTapadOverlap(spark)
-    getTestSet(spark)
+    //getTestSet(spark)
+    generate_data_leo(spark)
   }
 }
