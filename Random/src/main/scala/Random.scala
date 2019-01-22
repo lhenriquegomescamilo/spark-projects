@@ -297,7 +297,7 @@ def train_model(spark:SparkSession){
   val assembler = new VectorAssembler().setInputCols(Array("features_sparse")).setOutputCol("features_sparse")
 
   //For the regression we'll use the Gradient-boosted tree estimator
-  val gbt = new GBTRegressor().setLabelCol(labelColumn).setFeaturesCol("features_sparse").setPredictionCol("Predicted " + labelColumn).setMaxIter(50)
+  val gbt = new GBTRegressor().setLabelCol(labelColumn).setFeaturesCol("features_sparse").setPredictionCol("predicted_" + labelColumn).setMaxIter(50)
 
   //We define the Array with the stages of the pipeline
   val stages = Array(gbt)
