@@ -9,6 +9,13 @@ import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
 //import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.evaluation.RegressionEvaluator
+import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
+import org.apache.spark.ml.regression.GBTRegressor
+import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
+import org.apache.spark.sql.{Encoders, SparkSession}
+
 
 
 /**
@@ -173,16 +180,10 @@ object Random {
     val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
                                                                 Vectors.sparse(maximo+1, 
                                                                 (features.toList.map(f => f.toInt) zip counts.toList.map(f => f.toDouble)).toSeq.distinct.sortWith((e1,e2) => e1._1 < e2._1).toSeq))
-//                                                                                features.toList.map(f => f.toInt).toArray, 
-//                                                                                counts.toList.map(f => f.toDouble).toArray))
 
-
-//(l1 zip l2).toSeq.sortWith((e1,e2) => e1._1 < e2._1)
 
     val df_final = grouped_data.withColumn("features_sparse", udfFeatures(col("label"), col("features"), col("counts"),lit(maximo)))
     //.withColumn("labeled_points", udfLabeledPoint(col("label"), col("features"), col("counts"),lit(maximo)))
-                                
-                                
     
     df_final.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/labeled_points")
   }
@@ -281,11 +282,49 @@ object Random {
   }
 
 
+def train_model(spark:SparkSession){
+  
+  val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points")
+  
+  //We'll split the set into training and test data
+  val Array(trainingData, testData) = data.randomSplit(Array(0.8, 0.2))
+
+  val labelColumn = "label"
+
+  //We define the assembler to collect the columns into a new column with a single vector - "features"
+  val assembler = new VectorAssembler().setInputCols(Array("features_sparse")).setOutputCol("features_sparse")
+
+  //For the regression we'll use the Gradient-boosted tree estimator
+  val gbt = new GBTRegressor().setLabelCol(labelColumn).setFeaturesCol("features_sparse").setPredictionCol("Predicted " + labelColumn).setMaxIter(50)
+
+  //We define the Array with the stages of the pipeline
+  val stages = Array(gbt)
+
+  //Construct the pipeline
+  val pipeline = new Pipeline().setStages(stages)
+
+  //We fit our DataFrame into the pipeline to generate a model
+  val model = pipeline.fit(trainingData)
+
+  //We'll make predictions using the model and the test data
+  val predictions = model.transform(testData)
+
+  //This will evaluate the error/deviation of the regression using the Root Mean Squared deviation
+  val evaluator = new RegressionEvaluator().setLabelCol(labelColumn).setPredictionCol("Predicted " + labelColumn).setMetricName("rmse")
+
+  //We compute the error using the evaluator
+  val error = evaluator.evaluate(predictions)
+
+
+}
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
     //getTapadOverlap(spark)
-    getTestSet(spark)
-    //generate_data_leo(spark)
+    //getTestSet(spark)
+    train_model(spark)
+    
+
   }
 }
