@@ -157,7 +157,7 @@ object Random {
     val gt = gt_male.unionAll(gt_female)
 
     val joint = gt.join(df, Seq("device_id"))
-    joint.limit(10000).write.save("/datascience/data_demo/test/")
+    joint.write.save("/datascience/data_demo/test/")
   }
 
   def getTestSet(spark: SparkSession) {
@@ -169,22 +169,24 @@ object Random {
     val indexed_data = indexer2.fit(indexed1).transform(indexed1)
 
     val maximo = indexed_data.agg(max("featureIndex")).collect()(0)(0).toString.toDouble.toInt
-
-    val grouped_data = indexed_data.groupBy("device_id","label").agg(collect_list("featureIndex").as("features"),collect_list("count").as("counts"))
+    
+    // Agrupamos y sumamos los counts por cada feature
+    val grouped_indexed_data = indexed_data.groupBy("device_id","label","featureIndex").agg(sum("count").as("counts"))
+    // Agrupamos nuevamente y nos quedamos con la lista de features para cada device_id
+    val grouped_data = grouped_indexed_data.groupBy("device_id","label").agg(collect_list("featureIndex").as("features"),collect_list("count").as("counts"))
 
     //val udfLabeledPoint = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
     //                                            LabeledPoint(label, Vectors.sparse(features.length, 
     //                                                                              features.toList.map(f => f.toInt).toArray, 
     //                                                                             counts.toList.map(f => f.toDouble).toArray)))
 
+    // Esta UDF arma un vector esparso con 
     val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
                                                                 Vectors.sparse(maximo+1, 
                                                                 (features.toList.map(f => f.toInt) zip counts.toList.map(f => f.toDouble)).toSeq.distinct.sortWith((e1,e2) => e1._1 < e2._1).toSeq))
 
 
     val df_final = grouped_data.withColumn("features_sparse", udfFeatures(col("label"), col("features"), col("counts"),lit(maximo)))
-    //.withColumn("labeled_points", udfLabeledPoint(col("label"), col("features"), col("counts"),lit(maximo)))
-    
     df_final.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/labeled_points")
   }
 
@@ -324,8 +326,9 @@ def train_model(spark:SparkSession){
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
     //getTapadOverlap(spark)
-    //getTestSet(spark)
-    train_model(spark)
+    generate_test(spark)
+    getTestSet(spark)
+    //train_model(spark)
     
 
   }
