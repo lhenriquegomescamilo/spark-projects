@@ -289,7 +289,7 @@ def train_model(spark:SparkSession){
   val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points")
   
   //We'll split the set into training and test data
-  val Array(trainingData, testData) = data.randomSplit(Array(0.5, 0.5))
+  val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
 
   val labelColumn = "label"
 
@@ -326,9 +326,9 @@ def train_model(spark:SparkSession){
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
     //getTapadOverlap(spark)
-    generate_test(spark)
-    getTestSet(spark)
-    //train_model(spark)
+    //generate_test(spark)
+    //getTestSet(spark)
+    train_model(spark)
     
 
   }
