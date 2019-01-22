@@ -169,13 +169,13 @@ object Random {
                                                                                   features.toList.map(f => f.toInt).toArray, 
                                                                                  counts.toList.map(f => f.toDouble).toArray)))
 
-    val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
-                                                                Vectors.sparse(features.length, 
-                                                                                features.toList.map(f => f.toInt).toArray, 
-                                                                                counts.toList.map(f => f.toDouble).toArray))
+    //val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
+    //                                                            Vectors.sparse(features.length, 
+    //                                                                            features.toList.map(f => f.toInt).toArray, 
+    //                                                                            counts.toList.map(f => f.toDouble).toArray))
 
-    val df_final = grouped_data.withColumn("features", udfFeatures(col("label"), col("features"), col("counts"),lit(maximo)))
-                                .withColumn("labeled_points", udfLabeledPoint(col("label"), col("features"), col("counts"),lit(maximo)))
+    val df_final = grouped_data.withColumn("labeled_points", udfLabeledPoint(col("label"), col("features"), col("counts"),lit(maximo)))
+                                //.withColumn("features", udfFeatures(col("label"), col("features"), col("counts"),lit(maximo)))
                                 
     
     df_final.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/labeled_points")
