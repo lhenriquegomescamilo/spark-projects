@@ -287,7 +287,7 @@ def train_model(spark:SparkSession){
   val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points")
   
   //We'll split the set into training and test data
-  val Array(trainingData, testData) = data.randomSplit(Array(0.8, 0.2))
+  val Array(trainingData, testData) = data.randomSplit(Array(0.5, 0.5))
 
   val labelColumn = "label"
 
