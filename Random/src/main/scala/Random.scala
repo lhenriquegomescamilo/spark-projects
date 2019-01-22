@@ -281,7 +281,7 @@ object Random {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
     //getTapadOverlap(spark)
-    //getTestSet(spark)
-    generate_data_leo(spark)
+    getTestSet(spark)
+    //generate_data_leo(spark)
   }
 }
