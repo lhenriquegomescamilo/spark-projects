@@ -172,8 +172,12 @@ object Random {
 
     val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
                                                                 Vectors.sparse(features.length, 
-                                                                                features.toList.map(f => f.toInt).toArray, 
-                                                                                counts.toList.map(f => f.toDouble).toArray))
+                                                                (features zip counts).toSeq.sortWith((e1,e2) => e1._1 < e2._1).toSeq))
+//                                                                                features.toList.map(f => f.toInt).toArray, 
+//                                                                                counts.toList.map(f => f.toDouble).toArray))
+
+
+//(l1 zip l2).toSeq.sortWith((e1,e2) => e1._1 < e2._1)
 
     val df_final = grouped_data.withColumn("features_sparse", udfFeatures(col("label"), col("features"), col("counts"),lit(maximo)))
     //.withColumn("labeled_points", udfLabeledPoint(col("label"), col("features"), col("counts"),lit(maximo)))
