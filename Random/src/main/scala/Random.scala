@@ -171,7 +171,7 @@ object Random {
     val maximo = indexed_data.agg(max("featureIndex")).collect()(0)(0).toString.toDouble.toInt
     
     // Agrupamos y sumamos los counts por cada feature
-    val grouped_indexed_data = indexed_data.groupBy("device_id","label","featureIndex").agg(sum("count").as("counts"))
+    val grouped_indexed_data = indexed_data.groupBy("device_id","label","featureIndex").agg(sum("count").as("count"))
     // Agrupamos nuevamente y nos quedamos con la lista de features para cada device_id
     val grouped_data = grouped_indexed_data.groupBy("device_id","label").agg(collect_list("featureIndex").as("features"),collect_list("count").as("counts"))
 
@@ -180,7 +180,7 @@ object Random {
     //                                                                              features.toList.map(f => f.toInt).toArray, 
     //                                                                             counts.toList.map(f => f.toDouble).toArray)))
 
-    // Esta UDF arma un vector esparso con 
+    // Esta UDF arma un vector esparso con los features y sus valores de count.
     val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
                                                                 Vectors.sparse(maximo+1, 
                                                                 (features.toList.map(f => f.toInt) zip counts.toList.map(f => f.toDouble)).toSeq.distinct.sortWith((e1,e2) => e1._1 < e2._1).toSeq))
