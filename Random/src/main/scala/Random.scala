@@ -308,13 +308,15 @@ def train_model(spark:SparkSession){
 
   //We'll make predictions using the model and the test data
   val predictions = model.transform(testData)
+  predictions.show()
+  //println(predictions.select("Predicted").collect())
 
   //This will evaluate the error/deviation of the regression using the Root Mean Squared deviation
   val evaluator = new RegressionEvaluator().setLabelCol(labelColumn).setPredictionCol("Predicted " + labelColumn).setMetricName("rmse")
 
   //We compute the error using the evaluator
   val error = evaluator.evaluate(predictions)
-
+  println(error)
 
 }
 
