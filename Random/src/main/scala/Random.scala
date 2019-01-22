@@ -310,6 +310,7 @@ def train_model(spark:SparkSession){
 
   //We'll make predictions using the model and the test data
   val predictions = model.transform(testData)
+  predictions.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/predictions")
   predictions.show()
   //println(predictions.select("Predicted").collect())
 
