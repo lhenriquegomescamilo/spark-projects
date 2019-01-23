@@ -157,7 +157,7 @@ object Random {
     val gt = gt_male.unionAll(gt_female)
 
     /// Hacemos el join y sacamos los segmentos 2 y 3 del dataframe.
-    val joint = gt.join(df, Seq("device_id")).filter("features <> '2' and features <> '3'")
+    val joint = gt.join(df, Seq("device_id")).filter("feature <> '2' and feature <> '3'")
 
     joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test/")
   }
