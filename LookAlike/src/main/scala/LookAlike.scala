@@ -1,6 +1,6 @@
 package main.scala
 
-import org.apache.spark.mllib.recommendation.{ ALS, Rating }
+import org.apache.spark.mllib.recommendation.{ ALS }//, Rating }
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.sql.functions.{ sum, col }
@@ -14,6 +14,8 @@ object LookAlike {
     data
   }
 
+  case class Rating(userId: Int, movieId: Int, rating: Double)
+  
   def getRatings(triplets: DataFrame): DataFrame = {
     val indexer_devices = new StringIndexer().setInputCol("device_id").setOutputCol("device_id_index")
     val indexer_segments = new StringIndexer().setInputCol("feature").setOutputCol("feature_index")
@@ -29,11 +31,10 @@ object LookAlike {
 
     ratings.toDF()
   }
-
-
+  
   def train(training: DataFrame, test: DataFrame, numIter: Int, lambda: Double) {
     // Build the recommendation model using ALS on the training data
-    val model = new ALS()
+    val als = new ALS()
       .setMaxIter(numIter)
       .setRegParam(lambda)
       .setUserCol("userId")
