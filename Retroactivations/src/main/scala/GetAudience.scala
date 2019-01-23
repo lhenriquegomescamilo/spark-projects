@@ -185,7 +185,7 @@ object GetAudience {
                                                 .save("/datascience/devicer/processed/"+fileName))
     if (results.length > 1) {
       val done = spark.read.format("csv")
-                           .option("sep", " ")
+                           .option("sep", "\t")
                            .load("/datascience/devicer/processed/"+fileName)
                            .distinct()
       done.groupBy("_c0", "_c1")

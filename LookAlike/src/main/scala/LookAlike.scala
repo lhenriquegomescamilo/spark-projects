@@ -1,6 +1,6 @@
 package main.scala
 
-import org.apache.spark.mllib.recommendation.{ ALS }//, Rating }
+import org.apache.spark.mllib.recommendation.{ ALS , Rating }
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.sql.functions.{ sum, col }
@@ -8,16 +8,13 @@ import org.apache.spark.sql.{ SaveMode, DataFrame, Row, SparkSession }
 import org.apache.spark.rdd.RDD
 
 
-case class Rating(userId: Int, movieId: Int, rating: Double)
-
 object LookAlike {
   def getData(spark: SparkSession): DataFrame = {
     val data: DataFrame = spark.read.parquet("/datascience/data_demo/triplets_segments/")
     data
   }
-
   
-  def getRatings(triplets: DataFrame): DataFrame = {
+  def getRatings(triplets: DataFrame): RDD[Rating] = {
     val indexer_devices = new StringIndexer().setInputCol("device_id").setOutputCol("device_id_index")
     val indexer_segments = new StringIndexer().setInputCol("feature").setOutputCol("feature_index")
 
@@ -30,28 +27,28 @@ object LookAlike {
       Rating(user.asInstanceOf[Double].toInt, item.asInstanceOf[Double].toInt, rate.asInstanceOf[Integer].toDouble)
     })
 
-    ratings.toDF()
+    ratings
   }
   
-  def train(training: DataFrame, test: DataFrame, numIter: Int, lambda: Double) {
+  def train(training: DataFrame, test: DataFrame, rank: Int, numIter: Int, lambda: Double) {
     // Build the recommendation model using ALS on the training data
     val als = new ALS()
+      .setRank(rank)
       .setMaxIter(numIter)
-      .setRegParam(lambda)
-      .setUserCol("userId")
-      .setItemCol("feature")
-      .setRatingCol("value")
-    val model = als.fit(training)
+      .setLambda(lambda)
+    val model = als.run(training)
 
     val evaluator = new RegressionEvaluator()
       .setMetricName("rmse")
       .setLabelCol("value")
       .setPredictionCol("prediction")
-    val predictions = model.transform(test)
+    //val predictions = model.transform(test)
+    val predictions = model.predict(test)
 
-    predictions.show()
-    val rmse = evaluator.evaluate(predictions)
-    println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
+    println(predictions)
+    predictions.take(20)
+    //val rmse = evaluator.evaluate(predictions)
+    //println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
 
   def main(args: Array[String]) {
