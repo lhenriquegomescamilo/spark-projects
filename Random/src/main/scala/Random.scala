@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions.{explode, desc, lit, size, concat, col, concat_ws, collect_list, udf, broadcast, upper, sha2, count, max, avg, min, split}
+import org.apache.spark.sql.functions.{explode, desc, lit, size, concat, col, concat_ws, collect_list, udf, broadcast, upper, sha2, count, max, avg, min, split,sum}
 import org.joda.time.{Days,DateTime}
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.spark.sql.{ SaveMode, DataFrame }
@@ -9,6 +9,13 @@ import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
 //import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.evaluation.RegressionEvaluator
+import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
+import org.apache.spark.ml.regression.GBTRegressor
+import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
+import org.apache.spark.sql.{Encoders, SparkSession}
+
 
 
 /**
@@ -128,7 +135,8 @@ object Random {
                   .drop("device_type")
 
     val joint = xd.join(broadcast(xd_users),Seq("index")) 
-    joint.select("segments_xd","device","index").write.format("csv")
+    joint.select("segments_xd","device","index").limit(200000)
+                                          .write.format("csv")
                                           .option("sep","\t")
                                           .mode(SaveMode.Overwrite)
                                           .save("/datascience/data_leo")
@@ -148,8 +156,10 @@ object Random {
                                           .select("device_id","label")
     val gt = gt_male.unionAll(gt_female)
 
-    val joint = gt.join(df, Seq("device_id"))
-    joint.limit(10000).write.save("/datascience/data_demo/test/")
+    /// Hacemos el join y sacamos los segmentos 2 y 3 del dataframe.
+    val joint = gt.join(df, Seq("device_id")).filter("features <> '2' and features <> '3'")
+
+    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test/")
   }
 
   def getTestSet(spark: SparkSession) {
@@ -161,23 +171,19 @@ object Random {
     val indexed_data = indexer2.fit(indexed1).transform(indexed1)
 
     val maximo = indexed_data.agg(max("featureIndex")).collect()(0)(0).toString.toDouble.toInt
-
-    val grouped_data = indexed_data.groupBy("device_id","label").agg(collect_list("featureIndex").as("features"),collect_list("count").as("counts"))
-
-//    val udfLabeledPoint = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
-//                                                LabeledPoint(label, Vectors.sparse(features.length, 
- //                                                                                  features.toList.map(f => f.toInt).toArray, 
-  //                                                                                 counts.toList.map(f => f.toDouble).toArray)))
-
-    val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
-                                            Vectors.sparse(features.length, 
-                                                            features.toList.map(f => f.toInt).toArray, 
-                                                            counts.toList.map(f => f.toDouble).toArray))
-
-    val df_final = grouped_data.withColumn("features", udfFeatures(col("label"), col("features"), col("counts"),lit(maximo)))
-    //withColumn("points", udfLabeledPoint(col("label"), col("features"), col("counts"),lit(maximo)))
-                                
     
+    // Agrupamos y sumamos los counts por cada feature
+    val grouped_indexed_data = indexed_data.groupBy("device_id","label","featureIndex").agg(sum("count").cast("int").as("count"))
+    // Agrupamos nuevamente y nos quedamos con la lista de features para cada device_id
+    val grouped_data = grouped_indexed_data.groupBy("device_id","label").agg(collect_list("featureIndex").as("features"),collect_list("count").as("counts"))
+
+    // Esta UDF arma un vector esparso con los features y sus valores de count.
+    val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
+                                                                Vectors.sparse(maximo+1, 
+                                                                (features.toList.map(f => f.toInt) zip counts.toList.map(f => f.toDouble)).toSeq.distinct.sortWith((e1,e2) => e1._1 < e2._1).toSeq))
+
+
+    val df_final = grouped_data.withColumn("features_sparse", udfFeatures(col("label"), col("features"), col("counts"),lit(maximo)))
     df_final.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/labeled_points")
   }
 
@@ -275,10 +281,53 @@ object Random {
   }
 
 
+def train_model(spark:SparkSession){
+  
+  val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points")
+  
+  //We'll split the set into training and test data
+  val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
+
+  val labelColumn = "label"
+
+  //We define the assembler to collect the columns into a new column with a single vector - "features"
+  val assembler = new VectorAssembler().setInputCols(Array("features_sparse")).setOutputCol("features_sparse")
+
+  //For the regression we'll use the Gradient-boosted tree estimator
+  val gbt = new GBTRegressor().setLabelCol(labelColumn).setFeaturesCol("features_sparse").setPredictionCol("predicted_" + labelColumn).setMaxIter(50)
+
+  //We define the Array with the stages of the pipeline
+  val stages = Array(gbt)
+
+  //Construct the pipeline
+  val pipeline = new Pipeline().setStages(stages)
+
+  //We fit our DataFrame into the pipeline to generate a model
+  val model = pipeline.fit(trainingData)
+
+  //We'll make predictions using the model and the test data
+  val predictions = model.transform(testData)
+  //predictions.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/predictions")
+  predictions.show()
+  //println(predictions.select("Predicted").collect())
+
+  //This will evaluate the error/deviation of the regression using the Root Mean Squared deviation
+  val evaluator = new RegressionEvaluator().setLabelCol(labelColumn).setPredictionCol("predicted_" + labelColumn).setMetricName("rmse")
+
+  //We compute the error using the evaluator
+  val error = evaluator.evaluate(predictions)
+  println(error)
+
+}
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
-    getTapadOverlap(spark)
-    //getTestSet(spark)
+    //getTapadOverlap(spark)
+    generate_test(spark)
+    getTestSet(spark)
+    //train_model(spark)
+    
+
   }
 }
