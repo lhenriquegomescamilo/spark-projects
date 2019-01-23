@@ -56,6 +56,8 @@ object LookAlike {
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("LookAlike modeling").getOrCreate()
+    val sqlContext= new org.apache.spark.sql.SQLContext(spark.sparkContext)
+    import sqlContext.implicits._
 
     val triplets = getData(spark)
     val ratings = getRatings(triplets)
