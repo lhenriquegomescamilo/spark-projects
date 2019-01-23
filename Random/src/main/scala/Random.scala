@@ -320,30 +320,34 @@ def train_model(spark:SparkSession){
 
 }
 def get_data_leo_third_party(spark:SparkSession){
-val join_leo = spark.read.format("csv").option("sep","\t").option("header","true")
-                    .load("/datascience/join_leo.tsv")
-                    .withColumn("device_id",split(col("device_id"),","))
-                    .withColumn("device_id",explode(col("device_id")))
+  val join_leo = spark.read.format("csv").option("sep","\t").option("header","true")
+                      .load("/datascience/join_leo.tsv")
+                      .withColumn("device_id",split(col("device_id"),","))
+                      .withColumn("device_id",explode(col("device_id")))
 
-val format = "yyyyMMdd"
-val start = DateTime.now.minusDays(60)
-val end   = DateTime.now.minusDays(0)
+  val conf = spark.sparkContext.hadoopConfiguration
+  val fs = FileSystem.get(conf)
 
-val daysCount = Days.daysBetween(start, end).getDays()
-val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+  val format = "yyyyMMdd"
+  val start = DateTime.now.minusDays(86)
+  val end   = DateTime.now.minusDays(26)
 
-val dfs = days.map(x => spark.read.parquet("/datascience/data_audiences_p/day=%s".format(x)))
-val df = dfs.reduce((df1,df2) => df1.union(df2))
+  val daysCount = Days.daysBetween(start, end).getDays()
+  val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-val joint = join_leo.join(df,Seq("device_id"))
+  val dfs = days.filter(path => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_audiences_p/day=%s".format(x))))
+                .map(x => spark.read.parquet("/datascience/data_audiences_p/day=%s".format(x)))
+  val df = dfs.reduce((df1,df2) => df1.union(df2))
 
-val udfJoin = udf((lista: Seq[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2) else "")
-val to_csv = joint.select("device_id","third_party","xd_drawbridge","user")
-                  .withColumn("third_party",udfJoin(col("third_party")))
-                  .write.format("csv")
-                  .option("sep","\t")
-                  .option("header","true")
-                  .save("/datascience/data_leo_third_party.tsv")
+  val joint = join_leo.join(df,Seq("device_id"))
+
+  val udfJoin = udf((lista: Seq[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2) else "")
+  val to_csv = joint.select("device_id","third_party","xd_drawbridge","user")
+                    .withColumn("third_party",udfJoin(col("third_party")))
+                    .write.format("csv")
+                    .option("sep","\t")
+                    .option("header","true")
+                    .save("/datascience/data_leo_third_party.tsv")
 }
 
   def main(args: Array[String]) {
