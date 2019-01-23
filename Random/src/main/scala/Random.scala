@@ -307,7 +307,7 @@ def train_model(spark:SparkSession){
 
   //We'll make predictions using the model and the test data
   val predictions = model.transform(testData)
-  //predictions.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/predictions")
+  predictions.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/predictions")
   predictions.show()
   //println(predictions.select("Predicted").collect())
 
@@ -356,8 +356,8 @@ def get_data_leo_third_party(spark:SparkSession){
     //getTapadOverlap(spark)
     //generate_test(spark)
     //getTestSet(spark)
-    //train_model(spark)
-    get_data_leo_third_party(spark)
+    train_model(spark)
+    //get_data_leo_third_party(spark)
     
 
   }
