@@ -335,7 +335,7 @@ def get_data_leo_third_party(spark:SparkSession){
   val daysCount = Days.daysBetween(start, end).getDays()
   val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-  val dfs = days.filter(path => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_audiences_p/day=%s".format(x))))
+  val dfs = days.filter(x => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_audiences_p/day=%s".format(x))))
                 .map(x => spark.read.parquet("/datascience/data_audiences_p/day=%s".format(x)))
   val df = dfs.reduce((df1,df2) => df1.union(df2))
 
