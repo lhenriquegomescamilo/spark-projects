@@ -378,8 +378,8 @@ def get_data_leo_third_party(spark:SparkSession){
     //generate_test(spark)
     //getTestSet(spark)
     //train_model(spark)
-    get_data_leo_third_party(spark)
-    
+    //get_data_leo_third_party(spark)
+    getNetquest(spark)
 
   }
 }
