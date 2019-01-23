@@ -8,13 +8,14 @@ import org.apache.spark.sql.{ SaveMode, DataFrame, Row, SparkSession }
 import org.apache.spark.rdd.RDD
 
 
+case class Rating(userId: Int, movieId: Int, rating: Double)
+
 object LookAlike {
   def getData(spark: SparkSession): DataFrame = {
     val data: DataFrame = spark.read.parquet("/datascience/data_demo/triplets_segments/")
     data
   }
 
-  case class Rating(userId: Int, movieId: Int, rating: Double)
   
   def getRatings(triplets: DataFrame): DataFrame = {
     val indexer_devices = new StringIndexer().setInputCol("device_id").setOutputCol("device_id_index")
