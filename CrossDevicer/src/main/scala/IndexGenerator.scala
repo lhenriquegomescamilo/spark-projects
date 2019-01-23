@@ -69,7 +69,7 @@ object IndexGenerator {
                                                              (devices zip types).filter(tuple => tuple._2.substring(0, 3)=="con").map(tuple => tuple._1)))
 
         // Here we obtain the three lists and leave them as separate columns. Then we rename the index column as 'device_id'.
-        val index_xd = df.withColumn("devices", udfDevice(col("devices"), col("types")).cache
+        val index_xd = df.withColumn("devices", udfDevice(col("devices"), col("types"))).cache
                          .withColumn("android", col("devices._2"))
                          .withColumn("ios",     col("devices._3"))
                          .withColumn("cookies", col("devices._1"))
