@@ -10,7 +10,8 @@ import org.apache.spark.rdd.RDD
 
 object LookAlike {
   def getData(spark: SparkSession): DataFrame = {
-    val data: DataFrame = spark.read.parquet("/datascience/data_demo/triplets_segments/")
+    val data: DataFrame = spark.read.parquet("/datascience/data_demo/triplets_segments/part-05744-36693c74-c327-43a6-9482-2e83c0ead518-c000.snappy.parquet")
+                               .groupBy("device_id", "feature").agg(sum(col("count")).as("count"))
     data
   }
   
@@ -19,13 +20,12 @@ object LookAlike {
     val indexer_segments = new StringIndexer().setInputCol("feature").setOutputCol("feature_index")
 
     val data_dev_indexed = indexer_devices.fit(triplets).transform(triplets)
-    val data_indexed = indexer_segments.fit(data_dev_indexed).transform(data_dev_indexed)
+    val data_indexed = indexer_segments.fit(triplets).transform(data_dev_indexed)
 
     val ratings: RDD[Rating] = data_indexed.select("device_id_index", "feature_index", "count")
-                              .groupBy("device_id_index", "feature_index").agg(sum(col("count")).as("count"))
-                              .rdd.map(_ match { case Row(user, item, rate) =>
-      Rating(user.asInstanceOf[Double].toInt, item.asInstanceOf[Double].toInt, rate.asInstanceOf[Integer].toDouble)
-    })
+                                           .rdd.map(_ match { case Row(user, item, rate) =>
+                                              Rating(user.asInstanceOf[Double].toInt, item.asInstanceOf[Double].toInt, rate.asInstanceOf[Integer].toDouble)
+                                            })
 
     ratings
   }
