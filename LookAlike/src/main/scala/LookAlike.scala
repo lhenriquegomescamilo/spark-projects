@@ -60,7 +60,7 @@ object LookAlike {
     val ratings = getRatings(triplets)
 
     val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
-    training.show()
+    training.take(20)
     train(training, test.map(rating => (rating(0), rating(1))), 5, 0.01)
   }
 }
