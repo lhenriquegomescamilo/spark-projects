@@ -5,6 +5,7 @@ import org.apache.spark.{ SparkConf, SparkContext }
 import org.apache.spark.sql.{ DataFrame, SparkSession, SQLContext, SaveMode }
 import org.apache.spark.sql.functions.{ udf, col, lit, size, collect_list, concat_ws }
 import org.apache.spark.sql.Column
+import org.apache.hadoop.fs.{ FileSystem, Path }
 
 object CrossDevicer {
 
@@ -35,13 +36,17 @@ object CrossDevicer {
     val start = DateTime.now.minusDays(from)
     val days = (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
 
+    // Second we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
     // Now we obtain the list of files to be loaded
     val paths = days.map(day => "/datascience/data_audiences_p/day=%s".format(day.replace("-", "")))
+                    .filter(path => fs.exists(new Path(path)))
 
     // Finally, we load all the data
     val events_data = spark.read.option("basePath", "/datascience/data_audiences_p/").parquet(paths: _*)
       .select("device_id", "country", "third_party")
-      .dropDuplicates("device_id")
 
     events_data
   }
@@ -110,8 +115,7 @@ object CrossDevicer {
     val mapping_segments = mapping.keys.toArray
 
     // Some useful functions
-    val getItems = udf((segments: Seq[String]) => segments.filter(mapping_segments.contains(_))
-      .map(mapping(_)))
+    val getItems = udf((segments: Seq[String]) => segments.filter(mapping_segments.contains(_)).map(mapping(_)))
     val getItem = udf((segment: String) => mapping(segment))
     val flatten = udf((xs: Seq[Seq[String]]) => xs.flatten.distinct)
 

@@ -46,7 +46,7 @@ object LookAlike {
     val predictions = model.predict(test)
 
     println(predictions)
-    predictions.take(20)
+    predictions.take(20).foreach(println)
     //val rmse = evaluator.evaluate(predictions)
     //println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
@@ -60,7 +60,7 @@ object LookAlike {
     val ratings = getRatings(triplets)
 
     val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
-    training.take(20)
+    //training.take(20)
     train(training, test.map(rating => (rating.user, rating.product)), 8, 5, 0.01)
   }
 }
