@@ -319,14 +319,41 @@ def train_model(spark:SparkSession){
   println(error)
 
 }
+def get_data_leo_third_party(spark:SparkSession){
+val join_leo = spark.read.format("csv").option("sep","\t").option("header","true")
+                    .load("/datascience/join_leo.tsv")
+                    .withColumn("device_id",split(col("device_id"),","))
+                    .withColumn("device_id",explode(col("device_id")))
+
+val format = "yyyyMMdd"
+val start = DateTime.now.minusDays(60)
+val end   = DateTime.now.minusDays(0)
+
+val daysCount = Days.daysBetween(start, end).getDays()
+val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+val dfs = days.map(x => spark.read.parquet("/datascience/data_audiences_p/day=%s".format(x)))
+val df = dfs.reduce((df1,df2) => df1.union(df2))
+
+val joint = join_leo.join(df,Seq("device_id"))
+
+val udfJoin = udf((lista: Seq[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2) else "")
+val to_csv = joint.select("device_id","third_party","xd_drawbridge","user")
+                  .withColumn("third_party",udfJoin(col("third_party")))
+                  .write.format("csv")
+                  .option("sep","\t")
+                  .option("header","true")
+                  .save("/datascience/data_leo_third_party.tsv")
+}
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
     //getTapadOverlap(spark)
-    generate_test(spark)
-    getTestSet(spark)
+    //generate_test(spark)
+    //getTestSet(spark)
     //train_model(spark)
+    get_data_leo_third_party(spark)
     
 
   }
