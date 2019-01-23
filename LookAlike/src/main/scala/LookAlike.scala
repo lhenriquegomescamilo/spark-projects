@@ -9,7 +9,7 @@ import org.apache.spark.rdd.RDD
 
 
 object LookAlike {
-  def getData(spark: SparkSession): DataFrame = {
+  def getData(spark: SparkSession): RDD[Rating] = {
     val data: DataFrame = spark.read.parquet("/datascience/data_demo/triplets_segments/")
     data
   }
@@ -21,25 +21,27 @@ object LookAlike {
     val data_dev_indexed = indexer_devices.fit(triplets).transform(triplets)
     val data_indexed = indexer_segments.fit(data_dev_indexed).transform(data_dev_indexed)
 
-    val ratings = data_indexed.select("device_id_index", "feature_index", "count")
+    val ratings: RDD[Rating] = data_indexed.select("device_id_index", "feature_index", "count")
                               .groupBy("device_id_index", "feature_index").agg(sum(col("count")).as("count"))
                               .rdd.map(_ match { case Row(user, item, rate) =>
       Rating(user.asInstanceOf[Double].toInt, item.asInstanceOf[Double].toInt, rate.asInstanceOf[Integer].toDouble)
     })
 
-    ratings.toDF("userId", "feature", "value")
+    ratings
   }
 
 
   def train(training: DataFrame, test: DataFrame, numIter: Int, lambda: Double) {
     // Build the recommendation model using ALS on the training data
-    val als = new ALS()
+    val model = new ALS.train(training, 8, numIter, lambda)
+    /**
       .setMaxIter(numIter)
       .setRegParam(lambda)
       .setUserCol("userId")
       .setItemCol("feature")
       .setRatingCol("value")
     val model = als.fit(training)
+    */
 
     val evaluator = new RegressionEvaluator()
       .setMetricName("rmse")
