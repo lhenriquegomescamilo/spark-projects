@@ -319,6 +319,27 @@ def train_model(spark:SparkSession){
   println(error)
 
 }
+
+
+  def getNetquest(spark: SparkSession) {
+    val nDays = 7
+    val from = 1
+    // Now we get the list of days to be downloaded
+    val format = "yyyy/MM/dd"
+    val end   = DateTime.now.minusDays(from)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val files = days.map(day => "/data/eventqueue/%s/*.tsv.gz".format(day))
+
+    val data = spark.read.format("csv").option("sep", "\t").option("header", "true")
+                        .load(files:_*)
+                        .select("device_id", "device_type", "d31", "id_partner", "event_type")
+                        .filter("event_type = 'sync' AND id_partner = 31")
+                        .groupBy("device_id", "device_type", "d31").count()
+                        .write.format("csv").save("/datascience/custom/netquest_match")
+  }
+
+
+
 def get_data_leo_third_party(spark:SparkSession){
   val join_leo = spark.read.format("csv").option("sep","\t").option("header","true")
                       .load("/datascience/join_leo.tsv")
@@ -356,9 +377,9 @@ def get_data_leo_third_party(spark:SparkSession){
     //getTapadOverlap(spark)
     //generate_test(spark)
     //getTestSet(spark)
-    train_model(spark)
+    //train_model(spark)
     //get_data_leo_third_party(spark)
-    
+    getNetquest(spark)
 
   }
 }
