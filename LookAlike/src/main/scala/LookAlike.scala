@@ -14,7 +14,7 @@ object LookAlike {
     data
   }
 
-  def getRatings(triplets: DataFrame): RDD[Rating] = {
+  def getRatings(triplets: DataFrame): DataFrame = {
     val indexer_devices = new StringIndexer().setInputCol("device_id").setOutputCol("device_id_index")
     val indexer_segments = new StringIndexer().setInputCol("feature").setOutputCol("feature_index")
 
@@ -27,21 +27,19 @@ object LookAlike {
       Rating(user.asInstanceOf[Double].toInt, item.asInstanceOf[Double].toInt, rate.asInstanceOf[Integer].toDouble)
     })
 
-    ratings
+    ratings.toDF()
   }
 
 
-  def train(training: RDD[Rating], test: RDD[Rating], numIter: Int, lambda: Double) {
+  def train(training: DataFrame, test: DataFrame, numIter: Int, lambda: Double) {
     // Build the recommendation model using ALS on the training data
-    val model = new ALS.train(training, 8, numIter, lambda)
-    /**
+    val model = new ALS()
       .setMaxIter(numIter)
       .setRegParam(lambda)
       .setUserCol("userId")
       .setItemCol("feature")
       .setRatingCol("value")
     val model = als.fit(training)
-    */
 
     val evaluator = new RegressionEvaluator()
       .setMetricName("rmse")
@@ -61,6 +59,7 @@ object LookAlike {
     val ratings = getRatings(triplets)
 
     val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
+    training.show()
     train(training, test, 5, 0.01)
   }
 }
