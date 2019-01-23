@@ -377,9 +377,9 @@ def get_data_leo_third_party(spark:SparkSession){
     //getTapadOverlap(spark)
     //generate_test(spark)
     //getTestSet(spark)
-    //train_model(spark)
+    train_model(spark)
     //get_data_leo_third_party(spark)
-    getNetquest(spark)
+    //getNetquest(spark)
 
   }
 }
