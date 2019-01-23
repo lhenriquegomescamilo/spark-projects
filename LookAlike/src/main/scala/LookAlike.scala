@@ -9,12 +9,12 @@ import org.apache.spark.rdd.RDD
 
 
 object LookAlike {
-  def getData(spark: SparkSession): RDD[Rating] = {
+  def getData(spark: SparkSession): DataFrame = {
     val data: DataFrame = spark.read.parquet("/datascience/data_demo/triplets_segments/")
     data
   }
 
-  def getRatings(triplets: DataFrame): DataFrame = {
+  def getRatings(triplets: DataFrame): RDD[Rating] = {
     val indexer_devices = new StringIndexer().setInputCol("device_id").setOutputCol("device_id_index")
     val indexer_segments = new StringIndexer().setInputCol("feature").setOutputCol("feature_index")
 
@@ -31,7 +31,7 @@ object LookAlike {
   }
 
 
-  def train(training: DataFrame, test: DataFrame, numIter: Int, lambda: Double) {
+  def train(training: RDD[Rating], test: RDD[Rating], numIter: Int, lambda: Double) {
     // Build the recommendation model using ALS on the training data
     val model = new ALS.train(training, 8, numIter, lambda)
     /**
