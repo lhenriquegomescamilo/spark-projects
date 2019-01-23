@@ -70,7 +70,7 @@ object AudienceCrossDevicer {
   def main(args: Array[String]) {
     // First of all, we parse the parameters
     val audience_name = args.last
-    val options = nextOption(Map(), args.toList.slice(0, args.toList.length-1)
+    val options = nextOption(Map(), args.toList.slice(0, args.toList.length-1))
     val index_filter = if (options.contains('filter)) options('filter) else ""
     val sep = if (options.contains('sep)) options('sep) else " "
     val column = if (options.contains('column)) options('column) else "_c0"
