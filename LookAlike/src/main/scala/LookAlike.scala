@@ -46,6 +46,9 @@ object LookAlike {
       .setMetricName("rmse")
       .setLabelCol("value")
       .setPredictionCol("prediction")
+    val predictions = model.transform(test)
+
+    predictions.show()
     val rmse = evaluator.evaluate(predictions)
     println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
