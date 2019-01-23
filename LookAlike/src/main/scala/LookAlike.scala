@@ -1,7 +1,6 @@
 package main.scala
 
-import org.apache.spark.mllib.recommendation.ALS
-import org.apache.spark.mllib.Rating
+import org.apache.spark.mllib.recommendation.{ ALS, Rating }
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.sql.functions.{ sum, col }
