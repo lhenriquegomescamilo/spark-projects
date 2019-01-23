@@ -30,11 +30,11 @@ object LookAlike {
     ratings
   }
   
-  def train(training: DataFrame, test: DataFrame, rank: Int, numIter: Int, lambda: Double) {
+  def train(training: RDD[Rating], test: RDD[Rating], rank: Int, numIter: Int, lambda: Double) {
     // Build the recommendation model using ALS on the training data
     val als = new ALS()
       .setRank(rank)
-      .setMaxIter(numIter)
+      .setIterations(numIter)
       .setLambda(lambda)
     val model = als.run(training)
 
