@@ -334,7 +334,7 @@ def train_model(spark:SparkSession){
                         .load(files:_*)
                         .select("device_id", "device_type", "d31", "id_partner", "event_type")
                         .filter("event_type = 'sync' AND id_partner = 31")
-                        .groupby("device_id", "device_type", "d31").count()
+                        .groupBy("device_id", "device_type", "d31").count()
                         .write.format("csv").save("/datascience/custom/netquest_match")
   }
 
