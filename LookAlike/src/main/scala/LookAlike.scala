@@ -61,6 +61,6 @@ object LookAlike {
 
     val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
     training.take(20)
-    train(training, test.map(rating => (rating.user(), rating.product())), 8, 5, 0.01)
+    train(training, test.map(rating => (rating.user, rating.product)), 8, 5, 0.01)
   }
 }
