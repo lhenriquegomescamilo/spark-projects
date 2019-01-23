@@ -30,7 +30,7 @@ object LookAlike {
     ratings
   }
   
-  def train(training: RDD[Rating], test: RDD[Rating], rank: Int, numIter: Int, lambda: Double) {
+  def train(training: RDD[Rating], test: RDD[(Int, Int)], rank: Int, numIter: Int, lambda: Double) {
     // Build the recommendation model using ALS on the training data
     val als = new ALS()
       .setRank(rank)
@@ -61,6 +61,6 @@ object LookAlike {
 
     val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
     training.show()
-    train(training, test, 5, 0.01)
+    train(training, test.map(rating => (rating(0), rating(1))), 5, 0.01)
   }
 }
