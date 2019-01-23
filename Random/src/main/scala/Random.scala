@@ -332,9 +332,9 @@ def train_model(spark:SparkSession){
 
     val data = spark.read.format("csv").option("sep", "\t").option("header", "true")
                         .load(files:_*)
-                        .select("device_id", "device_type", "d31", "id_partner", "event_type")
+                        .select("device_id", "device_type", "id_partner_user", "id_partner", "event_type")
                         .filter("event_type = 'sync' AND id_partner = 31")
-                        .groupBy("device_id", "device_type", "d31").count()
+                        .groupBy("device_id", "device_type", "id_partner_user").count()
                         .write.format("csv").save("/datascience/custom/netquest_match")
   }
 
@@ -377,9 +377,9 @@ def get_data_leo_third_party(spark:SparkSession){
     //getTapadOverlap(spark)
     //generate_test(spark)
     //getTestSet(spark)
-    train_model(spark)
+    //train_model(spark)
     //get_data_leo_third_party(spark)
-    //getNetquest(spark)
+    getNetquest(spark)
 
   }
 }
