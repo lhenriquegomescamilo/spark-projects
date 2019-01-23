@@ -156,7 +156,9 @@ object Random {
                                           .select("device_id","label")
     val gt = gt_male.unionAll(gt_female)
 
-    val joint = gt.join(df, Seq("device_id"))
+    /// Hacemos el join y sacamos los segmentos 2 y 3 del dataframe.
+    val joint = gt.join(df, Seq("device_id")).filter("features <> '2' and features <> '3'")
+
     joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test/")
   }
 
@@ -174,11 +176,6 @@ object Random {
     val grouped_indexed_data = indexed_data.groupBy("device_id","label","featureIndex").agg(sum("count").cast("int").as("count"))
     // Agrupamos nuevamente y nos quedamos con la lista de features para cada device_id
     val grouped_data = grouped_indexed_data.groupBy("device_id","label").agg(collect_list("featureIndex").as("features"),collect_list("count").as("counts"))
-
-    //val udfLabeledPoint = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
-    //                                            LabeledPoint(label, Vectors.sparse(features.length, 
-    //                                                                              features.toList.map(f => f.toInt).toArray, 
-    //                                                                             counts.toList.map(f => f.toDouble).toArray)))
 
     // Esta UDF arma un vector esparso con los features y sus valores de count.
     val udfFeatures = udf((label: Int, features: Seq[Double], counts:Seq[Int], maximo:Int) => 
@@ -327,9 +324,9 @@ def train_model(spark:SparkSession){
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
     //getTapadOverlap(spark)
-    //generate_test(spark)
-    //getTestSet(spark)
-    train_model(spark)
+    generate_test(spark)
+    getTestSet(spark)
+    //train_model(spark)
     
 
   }
