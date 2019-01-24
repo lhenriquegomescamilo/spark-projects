@@ -322,7 +322,7 @@ def train_model(spark:SparkSession){
 
 
   def getNetquest(spark: SparkSession) {
-    val nDays = 7
+    val nDays = 10
     val from = 1
     // Now we get the list of days to be downloaded
     val format = "yyyy/MM/dd"
@@ -333,8 +333,8 @@ def train_model(spark:SparkSession){
     val data = spark.read.format("csv").option("sep", "\t").option("header", "true")
                         .load(files:_*)
                         .select("device_id", "device_type", "id_partner_user", "id_partner", "event_type")
-                        .filter("event_type = 'sync' AND id_partner = 31")
-                        .groupBy("device_id", "device_type", "id_partner_user").count()
+                        .filter("country in ('AR', 'MX') AND event_type = 'sync' AND id_partner = 31")
+                        .groupBy("device_id", "device_type", "id_partner_user", "country").count()
                         .write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/netquest_match")
   }
 
