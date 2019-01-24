@@ -4,7 +4,9 @@ import org.apache.spark.sql.functions.{lit, length, split, col, concat_ws, colle
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.spark.sql.{ SaveMode, DataFrame }
+import org.apache.spark.sql.DataFrame
 import org.apache.hadoop.conf.Configuration
+
 
 
 
@@ -284,15 +286,15 @@ object GetAudience {
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
       // Now we finally get the data that will be used
-      val ids = partner_ids.split(",", -1).toList
+      val ids = partner_ids.toString.split(",", -1).toList
       
       // Here we select the pipeline where we will gather the data
       val pipeline = queries(0)("pipeline")
       val data: Dataframe = pipeline match {
-                case 0 => if (partner_ids.length>0) getDataIdPartners(spark, ids, nDays, since) else getDataAudiences(spark, nDays, since)
-                case 1 => getDataIdPartners(spark, ids, nDays, since)
-                case 2 => getDataAudiences(spark, nDays, since)
-                case 3 => getDataKeywords(spark, nDays, since)
+                case 0 => if (partner_ids.toString.length>0) getDataIdPartners(spark, ids, nDays.toInt, since) else getDataAudiences(spark, nDays.toInt, since.toInt)
+                case 1 => getDataIdPartners(spark, ids, nDays.toInt, since.toInt)
+                case 2 => getDataAudiences(spark, nDays.toInt, since.toInt)
+                case 3 => getDataKeywords(spark, nDays.toInt, since.toInt)
                 }
 
       // Lastly we store the audience applying the filters
@@ -305,7 +307,7 @@ object GetAudience {
       hdfs.rename(srcPath, destPath)
       
       // If push parameter is true, we generate a file with the metadata.
-      push = queries(0)("push")
+      val push = queries(0)("push")
       if (push){
           val priority = queries(0)("priority")
           val as_view = queries(0)("as_view")
@@ -314,6 +316,9 @@ object GetAudience {
           val description = queries(0)("description")
           file_name = if(queries.length > 1) file_name+"_grouped" else file_name
           
+          
+          val conf = new Configuration()
+          conf.set("fs.defaultFS", "hdfs://rely-hdfs")
           val fs= FileSystem.get(conf)
           val os = fs.create(new Path("/datascience/ingester/ready/%s.meta".format(file_name)))
           val json_content = """{"path":"/datascience/devicer/processed/%s", "priority":%s, "partnerId":%s,
