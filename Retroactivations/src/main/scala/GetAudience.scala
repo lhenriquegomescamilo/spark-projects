@@ -245,58 +245,6 @@ object GetAudience {
   * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
   * the file_name is extracted from the file path.
   **/
-  def processFile(spark: SparkSession, file: String) {
-    val hadoopConf = new Configuration()
-    val hdfs = FileSystem.get(hadoopConf)
-
-    var actual_path = "/datascience/devicer/to_process/%s".format(file)
-    var srcPath = new Path("/datascience")
-    var destPath = new Path("/datascience")
-    var queries: List[(Any, Any, Any, Any, Any)] = List()
-    var errorMessage = ""
-
-    try{
-      queries = getQueriesFromFile(spark, actual_path)
-    } catch {
-      case e: Throwable => {
-        errorMessage = e.toString()
-      }
-    }
-    if (queries.length==0) {
-      // If there is an error in the file, move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/errors/
-      println("DEVICER LOG: The devicer process failed on "+file+"\nThe error was: "+errorMessage)
-      srcPath = new Path(actual_path)
-      destPath = new Path("/datascience/devicer/errors/")
-      hdfs.rename(srcPath, destPath)
-    } else {
-      // Move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/in_progress/
-      srcPath = new Path(actual_path)
-      destPath = new Path("/datascience/devicer/in_progress/")
-      hdfs.rename(srcPath, destPath)
-      actual_path = "/datascience/devicer/in_progress/%s".format(file)
-      
-      // Here we obtain three parameters that are supposed to be equal for every query in the file
-      val partner_ids = queries(0)._3.toString
-      val since = queries(0)._4.toString.toInt
-      val nDays = queries(0)._5.toString.toInt
-      println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d".format(file, partner_ids, since, nDays))
-
-      // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
-      // Now we finally get the data that will be used
-      val ids = partner_ids.split(",", -1).toList
-      val data = if (partner_ids.length>0) getDataIdPartners(spark, ids, nDays, since) else getDataAudiences(spark, nDays, since)
-
-      // Lastly we store the audience applying the filters
-      val file_name = file.replace(".json", "")
-      getAudience(spark, data, queries.map(tuple => (tuple._1.toString, tuple._2.toString)), file_name)
-
-      // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
-      srcPath = new Path(actual_path)
-      destPath = new Path("/datascience/devicer/done/")
-      hdfs.rename(srcPath, destPath)
-    }
-  }
-
 
    def processFile(spark: SparkSession, file: String) {
     val hadoopConf = new Configuration()
