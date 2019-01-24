@@ -420,8 +420,18 @@ def get_safegraph_metrics(spark: SparkSession) =
 		df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
 
 }
-  
-  
+  def getAudience(spark: SparkSession) {
+    val data = spark.read.format("parquet").load("/datascience/data_audiences_p/country==AR")
+                         .filter("((array_contains(third_party,'4') OR (array_contains(third_party,'5'))
+                          AND ((array_contains(third_party,'4')
+                               OR (url LIKE '%messi%' OR url LIKE '%aguero%'
+                               OR url LIKE '%copa%' AND url LIKE '%america%' 
+                               OR url LIKE '%griezmann%' OR url LIKE '%botines%' OR url LIKE '%arquero%'
+                               OR url LIKE '%corner%' OR url LIKE '%la%' AND url LIKE '%seleccion%'))")
+                         .select("device_id","device_type")
+    data.write.format("csv").save("/datascience/audiences/output/test_leo")
+   }    
+                             
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
@@ -431,7 +441,8 @@ def get_safegraph_metrics(spark: SparkSession) =
     //train_model(spark)
     //get_data_leo_third_party(spark)
     //getNetquest(spark)
-	get_safegraph_metrics(spark)
+	  //get_safegraph_metrics(spark)
+      getAudience(spark)
 
   }
   
