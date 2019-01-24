@@ -46,6 +46,23 @@ object GetAudience {
     df
   }
 
+  def getDataKeywords(spark: SparkSession,nDays: Int = 30, since: Int = 1): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end   = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords_p"
+    
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days.map(day => path+"/day=%s".format(day))
+                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
+    df
+  } 
 
   /**
   * This method returns a DataFrame with the data from the audiences data pipeline, for the interval
@@ -140,26 +157,45 @@ object GetAudience {
     filesReady diff filesDone
   }
   
-  def getQueriesFromFile(spark: SparkSession, file: String): List[(Any, Any, Any, Any, Any)] = {
+  /***
+  Posible pipeline values:
+  - 0: automatico
+  - 1: data_partner
+  - 2: data_audiences_p
+  - 3: data_keywords_p
+  ***/
+  def getQueriesFromFile(spark: SparkSession, file: String): List[Map[String, Any]] = {
     // First of all we obtain all the data from the file
     val df = spark.sqlContext.read.json(file)
     val columns = df.columns
     val data = df.collect().map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
-
+    
     // Now we extract the different values from each row. Every row has to have a filter and the segment to which the
     // audience is going to be pushed. Then it might have the partnerId, the number of days to be skipped, and the 
     // number of days to be loaded from the pipeline
-    var queries: List[(Any, Any, Any, Any, Any)] = List()
+    var queries = List[Map[String, Any]]()
+
     for (query <- data) {
         val filter = query("query")
         val segmentId = query("segmentId")
         val partnerId = if (query.contains("partnerId") && Option(query("partnerId")).getOrElse("").toString.length>0) query("partnerId") else ""
         val from = if (query.contains("from") && Option(query("from")).getOrElse("").toString.length>0) query("from") else 1
         val nDays = if (query.contains("ndays") && Option(query("ndays")).getOrElse("").toString.length>0) query("ndays") else 30
+        val push = if (query.contains("push") && Option(query("push")).getOrElse("").toString.length>0) query("push") else false
+        val priority = if (query.contains("priority") && Option(query("priority")).getOrElse("").toString.length>0) query("priority") else 14
+        val as_view = if (query.contains("as_view") && Option(query("as_view")).getOrElse("").toString.length>0) query("as_view") else ""
+        val queue = if (query.contains("queue") && Option(query("queue")).getOrElse("").toString.length>0) query("queue") else "datascience"
+        val pipeline = if (query.contains("pipeline") && Option(query("pipeline")).getOrElse("").toString.length>0) query("pipeline") else 0
+        val description = if (query.contains("description") && Option(query("description")).getOrElse("").toString.length>0) query("description") else ""
+    
+        val actual_map: Map[String,Any] = Map("filter" -> filter, "segment_id" -> segmentId, "partner_id" -> partnerId,
+                                               "from" -> from, "ndays" -> nDays, "push" -> push, "priority" -> priority, 
+                                               "as_view" -> as_view, "queue" -> queue, "pipeline" -> pipeline,
+                                                "description" -> description)
         
-        queries = queries ::: List((filter, segmentId, partnerId, from, nDays))
-    }
-    queries
+        queries = queries ::: List(actual_map)
+      }
+      queries
   }
 
   /** 
@@ -169,36 +205,37 @@ object GetAudience {
   * /datascience/devicer/processed/file_name. The file_name value is extracted from the file path given by parameter.
   *
   * @param data: DataFrame that will be used to extract the audience from, applying the corresponding filters.
-  * @param queries: List of tuples, where every tuple has two elements: (query, segmentId).
+  * @param queries: List of Maps, where the key is the parameter and the values are the values.
   *
   * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
   * the file_name is extracted from the file path.
   **/
-  def getAudience(spark: SparkSession, data: DataFrame, queries: List[(String, String)], fileName: String) = {
-    //data.cache()
-    val results = queries.map(query => data.filter(query._1)
-                                           .select("device_type", "device_id")
-                                           .withColumn("segmentIds", lit(query._2)))
+  
+  def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = { 
+    val results = queries.map(query => data.filter(query("query"))
+                                        .select("device_type", "device_id")
+                                        .withColumn("segmentIds", lit(query("segment_id"))))
     results.foreach(dataframe => dataframe.write.format("csv")
-                                                .option("sep", "\t")
-                                                .mode("append")
-                                                .save("/datascience/devicer/processed/"+fileName))
+                                            .option("sep", "\t")
+                                            .mode("append")
+                                            .save("/datascience/devicer/processed/"+fileName))
     if (results.length > 1) {
       val done = spark.read.format("csv")
-                           .option("sep", "\t")
-                           .load("/datascience/devicer/processed/"+fileName)
-                           .distinct()
+                        .option("sep", "\t")
+                        .load("/datascience/devicer/processed/"+fileName)
+                        .distinct()
       done.groupBy("_c0", "_c1")
           .agg(collect_list("_c2") as "segments")
           .withColumn("segments", concat_ws(",", col("segments")))
           .write.format("csv")
-                .option("sep", "\t")
-                .mode("append")
-                .save("/datascience/devicer/processed/"+fileName+"_grouped")
+            .option("sep", "\t")
+            .mode("append")
+            .save("/datascience/devicer/processed/"+fileName+"_grouped")
     }
-    //data.unpersist()
+  
   }
   
+
   /**
   * Given a file path, this method takes all the information from it (query, days to be read, and the partner
   * id) and gets the audience.
@@ -258,6 +295,86 @@ object GetAudience {
       srcPath = new Path(actual_path)
       destPath = new Path("/datascience/devicer/done/")
       hdfs.rename(srcPath, destPath)
+    }
+  }
+
+
+   def processFile(spark: SparkSession, file: String) {
+    val hadoopConf = new Configuration()
+    val hdfs = FileSystem.get(hadoopConf)
+
+    var actual_path = "/datascience/devicer/to_process/%s".format(file)
+    var srcPath = new Path("/datascience")
+    var destPath = new Path("/datascience")
+    var queries: List[Map[String, Any]]()
+    var errorMessage = ""
+
+    try{
+      queries = getQueriesFromFile(spark, actual_path)
+    } catch {
+      case e: Throwable => {
+        errorMessage = e.toString()
+      }
+    }
+    if (queries.length==0) {
+      // If there is an error in the file, move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/errors/
+      println("DEVICER LOG: The devicer process failed on "+file+"\nThe error was: "+errorMessage)
+      srcPath = new Path(actual_path)
+      destPath = new Path("/datascience/devicer/errors/")
+      hdfs.rename(srcPath, destPath)
+    } else {
+      // Move file from the folder /datascience/devicer/to_process/ to /datascience/devicer/in_progress/
+      srcPath = new Path(actual_path)
+      destPath = new Path("/datascience/devicer/in_progress/")
+      hdfs.rename(srcPath, destPath)
+      actual_path = "/datascience/devicer/in_progress/%s".format(file)
+      
+      // Here we obtain three parameters that are supposed to be equal for every query in the file
+      val partner_ids = queries(0)("partner_id")
+      val since = queries(0)("since")
+      val nDays = queries(0)("ndays")
+      println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d".format(file, partner_ids, since, nDays))
+
+      // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
+      // Now we finally get the data that will be used
+      val ids = partner_ids.split(",", -1).toList
+      
+      // Here we select the pipeline where we will gather the data
+      val pipeline = queries(0)("pipeline")
+      val data = pipeline match {
+                case 0 => if (partner_ids.length>0) getDataIdPartners(spark, ids, nDays, since) else getDataAudiences(spark, nDays, since)
+                case 1 => getDataIdPartners(spark, ids, nDays, since)
+                case 2 => getDataAudiences(spark, nDays, since)
+                case 3 => getDataKeywords(spark, nDays, since)
+                }
+
+      // Lastly we store the audience applying the filters
+      var file_name = file.replace(".json", "")
+      getAudience(spark, data, queries, file_name)
+
+      // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
+      srcPath = new Path(actual_path)
+      destPath = new Path("/datascience/devicer/done/")
+      hdfs.rename(srcPath, destPath)
+      
+      // If push parameter is true, we generate a file with the metadata.
+      push = queries(0)("push")
+      if (push){
+          val priority = queries(0)("priority")
+          val as_view = queries(0)("as_view")
+          val queue = queries(0)("queue")
+          val jobid = queries(0)("jobid")
+          val description = queries(0)("description")
+          file_name = if(queries.length > 1) file_name+"_grouped" else file_name
+          
+          val fs= FileSystem.get(conf)
+          val os = fs.create(new Path("/datascience/ingester/ready/%s.meta".format(file_name)))
+          val json_content = """{"path":"/datascience/devicer/processed/%s", "priority":%s, "partnerId":%s,
+                                 "queue":"%s", "jobid":%s, "description:"%s"}""".format(file_name,priority,as_view,
+                                                                                        queue,jobid,description)
+          os.write(json_content.getBytes)
+          fs.close()
+      }
     }
   }
 
