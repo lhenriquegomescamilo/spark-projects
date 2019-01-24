@@ -414,11 +414,16 @@ def get_safegraph_metrics(spark: SparkSession) =
 		val df_user_day_count = df_safe.select(col("ad_id"),col("Day")).groupBy(col("Day")).agg(count("ad_id").alias("signals_day"))
 
 		df_user_day_count.cache()
-
-		df_user_day_count.filter(col("signals_day")>=2).select(col("signals_day")).count()
-		df_user_day_count.filter(col("signals_day")>=20).select(col("signals_day")).count()
-		df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
-
+		
+							
+		val mayor2 = df_user_day_count.filter(col("signals_day")>=2).select(col("signals_day")).count()
+		println("signals >=2",mayor2)
+		
+		val mayor20 =  df_user_day_count.filter(col("signals_day")>=20).select(col("signals_day")).count()
+		println("signals >=20",mayor20)
+				
+		val mayor80 = df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
+		println("signals >=80",mayor80)
 }
   def getAudience(spark: SparkSession) {
     val data = spark.read.format("parquet").load("/datascience/data_audiences_p/country==AR")
