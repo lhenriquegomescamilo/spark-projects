@@ -211,9 +211,9 @@ object GetAudience {
   **/
   
   def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = { 
-    val results = queries.map(query => data.filter(query("query"))
+    val results = queries.map(query => data.filter(query("query").toString)
                                         .select("device_type", "device_id")
-                                        .withColumn("segmentIds", lit(query("segment_id"))))
+                                        .withColumn("segmentIds", lit(query("segment_id").toString)))
     results.foreach(dataframe => dataframe.write.format("csv")
                                             .option("sep", "\t")
                                             .mode("append")
@@ -288,7 +288,7 @@ object GetAudience {
       
       // Here we select the pipeline where we will gather the data
       val pipeline = queries(0)("pipeline")
-      val data = pipeline match {
+      val data: Dataframe = pipeline match {
                 case 0 => if (partner_ids.length>0) getDataIdPartners(spark, ids, nDays, since) else getDataAudiences(spark, nDays, since)
                 case 1 => getDataIdPartners(spark, ids, nDays, since)
                 case 2 => getDataAudiences(spark, nDays, since)
