@@ -58,7 +58,7 @@ object IndexGenerator {
                                           .filter("index_type = 'coo'")
                                           .groupBy("index")
                                           .agg(collect_list("device") as "devices",
-                                               collect_list("device_types") as "types")
+                                               collect_list("device_type") as "types")
 
         // This UDF takes two lists: devices and their corresponding types. As a result, it generates a tuple with three lists,
         // (cookies, androids, ios). Where cookies is the list of devices that are of type 'c' (a cookie).
@@ -85,7 +85,7 @@ object IndexGenerator {
     def main(args: Array[String]) {
         val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
         
-        generate_index_double(spark)
+        //generate_index_double(spark)
         generate_index_lists(spark)     
     }
 }
