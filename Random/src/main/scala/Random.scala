@@ -415,13 +415,15 @@ def get_safegraph_metrics(spark: SparkSession) =
 
 		df_user_day_count.cache()
 		
-		println("signals >=2")					
-		df_user_day_count.filter(col("signals_day")>=2).select(col("signals_day")).count().show()
-		println("signals >=20")
-		df_user_day_count.filter(col("signals_day")>=20).select(col("signals_day")).count().show()
-		println("signals >=20")
-		df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count().show()
-
+							
+		val mayor2 = df_user_day_count.filter(col("signals_day")>=2).select(col("signals_day")).count()
+		println("signals >=2",mayor2)
+		
+		val mayor20 =  df_user_day_count.filter(col("signals_day")>=20).select(col("signals_day")).count()
+		println("signals >=20",mayor20)
+				
+		val mayor80 = df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
+		println("signals >=80",mayor80)
 }
   
   
