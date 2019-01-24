@@ -291,7 +291,7 @@ object GetAudience {
       // Here we select the pipeline where we will gather the data
       val pipeline = queries(0)("pipeline")
       val data = pipeline match {
-                case 0 => if (partner_ids.toString.length>0) getDataIdPartners(spark, ids, nDays.toString.toInt, since) else getDataAudiences(spark, nDays.toString.toInt,
+                case 0 => if (partner_ids.toString.length>0) getDataIdPartners(spark, ids, nDays.toString.toInt, since.toString.toInt) else getDataAudiences(spark, nDays.toString.toInt,
                                                                                                                                                      since.toString.toInt)
                 case 1 => getDataIdPartners(spark, ids, nDays.toString.toInt, since.toString.toInt)
                 case 2 => getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
