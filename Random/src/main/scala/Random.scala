@@ -371,6 +371,57 @@ def get_data_leo_third_party(spark:SparkSession){
                     .save("/datascience/data_leo_third_party.tsv")
 }
 
+  
+def get_safegraph_metrics(spark: SparkSession) =
+						{
+		                       //This function calculates montly metrics from safegraph
+
+		val country = "argentina"
+
+		val df_safegraph = spark.read.option("header", "true").csv("hdfs://rely-hdfs/data/geo/safegraph/2018/12/*")
+											.filter("country = '%s'".format(country))
+												.select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")                                .withColumnRenamed("latitude", "latitude_user")                               .withColumnRenamed("longitude", "longitude_user")                             .withColumn("geocode", ((abs(col("latitude_user").cast("float"))*10).cast("int")*10000)+(abs(col("longitude_user").cast("float")*100).cast("int"))) 
+
+		val df_safe = df_safegraph.select("ad_id", "id_type", "utc_timestamp")
+									.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+										.withColumn("Day", date_format(col("Time"), "d"))
+										.withColumn("Month", date_format(col("Time"), "M"))
+
+		df_safe.cache()
+
+		//usarios unicos por día
+		val df_user_day = (df_safe.select(col("ad_id"),col("Day")).distinct()).groupBy(col("Day")).count()
+
+		//usuarios unicos en un mes
+		val df_user_month = (df_safe.select(col("ad_id"),col("Month")).distinct()).groupBy(col("Month")).count()
+
+		//promedio de señales por usuario por dia
+		val df_user_signal = df_safe.groupBy(col("ad_id"),col("Month"))
+															.agg(count("id_type").alias("signals"))
+															.agg(avg(col("signals")))
+
+
+		println("Unique users per day")
+		df_user_day.show(30)
+
+		println("Mean signals per day")
+		df_user_signal.show(30)
+
+		println("Unique users per Month")
+		df_user_month.show(2)
+
+		//
+		val df_user_day_count = df_safe.select(col("ad_id"),col("Day")).groupBy(col("Day")).agg(count("ad_id").alias("signals_day"))
+
+		df_user_day_count.cache()
+
+		df_user_day_count.filter(col("signals_day")>=2).select(col("ad_id")).count()
+		df_user_day_count.filter(col("signals_day")>=20).select(col("ad_id")).count()
+		df_user_day_count.filter(col("signals_day")>=80).select(col("ad_id")).count()
+
+}
+  
+  
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
@@ -382,4 +433,6 @@ def get_data_leo_third_party(spark:SparkSession){
     getNetquest(spark)
 
   }
+  
+  
 }
