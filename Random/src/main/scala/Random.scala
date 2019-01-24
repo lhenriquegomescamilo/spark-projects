@@ -415,9 +415,9 @@ def get_safegraph_metrics(spark: SparkSession) =
 
 		df_user_day_count.cache()
 
-		df_user_day_count.filter(col("signals_day")>=2).select(col("ad_id")).count()
-		df_user_day_count.filter(col("signals_day")>=20).select(col("ad_id")).count()
-		df_user_day_count.filter(col("signals_day")>=80).select(col("ad_id")).count()
+		df_user_day_count.filter(col("signals_day")>=2).select(col("signals_day")).count()
+		df_user_day_count.filter(col("signals_day")>=20).select(col("signals_day")).count()
+		df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
 
 }
   
