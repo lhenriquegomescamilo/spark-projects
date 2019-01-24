@@ -332,7 +332,7 @@ def train_model(spark:SparkSession){
 
     val data = spark.read.format("csv").option("sep", "\t").option("header", "true")
                         .load(files:_*)
-                        .select("device_id", "device_type", "id_partner_user", "id_partner", "event_type")
+                        .select("device_id", "device_type", "id_partner_user", "id_partner", "event_type", "country")
                         .filter("country in ('AR', 'MX') AND event_type = 'sync' AND id_partner = 31")
                         .groupBy("device_id", "device_type", "id_partner_user", "country").count()
                         .write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/netquest_match")
