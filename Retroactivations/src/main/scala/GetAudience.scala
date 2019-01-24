@@ -180,7 +180,7 @@ object GetAudience {
         val filter = query("query")
         val segmentId = query("segmentId")
         val partnerId = if (query.contains("partnerId") && Option(query("partnerId")).getOrElse("").toString.length>0) query("partnerId") else ""
-        val from = if (query.contains("from") && Option(query("from")).getOrElse("").toString.length>0) query("from") else 1
+        val since = if (query.contains("since") && Option(query("since")).getOrElse("").toString.length>0) query("since") else 1
         val nDays = if (query.contains("ndays") && Option(query("ndays")).getOrElse("").toString.length>0) query("ndays") else 30
         val push = if (query.contains("push") && Option(query("push")).getOrElse("").toString.length>0) query("push") else false
         val priority = if (query.contains("priority") && Option(query("priority")).getOrElse("").toString.length>0) query("priority") else 14
@@ -190,7 +190,7 @@ object GetAudience {
         val description = if (query.contains("description") && Option(query("description")).getOrElse("").toString.length>0) query("description") else ""
     
         val actual_map: Map[String,Any] = Map("filter" -> filter, "segment_id" -> segmentId, "partner_id" -> partnerId,
-                                               "from" -> from, "ndays" -> nDays, "push" -> push, "priority" -> priority, 
+                                               "since" -> since, "ndays" -> nDays, "push" -> push, "priority" -> priority, 
                                                "as_view" -> as_view, "queue" -> queue, "pipeline" -> pipeline,
                                                 "description" -> description)
         
