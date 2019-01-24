@@ -414,10 +414,13 @@ def get_safegraph_metrics(spark: SparkSession) =
 		val df_user_day_count = df_safe.select(col("ad_id"),col("Day")).groupBy(col("Day")).agg(count("ad_id").alias("signals_day"))
 
 		df_user_day_count.cache()
-
-		df_user_day_count.filter(col("signals_day")>=2).select(col("signals_day")).count()
-		df_user_day_count.filter(col("signals_day")>=20).select(col("signals_day")).count()
-		df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
+		
+		println("signals >=2")					
+		df_user_day_count.filter(col("signals_day")>=2).select(col("signals_day")).count().show()
+		println("signals >=20")
+		df_user_day_count.filter(col("signals_day")>=20).select(col("signals_day")).count().show()
+		println("signals >=20")
+		df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count().show()
 
 }
   
