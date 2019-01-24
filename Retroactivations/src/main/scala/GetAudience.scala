@@ -1,5 +1,4 @@
 package main.scala
-
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{lit, length, split, col, concat_ws, collect_list}
 import org.joda.time.{Days, DateTime}
@@ -306,7 +305,7 @@ object GetAudience {
     var actual_path = "/datascience/devicer/to_process/%s".format(file)
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
-    var queries: List[Map[String, Any]]()
+    var queries: List[Map[String, Any]] = List()
     var errorMessage = ""
 
     try{
