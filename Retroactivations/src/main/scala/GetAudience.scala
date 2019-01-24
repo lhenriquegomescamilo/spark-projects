@@ -290,11 +290,12 @@ object GetAudience {
       
       // Here we select the pipeline where we will gather the data
       val pipeline = queries(0)("pipeline")
-      val data: Dataframe = pipeline match {
-                case 0 => if (partner_ids.toString.length>0) getDataIdPartners(spark, ids, nDays.toInt, since) else getDataAudiences(spark, nDays.toInt, since.toInt)
-                case 1 => getDataIdPartners(spark, ids, nDays.toInt, since.toInt)
-                case 2 => getDataAudiences(spark, nDays.toInt, since.toInt)
-                case 3 => getDataKeywords(spark, nDays.toInt, since.toInt)
+      val data = pipeline match {
+                case 0 => if (partner_ids.toString.length>0) getDataIdPartners(spark, ids, nDays.toString.toInt, since) else getDataAudiences(spark, nDays.toString.toInt,
+                                                                                                                                                     since.toString.toInt)
+                case 1 => getDataIdPartners(spark, ids, nDays.toString.toInt, since.toString.toInt)
+                case 2 => getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
+                case 3 => getDataKeywords(spark, nDays.toString.toInt, since.toString.toInt)
                 }
 
       // Lastly we store the audience applying the filters
@@ -308,7 +309,7 @@ object GetAudience {
       
       // If push parameter is true, we generate a file with the metadata.
       val push = queries(0)("push")
-      if (push){
+      if (push.toString.toBoolean){
           val priority = queries(0)("priority")
           val as_view = queries(0)("as_view")
           val queue = queries(0)("queue")
