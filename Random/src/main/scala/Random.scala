@@ -430,7 +430,8 @@ def get_safegraph_metrics(spark: SparkSession) =
     //getTestSet(spark)
     //train_model(spark)
     //get_data_leo_third_party(spark)
-    getNetquest(spark)
+    //getNetquest(spark)
+	get_safegraph_metrics(spark)
 
   }
   
