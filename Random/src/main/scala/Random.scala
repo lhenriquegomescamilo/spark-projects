@@ -440,7 +440,7 @@ def get_safegraph_metrics(spark: SparkSession) =
    }    
 	
 def getPIItest(spark: SparkSession) {
-		   val nDays = 1
+		   val nDays = 3
 		    val from = 1
 		    // Now we get the list of days to be downloaded
 		    val format = "yyyy/MM/dd"
