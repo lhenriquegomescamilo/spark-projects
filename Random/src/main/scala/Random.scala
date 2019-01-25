@@ -440,22 +440,21 @@ def get_safegraph_metrics(spark: SparkSession) =
    }    
 	
 def getPIItest(spark: SparkSession) {
-		   val nDays = 3
-		    val from = 1
-		    // Now we get the list of days to be downloaded
-		    val format = "yyyy/MM/dd"
-		    val end   = DateTime.now.minusDays(from)
-		    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-		    val files = days.map(day => "/data/eventqueue/%s/*.tsv.gz".format(day))
-		    val data = spark.read.format("csv").option("sep", "\t").option("header", "true").load(files:_*)
+    val nDays = 3
+    val from = 1
+    // Now we get the list of days to be downloaded
+    val format = "yyyy/MM/dd"
+    val end   = DateTime.now.minusDays(from)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val files = days.map(day => "/data/eventqueue/%s/*.tsv.gz".format(day))
+    val data = spark.read.format("csv").option("sep", "\t").option("header", "true").load(files:_*)
 	   
               
-	data
-	.filter("ml_sh2 is not null and data_type = 'hash'")
-	.select( "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","timestamp")
-	.write
-	.format("parquet")
-	.mode(SaveMode.Overwrite)
+    data.filter("ml_sh2 is not null AND data_type = 'hash'")
+        .select( "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","timestamp")
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
         .save("/datascience/pii_matching/pii_tuples")
 	
 			}
@@ -467,8 +466,8 @@ def getPIItest(spark: SparkSession) {
     //getTestSet(spark)
     //train_model(spark)
     //get_data_leo_third_party(spark)
-    //  getAudience(spark)
-getPIItest(spark)
+    // getAudience(spark)
+    getPIItest(spark)
   }
   
   
