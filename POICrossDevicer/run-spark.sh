@@ -8,4 +8,4 @@ spark-submit\
   --executor-cores 3\
   --queue default\
   --conf spark.yarn.maxAppAttempts=1\
-  "/home/rely/spark-projects/POI matcher/target/scala-2.11/poi-matcher_2.11-1.0.jar"  --nDays 2 --poi_file hdfs://rely-hdfs/datascience/geo/GCBAPoisSeguridad.csv --country argentina --output /datascience/geo/MX/specific_POIs2
+  "/home/rely/spark-projects/POI matcher/target/scala-2.11/poi-matcher_2.11-1.0.jar"  --nDays 10 --poi_file  "hdfs://rely-hdfs/datascience/geo/AR/publicidad_sarmiento.csv" --country argentina --output /datascience/geo/AR/publicidad_sarmiento_test --filter "index_type IN ('and', 'ios')" 
