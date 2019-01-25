@@ -188,11 +188,12 @@ object GetAudience {
         val queue = if (query.contains("queue") && Option(query("queue")).getOrElse("").toString.length>0) query("queue") else "datascience"
         val pipeline = if (query.contains("pipeline") && Option(query("pipeline")).getOrElse("").toString.length>0) query("pipeline") else 0
         val description = if (query.contains("description") && Option(query("description")).getOrElse("").toString.length>0) query("description") else ""
+        val jobid = if (query.contains("jobid") && Option(query("jobid")).getOrElse("").toString.length>0) query("jobid") else ""
     
         val actual_map: Map[String,Any] = Map("filter" -> filter, "segment_id" -> segmentId, "partner_id" -> partnerId,
                                                "since" -> since, "ndays" -> nDays, "push" -> push, "priority" -> priority, 
                                                "as_view" -> as_view, "queue" -> queue, "pipeline" -> pipeline,
-                                                "description" -> description)
+                                                "description" -> description, "jobid" -> jobid)
         
         queries = queries ::: List(actual_map)
       }
