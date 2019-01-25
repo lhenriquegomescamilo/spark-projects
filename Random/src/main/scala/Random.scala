@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions.{explode, desc, lit, size, concat, col, concat_ws, collect_list, udf, broadcast, upper, sha2, count, max, avg, min, split,sum}
+import org.apache.spark.sql.functions._
 import org.joda.time.{Days,DateTime}
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.spark.sql.{ SaveMode, DataFrame }
@@ -371,6 +371,71 @@ def get_data_leo_third_party(spark:SparkSession){
                     .save("/datascience/data_leo_third_party.tsv")
 }
 
+  
+def get_safegraph_metrics(spark: SparkSession) =
+						{
+		                       //This function calculates montly metrics from safegraph
+
+		val country = "argentina"
+
+		val df_safegraph = spark.read.option("header", "true").csv("hdfs://rely-hdfs/data/geo/safegraph/2018/12/*")
+											.filter("country = '%s'".format(country))
+												.select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")                                .withColumnRenamed("latitude", "latitude_user")                               .withColumnRenamed("longitude", "longitude_user")                             .withColumn("geocode", ((abs(col("latitude_user").cast("float"))*10).cast("int")*10000)+(abs(col("longitude_user").cast("float")*100).cast("int"))) 
+
+		val df_safe = df_safegraph.select("ad_id", "id_type", "utc_timestamp")
+									.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+										.withColumn("Day", date_format(col("Time"), "d"))
+										.withColumn("Month", date_format(col("Time"), "M"))
+
+		df_safe.cache()
+
+		//usarios unicos por día
+		val df_user_day = (df_safe.select(col("ad_id"),col("Day")).distinct()).groupBy(col("Day")).count()
+
+		//usuarios unicos en un mes
+		val df_user_month = (df_safe.select(col("ad_id"),col("Month")).distinct()).groupBy(col("Month")).count()
+
+		//promedio de señales por usuario por dia
+		val df_user_signal = df_safe.groupBy(col("ad_id"),col("Month"))
+															.agg(count("id_type").alias("signals"))
+															.agg(avg(col("signals")))
+
+
+		println("Unique users per day")
+		df_user_day.show(30)
+
+		println("Mean signals per day")
+		df_user_signal.show(30)
+
+		println("Unique users per Month")
+		df_user_month.show(2)
+
+		//
+		val df_user_day_count = df_safe.select(col("ad_id"),col("Day")).groupBy(col("Day")).agg(count("ad_id").alias("signals_day"))
+
+		df_user_day_count.cache()
+		
+							
+		val mayor2 = df_user_day_count.filter(col("signals_day")>=2).select(col("signals_day")).count()
+		println("signals >=2",mayor2)
+		
+		val mayor20 =  df_user_day_count.filter(col("signals_day")>=20).select(col("signals_day")).count()
+		println("signals >=20",mayor20)
+				
+		val mayor80 = df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
+		println("signals >=80",mayor80)
+}
+  def getAudience(spark: SparkSession) {
+    val data = spark.read.format("parquet").load("/datascience/data_audiences_p/country==AR")
+                         .filter("((array_contains(third_party,'4') OR (array_contains(third_party,'5'))
+                          AND ((array_contains(third_party,'4')
+                               OR (url LIKE '%messi%' OR url LIKE '%aguero%'
+                               OR url LIKE '%copa%' AND url LIKE '%america%' 
+                               OR url LIKE '%griezmann%' OR url LIKE '%botines%' OR url LIKE '%arquero%'
+                               OR url LIKE '%corner%' OR url LIKE '%la%' AND url LIKE '%seleccion%'))")
+                         .select("device_id","device_type")
+    data.write.format("csv").save("/datascience/audiences/output/test_leo")
+   }    
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
@@ -380,6 +445,9 @@ def get_data_leo_third_party(spark:SparkSession){
     //getTestSet(spark)
     //train_model(spark)
     //get_data_leo_third_party(spark)
+      getAudience(spark)
 
   }
+  
+  
 }
