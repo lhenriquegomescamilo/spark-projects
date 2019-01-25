@@ -371,6 +371,7 @@ def get_data_leo_third_party(spark:SparkSession){
                     .save("/datascience/data_leo_third_party.tsv")
 }
 
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
@@ -379,7 +380,6 @@ def get_data_leo_third_party(spark:SparkSession){
     //getTestSet(spark)
     //train_model(spark)
     //get_data_leo_third_party(spark)
-    getNetquest(spark)
 
   }
 }
