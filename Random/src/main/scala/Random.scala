@@ -427,12 +427,12 @@ def get_safegraph_metrics(spark: SparkSession) =
 }
    def getAudience(spark: SparkSession) {
     val data = spark.read.format("parquet").load("/datascience/data_audiences_p/country==AR")
-                         .filter("((array_contains(third_party,'4') OR (array_contains(third_party,'5'))
+                         .filter("""((array_contains(third_party,'4') OR (array_contains(third_party,'5'))
                           AND (
                                 url LIKE '%messi%' OR url LIKE '%aguero%'
                                OR (url LIKE '%copa%' AND url LIKE '%america%') 
                                OR url LIKE '%griezmann%' OR url LIKE '%botines%' OR url LIKE '%arquero%'
-                               OR url LIKE '%corner%' OR (url LIKE '%la%' AND url LIKE '%seleccion%'))")
+                               OR url LIKE '%corner%' OR (url LIKE '%la%' AND url LIKE '%seleccion%'))""")
                          .select("device_id","device_type")
     data.write.format("csv").save("/datascience/audiences/output/test_leo")
    }    
