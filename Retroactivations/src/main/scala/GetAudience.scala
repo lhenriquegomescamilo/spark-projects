@@ -213,7 +213,7 @@ object GetAudience {
   **/
   
   def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = { 
-    val results = queries.map(query => data.filter(query("query").toString)
+    val results = queries.map(query => data.filter(query("filter").toString)
                                         .select("device_type", "device_id")
                                         .withColumn("segmentIds", lit(query("segment_id").toString)))
     results.foreach(dataframe => dataframe.write.format("csv")
