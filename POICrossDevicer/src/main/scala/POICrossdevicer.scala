@@ -158,7 +158,7 @@ def cross_device(spark: SparkSession,
       case "--output" :: value :: tail =>
         nextOption(map ++ Map('output -> value.toString), tail)
       case "--filter" :: value :: tail =>
-        nextOption(map ++ Map('filter -> value), tail)
+        nextOption(map ++ Map('filter -> value.toString), tail)
          }
   }
   
@@ -171,7 +171,7 @@ def cross_device(spark: SparkSession,
     val country = if (options.contains('country)) options('country).toString else "mexico"
     val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
     val poi_output_file = if (options.contains('output)) options('output).toString else ""
-    val index_filter = if (options.contains('filter)) options('filter) else ""
+    val index_filter = if (options.contains('filter)) options('filter).toString else ""
 
     // Start Spark Session
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
@@ -183,7 +183,7 @@ def cross_device(spark: SparkSession,
 
     match_POI(spark, safegraph_days, POI_file_name, country, poi_output_file)
       // Finally, we perform the cross-device
-    cross_device(spark, poi_output_file, index_filter,POI_file_name)
+    cross_device(spark, poi_output_file, POI_file_name,index_filter)
   
   }
 }
