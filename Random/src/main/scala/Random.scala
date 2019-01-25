@@ -413,18 +413,17 @@ def get_safegraph_metrics(spark: SparkSession) =
 		df_user_month.show(2)
 
 		//
-		val df_user_day_count = df_safe.select(col("ad_id"),col("Day")).groupBy(col("Day")).agg(count("ad_id").alias("signals_day"))
-
-		df_user_day_count.cache()
 		
-							
-		val mayor2 = df_user_day_count.filter(col("signals_day")>=2).select(col("signals_day")).count()
+		val df_user_count_signals = df_safe.groupBy(col("ad_id"),col("Day")).count()
+		df_user_count_signals.cache()
+
+		val mayor2 = df_user_count_signals.filter(col("count")>=2).count()
 		println("signals >=2",mayor2)
 		
-		val mayor20 =  df_user_day_count.filter(col("signals_day")>=20).select(col("signals_day")).count()
+		val mayor20 =  df_user_count_signals.filter(col("count")>=20).count()
 		println("signals >=20",mayor20)
 				
-		val mayor80 = df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
+		val mayor80 = df_user_count_signals.filter(col("count")>=80).count()
 		println("signals >=80",mayor80)
 }
    def getAudience(spark: SparkSession) {
@@ -440,7 +439,7 @@ def get_safegraph_metrics(spark: SparkSession) =
    }    
 	
 def getPIItest(spark: SparkSession) {
-    val nDays = 3
+    val nDays = 90
     val from = 1
     // Now we get the list of days to be downloaded
     val format = "yyyy/MM/dd"
@@ -450,7 +449,7 @@ def getPIItest(spark: SparkSession) {
     val data = spark.read.format("csv").option("sep", "\t").option("header", "true").load(files:_*)
 	   
               
-    data.filter("ml_sh2 is not null AND data_type = 'hash'")
+    data.filter(col("data_type").contains("hash") && (col("ml_sh2").isNotNull ||  col("mb_sh2").isNotNull ||  col("nid_sh2").isNotNull ))
         .select( "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","timestamp")
         .write
         .format("parquet")
@@ -467,7 +466,8 @@ def getPIItest(spark: SparkSession) {
     //train_model(spark)
     //get_data_leo_third_party(spark)
     // getAudience(spark)
-    getPIItest(spark)
+    //getPIItest(spark)
+get_safegraph_metrics(spark)
   }
   
   
