@@ -448,11 +448,17 @@ def getPIItest(spark: SparkSession) {
 		    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 		    val files = days.map(day => "/data/eventqueue/%s/*.tsv.gz".format(day))
 		    val data = spark.read.format("csv").option("sep", "\t").option("header", "true").load(files:_*)
-	   }
+	   
               
-data.filter("data_type = 'hash' AND ml_sh2 <> null").select( "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","timestamp").show(1)
+	data
+	.filter("data_type = 'hash' AND ml_sh2 <> null")
+	.select( "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","timestamp")
+	.write
+	.format("parquet")
+	.mode(SaveMode.Overwrite)
+        .save("/datascience/pii_matching/pii_tuples")
 	
-
+			}
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
