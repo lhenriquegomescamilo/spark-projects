@@ -133,6 +133,6 @@ object CrossDevicer {
       .withColumn("new_segment", concat_ws(",", col("new_segment")))
       .select("device", "device_type", "new_segment").distinct()
 
-    joint.write.format("csv").mode(SaveMode.Overwrite).option("sep", "\t").save("/datascience/audiences/crossdeviced/taxo")
+    joint.write.format("csv").mode(SaveMode.Overwrite).option("sep", "\t").save("/datascience/audiences/crossdeviced/taxo_gral")
   }
 }
