@@ -378,7 +378,7 @@ def get_safegraph_metrics(spark: SparkSession) =
 						{
 		                       //This function calculates montly metrics from safegraph
 
-		val country = "argentina"
+		val country = "mexico"
 
 		val df_safegraph = spark.read.option("header", "true").csv("hdfs://rely-hdfs/data/geo/safegraph/2018/12/*")
 											.filter("country = '%s'".format(country))
