@@ -161,7 +161,7 @@ def cross_device(spark: SparkSession,
         nextOption(map ++ Map('filter -> value), tail)
          }
   }
-  }
+  
 
   
   def main(args: Array[String]) {
