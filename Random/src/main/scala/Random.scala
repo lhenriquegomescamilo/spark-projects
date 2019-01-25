@@ -466,8 +466,8 @@ def getPIItest(spark: SparkSession) {
     //train_model(spark)
     //get_data_leo_third_party(spark)
     // getAudience(spark)
-    //getPIItest(spark)
-get_safegraph_metrics(spark)
+    getPIItest(spark)
+//get_safegraph_metrics(spark)
   }
   
   
