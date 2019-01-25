@@ -15,6 +15,8 @@ import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
 import org.apache.spark.ml.regression.GBTRegressor
 import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
 import org.apache.spark.sql.{Encoders, SparkSession}
+import org.joda.time.Days
+import org.joda.time.DateTime
 
 
 
@@ -425,18 +427,38 @@ def get_safegraph_metrics(spark: SparkSession) =
 		val mayor80 = df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
 		println("signals >=80",mayor80)
 }
-  def getAudience(spark: SparkSession) {
+   def getAudience(spark: SparkSession) {
     val data = spark.read.format("parquet").load("/datascience/data_audiences_p/country==AR")
-                         .filter("((array_contains(third_party,'4') OR (array_contains(third_party,'5'))
-                          AND ((array_contains(third_party,'4')
-                               OR (url LIKE '%messi%' OR url LIKE '%aguero%'
-                               OR url LIKE '%copa%' AND url LIKE '%america%' 
+                         .filter("""((array_contains(third_party,'4') OR (array_contains(third_party,'5'))
+                          AND (
+                                url LIKE '%messi%' OR url LIKE '%aguero%'
+                               OR (url LIKE '%copa%' AND url LIKE '%america%') 
                                OR url LIKE '%griezmann%' OR url LIKE '%botines%' OR url LIKE '%arquero%'
-                               OR url LIKE '%corner%' OR url LIKE '%la%' AND url LIKE '%seleccion%'))")
+                               OR url LIKE '%corner%' OR (url LIKE '%la%' AND url LIKE '%seleccion%'))""")
                          .select("device_id","device_type")
     data.write.format("csv").save("/datascience/audiences/output/test_leo")
    }    
-
+	
+def getPIItest(spark: SparkSession) {
+		   val nDays = 1
+		    val from = 1
+		    // Now we get the list of days to be downloaded
+		    val format = "yyyy/MM/dd"
+		    val end   = DateTime.now.minusDays(from)
+		    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+		    val files = days.map(day => "/data/eventqueue/%s/*.tsv.gz".format(day))
+		    val data = spark.read.format("csv").option("sep", "\t").option("header", "true").load(files:_*)
+	   
+              
+	data
+	.filter("ml_sh2 is not null and data_type = 'hash'")
+	.select( "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","timestamp")
+	.write
+	.format("parquet")
+	.mode(SaveMode.Overwrite)
+        .save("/datascience/pii_matching/pii_tuples")
+	
+			}
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadIndex(spark)
@@ -445,8 +467,8 @@ def get_safegraph_metrics(spark: SparkSession) =
     //getTestSet(spark)
     //train_model(spark)
     //get_data_leo_third_party(spark)
-      getAudience(spark)
-
+    //  getAudience(spark)
+getPIItest(spark)
   }
   
   
