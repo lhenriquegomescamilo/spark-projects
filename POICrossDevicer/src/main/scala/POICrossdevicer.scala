@@ -139,7 +139,7 @@ def cross_device(spark: SparkSession,
     cross_deviced.write.format("csv").mode(SaveMode.Overwrite).save(output_path)
   }
   
-  type OptionMap = Map[Symbol, String]
+    type OptionMap = Map[Symbol, Any]
 
   
   /**
