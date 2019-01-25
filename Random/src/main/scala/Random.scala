@@ -451,7 +451,7 @@ def getPIItest(spark: SparkSession) {
 	   
               
 	data
-	.filter("data_type = 'hash' AND ml_sh2 <> 'null'")
+	.filter("data_type = 'hash'")
 	.select( "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","timestamp")
 	.write
 	.format("parquet")
