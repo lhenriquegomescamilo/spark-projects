@@ -1,5 +1,5 @@
 spark-submit\
-  --class "main.scala.POIMatcher"\
+  --class "main.scala.POICrossdevicer"\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\
