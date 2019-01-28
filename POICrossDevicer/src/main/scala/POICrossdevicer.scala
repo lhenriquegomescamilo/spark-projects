@@ -119,7 +119,7 @@ def cross_device(spark: SparkSession,
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
     val audience_name = poi_output_file.split("/").last
     val audience = spark.read.format("csv").option("sep", "\t").load(poi_output_file)
-                                                              .withColumnRenamed("ad_id", "device_id")
+                                                              .withColumnRenamed("_c0", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
