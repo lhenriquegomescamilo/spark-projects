@@ -453,7 +453,8 @@ def getPIItest(spark: SparkSession) {
     val data = spark.read.format("csv").option("sep", "\t").option("header", "true").load(files:_*)
 	   
               
-    data.filter(col("data_type").contains("hash") && (col("ml_sh2").isNotNull ||  col("mb_sh2").isNotNull ||  col("nid_sh2").isNotNull ))
+    data.withColumn("day", lit(day))
+        .filter(col("data_type").contains("hash") && (col("ml_sh2").isNotNull ||  col("mb_sh2").isNotNull ||  col("nid_sh2").isNotNull ))
         .select( "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","timestamp")
         .write
         .format("parquet")
