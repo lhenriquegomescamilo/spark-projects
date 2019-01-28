@@ -292,7 +292,7 @@ def train_model(spark:SparkSession){
 
   val labelColumn = "label"
 
-  //We define the assembler to collect the columns into a new column with a single vector - "features"
+  //We define the assembler to collect the columns into a new column with a single vector - "features sparse"
   val assembler = new VectorAssembler().setInputCols(Array("features_sparse")).setOutputCol("features_sparse")
 
   //For the regression we'll use the Gradient-boosted tree estimator
@@ -310,15 +310,18 @@ def train_model(spark:SparkSession){
   //We'll make predictions using the model and the test data
   val predictions = model.transform(testData)
   predictions.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/predictions")
-  predictions.show()
-  //println(predictions.select("Predicted").collect())
+  
+  val predictionLabelsRDD = predictions.select("predicted_label", "label").map(r => (r.getDouble(0), r.getDouble(1)))
+  val binMetrics = new BinaryClassificationMetrics(predictionAndLabels)
+  println("AUC ROC: %s".format(binMetrics.areaUnderROC))
+  println("F1: %s".format(binMetrics.fMeasureByThreshold))
 
   //This will evaluate the error/deviation of the regression using the Root Mean Squared deviation
   val evaluator = new RegressionEvaluator().setLabelCol(labelColumn).setPredictionCol("predicted_" + labelColumn).setMetricName("rmse")
 
   //We compute the error using the evaluator
   val error = evaluator.evaluate(predictions)
-  println(error)
+  println("RMSE Error: %s".format(error))
 
 }
 
