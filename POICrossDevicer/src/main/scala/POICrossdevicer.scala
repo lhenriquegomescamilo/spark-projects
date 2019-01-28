@@ -114,19 +114,18 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
 def cross_device(spark: SparkSession, 
                 poi_output_file: String, 
-                index_filter: String, 
-                POI_file_name: String)
+               )
                 {
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
-  
+    val audience_name = poi_output_file.split("/").last
     val audience = spark.read.format("csv").option("sep", "\t").load(poi_output_file)
                                                               .withColumnRenamed("ad_id", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     val db_data = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
-                                              .filter(index_filter)
+                                             .filter("index_type IN ('and', 'ios')")
                                               .withColumn("index", upper(col("index")))
                                               .select("index", "device", "device_type")
                                               
@@ -135,7 +134,7 @@ def cross_device(spark: SparkSession,
                                //.select("index", "device", "device_type")
     
     // Finally, we store the result obtained.
-    val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(POI_file_name)
+    val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
     cross_deviced.write.format("csv").mode(SaveMode.Overwrite).save(output_path)
   }
   
@@ -157,9 +156,7 @@ def cross_device(spark: SparkSession,
         nextOption(map ++ Map('poi_file -> value.toString), tail)
       case "--output" :: value :: tail =>
         nextOption(map ++ Map('output -> value.toString), tail)
-      case "--filter" :: value :: tail =>
-        nextOption(map ++ Map('filter -> value.toString), tail)
-         }
+        }
   }
   
 
@@ -171,8 +168,7 @@ def cross_device(spark: SparkSession,
     val country = if (options.contains('country)) options('country).toString else "mexico"
     val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
     val poi_output_file = if (options.contains('output)) options('output).toString else ""
-    val index_filter = if (options.contains('filter)) options('filter).toString else ""
-
+    
     // Start Spark Session
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
 
@@ -183,7 +179,7 @@ def cross_device(spark: SparkSession,
 
     match_POI(spark, safegraph_days, POI_file_name, country, poi_output_file)
       // Finally, we perform the cross-device
-    cross_device(spark, poi_output_file, POI_file_name,index_filter)
+    cross_device(spark, poi_output_file)
   
   }
 }
