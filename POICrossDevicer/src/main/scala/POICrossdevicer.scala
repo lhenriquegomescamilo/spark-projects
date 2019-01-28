@@ -113,8 +113,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 //hasta aca es el poi matcher, ahora agrego el crossdevicer
 
 def cross_device(spark: SparkSession, 
-                poi_output_file: String, 
-               )
+                poi_output_file: String)
                 {
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
