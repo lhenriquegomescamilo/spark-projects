@@ -662,6 +662,7 @@ object Random {
       .withColumnRenamed("device", "INDIVIDUAL_CLUSTER_ID")
       .withColumnRenamed("index", "device_id")
       .select("INDIVIDUAL_CLUSTER_ID", "device_id")
+      .withColumn("device_id", upper(col("device_id")))
 
     // Now we load the PII data.
     // This file contains 10 columns: "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","day"
@@ -670,6 +671,7 @@ object Random {
       .load("/datascience/pii_matching/pii_tuples")
       .select("device_id", "ml_sh2")
       .filter("ml_sh2 IS NOT NULL and length(ml_sh2)>0")
+      .withColumn("device_id", upper(col("device_id")))
       .distinct()
 
     piiData
