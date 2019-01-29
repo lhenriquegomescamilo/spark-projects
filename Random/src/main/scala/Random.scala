@@ -24,6 +24,7 @@ import org.apache.spark.sql.{Encoders, SparkSession}
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.hadoop.conf.Configuration
+import org.apache.spark.ml.classification.{RandomForestClassificationModel, RandomForestClassifier}
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -414,14 +415,20 @@ object Random {
       .setOutputCol("features_sparse")
 
     //For the regression we'll use the Gradient-boosted tree estimator
-    val gbt = new GBTRegressor()
-      .setLabelCol(labelColumn)
-      .setFeaturesCol("features_sparse")
-      .setPredictionCol("predicted_" + labelColumn)
-      .setMaxIter(50)
+    //val gbt = new GBTRegressor()
+    //  .setLabelCol(labelColumn)
+    //  .setFeaturesCol("features_sparse")
+    //  .setPredictionCol("predicted_" + labelColumn)
+    //  .setMaxIter(50)
+
+    val rf = new RandomForestClassifier()
+                .setLabelCol(labelColumn)
+                .setFeaturesCol("features_sparse")
+                .setPredictionCol("predicted_" + labelColumn)
+                .setNumTrees(100)
 
     //We define the Array with the stages of the pipeline
-    val stages = Array(gbt)
+    val stages = Array(rf)
 
     //Construct the pipeline
     val pipeline = new Pipeline().setStages(stages)
@@ -433,13 +440,13 @@ object Random {
     val predictions = model.transform(testData)
     predictions.write
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/predictions")
+      .save("/datascience/data_demo/predictions_rf")
 
     // We compute AUC and F1
     val predictionLabelsRDD = predictions
       .select("predicted_label", "label")
       .rdd
-      .map(r => (r(0).toString.toInt.toDouble, r(1).toString.toInt.toDouble))
+      .map(r => (r.getDouble(0), r.getInt(1).toDouble))
     val binMetrics = new BinaryClassificationMetrics(predictionLabelsRDD)
 
     val auc = binMetrics.areaUnderROC
@@ -458,7 +465,7 @@ object Random {
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
-    val os = fs.create(new Path("/datascience/data_demo/metrics_gbt.json"))
+    val os = fs.create(new Path("/datascience/data_demo/metrics_rf.json"))
     val json_content =
       """{"auc":"%s", "f1":%s, "rmse":%s}""".format(auc, f1, error)
     os.write(json_content.getBytes)
@@ -672,7 +679,8 @@ object Random {
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getTapadPerformance(spark)
+    //getTapadPerformance(spark)
+    train_model(spark)
   }
 
 }
