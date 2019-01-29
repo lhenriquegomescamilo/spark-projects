@@ -93,7 +93,7 @@ object CrossDevicer {
     val events_data = get_event_data(spark, nDays, from)
 
     // Here we get the mapping of old segments to new segments
-    val mapping = """4752,4752|4753,4753|4754,4754|4755,4755|4756,4756|4757,4757|4758,4758|4759,4759|4760,4760
+    val mapping_s = """4752,4752|4753,4753|4754,4754|4755,4755|4756,4756|4757,4757|4758,4758|4759,4759|4760,4760
                      4761,4761|4762,4762|4763,4763|4764,4764|4765,4765|4766,4766|4767,4767|4768,4768|4815,4815
                      4816,4816|4750,4750|4751,4751|4744,4744|4745,4745|4746,4746|4747,4747|4748,4748|4749,4749
                      4769,4769|4770,4770|4771,4771|4772,4772|4773,4773|4774,4774|4775,4775|4776,4776|4777,4777
@@ -111,7 +111,9 @@ object CrossDevicer {
                      22490,22490|22492,22492|20117,20117|20118,20118|22494,22494|22496,22496|20119,20119
                      20120,20120|22498,22498|22500,22500|20121,20121|20122,20122|20123,20123|20124,20124
                      22502,22502|22504,22504|22506,22506|22508,22508""".replace("\n", "|").split("\\|")
-      .map(tuple => (tuple.trim.split(",")(0), tuple.trim.split(",").last)).toMap
+      .map(tuple => (tuple.trim.split(",")(0), tuple.trim.split(",").last))
+    val mapping_c = ((579 to 827).map(_.toString) zip (579 to 827).map(_.toString)).toList //mapping for countries
+    val mapping = (mapping:::mapping_c).toMap
     val mapping_segments = mapping.keys.toArray
 
     // Some useful functions
