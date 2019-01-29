@@ -414,14 +414,20 @@ object Random {
       .setOutputCol("features_sparse")
 
     //For the regression we'll use the Gradient-boosted tree estimator
-    val gbt = new GBTRegressor()
-      .setLabelCol(labelColumn)
-      .setFeaturesCol("features_sparse")
-      .setPredictionCol("predicted_" + labelColumn)
-      .setMaxIter(50)
+    //val gbt = new GBTRegressor()
+    //  .setLabelCol(labelColumn)
+    //  .setFeaturesCol("features_sparse")
+    //  .setPredictionCol("predicted_" + labelColumn)
+    //  .setMaxIter(50)
+
+    val rf = new RandomForestClassifier()
+                .setLabelCol(labelColumn)
+                .setFeaturesCol("features_sparse")
+                .setPredictionCol("predicted_" + labelColumn)
+                .setNumTrees(100)
 
     //We define the Array with the stages of the pipeline
-    val stages = Array(gbt)
+    val stages = Array(rf)
 
     //Construct the pipeline
     val pipeline = new Pipeline().setStages(stages)
@@ -433,7 +439,7 @@ object Random {
     val predictions = model.transform(testData)
     predictions.write
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/predictions")
+      .save("/datascience/data_demo/predictions_rf")
 
     // We compute AUC and F1
     val predictionLabelsRDD = predictions
@@ -458,7 +464,7 @@ object Random {
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
-    val os = fs.create(new Path("/datascience/data_demo/metrics_gbt.json"))
+    val os = fs.create(new Path("/datascience/data_demo/metrics_rf.json"))
     val json_content =
       """{"auc":"%s", "f1":%s, "rmse":%s}""".format(auc, f1, error)
     os.write(json_content.getBytes)
