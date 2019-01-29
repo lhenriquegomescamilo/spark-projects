@@ -1,23 +1,10 @@
 package main.scala
-import org.apache.spark.sql.{SparkSession, Row, SaveMode}
+
+import org.apache.spark.sql.{SparkSession, SaveMode}
 import org.apache.spark.sql.functions._
-import org.joda.time.{Days,DateTime}
-import org.apache.hadoop.fs.{ FileSystem, Path }
-import org.apache.spark.sql.{ SaveMode, DataFrame }
-import org.apache.spark.ml.attribute.Attribute
-import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
-//import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
-import org.apache.spark.ml.linalg.Vectors
-import org.apache.spark.mllib.regression.LabeledPoint
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.evaluation.RegressionEvaluator
-import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
-import org.apache.spark.ml.regression.GBTRegressor
-import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
-import org.apache.spark.sql.{Encoders, SparkSession}
-import org.joda.time.Days
 import org.joda.time.DateTime
+import org.apache.hadoop.fs.{ FileSystem, Path }
+import org.apache.spark.sql.SparkSession
 
 
 object FromEventqueuePII {
