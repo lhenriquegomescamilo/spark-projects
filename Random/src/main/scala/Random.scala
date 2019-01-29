@@ -655,6 +655,7 @@ object Random {
       .load("datascience/pii_matching/pii_tuples")
       .select("device_id", "ml_sh2")
       .filter("ml_sh2 IS NOT NULL and length(ml_sh2)>0")
+      .distinct()
 
     piiData
       .join(tapadIndex, Seq("device_id"))
