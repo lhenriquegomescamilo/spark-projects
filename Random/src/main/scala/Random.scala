@@ -329,7 +329,7 @@ def train_model(spark:SparkSession){
   val conf = new Configuration()
   conf.set("fs.defaultFS", "hdfs://rely-hdfs")
   val fs= FileSystem.get(conf)
-  val os = fs.create(new Path("/datascience/data_demo/metrics.json")
+  val os = fs.create(new Path("/datascience/data_demo/metrics.json"))
   val json_content = """{"auc":"%s", "f1":%s, "rmse":%s}""".format(auc,f1,error)
   os.write(json_content.getBytes)
   fs.close()
