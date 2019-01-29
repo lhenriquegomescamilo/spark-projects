@@ -406,9 +406,6 @@ object Random {
     //We'll split the set into training and test data
     val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
 
-    //We'll split the set into training and test data
-    val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
-
     val labelColumn = "label"
 
     //We define the assembler to collect the columns into a new column with a single vector - "features sparse"
@@ -429,6 +426,9 @@ object Random {
     //Construct the pipeline
     val pipeline = new Pipeline().setStages(stages)
 
+    //We fit our DataFrame into the pipeline to generate a model
+    val model = pipeline.fit(trainingData)
+
     //We'll make predictions using the model and the test data
     val predictions = model.transform(testData)
     predictions.write
@@ -445,11 +445,11 @@ object Random {
     val auc = binMetrics.areaUnderROC
     val f1 = binMetrics.fMeasureByThreshold
 
-    //We'll make predictions using the model and the test data
-    val predictions = model.transform(testData)
-    predictions.write
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/predictions")
+    //This will evaluate the error/deviation of the regression using the Root Mean Squared deviation
+    val evaluator = new RegressionEvaluator()
+      .setLabelCol(labelColumn)
+      .setPredictionCol("predicted_" + labelColumn)
+      .setMetricName("rmse")
 
     //We compute the error using the evaluator
     val error = evaluator.evaluate(predictions)
@@ -463,16 +463,6 @@ object Random {
       """{"auc":"%s", "f1":%s, "rmse":%s}""".format(auc, f1, error)
     os.write(json_content.getBytes)
     fs.close()
-
-    //This will evaluate the error/deviation of the regression using the Root Mean Squared deviation
-    val evaluator = new RegressionEvaluator()
-      .setLabelCol(labelColumn)
-      .setPredictionCol("predicted_" + labelColumn)
-      .setMetricName("rmse")
-
-    //We compute the error using the evaluator
-    val error = evaluator.evaluate(predictions)
-    println("RMSE Error: %s".format(error))
 
   }
 
