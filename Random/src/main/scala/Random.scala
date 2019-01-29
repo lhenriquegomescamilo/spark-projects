@@ -439,7 +439,7 @@ object Random {
     val predictionLabelsRDD = predictions
       .select("predicted_label", "label")
       .rdd
-      .map(r => (r.getInt(0).toDouble, r.getInt(1).toDouble))
+      .map(r => (r.getDouble(0), r.getInt(1).toDouble))
     val binMetrics = new BinaryClassificationMetrics(predictionLabelsRDD)
 
     val auc = binMetrics.areaUnderROC
