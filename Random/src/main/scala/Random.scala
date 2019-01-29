@@ -639,45 +639,6 @@ object Random {
     data.write.format("csv").save("/datascience/audiences/output/test_leo")
   }
 
-  def getPIItest(spark: SparkSession) {
-    val nDays = 1
-    val from = 1
-    // Now we get the list of days to be downloaded
-    val format = "yyyy/MM/dd"
-    val end = DateTime.now.minusDays(from)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val files = days.map(day => "/data/eventqueue/%s/*.tsv.gz".format(day))
-    val data = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .load(files: _*)
-
-    data
-      .withColumn("day", lit(day))
-      .filter(
-        col("data_type").contains("hash") && (col("ml_sh2").isNotNull || col(
-          "mb_sh2"
-        ).isNotNull || col("nid_sh2").isNotNull)
-      )
-      .select(
-        "device_id",
-        "device_type",
-        "country",
-        "id_partner",
-        "data_type",
-        "ml_sh2",
-        "mb_sh2",
-        "nid_sh2",
-        "timestamp"
-      )
-      .write
-      .format("parquet")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/pii_matching/pii_tuples")
-
-  }
-
   def getTapadPerformance(spark: SparkSession) = {
     // First we load the index with the association for TapAd
     // This file has 4 columns: "HOUSEHOLD_CLUSTER_ID", "INDIVIDUAL_CLUSTER_ID", "device", and "device_type"
