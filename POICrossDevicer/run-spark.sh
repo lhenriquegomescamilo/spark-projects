@@ -8,4 +8,4 @@ spark-submit\
   --executor-cores 3\
   --queue default\
   --conf spark.yarn.maxAppAttempts=1\
-  "/home/rely/spark-projects/POICrossDevicer/target/scala-2.11/poi-crossdevicer_2.11-1.0.jar"  --nDays 2 --poi_file  "hdfs://rely-hdfs/datascience/geo/AR/publicidad_sarmiento.csv" --country argentina --output /datascience/geo/AR/publicidad_sarmientito_test 
+  "/home/rely/spark-projects/POICrossDevicer/target/scala-2.11/poi-crossdevicer_2.11-1.0.jar"  --nDays 30 --poi_file  "hdfs://rely-hdfs/datascience/geo/AR/pagofacil.csv" --country argentina --output /datascience/geo/AR/pagofacil_30_29-01 
