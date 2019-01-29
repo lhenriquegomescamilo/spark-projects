@@ -681,7 +681,7 @@ object Random {
       .write
       .format("csv")
       .option("sep", " ")
-      .save("/datascience/custom/tapad_pii")
+      .save("/datascience/custom/db_pii")
   }
 
   def main(args: Array[String]) {
