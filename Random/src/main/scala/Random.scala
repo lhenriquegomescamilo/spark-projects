@@ -286,7 +286,7 @@ object Random {
 
 def train_model(spark:SparkSession){
   import spark.implicits._
-  
+
   val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points")
   
   //We'll split the set into training and test data
@@ -314,7 +314,7 @@ def train_model(spark:SparkSession){
   predictions.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/predictions")
   
   // We compute AUC and F1
-  val predictionLabelsRDD = predictions.select("predicted_label", "label").map(r => (r.getDouble(0), r.getDouble(1)))
+  val predictionLabelsRDD = predictions.select("predicted_label", "label").rdd.map(r => (r.getDouble(0), r.getDouble(1)))
   val binMetrics = new BinaryClassificationMetrics(predictionLabelsRDD)
   
   val auc = binMetrics.areaUnderROC
