@@ -18,7 +18,7 @@ import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructTy
 import org.apache.spark.sql.{Encoders, SparkSession}
 import org.joda.time.Days
 import org.joda.time.DateTime
-
+import org.apache.spark.implicits._
 
 
 /**
