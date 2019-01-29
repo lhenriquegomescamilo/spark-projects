@@ -23,11 +23,7 @@ import org.apache.spark.sql.types.{
 import org.apache.spark.sql.{Encoders, SparkSession}
 import org.joda.time.Days
 import org.joda.time.DateTime
-<<<<<<< HEAD
-=======
 import org.apache.hadoop.conf.Configuration
-
->>>>>>> cfd4e7d81aaf81f035a284190ec5fa938b12dc6b
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -402,19 +398,13 @@ object Random {
   }
 
   def train_model(spark: SparkSession) {
+    import spark.implicits._
 
-<<<<<<< HEAD
     val data =
       spark.read.format("parquet").load("/datascience/data_demo/labeled_points")
-=======
-def train_model(spark:SparkSession){
-  import spark.implicits._
 
-  val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points")
-  
-  //We'll split the set into training and test data
-  val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
->>>>>>> cfd4e7d81aaf81f035a284190ec5fa938b12dc6b
+    //We'll split the set into training and test data
+    val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
 
     //We'll split the set into training and test data
     val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
@@ -439,21 +429,21 @@ def train_model(spark:SparkSession){
     //Construct the pipeline
     val pipeline = new Pipeline().setStages(stages)
 
-<<<<<<< HEAD
-    //We fit our DataFrame into the pipeline to generate a model
-    val model = pipeline.fit(trainingData)
-=======
-  //We'll make predictions using the model and the test data
-  val predictions = model.transform(testData)
-  predictions.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/predictions")
-  
-  // We compute AUC and F1
-  val predictionLabelsRDD = predictions.select("predicted_label", "label").rdd.map(r => (r.getDouble(0), r.getDouble(1)))
-  val binMetrics = new BinaryClassificationMetrics(predictionLabelsRDD)
-  
-  val auc = binMetrics.areaUnderROC
-  val f1 = binMetrics.fMeasureByThreshold
->>>>>>> cfd4e7d81aaf81f035a284190ec5fa938b12dc6b
+    //We'll make predictions using the model and the test data
+    val predictions = model.transform(testData)
+    predictions.write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/predictions")
+
+    // We compute AUC and F1
+    val predictionLabelsRDD = predictions
+      .select("predicted_label", "label")
+      .rdd
+      .map(r => (r.getDouble(0), r.getDouble(1)))
+    val binMetrics = new BinaryClassificationMetrics(predictionLabelsRDD)
+
+    val auc = binMetrics.areaUnderROC
+    val f1 = binMetrics.fMeasureByThreshold
 
     //We'll make predictions using the model and the test data
     val predictions = model.transform(testData)
@@ -461,27 +451,18 @@ def train_model(spark:SparkSession){
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/predictions")
 
-<<<<<<< HEAD
-    val predictionLabelsRDD = predictions
-      .select("predicted_label", "label")
-      .map(r => (r.getDouble(0), r.getDouble(1)))
-    val binMetrics = new BinaryClassificationMetrics(predictionAndLabels)
-    println("AUC ROC: %s".format(binMetrics.areaUnderROC))
-    println("F1: %s".format(binMetrics.fMeasureByThreshold))
-=======
-  //We compute the error using the evaluator
-  val error = evaluator.evaluate(predictions)
+    //We compute the error using the evaluator
+    val error = evaluator.evaluate(predictions)
 
-  // We store the metrics in a json file
-  val conf = new Configuration()
-  conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-  val fs= FileSystem.get(conf)
-  val os = fs.create(new Path("/datascience/data_demo/metrics_gbt.json"))
-  val json_content = """{"auc":"%s", "f1":%s, "rmse":%s}""".format(auc,f1,error)
-  os.write(json_content.getBytes)
-  fs.close()
-
->>>>>>> cfd4e7d81aaf81f035a284190ec5fa938b12dc6b
+    // We store the metrics in a json file
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    val fs = FileSystem.get(conf)
+    val os = fs.create(new Path("/datascience/data_demo/metrics_gbt.json"))
+    val json_content =
+      """{"auc":"%s", "f1":%s, "rmse":%s}""".format(auc, f1, error)
+    os.write(json_content.getBytes)
+    fs.close()
 
     //This will evaluate the error/deviation of the regression using the Root Mean Squared deviation
     val evaluator = new RegressionEvaluator()
@@ -727,7 +708,8 @@ def train_model(spark:SparkSession){
     piiData
       .join(tapadIndex, Seq("device_id"))
       .select("INDIVIDUAL_CLUSTER_ID", "ml_sh2")
-      .groupBy("INDIVIDUAL_CLUSTER_ID").agg(collect_list("ml_sh2").as("mails"))
+      .groupBy("INDIVIDUAL_CLUSTER_ID")
+      .agg(collect_list("ml_sh2").as("mails"))
       .withColumn("mails", concat_ws(",", col("mails")))
       .write
       .format("csv")
@@ -738,7 +720,7 @@ def train_model(spark:SparkSession){
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-      getTapadPerformance(spark)
+    getTapadPerformance(spark)
   }
 
 }
