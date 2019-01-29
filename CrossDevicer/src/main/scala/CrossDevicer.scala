@@ -111,7 +111,7 @@ object CrossDevicer {
                      22490,22490|22492,22492|20117,20117|20118,20118|22494,22494|22496,22496|20119,20119
                      20120,20120|22498,22498|22500,22500|20121,20121|20122,20122|20123,20123|20124,20124
                      22502,22502|22504,22504|22506,22506|22508,22508""".replace("\n", "|").split("\\|")
-      .map(tuple => (tuple.trim.split(",")(0), tuple.trim.split(",").last))
+      .map(tuple => (tuple.trim.split(",")(0), tuple.trim.split(",").last)).toList
     val mapping_c = ((579 to 827).map(_.toString) zip (579 to 827).map(_.toString)).toList //mapping for countries
     val mapping = (mapping_s:::mapping_c).toMap
     val mapping_segments = mapping.keys.toArray
