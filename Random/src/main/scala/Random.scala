@@ -285,6 +285,7 @@ object Random {
 
 
 def train_model(spark:SparkSession){
+  import spark.implicits._
   
   val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points")
   
