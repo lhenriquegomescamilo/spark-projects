@@ -312,17 +312,28 @@ def train_model(spark:SparkSession){
   val predictions = model.transform(testData)
   predictions.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/predictions")
   
+  // We compute AUC and F1
   val predictionLabelsRDD = predictions.select("predicted_label", "label").map(r => (r.getDouble(0), r.getDouble(1)))
   val binMetrics = new BinaryClassificationMetrics(predictionAndLabels)
-  println("AUC ROC: %s".format(binMetrics.areaUnderROC))
-  println("F1: %s".format(binMetrics.fMeasureByThreshold))
+  
+  val auc = binMetrics.areaUnderROC
+  val f1 = binMetrics.fMeasureByThreshold
 
   //This will evaluate the error/deviation of the regression using the Root Mean Squared deviation
   val evaluator = new RegressionEvaluator().setLabelCol(labelColumn).setPredictionCol("predicted_" + labelColumn).setMetricName("rmse")
 
   //We compute the error using the evaluator
   val error = evaluator.evaluate(predictions)
-  println("RMSE Error: %s".format(error))
+
+  // We store the metrics in a json file
+  val conf = new Configuration()
+  conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+  val fs= FileSystem.get(conf)
+  val os = fs.create(new Path("/datascience/data_demo/metrics.json")
+  val json_content = """{"auc":"%s", "f1":%s, "rmse":%s}""".format(auc,f1,error)
+  os.write(json_content.getBytes)
+  fs.close()
+
 
 }
 
