@@ -104,8 +104,14 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
                 )
                 WHERE distance < radius"""
 
+    
+    
     //storing result
     val sqlDF = spark.sql(query)
+    
+    //we want information about the process              
+    println(sqlDF.explain(extended = true))         
+    
     val filtered = 
     sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(poi_output_file)
   }
@@ -131,6 +137,9 @@ def cross_device(spark: SparkSession,
     // Here we do the cross-device per se.
     val cross_deviced = db_data.join(audience, db_data.col("index")===audience.col("device_id"))
                                //.select("index", "device", "device_type")
+    
+    //we want information about the process              
+    println(cross_deviced.explain(extended = true))              
     
     // Finally, we store the result obtained.
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
