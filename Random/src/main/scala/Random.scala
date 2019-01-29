@@ -439,7 +439,7 @@ object Random {
     val predictionLabelsRDD = predictions
       .select("predicted_label", "label")
       .rdd
-      .map(r => (r(0).toInt.toDouble, r(1).toInt.toDouble))
+      .map(r => (r.getInt(0), r.getInt(1)))
     val binMetrics = new BinaryClassificationMetrics(predictionLabelsRDD)
 
     val auc = binMetrics.areaUnderROC
@@ -652,7 +652,7 @@ object Random {
     // This file contains 10 columns: "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","day"
     val piiData = spark.read
       .format("parquet")
-      .load("/datascience/pii_matching/pii_tuples")
+      .load("datascience/pii_matching/pii_tuples")
       .select("device_id", "ml_sh2")
       .filter("ml_sh2 IS NOT NULL and length(ml_sh2)>0")
 
