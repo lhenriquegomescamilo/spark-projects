@@ -24,7 +24,10 @@ import org.apache.spark.sql.{Encoders, SparkSession}
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.hadoop.conf.Configuration
-import org.apache.spark.ml.classification.{RandomForestClassificationModel, RandomForestClassifier}
+import org.apache.spark.ml.classification.{
+  RandomForestClassificationModel,
+  RandomForestClassifier
+}
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -422,10 +425,10 @@ object Random {
     //  .setMaxIter(50)
 
     val rf = new RandomForestClassifier()
-                .setLabelCol(labelColumn)
-                .setFeaturesCol("features_sparse")
-                .setPredictionCol("predicted_" + labelColumn)
-                .setNumTrees(100)
+      .setLabelCol(labelColumn)
+      .setFeaturesCol("features_sparse")
+      .setPredictionCol("predicted_" + labelColumn)
+      .setNumTrees(100)
 
     //We define the Array with the stages of the pipeline
     val stages = Array(rf)
@@ -684,6 +687,18 @@ object Random {
       .format("csv")
       .option("sep", " ")
       .save("/datascience/custom/db_pii")
+  }
+
+  def getSampleATT(spark: SparkSession) {
+    spark.read
+      .format("csv")
+      .load("/datascience/sharethis/loading/*.json")
+      .filter("_c13 = 'san francisco' AND _c8 LIKE '%att%'")
+      .select("_c0", "_c1", "_c3", "_c4", "_c5", "_c6", "_c7", "_c8", "_c9")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/sharethis/sample_att")
   }
 
   def main(args: Array[String]) {
