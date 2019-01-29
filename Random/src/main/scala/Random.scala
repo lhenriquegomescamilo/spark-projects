@@ -314,7 +314,7 @@ def train_model(spark:SparkSession){
   
   // We compute AUC and F1
   val predictionLabelsRDD = predictions.select("predicted_label", "label").map(r => (r.getDouble(0), r.getDouble(1)))
-  val binMetrics = new BinaryClassificationMetrics(predictionAndLabels)
+  val binMetrics = new BinaryClassificationMetrics(predictionLabelsRDD)
   
   val auc = binMetrics.areaUnderROC
   val f1 = binMetrics.fMeasureByThreshold
