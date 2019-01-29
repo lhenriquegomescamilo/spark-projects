@@ -116,8 +116,9 @@ object keywordIngestion {
       val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()
       val ndays = if (args.length > 0) args(0).toInt else 10
       val since = if (args.length > 1) args(1).toInt else 1
-      
-      val today = DateTime.now().minusDays(1).toString("yyyyMMdd")
+      val actual_day = if (args.length > 2) args(2).toInt else 1
+
+      val today = DateTime.now().minusDays(actual_day).toString("yyyyMMdd")
       
       get_data_for_queries(spark,ndays,today,since)
       get_data_for_elastic(spark,today)
