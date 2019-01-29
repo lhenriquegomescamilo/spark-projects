@@ -688,7 +688,7 @@ object Random {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getTapadPerformance(spark)
-    train_model(spark)
+    getTapadPerformance(spark)
   }
 
 }
