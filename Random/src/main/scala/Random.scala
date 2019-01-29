@@ -479,10 +479,10 @@ def getPIItest(spark: SparkSession) {
     //getTapadOverlap(spark)
     //generate_test(spark)
     //getTestSet(spark)
-    //train_model(spark)
+    train_model(spark)
     //get_data_leo_third_party(spark)
     // getAudience(spark)
-    getPIItest(spark)
+    //getPIItest(spark)
 //get_safegraph_metrics(spark)
   }
   
