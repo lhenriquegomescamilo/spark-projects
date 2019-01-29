@@ -24,6 +24,7 @@ import org.apache.spark.sql.{Encoders, SparkSession}
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.hadoop.conf.Configuration
+import org.apache.spark.ml.classification.{RandomForestClassificationModel, RandomForestClassifier}
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
