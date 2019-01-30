@@ -535,6 +535,7 @@ object Random {
       //.agg(collect_list("ml_sh2").as("mails"))
       //.withColumn("mails", concat_ws(",", col("mails")))
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", " ")
       .save("/datascience/custom/db_pii")
