@@ -522,17 +522,18 @@ object Random {
     val piiData = spark.read
       .format("parquet")
       .load("/datascience/pii_matching/pii_tuples")
-      .select("device_id", "ml_sh2")
+      .select("device_id", "ml_sh2", "country")
       .filter("ml_sh2 IS NOT NULL and length(ml_sh2)>0")
       .withColumn("device_id", upper(col("device_id")))
       .distinct()
 
     piiData
       .join(tapadIndex, Seq("device_id"))
-      .select("INDIVIDUAL_CLUSTER_ID", "ml_sh2")
-      .groupBy("INDIVIDUAL_CLUSTER_ID")
-      .agg(collect_list("ml_sh2").as("mails"))
-      .withColumn("mails", concat_ws(",", col("mails")))
+      .distinct()
+      .select("INDIVIDUAL_CLUSTER_ID", "ml_sh2", "country")
+      //.groupBy("INDIVIDUAL_CLUSTER_ID")
+      //.agg(collect_list("ml_sh2").as("mails"))
+      //.withColumn("mails", concat_ws(",", col("mails")))
       .write
       .format("csv")
       .option("sep", " ")
