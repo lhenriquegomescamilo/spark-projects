@@ -502,20 +502,22 @@ object Random {
   def getTapadPerformance(spark: SparkSession) = {
     // First we load the index with the association for TapAd
     // This file has 4 columns: "HOUSEHOLD_CLUSTER_ID", "INDIVIDUAL_CLUSTER_ID", "device", and "device_type"
-    // val tapadIndex = spark.read
-    //   .format("parquet")
-    //   .load("/datascience/custom/tapad_index/")
-    //   .select("INDIVIDUAL_CLUSTER_ID", "device")
-    //   .withColumnRenamed("device", "device_id")
-
     val tapadIndex = spark.read
       .format("parquet")
-      .load("/datascience/crossdevice/double_index/")
-      .filter("device_type = 'dra'")
-      .withColumnRenamed("device", "INDIVIDUAL_CLUSTER_ID")
-      .withColumnRenamed("index", "device_id")
-      .select("INDIVIDUAL_CLUSTER_ID", "device_id")
+      .load("/datascience/custom/tapad_index/")
+      .select("INDIVIDUAL_CLUSTER_ID", "device")
+      .withColumnRenamed("device", "device_id")
       .withColumn("device_id", upper(col("device_id")))
+
+
+    // val tapadIndex = spark.read
+    //   .format("parquet")
+    //   .load("/datascience/crossdevice/double_index/")
+    //   .filter("device_type = 'dra'")
+    //   .withColumnRenamed("device", "INDIVIDUAL_CLUSTER_ID")
+    //   .withColumnRenamed("index", "device_id")
+    //   .select("INDIVIDUAL_CLUSTER_ID", "device_id")
+    //   .withColumn("device_id", upper(col("device_id")))
 
     // Now we load the PII data.
     // This file contains 10 columns: "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","day"
@@ -538,7 +540,7 @@ object Random {
       .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", " ")
-      .save("/datascience/custom/db_pii")
+      .save("/datascience/custom/tapad_pii")
   }
 
   def getSampleATT(spark: SparkSession) {
