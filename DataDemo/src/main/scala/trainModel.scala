@@ -140,14 +140,14 @@ object TrainModel {
                       .setSeed(1234L)
                       .setMaxIter(100)
 **/
-    val model = new RandomForestClassifier()
+    val rf = new RandomForestClassifier()
         .setLabelCol(labelColumn)
         .setFeaturesCol("features_sparse")
         .setPredictionCol("predicted_" + labelColumn)
         .setNumTrees(100)
 
     //We define the Array with the stages of the pipeline
-    val stages = Array(model)
+    val stages = Array(rf)
 
     //Construct the pipeline
     val pipeline = new Pipeline().setStages(stages)
