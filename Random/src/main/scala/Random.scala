@@ -32,6 +32,11 @@ import org.apache.spark.ml.classification.{
   GBTClassificationModel,
   GBTClassifier
 }
+import java.security.MessageDigest
+import java.util
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
+import org.apache.commons.codec.binary.Base64
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
