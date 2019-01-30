@@ -532,7 +532,7 @@ object Random {
     piiData
       .join(tapadIndex, Seq("device_id"))
       .distinct()
-      .select("INDIVIDUAL_CLUSTER_ID", "ml_sh2", "country")
+      .select("INDIVIDUAL_CLUSTER_ID", "ml_sh2", "country", "device_id")
       //.groupBy("INDIVIDUAL_CLUSTER_ID")
       //.agg(collect_list("ml_sh2").as("mails"))
       //.withColumn("mails", concat_ws(",", col("mails")))
