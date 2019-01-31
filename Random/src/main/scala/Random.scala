@@ -418,18 +418,17 @@ object Random {
       .save("/datascience/data_leo_third_party.tsv")
   }
 
-
   /**
-   * 
-   * 
-   * 
-   * 
-   * 
-   * SAFEGRAPH STATISTICS
-   * 
-   * 
-   * 
-   * 
+    *
+    *
+    *
+    *
+    *
+    * SAFEGRAPH STATISTICS
+    *
+    *
+    *
+    *
    **/
   def get_safegraph_metrics(spark: SparkSession) = {
     //This function calculates montly metrics from safegraph
@@ -503,71 +502,86 @@ object Random {
     val mayor80 = df_user_count_signals.filter(col("count") >= 80).count()
     println("signals >=80", mayor80)
   }
- /**
-   * 
-   * 
-   * 
-   * KOCHAVA
-   * 
-   * 
-   * 
-   */
-
-
- def kochava_metrics(spark: SparkSession) = {
-
-          val df_safegraphito = spark.read.option("header", "true").csv("hdfs://rely-hdfs/data/geo/safegraph/2018/12/*")
-                                  .filter("country = 'mexico'"
-                                )
-          val kocha = spark.read.option("header", "false").csv("hdfs://rely-hdfs/data/geo/kochava/Mexico")
-                      .withColumnRenamed("_c0", "ad_id")
-                      .withColumnRenamed("_c2", "timestamp")
-                      .withColumn("Day", date_format(col("timestamp"), "d"))
-                      .withColumn("Month", date_format(col("timestamp"), "M"))
-
-          kocha.cache()
-
-              //usarios unicos por día
-          val df_user_day = (kocha .select(col("ad_id"), col("Day"))  .distinct()) .groupBy(col("Day"))  .count()
-
-          //usuarios unicos en un mes
-          val df_user_month = (kocha    .select(col("ad_id"), col("Month"))   .distinct())  .groupBy(col("Month"))   .count()
-
-          //promedio de señales por usuario por dia
-          val df_user_signal = kocha      .groupBy(col("ad_id"), col("Month")) .agg(count("_c1").alias("signals"))   .agg(avg(col("signals")))
-
-
-          //total unique users kochava 
-
-          //common users
-          val common = df_safegraphito.select(col("ad_id")).join(kocha.select(col("ad_id")),Seq("ad_id")).distinct().count()
-
-          println("Months of Data in Kochava")
-          println(kocha.select(col("Month")).distinct().count())
-
-          println("Unique users per day")
-          df_user_day.show(32)
-
-          println("Unique users per Month")
-          df_user_month.show()
-
-          println("Mean signals per day")
-          df_user_signal.show(32)
-
-
-          println("Common Users")
-          println(common)
-}
 
   /**
-   * 
-   * 
-   * 
-   * TAPAD STUDY
-   * 
-   * 
-   * 
-   */
+    *
+    *
+    *
+    * KOCHAVA
+    *
+    *
+    *
+    */
+  def kochava_metrics(spark: SparkSession) = {
+
+    val df_safegraphito = spark.read
+      .option("header", "true")
+      .csv("hdfs://rely-hdfs/data/geo/safegraph/2018/12/*")
+      .filter("country = 'mexico'")
+    val kocha = spark.read
+      .option("header", "false")
+      .csv("hdfs://rely-hdfs/data/geo/kochava/Mexico")
+      .withColumnRenamed("_c0", "ad_id")
+      .withColumnRenamed("_c2", "timestamp")
+      .withColumn("Day", date_format(col("timestamp"), "d"))
+      .withColumn("Month", date_format(col("timestamp"), "M"))
+
+    kocha.cache()
+
+    //usarios unicos por día
+    val df_user_day = (kocha
+      .select(col("ad_id"), col("Day"))
+      .distinct())
+      .groupBy(col("Day"))
+      .count()
+
+    //usuarios unicos en un mes
+    val df_user_month = (kocha
+      .select(col("ad_id"), col("Month"))
+      .distinct())
+      .groupBy(col("Month"))
+      .count()
+
+    //promedio de señales por usuario por dia
+    val df_user_signal = kocha
+      .groupBy(col("ad_id"), col("Month"))
+      .agg(count("_c1").alias("signals"))
+      .agg(avg(col("signals")))
+
+    //total unique users kochava
+
+    //common users
+    val common = df_safegraphito
+      .select(col("ad_id"))
+      .join(kocha.select(col("ad_id")), Seq("ad_id"))
+      .distinct()
+      .count()
+
+    println("Months of Data in Kochava")
+    println(kocha.select(col("Month")).distinct().count())
+
+    println("Unique users per day")
+    df_user_day.show(32)
+
+    println("Unique users per Month")
+    df_user_month.show()
+
+    println("Mean signals per day")
+    df_user_signal.show(32)
+
+    println("Common Users")
+    println(common)
+  }
+
+  /**
+    *
+    *
+    *
+    * TAPAD STUDY
+    *
+    *
+    *
+    */
   def getTapadPerformance(spark: SparkSession) = {
     // First we load the index with the association for TapAd
     // This file has 4 columns: "HOUSEHOLD_CLUSTER_ID", "INDIVIDUAL_CLUSTER_ID", "device", and "device_type"
@@ -629,17 +643,16 @@ object Random {
       .save("/datascience/custom/tapad_pii")
   }
 
-
   /**
-   * 
-   * 
-   * 
-   * 
-   * ATT  SAMPLE
-   * 
-   * 
-   * 
-   * 
+    *
+    *
+    *
+    *
+    * ATT  SAMPLE
+    *
+    *
+    *
+    *
    **/
   def encrypt(value: String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
@@ -668,36 +681,38 @@ object Random {
 
   def getSampleATT(spark: SparkSession) {
     val udfEncrypt = udf(
-      (estid: String) =>
-        encrypt(estid)
+      (estid: String) => encrypt(estid)
     )
 
-    spark.read
-      .format("com.databricks.spark.csv")
-      .load("/datascience/sharethis/loading/2018*.json")
-      .filter("_c13 = 'san francisco' AND _c8 LIKE '%att%'")
-      .select("_c0", "_c1", "_c3", "_c4", "_c5", "_c6", "_c7", "_c8", "_c9")
-      .withColumn("_c0", udfEncrypt(col("_c0")))
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("csv")
-      .option("sep", "\t")
-      .save("/datascience/sharethis/sample_att")
+    val format = "yyyyMMdd"
+    val from = 31
+    val start = DateTime.now.minusDays(from)
+    val days = (0 until 75).map(start.minusDays(_)).map(_.toString(format))
+
+    def parseDay(day: String) = {
+      println("LOGGER: processing day %s".format(day))
+      spark.read
+        .format("com.databricks.spark.csv")
+        .load("/datascience/sharethis/loading/%s*.json".format(day))
+        .filter("_c13 = 'san francisco' AND _c8 LIKE '%att%'")
+        .select("_c0", "_c1", "_c3", "_c4", "_c5", "_c6", "_c7", "_c8", "_c9")
+        .withColumn("_c0", udfEncrypt(col("_c0")))
+        .write
+        .moded("append") //.mode(SaveMode.Overwrite)
+        .format("csv")
+        .option("sep", "\t")
+        .save("/datascience/sharethis/sample_att")
+      println("LOGGER: day %s processed successfully!".format(day))
+    }
+
+    days.map(day => parseDay(day))
   }
-
-
-
-
-
-
-
-
 
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getTapadPerformance(spark)
-    getDBPerformance(spark)
+    // getTapadPerformance(spark)
+    // getDBPerformance(spark)
     getSampleATT(spark)
   }
 
