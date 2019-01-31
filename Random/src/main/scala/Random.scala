@@ -710,7 +710,7 @@ object Random {
         .select("_c0", "_c1", "_c3", "_c4", "_c5", "_c6", "_c7", "_c8", "_c9")
         .withColumn("_c0", udfEncrypt(col("_c0")))
         .write
-        .moded("append") //.mode(SaveMode.Overwrite)
+        .mode("append") //.mode(SaveMode.Overwrite)
         .format("csv")
         .option("sep", "\t")
         .save("/datascience/sharethis/sample_att")
