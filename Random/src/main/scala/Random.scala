@@ -418,6 +418,19 @@ object Random {
       .save("/datascience/data_leo_third_party.tsv")
   }
 
+
+  /**
+   * 
+   * 
+   * 
+   * 
+   * 
+   * SAFEGRAPH STATISTICS
+   * 
+   * 
+   * 
+   * 
+   **/
   def get_safegraph_metrics(spark: SparkSession) = {
     //This function calculates montly metrics from safegraph
 
@@ -490,22 +503,17 @@ object Random {
     val mayor80 = df_user_count_signals.filter(col("count") >= 80).count()
     println("signals >=80", mayor80)
   }
-  def getAudience(spark: SparkSession) {
-    val data = spark.read
-      .format("parquet")
-      .load("/datascience/data_audiences_p/country==AR")
-      .filter(
-        """((array_contains(third_party,'4') OR (array_contains(third_party,'5'))
-                          AND (
-                                url LIKE '%messi%' OR url LIKE '%aguero%'
-                               OR (url LIKE '%copa%' AND url LIKE '%america%') 
-                               OR url LIKE '%griezmann%' OR url LIKE '%botines%' OR url LIKE '%arquero%'
-                               OR url LIKE '%corner%' OR (url LIKE '%la%' AND url LIKE '%seleccion%'))"""
-      )
-      .select("device_id", "device_type")
-    data.write.format("csv").save("/datascience/audiences/output/test_leo")
-  }
 
+
+  /**
+   * 
+   * 
+   * 
+   * TAPAD STUDY
+   * 
+   * 
+   * 
+   */
   def getTapadPerformance(spark: SparkSession) = {
     // First we load the index with the association for TapAd
     // This file has 4 columns: "HOUSEHOLD_CLUSTER_ID", "INDIVIDUAL_CLUSTER_ID", "device", and "device_type"
@@ -515,15 +523,6 @@ object Random {
       .select("INDIVIDUAL_CLUSTER_ID", "device")
       .withColumnRenamed("device", "device_id")
       .withColumn("device_id", upper(col("device_id")))
-
-    // val tapadIndex = spark.read
-    //   .format("parquet")
-    //   .load("/datascience/crossdevice/double_index/")
-    //   .filter("device_type = 'dra'")
-    //   .withColumnRenamed("device", "INDIVIDUAL_CLUSTER_ID")
-    //   .withColumnRenamed("index", "device_id")
-    //   .select("INDIVIDUAL_CLUSTER_ID", "device_id")
-    //   .withColumn("device_id", upper(col("device_id")))
 
     // Now we load the PII data.
     // This file contains 10 columns: "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","day"
@@ -537,11 +536,7 @@ object Random {
 
     piiData
       .join(tapadIndex, Seq("device_id"))
-      .distinct()
       .select("INDIVIDUAL_CLUSTER_ID", "nid_sh2", "country", "device_id")
-      //.groupBy("INDIVIDUAL_CLUSTER_ID")
-      //.agg(collect_list("ml_sh2").as("mails"))
-      //.withColumn("mails", concat_ws(",", col("mails")))
       .write
       .mode(SaveMode.Overwrite)
       .format("csv")
@@ -549,6 +544,49 @@ object Random {
       .save("/datascience/custom/tapad_pii")
   }
 
+  def getDBPerformance(spark: SparkSession) = {
+    // First we load the index with the association for Drawbridge
+    val tapadIndex = spark.read
+      .format("parquet")
+      .load("/datascience/crossdevice/double_index/")
+      .filter("device_type = 'dra'")
+      .withColumnRenamed("device", "INDIVIDUAL_CLUSTER_ID")
+      .withColumnRenamed("index", "device_id")
+      .select("INDIVIDUAL_CLUSTER_ID", "device_id")
+      .withColumn("device_id", upper(col("device_id")))
+
+    // Now we load the PII data.
+    // This file contains 10 columns: "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","day"
+    val piiData = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples")
+      .select("device_id", "nid_sh2", "country")
+      .filter("nid_sh2 IS NOT NULL and length(nid_sh2)>0")
+      .withColumn("device_id", upper(col("device_id")))
+      .distinct()
+
+    piiData
+      .join(tapadIndex, Seq("device_id"))
+      .select("INDIVIDUAL_CLUSTER_ID", "nid_sh2", "country", "device_id")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", " ")
+      .save("/datascience/custom/tapad_pii")
+  }
+
+
+  /**
+   * 
+   * 
+   * 
+   * 
+   * ATT  SAMPLE
+   * 
+   * 
+   * 
+   * 
+   **/
   def encrypt(value: String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
     cipher.init(Cipher.ENCRYPT_MODE, keyToSpec())
@@ -593,9 +631,19 @@ object Random {
       .save("/datascience/sharethis/sample_att")
   }
 
+
+
+
+
+
+
+
+
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
+    getTapadPerformance(spark)
+    getDBPerformance(spark)
     getSampleATT(spark)
   }
 
