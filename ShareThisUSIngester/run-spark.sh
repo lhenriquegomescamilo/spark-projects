@@ -1,4 +1,5 @@
 spark-submit\
+  --class "main.scala.ShareThisUSIngester"\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\
