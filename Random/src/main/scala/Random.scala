@@ -516,7 +516,7 @@ object Random {
 
  def kochava_metrics(spark: SparkSession) = {
 
-          val df_safegraphito = spark.read.option("header", "true").csv("hdfs://rely-hdfs/data/geo/safegraph/2018/12/*")
+          val df_safegraphito = spark.read.option("header", "true").csv("hdfs://rely-hdfs/data/geo/safegraph/2018/11/*")
                                   .filter("country = 'mexico'"
                                 )
           val kocha = spark.read.option("header", "false").csv("hdfs://rely-hdfs/data/geo/kochava/Mexico")
@@ -537,8 +537,7 @@ object Random {
           val df_user_signal = kocha      .groupBy(col("ad_id"), col("Month")) .agg(count("_c1").alias("signals"))   .agg(avg(col("signals")))
 
 
-          //total unique users kochava 
-
+          
           //common users
           val common = df_safegraphito.select(col("ad_id")).join(kocha.select(col("ad_id")),Seq("ad_id")).distinct().count()
 
@@ -557,6 +556,18 @@ object Random {
 
           println("Common Users")
           println(common)
+
+          val df_user_count_signals = kocha.groupBy(col("ad_id"), col("Day")).count()
+          df_user_count_signals.cache()
+
+          val mayor2 = df_user_count_signals.filter(col("count") >= 2).count()
+          println("signals >=2", mayor2)
+
+          val mayor20 = df_user_count_signals.filter(col("count") >= 20).count()
+          println("signals >=20", mayor20)
+
+          val mayor80 = df_user_count_signals.filter(col("count") >= 80).count()
+          println("signals >=80", mayor80)
 }
 
   /**
