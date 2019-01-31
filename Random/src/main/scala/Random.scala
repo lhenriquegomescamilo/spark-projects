@@ -534,7 +534,7 @@ object Random {
           val df_user_month = (kocha    .select(col("ad_id"), col("Month"))   .distinct())  .groupBy(col("Month"))   .count()
 
           //promedio de señales por usuario por dia
-          val df_user_signal = df_safe       .groupBy(col("ad_id"), col("Month")) .agg(count("_c1").alias("signals"))   .agg(avg(col("signals")))
+          val df_user_signal = kocha      .groupBy(col("ad_id"), col("Month")) .agg(count("_c1").alias("signals"))   .agg(avg(col("signals")))
 
 
           //total unique users kochava 
@@ -543,7 +543,7 @@ object Random {
           val common = df_safegraphito.select(col("ad_id")).join(kocha.select(col("ad_id")),Seq("ad_id")).distinct().count()
 
           println("Months of Data in Kochava")
-          kocha.select(col("Month")).distinct().count().show()
+          println(kocha.select(col("Month")).distinct().count())
 
           println("Unique users per day")
           df_user_day.show(32)
@@ -556,7 +556,7 @@ object Random {
 
 
           println("Common Users")
-          common.show(2)
+          println(common)
 }
 
   /**
