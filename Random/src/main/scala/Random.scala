@@ -652,7 +652,7 @@ object Random {
       .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", " ")
-      .save("/datascience/custom/tapad_pii")
+      .save("/datascience/custom/db_pii")
   }
 
   /**
@@ -697,9 +697,9 @@ object Random {
     )
 
     val format = "yyyyMMdd"
-    val from = 31
+    val from = 72
     val start = DateTime.now.minusDays(from)
-    val days = (0 until 75).map(start.minusDays(_)).map(_.toString(format))
+    val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
 
     def parseDay(day: String) = {
       println("LOGGER: processing day %s".format(day))
@@ -713,7 +713,7 @@ object Random {
         .mode("append") //.mode(SaveMode.Overwrite)
         .format("csv")
         .option("sep", "\t")
-        .save("/datascience/sharethis/sample_att")
+        .save("/datascience/sharethis/sample_att2")
       println("LOGGER: day %s processed successfully!".format(day))
     }
 
@@ -723,8 +723,8 @@ object Random {
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    // getTapadPerformance(spark)
-    // getDBPerformance(spark)
+    getTapadPerformance(spark)
+    getDBPerformance(spark)
     getSampleATT(spark)
   }
 
