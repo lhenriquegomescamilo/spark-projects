@@ -18,12 +18,13 @@ object dataGCBA {
         val spark = SparkSession.builder.appName("Data GCBA Process").getOrCreate()
 
          /// Parseo de parametros
-        val ndays = if (args.length > 0) args(0).toInt else 1
+        val since = if (args.length > 0) args(0).toInt else 1
+        val ndays = if (args.length > 1) args(1).toInt else 0
 
         //val today = DateTime.now().toString("yyyy/MM/dd")
         val format = "yyyy/MM/dd"
-        val start = DateTime.now.minusDays(ndays)
-        val end   = DateTime.now.minusDays(0)
+        val start = DateTime.now.minusDays(since+ndays)
+        val end   = DateTime.now.minusDays(since)
 
         val daysCount = Days.daysBetween(start, end).getDays()
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
