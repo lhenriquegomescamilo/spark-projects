@@ -569,9 +569,21 @@ object Random {
     println("Mean signals per day")
     df_user_signal.show(32)
 
-    println("Common Users")
-    println(common)
-  }
+          println("Common Users")
+          println(common)
+
+          val df_user_count_signals = kocha.groupBy(col("ad_id"), col("Day")).count()
+          df_user_count_signals.cache()
+
+          val mayor2 = df_user_count_signals.filter(col("count") >= 2).count()
+          println("signals >=2", mayor2)
+
+          val mayor20 = df_user_count_signals.filter(col("count") >= 20).count()
+          println("signals >=20", mayor20)
+
+          val mayor80 = df_user_count_signals.filter(col("count") >= 80).count()
+          println("signals >=80", mayor80)
+}
 
   /**
     *
