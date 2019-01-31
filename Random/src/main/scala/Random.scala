@@ -28,7 +28,15 @@ import org.apache.spark.ml.classification.{
   RandomForestClassifier
 }
 import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
-import org.apache.spark.ml.classification.{GBTClassificationModel, GBTClassifier}
+import org.apache.spark.ml.classification.{
+  GBTClassificationModel,
+  GBTClassifier
+}
+import java.security.MessageDigest
+import java.util
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
+import org.apache.commons.codec.binary.Base64
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -325,7 +333,6 @@ object Random {
       .foreach(println)
   }
 
-
   def getNetquest(spark: SparkSession) {
     val nDays = 10
     val from = 1
@@ -502,51 +509,85 @@ object Random {
   def getTapadPerformance(spark: SparkSession) = {
     // First we load the index with the association for TapAd
     // This file has 4 columns: "HOUSEHOLD_CLUSTER_ID", "INDIVIDUAL_CLUSTER_ID", "device", and "device_type"
-    // val tapadIndex = spark.read
-    //   .format("parquet")
-    //   .load("/datascience/custom/tapad_index/")
-    //   .select("INDIVIDUAL_CLUSTER_ID", "device")
-    //   .withColumnRenamed("device", "device_id")
-
     val tapadIndex = spark.read
       .format("parquet")
-      .load("/datascience/crossdevice/double_index/")
-      .filter("device_type = 'dra'")
-      .withColumnRenamed("device", "INDIVIDUAL_CLUSTER_ID")
-      .withColumnRenamed("index", "device_id")
-      .select("INDIVIDUAL_CLUSTER_ID", "device_id")
+      .load("/datascience/custom/tapad_index/")
+      .select("INDIVIDUAL_CLUSTER_ID", "device")
+      .withColumnRenamed("device", "device_id")
       .withColumn("device_id", upper(col("device_id")))
+
+    // val tapadIndex = spark.read
+    //   .format("parquet")
+    //   .load("/datascience/crossdevice/double_index/")
+    //   .filter("device_type = 'dra'")
+    //   .withColumnRenamed("device", "INDIVIDUAL_CLUSTER_ID")
+    //   .withColumnRenamed("index", "device_id")
+    //   .select("INDIVIDUAL_CLUSTER_ID", "device_id")
+    //   .withColumn("device_id", upper(col("device_id")))
 
     // Now we load the PII data.
     // This file contains 10 columns: "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","day"
     val piiData = spark.read
       .format("parquet")
       .load("/datascience/pii_matching/pii_tuples")
-      .select("device_id", "ml_sh2", "country")
-      .filter("ml_sh2 IS NOT NULL and length(ml_sh2)>0")
+      .select("device_id", "nid_sh2", "country")
+      .filter("nid_sh2 IS NOT NULL and length(nid_sh2)>0")
       .withColumn("device_id", upper(col("device_id")))
       .distinct()
 
     piiData
       .join(tapadIndex, Seq("device_id"))
       .distinct()
-      .select("INDIVIDUAL_CLUSTER_ID", "ml_sh2", "country")
+      .select("INDIVIDUAL_CLUSTER_ID", "nid_sh2", "country", "device_id")
       //.groupBy("INDIVIDUAL_CLUSTER_ID")
       //.agg(collect_list("ml_sh2").as("mails"))
       //.withColumn("mails", concat_ws(",", col("mails")))
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", " ")
-      .save("/datascience/custom/db_pii")
+      .save("/datascience/custom/tapad_pii")
   }
 
+  def encrypt(value: String): String = {
+    val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
+    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec())
+    Base64.encodeBase64String(cipher.doFinal(value.getBytes("UTF-8")))
+  }
+
+  def decrypt(encryptedValue: String): String = {
+    val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING")
+    cipher.init(Cipher.DECRYPT_MODE, keyToSpec())
+    new String(cipher.doFinal(Base64.decodeBase64(encryptedValue)))
+  }
+
+  def keyToSpec(): SecretKeySpec = {
+    var keyBytes: Array[Byte] = (SALT + KEY).getBytes("UTF-8")
+    val sha: MessageDigest = MessageDigest.getInstance("SHA-1")
+    keyBytes = sha.digest(keyBytes)
+    keyBytes = util.Arrays.copyOf(keyBytes, 16)
+    new SecretKeySpec(keyBytes, "AES")
+  }
+
+  private val SALT: String =
+    "jMhKlOuJnM34G6NHkqo9V010GhLAqOpF0BePojHgh1HgNg8^72k"
+
+  private val KEY: String = "a51hgaoqpgh5bcmhyt1zptys=="
+
   def getSampleATT(spark: SparkSession) {
+    val udfEncrypt = udf(
+      (estid: String) =>
+        encrypt(estid)
+    )
+
     spark.read
       .format("csv")
-      .load("/datascience/sharethis/loading/*.json")
+      .load("/datascience/sharethis/loading/2018*.json")
       .filter("_c13 = 'san francisco' AND _c8 LIKE '%att%'")
       .select("_c0", "_c1", "_c3", "_c4", "_c5", "_c6", "_c7", "_c8", "_c9")
+      //.withColumn("_c0", udfEncrypt(col("_c0")))
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", "\t")
       .save("/datascience/sharethis/sample_att")
@@ -555,8 +596,7 @@ object Random {
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    //getTapadPerformance(spark)
-    getTapadPerformance(spark)
+    getSampleATT(spark)
   }
 
 }
