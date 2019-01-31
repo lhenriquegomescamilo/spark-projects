@@ -74,7 +74,8 @@ object AudienceCrossDevicer {
     val index_filter = if (options.contains('filter)) options('filter) else ""
     val sep = if (options.contains('sep)) options('sep) else " "
     val column = if (options.contains('column)) options('column) else "_c0"
-    
+    println("\n\nLOGGER - PARAMETERS: \ncolumn: %s\nsep: '%s'\nindex filter: %s\npath: %s\n\n".format(column, sep, index_filter, audience_name))
+
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
     
