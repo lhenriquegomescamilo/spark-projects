@@ -31,10 +31,34 @@ object FromEventqueuePII {
         .save("/datascience/pii_matching/pii_tuples")
 	}
 
+  def procesPII(spark:SparkSession){
+    // First we load all the data generated from PIIs
+    var data = spark.read.load("/datascience/pii_matching/pii_tuples/")
+    // Then we separate the data acording to the PII type
+    var mails = union.filter("ml_sh2 is not null").select("device_id","device_type","country","id_partner","data_type","ml_sh2","day").withColumnRenamed("ml_sh2","pii")
+    var dnis = union.filter("nid_sh2 is not null").select("device_id","device_type","country","id_partner","data_type","nid_sh2","day").withColumnRenamed("nid_sh2","pii")
+    var mobs = union.filter("mb_sh2 is not null").select("device_id","device_type","country","id_partner","data_type","mb_sh2","day").withColumnRenamed("mb_sh2","pii")
+    var total = mails.unionAll(dnis).unionAll(mobs)
+    // We group the data and get the list of pii for each device_id with the correspondant id_partner and timestamp in a tuple.
+    var grouped = total.groupBy("device_id","country","pii","data_type").agg(collect_list("id_partner").as("id_partner"),
+                                                                            collect_list("day").as("days"),
+                                                                            collect_list("device_type").as("device_type"))
+    // Then we sort the tuples and we keep the one with the smallest timestamp.
+    val udfSort = udf((id_partner: Seq[String], days: Seq[String]) => (id_partner zip days).sortBy(_._2).toList(0))
+    val df_final = grouped.withColumn("result",udfSort($"id_partner",$"days"))
+                          .withColumn("id_partner",$"result".getItem("_1"))
+                          .withColumn("days",$"result".getItem("_2"))
+                          .select("device_id","country","pii","data_type","id_partner","days")
+    // We save the generated file
+    df_final.write
+            .format("parquet")
+            .mode(SaveMode.Append)
+            .save("/datascience/pii_matching/pii_table")
+  }
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Get Pii from Eventqueue").getOrCreate()
-
+/***
     // Here we obtain the list of days to be downloaded
     val nDays = 45
     val from = 17
@@ -44,7 +68,8 @@ object FromEventqueuePII {
 
     // Now we effectively download the data day by day
     days.map(day => getPII(spark, day))
-
+**/
+  procesPII(spark)
   }
 
 }
