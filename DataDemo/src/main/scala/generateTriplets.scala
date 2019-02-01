@@ -108,6 +108,6 @@ object GenerateTriplets {
         val ndays = if (args.length > 0) args(0).toInt else 30
         
         generate_triplets_segments(spark,ndays)
-        generate_triplets_keywords(spark,ndays) 
+        //generate_triplets_keywords(spark,ndays) 
     }
   }
