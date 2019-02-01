@@ -31,7 +31,7 @@ import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 
    The current method will provide the basis for future more customizable geolocation jobs. 
      */
-object POIMatcher {
+object POIGeoSparkMatcher {
    
  
 /**
@@ -99,6 +99,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
   def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, country: String, output_file: String) = {
     
+     val geosparkConf = new GeoSparkConf(sparkSession.sparkContext.getConf)
+     
     //getting POIs
     val df_pois_final = get_POI_coordinates(spark, POI_file_name)
      df_pois_final.createOrReplaceTempView("pointtable")
