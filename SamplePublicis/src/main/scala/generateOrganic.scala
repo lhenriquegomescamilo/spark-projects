@@ -83,7 +83,7 @@ object generateOrganic {
         userSegments.write.format("csv").option("sep", "\t")
                             .option("header",true)
                             .mode(SaveMode.Overwrite)
-                            .save("/datascience/data_mediabrands/organic")
+                            .save("/datascience/data_publicis/organic")
 
     }
     def main(args: Array[String]) {

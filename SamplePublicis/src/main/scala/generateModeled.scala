@@ -67,7 +67,7 @@ object generateModeled {
                             .withColumn("gral_segments", udfFlattenLists(col("gral_segments")))
                             .withColumn("gral_segments", udfDropDuplicates(col("gral_segments")))
 
-        userSegments.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save("/datascience/data_mediabrands/modeled")
+        userSegments.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save("/datascience/data_publicis/modeled")
 
     }
     def main(args: Array[String]) {
