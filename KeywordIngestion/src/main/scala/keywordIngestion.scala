@@ -118,9 +118,11 @@ object keywordIngestion {
       val since = if (args.length > 1) args(1).toInt else 1
       val actual_day = if (args.length > 2) args(2).toInt else 1
 
-      val today = DateTime.now().minusDays(actual_day).toString("yyyyMMdd")
+      val today = DateTime.now().minusDays(actual_day)
       
-      get_data_for_queries(spark,ndays,today,since)
-      get_data_for_elastic(spark,today)
+      //get_data_for_queries(spark,ndays,today,since)
+      val today = DateTime.now().minusDays(2)
+      val days = (0 until 4).map(today.plusDays(_).toString("yyyyMMdd")).map(get_data_for_queries(spark, ndays, _, since))
+      //get_data_for_elastic(spark,today)
     }
   }
