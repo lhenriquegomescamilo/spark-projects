@@ -103,10 +103,10 @@ object keywordIngestion {
                                     .withColumn("day", lit(today))
       
       // Hacemos el join entre nuestra data y la data de las urls con keywords.
-      val joint = df_audiences.join(broadcast(df),Seq("url"),"left_outer").na.fill("")
+      val joint = df_audiences.join(df,Seq("url"),"left_outer").na.fill("")
       // Guardamos la data en formato parquet
       joint.write.format("parquet")
-                  .mode("append")
+                  .mode(SaveMode.Overwrite)
                   .partitionBy("day")
                   .save("/datascience/data_keywords_p/")
 
@@ -121,8 +121,8 @@ object keywordIngestion {
       //val today = DateTime.now().minusDays(actual_day)
       
       //get_data_for_queries(spark,ndays,today,since)
-      val today = DateTime.now().minusDays(5)
-      val days = (0 until 3).map(today.plusDays(_).toString("yyyyMMdd")).map(get_data_for_queries(spark, ndays, _, since))
+      val today = DateTime.now().minusDays(4)
+      val days = (0 until 2).map(today.plusDays(_).toString("yyyyMMdd")).map(get_data_for_queries(spark, ndays, _, since))
       //get_data_for_elastic(spark,today)
     }
   }
