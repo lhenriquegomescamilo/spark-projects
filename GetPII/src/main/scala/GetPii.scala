@@ -24,6 +24,7 @@ object FromEventqueuePII {
     data.withColumn("day", lit(day.replace("/", "")))
         .filter(col("data_type").contains("hash") && (col("ml_sh2").isNotNull ||  col("mb_sh2").isNotNull ||  col("nid_sh2").isNotNull ))
         .select( "device_id", "device_type","country","id_partner","data_type","ml_sh2", "mb_sh2", "nid_sh2","day")
+        .distinct()
         .write
         .format("parquet")
         .mode(SaveMode.Append)
@@ -35,9 +36,9 @@ object FromEventqueuePII {
     // First we load all the data generated from PIIs
     var data = spark.read.load("/datascience/pii_matching/pii_tuples/")
     // Then we separate the data acording to the PII type
-    var mails = union.filter("ml_sh2 is not null").select("device_id","device_type","country","id_partner","data_type","ml_sh2","day").withColumnRenamed("ml_sh2","pii")
-    var dnis = union.filter("nid_sh2 is not null").select("device_id","device_type","country","id_partner","data_type","nid_sh2","day").withColumnRenamed("nid_sh2","pii")
-    var mobs = union.filter("mb_sh2 is not null").select("device_id","device_type","country","id_partner","data_type","mb_sh2","day").withColumnRenamed("mb_sh2","pii")
+    var mails = data.filter("ml_sh2 is not null").select("device_id","device_type","country","id_partner","data_type","ml_sh2","day").withColumnRenamed("ml_sh2","pii")
+    var dnis = data.filter("nid_sh2 is not null").select("device_id","device_type","country","id_partner","data_type","nid_sh2","day").withColumnRenamed("nid_sh2","pii")
+    var mobs = data.filter("mb_sh2 is not null").select("device_id","device_type","country","id_partner","data_type","mb_sh2","day").withColumnRenamed("mb_sh2","pii")
     var total = mails.unionAll(dnis).unionAll(mobs)
     // We group the data and get the list of pii for each device_id with the correspondant id_partner and timestamp in a tuple.
     var grouped = total.groupBy("device_id","country","pii","data_type").agg(collect_list("id_partner").as("id_partner"),
@@ -49,6 +50,7 @@ object FromEventqueuePII {
                           .withColumn("id_partner",$"result".getItem("_1"))
                           .withColumn("days",$"result".getItem("_2"))
                           .select("device_id","country","pii","data_type","id_partner","days")
+                          
     // We save the generated file
     df_final.write
             .format("parquet")
