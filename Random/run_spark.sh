@@ -5,6 +5,7 @@ spark-submit\
   --executor-memory 8g\
   --num-executors 10\
   --executor-cores 3\
-  --queue spark\
+  --queue default\
   --conf spark.yarn.maxAppAttempts=1\
+  --packages com.databricks:spark-csv_2.11:1.5.0\
   /home/rely/spark-projects/Random/target/scala-2.11/random_2.11-1.0.jar
