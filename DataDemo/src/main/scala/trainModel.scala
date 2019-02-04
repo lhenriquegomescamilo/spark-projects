@@ -29,11 +29,11 @@ import org.apache.spark.ml.classification.{GBTClassificationModel, GBTClassifier
 
 
 object TrainModel {
-  def getTrainingSet(spark: SparkSession) {
+  def getTrainingSet(spark: SparkSession, country:String) {
     //val df = spark.read.parquet(
     //  "/datascience/data_demo/triplets_segments/part-06761-36693c74-c327-43a6-9482-2e83c0ead518-c000.snappy.parquet"
     //)
-    val df = spark.read.parquet("/datascience/data_demo/triplets_segments/")
+    val df = spark.read.parquet("/datascience/data_demo/triplets_segments/country=%s".format(country))
 
     val gt_male = spark.read
       .format("csv")
@@ -196,8 +196,9 @@ object TrainModel {
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Train and evaluate model").getOrCreate()
+    val country = if (args.length > 0) args(0).toInt else "MX"
     
-    getTrainingSet(spark)
+    getTrainingSet(spark,country)
     getLabeledPointSet(spark)
     train_and_evaluate_model(spark)
   }
