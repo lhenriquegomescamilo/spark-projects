@@ -64,7 +64,7 @@ object FromEventqueuePII {
         "ml_sh2",
         "day"
       )
-      .withColumnRenamed("ml_sh2", "pii").withColumn("data_type",lit("mail"))
+      .withColumnRenamed("ml_sh2", "pii").withColumn("pii_type",lit("mail"))
     var dnis = data
       .filter("nid_sh2 is not null")
       .select(
@@ -75,7 +75,7 @@ object FromEventqueuePII {
         "nid_sh2",
         "day"
       )
-      .withColumnRenamed("nid_sh2", "pii").withColumn("data_type",lit("nid"))
+      .withColumnRenamed("nid_sh2", "pii").withColumn("pii_type",lit("nid"))
     var mobs = data
       .filter("mb_sh2 is not null")
       .select(
@@ -86,11 +86,11 @@ object FromEventqueuePII {
         "mb_sh2",
         "day"
       )
-      .withColumnRenamed("mb_sh2", "pii").withColumn("data_type",lit("mob"))
+      .withColumnRenamed("mb_sh2", "pii").withColumn("pii_type",lit("mob"))
     var total = mails.unionAll(dnis).unionAll(mobs)
     // We group the data and get the list of pii for each device_id with the correspondant id_partner and timestamp in a tuple.
     var grouped = total
-      .groupBy("device_id", "country", "pii", "data_type")
+      .groupBy("device_id", "country", "pii", "pii_type")
       .agg(
         collect_list("id_partner").as("id_partner"),
         collect_list("day").as("days"),
@@ -105,7 +105,7 @@ object FromEventqueuePII {
       .withColumn("result", udfSort(col("id_partner"), col("days")))
       .withColumn("id_partner", col("result").getItem("_1"))
       .withColumn("days", col("result").getItem("_2"))
-      .select("device_id", "country", "pii", "data_type", "id_partner", "days")
+      .select("device_id", "country", "pii", "pii_type", "id_partner", "days")
 
     // We save the generated file
     df_final.write
