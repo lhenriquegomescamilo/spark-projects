@@ -110,7 +110,7 @@ object FromEventqueuePII {
     // We save the generated file
     df_final.write
       .format("parquet")
-      .mode(SaveMode.Append)
+      .mode(SaveMode.Overwrite)
       .save("/datascience/pii_matching/pii_table")
   }
 
