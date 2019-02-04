@@ -61,7 +61,6 @@ object FromEventqueuePII {
         "device_type",
         "country",
         "id_partner",
-        "data_type",
         "ml_sh2",
         "day"
       )
@@ -73,7 +72,6 @@ object FromEventqueuePII {
         "device_type",
         "country",
         "id_partner",
-        "data_type",
         "nid_sh2",
         "day"
       )
@@ -85,7 +83,6 @@ object FromEventqueuePII {
         "device_type",
         "country",
         "id_partner",
-        "data_type",
         "mb_sh2",
         "day"
       )
