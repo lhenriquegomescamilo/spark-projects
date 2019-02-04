@@ -65,7 +65,7 @@ object FromEventqueuePII {
         "ml_sh2",
         "day"
       )
-      .withColumnRenamed("ml_sh2", "pii")
+      .withColumnRenamed("ml_sh2", "pii").withColumn("data_type",lit("mail"))
     var dnis = data
       .filter("nid_sh2 is not null")
       .select(
@@ -77,7 +77,7 @@ object FromEventqueuePII {
         "nid_sh2",
         "day"
       )
-      .withColumnRenamed("nid_sh2", "pii")
+      .withColumnRenamed("nid_sh2", "pii").withColumn("data_type",lit("nid"))
     var mobs = data
       .filter("mb_sh2 is not null")
       .select(
@@ -89,7 +89,7 @@ object FromEventqueuePII {
         "mb_sh2",
         "day"
       )
-      .withColumnRenamed("mb_sh2", "pii")
+      .withColumnRenamed("mb_sh2", "pii").withColumn("data_type",lit("mob"))
     var total = mails.unionAll(dnis).unionAll(mobs)
     // We group the data and get the list of pii for each device_id with the correspondant id_partner and timestamp in a tuple.
     var grouped = total
