@@ -734,32 +734,40 @@ object Random {
    * 
   */
   def getSTGeo(spark: SparkSession) = {
-    // val format = "yyyyMMdd"
-    // val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    // val start = formatter.parseDateTime("14/11/2018")
-    // val days =
-    //   (0 until 30).map(start.plusDays(_)).map(_.toString(format))
-    // val path = "/datascience/sharethis/loading/"
-    // days.map(day => spark.read.format("csv").load(path + day + "*")
-    //                      .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5")
-    //                      .withColumnRenamed("_c0", "estid")
-    //                      .withColumnRenamed("_c1", "utc_timestamp")
-    //                      .withColumnRenamed("_c3", "ip")
-    //                      .withColumnRenamed("_c0", "estid")
-    //                      .withColumnRenamed("_c0", "estid")
-    //                      .withColumnRenamed("_c0", "estid"))
-    spark.read.format("csv")
-         .load("/datascience/sharethis/loading/*")
-         .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5")
-         .withColumnRenamed("_c0", "estid")
-         .withColumnRenamed("_c1", "utc_timestamp")
-         .withColumnRenamed("_c3", "ip")
-         .withColumnRenamed("_c10", "latitude")
-         .withColumnRenamed("_c11", "longitude")
-         .withColumnRenamed("_c5", "device_type")
-         .write
-         .format("csv")
-         .save("/datascience/custom/geo_st")
+    val format = "yyyyMMdd"
+    val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
+    val start = formatter.parseDateTime("14/11/2018")
+    val days =
+      (0 until 30).map(start.plusDays(_)).map(_.toString(format))
+    val path = "/datascience/sharethis/loading/"
+    days.map(day => spark.read.format("csv").load(path + day + "*")
+                         .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5", "_c12", "_c13")
+                         .withColumnRenamed("_c0", "estid")
+                         .withColumnRenamed("_c1", "utc_timestamp")
+                         .withColumnRenamed("_c3", "ip")
+                         .withColumnRenamed("_c10", "latitude")
+                         .withColumnRenamed("_c11", "longitude")
+                         .withColumnRenamed("_c12", "zipcode")
+                         .withColumnRenamed("_c13", "city")
+                         .withColumnRenamed("_c5", "device_type")
+                         .withColumn("day", lit(day))
+                         .write
+                         .format("parquet")
+                         .partitionBy("day")
+                         .mode("append")
+                         .save("/datascience/geo/US/"))
+    // spark.read.format("csv")
+    //      .load("/datascience/sharethis/loading/*")
+    //      .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5")
+    //      .withColumnRenamed("_c0", "estid")
+    //      .withColumnRenamed("_c1", "utc_timestamp")
+    //      .withColumnRenamed("_c3", "ip")
+    //      .withColumnRenamed("_c10", "latitude")
+    //      .withColumnRenamed("_c11", "longitude")
+    //      .withColumnRenamed("_c5", "device_type")
+    //      .write
+    //      .format("csv")
+    //      .save("/datascience/custom/geo_st")
   }
 
 
