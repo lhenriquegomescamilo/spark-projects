@@ -196,7 +196,7 @@ object TrainModel {
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Train and evaluate model").getOrCreate()
-    val country = if (args.length > 0) args(0).toInt else "MX"
+    val country = if (args.length > 0) args(0).toString else "MX"
     
     getTrainingSet(spark,country)
     getLabeledPointSet(spark)
