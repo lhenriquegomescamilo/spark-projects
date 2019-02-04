@@ -2,6 +2,7 @@ package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
+import org.joda.time.format.DateTimeFormat
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.spark.ml.attribute.Attribute
@@ -720,12 +721,53 @@ object Random {
     days.map(day => parseDay(day))
   }
 
+
+
+
+  /**
+   * 
+   * 
+   * 
+   *      US GEO Sample
+   * 
+   * 
+   * 
+  */
+  def getSTGeo(spark: SparkSession) = {
+    // val format = "yyyyMMdd"
+    // val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
+    // val start = formatter.parseDateTime("14/11/2018")
+    // val days =
+    //   (0 until 30).map(start.plusDays(_)).map(_.toString(format))
+    // val path = "/datascience/sharethis/loading/"
+    // days.map(day => spark.read.format("csv").load(path + day + "*")
+    //                      .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5")
+    //                      .withColumnRenamed("_c0", "estid")
+    //                      .withColumnRenamed("_c1", "utc_timestamp")
+    //                      .withColumnRenamed("_c3", "ip")
+    //                      .withColumnRenamed("_c0", "estid")
+    //                      .withColumnRenamed("_c0", "estid")
+    //                      .withColumnRenamed("_c0", "estid"))
+    spark.read.format("csv")
+         .load("/datascience/sharethis/loading/*")
+         .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5")
+         .withColumnRenamed("_c0", "estid")
+         .withColumnRenamed("_c1", "utc_timestamp")
+         .withColumnRenamed("_c3", "ip")
+         .withColumnRenamed("_c10", "latitude")
+         .withColumnRenamed("_c11", "longitude")
+         .withColumnRenamed("_c5", "device_type")
+         .write
+         .format("csv")
+         .save("/datascience/custom/geo_st")
+  }
+
+
+
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getTapadPerformance(spark)
-    getDBPerformance(spark)
-    getSampleATT(spark)
+    getSTGeo(spark)
   }
 
 }
