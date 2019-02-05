@@ -738,7 +738,7 @@ object Random {
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
     val start = formatter.parseDateTime("03/01/2018")
     val days =
-      (0 until 11).map(start.plusDays(_*2)).map(_.toString(format))
+      (0 until 11).map(n => start.plusDays(n*2)).map(_.toString(format))
     val path = "/datascience/sharethis/loading/"
     days.map(day => spark.read.format("csv").load(path + day + "*")
                          .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5", "_c12", "_c13")
