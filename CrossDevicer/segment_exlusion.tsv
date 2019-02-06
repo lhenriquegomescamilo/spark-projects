@@ -1,0 +1,161 @@
+age	9	age_65	10	1
+age	8	age_55	10	1
+age	7	age_45	10	1
+age	6	age_35	10	1
+age	5	age_25	10	1
+age	4	age_18	10	1
+eqfx_age	20116		20	0
+eqfx_age	20115		20	0
+eqfx_age	20114		20	0
+eqfx_age	20113		20	0
+eqfx_age	20112		20	0
+eqfx_age	20111		20	0
+eqfx_bank	20118		20	0
+eqfx_bank	20117		20	0
+eqfx_credit	20124		20	0
+eqfx_credit	20121		20	0
+eqfx_credit	20123		20	0
+eqfx_credit	20122		20	0
+eqfx_gender	20126		20	0
+eqfx_gender	20125		20	0
+eqfx_income	20110		20	0
+eqfx_income	20109		20	0
+eqfx_income	20108		20	0
+eqfx_income	20107		20	0
+eqfx_la_age	22492		20	0
+eqfx_la_age	22490		20	0
+eqfx_la_age	22488		20	0
+eqfx_la_age	22486		20	0
+eqfx_la_age	22484		20	0
+eqfx_la_age	22482		20	0
+eqfx_la_bank	22496		20	0
+eqfx_la_bank	22494		20	0
+eqfx_la_credit	22508		20	0
+eqfx_la_credit	22502		20	0
+eqfx_la_credit	22506		20	0
+eqfx_la_credit	22504		20	0
+eqfx_la_gender	22512		20	0
+eqfx_la_gender	22510		20	0
+eqfx_la_income	22480		20	0
+eqfx_la_income	22478		20	0
+eqfx_la_income	22476		20	0
+eqfx_la_income	22474		20	0
+eqfx_la_t	22498		20	0
+eqfx_la_t	22500		20	0
+eqfx_t	20119		20	0
+eqfx_t	20120		20	0
+eqfx_xd_age	22491		20	0
+eqfx_xd_age	22489		20	0
+eqfx_xd_age	22487		20	0
+eqfx_xd_age	22485		20	0
+eqfx_xd_age	22483		20	0
+eqfx_xd_age	22481		20	0
+eqfx_xd_bank	22495		20	0
+eqfx_xd_bank	22493		20	0
+eqfx_xd_credit	22507		20	0
+eqfx_xd_credit	22501		20	0
+eqfx_xd_credit	22505		20	0
+eqfx_xd_credit	22503		20	0
+eqfx_xd_gender	22511		20	0
+eqfx_xd_gender	22509		20	0
+eqfx_xd_income	22479		20	0
+eqfx_xd_income	22477		20	0
+eqfx_xd_income	22475		20	0
+eqfx_xd_income	22473		20	0
+eqfx_xd_t	22497		20	0
+eqfx_xd_t	22499		20	0
+gender	2	male	10	1
+gender	3	female	10	1
+social	16	social_e	10	1
+social	15	social_d	10	1
+social	14	social_c	10	1
+social	13	social_b	10	1
+social	12	social_a	10	1
+tu_age	24609	age_18	20	1
+tu_age	24610	age_25	20	1
+tu_age	24611	age_25	20	1
+tu_age	24612	age_35	20	1
+tu_age	24613	age_35	20	1
+tu_age	24614	age_45	20	1
+tu_age	24615	age_45	20	1
+tu_age	24616	age_55	20	1
+tu_age	24617	age_55	20	1
+tu_age	24618	age_65	20	1
+tu_aniversary	24623		20	1
+tu_aniversary	24624		20	1
+tu_aniversary	24625		20	1
+tu_aniversary	24626		20	1
+tu_aniversary	24627		20	1
+tu_aniversary	24628		20	1
+tu_aniversary	24629		20	1
+tu_aniversary	24630		20	1
+tu_aniversary	24631		20	1
+tu_aniversary	24632		20	1
+tu_aniversary	24633		20	1
+tu_aniversary	24634		20	1
+tu_bank	24670		20	1
+tu_bank	24671		20	1
+tu_bank	24672		20	1
+tu_civil_status	24619		20	1
+tu_civil_status	24620		20	1
+tu_education	24647		20	1
+tu_education	24648		20	1
+tu_education	24649		20	1
+tu_education	24650		20	1
+tu_education	24651		20	1
+tu_education	24652		20	1
+tu_education	24653		20	1
+tu_education	24654		20	1
+tu_education	24655		20	1
+tu_gender	24621	male	20	1
+tu_gender	24622	female	20	1
+tu_salary	24661		20	1
+tu_salary	24662		20	1
+tu_salary	24663		20	1
+tu_salary	24664		20	1
+tu_salary	24665		20	1
+tu_salary	24666		20	1
+tu_salary	24667		20	1
+tu_salary	24668		20	1
+tu_salary	24669		20	1
+tu_social	24656	social_a	20	1
+tu_social	24657	social_b	20	1
+tu_social	24658	social_c	20	1
+tu_social	24659	social_d	20	1
+tu_social	24660	social_e	20	1
+tu_zodiac	24635		20	1
+tu_zodiac	24636		20	1
+tu_zodiac	24637		20	1
+tu_zodiac	24638		20	1
+tu_zodiac	24639		20	1
+tu_zodiac	24640		20	1
+tu_zodiac	24641		20	1
+tu_zodiac	24642		20	1
+tu_zodiac	24643		20	1
+tu_zodiac	24644		20	1
+tu_zodiac	24645		20	1
+tu_zodiac	24646		20	1
+us_sp_age	4749		0	1
+us_sp_age	4748		0	1
+us_sp_age	4747		0	1
+us_sp_age	4746		0	1
+us_sp_age	4745		0	1
+us_sp_age	4744		0	1
+us_sp_gender	4750		0	1
+us_sp_gender	4751		0	1
+xd_age	5209	age_65	5	1
+xd_age	5208	age_55	5	1
+xd_age	5207	age_45	5	1
+xd_age	5206	age_35	5	1
+xd_age	5205	age_25	5	1
+xd_age	5204	age_18	5	1
+xd_gender	5202	male	5	1
+xd_gender	5203	female	5	1
+det_gender	28047	male	15	1
+det_gender	28048	female	15	1
+det_age	28049	age_18	15	1
+det_age	28050	age_25	15	1
+det_age	28051	age_35	15	1
+det_age	28052	age_45	15	1
+det_age	28053	age_55	15	1
+det_age	28054	age_65	15	1

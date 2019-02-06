@@ -1,5 +1,5 @@
 spark-submit\
-  --class "main.scala.GenerateTriplets"\
+  --class "main.scala.TrainModel"\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\
