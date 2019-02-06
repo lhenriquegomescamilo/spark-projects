@@ -156,7 +156,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     config("spark.kryo.registrator", classOf[GeoSparkVizKryoRegistrator].getName).
     master("local[*]").appName("match_POI_geospark").getOrCreate()
 
-    GeoSparkSQLRegistrator.registerAll(sparkSession)
+    GeoSparkSQLRegistrator.registerAll(spark)
 
     // chequear que el POI_file_name este especificado y el output_file tambien
 
