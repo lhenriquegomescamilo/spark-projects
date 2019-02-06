@@ -784,8 +784,7 @@ object Random {
 
     val path = "/datascience/sharethis/loading/"
 
-    days.filter(day => fs.exists(new org.apache.hadoop.fs.Path(path + day + "*")))
-        .map(day => spark.read.format("csv").load(path + day + "*")
+    days.map(day => spark.read.format("csv").load(path + day + "*")
                               .select("_c0", "_c1", "_c3", "_c5")
                               .withColumnRenamed("_c0", "estid")
                               .withColumnRenamed("_c1", "utc_timestamp")
@@ -797,7 +796,8 @@ object Random {
                               .partitionBy("day")
                               .mode("append")
                               .save("/datascience/sharethis/urls/"))
-          
+//        filter(day => fs.exists(new org.apache.hadoop.fs.Path(path + day + "*")))
+  
   }
 
 
