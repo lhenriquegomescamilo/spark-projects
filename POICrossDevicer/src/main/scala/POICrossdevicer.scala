@@ -29,13 +29,24 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
+
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+   val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
     val format = "yyyy/MM/dd"
     val end   = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we obtain the list of hdfs folders to be read
     val path = "/data/geo/safegraph/"
-    val hdfs_files = days.map(day => path+"%s/*.gz".format(day))
+
+    // Now we obtain the list of hdfs folders to be read
+
+     val hdfs_files = days.map(day => path+"%s/".format(day))
+                            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
+
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .dropDuplicates("ad_id","latitude","longitude")
                                   .filter("country = '%s'".format(country))
