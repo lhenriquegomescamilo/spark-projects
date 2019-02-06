@@ -1,14 +1,8 @@
+name := "POI Geo SparkMatcher"
 
-val SparkVersion = "2.3.1"
+version := "1.0"
 
-val SparkCompatibleVersion = "2.3.1"
+scalaVersion := "2.11.8"
 
-val GeoSparkVersion = "1.1.3"
-
-val dependencyScope = "compile"
-
-libraryDependencies ++= Seq(
-  "org.apache.spark" %% "spark-core" % SparkVersion,
-  "org.apache.spark" %% "spark-sql" % SparkVersion,
-  "org.datasyslab" % "geospark" % GeoSparkVersion
-)
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.3.1"
+libraryDependencies += "org.datasyslab" % "geospark" % "1.1.3"
