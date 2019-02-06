@@ -1,4 +1,4 @@
-name := "Random"
+name := "Pii Table"
 
 version := "1.0"
 

@@ -770,12 +770,46 @@ object Random {
     //      .save("/datascience/custom/geo_st")
   }
 
+  def get_urls_sharethis(spark:SparkSession,ndays:Int){
+/**
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(ndays)
+    val end   = DateTime.now.minusDays(0)
+
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+**/
+    val path = "/datascience/sharethis/loading/"
+    val days = List("20190103","20190105","20190107","20190103","20190109","20190111","20190113","20190115","20190117",
+                    "20190119","20190121","20190123","20190124","20190125","20190126")
+    days.map(day => spark.read.format("csv").load(path + day + "*")
+                              .select("_c0", "_c1", "_c3", "_c5")
+                              .withColumnRenamed("_c0", "estid")
+                              .withColumnRenamed("_c1", "utc_timestamp")
+                              .withColumnRenamed("_c3", "url")
+                              .withColumnRenamed("_c5", "device_type")
+                              .withColumn("day", lit(day))
+                              .write
+                              .format("parquet")
+                              .partitionBy("day")
+                              .mode("append")
+                              .save("/datascience/sharethis/urls/"))
+//        filter(day => fs.exists(new org.apache.hadoop.fs.Path(path + day + "*")))
+  
+  }
+
 
 
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getSTGeo(spark)
+    //getSTGeo(spark)
+    val ndays = if (args.length > 0) args(0).toInt else 40
+    get_urls_sharethis(spark,ndays)
   }
 
 }
