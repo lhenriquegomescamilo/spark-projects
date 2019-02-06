@@ -774,7 +774,7 @@ object Random {
               .withColumnRenamed("_c2","url")
               .filter("url LIKE '%weed%' OR url LIKE '%cannabis%' OR url LIKE '%marihuana%' OR url LIKE '%marijuana%'")
               .select("_c0").distinct.count
-    println("Cantidad de users query marihuana: %s").format(query1)
+    println("Cantidad de users query marihuana: %s".format(query1))
     
   }
 
