@@ -151,7 +151,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val output_file = if (options.contains('output)) options('output).toString else ""
 
     // Start Spark Session
-    val spark = spark.builder().config("spark.serializer",classOf[KryoSerializer].getName).
+    val spark = SparkSession.builder().config("spark.serializer",classOf[KryoSerializer].getName).
     config("spark.kryo.registrator", classOf[GeoSparkVizKryoRegistrator].getName).
     master("local[*]").appName("match_POI_geospark").getOrCreate()
 
