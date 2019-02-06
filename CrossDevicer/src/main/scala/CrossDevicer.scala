@@ -324,7 +324,7 @@ object CrossDevicer {
       case "--from" :: value :: tail =>
         nextOption(map ++ Map('from -> value.toInt), tail)
       case "--exclusion" :: tail =>
-          nextOption(map ++ Map('exclusion -> true), tail)
+          nextOption(map ++ Map('exclusion -> 0), tail)
     }
   }
 
