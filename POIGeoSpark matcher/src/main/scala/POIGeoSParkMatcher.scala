@@ -8,7 +8,7 @@ import org.apache.spark.sql.SaveMode
 
 import org.apache.spark.serializer.KryoSerializer
 
-
+import org.datasyslab.geospark.utils.GeoSparkConf
 import org.datasyslab.geospark.spatialOperator.RangeQuery
 import org.datasyslab.geospark.spatialRDD.PointRDD
 import org.datasyslab.geospark.spatialOperator.JoinQuery
