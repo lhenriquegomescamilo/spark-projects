@@ -40,7 +40,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
  */
 
-  def get_safegraph_data(spark: SparkSession, nDays: Integer, country: String, since: Integer = 1) = {
+  def get_safegraph_data(spark: SparkSession, nDays: Integer, country: String, since: Integer = 3) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
