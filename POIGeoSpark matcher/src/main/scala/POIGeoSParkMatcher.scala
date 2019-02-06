@@ -21,7 +21,7 @@ import org.datasyslab.geospark.spatialRDD.PolygonRDD
 import com.vividsolutions.jts.geom.Coordinate
 import com.vividsolutions.jts.geom.GeometryFactory
 import com.vividsolutions.jts.geom.Point
-import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
+
 
 /**
   Job Summary: 
@@ -99,13 +99,12 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
   def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, country: String, output_file: String) = {
     
-     val geosparkConf = new GeoSparkConf(sparkSession.sparkContext.getConf)
-     
+        
     //getting POIs
     val df_pois_final = get_POI_coordinates(spark, POI_file_name)
      df_pois_final.createOrReplaceTempView("pointtable")
      
-    var pointDf1 = sparkSession.sql("select name,radius,ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape1 from pointtable")
+    var pointDf1 = spark.sql("select name,radius,ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape1 from pointtable")
 
     pointDf1.createOrReplaceTempView("pointdf1")
 
@@ -113,11 +112,11 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val df_users = get_safegraph_data(spark, safegraph_days, country)
     df_users.createOrReplaceTempView("pointtable")
     
-   var pointDf2 = sparkSession.sql("select ad_id,id_type,utc_timestamp,ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape2 from pointtable")
+   var pointDf2 = spark.sql("select ad_id,id_type,utc_timestamp,ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape2 from pointtable")
     pointDf2.createOrReplaceTempView("pointdf2")
     //pointDf2.show(2)
     
-    var distanceJoinDf = sparkSession.sql("select name,ad_id,id_type,utc_timestamp,ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  from pointdf1,pointdf2 where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius")
+    var distanceJoinDf = spark.sql("select name,ad_id,id_type,utc_timestamp,ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  from pointdf1,pointdf2 where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius")
 
 
     //storing result
@@ -125,6 +124,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val filtered = 
     distanceJoinDf.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_file)
   }
+
 
   type OptionMap = Map[Symbol, Any]
 
