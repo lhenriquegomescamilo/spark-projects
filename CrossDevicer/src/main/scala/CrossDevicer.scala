@@ -263,7 +263,7 @@ object CrossDevicer {
       val getSegments = udf(
         (segments: Seq[String]) =>
           segments.map(s => (s.toString, new_exclusion_map(s)._1.toString, new_exclusion_map(s)._2.toString.toInt))
-          .groupBy(s: (String, String, Integer) => (s._1, s._2)).map(l => (l._1._1, l._1._2, l._2.map(_._3).reduce(_+_))) // Here I get the total score per segment
+          .groupBy(s => (s._1, s._2)).map(l => (l._1._1, l._1._2, l._2.map(_._3).reduce(_+_))) // Here I get the total score per segment
           .groupBy(_._2) //group by exclusion group
           .values // For every group I have a list of tuples of this format (segment, group, total_score)
           .map(l => l.maxBy(_._3)._1)  // Here I save the segment with best score for eah group
