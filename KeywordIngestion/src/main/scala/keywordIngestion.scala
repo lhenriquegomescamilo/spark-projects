@@ -108,7 +108,7 @@ object keywordIngestion {
       joint.write.format("parquet")
                   .mode(SaveMode.Overwrite)
                   .partitionBy("day")
-                  .save("/datascience/data_keywords_p/")
+                  .save("/datascience/data_keywords/")
 
     }
     def main(args: Array[String]) {
@@ -121,8 +121,8 @@ object keywordIngestion {
       //val today = DateTime.now().minusDays(actual_day)
       
       //get_data_for_queries(spark,ndays,today,since)
-      val today = DateTime.now().minusDays(4)
-      val days = (0 until 2).map(today.plusDays(_).toString("yyyyMMdd")).map(get_data_for_queries(spark, ndays, _, since))
+      val today = DateTime.now().minusDays(1)
+      val days = (0 until 20).map(today.minusDays(_).toString("yyyyMMdd")).map(get_data_for_queries(spark, ndays, _, since))
       //get_data_for_elastic(spark,today)
     }
   }
