@@ -267,6 +267,7 @@ object CrossDevicer {
           .groupBy(_._2) //group by exclusion group
           .values // For every group I have a list of tuples of this format (segment, group, total_score)
           .map(l => l.maxBy(_._3)._1)  // Here I save the segment with best score for eah group
+          .toSeq
       )
   
       // Now we can get event data
