@@ -784,13 +784,15 @@ object Random {
     val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 **/
     val path = "/datascience/sharethis/loading/"
-    val days = List("20190103","20190105","20190107","20190103","20190109","20190111","20190113","20190115","20190117",
-                    "20190119","20190121","20190123","20190124","20190125","20190126")
+    val days = List("20181220","20181221","20181222","20181223","20181224","20181225","20181226","20181227",
+                    "20181228","20181229","20181230","20181231","20190101","20190103","20190105","20190107",
+                    "20190103","20190109","20190111","20190113","20190115","20190117","20190119","20190121",
+                    "20190123","20190124","20190125","20190126")
     days.map(day => spark.read.format("csv").load(path + day + "*")
-                              .select("_c0", "_c1", "_c3", "_c5")
+                              .select("_c0", "_c1", "_c2", "_c5")
                               .withColumnRenamed("_c0", "estid")
                               .withColumnRenamed("_c1", "utc_timestamp")
-                              .withColumnRenamed("_c3", "url")
+                              .withColumnRenamed("_c2", "url")
                               .withColumnRenamed("_c5", "device_type")
                               .withColumn("day", lit(day))
                               .write
