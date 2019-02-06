@@ -271,7 +271,7 @@ object CrossDevicer {
       )
   
       // Now we can get event data
-      val events_data = get_event_data(spark, nDays, from)
+      val events_data = get_event_data(spark, nDays, from, "segments")
   
       // Here we do the mapping from original segments to the cross-deviced segments
       val new_segments = events_data
