@@ -245,7 +245,7 @@ object CrossDevicer {
           segments
             .filter(
               segment =>
-                mapping_segments.contains(segment) && (exclusion_segments.contains(segment) or country_codes.contains(segment))
+                exclusion_segments.contains(segment)//mapping_segments.contains(segment) && (exclusion_segments.contains(segment) or country_codes.contains(segment))
             )
             .map(mapping(_))
       )
@@ -260,9 +260,13 @@ object CrossDevicer {
           } else segments.distinct
       )
       // This function returns the best segment for every exclusion group
-      val getSegment = udf(
+      val getSegments = udf(
         (segments: Seq[String]) =>
           segments.map(s => (s, new_exclusion_map(s)._1, new_exclusion_map(s)._2))
+          .groupBy(s => (s._1, s._2)).map(l => (l._1._1, l._1._2, l._2.map(_._3).reduce(_+_))) // Here I get the total score per segment
+          .groupBy(_._2) //group by exclusion group
+          .values // For every group I have a list of tuples of this format (segment, group, total_score)
+          .map(l => l.maxBy(_._3)._1)  // Here I save the segment with best score for eah group
       )
   
       // Now we can get event data
@@ -283,7 +287,7 @@ object CrossDevicer {
         .join(new_segments, index.col("index") === new_segments.col("device_id"))
         .groupBy("device", "device_type")
         .agg(flatten(collect_list("new_segment")).alias("new_segment"))
-        .withColumn("new_segment", getCountry(col("new_segment")))
+        .withColumn("new_segment", getSegments(col("new_segment")))
         .withColumn("new_segment", concat_ws(",", col("new_segment")))
         .select("device", "device_type", "new_segment")
         .distinct()
@@ -292,7 +296,7 @@ object CrossDevicer {
         .format("csv")
         .mode(SaveMode.Overwrite)
         .option("sep", "\t")
-        .save("/datascience/audiences/crossdeviced/taxo_gral")
+        .save("/datascience/audiences/crossdeviced/taxo_gral_exclusion")
     }
 
 
@@ -319,6 +323,8 @@ object CrossDevicer {
         nextOption(map ++ Map('nDays -> value.toInt), tail)
       case "--from" :: value :: tail =>
         nextOption(map ++ Map('from -> value.toInt), tail)
+      case "--exclusion" :: tail =>
+          nextOption(map ++ Map('exclusion -> true), tail)
     }
   }
 
