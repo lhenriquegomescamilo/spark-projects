@@ -112,7 +112,7 @@ object CrossDevicer {
     // Now we merge both mappings
     val mapping = (mapping_s ::: mapping_c).toMap
     val mapping_segments = mapping.keys.toArray
-    val country_codes = mapping_c.keys.toArray
+    val country_codes = (579 to 827).map(_.toString).toArray
     // Finally we load also the exclusion segments
     val exclusion_segments = spark.read
       .format("csv")
@@ -221,8 +221,8 @@ object CrossDevicer {
         ((579 to 827).map(_.toString) zip (579 to 827).map(_.toString)).toList
       // Now we merge both mappings
       val mapping = (mapping_s ::: mapping_c).toMap
-      val mapping_segments = mapping_s.keys.toArray
-      val country_codes = mapping_c.keys.toArray
+      val mapping_segments = mapping_s.map(t => t._1).toArray
+      val country_codes = (579 to 827).map(_.toString).toArray
       // Finally we load also the exclusion segments with all the information (group, segment id, and score)
       val exclusion_map = spark.read
         .format("csv")
@@ -234,7 +234,7 @@ object CrossDevicer {
         .collect()
         .toArray
         .toMap
-      val exclusion_segments = exlusion_map.keys.toArray.filter(s => mapping_segments.contains(s))
+      val exclusion_segments = exclusion_map.keys.toArray.filter(s => mapping_segments.contains(s))
       val new_exclusion_map = exclusion_segments.filter().map(s => (mapping(s), exclusion_map(s))).toMap
   
       // Some useful functions
@@ -262,8 +262,8 @@ object CrossDevicer {
       // This function returns the best segment for every exclusion group
       val getSegments = udf(
         (segments: Seq[String]) =>
-          segments.map(s => (s, new_exclusion_map(s)._1, new_exclusion_map(s)._2))
-          .groupBy(s => (s._1, s._2)).map(l => (l._1._1, l._1._2, l._2.map(_._3).reduce(_+_))) // Here I get the total score per segment
+          segments.map(s => (s.toString, new_exclusion_map(s)._1.toString, new_exclusion_map(s)._2.toString.toInt))
+          .groupBy(s: (String, String, Integer) => (s._1, s._2)).map(l => (l._1._1, l._1._2, l._2.map(_._3).reduce(_+_))) // Here I get the total score per segment
           .groupBy(_._2) //group by exclusion group
           .values // For every group I have a list of tuples of this format (segment, group, total_score)
           .map(l => l.maxBy(_._3)._1)  // Here I save the segment with best score for eah group
