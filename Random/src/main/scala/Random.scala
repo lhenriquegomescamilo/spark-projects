@@ -769,13 +769,31 @@ object Random {
     //      .format("csv")
     //      .save("/datascience/custom/geo_st")
   }
-  def get_audiences_sharethis(spark:SparkSession){
-    var query1 = spark.read.format("csv").load("/datascience/sharethis/loading/")
-              .withColumnRenamed("_c2","url")
-              .filter("url LIKE '%weed%' OR url LIKE '%cannabis%' OR url LIKE '%marihuana%' OR url LIKE '%marijuana%'")
-              .select("_c0").distinct.count
-    println("Cantidad de users query marihuana: %s".format(query1))
-    
+
+  def get_urls_sharethis(spark:SparkSession,ndays:Int){
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(ndays)
+    val end   = DateTime.now.minusDays(0)
+
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+    val path = "/datascience/sharethis/loading/"
+
+    days.filter(day => fs.exists(new org.apache.hadoop.fs.Path(path + day + "*")))
+        .map(day => spark.read.format("csv").load(path + day + "*")
+                              .select("_c0", "_c1", "_c3", "_c5")
+                              .withColumnRenamed("_c0", "estid")
+                              .withColumnRenamed("_c1", "utc_timestamp")
+                              .withColumnRenamed("_c3", "url")
+                              .withColumnRenamed("_c5", "device_type")
+                              .withColumn("day", lit(day))
+                              .write
+                              .format("parquet")
+                              .partitionBy("day")
+                              .mode("append")
+                              .save("/datascience/sharethis/urls/"))
+          
   }
 
 
@@ -784,7 +802,8 @@ object Random {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getSTGeo(spark)
-    get_audiences_sharethis(spark)
+    ndays = 40
+    get_urls_sharethis(spark,ndays)
   }
 
 }
