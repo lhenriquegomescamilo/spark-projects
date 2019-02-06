@@ -771,6 +771,10 @@ object Random {
   }
 
   def get_urls_sharethis(spark:SparkSession,ndays:Int){
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(ndays)
     val end   = DateTime.now.minusDays(0)
@@ -802,7 +806,7 @@ object Random {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getSTGeo(spark)
-    ndays = 40
+    val ndays = if (args.length > 0) args(0).toInt else 40
     get_urls_sharethis(spark,ndays)
   }
 
