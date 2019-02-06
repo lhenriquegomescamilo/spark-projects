@@ -94,8 +94,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
   def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, country: String, output_file: String) = {
     
-    val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
-        
+   
+         
     //getting POIs
     val df_pois_final = get_POI_coordinates(spark, POI_file_name)
      df_pois_final.createOrReplaceTempView("pointtable")
@@ -151,7 +151,11 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val output_file = if (options.contains('output)) options('output).toString else ""
 
     // Start Spark Session
-    val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
+    val spark = spark.builder().config("spark.serializer",classOf[KryoSerializer].getName).
+    config("spark.kryo.registrator", classOf[GeoSparkVizKryoRegistrator].getName).
+    master("local[*]").appName("match_POI_geospark").getOrCreate()
+
+    GeoSparkSQLRegistrator.registerAll(sparkSession)
 
     // chequear que el POI_file_name este especificado y el output_file tambien
 
