@@ -6,21 +6,16 @@ import org.joda.time.DateTime
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 
-import org.apache.spark.serializer.KryoSerializer
 
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.serializer.KryoSerializer
+import org.apache.spark.sql.SparkSession
+import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
+import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.datasyslab.geospark.utils.GeoSparkConf
-import org.datasyslab.geospark.spatialOperator.RangeQuery
-import org.datasyslab.geospark.spatialRDD.PointRDD
-import org.datasyslab.geospark.spatialOperator.JoinQuery
-import org.datasyslab.geospark.spatialRDD.RectangleRDD
-import com.vividsolutions.jts.geom.Envelope
-import org.datasyslab.geospark.spatialOperator.KNNQuery
-import org.datasyslab.geospark.spatialRDD
-import org.datasyslab.geospark.spatialRDD.PointRDD
-import org.datasyslab.geospark.spatialRDD.PolygonRDD
-import com.vividsolutions.jts.geom.Coordinate
-import com.vividsolutions.jts.geom.GeometryFactory
-import com.vividsolutions.jts.geom.Point
+import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
+
 
 
 /**
