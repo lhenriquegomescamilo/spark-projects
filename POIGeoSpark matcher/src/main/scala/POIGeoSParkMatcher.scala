@@ -6,21 +6,17 @@ import org.joda.time.DateTime
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 
+
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.serializer.KryoSerializer
+import org.apache.spark.sql.SparkSession
+import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
+import org.datasyslab.geospark.spatialRDD.SpatialRDD
+import org.datasyslab.geospark.utils.GeoSparkConf
+import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
+import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 
-
-import org.datasyslab.geospark.spatialOperator.RangeQuery
-import org.datasyslab.geospark.spatialRDD.PointRDD
-import org.datasyslab.geospark.spatialOperator.JoinQuery
-import org.datasyslab.geospark.spatialRDD.RectangleRDD
-import com.vividsolutions.jts.geom.Envelope
-import org.datasyslab.geospark.spatialOperator.KNNQuery
-import org.datasyslab.geospark.spatialRDD
-import org.datasyslab.geospark.spatialRDD.PointRDD
-import org.datasyslab.geospark.spatialRDD.PolygonRDD
-import com.vividsolutions.jts.geom.Coordinate
-import com.vividsolutions.jts.geom.GeometryFactory
-import com.vividsolutions.jts.geom.Point
 
 
 /**
@@ -99,7 +95,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
   def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, country: String, output_file: String) = {
     
-        
+   
+         
     //getting POIs
     val df_pois_final = get_POI_coordinates(spark, POI_file_name)
      df_pois_final.createOrReplaceTempView("pointtable")
@@ -155,7 +152,11 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val output_file = if (options.contains('output)) options('output).toString else ""
 
     // Start Spark Session
-    val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
+    val spark = SparkSession.builder().config("spark.serializer",classOf[KryoSerializer].getName).
+    config("spark.kryo.registrator", classOf[GeoSparkVizKryoRegistrator].getName).
+    master("local[*]").appName("match_POI_geospark").getOrCreate()
+
+    GeoSparkSQLRegistrator.registerAll(spark)
 
     // chequear que el POI_file_name este especificado y el output_file tambien
 
