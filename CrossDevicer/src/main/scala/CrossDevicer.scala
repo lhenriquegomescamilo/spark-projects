@@ -235,7 +235,7 @@ object CrossDevicer {
         .toArray
         .toMap
       val exclusion_segments = exclusion_map.keys.toArray.filter(s => mapping_segments.contains(s))
-      val new_exclusion_map = exclusion_segments.filter().map(s => (mapping(s), exclusion_map(s))).toMap
+      val new_exclusion_map = exclusion_segments.map(s => (mapping(s), exclusion_map(s))).toMap
   
       // Some useful functions
       // getItems function takes a list of segments, checks whether those segments are in the cross-device mapping, if not it filters them out,
