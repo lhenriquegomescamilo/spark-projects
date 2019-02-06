@@ -769,13 +769,22 @@ object Random {
     //      .format("csv")
     //      .save("/datascience/custom/geo_st")
   }
+  def get_audiences_sharethis(spark:SparkSession){
+    var query1 = spark.read.format("csv").load("/datascience/sharethis/loading/")
+              .withColumnRenamed("_c2","url")
+              .filter("url LIKE '%weed%' OR url LIKE '%cannabis%' OR url LIKE '%marihuana%' OR url LIKE '%marijuana%'")
+              .select("_c0").distinct.count
+    println("Cantidad de users query marihuana: %s").format(query1)
+    
+  }
 
 
 
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getSTGeo(spark)
+    //getSTGeo(spark)
+    get_audiences_sharethis(spark)
   }
 
 }
