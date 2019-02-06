@@ -1,7 +1,7 @@
 
-val SparkVersion = "2.2.1"
+val SparkVersion = "2.3.1"
 
-val SparkCompatibleVersion = "2.2"
+val SparkCompatibleVersion = "2.3.1"
 
 val GeoSparkVersion = "1.1.3"
 
