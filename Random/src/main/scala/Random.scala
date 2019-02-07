@@ -648,7 +648,9 @@ object Random {
 ////////////////////////
 //Now the sample dataset
 
-val df_sample = spark.read.option("header", "true").option("delimiter", ",").csv("hdfs://rely-hdfs/datascience/geo/sample").withColumn("day", date_format(to_date(col("timestamp")), "d")).withColumn("month", date_format(to_date(col("timestamp")), "M"))
+val df_sample = spark.read.option("header", "true").option("delimiter", ",").csv("hdfs://rely-hdfs/datascience/geo/sample")
+          .withColumn("day", date_format(to_date(col("timestamp")), "d"))
+          .withColumn("month", date_format(to_date(col("timestamp")), "M"))
 
             //Unique MAIDs
             val unique_MAIDSs = df_sample.select(col("identifier")).distinct().count()
@@ -689,20 +691,23 @@ println("Common Users with Safergaph",common)
 
 //Overlap de events/MAID con current data set (buscamos entender si nos provee más puntos por ID aunque no necesariamente traiga mas IDs).
  
- val records_common_safegraph = the_join.select(col("identifier"),col("timestamp")).groupBy(col("identifier")).agg(count("timestamp").alias("records_safegraph"))
-              .agg(avg(col("records_safegraph")))
+ val records_common_safegraph = the_join.select(col("identifier"),col("utc_timestamp"))
+                    .groupBy(col("identifier")).agg(count("utc_timestamp").alias("records_safegraph"))
+                      .agg(avg(col("records_safegraph")))
 
 println("Records in Sample in safegraph",records_common_safegraph)
 
-val records_common_sample = the_join.select(col("ad_id"),col("utc_timestamp")).groupBy(col("ad_id")).agg(count("utc_timestamp").alias("records_sample"))
-              .agg(avg(col("records_sample")))
+val records_common_sample = the_join.select(col("ad_id"),col("timestamp"))
+                .groupBy(col("ad_id")).agg(count("timestamp").alias("records_sample"))
+                      .agg(avg(col("records_sample")))
 
 println("Records in Sample in common users",records_common_sample)
 
 
-val records_common = the_join.select(col("identifier")).groupBy(col("identifier")).agg(count("timestamp").alias("records_safegraph"))
-                                                             .agg(count("utc_timestamp").alias("records_sample"))  
-                                                    .withColumn("ratio", col("records_safegraph") / col("records_sample"))
+val records_common = the_join.select(col("identifier"))
+                      .groupBy(col("identifier")).agg(count("timestamp").alias("records_safegraph"))
+                      .agg(count("utc_timestamp").alias("records_sample"))  
+                      .withColumn("ratio", col("records_safegraph") / col("records_sample"))
 
 
    the_join.write
@@ -830,7 +835,7 @@ val records_common = the_join.select(col("identifier")).groupBy(col("identifier"
     def parseDay(day: String) = {
       println("LOGGER: processing day %s".format(day))
       spark.read
-        .format("com.databricks.spark.csv")
+       // .format("com.databricks.spark.csv")
         .load("/datascience/sharethis/loading/%s*.json".format(day))
         .filter("_c13 = 'san francisco' AND _c8 LIKE '%att%'")
         .select("_c0", "_c1", "_c3", "_c4", "_c5", "_c6", "_c7", "_c8", "_c9")
