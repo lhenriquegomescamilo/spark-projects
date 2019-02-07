@@ -623,7 +623,7 @@ object Random {
 
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)                                   .filter("country = '%s'".format(country))                          .select("ad_id", "id_type","utc_timestamp")                       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))                    .withColumn("Day", date_format(col("Time"), "d"))                                     .withColumn("Month", date_format(col("Time"), "M"))
 
-
+    df_safegraph.cache()
     //usarios unicos por día
     val df_user_day_safe = (df_safegraph      
                         .select(col("ad_id"), col("Day"))      
@@ -643,6 +643,7 @@ object Random {
                             .agg(count("id_type").alias("signals"))      
                             .agg(avg(col("signals")))
 
+
     println("Mean signals per user - safegraph",df_user_signal_safe)
 
 ////////////////////////
@@ -652,6 +653,8 @@ val df_sample = spark.read.option("header", "true").option("delimiter", ",").csv
           .withColumn("day", date_format(to_date(col("timestamp")), "d"))
           .withColumn("month", date_format(to_date(col("timestamp")), "M"))
 
+        df_sample.cache()
+        
             //Unique MAIDs
             val unique_MAIDSs = df_sample.select(col("identifier")).distinct().count()
             println("Unique MAIDs - sample dataset",unique_MAIDSs)
@@ -682,17 +685,16 @@ val df_sample = spark.read.option("header", "true").option("delimiter", ",").csv
 //Overlap de MAIDs con current data set (buscamos entender el incremental de IDs)
 
 //common users
-val the_join = df_sample.limit(1000)
-              .join(df_safegraph.limit(1000), df_sample.col("identifier")===df_safegraph.col("ad_id"),"inner")
+val the_join = df_sample.join(df_safegraph, df_sample.col("identifier")===df_safegraph.col("ad_id"),"inner")
 
 val common = the_join.distinct().count()
 
-println("Common Users with Safergaph",common)
+println("Common Users with Safegraph",common)
 
 //Overlap de events/MAID con current data set (buscamos entender si nos provee más puntos por ID aunque no necesariamente traiga mas IDs).
- 
- val records_common_safegraph = the_join.select(col("identifier"),col("utc_timestamp"))
-                    .groupBy(col("identifier")).agg(count("utc_timestamp").alias("records_safegraph"))
+ /*
+ val records_common_safegraph = the_join.groupBy(col("identifier"))
+                      .agg(count("utc_timestamp").alias("records_safegraph"))
                       .agg(avg(col("records_safegraph")))
 
 println("Records in Sample in safegraph",records_common_safegraph)
@@ -709,10 +711,10 @@ val records_common = the_join.select(col("identifier"))
                       .agg(count("utc_timestamp").alias("records_sample"))  
                       .withColumn("ratio", col("records_safegraph") / col("records_sample"))
 
-
+*/
    the_join.write
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/metrics")
+      .save("/datascience/geo/sample_metrics")
 
   }
 
