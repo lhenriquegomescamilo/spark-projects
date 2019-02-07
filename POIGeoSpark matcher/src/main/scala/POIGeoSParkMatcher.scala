@@ -128,14 +128,16 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       "select name,ad_id,id_type,utc_timestamp,ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  from pointdf1,pointdf2 where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius"
     )
 
+    val countito = distanceJoinDf.count()
+      println("conteo", countito)
     //storing result
 
-    val filtered =
-      distanceJoinDf.write
-        .format("csv")
-        .option("sep", "\t")
-        .mode(SaveMode.Overwrite)
-        .save(output_file)
+    // val filtered = 
+    //  distanceJoinDf.write
+     //   .format("csv")
+      //  .option("sep", "\t")
+       // .mode(SaveMode.Overwrite)
+       // .save(output_file)
   }
 
   type OptionMap = Map[Symbol, Any]
