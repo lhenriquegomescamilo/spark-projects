@@ -4,6 +4,11 @@ import org.joda.time.DateTime
 import org.apache.spark.sql.functions.col
 import org.joda.time.format.DateTimeFormat
 import org.apache.spark.sql.{DataFrame, SparkSession, SaveMode}
+import java.security.MessageDigest
+import java.util
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
+import org.apache.commons.codec.binary.Base64
 
 object ByTwoGeoData {
 
@@ -47,6 +52,11 @@ object ByTwoGeoData {
   private val KEY: String = "a51hgaoqpgh5bcmhyt1zptys=="
 
   def getSampleATT(spark: SparkSession, day: String) = {
+    val udfEncrypt = udf(
+      (estid: String) => encrypt(estid)
+    )
+
+    
     println("LOGGER: processing day %s".format(day))
     spark.read
     // .format("com.databricks.spark.csv")
