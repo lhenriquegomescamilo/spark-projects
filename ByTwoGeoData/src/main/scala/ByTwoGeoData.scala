@@ -19,14 +19,43 @@ object ByTwoGeoData {
     println("\nLOGGER: DAY %s HAS BEEN PROCESSED!\n\n".format(day))
   }
 
+  def getSampleATT(spark: SparkSession, day: String) = {
+    println("LOGGER: processing day %s".format(day))
+    spark.read
+    // .format("com.databricks.spark.csv")
+      .load("/datascience/sharethis/loading/%s*.json".format(day))
+      .filter("_c13 = 'san francisco' AND _c8 LIKE '%att%'")
+      .select(
+        "_c0",
+        "_c1",
+        "_c2",
+        "_c3",
+        "_c4",
+        "_c5",
+        "_c6",
+        "_c7",
+        "_c8",
+        "_c9"
+      )
+      .withColumn("_c0", udfEncrypt(col("_c0")))
+      .write
+      .coalesce(100)
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/sharethis/sample_att_url/%s".format(day))
+    println("LOGGER: day %s processed successfully!".format(day))
+  }
+
   def main(Args: Array[String]) {
-    val spark = SparkSession.builder.appName("ByTwo data").getOrCreate()
+    // val spark = SparkSession.builder.appName("ByTwo data").getOrCreate()
 
-    val format = "yyyyMMdd"
-    val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("15/11/2018")
-    val days = (0 until 50).map(n => start.plusDays(n)).map(_.toString(format))
+    // val format = "yyyyMMdd"
+    // val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
+    // val start = formatter.parseDateTime("14/11/2018")
+    // val days = (0 until 50).map(n => start.plusDays(n)).map(_.toString(format))
 
-    days.map(day => sampleSanti(spark, day))
+    // days.map(day => sampleSanti(spark, day))
+    getSampleATT(spark)
   }
 }
