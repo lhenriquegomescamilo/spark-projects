@@ -172,10 +172,9 @@ object keywordIngestion {
     // Guardamos la data en formato parquet
     joint.write
       .format("parquet")
-      .mode(SaveMode.Overwrite)
+      .mode("append")
       .partitionBy("day")
       .save("/datascience/data_keywords/")
-
   }
 
   def main(args: Array[String]) {
