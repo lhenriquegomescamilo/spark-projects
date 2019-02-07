@@ -590,6 +590,131 @@ object Random {
     *
     *
     *
+    * Geo Metrics Sample
+    *
+    *
+    *
+    */
+  def get_geo_sample_dataa(spark: SparkSession, nDays: Integer, country: String, since: Integer ) = {
+    //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
+    // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
+    // Also we generate a new column call 'geocode' that will be used for the join
+
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+   val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    val nDays = 10
+    val since = 10
+    val country = "argentina"
+
+    // Get the days to be loaded
+    val format = "yyyy/MM/dd"
+    val end   = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/data/geo/safegraph/"
+
+    // Now we obtain the list of hdfs folders to be read
+
+     val hdfs_files = days.map(day => path+"%s/".format(day))
+                            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
+
+    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)                                   .filter("country = '%s'".format(country))                          .select("ad_id", "id_type","utc_timestamp")                       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))                    .withColumn("Day", date_format(col("Time"), "d"))                                     .withColumn("Month", date_format(col("Time"), "M"))
+
+
+    //usarios unicos por día
+    val df_user_day = (df_safegraph      
+                        .select(col("ad_id"), col("Day"))      
+                        .distinct())      
+                        .groupBy(col("Day"))      
+                        .count()
+
+            println("Unique users per day - safegraph")
+            df_user_day.show()
+    
+    //usuarios unicos en un mes
+//   val df_user_month = (df_safegraph  .select(col("ad_id"), col("Month")).distinct()).groupBy(col("Month")).count()
+
+    //promedio de señales por usuario por dia
+    val df_user_signal = df_safegraph      
+                            .groupBy(col("ad_id"), col("Month"))      
+                            .agg(count("id_type").alias("signals"))      
+                            .agg(avg(col("signals")))
+
+    println("Mean signals per user - safegraph",df_user_signal)
+
+////////////////////////
+//Now the sample dataset
+
+val df_sample = spark.read.option("header", "true").option("delimiter", ",").csv("hdfs://rely-hdfs/datascience/geo/sample").withColumn("day", date_format(to_date(col("timestamp")), "d")).withColumn("month", date_format(to_date(col("timestamp")), "M"))
+
+            //Unique MAIDs
+            val unique_MAIDSs = df_sample.select(col("identifier")).distinct().count()
+            println("Unique MAIDs - sample dataset",unique_MAIDs)
+
+            //Total number of events
+            val number_events = df_sample.select(col("record_id")).distinct().count()
+            println("Total Events - sample dataset",number_events)
+
+            //usarios unicos por día
+            val df_user_day = (df_sample.select(col("identifier"),col("day"))
+                              .distinct())
+                              .groupBy(col("Day"))
+                              .count()
+
+            println("Unique users per day - sample dataset")
+            df_user_day.show()
+
+//Mean, median, mode y range de events/MAID
+
+//promedio de señales por usuario por dia
+      val df_user_signal = df_sample.groupBy(col("identifier"),col("day"))
+                                    .agg(count("identifier_type")
+                                    .alias("signals"))
+                                    .agg(avg(col("signals")))
+
+ println("Mean signals per user - sample data",df_user_signal)
+
+//Overlap de MAIDs con current data set (buscamos entender el incremental de IDs)
+
+//common users
+val the_join = df_sample.limit(1000)
+              .join(df_safegraph.limit(1000), df_sample.col("identifier")===df_safegraph.col("ad_id"),"inner")
+
+val common = the_join.distinct().count()
+
+println("Common Users with Safergaph",common)
+
+//Overlap de events/MAID con current data set (buscamos entender si nos provee más puntos por ID aunque no necesariamente traiga mas IDs).
+ 
+ val records_common_safegraph = the_join.select(col("identifier"),col("timestamp")).groupBy(col("identifier")).agg(count("timestamp").alias("records_safegraph"))
+              .agg(avg(col("records_safegraph")))
+
+println("Records in Sample in safegraph",records_common_safegraph)
+
+val records_common_sample = the_join.select(col("ad_id"),col("utc_timestamp")).groupBy(col("ad_id")).agg(count("utc_timestamp").alias("records_sample"))
+              .agg(avg(col("records_sample")))
+
+println("Records in Sample in common users",records_common_sample)
+
+
+val records_common = the_join.select(col("identifier")).groupBy(col("identifier")).agg(count("timestamp").alias("records_safegraph"))
+                                                             .agg(count("utc_timestamp").alias("records_sample"))  
+                                                             .withColumn("ratio", $"records_safegraph" / $"records_sample") 
+
+
+   the_join.write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/metrics")
+
+  }
+
+  /**
+    *
+    *
+    *
     * TAPAD STUDY
     *
     *
@@ -863,7 +988,8 @@ object Random {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getSTGeo(spark)
-    sampleSanti(spark)
+    get_geo_sample_data(spark)
+    //sampleSanti(spark)
   }
 
 }
