@@ -75,8 +75,8 @@ object ByTwoGeoData {
         "_c9"
       )
       .withColumn("_c0", udfEncrypt(col("_c0")))
-      .write
       .coalesce(100)
+      .write
       .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", "\t")
