@@ -168,13 +168,15 @@ object keywordIngestion {
       .withColumn("day", lit(today))
 
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
-    val joint = df_audiences.join(df, Seq("url"), "left_outer").na.fill("")
+    val joint = df_audiences.join(broadcast(df), Seq("url"), "left_outer").na.fill("")
     // Guardamos la data en formato parquet
     joint.write
       .format("parquet")
       .mode("append")
       .partitionBy("day")
       .save("/datascience/data_keywords/")
+    df.unpersist()
+    df.destroy()
   }
 
   def main(args: Array[String]) {
