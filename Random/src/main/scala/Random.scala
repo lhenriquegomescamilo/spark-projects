@@ -839,22 +839,25 @@ object Random {
   }
 
   def sampleSanti(spark: SparkSession) {
-    val day = "20181114"
+    val format = "yyyyMMdd"
+    val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
+    val start = formatter.parseDateTime("15/11/2018")
+    val days =
+      (0 until 50).map(n => start.plusDays(n)).map(_.toString(format))
+
     // First we read the data in parquet format
-    val data = spark.read
-      .format("parquet")
-      .load("/datascience/geo/US/day=%s".format(day))
-
-    data.write
-      .format("com.databricks.spark.csv")
-      .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
-      .save("/datascience/custom/geo/US/")
+    days.map(
+      day =>
+        spark.read
+          .format("parquet")
+          .load("/datascience/geo/US/day=%s".format(day))
+          .coalesce(100)
+          .format("com.databricks.spark.csv")
+          .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/geo/US/")
+    )
   }
-
-
-
-
-
 
   def main(args: Array[String]) {
     val spark =
