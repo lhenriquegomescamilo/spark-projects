@@ -595,7 +595,7 @@ object Random {
     *
     *
     */
-  def get_geo_sample_dataa(spark: SparkSession, nDays: Integer, country: String, since: Integer ) = {
+  def get_geo_sample_data(spark: SparkSession) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
@@ -625,25 +625,25 @@ object Random {
 
 
     //usarios unicos por día
-    val df_user_day = (df_safegraph      
+    val df_user_day_safe = (df_safegraph      
                         .select(col("ad_id"), col("Day"))      
                         .distinct())      
                         .groupBy(col("Day"))      
                         .count()
 
             println("Unique users per day - safegraph")
-            df_user_day.show()
+            df_user_day_safe.show()
     
     //usuarios unicos en un mes
 //   val df_user_month = (df_safegraph  .select(col("ad_id"), col("Month")).distinct()).groupBy(col("Month")).count()
 
     //promedio de señales por usuario por dia
-    val df_user_signal = df_safegraph      
+    val df_user_signal_safe = df_safegraph      
                             .groupBy(col("ad_id"), col("Month"))      
                             .agg(count("id_type").alias("signals"))      
                             .agg(avg(col("signals")))
 
-    println("Mean signals per user - safegraph",df_user_signal)
+    println("Mean signals per user - safegraph",df_user_signal_safe)
 
 ////////////////////////
 //Now the sample dataset
@@ -652,7 +652,7 @@ val df_sample = spark.read.option("header", "true").option("delimiter", ",").csv
 
             //Unique MAIDs
             val unique_MAIDSs = df_sample.select(col("identifier")).distinct().count()
-            println("Unique MAIDs - sample dataset",unique_MAIDs)
+            println("Unique MAIDs - sample dataset",unique_MAIDSs)
 
             //Total number of events
             val number_events = df_sample.select(col("record_id")).distinct().count()
@@ -702,7 +702,7 @@ println("Records in Sample in common users",records_common_sample)
 
 val records_common = the_join.select(col("identifier")).groupBy(col("identifier")).agg(count("timestamp").alias("records_safegraph"))
                                                              .agg(count("utc_timestamp").alias("records_sample"))  
-                                                             .withColumn("ratio", $"records_safegraph" / $"records_sample") 
+                                                    .withColumn("ratio", col("records_safegraph") / col("records_sample"))
 
 
    the_join.write
