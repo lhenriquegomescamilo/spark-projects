@@ -177,6 +177,7 @@ object keywordIngestion {
       .save("/datascience/data_keywords/")
 
   }
+
   def main(args: Array[String]) {
     /// Configuracion spark
     val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()

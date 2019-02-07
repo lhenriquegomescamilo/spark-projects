@@ -570,21 +570,21 @@ object Random {
     println("Mean signals per day")
     df_user_signal.show(32)
 
-          println("Common Users")
-          println(common)
+    println("Common Users")
+    println(common)
 
-          val df_user_count_signals = kocha.groupBy(col("ad_id"), col("Day")).count()
-          df_user_count_signals.cache()
+    val df_user_count_signals = kocha.groupBy(col("ad_id"), col("Day")).count()
+    df_user_count_signals.cache()
 
-          val mayor2 = df_user_count_signals.filter(col("count") >= 2).count()
-          println("signals >=2", mayor2)
+    val mayor2 = df_user_count_signals.filter(col("count") >= 2).count()
+    println("signals >=2", mayor2)
 
-          val mayor20 = df_user_count_signals.filter(col("count") >= 20).count()
-          println("signals >=20", mayor20)
+    val mayor20 = df_user_count_signals.filter(col("count") >= 20).count()
+    println("signals >=20", mayor20)
 
-          val mayor80 = df_user_count_signals.filter(col("count") >= 80).count()
-          println("signals >=80", mayor80)
-}
+    val mayor80 = df_user_count_signals.filter(col("count") >= 80).count()
+    println("signals >=80", mayor80)
+  }
 
   /**
     *
@@ -721,41 +721,43 @@ object Random {
     days.map(day => parseDay(day))
   }
 
-
-
-
   /**
-   * 
-   * 
-   * 
-   *      US GEO Sample
-   * 
-   * 
-   * 
-  */
+    *
+    *
+    *
+    *      US GEO Sample
+    *
+    *
+    *
+    */
   def getSTGeo(spark: SparkSession) = {
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
     val start = formatter.parseDateTime("03/01/2018")
     val days =
-      (0 until 11).map(n => start.plusDays(n*2)).map(_.toString(format))
+      (0 until 11).map(n => start.plusDays(n * 2)).map(_.toString(format))
     val path = "/datascience/sharethis/loading/"
-    days.map(day => spark.read.format("csv").load(path + day + "*")
-                         .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5", "_c12", "_c13")
-                         .withColumnRenamed("_c0", "estid")
-                         .withColumnRenamed("_c1", "utc_timestamp")
-                         .withColumnRenamed("_c3", "ip")
-                         .withColumnRenamed("_c10", "latitude")
-                         .withColumnRenamed("_c11", "longitude")
-                         .withColumnRenamed("_c12", "zipcode")
-                         .withColumnRenamed("_c13", "city")
-                         .withColumnRenamed("_c5", "device_type")
-                         .withColumn("day", lit(day))
-                         .write
-                         .format("parquet")
-                         .partitionBy("day")
-                         .mode("append")
-                         .save("/datascience/geo/US/"))
+    days.map(
+      day =>
+        spark.read
+          .format("csv")
+          .load(path + day + "*")
+          .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5", "_c12", "_c13")
+          .withColumnRenamed("_c0", "estid")
+          .withColumnRenamed("_c1", "utc_timestamp")
+          .withColumnRenamed("_c3", "ip")
+          .withColumnRenamed("_c10", "latitude")
+          .withColumnRenamed("_c11", "longitude")
+          .withColumnRenamed("_c12", "zipcode")
+          .withColumnRenamed("_c13", "city")
+          .withColumnRenamed("_c5", "device_type")
+          .withColumn("day", lit(day))
+          .write
+          .format("parquet")
+          .partitionBy("day")
+          .mode("append")
+          .save("/datascience/geo/US/")
+    )
     // spark.read.format("csv")
     //      .load("/datascience/sharethis/loading/*")
     //      .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5")
@@ -770,8 +772,9 @@ object Random {
     //      .save("/datascience/custom/geo_st")
   }
 
-  def get_urls_sharethis(spark:SparkSession,ndays:Int){
-/**
+  def get_urls_sharethis(spark: SparkSession, ndays: Int) {
+
+    /**
     val sc = spark.sparkContext
     val conf = sc.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
@@ -782,27 +785,74 @@ object Random {
 
     val daysCount = Days.daysBetween(start, end).getDays()
     val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-**/
+    **/
     val path = "/datascience/sharethis/loading/"
-    val days = List("20181220","20181221","20181222","20181223","20181224","20181225","20181226","20181227",
-                    "20181228","20181229","20181230","20181231","20190101","20190103","20190105","20190107",
-                    "20190103","20190109","20190111","20190113","20190115","20190117","20190119","20190121",
-                    "20190123","20190124","20190125","20190126")
-    days.map(day => spark.read.format("csv").load(path + day + "*")
-                              .select("_c0", "_c1", "_c2", "_c5")
-                              .withColumnRenamed("_c0", "estid")
-                              .withColumnRenamed("_c1", "utc_timestamp")
-                              .withColumnRenamed("_c2", "url")
-                              .withColumnRenamed("_c5", "device_type")
-                              .withColumn("day", lit(day))
-                              .write
-                              .format("parquet")
-                              .partitionBy("day")
-                              .mode("append")
-                              .save("/datascience/sharethis/urls/"))
+    val days = List(
+      "20181220",
+      "20181221",
+      "20181222",
+      "20181223",
+      "20181224",
+      "20181225",
+      "20181226",
+      "20181227",
+      "20181228",
+      "20181229",
+      "20181230",
+      "20181231",
+      "20190101",
+      "20190103",
+      "20190105",
+      "20190107",
+      "20190103",
+      "20190109",
+      "20190111",
+      "20190113",
+      "20190115",
+      "20190117",
+      "20190119",
+      "20190121",
+      "20190123",
+      "20190124",
+      "20190125",
+      "20190126"
+    )
+    days.map(
+      day =>
+        spark.read
+          .format("csv")
+          .load(path + day + "*")
+          .select("_c0", "_c1", "_c2", "_c5")
+          .withColumnRenamed("_c0", "estid")
+          .withColumnRenamed("_c1", "utc_timestamp")
+          .withColumnRenamed("_c2", "url")
+          .withColumnRenamed("_c5", "device_type")
+          .withColumn("day", lit(day))
+          .write
+          .format("parquet")
+          .partitionBy("day")
+          .mode("append")
+          .save("/datascience/sharethis/urls/")
+    )
 //        filter(day => fs.exists(new org.apache.hadoop.fs.Path(path + day + "*")))
-  
+
   }
+
+  def sampleSanti(spark: SparkSession) {
+    val day = "20181114"
+    // First we read the data in parquet format
+    val data = spark.read
+      .format("parquet")
+      .load("/datascience/geo/US/day=%s".format(day))
+
+    data.write
+      .format("com.databricks.spark.csv")
+      .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
+      .save("/datascience/custom/geo/US/")
+  }
+
+
+
 
 
 
@@ -810,8 +860,7 @@ object Random {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getSTGeo(spark)
-    val ndays = if (args.length > 0) args(0).toInt else 40
-    get_urls_sharethis(spark,ndays)
+    sampleSanti(spark)
   }
 
 }
