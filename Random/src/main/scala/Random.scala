@@ -967,13 +967,14 @@ val records_common = the_join.select(col("identifier"))
 //        filter(day => fs.exists(new org.apache.hadoop.fs.Path(path + day + "*")))
 
   }
-
+ /**
   def sampleSanti(spark: SparkSession) {
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
     val start = formatter.parseDateTime("15/11/2018")
     val days =
       (0 until 50).map(n => start.plusDays(n)).map(_.toString(format))
+
 
     // First we read the data in parquet format
     days.map(
@@ -982,12 +983,13 @@ val records_common = the_join.select(col("identifier"))
           .format("parquet")
           .load("/datascience/geo/US/day=%s".format(day))
           .coalesce(100)
-         // .format("com.databricks.spark.csv")
+          .format("com.databricks.spark.csv")
           .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
           .mode(SaveMode.Overwrite)
           .save("/datascience/custom/geo/US/")
     )
   }
+**/
 
   def main(args: Array[String]) {
     val spark =
