@@ -595,7 +595,7 @@ object Random {
     *
     *
     */
-  def get_geo_sample_data(spark: SparkSession, nDays: 10, country: argentina, since: Integer = 7) = {
+  def get_geo_sample_dataa(spark: SparkSession, nDays: Integer, country: String, since: Integer ) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
@@ -603,6 +603,10 @@ object Random {
     // First we obtain the configuration to be allowed to watch if a file exists or not
    val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
+
+    val nDays = 10
+    val since = 10
+    val country = "argentina"
 
     // Get the days to be loaded
     val format = "yyyy/MM/dd"
