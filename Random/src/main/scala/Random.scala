@@ -595,7 +595,7 @@ object Random {
     *
     *
     */
-  def get_geo_sample_data(spark: SparkSession, nDays: Integer, country: String, since: Integer ) = {
+  def get_geo_sample_data(spark: SparkSession) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
