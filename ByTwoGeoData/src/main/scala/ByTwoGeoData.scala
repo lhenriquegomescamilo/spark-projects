@@ -59,7 +59,7 @@ object ByTwoGeoData {
 
     println("LOGGER: processing day %s".format(day))
     spark.read
-    // .format("com.databricks.spark.csv")
+      .format("com.databricks.spark.csv")
       .load("/datascience/sharethis/loading/%s*.json".format(day))
       .filter("_c13 = 'san francisco' AND _c8 LIKE '%att%'")
       .select(
