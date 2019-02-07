@@ -1,7 +1,7 @@
 package main.scala
 
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.functions.{col, udf}
 import org.joda.time.format.DateTimeFormat
 import org.apache.spark.sql.{DataFrame, SparkSession, SaveMode}
 import java.security.MessageDigest
@@ -56,7 +56,7 @@ object ByTwoGeoData {
       (estid: String) => encrypt(estid)
     )
 
-    
+
     println("LOGGER: processing day %s".format(day))
     spark.read
     // .format("com.databricks.spark.csv")
