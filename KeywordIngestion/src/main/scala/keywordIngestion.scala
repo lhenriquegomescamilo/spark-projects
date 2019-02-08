@@ -84,6 +84,93 @@ object keywordIngestion {
 
   }
 
+  def getKeywordsByURL(
+      spark: SparkSession,
+      ndays: Int,
+      today: String,
+      since: Int
+  ): DataFrame = {
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    /// Leemos la data de keywords de ndays hacia atras
+    val format = "yyyy-MM-dd"
+    val start = DateTime.now.minusDays(since + ndays)
+    val end = DateTime.now.minusDays(since)
+
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days =
+      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+    val dfs = (0 until daysCount)
+      .map(start.plusDays(_))
+      .map(_.toString(format))
+      .filter(
+        day =>
+          fs.exists(
+            new Path("/datascience/data_keyword_ingestion/%s.csv".format(day))
+          )
+      )
+      .map("/datascience/data_keyword_ingestion/%s.csv".format(x))
+
+    val df = spark.read
+      .format("csv")
+      .load(dfs: _*)
+      .withColumnRenamed("_c0", "url")
+      .withColumnRenamed("_c1", "content_keys")
+      .withColumnRenamed("_c2", "count")
+      .withColumnRenamed("_c3", "country")
+      .drop("count")
+
+    df
+  }
+
+
+  /**
+   * Esta funcion retorna un DataFrame con toda la data proveniente del pipeline de data_audiences.
+   * Ademas, esta función se encarga de preprocesar las URLs de manera que se obtengan todas las
+   * keywords de dicha data. 
+   */
+  def getAudienceData(spark: SparkSession, today: String): DataFrame = {
+    // En primer lugar definimos un par de funciones que seran de utilidad
+    // La primer funcion sirve para eliminar todos los tokens que tienen digitos
+    val udfFilter = udf(
+      (segments: Seq[String]) =>
+        segments.filter(token => !(token.matches("\\d*")))
+    )
+
+    // Esta funcion toma el campo segments y all_segments y los pone todos en un mismo listado
+    val udfGetSegments = udf(
+      (segments: Seq[String], all_segments: Seq[String], event_type: String) =>
+        (segments.map(s => "s_%s".format(s)).toList ::: all_segments.map(s => "as_%s".format(s)).toList)
+          .map(s => "%s%s".format((if (event_type == "xp") "xp" else ""), s)).toSeq
+    )
+
+    // Finalme
+    spark.read
+      .parquet("/datascience/data_audiences_p/day=%s".format(today)) // Leemos la data
+      .withColumn("day", lit(today)) // Agregamos el dia
+      .withColumn(
+        "segments",
+        udfGetSegments(col("segments"), col("all_segments"), col("event_type"))
+      ) // En este punto juntamos todos los segmentos en una misma columna
+      .withColumn("url_keys", regexp_replace(col("url"), """https*://""", ""))
+      .withColumn(
+        "url_keys",
+        regexp_replace(col("url_keys"), """[/,=&\.\(\) \|]""", " , ")
+      )
+      .withColumn("url_keys", regexp_replace(col("url_keys"), """%..""", " , "))
+      .withColumn("url_keys", split(col("url_keys"), " , "))
+      .withColumn("url_keys", udfFilter(col("url_keys"))) // En esta parte nos quedamos con las keywords de cada sitio
+      .select(
+        "device_id",
+        "device_type",
+        "url",
+        "country",
+        "segments",
+        "url_keys"
+      )
+  }
+
   /**
     * Este metodo se encarga de generar un archivo de la pinta <device_id, url_keywords, content_keys, all_segments, country>.
     * Para armar este dataframe se utiliza la data de las keywords subidas diariamente (se utilizan los ultimos ndays y el parametro since para levantar la data)
@@ -105,101 +192,65 @@ object keywordIngestion {
       today: String,
       since: Int
   ) {
+    // This function takes a list of lists and returns only a list with all the values.
+    val flatten = udf((xs: Seq[Seq[String]]) => xs.flatten)
 
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-    /// Leemos la data de keywords de ndays hacia atras
-    val format = "yyyy-MM-dd"
-    val start = DateTime.now.minusDays(since + ndays)
-    val end = DateTime.now.minusDays(since)
+    // Primero levantamos el dataframe que tiene toda la data de los usuarios con sus urls
+    val URLkeys = getKeywordsByURL(spark, ndays, today, since)
 
-    val daysCount = Days.daysBetween(start, end).getDays()
-    val days =
-      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
-    val dfs = (0 until daysCount)
-      .map(start.plusDays(_))
-      .map(_.toString(format))
-      .filter(
-        day =>
-          fs.exists(
-            new Path("/datascience/data_keyword_ingestion/%s.csv".format(day))
-          )
-      )
-      .map(
-        x =>
-          spark.read
-            .format("csv")
-            .load("/datascience/data_keyword_ingestion/%s.csv".format(x))
-      )
-
-    val df = dfs
-      .reduce(_ union _)
-      .withColumnRenamed("_c0", "url")
-      .withColumnRenamed("_c1", "content_keys")
-      .withColumnRenamed("_c2", "count")
-      .withColumnRenamed("_c3", "country")
-      .drop("country")
-
-    // Levantamos el dataframe que tiene toda la data de los usuarios con sus urls
-    val udfFilter = udf(
-      (segments: Seq[String]) =>
-        segments.filter(token => !(token.matches("\\d*")))
-    )
-
-    val df_audiences = spark.read
-      .parquet("/datascience/data_audiences_p/day=%s".format(today))
-      .select(
-        "device_id",
-        "event_type",
-        "all_segments",
-        "url",
-        "device_type",
-        "country"
-      )
-      .withColumn("url_keys", regexp_replace(col("url"), """https*://""", ""))
-      .withColumn(
-        "url_keys",
-        regexp_replace(col("url_keys"), """[/,=&\.\(\) \|]""", " , ")
-      )
-      .withColumn("url_keys", regexp_replace(col("url_keys"), """%..""", " , "))
-      .withColumn("url_keys", split(col("url_keys"), " , "))
-      .withColumn("url_keys", udfFilter(col("url_keys")))
-      .withColumn("day", lit(today))
+    // Ahora levantamos la data de las audiencias
+    val df_audiences = getAudienceData(spark, ndays, today, since)
 
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
-    val df_b = spark.sparkContext.broadcast(df)
-    val joint = df_audiences.join(df_b.value, Seq("url"), "left_outer").na.fill("")
+    //val df_b = spark.sparkContext.broadcast(df)
+    val joint = df_audiences
+      .join(URLkeys, Seq("country", "url"), "left_outer")
+      .na
+      .fill("")
+      .groupBy("device_id", "device_type", "country")
+      .agg(
+        collect_list("segments").as("segments"),
+        collect_list("content_keys").as("content_keys"),
+        collect_list("url_keys").as("url_keys")
+      )
+      .withColumn("url_keys", flatten("url_keys"))
+      .withColumn("content_keys", flatten("content_keys"))
+      .withColumn("segments", flatten("segments"))
+
     // Guardamos la data en formato parquet
-    joint.write
+    joint.coalesce(100).write
       .format("parquet")
       .mode("append")
       .partitionBy("day")
-      .save("/datascience/data_keywords_p/")
-    df_b.unpersist()
-    df_b.destroy()
+      .partitionBy("country")
+      .save("/datascience/data_keywords/")
+    // df_b.unpersist()
+    // df_b.destroy()
   }
 
   def main(args: Array[String]) {
     /// Configuracion spark
     val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()
     val ndays = if (args.length > 0) args(0).toInt else 10
-    //val since = if (args.length > 1) args(1).toInt else 1
+    val since = if (args.length > 1) args(1).toInt else 1
     val actual_day = if (args.length > 2) args(2).toInt else 1
 
-    //val today = DateTime.now().minusDays(actual_day)
+    val today = DateTime.now().minusDays(actual_day)
 
-    //get_data_for_queries(spark,ndays,today,since)
-    val today = DateTime.now().minusDays(5)
-    val days = (0 until 20).map(
-      since =>
-        get_data_for_queries(
-          spark,
-          ndays,
-          today.minusDays(since).toString("yyyyMMdd"),
-          since
-        )
-    )
+    get_data_for_queries(spark,ndays,today,since)
+
+    // val today = DateTime.now().minusDays(1)
+    // val days = (0 until 20).map(
+    //   since =>
+    //     get_data_for_queries(
+    //       spark,
+    //       ndays,
+    //       today.minusDays(since).toString("yyyyMMdd"),
+    //       since
+    //     )
+    // )
+
     //get_data_for_elastic(spark,today)
   }
 }
+
