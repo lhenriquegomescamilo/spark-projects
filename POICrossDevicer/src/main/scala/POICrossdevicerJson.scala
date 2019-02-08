@@ -190,6 +190,7 @@ def cross_device(spark: SparkSession,
     val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
     val country = if (options.contains('country)) options('country).toString else "mexico"
     val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
+    val max_radius = if (options.contains('max_radius)) options('max_radius).toInt.toInt else 100
     val poi_output_file = if (options.contains('output)) options('output).toString else ""
     val xd = if (options.contains('xd)) options('xd).toString else ""
     
@@ -201,7 +202,7 @@ def cross_device(spark: SparkSession,
     //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
     //val poi_output_file = "/datascience/geo/MX/specific_POIs"
 
-    match_POI(spark, safegraph_days, POI_file_name, country, poi_output_file,max_radius)
+    match_POI(spark, safegraph_days, POI_file_name, country, poi_output_file, max_radius)
       // Finally, we perform the cross-device
   if(xd==true) {
     cross_device(spark, poi_output_file)
