@@ -1022,7 +1022,7 @@ val records_common = the_join.select(col("identifier"))
           .write
           .format("csv")
           .mode(SaveMode.Overwrite)
-          .save("datascience/audiences/custom_audiences/audience_vuse")
+          .save("/datascience/audiences/custom_audiences/audience_vuse")
   }
 
 }
