@@ -26,17 +26,16 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
  */
   def get_variables(spark: SparkSession, path_geo_json:String) =  {
 
-    val file = "hdfs://rely-hdfs/datascience/geo/geo_json/{}.json".format(path_geo_json)
-    val df = spark.sqlContext.read.json(file)
-   // val columns = df.columns
-   // val data = df.collect().map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
 
-    val max_radius = df.select(col("max_radius")).as[Integer].collect()(0)
-    val country = df.select(col("country")).as[String].collect()(0)
-    val output_file = df.select(col("output_file")).as[String].collect()(0)
-    val path_to_pois = df.select(col("path_to_pois")).as[String].collect()(0)
-    val crossdevice = df.select(col("max_radius")).as[String].collect()(0)
-    val nDays = df.select(col("max_radius")).as[Integer].collect()(0)
+    val file = "hdfs://rely-hdfs/datascience/geo/geo_json/%s.json".format(path_geo_json)
+    val df = spark.sqlContext.read.json(file)
+
+    val max_radius = df.select(col("max_radius")).collect()(0)(0).toString.toInt
+    val country = df.select(col("country")).collect()(0)(0).toString
+    val output_file = df.select(col("output_file")).collect()(0)(0).toString
+    val path_to_pois = df.select(col("path_to_pois")).collect()(0)(0).toString
+    val crossdevice = df.select(col("crossdevice")).collect()(0)(0).toString
+    val nDays = df.select(col("nDays")).collect()(0)(0).toString.toInt
 
     max_radius
     country
