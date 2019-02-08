@@ -6,6 +6,7 @@ import org.apache.spark.sql.functions.{
   abs,
   udf,
   regexp_replace,
+  collect_list,
   split,
   lit
 }
@@ -215,9 +216,9 @@ object keywordIngestion {
         collect_list("content_keys").as("content_keys"),
         collect_list("url_keys").as("url_keys")
       )
-      .withColumn("url_keys", flatten("url_keys"))
-      .withColumn("content_keys", flatten("content_keys"))
-      .withColumn("segments", flatten("segments"))
+      .withColumn("url_keys", flatten(col("url_keys")))
+      .withColumn("content_keys", flatten(col("content_keys")))
+      .withColumn("segments", flatten(col("segments")))
 
     // Guardamos la data en formato parquet
     joint
