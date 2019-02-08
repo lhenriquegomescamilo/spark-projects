@@ -190,7 +190,7 @@ def cross_device(spark: SparkSession,
     val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
     val country = if (options.contains('country)) options('country).toString else "mexico"
     val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
-    val max_radius = if (options.contains('max_radius)) options('max_radius).toInt.toInt else 100
+    val max_radius = if (options.contains('max_radius)) options('max_radius).toInt else 100
     val poi_output_file = if (options.contains('output)) options('output).toString else ""
     val xd = if (options.contains('xd)) options('xd).toString else ""
     
