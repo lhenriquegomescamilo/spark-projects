@@ -621,8 +621,21 @@ object Random {
      val hdfs_files = days.map(day => path+"%s/".format(day))
                             .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
 
-    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)                                   .filter("country = '%s'".format(country))                          .select("ad_id", "id_type","utc_timestamp")                       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))                    .withColumn("Day", date_format(col("Time"), "d"))                                     .withColumn("Month", date_format(col("Time"), "M"))
+    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)       
+                        .filter("country = '%s'".format(country))
+                        .select("ad_id", "id_type","utc_timestamp")
+                        .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+                        .withColumn("Day", date_format(col("Time"), "d"))
+                        .withColumn("Month", date_format(col("Time"), "M"))
+                        .write
+                        .format("csv")
+                        .option("sep", "\t")
+                        .option("header", "true")
+                        .save("/datascience/geo/safegraph_10d.tsv")
+                        
 
+
+/*
     df_safegraph.cache()
     //usarios unicos por día
     val df_user_day_safe = (df_safegraph      
@@ -645,7 +658,7 @@ object Random {
 
 
     println("Mean signals per user - safegraph",df_user_signal_safe)
-
+ 
 ////////////////////////
 //Now the sample dataset
 
@@ -692,7 +705,7 @@ val common = the_join.distinct().count()
 println("Common Users with Safegraph",common)
 
 //Overlap de events/MAID con current data set (buscamos entender si nos provee más puntos por ID aunque no necesariamente traiga mas IDs).
- /*
+
  val records_common_safegraph = the_join.groupBy(col("identifier"))
                       .agg(count("utc_timestamp").alias("records_safegraph"))
                       .agg(avg(col("records_safegraph")))
@@ -711,10 +724,12 @@ val records_common = the_join.select(col("identifier"))
                       .agg(count("utc_timestamp").alias("records_sample"))  
                       .withColumn("ratio", col("records_safegraph") / col("records_sample"))
 
-*/
+
    the_join.write
       .mode(SaveMode.Overwrite)
       .save("/datascience/geo/sample_metrics")
+
+*/
 
   }
 
