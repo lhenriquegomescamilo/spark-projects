@@ -201,7 +201,7 @@ object keywordIngestion {
     val URLkeys = getKeywordsByURL(spark, ndays, today, since)
 
     // Ahora levantamos la data de las audiencias
-    val df_audiences = getAudienceData(spark, ndays, today, since)
+    val df_audiences = getAudienceData(spark, today)
 
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
     //val df_b = spark.sparkContext.broadcast(df)
