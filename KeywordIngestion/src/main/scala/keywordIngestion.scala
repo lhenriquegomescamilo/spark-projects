@@ -84,6 +84,45 @@ object keywordIngestion {
 
   }
 
+  def getKeywordsByURL(
+      spark: SparkSession,
+      ndays: Int,
+      today: String,
+      since: Int
+  ): DataFrame = {
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    /// Leemos la data de keywords de ndays hacia atras
+    val format = "yyyy-MM-dd"
+    val start = DateTime.now.minusDays(since + ndays)
+    val end = DateTime.now.minusDays(since)
+
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days =
+      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+    val dfs = (0 until daysCount)
+      .map(start.plusDays(_))
+      .map(_.toString(format))
+      .filter(
+        day =>
+          fs.exists(
+            new Path("/datascience/data_keyword_ingestion/%s.csv".format(day))
+          )
+      )
+      .map("/datascience/data_keyword_ingestion/%s.csv".format(x))
+
+    val df = spark.read
+      .format("csv")
+      .load(dfs: _*)
+      .withColumnRenamed("_c0", "url")
+      .withColumnRenamed("_c1", "content_keys")
+      .withColumnRenamed("_c2", "count")
+      .withColumnRenamed("_c3", "country")
+
+    df
+  }
+
   /**
     * Este metodo se encarga de generar un archivo de la pinta <device_id, url_keywords, content_keys, all_segments, country>.
     * Para armar este dataframe se utiliza la data de las keywords subidas diariamente (se utilizan los ultimos ndays y el parametro since para levantar la data)
@@ -106,40 +145,7 @@ object keywordIngestion {
       since: Int
   ) {
 
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-    /// Leemos la data de keywords de ndays hacia atras
-    val format = "yyyy-MM-dd"
-    val start = DateTime.now.minusDays(since + ndays)
-    val end = DateTime.now.minusDays(since)
-
-    val daysCount = Days.daysBetween(start, end).getDays()
-    val days =
-      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
-    val dfs = (0 until daysCount)
-      .map(start.plusDays(_))
-      .map(_.toString(format))
-      .filter(
-        day =>
-          fs.exists(
-            new Path("/datascience/data_keyword_ingestion/%s.csv".format(day))
-          )
-      )
-      .map(
-        x =>
-          spark.read
-            .format("csv")
-            .load("/datascience/data_keyword_ingestion/%s.csv".format(x))
-      )
-
-    val df = dfs
-      .reduce(_ union _)
-      .withColumnRenamed("_c0", "url")
-      .withColumnRenamed("_c1", "content_keys")
-      .withColumnRenamed("_c2", "count")
-      .withColumnRenamed("_c3", "country")
-      .drop("country")
+    val URLkeys = getKeywordsByURL(spark, ndays, today, since)
 
     // Levantamos el dataframe que tiene toda la data de los usuarios con sus urls
     val udfFilter = udf(
@@ -157,27 +163,30 @@ object keywordIngestion {
         "device_type",
         "country"
       )
-      .withColumn("url_keys", regexp_replace(col("url"), """https*://""", ""))
-      .withColumn(
-        "url_keys",
-        regexp_replace(col("url_keys"), """[/,=&\.\(\) \|]""", " , ")
-      )
-      .withColumn("url_keys", regexp_replace(col("url_keys"), """%..""", " , "))
-      .withColumn("url_keys", split(col("url_keys"), " , "))
-      .withColumn("url_keys", udfFilter(col("url_keys")))
       .withColumn("day", lit(today))
+    // .withColumn("url_keys", regexp_replace(col("url"), """https*://""", ""))
+    // .withColumn(
+    //   "url_keys",
+    //   regexp_replace(col("url_keys"), """[/,=&\.\(\) \|]""", " , ")
+    // )
+    // .withColumn("url_keys", regexp_replace(col("url_keys"), """%..""", " , "))
+    // .withColumn("url_keys", split(col("url_keys"), " , "))
+    // .withColumn("url_keys", udfFilter(col("url_keys")))
 
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
-    val df_b = spark.sparkContext.broadcast(df)
-    val joint = df_audiences.join(df_b.value, Seq("url"), "left_outer").na.fill("")
+    //val df_b = spark.sparkContext.broadcast(df)
+    val joint = df_audiences
+      .join(URLkeys, Seq("country", "url"), "left_outer")
+      .na
+      .fill("")
     // Guardamos la data en formato parquet
     joint.write
       .format("parquet")
       .mode("append")
       .partitionBy("day")
       .save("/datascience/data_keywords/")
-    df_b.unpersist()
-    df_b.destroy()
+    // df_b.unpersist()
+    // df_b.destroy()
   }
 
   def main(args: Array[String]) {
