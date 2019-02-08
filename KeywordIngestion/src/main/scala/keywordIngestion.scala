@@ -152,7 +152,6 @@ object keywordIngestion {
     // Finalme
     spark.read
       .parquet("/datascience/data_audiences_p/day=%s".format(today)) // Leemos la data
-      .withColumn("day", lit(today)) // Agregamos el dia
       .withColumn(
         "segments",
         udfGetSegments(col("segments"), col("all_segments"), col("event_type"))
@@ -166,7 +165,6 @@ object keywordIngestion {
       .withColumn("url_keys", split(col("url_keys"), " , "))
       .withColumn("url_keys", udfFilter(col("url_keys"))) // En esta parte nos quedamos con las keywords de cada sitio
       .select(
-        "day",
         "device_id",
         "device_type",
         "url",
@@ -221,6 +219,7 @@ object keywordIngestion {
       .withColumn("url_keys", flatten(col("url_keys")))
       .withColumn("content_keys", flatten(col("content_keys")))
       .withColumn("segments", flatten(col("segments")))
+      .withColumn("day", lit(today)) // Agregamos el dia
 
     // Guardamos la data en formato parquet
     joint
