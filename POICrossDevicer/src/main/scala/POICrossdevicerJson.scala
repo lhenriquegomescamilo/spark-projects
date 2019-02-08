@@ -71,7 +71,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     //creating geocodes the POIs
     val df_pois_parsed = df_pois.withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
-                                .withColumn("radius", lit(max_radius)))
+                                .withColumn("radius", lit(max_radius))
 
     // Here we rename the columns
     val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "radius", "geocode")
