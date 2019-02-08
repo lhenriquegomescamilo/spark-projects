@@ -8,7 +8,7 @@ spark-submit\
   --executor-cores 4\
   --queue default\
   --conf spark.yarn.maxAppAttempts=1\
-  /home/rely/spark-projects/CrossDevicer/target/scala-2.11/cross-devicer_2.11-1.0.jar --from 1 --nDays 5
+  /home/rely/spark-projects/CrossDevicer/target/scala-2.11/cross-devicer_2.11-1.0.jar --from 4 --nDays 60 --exclusion
 
 
 

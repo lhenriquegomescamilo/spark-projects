@@ -175,7 +175,7 @@ object keywordIngestion {
       .format("parquet")
       .mode("append")
       .partitionBy("day")
-      .save("/datascience/data_keywords/")
+      .save("/datascience/data_keywords_p/")
     df_b.unpersist()
     df_b.destroy()
   }
@@ -190,7 +190,7 @@ object keywordIngestion {
     //val today = DateTime.now().minusDays(actual_day)
 
     //get_data_for_queries(spark,ndays,today,since)
-    val today = DateTime.now().minusDays(1)
+    val today = DateTime.now().minusDays(5)
     val days = (0 until 20).map(
       since =>
         get_data_for_queries(
