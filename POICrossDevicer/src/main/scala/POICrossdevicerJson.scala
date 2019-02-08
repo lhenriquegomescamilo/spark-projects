@@ -3,7 +3,7 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.{round, broadcast, col, abs, upper}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import scala.collection.Map
 
@@ -174,11 +174,11 @@ def cross_device(spark: SparkSession,
       case "--poi_file" :: value :: tail =>
         nextOption(map ++ Map('poi_file -> value.toString), tail)
       case "--max_radius" :: value :: tail =>
-        nextOption(map ++ Map('poi_file -> value.toInt), tail)
+        nextOption(map ++ Map('max_radius -> value.toInt), tail)
       case "--output" :: value :: tail =>
         nextOption(map ++ Map('output -> value.toString), tail)
       case "--xd" :: value :: tail =>
-        nextOption(map ++ Map('output -> value.toString), tail)
+        nextOption(map ++ Map('xd -> value.toString), tail)
         }
   }
   
@@ -190,6 +190,7 @@ def cross_device(spark: SparkSession,
     val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
     val country = if (options.contains('country)) options('country).toString else "mexico"
     val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
+    val max_radius = if (options.contains('max_radius)) options('max_radius).toString.toInt else 100
     val poi_output_file = if (options.contains('output)) options('output).toString else ""
     val xd = if (options.contains('xd)) options('xd).toString else ""
     
@@ -201,9 +202,9 @@ def cross_device(spark: SparkSession,
     //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
     //val poi_output_file = "/datascience/geo/MX/specific_POIs"
 
-    match_POI(spark, safegraph_days, POI_file_name, country, poi_output_file)
+    match_POI(spark, safegraph_days, POI_file_name, country, poi_output_file, max_radius)
       // Finally, we perform the cross-device
-  if(xd===true) {
+  if(xd==true) {
     cross_device(spark, poi_output_file)
     }
    
