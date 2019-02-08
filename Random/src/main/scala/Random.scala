@@ -1024,13 +1024,13 @@ val records_common = the_join.select(col("identifier"))
     //      .mode(SaveMode.Overwrite)
     //      .save("/datascience/audiences/custom_audiences/audience_vuse")
     var df_audience = spark.read.format("csv").load("/datascience/audiences/custom_audiences/audience_vuse").withColumnRenamed("_c0","d17")
-    var mapping = spark.read.format("csv").option("sep","\t").option("header","true").load("/datascience/matching_estid")
+    var mapping = spark.read.format("csv").option("sep","\t").option("header","true").load("/datascience/matching_estid_2")
     var joint = df_audience.join(mapping,Seq("d17"))
     joint.select("device_id").distinct
           .write
           .format("csv")
           .mode(SaveMode.Overwrite)
-          .save("/datascience/audiences/custom_audiences/device_id_vuse")
+          .save("/datascience/audiences/custom_audiences/device_id_vuse_2")
   }
 
 }
