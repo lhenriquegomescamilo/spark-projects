@@ -166,6 +166,7 @@ object keywordIngestion {
       .withColumn("url_keys", split(col("url_keys"), " , "))
       .withColumn("url_keys", udfFilter(col("url_keys"))) // En esta parte nos quedamos con las keywords de cada sitio
       .select(
+        "day",
         "device_id",
         "device_type",
         "url",
@@ -238,23 +239,23 @@ object keywordIngestion {
     /// Configuracion spark
     val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()
     val ndays = if (args.length > 0) args(0).toInt else 10
-    val since = if (args.length > 1) args(1).toInt else 1
+    // val since = if (args.length > 1) args(1).toInt else 1
     val actual_day = if (args.length > 2) args(2).toInt else 1
 
-    val today = DateTime.now().minusDays(actual_day).toString("yyyyMMdd")
+    // val today = DateTime.now().minusDays(actual_day).toString("yyyyMMdd")
 
-    get_data_for_queries(spark, ndays, today, since)
+    // get_data_for_queries(spark, ndays, today, since)
 
-    // val today = DateTime.now().minusDays(1)
-    // val days = (0 until 20).map(
-    //   since =>
-    //     get_data_for_queries(
-    //       spark,
-    //       ndays,
-    //       today.minusDays(since).toString("yyyyMMdd"),
-    //       since
-    //     )
-    // )
+    val today = DateTime.now().minusDays(1)
+    val days = (0 until 20).map(
+      since =>
+        get_data_for_queries(
+          spark,
+          ndays,
+          today.minusDays(since).toString("yyyyMMdd"),
+          since
+        )
+    )
 
     //get_data_for_elastic(spark,today)
   }
