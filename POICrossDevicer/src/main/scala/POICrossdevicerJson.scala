@@ -24,6 +24,28 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
    @param country: country from with to filter the data, it is currently hardcoded to Mexico
    @return df_safegraph: dataframe created with the safegraph data, filtered by the desired country, extracting the columns user id, device id, latitude and longitude removing duplicate users that have repeated locations and with added geocode.
  */
+  def get_variables(spark: SparkSession, path_geo_json:String) =  {
+
+    val file = "hdfs://rely-hdfs/datascience/geo/geo_json/{}.json".format(path_geo_json)
+    val df = spark.sqlContext.read.json(file)
+   // val columns = df.columns
+   // val data = df.collect().map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
+
+    val max_radius = df.select(col("max_radius")).as[Integer].collect()(0)
+    val country = df.select(col("country")).as[String].collect()(0)
+    val output_file = df.select(col("output_file")).as[String].collect()(0)
+    val path_to_pois = df.select(col("path_to_pois")).as[String].collect()(0)
+    val crossdevice = df.select(col("max_radius")).as[String].collect()(0)
+    val nDays = df.select(col("max_radius")).as[Integer].collect()(0)
+
+    max_radius
+    country
+    output_file
+    path_to_pois
+    crossdevice
+    nDays
+
+  }
 
   def get_safegraph_data(spark: SparkSession, nDays: Integer, country: String, since: Integer = 1) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
@@ -167,6 +189,9 @@ def cross_device(spark: SparkSession,
     def isSwitch(s: String) = (s(0) == '-')
     list match {
       case Nil => map
+      case "--path_geo_json" :: value :: tail =>
+        nextOption(map ++ Map('path_geo_json -> value.toString), tail) 
+        /*
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value.toInt), tail)
       case "--country" :: value :: tail =>
@@ -178,7 +203,8 @@ def cross_device(spark: SparkSession,
       case "--output" :: value :: tail =>
         nextOption(map ++ Map('output -> value.toString), tail)
       case "--xd" :: value :: tail =>
-        nextOption(map ++ Map('xd -> value.toString), tail)
+        nextOption(map ++ Map('xd -> value.toString), tail) 
+        */
         }
   }
   
