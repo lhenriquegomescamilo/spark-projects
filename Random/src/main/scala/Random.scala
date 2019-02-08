@@ -1013,8 +1013,16 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //getSTGeo(spark)
-    get_geo_sample_data(spark)
+    //get_geo_sample_data(spark)
     //sampleSanti(spark)
+    spark.read.load("/datascience/sharethis/urls/day=2019*")
+          .filter("url LIKE '%vuse%' OR url LIKE '%vape%' OR url LIKE '%vaping%' OR url LIKE '%electr%cigar%' OR url LIKE '%smoke%alternative%' OR url LIKE '%cbd%'")
+          .select("estid")
+          .distinct
+          .write
+          .format("csv")
+          .mode(SaveMode.Overwrite)
+          .save("datascience/audiences/custom_audiences/audience_vuse")
   }
 
 }
