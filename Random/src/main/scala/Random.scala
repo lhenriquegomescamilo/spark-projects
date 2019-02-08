@@ -1012,8 +1012,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getSTGeo(spark)
-    //get_geo_sample_data(spark)
+    //getSTGeo(spark)
+    get_geo_sample_data(spark)
     //sampleSanti(spark)
   }
 
