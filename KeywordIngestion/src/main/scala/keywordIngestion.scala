@@ -9,7 +9,7 @@ import org.apache.spark.sql.functions.{
   split,
   lit
 }
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.broadcast
@@ -110,7 +110,7 @@ object keywordIngestion {
             new Path("/datascience/data_keyword_ingestion/%s.csv".format(day))
           )
       )
-      .map("/datascience/data_keyword_ingestion/%s.csv".format(x))
+      .map(day => "/datascience/data_keyword_ingestion/%s.csv".format(day))
 
     val df = spark.read
       .format("csv")
@@ -124,12 +124,11 @@ object keywordIngestion {
     df
   }
 
-
   /**
-   * Esta funcion retorna un DataFrame con toda la data proveniente del pipeline de data_audiences.
-   * Ademas, esta función se encarga de preprocesar las URLs de manera que se obtengan todas las
-   * keywords de dicha data. 
-   */
+    * Esta funcion retorna un DataFrame con toda la data proveniente del pipeline de data_audiences.
+    * Ademas, esta función se encarga de preprocesar las URLs de manera que se obtengan todas las
+    * keywords de dicha data.
+    */
   def getAudienceData(spark: SparkSession, today: String): DataFrame = {
     // En primer lugar definimos un par de funciones que seran de utilidad
     // La primer funcion sirve para eliminar todos los tokens que tienen digitos
@@ -141,8 +140,11 @@ object keywordIngestion {
     // Esta funcion toma el campo segments y all_segments y los pone todos en un mismo listado
     val udfGetSegments = udf(
       (segments: Seq[String], all_segments: Seq[String], event_type: String) =>
-        (segments.map(s => "s_%s".format(s)).toList ::: all_segments.map(s => "as_%s".format(s)).toList)
-          .map(s => "%s%s".format((if (event_type == "xp") "xp" else ""), s)).toSeq
+        (segments
+          .map(s => "s_%s".format(s))
+          .toList ::: all_segments.map(s => "as_%s".format(s)).toList)
+          .map(s => "%s%s".format((if (event_type == "xp") "xp" else ""), s))
+          .toSeq
     )
 
     // Finalme
@@ -218,7 +220,9 @@ object keywordIngestion {
       .withColumn("segments", flatten("segments"))
 
     // Guardamos la data en formato parquet
-    joint.coalesce(100).write
+    joint
+      .coalesce(100)
+      .write
       .format("parquet")
       .mode("append")
       .partitionBy("day")
@@ -235,9 +239,9 @@ object keywordIngestion {
     val since = if (args.length > 1) args(1).toInt else 1
     val actual_day = if (args.length > 2) args(2).toInt else 1
 
-    val today = DateTime.now().minusDays(actual_day)
+    val today = DateTime.now().minusDays(actual_day).toString("yyyyMMdd")
 
-    get_data_for_queries(spark,ndays,today,since)
+    get_data_for_queries(spark, ndays, today, since)
 
     // val today = DateTime.now().minusDays(1)
     // val days = (0 until 20).map(
