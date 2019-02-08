@@ -174,11 +174,11 @@ def cross_device(spark: SparkSession,
       case "--poi_file" :: value :: tail =>
         nextOption(map ++ Map('poi_file -> value.toString), tail)
       case "--max_radius" :: value :: tail =>
-        nextOption(map ++ Map('poi_file -> value.toInt), tail)
+        nextOption(map ++ Map('max_radius -> value.toInt), tail)
       case "--output" :: value :: tail =>
         nextOption(map ++ Map('output -> value.toString), tail)
       case "--xd" :: value :: tail =>
-        nextOption(map ++ Map('output -> value.toString), tail)
+        nextOption(map ++ Map('xd -> value.toString), tail)
         }
   }
   
