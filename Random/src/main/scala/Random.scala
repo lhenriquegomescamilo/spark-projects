@@ -866,9 +866,9 @@ val records_common = the_join.select(col("identifier"))
   def getSTGeo(spark: SparkSession) = {
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("03/01/2018")
+    val start = formatter.parseDateTime("01/01/2018")
     val days =
-      (0 until 11).map(n => start.plusDays(n * 2)).map(_.toString(format))
+      (0 until 40).map(n => start.plusDays(n)).map(_.toString(format))
     val path = "/datascience/sharethis/loading/"
     days.map(
       day =>
@@ -997,8 +997,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    //getSTGeo(spark)
-    get_geo_sample_data(spark)
+    getSTGeo(spark)
+    //get_geo_sample_data(spark)
     //sampleSanti(spark)
   }
 
