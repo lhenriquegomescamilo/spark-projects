@@ -1015,14 +1015,22 @@ val records_common = the_join.select(col("identifier"))
     //getSTGeo(spark)
     //get_geo_sample_data(spark)
     //sampleSanti(spark)
-    spark.read.load("/datascience/sharethis/urls/day=2019*")
-          .filter("url LIKE '%vuse%' OR url LIKE '%vape%' OR url LIKE '%vaping%' OR url LIKE '%electr%cigar%' OR url LIKE '%smoke%alternative%' OR url LIKE '%cbd%'")
-          .select("estid")
-          .distinct
+    //spark.read.load("/datascience/sharethis/urls/day=2019*")
+    //      .filter("url LIKE '%vuse%' OR url LIKE '%vape%' OR url LIKE '%vaping%' OR url LIKE '%electr%cigar%' OR url LIKE '%smoke%alternative%' OR url LIKE '%cbd%'")
+    //      .select("estid")
+    //      .distinct
+    //      .write
+    //      .format("csv")
+    //      .mode(SaveMode.Overwrite)
+    //      .save("/datascience/audiences/custom_audiences/audience_vuse")
+    var df_audience = spark.read.format("csv").load("/datascience/audiences/custom_audiences/audience_vuse").withColumnRenamed("_c0","d17")
+    var mapping = spark.read.format("csv").option("sep","\t").option("header","true").load("/datascience/matching_estid")
+    var joint = df_audience.join(mapping,Seq("d17"))
+    joint.select("device_id").distinct
           .write
           .format("csv")
           .mode(SaveMode.Overwrite)
-          .save("/datascience/audiences/custom_audiences/audience_vuse")
+          .save("/datascience/audiences/custom_audiences/device_id_vuse")
   }
 
 }
