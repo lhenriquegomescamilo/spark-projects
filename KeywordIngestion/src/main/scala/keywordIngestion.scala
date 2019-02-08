@@ -257,3 +257,4 @@ object keywordIngestion {
     //get_data_for_elastic(spark,today)
   }
 }
+
