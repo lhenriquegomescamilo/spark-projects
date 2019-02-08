@@ -118,6 +118,7 @@ object keywordIngestion {
       .load(dfs: _*)
       .withColumnRenamed("_c0", "url")
       .withColumnRenamed("_c1", "content_keys")
+      .withColumnRenamed("content_keys", split(col("content_keys"), "\\|"))
       .withColumnRenamed("_c2", "count")
       .withColumnRenamed("_c3", "country")
       .drop("count")
