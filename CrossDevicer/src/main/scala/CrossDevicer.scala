@@ -237,7 +237,7 @@ object CrossDevicer {
       .format("csv")
       .option("sep", "\t")
       .load("/data/metadata/segment_exclusion.tsv")
-      .select("_c0", "_c1", "_c3")
+      .select("_c0", "_c1", "_c3") // group, segment id, score
       .rdd
       .map(x => (x(1).toString, (x(0).toString, x(2).toString)))
       .collect()
@@ -284,8 +284,7 @@ object CrossDevicer {
         segments
           .filter(
             segment =>
-              mapping_segments.contains(segment) && !exclusion_segments
-                .contains(segment)
+              exclusion_segments.contains(segment) || country_codes.contains(segment)
           )
           .map(mapping(_))
     )
