@@ -881,7 +881,7 @@ val records_common = the_join.select(col("identifier"))
   def getSTGeo(spark: SparkSession) = {
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("01/01/2019")
+    val start = formatter.parseDateTime("01/24/2019")
     val days =
       (0 until 40).map(n => start.plusDays(n)).map(_.toString(format))
     val path = "/datascience/sharethis/loading/"
@@ -1012,7 +1012,7 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    //getSTGeo(spark)
+    getSTGeo(spark)
     //get_geo_sample_data(spark)
     //sampleSanti(spark)
     //spark.read.load("/datascience/sharethis/urls/day=2019*")
@@ -1023,14 +1023,14 @@ val records_common = the_join.select(col("identifier"))
     //      .format("csv")
     //      .mode(SaveMode.Overwrite)
     //      .save("/datascience/audiences/custom_audiences/audience_vuse")
-    var df_audience = spark.read.format("csv").load("/datascience/audiences/custom_audiences/audience_vuse").withColumnRenamed("_c0","d17")
-    var mapping = spark.read.format("csv").option("sep","\t").option("header","true").load("/datascience/matching_estid_2")
-    var joint = df_audience.join(mapping,Seq("d17"))
-    joint.select("device_id").distinct
-          .write
-          .format("csv")
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/audiences/custom_audiences/device_id_vuse_2")
+    // var df_audience = spark.read.format("csv").load("/datascience/audiences/custom_audiences/audience_vuse").withColumnRenamed("_c0","d17")
+    // var mapping = spark.read.format("csv").option("sep","\t").option("header","true").load("/datascience/matching_estid_2")
+    // var joint = df_audience.join(mapping,Seq("d17"))
+    // joint.select("device_id").distinct
+    //       .write
+    //       .format("csv")
+    //       .mode(SaveMode.Overwrite)
+    //       .save("/datascience/audiences/custom_audiences/device_id_vuse_2")
   }
 
 }

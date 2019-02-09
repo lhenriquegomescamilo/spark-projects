@@ -84,6 +84,37 @@ object ByTwoGeoData {
     println("LOGGER: day %s processed successfully!".format(day))
   }
 
+
+
+  def getSTGeo(spark: SparkSession) = {
+    val format = "yyyyMMdd"
+    val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
+    val start = formatter.parseDateTime("01/24/2019")
+    val days =
+      (0 until 40).map(n => start.plusDays(n)).map(_.toString(format))
+    val path = "/datascience/sharethis/loading/"
+    days.map(
+      day =>
+        spark.read
+          .format("csv")
+          .load(path + day + "*")
+          .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5", "_c12", "_c13")
+          .withColumnRenamed("_c0", "estid")
+          .withColumnRenamed("_c1", "utc_timestamp")
+          .withColumnRenamed("_c3", "ip")
+          .withColumnRenamed("_c10", "latitude")
+          .withColumnRenamed("_c11", "longitude")
+          .withColumnRenamed("_c12", "zipcode")
+          .withColumnRenamed("_c13", "city")
+          .withColumnRenamed("_c5", "device_type")
+          .withColumn("day", lit(day))
+          .write
+          .format("parquet")
+          .partitionBy("day")
+          .mode("append")
+          .save("/datascience/geo/US/")
+    )
+
   def main(Args: Array[String]) {
     val spark = SparkSession.builder.appName("ByTwo data").getOrCreate()
 
@@ -92,7 +123,8 @@ object ByTwoGeoData {
     val start = formatter.parseDateTime("24/01/2019")
     val days = (0 until 50).map(n => start.plusDays(n)).map(_.toString(format))
 
-    days.map(day => sampleSanti(spark, day))
+    // days.map(day => sampleSanti(spark, day))
     //days.map(day => getSampleATT(spark, day))
+    getSTGeo(spark)
   }
 }
