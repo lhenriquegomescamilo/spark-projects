@@ -89,10 +89,10 @@ object ByTwoGeoData {
 
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("14/11/2018")
+    val start = formatter.parseDateTime("24/01/2019")
     val days = (0 until 50).map(n => start.plusDays(n)).map(_.toString(format))
 
-    // days.map(day => sampleSanti(spark, day))
-    days.map(day => getSampleATT(spark, day))
+    days.map(day => sampleSanti(spark, day))
+    //days.map(day => getSampleATT(spark, day))
   }
 }
