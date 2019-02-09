@@ -276,21 +276,24 @@ object CrossDevicer {
         .mapValues(_.size)
         .maxBy(_._2)
         ._1 // Most popular country
-    
-        // getItems function takes a list of segments, checks whether those segments are in the cross-device mapping, if not it filters them out,
+
+    // getItems function takes a list of segments, checks whether those segments are in the cross-device mapping, if not it filters them out,
     // and also checks that the segments are not exclusive. Finally, it maps the original segments into the cross-device segments.
     val getItems = udf(
       (segments: Seq[String]) =>
-        segments
-          .filter(
-            segment =>
-              exclusion_segments.contains(segment) || country_codes.contains(segment)
-          )
-          .map(mapping(_))
+        if (segments.exists(s => exclusion_segments.contains(segments))) {
+          segments
+            .filter(
+              segment =>
+                exclusion_segments.contains(segment) || country_codes
+                  .contains(segment)
+            )
+            .map(mapping(_))
+        } else Seq()
     )
     // This function takes a list of lists and returns only a list with all the values.
     val flatten = udf((xs: Seq[Seq[String]]) => xs.flatten)
-    
+
     // This function returns the best segment for every exclusion group concatenated with the country
     val getSegments = udf(
       (segments: Seq[String]) =>
