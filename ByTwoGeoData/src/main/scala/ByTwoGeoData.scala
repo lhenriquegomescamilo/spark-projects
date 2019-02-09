@@ -25,7 +25,6 @@ object ByTwoGeoData {
     println("\nLOGGER: DAY %s HAS BEEN PROCESSED!\n\n".format(day))
   }
 
-
   def encrypt(value: String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
     cipher.init(Cipher.ENCRYPT_MODE, keyToSpec())
@@ -56,7 +55,6 @@ object ByTwoGeoData {
       (estid: String) => encrypt(estid)
     )
 
-
     println("LOGGER: processing day %s".format(day))
     spark.read
       .format("com.databricks.spark.csv")
@@ -83,8 +81,6 @@ object ByTwoGeoData {
       .save("/datascience/sharethis/sample_att_url/%s".format(day))
     println("LOGGER: day %s processed successfully!".format(day))
   }
-
-
 
   def getSTGeo(spark: SparkSession) = {
     val format = "yyyyMMdd"
@@ -114,6 +110,7 @@ object ByTwoGeoData {
           .mode("append")
           .save("/datascience/geo/US/")
     )
+  }
 
   def main(Args: Array[String]) {
     val spark = SparkSession.builder.appName("ByTwo data").getOrCreate()
