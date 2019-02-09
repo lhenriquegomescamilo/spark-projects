@@ -85,7 +85,7 @@ object ByTwoGeoData {
   def getSTGeo(spark: SparkSession) = {
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("01/24/2019")
+    val start = formatter.parseDateTime("24/01/2019")
     val days =
       (0 until 40).map(n => start.plusDays(n)).map(_.toString(format))
     val path = "/datascience/sharethis/loading/"
