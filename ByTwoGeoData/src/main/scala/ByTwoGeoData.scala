@@ -1,7 +1,7 @@
 package main.scala
 
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.{col, udf}
+import org.apache.spark.sql.functions.{col, udf, lit}
 import org.joda.time.format.DateTimeFormat
 import org.apache.spark.sql.{DataFrame, SparkSession, SaveMode}
 import java.security.MessageDigest
