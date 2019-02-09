@@ -228,7 +228,7 @@ object keywordIngestion {
       .format("parquet")
       .mode("append")
       .partitionBy("day", "country")
-      .save("/datascience/data_keywords/")
+      .save("/datascience/data_keywords_p/")
     // df_b.unpersist()
     // df_b.destroy()
   }
