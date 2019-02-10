@@ -281,7 +281,7 @@ object CrossDevicer {
     // and also checks that the segments are not exclusive. Finally, it maps the original segments into the cross-device segments.
     val getItems = udf(
       (segments: Seq[String]) =>
-        if (segments.exists(s => exclusion_segments.contains(segments))) {
+        if (segments.exists(s => exclusion_segments.contains(s))) {
           segments
             .filter(
               segment =>
