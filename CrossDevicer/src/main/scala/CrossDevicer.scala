@@ -298,7 +298,7 @@ object CrossDevicer {
     val getSegments = udf(
       (segments: Seq[String]) =>
         if (segments.filter(s => country_codes.contains(s)).length > 0) {
-          getExclusionSegments(segments) :+ getMostPopularCountry(segments)
+          getExclusionSegments(segments.filter(s => !country_codes.contains(s))) :+ getMostPopularCountry(segments)
         } else getExclusionSegments(segments)
     )
 
