@@ -224,7 +224,6 @@ object keywordIngestion {
 
     // Guardamos la data en formato parquet
     joint
-      .coalesce(100)
       .write
       .format("parquet")
       .mode("append")
