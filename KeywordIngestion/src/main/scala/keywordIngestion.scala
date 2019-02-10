@@ -152,6 +152,7 @@ object keywordIngestion {
     // Finalme
     spark.read
       .parquet("/datascience/data_audiences_p/day=%s".format(today)) // Leemos la data
+      .repartition(500)
       .withColumn(
         "segments",
         udfGetSegments(col("segments"), col("all_segments"), col("event_type"))
@@ -202,7 +203,7 @@ object keywordIngestion {
     val URLkeys = getKeywordsByURL(spark, ndays, today, since).repartition(100)
 
     // Ahora levantamos la data de las audiencias
-    val df_audiences = getAudienceData(spark, today).repartition(1000)
+    val df_audiences = getAudienceData(spark, today)
 
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
     //val df_b = spark.sparkContext.broadcast(df)
