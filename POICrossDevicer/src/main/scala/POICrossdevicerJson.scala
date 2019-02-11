@@ -27,6 +27,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
   def get_variables(spark: SparkSession, path_geo_json:String) =  {
 
 
+
+
     val file = "hdfs://rely-hdfs/datascience/geo/geo_json/%s.json".format(path_geo_json)
     val df = spark.sqlContext.read.json(file)
 
@@ -42,7 +44,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     output_file
     path_to_pois
     crossdevice
-    nDays
+    safegraph_days
 
     println(file,max_radius,country,output_file,path_to_pois,crossdevice,nDays,"-------------------------------------------")
 
@@ -220,7 +222,7 @@ def cross_device(spark: SparkSession,
    // val max_radius = if (options.contains('max_radius)) options('max_radius).toString.toInt else 100
    // val poi_output_file = if (options.contains('output)) options('output).toString else ""
    // val xd = if (options.contains('xd)) options('xd).toString else ""
-   // val path_geo_json = if (options.contains('path_geo_json)) options('path_geo_json).toString else ""
+    val path_geo_json = if (options.contains('path_geo_json)) options('path_geo_json).toString else ""
     
     // Start Spark Session
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
@@ -232,11 +234,12 @@ def cross_device(spark: SparkSession,
 
     get_variables(spark,path_geo_json)
 
-    match_POI(spark, safegraph_days, POI_file_name, country, poi_output_file, max_radius)
+    match_POI(spark, nDays, path_to_pois, country, output_file, max_radius)
       // Finally, we perform the cross-device
-  if(xd==true) {
+  if(crossdevice==true) {
     cross_device(spark, poi_output_file)
     }
+   
    
   
   }
