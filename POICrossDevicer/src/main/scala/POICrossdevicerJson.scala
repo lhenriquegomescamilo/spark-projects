@@ -170,7 +170,7 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
     val audience_name = value_dictionary("poi_output_file").split("/").last
-    val audience = spark.read.format("csv").option("sep", "\t").load(poi_output_file)
+    val audience = spark.read.format("csv").option("sep", "\t").load(value_dictionary("poi_output_file"))
                                                               .withColumnRenamed("_c0", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
     
@@ -246,10 +246,10 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
 
     val value_dictionary = get_variables(spark, path_geo_json)
 
-    match_POI(spark)
+    match_POI(spark, value_dictionary)
       // Finally, we perform the cross-device
   
-    cross_device(spark)
+    cross_device(spark, value_dictionary)
     
    
    
