@@ -1,4 +1,5 @@
-package main.scala
+package main.scala.devicer
+import main.scala.crossdevicer.AudienceCrossDevicer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{lit, length, split, col, concat_ws, collect_list}
 import org.joda.time.{Days, DateTime}
