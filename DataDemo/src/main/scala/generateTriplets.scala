@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split,lit,explode,length}
+import org.apache.spark.sql.functions.{upper, col,abs,udf,regexp_replace,split,lit,explode,length,sum}
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
@@ -73,30 +73,33 @@ object GenerateTriplets {
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
         
         val dfs = days
-                    .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_keywords_p/day=%s".format(day))))
-                    .map(x => spark.read.parquet("/datascience/data_keywords_p/day=%s".format(x))
-                                    .select("device_id","url_keys","content_keys"))
+                    .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_keywords/day=%s".format(day))))
+                    .map(x => spark.read.parquet("/datascience/data_keywords/day=%s".format(x))
+                                    .select("device_id","url_keys","content_keys","country"))
 
         val df = dfs.reduce((df1,df2) => df1.union(df2))
 
         /// Obtenemos las keywords del contenido de la url 
-        val df_content_keys = df.select("device_id","content_keys")
-                                .withColumn("content_keys",split(col("content_keys"),","))
+        val df_content_keys = df.select("device_id","content_keys","country")
+                                //.withColumn("content_keys",split(col("content_keys"),","))
                                 .withColumnRenamed("content_keys","feature")
                                 .withColumn("count",lit(1))
         
         /// Obtenemos las keywords provenientes de la url                             
-        val df_url_keys = df.select("device_id","url_keys")
+        val df_url_keys = df.select("device_id","url_keys","country")
                             .withColumnRenamed("url_keys","feature")
                             .withColumn("count",lit(1))
         
         /// Unimos ambas keywords y las guardamos
         val union = df_content_keys.unionAll(df_url_keys).withColumn("feature",explode(col("feature")))
 
+        val grouped_data = union.groupBy("device_id","feature","country").agg(sum("count").as("count"))
+
         /// Filtramos las palabras que tiene longitud menor a 3 y guardamos
-        union.where(length(col("feature")) > 3)
+        grouped_data.where(length(col("feature")) > 3)
             .write.format("parquet").option("header",true)
             .mode(SaveMode.Overwrite)
+            .partitionBy("country")
             .save("/datascience/data_demo/triplets_keywords")
 
     }
@@ -105,9 +108,9 @@ object GenerateTriplets {
         val spark = SparkSession.builder.appName("Get triplets: keywords and segments").getOrCreate()
 
         // Parseo de parametros
-        val ndays = if (args.length > 0) args(0).toInt else 30
+        val ndays = if (args.length > 0) args(0).toInt else 20
         
-        generate_triplets_segments(spark,ndays)
-        //generate_triplets_keywords(spark,ndays) 
+        //generate_triplets_segments(spark,ndays)
+        generate_triplets_keywords(spark,ndays) 
     }
   }

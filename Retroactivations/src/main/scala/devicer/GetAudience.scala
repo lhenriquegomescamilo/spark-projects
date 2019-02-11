@@ -190,7 +190,7 @@ object GetAudience {
         val pipeline = if (query.contains("pipeline") && Option(query("pipeline")).getOrElse("").toString.length>0) query("pipeline") else 0
         val description = if (query.contains("description") && Option(query("description")).getOrElse("").toString.length>0) query("description") else ""
         val jobid = if (query.contains("jobid") && Option(query("jobid")).getOrElse("").toString.length>0) query("jobid") else ""
-        val xd = if (query.contains("xd") && Option(query("xd")).getOrElse("").toString.length>0) query("xd") else ""
+        val xd = if (query.contains("xd") && Option(query("xd")).getOrElse("").toString.length>0) query("xd") else false
     
         val actual_map: Map[String,Any] = Map("filter" -> filter, "segment_id" -> segmentId, "partner_id" -> partnerId,
                                                "since" -> since, "ndays" -> nDays, "push" -> push, "priority" -> priority, 
@@ -306,8 +306,8 @@ object GetAudience {
       getAudience(spark, data, queries, file_name)
 
       // We cross device the audience if the parameter is set.
-      val xd = queries(0)("xd")
-      if (xd.toString.toBoolean){
+      //val xd = queries(0)("xd")
+      //if (xd.toString.toBoolean){
      //   new AudienceCrossDevicer cross_device(spark,
      //                                       "/datascience/devicer/processed/"+file_name,
      //                                       "index_type IN ('coo')",
