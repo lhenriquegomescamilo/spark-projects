@@ -123,9 +123,6 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
      // fuertemente tipado
   def match_POI(spark: SparkSession, value_dictionary: Map [String,String]) = {
   
-
-    
-
     val df_users = get_safegraph_data(spark, value_dictionary) ///////
     val df_pois_final = get_POI_coordinates(spark, value_dictionary)
 
@@ -157,8 +154,9 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     //we want information about the process              
     println(sqlDF.explain(extended = true))         
     
+       
     val filtered = 
-    sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(value_dictionary("poi_output_file"))
+    sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
   }
 
 //hasta aca es el poi matcher, ahora agrego el crossdevicer
