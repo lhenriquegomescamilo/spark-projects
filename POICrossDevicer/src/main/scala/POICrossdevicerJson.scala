@@ -44,7 +44,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     crossdevice
     nDays
 
-    println(file,max_radius,country,output_file,path_to_pois,crossdevice,nDays)
+    println(file,max_radius,country,output_file,path_to_pois,crossdevice,nDays,"-------------------------------------------")
 
   }
 
