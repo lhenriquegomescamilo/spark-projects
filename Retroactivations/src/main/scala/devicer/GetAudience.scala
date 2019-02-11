@@ -190,11 +190,12 @@ object GetAudience {
         val pipeline = if (query.contains("pipeline") && Option(query("pipeline")).getOrElse("").toString.length>0) query("pipeline") else 0
         val description = if (query.contains("description") && Option(query("description")).getOrElse("").toString.length>0) query("description") else ""
         val jobid = if (query.contains("jobid") && Option(query("jobid")).getOrElse("").toString.length>0) query("jobid") else ""
+        val xd = if (query.contains("xd") && Option(query("xd")).getOrElse("").toString.length>0) query("xd") else ""
     
         val actual_map: Map[String,Any] = Map("filter" -> filter, "segment_id" -> segmentId, "partner_id" -> partnerId,
                                                "since" -> since, "ndays" -> nDays, "push" -> push, "priority" -> priority, 
                                                "as_view" -> as_view, "queue" -> queue, "pipeline" -> pipeline,
-                                                "description" -> description, "jobid" -> jobid)
+                                                "description" -> description, "jobid" -> jobid, "xd" -> xd)
         
         queries = queries ::: List(actual_map)
       }
@@ -303,6 +304,16 @@ object GetAudience {
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
       getAudience(spark, data, queries, file_name)
+
+      // We cross device the audience if the parameter is set.
+      val xd = queries(0)("xd")
+      if (xd.toString.toBoolean){
+        new AudienceCrossDevicer cross_device(spark,
+                                            "/datascience/devicer/processed/"+file_name,
+                                            "index_type IN ('coo')",
+                                            "\t", "device_id")
+      }
+
 
       // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
       srcPath = new Path(actual_path)
