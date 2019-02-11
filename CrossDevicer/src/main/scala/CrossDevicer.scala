@@ -354,7 +354,7 @@ object CrossDevicer {
     }
   }
 
-  val merge(spark: SparkSession) = {
+  val mergeData(spark: SparkSession) = {
     val gral = spark.read
       .format("csv")
       .option("sep", "\t")
@@ -414,7 +414,7 @@ object CrossDevicer {
 
     if (regular) {
       if (merge) {
-        merge(spark)
+        mergeData(spark)
       } else {
         regularCrossDevice(spark, nDays, from)
       }
