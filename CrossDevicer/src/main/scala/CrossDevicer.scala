@@ -385,6 +385,7 @@ object CrossDevicer {
 
     joint
       .select("device_type", "device_id", "ids")
+      .write
       .format("csv")
       .mode(SaveMode.Overwrite)
       .option("sep", "\t")
