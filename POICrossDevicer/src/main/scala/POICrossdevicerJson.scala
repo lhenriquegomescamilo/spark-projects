@@ -213,13 +213,14 @@ def cross_device(spark: SparkSession,
   
   def main(args: Array[String]) {
     // Parse the parameters
-    val options = nextOption(Map(), args.toList)
-    val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
-    val country = if (options.contains('country)) options('country).toString else "mexico"
-    val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
-    val max_radius = if (options.contains('max_radius)) options('max_radius).toString.toInt else 100
-    val poi_output_file = if (options.contains('output)) options('output).toString else ""
-    val xd = if (options.contains('xd)) options('xd).toString else ""
+   // val options = nextOption(Map(), args.toList)
+   // val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
+   // val country = if (options.contains('country)) options('country).toString else "mexico"
+   // val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
+   // val max_radius = if (options.contains('max_radius)) options('max_radius).toString.toInt else 100
+   // val poi_output_file = if (options.contains('output)) options('output).toString else ""
+   // val xd = if (options.contains('xd)) options('xd).toString else ""
+   // val path_geo_json = if (options.contains('path_geo_json)) options('path_geo_json).toString else ""
     
     // Start Spark Session
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
