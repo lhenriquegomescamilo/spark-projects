@@ -93,7 +93,7 @@ object GenerateTriplets {
         /// Unimos ambas keywords y las guardamos
         val union = df_content_keys.unionAll(df_url_keys).withColumn("feature",explode(col("feature")))
 
-        val grouped_data = union.groupBy("device_id","feature").agg(sum("count").as("count"))
+        val grouped_data = union.groupBy("device_id","feature","country").agg(sum("count").as("count"))
 
         /// Filtramos las palabras que tiene longitud menor a 3 y guardamos
         grouped_data.where(length(col("feature")) > 3)
