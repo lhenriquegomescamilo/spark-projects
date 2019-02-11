@@ -27,26 +27,30 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
   def get_variables(spark: SparkSession, path_geo_json:String) =  {
 
 
+
+
     val file = "hdfs://rely-hdfs/datascience/geo/geo_json/%s.json".format(path_geo_json)
     val df = spark.sqlContext.read.json(file)
 
     val max_radius = df.select(col("max_radius")).collect()(0)(0).toString.toInt
     val country = df.select(col("country")).collect()(0)(0).toString
-    val output_file = df.select(col("output_file")).collect()(0)(0).toString
+    val poi_output_file = df.select(col("output_file")).collect()(0)(0).toString
     val path_to_pois = df.select(col("path_to_pois")).collect()(0)(0).toString
     val crossdevice = df.select(col("crossdevice")).collect()(0)(0).toString
     val nDays = df.select(col("nDays")).collect()(0)(0).toString.toInt
 
     max_radius
     country
-    output_file
+    poi_output_file
     path_to_pois
     crossdevice
-    nDays
+    nDays 
+
+    println(file,max_radius,country,poi_output_file,path_to_pois,crossdevice,nDays,"-------------------------------------------")
 
   }
 
-  def get_safegraph_data(spark: SparkSession, nDays: Integer, country: String, since: Integer = 1) = {
+  def get_safegraph_data(spark: SparkSession, since: Integer = 1) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
@@ -86,9 +90,9 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
    @param return df_pois_final: dataframe created from the one provided by the user containing the POIS: contains the geocode and renamed columns.   
      */
 
-  def get_POI_coordinates(spark: SparkSession, file_name: String, max_radius: Integer) = {
+  def get_POI_coordinates(spark: SparkSession) = {
     // Loading POIs. The format of the file is Name, Latitude, Longitude
-    val df_pois = spark.read.option("header", "true").option("delimiter", ",").csv(file_name)
+    val df_pois = spark.read.option("header", "true").option("delimiter", ",").csv(path_to_pois)
 
     //creating geocodes the POIs
     val df_pois_parsed = df_pois.withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
@@ -112,9 +116,12 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
    @param return df_pois_final: dataframe created from the one provided by the user containing the POIS: contains the geocode and renamed columns.   
      */
 
-  def match_POI(spark: SparkSession, safegraph_days: Integer, POI_file_name: String, country: String, poi_output_file: String, max_radius: Integer) = {
-    val df_users = get_safegraph_data(spark, safegraph_days, country)
-    val df_pois_final = get_POI_coordinates(spark, POI_file_name,max_radius)
+  def match_POI(spark: SparkSession) = {
+    
+    
+
+    val df_users = get_safegraph_data(spark, nDays, country)
+    val df_pois_final = get_POI_coordinates(spark, path_to_pois,max_radius)
 
     //joining datasets by geocode (added broadcast to force..broadcasting)
     val joint = df_users.join(broadcast(df_pois_final),Seq("geocode")).
@@ -150,8 +157,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
 //hasta aca es el poi matcher, ahora agrego el crossdevicer
 
-def cross_device(spark: SparkSession, 
-                poi_output_file: String)
+def cross_device(spark: SparkSession)
                 {
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
@@ -211,13 +217,14 @@ def cross_device(spark: SparkSession,
   
   def main(args: Array[String]) {
     // Parse the parameters
-    val options = nextOption(Map(), args.toList)
-    val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
-    val country = if (options.contains('country)) options('country).toString else "mexico"
-    val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
-    val max_radius = if (options.contains('max_radius)) options('max_radius).toString.toInt else 100
-    val poi_output_file = if (options.contains('output)) options('output).toString else ""
-    val xd = if (options.contains('xd)) options('xd).toString else ""
+   // val options = nextOption(Map(), args.toList)
+   // val safegraph_days = if (options.contains('nDays)) options('nDays).toString.toInt else 30
+   // val country = if (options.contains('country)) options('country).toString else "mexico"
+   // val POI_file_name = if (options.contains('poi_file)) options('poi_file).toString else ""
+   // val max_radius = if (options.contains('max_radius)) options('max_radius).toString.toInt else 100
+   // val poi_output_file = if (options.contains('output)) options('output).toString else ""
+   // val xd = if (options.contains('xd)) options('xd).toString else ""
+    val path_geo_json = if (options.contains('path_geo_json)) options('path_geo_json).toString else ""
     
     // Start Spark Session
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
@@ -227,11 +234,14 @@ def cross_device(spark: SparkSession,
     //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
     //val poi_output_file = "/datascience/geo/MX/specific_POIs"
 
-    match_POI(spark, safegraph_days, POI_file_name, country, poi_output_file, max_radius)
+    get_variables(spark,path_geo_json)
+
+    match_POI(spark)
       // Finally, we perform the cross-device
-  if(xd==true) {
-    cross_device(spark, poi_output_file)
+  if(crossdevice==true) {
+    cross_device(spark)
     }
+   
    
   
   }
