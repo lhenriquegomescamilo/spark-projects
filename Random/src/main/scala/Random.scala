@@ -920,6 +920,18 @@ val records_common = the_join.select(col("identifier"))
     //      .save("/datascience/custom/geo_st")
   }
 
+ def get_pii_AR(spark: SparkSession) {
+
+  val df_pii = spark.read.option("header", "true").parquet("hdfs://rely-hdfs/datascience/pii_matching/pii_table").filter(col("country") === "AR")
+      .write
+      .format("csv")
+      .option("sep", ",")
+      .option("header", true)
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/audiences/output/pii_table_AR_11_02_19")
+
+}
+
   def get_urls_sharethis(spark: SparkSession, ndays: Int) {
 
     /**
@@ -1012,8 +1024,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getSTGeo(spark)
-    //get_geo_sample_data(spark)
+    //getSTGeo(spark)
+    get_pii_AR(spark)
     //sampleSanti(spark)
     //spark.read.load("/datascience/sharethis/urls/day=2019*")
     //      .filter("url LIKE '%vuse%' OR url LIKE '%vape%' OR url LIKE '%vaping%' OR url LIKE '%electr%cigar%' OR url LIKE '%smoke%alternative%' OR url LIKE '%cbd%'")
