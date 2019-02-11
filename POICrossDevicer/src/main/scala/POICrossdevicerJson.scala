@@ -47,7 +47,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       "path_to_pois" -> path_to_pois, 
       "crossdevice" -> crossdevice , 
       "nDays" -> nDays,
-      "since" -> since))
+      "since" -> since)
 
       value_dictionary 
 
