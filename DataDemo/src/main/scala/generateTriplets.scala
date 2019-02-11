@@ -81,7 +81,7 @@ object GenerateTriplets {
 
         /// Obtenemos las keywords del contenido de la url 
         val df_content_keys = df.select("device_id","content_keys","country")
-                                .withColumn("content_keys",split(col("content_keys"),","))
+                                //.withColumn("content_keys",split(col("content_keys"),","))
                                 .withColumnRenamed("content_keys","feature")
                                 .withColumn("count",lit(1))
         
