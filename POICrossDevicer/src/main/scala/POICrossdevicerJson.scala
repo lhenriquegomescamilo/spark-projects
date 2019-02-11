@@ -38,6 +38,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val path_to_pois = df.select(col("path_to_pois")).collect()(0)(0).toString
     val crossdevice = df.select(col("crossdevice")).collect()(0)(0).toString
     val nDays = df.select(col("nDays")).collect()(0)(0).toString
+    val since = df.select(col("since")).collect()(0)(0).toString
 
     val value_dictionary: Map [String, String] = Map(
       "max_radius" -> max_radius , 
@@ -53,7 +54,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
   }
 
-  def get_safegraph_data(spark: SparkSession, value_dictionary: Map[String,String] , since: Integer = 1) = {
+  def get_safegraph_data(spark: SparkSession, value_dictionary: Map[String,String]) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
@@ -64,7 +65,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     // Get the days to be loaded
     val format = "yyyy/MM/dd"
-    val end   = DateTime.now.minusDays(since)
+    val end   = DateTime.now.minusDays(value_dictionary("since").toInt)
     val days = (0 until value_dictionary("nDays").toInt).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we obtain the list of hdfs folders to be read
