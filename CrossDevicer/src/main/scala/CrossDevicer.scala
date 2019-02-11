@@ -354,7 +354,7 @@ object CrossDevicer {
     }
   }
 
-  val mergeData(spark: SparkSession) = {
+  def mergeData(spark: SparkSession) = {
     val gral = spark.read
       .format("csv")
       .option("sep", "\t")
