@@ -160,7 +160,9 @@ get_variables(spark,path_geo_json)
 
 def cross_device(spark: SparkSession)
                 {
-                  get_variables(spark,path_geo_json)
+    get_variables(spark,path_geo_json)
+
+     if(crossdevice==true) {
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
     val audience_name = poi_output_file.split("/").last
@@ -185,6 +187,7 @@ def cross_device(spark: SparkSession)
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
     cross_deviced.write.format("csv").mode(SaveMode.Overwrite).save(output_path)
   }
+}
   
     type OptionMap = Map[Symbol, Any]
 
@@ -237,15 +240,11 @@ def cross_device(spark: SparkSession)
     //val poi_output_file = "/datascience/geo/MX/specific_POIs"
 
     
-
-   
-
     match_POI(spark)
       // Finally, we perform the cross-device
-  if(get_variables(spark,path_geo_json)
-    crossdevice==true) {
+  
     cross_device(spark)
-    }
+    
    
    
   
