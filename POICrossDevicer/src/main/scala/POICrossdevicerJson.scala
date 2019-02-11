@@ -229,6 +229,8 @@ def cross_device(spark: SparkSession,
     //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
     //val poi_output_file = "/datascience/geo/MX/specific_POIs"
 
+    get_variables(spark,path_geo_json)
+
     match_POI(spark, safegraph_days, POI_file_name, country, poi_output_file, max_radius)
       // Finally, we perform the cross-device
   if(xd==true) {
