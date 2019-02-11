@@ -51,8 +51,11 @@ object DataGoogleAnalytics {
         /// Hacemos el join de ambos dataframes para obtener la distribucion de cada device_id
         val joint = df.join(broadcast(distributions),Seq("url"))
 
+        joint.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/data_demo/join_google_analytics")
+
         /// Agrupamos por device_id y sacamos algunas estadisticas para cada segmento (promedio, desvio estandar y cantidad)
         ///  Aclaracion: Se renombran las columnas al final para que no haya errores al gurdar en formato parquet.
+        /**
         val statistics = joint.groupBy("device_id")
                                 .agg(mean("2"), mean("3"), mean("4"), mean("5"), mean("6"), mean("7"), mean("8"), mean("9"),
                                     stddev("2"), stddev("3"), stddev("4"), stddev("5"), stddev("6"), stddev("7"), stddev("8"), stddev("9"),
@@ -66,6 +69,7 @@ object DataGoogleAnalytics {
         statistics.write.format("parquet")
                 .mode(SaveMode.Overwrite)
                 .save("/datascience/data_demo/data_google_analytics")
+        **/
     }
 
     def main(args: Array[String]) {
