@@ -39,14 +39,14 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val crossdevice = df.select(col("crossdevice")).collect()(0)(0).toString
     val nDays = df.select(col("nDays")).collect()(0)(0).toString.toInt
 
-    max_radius
-    country
-    poi_output_file
-    path_to_pois
-    crossdevice
-    nDays 
+    (max_radius,
+    country,
+    poi_output_file,
+    path_to_pois,
+    crossdevice,
+    nDays) 
 
-    println(file,max_radius,country,poi_output_file,path_to_pois,crossdevice,nDays,"-------------------------------------------")
+    println(file,max_radius,country,poi_output_file,path_to_pois,crossdevice,nDays,"------------------aag87ytg-------------------------")
 
   }
 
@@ -234,7 +234,14 @@ def cross_device(spark: SparkSession)
     //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
     //val poi_output_file = "/datascience/geo/MX/specific_POIs"
 
-    get_variables(spark,path_geo_json)
+    
+
+    val (max_radius,
+    country,
+    poi_output_file,
+    path_to_pois,
+    crossdevice,
+    nDays)  = get_variables(spark,path_geo_json)
 
     match_POI(spark)
       // Finally, we perform the cross-device
