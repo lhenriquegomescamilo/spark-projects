@@ -298,7 +298,9 @@ object CrossDevicer {
     val getSegments = udf(
       (segments: Seq[String]) =>
         if (segments.filter(s => country_codes.contains(s)).length > 0) {
-          getExclusionSegments(segments.filter(s => !country_codes.contains(s))) :+ getMostPopularCountry(segments)
+          getExclusionSegments(segments.filter(s => !country_codes.contains(s))) :+ getMostPopularCountry(
+            segments
+          )
         } else getExclusionSegments(segments)
     )
 
@@ -347,7 +349,46 @@ object CrossDevicer {
         nextOption(map ++ Map('from -> value.toInt), tail)
       case "--exclusion" :: tail =>
         nextOption(map ++ Map('exclusion -> 0), tail)
+      case "--merge" :: tail =>
+        nextOption(map ++ Map('merge -> 0), tail)
     }
+  }
+
+  val merge(spark: SparkSession) = {
+    val gral = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/audiences/crossdeviced/taxo_gral/")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c1", "device_type")
+      .withColumnRenamed("_c2", "segment_ids")
+    val excl = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/audiences/crossdeviced/taxo_gral_exclusion/")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c1", "device_type")
+      .withColumnRenamed("_c2", "exclusion_ids")
+
+    val concatUDF = udf(
+      (segments: String, exclusion: String) =>
+        if (segments.length > 0 && exclusion.length > 0)
+          segments + "," + exclusion
+        else if (segments.length > 0) segments
+        else exclusion
+    )
+    val joint = excl
+      .join(gral, Seq("device_id", "device_type"), "outer")
+      .na
+      .fill("")
+      .withColumn("ids", concatUDF(col("segment_ids"), col("exclusion_ids")))
+
+    joint
+      .select("device_type", "device_id", "ids")
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .option("sep", "\t")
+      .save("/datascience/audiences/crossdeviced/taxo_gral_joint")
   }
 
   def main(Args: Array[String]) {
@@ -356,6 +397,7 @@ object CrossDevicer {
     val nDays = if (options.contains('nDays)) options('nDays) else 30
     val from = if (options.contains('from)) options('from) else 1
     val regular = if (options.contains('exclusion)) false else true
+    val merge = if (options.contains('merge)) true else false
 
     // First we obtain the Spark session
     val conf = new SparkConf()
@@ -370,7 +412,11 @@ object CrossDevicer {
     val spark = sqlContext.sparkSession
 
     if (regular) {
-      regularCrossDevice(spark, nDays, from)
+      if (merge) {
+        merge(spark)
+      } else {
+        regularCrossDevice(spark, nDays, from)
+      }
     } else {
       exclusionCrossDevice(spark, nDays, from)
     }
