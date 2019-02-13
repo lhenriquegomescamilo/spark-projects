@@ -1,4 +1,4 @@
-package main.scala
+package main.scala.estidmapper
 import org.apache.spark.sql.SparkSession
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.lit
