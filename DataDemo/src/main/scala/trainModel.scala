@@ -62,7 +62,6 @@ object TrainModel {
       .format("csv")
       .option("sep", "\t")
       .load("/datascience/devicer/processed/users_no_gender")
-      .withColumn("label", lit(1))
       .withColumnRenamed("_c1", "device_id")
 
     val joint = users_no_gender.join(df, Seq("device_id"))
