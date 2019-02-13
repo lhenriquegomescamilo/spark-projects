@@ -39,8 +39,7 @@ object DataGoogleAnalytics {
                     
         /// Concatenamos los dataframes y nos quedamos solamente con el dominio de la url
         val df = dfs.reduce((df1,df2) => df1.union(df2))
-                    .withColumn("url",regexp_replace(col("url"), """http*://""", ""))
-                    .withColumn("url",regexp_replace(col("url"), """https*://""", ""))
+                    .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
         
         /// Leemos el archivo que tiene las distribuciones para cada URL
         val distributions = spark.read.format("csv").option("header","true")

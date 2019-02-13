@@ -57,7 +57,7 @@ object GetAudience {
     val format = "yyyyMMdd"
     val end   = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_keywords_p"
+    val path = "/datascience/data_keywords"
     
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days.map(day => path+"/day=%s".format(day))
@@ -306,12 +306,18 @@ object GetAudience {
       getAudience(spark, data, queries, file_name)
 
       // We cross device the audience if the parameter is set.
-      //val xd = queries(0)("xd")
-      //if (xd.toString.toBoolean){
-     //   new AudienceCrossDevicer cross_device(spark,
-     //                                       "/datascience/devicer/processed/"+file_name,
-     //                                       "index_type IN ('coo')",
-     //                                       "\t", "device_id")
+      val xd = queries(0)("xd")
+      if (xd.toString.toBoolean){
+     //   val object_xd = new AudienceCrossDevicer
+     //   object_xd.cross_device(spark, 
+     //                           "/datascience/devicer/processed/"+file_name,
+     //                           "index_type IN ('coo')",
+     //                           "\t",
+     //                             "device_id")
+        val object_xd = AudienceCrossDevicer.cross_device(spark,
+                                  "/datascience/devicer/processed/"+file_name,
+                                            "index_type IN ('coo')",
+                                            "\t", "device_id")
       }
 
 

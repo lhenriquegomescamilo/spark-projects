@@ -30,9 +30,6 @@ import org.apache.spark.ml.classification.{GBTClassificationModel, GBTClassifier
 
 object TrainModel {
   def getTrainingSet(spark: SparkSession, country:String) {
-    //val df = spark.read.parquet(
-    //  "/datascience/data_demo/triplets_segments/part-06761-36693c74-c327-43a6-9482-2e83c0ead518-c000.snappy.parquet"
-    //)
     val df = spark.read.parquet("/datascience/data_demo/triplets_segments/country=%s".format(country))
 
     val gt_male = spark.read
@@ -55,16 +52,29 @@ object TrainModel {
     /// Hacemos el join y sacamos todos los segmentos de genero.
     val joint = gt.join(df, Seq("device_id")).filter("feature NOT IN ('2','3','69207','69228','39525','40136','40881','36523')")
 
-    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/training_set/")
+    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/training_set_%s/".format(country))
   }
 
-  def getLabeledPointSet(spark: SparkSession) {
-    val data = spark.read.format("parquet").load("/datascience/data_demo/training_set")
+  def getTestSet(spark: SparkSession, country:String){
 
-    val indexer1 = new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
-    val indexed1 = indexer1.fit(data).transform(data)
-    val indexer2 = new StringIndexer().setInputCol("feature").setOutputCol("featureIndex")
-    val indexed_data = indexer2.fit(indexed1).transform(indexed1)
+
+  
+  
+  
+  }
+
+  def getLabeledPointSet(spark: SparkSession, country:String) {
+    val data = spark.read.format("parquet").load("/datascience/data_demo/training_set_%s".format(country))
+    
+    // Usamos indexamos los features y los devices id
+    val device_indexer = new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
+    val indexed1 = device_indexer.fit(data).transform(data)
+    val feature_indexer = new StringIndexer().setInputCol("feature").setOutputCol("featureIndex")
+    val indexed_data = feature_indexer.fit(indexed1).transform(indexed1)
+
+    // Guardamos los indexers
+    device_indexer.write.overwrite.save("/datascience/data_demo/device_indexer")
+    feature_indexer.write.overwrite.save("/datascience/data_demo/feature_indexer")
 
     val maximo = indexed_data
       .agg(max("featureIndex"))
@@ -102,13 +112,13 @@ object TrainModel {
     )
     df_final.write
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/labeled_points")
+      .save("/datascience/data_demo/labeled_points_%s".format(country))
   }
 
-  def train_and_evaluate_model(spark: SparkSession) {
+  def train_and_evaluate_model(spark: SparkSession,country:String) {
     import spark.implicits._
 
-    val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points")
+    val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_%s".format(country))
 
     //We'll split the set into training and test data
     val Array(trainingData, testData) = data.randomSplit(Array(0.7, 0.3))
@@ -120,26 +130,6 @@ object TrainModel {
       .setInputCols(Array("features_sparse"))
       .setOutputCol("features_sparse")
 
-/** MODELS
-    val model = new GBTClassifier()
-        .setLabelCol(labelColumn)
-        .setFeaturesCol("features_sparse")
-        .setPredictionCol("predicted_" + labelColumn)
-        .setMaxIter(50)
-
-    
-    // specify layers for the neural network:
-    // input layer of size 4 (features), two intermediate of size 5 and 4
-    // and output of size 2 (classes)
-    val layers = Array[Int](5406, 3, 3, 2)
-
-    // create the trainer and set its parameters
-    val model = new MultilayerPerceptronClassifier()
-                      .setLayers(layers)
-                      .setBlockSize(128)
-                      .setSeed(1234L)
-                      .setMaxIter(100)
-**/
     val rf = new RandomForestClassifier()
         .setLabelCol(labelColumn)
         .setFeaturesCol("features_sparse")
@@ -192,15 +182,42 @@ object TrainModel {
 
   }
 
+  def train_model(spark:SparkSession, country:String){
+    import spark.implicits._
+
+    val trainingData = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_%s".format(country))
+  
+    val labelColumn = "label"
+
+    val rf = new RandomForestClassifier()
+        .setLabelCol(labelColumn)
+        .setFeaturesCol("features_sparse")
+        .setPredictionCol("predicted_" + labelColumn)
+        .setNumTrees(100)
+
+    //We define the Array with the stages of the pipeline
+    val stages = Array(rf)
+
+    //Construct the pipeline
+    val pipeline = new Pipeline().setStages(stages)
+
+    //We fit our DataFrame into the pipeline to generate a model
+    val model = pipeline.fit(trainingData)
+
+    // Save the trained model
+    model.write.overwrite.save("/datascience/data_demo/pipeline_rf")
+  }
+
+
 
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Train and evaluate model").getOrCreate()
     val country = if (args.length > 0) args(0).toString else "MX"
     
-    getTrainingSet(spark,country)
-    getLabeledPointSet(spark)
-    train_and_evaluate_model(spark)
+    //getTrainingSet(spark,country)
+    getLabeledPointSet(spark,country)
+    train_model(spark,country)
   }
 
 }

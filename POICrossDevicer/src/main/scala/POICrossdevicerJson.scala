@@ -100,17 +100,26 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     // Loading POIs. The format of the file is Name, Latitude, Longitude
     val df_pois = spark.read.option("header", "true").option("delimiter", ",").csv(value_dictionary("path_to_pois"))
 
-    //creating geocodes the POIs
+    //creating geocodes,assigning radius and renaming columns
     val df_pois_parsed = df_pois.withColumn("geocode", ((abs(col("latitude").cast("float"))*10).cast("int")*10000)+(abs(col("longitude").cast("float")*100).cast("int")))
-                                .withColumn("radius", lit(value_dictionary("max_radius").toInt))
+                                .withColumnRenamed("latitude","latitude_poi")
+                                .withColumnRenamed("longitude","longitude_poi")
+                                
+    if (df_pois_parsed.columns.contains("radius")) {
+             val df_pois_final = df_pois_parsed
 
+            df_pois_final}
+    else {
+            val df_pois_final = df_pois_parsed.
+                                withColumn("radius", lit(value_dictionary("max_radius").toInt))
+       df_pois_final}                             
     // Here we rename the columns
-    val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "radius", "geocode")
+    //val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "radius", "geocode")
 
     //renaming columns based on list
-    val df_pois_final = df_pois_parsed.toDF(columnsRenamed_poi: _*)
+    //val df_pois_final = df_pois_parsed.toDF(columnsRenamed_poi: _*)
 
-    df_pois_final
+          
   }
 
 /**
