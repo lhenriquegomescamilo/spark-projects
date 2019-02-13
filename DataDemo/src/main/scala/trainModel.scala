@@ -55,6 +55,14 @@ object TrainModel {
     joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/training_set_%s/".format(country))
   }
 
+  def getTestSet(spark: SparkSession, country:String){
+
+
+  
+  
+  
+  }
+
   def getLabeledPointSet(spark: SparkSession, country:String) {
     val data = spark.read.format("parquet").load("/datascience/data_demo/training_set_%s".format(country))
     
@@ -65,8 +73,8 @@ object TrainModel {
     val indexed_data = feature_indexer.fit(indexed1).transform(indexed1)
 
     // Guardamos los indexers
-    device_indexer.write.overwrite.save("device_indexer")
-    feature_indexer.write.overwrite.save("feature_indexer")
+    device_indexer.write.overwrite.save("/datascience/data_demo/device_indexer")
+    feature_indexer.write.overwrite.save("/datascience/data_demo/feature_indexer")
 
     val maximo = indexed_data
       .agg(max("featureIndex"))
@@ -197,8 +205,10 @@ object TrainModel {
     val model = pipeline.fit(trainingData)
 
     // Save the trained model
-    model.write.overwrite.save("pipeline_rf")
+    model.write.overwrite.save("/datascience/data_demo/pipeline_rf")
   }
+
+
 
 
   def main(args: Array[String]) {
