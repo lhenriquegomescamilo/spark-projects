@@ -18,7 +18,7 @@ object EstidMapper {
         "d17 is not null and country = 'US' and event_type = 'sync'"
       )
       .select("d17", "device_id", "device_type")
-      .withColumn("day", lit(day))
+      .withColumn("day", lit(day.replace("/", "")))
       .dropDuplicates()
 
     df.write
