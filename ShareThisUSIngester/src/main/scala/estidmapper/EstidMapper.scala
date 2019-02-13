@@ -1,6 +1,7 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
 import org.joda.time.DateTime
+import org.apache.spark.sql.functions.lit
 
 object EstidMapper {
     /**
