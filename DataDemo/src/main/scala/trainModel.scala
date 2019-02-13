@@ -56,10 +56,18 @@ object TrainModel {
   }
 
   def getTestSet(spark: SparkSession, country:String){
+    val df = spark.read.parquet("/datascience/data_demo/triplets_segments/country=%s".format(country))
 
+    val users_no_gender = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/users_no_gender")
+      .withColumn("label", lit(1))
+      .withColumnRenamed("_c1", "device_id")
 
-  
-  
+    val joint = users_no_gender.join(df, Seq("device_id"))
+
+    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test_set_%s/".format(country))
   
   }
 
