@@ -308,18 +308,11 @@ object GetAudience {
       // We cross device the audience if the parameter is set.
       val xd = queries(0)("xd")
       if (xd.toString.toBoolean){
-     //   val object_xd = new AudienceCrossDevicer
-     //   object_xd.cross_device(spark, 
-     //                           "/datascience/devicer/processed/"+file_name,
-     //                           "index_type IN ('coo')",
-     //                           "\t",
-     //                             "device_id")
         val object_xd = AudienceCrossDevicer.cross_device(spark,
                                   "/datascience/devicer/processed/"+file_name,
                                             "index_type IN ('coo')",
-                                            "\t", "device_id")
+                                            "\t", "_c1")
       }
-
 
       // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
       srcPath = new Path(actual_path)
