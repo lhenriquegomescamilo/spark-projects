@@ -23,7 +23,7 @@ object EstidMapper {
 
     df.write
       .format("parquet")
-      .patitionBy("day")
+      .partitionBy("day")
       .mode("append")
       .save("/datascience/sharethis/estid_table/")
   }
