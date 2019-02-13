@@ -99,40 +99,24 @@ object Random {
       .save("/datascience/custom/madidsShareThisWithGEO")
   }
 
-  def getEstIdsMatching(spark: SparkSession) = {
-    val format = "yyyy/MM/dd"
-    val start = DateTime.now.minusDays(30)
-    val end = DateTime.now.minusDays(15)
-
-    val daysCount = Days.daysBetween(start, end).getDays()
-    val days =
-      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
-    val dfs = (0 until daysCount)
-      .map(start.plusDays(_))
-      .map(_.toString(format))
-      .map(
-        x =>
-          spark.read
-            .format("csv")
-            .option("sep", "\t")
-            .option("header", "true")
-            .load("/data/eventqueue/%s/*.tsv.gz".format(x))
-            .filter(
-              "d17 is not null and country = 'US' and event_type = 'sync'"
-            )
-            .select("d17", "device_id")
-            .dropDuplicates()
-      )
-
-    val df = dfs.reduce(_ union _)
+  def getEstIdsMatching(spark: SparkSession, day: String) = {
+    val df = spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .option("header", "true")
+        .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+        .filter(
+          "d17 is not null and country = 'US' and event_type = 'sync'"
+        )
+        .select("d17", "device_id", "device_type")
+        .withColumn("day", lit(day))
+        .dropDuplicates()
 
     df.write
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", true)
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/matching_estid_2")
+      .format("parquet")
+      .patitionBy("day")
+      .mode("append")
+      .save("/datascience/sharethis/estid_table/")
   }
 
   def process_geo(spark: SparkSession) {
