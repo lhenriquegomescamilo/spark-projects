@@ -122,7 +122,7 @@ object TrainModel {
   def generate_expansion(spark:SparkSession,country:String){
     val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_test_%s".format(country))
     // Cargamos el pipeline entrenado
-    val model = Pipeline.read.load("/datascience/data_demo/pipeline_rf")
+    val model = PipelineModel.read.load("/datascience/data_demo/pipeline_rf")
     // Predecimos sobre la data de test
     val predictions = model.transform(data)
     predictions.write.mode(SaveMode.Overwrite)
