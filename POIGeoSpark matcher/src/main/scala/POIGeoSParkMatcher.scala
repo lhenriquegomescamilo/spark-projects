@@ -15,7 +15,6 @@ import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.datasyslab.geospark.utils.GeoSparkConf
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
-
 /**
 /**
   Job Summary:
@@ -195,4 +194,4 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     match_POI(spark, safegraph_days, POI_file_name, country, output_file)
   }
 }
-  /**
+*/
