@@ -15,7 +15,7 @@ import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.datasyslab.geospark.utils.GeoSparkConf
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
-/**
+
 /**
   Job Summary:
   * The goal of this job is to create an audiencie based on Points Of Interests (POIs). The method takes as input a time frame (be default, december 2018) and a dataset containing the POIs. This dataset should be already formatted in three columns segment|latitude|longitude (without the index) and with the latitude and longitude with point (".") as delimiter.
@@ -23,7 +23,7 @@ import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
    The method then proceeds to filter the users by a desired minimum distance returning a final dataset with user id and device type.
 
    The current method will provide the basis for future more customizable geolocation jobs.
-  */
+  
 object POIGeoSparkMatcher {
 
   /**
