@@ -40,12 +40,16 @@ object DataGoogleAnalytics {
         /// Concatenamos los dataframes y nos quedamos solamente con el dominio de la url
         val df = dfs.reduce((df1,df2) => df1.union(df2))
                     .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
+                    .withColumn("url",regexp_replace(col("url"), "/.*", ""))
         
         /// Leemos el archivo que tiene las distribuciones para cada URL
         val distributions = spark.read.format("csv").option("header","true")
                                  .load("/datascience/data_demo/sites_distribution.csv")
                                  .drop("_c0")
                                  .withColumnRenamed("index","url")
+                                 .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
+                                 .withColumn("url",regexp_replace(col("url"), "/.*", ""))
+
 
         /// Hacemos el join de ambos dataframes para obtener la distribucion de cada device_id
         val joint = df.join(broadcast(distributions),Seq("url"))

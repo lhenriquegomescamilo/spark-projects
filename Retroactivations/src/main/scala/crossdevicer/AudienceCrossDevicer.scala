@@ -26,7 +26,7 @@ object AudienceCrossDevicer {
    * using the same name as the one sent by parameter.
    */
   def cross_device(spark: SparkSession, path_audience: String, index_filter: String, 
-                   sep: String = " ", column_name: String = "_c0"){
+                   sep: String = " ", column_name: String = "_c1"){
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
     val audience_name = path_audience.split("/").last
