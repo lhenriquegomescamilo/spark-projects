@@ -1,7 +1,7 @@
 package main.scala.devicer
 import main.scala.crossdevicer.AudienceCrossDevicer
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{lit, length, split, col, concat_ws, collect_list}
+import org.apache.spark.sql.functions.{lit, length, split, col, concat_ws, collect_list, udf}
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.spark.sql.{ SaveMode, DataFrame }
@@ -245,6 +245,7 @@ object GetAudience {
     data.createOrReplaceTempView("data")
 
     // Now we set all the filters
+    val columns = queries.map(query => col("c_"+query("segment_id").toString))
     val filters = queries.map(query => "IF(%s, %s, '') as c_%s".format(query("filter").toString, query("segment_id").toString, query("segment_id").toString)).mkString(", ")
 
     // We use all the filters to create a unique query
