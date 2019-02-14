@@ -15,15 +15,15 @@ import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.datasyslab.geospark.utils.GeoSparkConf
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
-
-/**
+/*
+/*
   Job Summary:
   * The goal of this job is to create an audiencie based on Points Of Interests (POIs). The method takes as input a time frame (be default, december 2018) and a dataset containing the POIs. This dataset should be already formatted in three columns segment|latitude|longitude (without the index) and with the latitude and longitude with point (".") as delimiter.
   * The method filters the safegraph data by country, and creates a geocode for both the POIs and the safegraph data. This geocode is used to match both datasets by performing a SQL join. The resulting rows will contain a user id, device type type, user latitude and longitude and POI id, latitude and longitude. Then the vincenty formula is used to calculate distance between the pairs of latitude and longitude.
    The method then proceeds to filter the users by a desired minimum distance returning a final dataset with user id and device type.
 
    The current method will provide the basis for future more customizable geolocation jobs.
-  
+  */
 object POIGeoSparkMatcher {
 
   /**
