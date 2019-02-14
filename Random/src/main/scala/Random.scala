@@ -981,52 +981,11 @@ val records_common = the_join.select(col("identifier"))
 //        filter(day => fs.exists(new org.apache.hadoop.fs.Path(path + day + "*")))
 
   }
- /**
-  def sampleSanti(spark: SparkSession) {
-    val format = "yyyyMMdd"
-    val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("15/11/2018")
-    val days =
-      (0 until 50).map(n => start.plusDays(n)).map(_.toString(format))
-
-
-    // First we read the data in parquet format
-    days.map(
-      day =>
-        spark.read
-          .format("parquet")
-          .load("/datascience/geo/US/day=%s".format(day))
-          .coalesce(100)
-          .format("com.databricks.spark.csv")
-          .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/custom/geo/US/")
-    )
-  }
-**/
 
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    //getSTGeo(spark)
     get_pii_AR(spark)
-    //sampleSanti(spark)
-    //spark.read.load("/datascience/sharethis/urls/day=2019*")
-    //      .filter("url LIKE '%vuse%' OR url LIKE '%vape%' OR url LIKE '%vaping%' OR url LIKE '%electr%cigar%' OR url LIKE '%smoke%alternative%' OR url LIKE '%cbd%'")
-    //      .select("estid")
-    //      .distinct
-    //      .write
-    //      .format("csv")
-    //      .mode(SaveMode.Overwrite)
-    //      .save("/datascience/audiences/custom_audiences/audience_vuse")
-    // var df_audience = spark.read.format("csv").load("/datascience/audiences/custom_audiences/audience_vuse").withColumnRenamed("_c0","d17")
-    // var mapping = spark.read.format("csv").option("sep","\t").option("header","true").load("/datascience/matching_estid_2")
-    // var joint = df_audience.join(mapping,Seq("d17"))
-    // joint.select("device_id").distinct
-    //       .write
-    //       .format("csv")
-    //       .mode(SaveMode.Overwrite)
-    //       .save("/datascience/audiences/custom_audiences/device_id_vuse_2")
   }
 
 }
