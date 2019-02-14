@@ -61,7 +61,7 @@ object TrainModel {
     val users_no_gender = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/devicer/processed/users_no_gender")
+      .load("/datascience/devicer/processed/users_no_gender/part-04616-cb74dcd0-b96b-4d5b-ad32-399a52128d55-c000.csv")
       .withColumnRenamed("_c1", "device_id")
       .select("device_id")
       .dropDuplicates("device_id")
