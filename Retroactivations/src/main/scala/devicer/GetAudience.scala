@@ -215,28 +215,53 @@ object GetAudience {
   * the file_name is extracted from the file path.
   **/
   
-  def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = { 
-    val results = queries.map(query => data.filter(query("filter").toString)
-                                        .select("device_type", "device_id")
-                                        .withColumn("segmentIds", lit(query("segment_id").toString)))
-    results.foreach(dataframe => dataframe.write.format("csv")
-                                            .option("sep", "\t")
-                                            .mode("append")
-                                            .save("/datascience/devicer/processed/"+fileName))
-    if (results.length > 1) {
-      val done = spark.read.format("csv")
-                        .option("sep", "\t")
-                        .load("/datascience/devicer/processed/"+fileName)
-                        .distinct()
-      done.groupBy("_c0", "_c1")
-          .agg(collect_list("_c2") as "segments")
-          .withColumn("segments", concat_ws(",", col("segments")))
-          .write.format("csv")
-            .option("sep", "\t")
-            .mode("append")
-            .save("/datascience/devicer/processed/"+fileName+"_grouped")
-    }
+  // def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = { 
+  //   val results = queries.map(query => data.filter(query("filter").toString)
+  //                                       .select("device_type", "device_id")
+  //                                       .withColumn("segmentIds", lit(query("segment_id").toString)))
+  //   results.foreach(dataframe => dataframe.write.format("csv")
+  //                                           .option("sep", "\t")
+  //                                           .mode("append")
+  //                                           .save("/datascience/devicer/processed/"+fileName))
+  //   if (results.length > 1) {
+  //     val done = spark.read.format("csv")
+  //                       .option("sep", "\t")
+  //                       .load("/datascience/devicer/processed/"+fileName)
+  //                       .distinct()
+  //     done.groupBy("_c0", "_c1")
+  //         .agg(collect_list("_c2") as "segments")
+  //         .withColumn("segments", concat_ws(",", col("segments")))
+  //         .write.format("csv")
+  //           .option("sep", "\t")
+  //           .mode("append")
+  //           .save("/datascience/devicer/processed/"+fileName+"_grouped")
+  //   }
   
+  // }
+
+
+  def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = {
+    // First we register the table
+    data.createOrReplaceTempView("data")
+
+    // Now we set all the filters
+    val filters = queries.map(query => "IF(%s, %s, '') as c_%s".format(query("filter").toString, query("segment_id").toString, query("segment_id").toString)).mkString(", ")
+
+    // We use all the filters to create a unique query
+    val final_query = "SELECT device_id, device_type, %s FROM data".format(filters)
+
+    // Here we define a useful function that concatenates two columns
+    val concatUDF = udf( (c1:String, c2:String) => if (c1.length>0 && c2.length>0) "%s,%s".format(c1, c2) else if (c1.length>0) c1 else c2 )
+
+    // Finally we store the results
+    val results = spark.sql(final_query)
+    results.withColumn("segments", columns.reduce(concatUDF(_, _)))
+           .filter(length(col("segments"))>0)
+           .select("device_type", "device_id", "segments")
+           .write.format("csv")
+           .option("sep", "\t")
+           .mode("append")
+           .save("/datascience/devicer/processed/"+fileName)
   }
   
 
