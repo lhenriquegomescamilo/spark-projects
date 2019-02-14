@@ -45,7 +45,7 @@ object EstidMapper {
 
     // Here we do the cross-device per se.
     val cross_deviced = db_data
-      .join(audience, db_data.col("index") === audience.col("device_id"))
+      .join(estid_table, db_data.col("index") === estid_table.col("device_id"))
       .select("d17", "device", "device_type")
       .withColumnRenamed("d17", "estid")
 
