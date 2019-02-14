@@ -1,5 +1,5 @@
 package main.scala
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{SparkSession, Row, SaveMode}
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.{lit, col, upper}
 
@@ -39,7 +39,7 @@ object EstidMapper {
     val db_data = spark.read
       .format("parquet")
       .load("/datascience/crossdevice/double_index")
-      .filter("index_type = 'coo'")
+      .filter("index_type = 'coo' and device_type IN ('and', 'ios')")
       .withColumn("index", upper(col("index")))
       .select("index", "device", "device_type")
 
