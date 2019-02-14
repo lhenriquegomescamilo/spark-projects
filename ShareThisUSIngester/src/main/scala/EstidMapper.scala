@@ -34,6 +34,7 @@ object EstidMapper {
     val estid_table = spark.read
       .load("/datascience/sharethis/estid_table/")
       .withColumn("device_id", upper(col("device_id")))
+      .select("device_id", "d17")
 
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     val db_data = spark.read
