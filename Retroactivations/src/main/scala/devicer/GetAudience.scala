@@ -311,6 +311,7 @@ object GetAudience {
       val partner_ids = queries(0)("partner_id")
       val since = queries(0)("since")
       val nDays = queries(0)("ndays")
+      val pipeline = queries(0)("pipeline")
       println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d".format(file, partner_ids, since, nDays))
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
@@ -318,7 +319,6 @@ object GetAudience {
       val ids = partner_ids.toString.split(",", -1).toList
       
       // Here we select the pipeline where we will gather the data
-      val pipeline = queries(0)("pipeline")
       val data = pipeline match {
                 case 0 => if (partner_ids.toString.length>0) getDataIdPartners(spark, ids, nDays.toString.toInt, since.toString.toInt) else getDataAudiences(spark, nDays.toString.toInt,
                                                                                                                                                      since.toString.toInt)

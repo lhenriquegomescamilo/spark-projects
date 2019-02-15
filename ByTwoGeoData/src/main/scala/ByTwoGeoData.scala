@@ -85,7 +85,7 @@ object ByTwoGeoData {
   def getSTGeo(spark: SparkSession) = {
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("24/01/2019")
+    val start = formatter.parseDateTime("15/11/2018")
     val days =
       (0 until 40).map(n => start.plusDays(n)).map(_.toString(format))
     val path = "/datascience/sharethis/loading/"
@@ -97,18 +97,23 @@ object ByTwoGeoData {
           .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5", "_c12", "_c13")
           .withColumnRenamed("_c0", "estid")
           .withColumnRenamed("_c1", "utc_timestamp")
+          .withColumnRenamed("_c2", "url")
           .withColumnRenamed("_c3", "ip")
+          .withColumnRenamed("_c4", "device_type")
+          .withColumnRenamed("_c5", "os")
+          .withColumnRenamed("_c6", "browser")
+          .withColumnRenamed("_c8", "isp")
+          .withColumnRenamed("_c9", "connection_type")
           .withColumnRenamed("_c10", "latitude")
           .withColumnRenamed("_c11", "longitude")
           .withColumnRenamed("_c12", "zipcode")
           .withColumnRenamed("_c13", "city")
-          .withColumnRenamed("_c5", "device_type")
           .withColumn("day", lit(day))
           .write
           .format("parquet")
           .partitionBy("day")
           .mode("append")
-          .save("/datascience/geo/US/")
+          .save("/datascience/sharethis/historic/")
     )
   }
 
