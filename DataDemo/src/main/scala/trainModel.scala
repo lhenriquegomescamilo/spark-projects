@@ -10,7 +10,7 @@ import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
-import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
 import org.apache.spark.sql.types.{
@@ -118,7 +118,7 @@ object TrainModel {
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/labeled_points_test_%s".format(country))
   }
-/***
+
   def generate_expansion(spark:SparkSession,country:String){
     val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_test_%s".format(country))
     // Cargamos el pipeline entrenado
@@ -129,7 +129,7 @@ object TrainModel {
                     .save("/datascience/data_demo/expansion_%s".format(country))
 
   }
-***/
+
   def getLabeledPointTrain(spark: SparkSession, country:String) {
     val data = spark.read.format("parquet").load("/datascience/data_demo/training_set_%s".format(country))
     
