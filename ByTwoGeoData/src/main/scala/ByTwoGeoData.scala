@@ -85,16 +85,15 @@ object ByTwoGeoData {
   def getSTGeo(spark: SparkSession) = {
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("15/11/2018")
+    val start = formatter.parseDateTime("08/02/2019")
     val days =
-      (0 until 90).map(n => start.plusDays(n)).map(_.toString(format))
+      (0 until 80).map(n => start.plusDays(n)).map(_.toString(format))
     val path = "/datascience/sharethis/loading/"
     days.map(
       day =>
         spark.read
           .format("csv")
           .load(path + day + "*")
-          .select("_c0", "_c1", "_c2", "_c3", "_c4", "_c5", "_c6", "_c8", "_c9", "_c10", "_c11", "_c12", "_c13")
           .withColumnRenamed("_c0", "estid")
           .withColumnRenamed("_c1", "utc_timestamp")
           .withColumnRenamed("_c2", "url")
@@ -102,12 +101,12 @@ object ByTwoGeoData {
           .withColumnRenamed("_c4", "device_type")
           .withColumnRenamed("_c5", "os")
           .withColumnRenamed("_c6", "browser")
-          .withColumnRenamed("_c8", "isp")
-          .withColumnRenamed("_c9", "connection_type")
-          .withColumnRenamed("_c10", "latitude")
-          .withColumnRenamed("_c11", "longitude")
-          .withColumnRenamed("_c12", "zipcode")
-          .withColumnRenamed("_c13", "city")
+          .withColumnRenamed("_c7", "isp")
+          .withColumnRenamed("_c8", "connection_type")
+          .withColumnRenamed("_c9", "latitude")
+          .withColumnRenamed("_c10", "longitude")
+          .withColumnRenamed("_c11", "zipcode")
+          .withColumnRenamed("_c12", "city")
           .withColumn("day", lit(day))
           .write
           .format("parquet")
