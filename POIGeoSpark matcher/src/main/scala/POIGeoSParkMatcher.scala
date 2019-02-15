@@ -115,7 +115,11 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     df_pois_final.createOrReplaceTempView("pointtable")
 
     var pointDf1 = spark.sql(
-      "select name,radius,ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape1 from pointtable"
+      """select name,
+                radius,
+                ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),
+                         cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape1 
+         from pointtable"""
     )
 
     pointDf1.createOrReplaceTempView("pointdf1")
@@ -124,14 +128,25 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val df_users = df_pois_final//get_safegraph_data(spark, safegraph_days, country)
     df_users.createOrReplaceTempView("pointtable")
 
+    // var pointDf2 = spark.sql(
+    //   "select ad_id,id_type,utc_timestamp,ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape2 from pointtable"
+    // )
     var pointDf2 = spark.sql(
-      "select ad_id,id_type,utc_timestamp,ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape2 from pointtable"
+      """select ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)), 
+                         cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape2 
+         from pointtable"""
     )
     pointDf2.createOrReplaceTempView("pointdf2")
     //pointDf2.show(2)
 
+    // var distanceJoinDf = spark.sql(
+    //   "select name,ad_id,id_type,utc_timestamp,ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  from pointdf1,pointdf2 where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius"
+    // )
     var distanceJoinDf = spark.sql(
-      "select name,ad_id,id_type,utc_timestamp,ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  from pointdf1,pointdf2 where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius"
+      """select name,
+              ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  
+         from pointdf1,pointdf2 
+         where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius"""
     )
 
     val countito = distanceJoinDf.count()
