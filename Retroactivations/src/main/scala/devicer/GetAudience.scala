@@ -191,11 +191,12 @@ object GetAudience {
         val description = if (query.contains("description") && Option(query("description")).getOrElse("").toString.length>0) query("description") else ""
         val jobid = if (query.contains("jobid") && Option(query("jobid")).getOrElse("").toString.length>0) query("jobid") else ""
         val xd = if (query.contains("xd") && Option(query("xd")).getOrElse("").toString.length>0) query("xd") else false
+        val commonFilter = if (query.contains("common") && Option(query("common")).getOrElse("").toString.length>0) query("common") else ""
     
         val actual_map: Map[String,Any] = Map("filter" -> filter, "segment_id" -> segmentId, "partner_id" -> partnerId,
                                                "since" -> since, "ndays" -> nDays, "push" -> push, "priority" -> priority, 
                                                "as_view" -> as_view, "queue" -> queue, "pipeline" -> pipeline,
-                                                "description" -> description, "jobid" -> jobid, "xd" -> xd)
+                                                "description" -> description, "jobid" -> jobid, "xd" -> xd, "common" -> commonFilter)
         
         queries = queries ::: List(actual_map)
       }
@@ -314,6 +315,7 @@ object GetAudience {
       val since = queries(0)("since")
       val nDays = queries(0)("ndays")
       val pipeline = queries(0)("pipeline")
+      val commonFilter = queries(0)("common")
       println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d".format(file, partner_ids, since, nDays))
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
@@ -331,7 +333,7 @@ object GetAudience {
 
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
-      getAudience(spark, data, queries, file_name)
+      getAudience(spark, data, queries, file_name, commonFilter)
 
       // We cross device the audience if the parameter is set.
       val xd = queries(0)("xd")

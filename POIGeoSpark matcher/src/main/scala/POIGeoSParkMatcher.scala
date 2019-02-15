@@ -147,8 +147,9 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
          where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius"""
     )
 
+    distanceJoinDf.explain()
     val countito = distanceJoinDf.count()
-      println("conteo", countito)
+    println("conteo", countito)
     //storing result
 
     // val filtered = 
