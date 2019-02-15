@@ -12,6 +12,7 @@ libraryDependencies += "org.datasyslab" % "geospark" % "1.1.3"
 libraryDependencies += "org.datasyslab" % "geospark-sql_2.3" % "1.1.3"
 libraryDependencies += "org.datasyslab" % "geospark-viz" % "1.1.3"
 
+
 resolvers +=
  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
