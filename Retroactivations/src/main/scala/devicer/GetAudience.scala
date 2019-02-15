@@ -245,7 +245,7 @@ object GetAudience {
     val filtered = if (commonFilter.length>0) data.filter(commonFilter) else data
 
     // First we register the table
-    data.createOrReplaceTempView("data")
+    filtered.createOrReplaceTempView("data")
 
     // Now we set all the filters
     val columns = queries.map(query => col("c_"+query("segment_id").toString))
@@ -259,6 +259,8 @@ object GetAudience {
 
     // Finally we store the results
     val results = spark.sql(final_query)
+    println("\n\n\n\n")
+    results.explain()
     results.withColumn("segments", columns.reduce(concatUDF(_, _)))
            .filter(length(col("segments"))>0)
            .select("device_type", "device_id", "segments")
