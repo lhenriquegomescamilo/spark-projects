@@ -5,7 +5,7 @@ import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.spark.ml.attribute.Attribute
-import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
+import org.apache.spark.ml.feature.{IndexToString, StringIndexer, StringIndexerModel}
 //import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.ml.linalg.Vectors
@@ -77,18 +77,11 @@ object TrainModel {
     // Leemo el indexer generado en el entrenamiento y lo usamos para indexar features
     val device_indexer =  new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
     val indexed1 = device_indexer.fit(data).transform(data)
-    val feature_indexer = StringIndexer.read.load("/datascience/data_demo/feature_indexer")
-    val indexed_data = feature_indexer.fit(indexed1).transform(indexed1)//.filter("featureIndex < 18777")
+    val feature_indexer = StringIndexerModel.read.load("/datascience/data_demo/feature_indexer").setInputCol("feature").setOutputCol("featureIndex")
+    val indexed_data = feature_indexer.transform(indexed1)//.filter("featureIndex < 18777")
 
     device_indexer.write.overwrite.save("/datascience/data_demo/device_indexer_test")
-/***
-    val maximo = indexed_data
-      .agg(max("featureIndex"))
-      .collect()(0)(0)
-      .toString
-      .toDouble
-      .toInt
-  ***/
+
     val maximo = 18776
     // Agrupamos y sumamos los counts por cada feature
     val grouped_indexed_data = indexed_data
@@ -137,10 +130,10 @@ object TrainModel {
     val data = spark.read.format("parquet").load("/datascience/data_demo/training_set_%s".format(country))
     
     // Usamos indexamos los features y los devices id
-    val device_indexer = new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
-    val indexed1 = device_indexer.fit(data).transform(data)
-    val feature_indexer = new StringIndexer().setInputCol("feature").setOutputCol("featureIndex")
-    val indexed_data = feature_indexer.fit(indexed1).transform(indexed1)
+    val device_indexer = new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex").fit(data)
+    val indexed1 = device_indexer.transform(data)
+    val feature_indexer = new StringIndexer().setInputCol("feature").setOutputCol("featureIndex").fit(indexed1)
+    val indexed_data = feature_indexer.transform(indexed1)
 
     // Guardamos los indexers
     device_indexer.write.overwrite.save("/datascience/data_demo/device_indexer")
@@ -288,8 +281,9 @@ object TrainModel {
     //getTrainingSet(spark,country)
     //train_model(spark,country)
     //getTestSet(spark,country)
+    //getLabeledPointTrain(spark,country)
     getLabeledPointTest(spark,country)
-    //generate_expansion(spark,country)
+    generate_expansion(spark,country)
   }
 
 }
