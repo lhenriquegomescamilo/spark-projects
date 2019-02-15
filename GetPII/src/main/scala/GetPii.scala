@@ -119,7 +119,7 @@ object FromEventqueuePII {
       SparkSession.builder.appName("Get Pii from Eventqueue").getOrCreate()
 
     // Here we obtain the list of days to be downloaded
-    val nDays = 1
+    val nDays = 5
     val from = 1
     val format = "yyyy/MM/dd"
     val end   = DateTime.now.minusDays(from)
