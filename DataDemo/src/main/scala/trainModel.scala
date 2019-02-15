@@ -78,17 +78,18 @@ object TrainModel {
     val device_indexer =  new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
     val indexed1 = device_indexer.fit(data).transform(data)
     val feature_indexer = StringIndexer.read.load("/datascience/data_demo/feature_indexer")
-    val indexed_data = feature_indexer.fit(indexed1).transform(indexed1)
+    val indexed_data = feature_indexer.fit(indexed1).transform(indexed1)//.filter("featureIndex < 18777")
 
     device_indexer.write.overwrite.save("/datascience/data_demo/device_indexer_test")
-
+/***
     val maximo = indexed_data
       .agg(max("featureIndex"))
       .collect()(0)(0)
       .toString
       .toDouble
       .toInt
-
+  ***/
+    val maximo = 18776
     // Agrupamos y sumamos los counts por cada feature
     val grouped_indexed_data = indexed_data
       .groupBy("device_id", "featureIndex")
@@ -287,8 +288,8 @@ object TrainModel {
     //getTrainingSet(spark,country)
     //train_model(spark,country)
     //getTestSet(spark,country)
-    //getLabeledPointTest(spark,country)
-    generate_expansion(spark,country)
+    getLabeledPointTest(spark,country)
+    //generate_expansion(spark,country)
   }
 
 }
