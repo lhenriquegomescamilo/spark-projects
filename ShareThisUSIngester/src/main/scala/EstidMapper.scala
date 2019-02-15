@@ -91,7 +91,8 @@ object EstidMapper {
         )
     )
 
-    
-    crossDeviceTable(spark)
+    if (DateTime.now.getDayOfWeek()==7){
+      crossDeviceTable(spark)
+    }
   }
 }
