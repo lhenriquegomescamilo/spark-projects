@@ -14,7 +14,10 @@ import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.datasyslab.geospark.utils.GeoSparkConf
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
-//import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
+import org.datasyslab.geosparkviz._
+import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
+
+
 
 /**
   Job Summary:
@@ -176,7 +179,11 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val spark = SparkSession
       .builder()
       .config("spark.serializer", classOf[KryoSerializer].getName)
-           .master("local[*]")
+      .config(
+        "spark.kryo.registrator",
+        classOf[GeoSparkVizKryoRegistrator].getName
+      )
+      .master("local[*]")
       .appName("match_POI_geospark")
       .getOrCreate()
 
