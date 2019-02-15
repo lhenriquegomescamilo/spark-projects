@@ -38,7 +38,7 @@ object EstidMapper {
 
     // Get the days to be loaded
     val format = "yyyyMMdd"
-    val end   = DateTime.now.minusDays(since)
+    val end   = DateTime.now.minusDays(1)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     val path = "/datascience/sharethis/estid_table"
     
