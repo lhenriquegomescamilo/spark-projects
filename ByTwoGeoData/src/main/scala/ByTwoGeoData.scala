@@ -105,6 +105,8 @@ object ByTwoGeoData {
     val data = spark.read
       .load("/datascience/sharethis/historic/day=" + day)
       .drop("device_type")
+
+    // Get the data from the estid mapper
     val estid_madid =
       spark.read.load("/datascience/sharethis/estid_madid_table")
 
@@ -113,7 +115,7 @@ object ByTwoGeoData {
       .join(estid_madid, Seq("estid"))
       .drop("estid")
       .select(
-        "device_id",
+        "device",
         "utc_timestamp",
         "ip",
         "latitude",
@@ -138,7 +140,7 @@ object ByTwoGeoData {
     val start = DateTime.now.minusDays(7) //formatter.parseDateTime("24/01/2019")
     // val day = start.toString(format)
     val days = (0 until 6).map(start.plusDays(_)).map(_.toString(format))
-    
+
     // getSTData(spark, day)
     days.map(day => getByTwoData(spark, day))
   }
