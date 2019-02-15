@@ -121,7 +121,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     pointDf1.createOrReplaceTempView("pointdf1")
 
 //getting safegraph users
-    val df_users = get_safegraph_data(spark, safegraph_days, country)
+    val df_users = df_pois_final//get_safegraph_data(spark, safegraph_days, country)
     df_users.createOrReplaceTempView("pointtable")
 
     var pointDf2 = spark.sql(
