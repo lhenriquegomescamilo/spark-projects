@@ -76,31 +76,28 @@ object ByTwoGeoData {
     */
   def getSTData(spark: SparkSession, day: String) = {
     val path = "/datascience/sharethis/loading/" + day + "*"
-    days.map(
-      day =>
-        spark.read
-          .format("csv")
-          .load(path)
-          .withColumnRenamed("_c0", "estid")
-          .withColumnRenamed("_c1", "utc_timestamp")
-          .withColumnRenamed("_c2", "url")
-          .withColumnRenamed("_c3", "ip")
-          .withColumnRenamed("_c4", "device_type")
-          .withColumnRenamed("_c5", "os")
-          .withColumnRenamed("_c6", "browser")
-          .withColumnRenamed("_c7", "isp")
-          .withColumnRenamed("_c8", "connection_type")
-          .withColumnRenamed("_c9", "latitude")
-          .withColumnRenamed("_c10", "longitude")
-          .withColumnRenamed("_c11", "zipcode")
-          .withColumnRenamed("_c12", "city")
-          .withColumn("day", lit(day))
-          .write
-          .format("parquet")
-          .partitionBy("day")
-          .mode("append")
-          .save("/datascience/sharethis/historic/")
-    )
+    spark.read
+      .format("csv")
+      .load(path)
+      .withColumnRenamed("_c0", "estid")
+      .withColumnRenamed("_c1", "utc_timestamp")
+      .withColumnRenamed("_c2", "url")
+      .withColumnRenamed("_c3", "ip")
+      .withColumnRenamed("_c4", "device_type")
+      .withColumnRenamed("_c5", "os")
+      .withColumnRenamed("_c6", "browser")
+      .withColumnRenamed("_c7", "isp")
+      .withColumnRenamed("_c8", "connection_type")
+      .withColumnRenamed("_c9", "latitude")
+      .withColumnRenamed("_c10", "longitude")
+      .withColumnRenamed("_c11", "zipcode")
+      .withColumnRenamed("_c12", "city")
+      .withColumn("day", lit(day))
+      .write
+      .format("parquet")
+      .partitionBy("day")
+      .mode("append")
+      .save("/datascience/sharethis/historic/")
   }
 
   def getByTwoData(spark: SparkSession, day: String) = {
@@ -138,7 +135,7 @@ object ByTwoGeoData {
 
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = DateTime.now().minusDay(7) //formatter.parseDateTime("24/01/2019")
+    val start = DateTime.now.minusDay(7) //formatter.parseDateTime("24/01/2019")
     // val day = start.toString(format)
     val days = (0 to 6).map(start.plusDays(_)).map(_.toString(format))
     // getSTData(spark, day)
