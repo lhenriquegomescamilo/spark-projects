@@ -201,7 +201,6 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
         "spark.kryo.registrator",
         classOf[GeoSparkVizKryoRegistrator].getName
       )
-      .master("local[*]")
       .appName("match_POI_geospark")
       .getOrCreate()
 
