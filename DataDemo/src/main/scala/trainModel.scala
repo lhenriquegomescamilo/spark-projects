@@ -77,8 +77,8 @@ object TrainModel {
     // Leemo el indexer generado en el entrenamiento y lo usamos para indexar features
     val device_indexer =  new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
     val indexed1 = device_indexer.fit(data).transform(data)
-    val feature_indexer = StringIndexerModel.read.load("/datascience/data_demo/feature_indexer").setInputCol("feature").setOutputCol("featureIndex")
-    val indexed_data = feature_indexer.transform(indexed1)//.filter("featureIndex < 18777")
+    val feature_indexer = StringIndexerModel.read.load("/datascience/data_demo/feature_indexer").setHandleInvalid("skip")
+    val indexed_data = feature_indexer.transform(indexed1)
 
     device_indexer.write.overwrite.save("/datascience/data_demo/device_indexer_test")
 
