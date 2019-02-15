@@ -87,14 +87,14 @@ object ByTwoGeoData {
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
     val start = formatter.parseDateTime("15/11/2018")
     val days =
-      (0 until 40).map(n => start.plusDays(n)).map(_.toString(format))
+      (0 until 90).map(n => start.plusDays(n)).map(_.toString(format))
     val path = "/datascience/sharethis/loading/"
     days.map(
       day =>
         spark.read
           .format("csv")
           .load(path + day + "*")
-          .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5", "_c12", "_c13")
+          .select("_c0", "_c1", "_c2", "_c3", "_c4", "_c5", "_c6", "_c8", "_c9", "_c10", "_c11", "_c12", "_c13")
           .withColumnRenamed("_c0", "estid")
           .withColumnRenamed("_c1", "utc_timestamp")
           .withColumnRenamed("_c2", "url")
