@@ -283,9 +283,9 @@ object TrainModel {
     val country = if (args.length > 0) args(0).toString else "MX"
     
     //getTrainingSet(spark,country)
-    //getLabeledPointSet(spark,country)
     //train_model(spark,country)
-    getTestSet(spark,country)
+    //getTestSet(spark,country)
+    getLabeledPointTest(spark,country)
   }
 
 }
