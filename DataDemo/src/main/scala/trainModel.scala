@@ -89,11 +89,11 @@ object TrainModel {
 
     // Agrupamos y sumamos los counts por cada feature
     val grouped_indexed_data = indexed_data
-      .groupBy("device_id", "label", "featureIndex")
+      .groupBy("device_id", "featureIndex")
       .agg(sum("count").cast("int").as("count"))
     // Agrupamos nuevamente y nos quedamos con la lista de features para cada device_id
     val grouped_data = grouped_indexed_data
-      .groupBy("device_id", "label")
+      .groupBy("device_id")
       .agg(
         collect_list("featureIndex").as("features"),
         collect_list("count").as("counts")
@@ -101,7 +101,7 @@ object TrainModel {
 
     // Esta UDF arma un vector esparso con los features y sus valores de count.
     val udfFeatures = udf(
-      (label: Int, features: Seq[Double], counts: Seq[Int], maximo: Int) =>
+      (features: Seq[Double], counts: Seq[Int], maximo: Int) =>
         Vectors.sparse(
           maximo + 1,
           (features.toList.map(f => f.toInt) zip counts.toList.map(
@@ -112,7 +112,7 @@ object TrainModel {
 
     val df_final = grouped_data.withColumn(
       "features_sparse",
-      udfFeatures(col("label"), col("features"), col("counts"), lit(maximo))
+      udfFeatures(col("features"), col("counts"), lit(maximo))
     )
     df_final.write
       .mode(SaveMode.Overwrite)
