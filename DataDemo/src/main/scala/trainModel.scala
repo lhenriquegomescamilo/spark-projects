@@ -75,10 +75,12 @@ object TrainModel {
      val data = spark.read.format("parquet").load("/datascience/data_demo/test_set_%s".format(country))
     
     // Leemo el indexer generado en el entrenamiento y lo usamos para indexar features
-    val device_indexer = StringIndexer.read.load("/datascience/data_demo/device_indexer")
+    val device_indexer =  new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
     val indexed1 = device_indexer.fit(data).transform(data)
     val feature_indexer = StringIndexer.read.load("/datascience/data_demo/feature_indexer")
     val indexed_data = feature_indexer.fit(indexed1).transform(indexed1)
+
+    device_indexer.write.overwrite.save("/datascience/data_demo/device_indexer_test")
 
     val maximo = indexed_data
       .agg(max("featureIndex"))
@@ -285,8 +287,8 @@ object TrainModel {
     //getTrainingSet(spark,country)
     //train_model(spark,country)
     //getTestSet(spark,country)
-    //getLabeledPointTest(spark,country)
-    generate_expansion(spark,country)
+    getLabeledPointTest(spark,country)
+    //generate_expansion(spark,country)
   }
 
 }
