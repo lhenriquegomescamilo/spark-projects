@@ -764,7 +764,7 @@ val records_common = the_join.select(col("identifier"))
                         .format("csv")
                         .option("sep", "\t")
                         .option("header", "true")
-                        .save("/datascience/geo/safegraph_10d.tsv")
+                        .save("/datascience/geo/safegraph_30d_ar_15-02")
 
     df_safegraph
   }
