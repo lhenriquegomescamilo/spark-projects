@@ -717,6 +717,58 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
+
+  /**
+    *
+    *
+    *
+    * Downloading safegraph data for GCBA study (porque no hay job que haga polygon matching aun)
+    *
+    *
+    *
+    */
+
+ def get_safegraph_data(
+      spark: SparkSession,
+      nDays: Integer,
+      country: String,
+      since: Integer = 1
+  ) = {
+    //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
+    // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
+    // Also we generate a new column call 'geocode' that will be used for the join
+    val format = "yyyy/MM/dd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+        //dictionary for timezones
+    val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
+    
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/data/geo/safegraph/"
+    val hdfs_files = days.map(day => path + "%s/*.gz".format(day))
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .csv(hdfs_files: _*)
+      .dropDuplicates("ad_id", "latitude", "longitude")
+      .filter("country = '%s'".format(country))
+      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "HH"))
+      .withColumn("Day", date_format(col("Time"), "d"))
+      .withColumn("Month", date_format(col("Time"), "M"))
+                        .write
+                        .format("csv")
+                        .option("sep", "\t")
+                        .option("header", "true")
+                        .save("/datascience/geo/safegraph_10d.tsv")
+
+    df_safegraph
+  }
+
   /**
     *
     *
@@ -853,6 +905,8 @@ val records_common = the_join.select(col("identifier"))
     days.map(day => parseDay(day))
   }
 
+
+
   /**
     *
     *
@@ -985,7 +1039,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    get_pii_AR(spark)
+    //get_pii_AR(spark)
+    get_safegraph_data(spark,country="argentina",nDays=30)
   }
 
 }
