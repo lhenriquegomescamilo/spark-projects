@@ -2,6 +2,8 @@ package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.{lit, col, upper}
+import org.apache.hadoop.fs.{ FileSystem, Path }
+import org.apache.spark.sql.{ SaveMode, DataFrame }
 
 object EstidMapper {
 
@@ -29,10 +31,30 @@ object EstidMapper {
       .save("/datascience/sharethis/estid_table/")
   }
 
+
+  def getEstidTable(spark: SparkSession, nDays: Int = 60): DataFrame = {
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end   = DateTime.now.minusDays(1)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/sharethis/estid_table"
+    
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days.map(day => path+"/day=%s".format(day))
+                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
+
+    df
+  }
+
+
+
   def crossDeviceTable(spark: SparkSession) = {
     // Get the estid table
-    val estid_table = spark.read
-      .load("/datascience/sharethis/estid_table/")
+    val estid_table = getEstidTable(spark)
       .withColumn("device_id", upper(col("device_id")))
       .select("device_id", "d17")
 
@@ -60,14 +82,14 @@ object EstidMapper {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    // val today = DateTime.now()
-    // val days = (1 until 1).map(
-    //   days =>
-    //     getEstIdsMatching(
-    //       spark,
-    //       today.minusDays(days).toString("yyyy/MM/dd")
-    //     )
-    // )
+    val today = DateTime.now()
+    val days = (1 until 1).map(
+      days =>
+        getEstIdsMatching(
+          spark,
+          today.minusDays(days).toString("yyyy/MM/dd")
+        )
+    )
 
     crossDeviceTable(spark)
   }

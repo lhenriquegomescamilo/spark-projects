@@ -12,19 +12,6 @@ import org.apache.commons.codec.binary.Base64
 
 object ByTwoGeoData {
 
-  def sampleSanti(spark: SparkSession, day: String) {
-    spark.read
-      .format("parquet")
-      .load("/datascience/geo/US/day=%s".format(day))
-      .coalesce(100)
-      .write
-      .format("com.databricks.spark.csv")
-      .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/geo/US/%s/".format(day))
-    println("\nLOGGER: DAY %s HAS BEEN PROCESSED!\n\n".format(day))
-  }
-
   def encrypt(value: String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
     cipher.init(Cipher.ENCRYPT_MODE, keyToSpec())
@@ -82,38 +69,67 @@ object ByTwoGeoData {
     println("LOGGER: day %s processed successfully!".format(day))
   }
 
-  def getSTGeo(spark: SparkSession) = {
-    val format = "yyyyMMdd"
-    val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("08/02/2019")
-    val days =
-      (0 until 80).map(n => start.plusDays(n)).map(_.toString(format))
-    val path = "/datascience/sharethis/loading/"
-    days.map(
-      day =>
-        spark.read
-          .format("csv")
-          .load(path + day + "*")
-          .withColumnRenamed("_c0", "estid")
-          .withColumnRenamed("_c1", "utc_timestamp")
-          .withColumnRenamed("_c2", "url")
-          .withColumnRenamed("_c3", "ip")
-          .withColumnRenamed("_c4", "device_type")
-          .withColumnRenamed("_c5", "os")
-          .withColumnRenamed("_c6", "browser")
-          .withColumnRenamed("_c7", "isp")
-          .withColumnRenamed("_c8", "connection_type")
-          .withColumnRenamed("_c9", "latitude")
-          .withColumnRenamed("_c10", "longitude")
-          .withColumnRenamed("_c11", "zipcode")
-          .withColumnRenamed("_c12", "city")
-          .withColumn("day", lit(day))
-          .write
-          .format("parquet")
-          .partitionBy("day")
-          .mode("append")
-          .save("/datascience/sharethis/historic/")
-    )
+  /**
+    * This function takes the data in csv format, and transforms it into parquet files for a given day.
+    * Basically, it loads the data into a dataframe, rename the columns and finally store it as
+    * a parquet pipeline.
+    */
+  def getSTData(spark: SparkSession, day: String) = {
+    val path = "/datascience/sharethis/loading/" + day + "*"
+    spark.read
+      .format("csv")
+      .load(path)
+      .withColumnRenamed("_c0", "estid")
+      .withColumnRenamed("_c1", "utc_timestamp")
+      .withColumnRenamed("_c2", "url")
+      .withColumnRenamed("_c3", "ip")
+      .withColumnRenamed("_c4", "device_type")
+      .withColumnRenamed("_c5", "os")
+      .withColumnRenamed("_c6", "browser")
+      .withColumnRenamed("_c7", "isp")
+      .withColumnRenamed("_c8", "connection_type")
+      .withColumnRenamed("_c9", "latitude")
+      .withColumnRenamed("_c10", "longitude")
+      .withColumnRenamed("_c11", "zipcode")
+      .withColumnRenamed("_c12", "city")
+      .withColumn("day", lit(day))
+      .write
+      .format("parquet")
+      .partitionBy("day")
+      .mode("append")
+      .save("/datascience/sharethis/historic/")
+  }
+
+  def getByTwoData(spark: SparkSession, day: String) = {
+    // First we load the data for the given day
+    val data = spark.read
+      .load("/datascience/sharethis/historic/day=" + day)
+      .drop("device_type")
+
+    // Get the data from the estid mapper
+    val estid_madid =
+      spark.read.load("/datascience/sharethis/estid_madid_table")
+
+    // Now we join both tables
+    val join = data
+      .join(estid_madid, Seq("estid"))
+      .drop("estid")
+      .select(
+        "device",
+        "utc_timestamp",
+        "ip",
+        "latitude",
+        "longitude",
+        "zipcode",
+        "city",
+        "device_type"
+      )
+      .withColumn("day", lit(day))
+      .write
+      .format("parquet")
+      .partitionBy("day")
+      .mode("append")
+      .save("/datascience/data_bytwo")
   }
 
   def main(Args: Array[String]) {
@@ -121,11 +137,11 @@ object ByTwoGeoData {
 
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("24/01/2019")
-    val days = (0 until 50).map(n => start.plusDays(n)).map(_.toString(format))
+    val start = DateTime.now.minusDays(7) //formatter.parseDateTime("24/01/2019")
+    // val day = start.toString(format)
+    val days = (0 until 6).map(start.plusDays(_)).map(_.toString(format))
 
-    // days.map(day => sampleSanti(spark, day))
-    //days.map(day => getSampleATT(spark, day))
-    getSTGeo(spark)
+    // getSTData(spark, day)
+    days.map(day => getByTwoData(spark, day))
   }
 }
