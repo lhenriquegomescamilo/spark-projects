@@ -240,7 +240,9 @@ object GetAudience {
   // }
 
 
-  def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = {
+  def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String, commonFilter: String = "") = {
+    val filtered = if (commonFilter.length>0) data.filter(commonFilter) else data
+
     // First we register the table
     data.createOrReplaceTempView("data")
 
