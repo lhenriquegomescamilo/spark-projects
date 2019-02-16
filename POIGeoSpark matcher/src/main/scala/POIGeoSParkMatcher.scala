@@ -119,7 +119,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
                 ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),
                          cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape1 
          from pointtable"""
-    )
+    ).repartition(20)
     pointDf1.createOrReplaceTempView("pointdf1")
 
     //getting safegraph users
@@ -133,7 +133,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
                 ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)), 
                          cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape2 
          from pointtable"""
-    )
+    ).repartition(200)
     pointDf2.createOrReplaceTempView("pointdf2")
     
     // Here we obtain the points that are closer than the radius
@@ -145,8 +145,10 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
                 ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  
          from pointdf1,pointdf2 
          where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius"""
-    )
+    ).repartition(200)
 
+    println("EXPLAIN")
+    println(distanceJoinDf.explain())
     distanceJoinDf.explain()
     val countito = distanceJoinDf.count()
     println("conteo", countito)

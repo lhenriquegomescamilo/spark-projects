@@ -1,4 +1,8 @@
-spark-submit\
+#!/bin/bash
+
+source /home/rely/.bashrc
+
+/home/rely/spark/bin/spark-submit\
   --class "main.scala.ByTwoGeoData"\
   --master yarn\
   --deploy-mode cluster\
