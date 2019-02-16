@@ -14,13 +14,13 @@ spark-submit\
 
 
 spark-submit\
- --class "main.scala.GetAudience"\
+ --class "main.scala.devicer.GetAudience"\
  --master yarn\
  --deploy-mode cluster\
  --driver-memory 8g\
  --executor-memory 8g\
  --num-executors 15\
  --executor-cores 4\
- --queue spark\
+ --queue default\
  --conf spark.yarn.maxAppAttempts=1\
  /home/rely/spark-projects/Retroactivations/target/scala-2.11/retroactivations-by-partner-id_2.11-1.0.jar
