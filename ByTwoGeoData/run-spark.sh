@@ -8,7 +8,7 @@ source /home/rely/.bashrc
   --deploy-mode cluster\
   --driver-memory 8g\
   --executor-memory 8g\
-  --num-executors 15\
+  --num-executors 18\
   --executor-cores 4\
   --queue default\
   --conf spark.yarn.maxAppAttempts=1\
