@@ -262,17 +262,18 @@ object TrainModel {
   }
 
   def generate_expansion(spark:SparkSession,country:String){
+    val udfJoin = udf((lista: Seq[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2)
+                                                               else "")
     val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_test_%s".format(country))
     // Cargamos el pipeline entrenado
     val model = PipelineModel.read.load("/datascience/data_demo/pipeline_rf")
     // Predecimos sobre la data de test
-    val predictions = model.transform(data)
-    predictions.write.mode(SaveMode.Overwrite)
+    val predictions = model.transform(data).select("device_id","probability","predicted_label").withColumn("probability",udfJoin(col("probability")))
+    //predictions.write.mode(SaveMode.Overwrite)
+    //                .save("/datascience/data_demo/expansion_%s".format(country))
+
+     predictions.write.format("csv").option("sep","\t").option("header","true").mode(SaveMode.Overwrite)
                     .save("/datascience/data_demo/expansion_%s".format(country))
-
-     //predictions.write.format("csv").option("header","true").mode(SaveMode.Overwrite)
-     //               .save("/datascience/data_demo/expansion_%s".format(country))
-
   }
 
 
