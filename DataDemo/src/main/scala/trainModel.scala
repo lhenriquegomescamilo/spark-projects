@@ -267,8 +267,11 @@ object TrainModel {
     val model = PipelineModel.read.load("/datascience/data_demo/pipeline_rf")
     // Predecimos sobre la data de test
     val predictions = model.transform(data)
-    predictions.write.format("csv").option("header","true").mode(SaveMode.Overwrite)
+    predictions.write.mode(SaveMode.Overwrite)
                     .save("/datascience/data_demo/expansion_%s".format(country))
+
+     //predictions.write.format("csv").option("header","true").mode(SaveMode.Overwrite)
+     //               .save("/datascience/data_demo/expansion_%s".format(country))
 
   }
 
