@@ -905,8 +905,24 @@ val records_common = the_join.select(col("identifier"))
     days.map(day => parseDay(day))
   }
 
+/**
+    *
+    *
+    *
+    *      Data GCBA for campaigns
+    *
+    *
+    *
+    */
+ def gcba_campaign_day(spark:SparkSession, day:String){
+    
+    val df = spark.read.format("csv").option("sep","\t").option("header",true)                         
+                        .load("/data/eventqueue/%s/*.tsv.gz".format(day))                        
+                        .select("id_partner","all_segments","url")   
+                        .filter( col("id_partner") === "349" &&  col("all_segments").isin(List("76522,76536,76543"):_*))
 
-
+    df.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/gcba_campaign_%s".format(day))                  
+}
   /**
     *
     *
@@ -1040,7 +1056,8 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //get_pii_AR(spark)
-    get_safegraph_data(spark,country="argentina",nDays=30)
+    //get_safegraph_data(spark,country="argentina",nDays=30)
+    gcba_campaign_day(spark,"2019/02/18")
   }
 
 }
