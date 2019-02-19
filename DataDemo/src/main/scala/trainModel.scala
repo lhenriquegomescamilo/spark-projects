@@ -268,11 +268,9 @@ object TrainModel {
     // Cargamos el pipeline entrenado
     val model = PipelineModel.read.load("/datascience/data_demo/pipeline_rf")
     // Predecimos sobre la data de test
-    val predictions = model.transform(data).select("device_id","probability","predicted_label").withColumn("probability",udfJoin(col("probability")))
-    //predictions.write.mode(SaveMode.Overwrite)
-    //                .save("/datascience/data_demo/expansion_%s".format(country))
-
-     predictions.write.format("csv").option("sep","\t").option("header","true").mode(SaveMode.Overwrite)
+    val predictions = model.transform(data).select("device_id","probability","predicted_label").withColumn("probability", to_json(struct(col("probability"))))
+    
+    predictions.write.format("csv").option("sep","\t").option("header","true").mode(SaveMode.Overwrite)
                     .save("/datascience/data_demo/expansion_%s".format(country))
   }
 
