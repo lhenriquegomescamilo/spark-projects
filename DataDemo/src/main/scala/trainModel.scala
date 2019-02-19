@@ -262,7 +262,7 @@ object TrainModel {
   }
 
   def generate_expansion(spark:SparkSession,country:String){
-    val udfJoin = udf((lista: Seq[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2)
+    val udfJoin = udf((lista: Vector[String]) => if (lista.length > 0) lista.reduce((seg1, seg2) => seg1+","+seg2)
                                                                else "")
     val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_test_%s".format(country))
     // Cargamos el pipeline entrenado
