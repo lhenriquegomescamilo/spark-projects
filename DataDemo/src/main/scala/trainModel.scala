@@ -29,6 +29,7 @@ import org.apache.spark.ml.classification.{GBTClassificationModel, GBTClassifier
 
 
 object TrainModel {
+  ////////////////////////////////// Training //////////////////////////////////////////////////////////
   def getTrainingSet(spark: SparkSession, country:String) {
     val df = spark.read.parquet("/datascience/data_demo/triplets_segments/country=%s".format(country))
 
@@ -53,77 +54,6 @@ object TrainModel {
     val joint = gt.join(df, Seq("device_id")).filter("feature NOT IN ('2','3','69207','69228','39525','40136','40881','36523')")
 
     joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/training_set_%s/".format(country))
-  }
-
-  def getTestSet(spark: SparkSession, country:String){
-    val df = spark.read.parquet("/datascience/data_demo/triplets_segments/country=%s".format(country))
-
-    val users_no_gender = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .load("/datascience/devicer/processed/users_no_gender/part-04616-cb74dcd0-b96b-4d5b-ad32-399a52128d55-c000.csv")
-      .withColumnRenamed("_c1", "device_id")
-      .select("device_id")
-      .dropDuplicates("device_id")
-
-    val joint = users_no_gender.join(df, Seq("device_id"))
-
-    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test_set_%s/".format(country))
-  
-  }
-  def getLabeledPointTest(spark: SparkSession, country:String) {
-     val data = spark.read.format("parquet").load("/datascience/data_demo/test_set_%s".format(country))
-    
-    // Leemo el indexer generado en el entrenamiento y lo usamos para indexar features
-    val device_indexer =  new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
-    val indexed1 = device_indexer.fit(data).transform(data)
-    val feature_indexer = StringIndexerModel.read.load("/datascience/data_demo/feature_indexer").setHandleInvalid("skip")
-    val indexed_data = feature_indexer.transform(indexed1)
-
-    device_indexer.write.overwrite.save("/datascience/data_demo/device_indexer_test")
-
-    val maximo = 18776
-    // Agrupamos y sumamos los counts por cada feature
-    val grouped_indexed_data = indexed_data
-      .groupBy("device_id", "featureIndex")
-      .agg(sum("count").cast("int").as("count"))
-    // Agrupamos nuevamente y nos quedamos con la lista de features para cada device_id
-    val grouped_data = grouped_indexed_data
-      .groupBy("device_id")
-      .agg(
-        collect_list("featureIndex").as("features"),
-        collect_list("count").as("counts")
-      )
-
-    // Esta UDF arma un vector esparso con los features y sus valores de count.
-    val udfFeatures = udf(
-      (features: Seq[Double], counts: Seq[Int], maximo: Int) =>
-        Vectors.sparse(
-          maximo + 1,
-          (features.toList.map(f => f.toInt) zip counts.toList.map(
-            f => f.toDouble
-          )).toSeq.distinct.sortWith((e1, e2) => e1._1 < e2._1).toSeq
-        )
-    )
-
-    val df_final = grouped_data.withColumn(
-      "features_sparse",
-      udfFeatures(col("features"), col("counts"), lit(maximo))
-    )
-    df_final.write
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/labeled_points_test_%s".format(country))
-  }
-
-  def generate_expansion(spark:SparkSession,country:String){
-    val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_test_%s".format(country))
-    // Cargamos el pipeline entrenado
-    val model = PipelineModel.read.load("/datascience/data_demo/pipeline_rf")
-    // Predecimos sobre la data de test
-    val predictions = model.transform(data)
-    predictions.write.mode(SaveMode.Overwrite)
-                    .save("/datascience/data_demo/expansion_%s".format(country))
-
   }
 
   def getLabeledPointTrain(spark: SparkSession, country:String) {
@@ -270,6 +200,81 @@ object TrainModel {
     // Save the trained model
     model.write.overwrite.save("/datascience/data_demo/pipeline_rf")
   }
+  
+  ////////////////////////////////// Test //////////////////////////////////////////////////////////
+  def getTestSet(spark: SparkSession, country:String){
+    val df = spark.read.parquet("/datascience/data_demo/triplets_segments/country=%s".format(country))
+
+    val users_no_gender = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/users_no_gender/part-04616-cb74dcd0-b96b-4d5b-ad32-399a52128d55-c000.csv")
+      .withColumnRenamed("_c1", "device_id")
+      .select("device_id")
+      .dropDuplicates("device_id")
+
+    val joint = users_no_gender.join(df, Seq("device_id"))
+
+    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test_set_%s/".format(country))
+  
+  }
+  def getLabeledPointTest(spark: SparkSession, country:String) {
+     val data = spark.read.format("parquet").load("/datascience/data_demo/test_set_%s".format(country))
+    
+    // Leemo el indexer generado en el entrenamiento y lo usamos para indexar features
+    val device_indexer =  new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
+    val indexed1 = device_indexer.fit(data).transform(data)
+    val feature_indexer = StringIndexerModel.read.load("/datascience/data_demo/feature_indexer").setHandleInvalid("skip")
+    val indexed_data = feature_indexer.transform(indexed1)
+
+    // Hardcodeamos el maximo valor del feature
+    val maximo = 18776
+    // Agrupamos y sumamos los counts por cada feature
+    val grouped_indexed_data = indexed_data
+      .groupBy("device_id", "featureIndex")
+      .agg(sum("count").cast("int").as("count"))
+    // Agrupamos nuevamente y nos quedamos con la lista de features para cada device_id
+    val grouped_data = grouped_indexed_data
+      .groupBy("device_id")
+      .agg(
+        collect_list("featureIndex").as("features"),
+        collect_list("count").as("counts")
+      )
+
+    // Esta UDF arma un vector esparso con los features y sus valores de count.
+    val udfFeatures = udf(
+      (features: Seq[Double], counts: Seq[Int], maximo: Int) =>
+        Vectors.sparse(
+          maximo + 1,
+          (features.toList.map(f => f.toInt) zip counts.toList.map(
+            f => f.toDouble
+          )).toSeq.distinct.sortWith((e1, e2) => e1._1 < e2._1).toSeq
+        )
+    )
+
+    val df_final = grouped_data.withColumn(
+      "features_sparse",
+      udfFeatures(col("features"), col("counts"), lit(maximo))
+    )
+    df_final.write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/labeled_points_test_%s".format(country))
+  }
+
+  def generate_expansion(spark:SparkSession,country:String){
+    val data = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_test_%s".format(country))
+    // Cargamos el pipeline entrenado
+    val model = PipelineModel.read.load("/datascience/data_demo/pipeline_rf")
+    // Predecimos sobre la data de test
+    val predictions = model.transform(data)
+    predictions.write.format("csv").option("header","true").mode(SaveMode.Overwrite)
+                    .save("/datascience/data_demo/expansion_%s".format(country))
+
+  }
+
+
+
+
 
 
 
