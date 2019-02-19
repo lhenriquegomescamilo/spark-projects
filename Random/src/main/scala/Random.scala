@@ -919,7 +919,7 @@ val records_common = the_join.select(col("identifier"))
     val df = spark.read.format("csv").option("sep","\t").option("header",true)                         
                         .load("/data/eventqueue/%s/*.tsv.gz".format(day))                        
                         .select("id_partner","all_segments","url")   
-                        .filter("id_partner = 349 and all_segments = 76522|76536|76543")
+                        .filter( col("id_partner") === "349" &&  col("all_segments").isin(List("76522,76536,76543"):_*))
 
     df.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/gcba_campaign_%s".format(day))                  
 }
