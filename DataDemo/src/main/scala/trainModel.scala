@@ -273,14 +273,7 @@ object TrainModel {
     predictions.write.format("csv").option("sep","\t").option("header","true").mode(SaveMode.Overwrite)
                     .save("/datascience/data_demo/expansion_%s".format(country))
   }
-
-
-
-
-
-
-
-
+  
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Train and evaluate model").getOrCreate()
     val country = if (args.length > 0) args(0).toString else "MX"
@@ -289,8 +282,8 @@ object TrainModel {
     //train_model(spark,country)
     getTestSet(spark,country)
     //getLabeledPointTrain(spark,country)
-    getLabeledPointTest(spark,country)
-    generate_expansion(spark,country)
+    //getLabeledPointTest(spark,country)
+    //generate_expansion(spark,country)
   }
 
 }
