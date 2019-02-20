@@ -212,6 +212,7 @@ object TrainModel {
       .withColumnRenamed("_c1", "device_id")
       .select("device_id")
       .dropDuplicates("device_id")
+      .limit(1000000)
 
     val joint = users_no_gender.join(df, Seq("device_id"))
 
