@@ -283,8 +283,8 @@ object TrainModel {
     //train_model(spark,country)
     //getTestSet(spark,country)
     //getLabeledPointTrain(spark,country)
-    getLabeledPointTest(spark,country)
-    //generate_expansion(spark,country)
+    //getLabeledPointTest(spark,country)
+    generate_expansion(spark,country)
   }
 
 }
