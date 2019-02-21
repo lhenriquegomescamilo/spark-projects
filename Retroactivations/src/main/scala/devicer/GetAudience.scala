@@ -215,33 +215,43 @@ object GetAudience {
   * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
   * the file_name is extracted from the file path.
   **/
+  def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = { 
+    val results = queries.map(query => data.filter(query("filter").toString)
+                                        .select("device_type", "device_id")
+                                        .withColumn("segmentIds", lit(query("segment_id").toString)))
+    results.foreach(dataframe => dataframe.write.format("csv")
+                                            .option("sep", "\t")
+                                            .mode("append")
+                                            .save("/datascience/devicer/processed/"+fileName))
+    if (results.length > 1) {
+      val done = spark.read.format("csv")
+                        .option("sep", "\t")
+                        .load("/datascience/devicer/processed/"+fileName)
+                        .distinct()
+      done.groupBy("_c0", "_c1")
+          .agg(collect_list("_c2") as "segments")
+          .withColumn("segments", concat_ws(",", col("segments")))
+          .write.format("csv")
+            .option("sep", "\t")
+            .mode("append")
+            .save("/datascience/devicer/processed/"+fileName+"_grouped")
+    }
   
-  // def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = { 
-  //   val results = queries.map(query => data.filter(query("filter").toString)
-  //                                       .select("device_type", "device_id")
-  //                                       .withColumn("segmentIds", lit(query("segment_id").toString)))
-  //   results.foreach(dataframe => dataframe.write.format("csv")
-  //                                           .option("sep", "\t")
-  //                                           .mode("append")
-  //                                           .save("/datascience/devicer/processed/"+fileName))
-  //   if (results.length > 1) {
-  //     val done = spark.read.format("csv")
-  //                       .option("sep", "\t")
-  //                       .load("/datascience/devicer/processed/"+fileName)
-  //                       .distinct()
-  //     done.groupBy("_c0", "_c1")
-  //         .agg(collect_list("_c2") as "segments")
-  //         .withColumn("segments", concat_ws(",", col("segments")))
-  //         .write.format("csv")
-  //           .option("sep", "\t")
-  //           .mode("append")
-  //           .save("/datascience/devicer/processed/"+fileName+"_grouped")
-  //   }
-  
-  // }
+  }
 
-
-  def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String, commonFilter: String = "") = {
+  /** 
+  * This method takes a list of queries and their corresponding segment ids, and generates a file where the first
+  * column is the device_type, the second column is the device_id, and the last column is the list of segment ids
+  * for that user separated by comma. Every column is separated by a space. The file is stored in the folder
+  * /datascience/devicer/processed/file_name. The file_name value is extracted from the file path given by parameter.
+  *
+  * @param data: DataFrame that will be used to extract the audience from, applying the corresponding filters.
+  * @param queries: List of Maps, where the key is the parameter and the values are the values.
+  *
+  * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
+  * the file_name is extracted from the file path.
+  **/
+  def getMultipleAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String, commonFilter: String = "") = {
     val filtered = if (commonFilter.length>0) data.filter(commonFilter) else data
 
     // First we register the table
@@ -335,7 +345,12 @@ object GetAudience {
 
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
-      getAudience(spark, data, queries, file_name, commonFilter)
+      if (queries.length > 10){
+        getMulitpleAudience(spark, data, queries, file_name, commonFilter)
+      } else {
+        getAudience(spark, data, queries, file_name)
+      }
+      
 
       // We cross device the audience if the parameter is set.
       val xd = queries(0)("xd")
