@@ -346,7 +346,7 @@ object GetAudience {
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
       if (queries.length > 10){
-        getMulitpleAudience(spark, data, queries, file_name, commonFilter)
+        getMultipleAudience(spark, data, queries, file_name, commonFilter)
       } else {
         getAudience(spark, data, queries, file_name)
       }
