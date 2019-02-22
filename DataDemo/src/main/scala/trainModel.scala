@@ -228,9 +228,9 @@ object TrainModel {
       .collect()
       .map(_(0))
       .toSet
-    val gt_b = spark.sparkContext.broadcast(gt: _*)
+    val gt_b = spark.sparkContext.broadcast(gt)
 
-    df.filter(!col("device_id").isin(gt_b.value))
+    df.filter(!col("device_id").isin(gt_b.value: _*))
       .withColumn("country", lit(country))
       .write
       .partitionBy("country")
