@@ -238,7 +238,7 @@ object TrainModel {
       .save("/datascience/data_demo/test_set/".format(country))
   }
   def getLabeledPointTest(spark: SparkSession, country:String) {
-     val data = spark.read.format("parquet").load("/datascience/data_demo/test_set_%s".format(country))
+     val data = spark.read.format("parquet").load("/datascience/data_demo/test_set/country=%s".format(country))
     
     // Leemo el indexer generado en el entrenamiento y lo usamos para indexar features
     val device_indexer =  new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
@@ -302,7 +302,7 @@ object TrainModel {
     // getTestSet(spark,country)
     //getLabeledPointTrain(spark,country)
     getLabeledPointTest(spark,country)
-    // generate_expansion(spark,country)
+    generate_expansion(spark,country)
   }
 
 }
