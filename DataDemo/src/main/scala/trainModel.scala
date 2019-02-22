@@ -238,7 +238,7 @@ object TrainModel {
       .save("/datascience/data_demo/test_set/".format(country))
   }
   def getLabeledPointTest(spark: SparkSession, country:String) {
-     val data = spark.read.format("parquet").load("/datascience/data_demo/test_set/country=%s".format(country)).limit(10000000000l)
+     val data = spark.read.format("parquet").load("/datascience/data_demo/test_set/country=%s".format(country)).limit(10000000*1000)
     
     // Leemo el indexer generado en el entrenamiento y lo usamos para indexar features
     val device_indexer =  new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
