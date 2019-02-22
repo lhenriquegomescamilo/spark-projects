@@ -205,19 +205,44 @@ object TrainModel {
   def getTestSet(spark: SparkSession, country:String){
     val df = spark.read.parquet("/datascience/data_demo/triplets_segments/country=%s".format(country))
 
-    val users_no_gender = spark.read
+    // val users_no_gender = spark.read
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .load("/datascience/devicer/processed/users_no_gender")
+    //   .withColumnRenamed("_c1", "device_id")
+    //   .select("device_id")
+    //   .dropDuplicates("device_id")
+    //   .limit(3000000)
+
+    // val joint = users_no_gender.join(df, Seq("device_id"))
+
+    // joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test_set_%s/".format(country))
+
+    val gt_male = spark.read
       .format("csv")
-      .option("sep", "\t")
-      .load("/datascience/devicer/processed/users_no_gender")
+      .option("sep", " ")
+      .load("/datascience/devicer/processed/ground_truth_male")
+      .withColumn("label", lit(1))
       .withColumnRenamed("_c1", "device_id")
       .select("device_id")
-      .dropDuplicates("device_id")
-      .limit(3000000)
+      .collect()
+    val gt_female = spark.read
+      .format("csv")
+      .option("sep", " ")
+      .load("/datascience/devicer/processed/ground_truth_female")
+      .withColumn("label", lit(0))
+      .withColumnRenamed("_c1", "device_id")
+      .select("device_id")
+      .collect()
+    val gt = (gt_female ::: gt_male).toSet
+    val gt_b = spark.sparkContext.broadcast(gt)
 
-    val joint = users_no_gender.join(df, Seq("device_id"))
-
-    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test_set_%s/".format(country))
-  
+    df.filter(!col("device_id").isin(gt_b.value))
+      .withColumn("country", lit(country))
+      .write
+      .partitionBy("country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/test_set/".format(country))
   }
   def getLabeledPointTest(spark: SparkSession, country:String) {
      val data = spark.read.format("parquet").load("/datascience/data_demo/test_set_%s".format(country))
@@ -281,10 +306,10 @@ object TrainModel {
     
     //getTrainingSet(spark,country)
     //train_model(spark,country)
-    //getTestSet(spark,country)
+    getTestSet(spark,country)
     //getLabeledPointTrain(spark,country)
     //getLabeledPointTest(spark,country)
-    generate_expansion(spark,country)
+    // generate_expansion(spark,country)
   }
 
 }
