@@ -227,7 +227,7 @@ object TrainModel {
       .select("device_id")
       .collect()
       .map(_(0))
-      .toSet
+      .toSeq
     val gt_b = spark.sparkContext.broadcast(gt)
 
     df.filter(!col("device_id").isin(gt_b.value: _*))
