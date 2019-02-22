@@ -218,23 +218,15 @@ object TrainModel {
 
     // joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test_set_%s/".format(country))
 
-    val gt_male = spark.read
+    val gt = spark.read
       .format("csv")
       .option("sep", " ")
-      .load("/datascience/devicer/processed/ground_truth_male")
-      .withColumn("label", lit(1))
-      .withColumnRenamed("_c1", "device_id")
-      .select("device_id")
-      .collect()
-    val gt_female = spark.read
-      .format("csv")
-      .option("sep", " ")
-      .load("/datascience/devicer/processed/ground_truth_female")
+      .load("/datascience/devicer/processed/ground_truth_*")
       .withColumn("label", lit(0))
       .withColumnRenamed("_c1", "device_id")
       .select("device_id")
       .collect()
-    val gt = (gt_female ::: gt_male).toSet
+      .toSet
     val gt_b = spark.sparkContext.broadcast(gt)
 
     df.filter(!col("device_id").isin(gt_b.value))
