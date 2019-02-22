@@ -226,8 +226,9 @@ object TrainModel {
       .withColumnRenamed("_c1", "device_id")
       .select("device_id")
       .collect()
+      .map(_(0))
       .toSet
-    val gt_b = spark.sparkContext.broadcast(gt)
+    val gt_b = spark.sparkContext.broadcast(gt: _*)
 
     df.filter(!col("device_id").isin(gt_b.value))
       .withColumn("country", lit(country))
