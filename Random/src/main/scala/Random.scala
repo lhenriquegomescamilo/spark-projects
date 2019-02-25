@@ -866,9 +866,11 @@ val records_common = the_join.select(col("identifier"))
                               .map(day => "/datascience/data_keywords/day=%s"
                                 .format(day.toString("yyyyMMdd")))
           val segments = spark.read.format("parquet")
+                          val segments = spark.read.format("parquet")
                           .option("basePath","hdfs://rely-hdfs/datascience/data_keywords/")
                           .load(lista_files: _*)
-                          .select("device_id","segments")
+                          .withColumn("segmentos",concat_ws(",",col("segments")))
+                          .select("device_id","segmentos")
 
 
 
