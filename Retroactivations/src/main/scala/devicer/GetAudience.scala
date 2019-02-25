@@ -211,14 +211,21 @@ object GetAudience {
   *
   * @param data: DataFrame that will be used to extract the audience from, applying the corresponding filters.
   * @param queries: List of Maps, where the key is the parameter and the values are the values.
+  * @param fileName: File where we will store all the audiences.
+  * @param dropDuplicates: whether or not we will remove duplicates from the audience.
   *
   * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
   * the file_name is extracted from the file path.
   **/
-  def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = { 
+  def getAudience(spark: SparkSession, 
+                  data: DataFrame, 
+                  queries: List[Map[String, Any]], 
+                  fileName: String, 
+                  dropDuplicates: Boolean = false) = { 
     val results = queries.map(query => data.filter(query("filter").toString)
                                         .select("device_type", "device_id")
-                                        .withColumn("segmentIds", lit(query("segment_id").toString)))
+                                        .withColumn("segmentIds", lit(query("segment_id").toString)
+                                        .distinct()))
     results.foreach(dataframe => dataframe.write.format("csv")
                                             .option("sep", "\t")
                                             .mode("append")
