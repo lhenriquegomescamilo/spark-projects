@@ -1100,7 +1100,8 @@ val records_common = the_join.select(col("identifier"))
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //get_pii_AR(spark)
     //get_safegraph_data(spark,country="argentina",nDays=30)
-    gcba_campaign_day(spark,"2019/02/18")
+    getSegmentsforUsers(spark)
+    //gcba_campaign_day(spark,"2019/02/18")
   }
 
 }
