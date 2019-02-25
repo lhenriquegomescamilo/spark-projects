@@ -224,8 +224,8 @@ object GetAudience {
                   dropDuplicates: Boolean = false) = { 
     val results = queries.map(query => data.filter(query("filter").toString)
                                         .select("device_type", "device_id")
-                                        .withColumn("segmentIds", lit(query("segment_id").toString)
-                                        .distinct()))
+                                        .withColumn("segmentIds", lit(query("segment_id").toString))
+                                        .distinct())
     results.foreach(dataframe => dataframe.write.format("csv")
                                             .option("sep", "\t")
                                             .mode("append")
