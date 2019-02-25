@@ -32,14 +32,14 @@ object generateOrganic {
         /// Leemos los archivos con los segmentos para la taxo general y la taxo geo
         val taxo_general = spark.read.format("csv").option("sep","\t")
                                                     .option("header","True")
-                                                    .load("/datascience/taxo_general.csv")
+                                                    .load("/datascience/data_publicis/taxonomy_publicis.csv")
                                                     .select("Segment ID")
                                                     .rdd.map(row=>row(0)).collect()
 
-        val taxo_geo = spark.read.format("csv").option("header","True")
-                                            .load("/datascience/taxo_geo.csv")
-                                            .select("Segment ID")
-                                            .rdd.map(row=>row(0)).collect()
+        // val taxo_geo = spark.read.format("csv").option("header","True")
+        //                                     .load("/datascience/taxo_geo.csv")
+        //                                     .select("Segment ID")
+        //                                     .rdd.map(row=>row(0)).collect()
         
         /// Hacemos un broadcast de estas listas ya que son chicas
         val taxo_general_b = sc.broadcast(taxo_general)
@@ -48,7 +48,7 @@ object generateOrganic {
         /// Esta UDF recibe una lista de segmentos y se queda con los pertenecientes a la taxo general
         val udfGralSegments = udf((segments: Seq[String]) => segments.filter(segment => taxo_general_b.value.contains(segment)))
         /// Esta UDF recibe una lista de segmentos y se queda con los pertenecientes a la taxo geo
-        val udfGeoSegments = udf((segments: Seq[String]) => segments.filter(segment => taxo_geo_b.value.contains(segment)))
+        // val udfGeoSegments = udf((segments: Seq[String]) => segments.filter(segment => taxo_geo_b.value.contains(segment)))
         /// Esta UDF recibe una lista de segmentos y un dia, y genera una tupla (segmento, dia)
         val udfAddDay = udf((segments: Seq[String], day: String) => segments.map(segment => (segment, day)))
         /// Esta UDF recibe una lista de listas de tuplas y lo que hace es convertir todo a string y aplanar estas listas
@@ -69,16 +69,16 @@ object generateOrganic {
             mas recientemente.
         **/
         val userSegments = df.withColumn("gral_segments", udfGralSegments(col("segments")))
-                            .withColumn("geo_segments", udfGeoSegments(col("segments")))
+                            // .withColumn("geo_segments", udfGeoSegments(col("segments")))
                             .withColumn("gral_segments", udfAddDay(col("gral_segments"), col("day")))
-                            .withColumn("geo_segments", udfAddDay(col("geo_segments"), col("day")))
+                            // .withColumn("geo_segments", udfAddDay(col("geo_segments"), col("day")))
                             .groupBy("device_id")
-                            .agg(collect_list("gral_segments") as "gral_segments",
-                                collect_list("geo_segments") as "geo_segments")
+                            .agg(collect_list("gral_segments") as "gral_segments")//,
+                                // collect_list("geo_segments") as "geo_segments")
                             .withColumn("gral_segments", udfFlattenLists(col("gral_segments")))
-                            .withColumn("geo_segments", udfFlattenLists(col("geo_segments")))
+                            // .withColumn("geo_segments", udfFlattenLists(col("geo_segments")))
                             .withColumn("gral_segments", udfDropDuplicates(col("gral_segments")))
-                            .withColumn("geo_segments", udfDropDuplicates(col("geo_segments")))
+                            // .withColumn("geo_segments", udfDropDuplicates(col("geo_segments")))
 
         userSegments.write.format("csv").option("sep", "\t")
                             .option("header",true)
