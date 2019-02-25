@@ -30,7 +30,7 @@ object generateOrganic {
         val df = dfs.reduce((df1,df2) => df1.union(df2))
 
         /// Leemos los archivos con los segmentos para la taxo general y la taxo geo
-        val taxo_general = spark.read.format("csv").option("sep","\t")
+        val taxo_general = spark.read.format("csv").option("sep",",")
                                                     .option("header","True")
                                                     .load("/datascience/data_publicis/taxonomy_publicis.csv")
                                                     .select("Segment ID")
