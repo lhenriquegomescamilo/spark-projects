@@ -1,7 +1,7 @@
 package main.scala.devicer
 import main.scala.crossdevicer.AudienceCrossDevicer
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{lit, length, split, col, concat_ws, collect_list}
+import org.apache.spark.sql.functions.{lit, length, split, col, concat_ws, collect_list, udf}
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.spark.sql.{ SaveMode, DataFrame }
@@ -191,11 +191,12 @@ object GetAudience {
         val description = if (query.contains("description") && Option(query("description")).getOrElse("").toString.length>0) query("description") else ""
         val jobid = if (query.contains("jobid") && Option(query("jobid")).getOrElse("").toString.length>0) query("jobid") else ""
         val xd = if (query.contains("xd") && Option(query("xd")).getOrElse("").toString.length>0) query("xd") else false
+        val commonFilter = if (query.contains("common") && Option(query("common")).getOrElse("").toString.length>0) query("common") else ""
     
         val actual_map: Map[String,Any] = Map("filter" -> filter, "segment_id" -> segmentId, "partner_id" -> partnerId,
                                                "since" -> since, "ndays" -> nDays, "push" -> push, "priority" -> priority, 
                                                "as_view" -> as_view, "queue" -> queue, "pipeline" -> pipeline,
-                                                "description" -> description, "jobid" -> jobid, "xd" -> xd)
+                                                "description" -> description, "jobid" -> jobid, "xd" -> xd, "common" -> commonFilter)
         
         queries = queries ::: List(actual_map)
       }
@@ -210,15 +211,21 @@ object GetAudience {
   *
   * @param data: DataFrame that will be used to extract the audience from, applying the corresponding filters.
   * @param queries: List of Maps, where the key is the parameter and the values are the values.
+  * @param fileName: File where we will store all the audiences.
+  * @param dropDuplicates: whether or not we will remove duplicates from the audience.
   *
   * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
   * the file_name is extracted from the file path.
   **/
-  
-  def getAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String) = { 
+  def getAudience(spark: SparkSession, 
+                  data: DataFrame, 
+                  queries: List[Map[String, Any]], 
+                  fileName: String, 
+                  dropDuplicates: Boolean = false) = { 
     val results = queries.map(query => data.filter(query("filter").toString)
                                         .select("device_type", "device_id")
-                                        .withColumn("segmentIds", lit(query("segment_id").toString)))
+                                        .withColumn("segmentIds", lit(query("segment_id").toString))
+                                        .distinct())
     results.foreach(dataframe => dataframe.write.format("csv")
                                             .option("sep", "\t")
                                             .mode("append")
@@ -237,6 +244,47 @@ object GetAudience {
             .save("/datascience/devicer/processed/"+fileName+"_grouped")
     }
   
+  }
+
+  /** 
+  * This method takes a list of queries and their corresponding segment ids, and generates a file where the first
+  * column is the device_type, the second column is the device_id, and the last column is the list of segment ids
+  * for that user separated by comma. Every column is separated by a space. The file is stored in the folder
+  * /datascience/devicer/processed/file_name. The file_name value is extracted from the file path given by parameter.
+  *
+  * @param data: DataFrame that will be used to extract the audience from, applying the corresponding filters.
+  * @param queries: List of Maps, where the key is the parameter and the values are the values.
+  *
+  * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
+  * the file_name is extracted from the file path.
+  **/
+  def getMultipleAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String, commonFilter: String = "") = {
+    val filtered = if (commonFilter.length>0) data.filter(commonFilter) else data
+
+    // First we register the table
+    filtered.createOrReplaceTempView("data")
+
+    // Now we set all the filters
+    val columns = queries.map(query => col("c_"+query("segment_id").toString))
+    val filters = queries.map(query => "IF(%s, %s, '') as c_%s".format(query("filter").toString, query("segment_id").toString, query("segment_id").toString)).mkString(", ")
+
+    // We use all the filters to create a unique query
+    val final_query = "SELECT device_id, device_type, %s FROM data".format(filters)
+
+    // Here we define a useful function that concatenates two columns
+    val concatUDF = udf( (c1:String, c2:String) => if (c1.length>0 && c2.length>0) "%s,%s".format(c1, c2) else if (c1.length>0) c1 else c2 )
+
+    // Finally we store the results
+    val results = spark.sql(final_query)
+    println("\n\n\n\n")
+    results.explain()
+    results.withColumn("segments", columns.reduce(concatUDF(_, _)))
+           .filter(length(col("segments"))>0)
+           .select("device_type", "device_id", "segments")
+           .write.format("csv")
+           .option("sep", "\t")
+           .mode("append")
+           .save("/datascience/devicer/processed/"+fileName)
   }
   
 
@@ -285,6 +333,8 @@ object GetAudience {
       val partner_ids = queries(0)("partner_id")
       val since = queries(0)("since")
       val nDays = queries(0)("ndays")
+      val pipeline = queries(0)("pipeline")
+      val commonFilter = queries(0)("common").toString
       println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d".format(file, partner_ids, since, nDays))
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
@@ -292,7 +342,6 @@ object GetAudience {
       val ids = partner_ids.toString.split(",", -1).toList
       
       // Here we select the pipeline where we will gather the data
-      val pipeline = queries(0)("pipeline")
       val data = pipeline match {
                 case 0 => if (partner_ids.toString.length>0) getDataIdPartners(spark, ids, nDays.toString.toInt, since.toString.toInt) else getDataAudiences(spark, nDays.toString.toInt,
                                                                                                                                                      since.toString.toInt)
@@ -303,23 +352,21 @@ object GetAudience {
 
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
-      getAudience(spark, data, queries, file_name)
+      if (queries.length > 10){
+        getMultipleAudience(spark, data, queries, file_name, commonFilter)
+      } else {
+        getAudience(spark, data, queries, file_name)
+      }
+      
 
       // We cross device the audience if the parameter is set.
       val xd = queries(0)("xd")
       if (xd.toString.toBoolean){
-     //   val object_xd = new AudienceCrossDevicer
-     //   object_xd.cross_device(spark, 
-     //                           "/datascience/devicer/processed/"+file_name,
-     //                           "index_type IN ('coo')",
-     //                           "\t",
-     //                             "device_id")
         val object_xd = AudienceCrossDevicer.cross_device(spark,
                                   "/datascience/devicer/processed/"+file_name,
                                             "index_type IN ('coo')",
-                                            "\t", "device_id")
+                                            "\t", "_c1")
       }
-
 
       // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
       srcPath = new Path(actual_path)
@@ -341,7 +388,7 @@ object GetAudience {
           conf.set("fs.defaultFS", "hdfs://rely-hdfs")
           val fs= FileSystem.get(conf)
           val os = fs.create(new Path("/datascience/ingester/ready/%s.meta".format(file_name)))
-          val json_content = """{"path":"/datascience/devicer/processed/%s", "priority":%s, "partnerId":%s,
+          val json_content = """{"filePath":"/datascience/devicer/processed/%s", "priority":%s, "partnerId":%s,
                                  "queue":"%s", "jobid":%s, "description:"%s"}""".format(file_name,priority,as_view,
                                                                                         queue,jobid,description)
           os.write(json_content.getBytes)

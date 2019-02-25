@@ -9,12 +9,17 @@ import org.apache.spark.sql.SaveMode
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.sql.SparkSession
 import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.datasyslab.geospark.utils.GeoSparkConf
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
+
+import org.apache.spark.serializer.KryoRegistrator
+import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
+
+
+
 
 /**
   Job Summary:
@@ -109,27 +114,44 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     df_pois_final.createOrReplaceTempView("pointtable")
 
     var pointDf1 = spark.sql(
-      "select name,radius,ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape1 from pointtable"
+      """select name,
+                radius,
+                ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),
+                         cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape1 
+         from pointtable"""
     )
-
     pointDf1.createOrReplaceTempView("pointdf1")
 
-//getting safegraph users
+    //getting safegraph users
     val df_users = get_safegraph_data(spark, safegraph_days, country)
-    df_users.createOrReplaceTempView("pointtable")
-
+    df_users.repartition(50).createOrReplaceTempView("pointtable")
+    
     var pointDf2 = spark.sql(
-      "select ad_id,id_type,utc_timestamp,ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape2 from pointtable"
+      """select ad_id,
+                id_type,
+                utc_timestamp,
+                ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)), 
+                         cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape2 
+         from pointtable"""
     )
     pointDf2.createOrReplaceTempView("pointdf2")
-    //pointDf2.show(2)
-
+    
+    // Here we obtain the points that are closer than the radius
     var distanceJoinDf = spark.sql(
-      "select name,ad_id,id_type,utc_timestamp,ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  from pointdf1,pointdf2 where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius"
+      """select name,
+                ad_id,
+                id_type,
+                utc_timestamp,
+                ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  
+         from pointdf1,pointdf2 
+         where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius"""
     )
 
+    println("EXPLAIN")
+    println(distanceJoinDf.explain())
+    distanceJoinDf.explain()
     val countito = distanceJoinDf.count()
-      println("conteo", countito)
+    println("conteo", countito)
     //storing result
 
     // val filtered = 
@@ -180,7 +202,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
         "spark.kryo.registrator",
         classOf[GeoSparkVizKryoRegistrator].getName
       )
-      .master("local[*]")
+      .config("geospark.join.numpartition", 200)
       .appName("match_POI_geospark")
       .getOrCreate()
 

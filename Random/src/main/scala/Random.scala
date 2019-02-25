@@ -99,40 +99,24 @@ object Random {
       .save("/datascience/custom/madidsShareThisWithGEO")
   }
 
-  def getEstIdsMatching(spark: SparkSession) = {
-    val format = "yyyy/MM/dd"
-    val start = DateTime.now.minusDays(30)
-    val end = DateTime.now.minusDays(15)
-
-    val daysCount = Days.daysBetween(start, end).getDays()
-    val days =
-      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
-    val dfs = (0 until daysCount)
-      .map(start.plusDays(_))
-      .map(_.toString(format))
-      .map(
-        x =>
-          spark.read
-            .format("csv")
-            .option("sep", "\t")
-            .option("header", "true")
-            .load("/data/eventqueue/%s/*.tsv.gz".format(x))
-            .filter(
-              "d17 is not null and country = 'US' and event_type = 'sync'"
-            )
-            .select("d17", "device_id")
-            .dropDuplicates()
-      )
-
-    val df = dfs.reduce(_ union _)
+  def getEstIdsMatching(spark: SparkSession, day: String) = {
+    val df = spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .option("header", "true")
+        .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+        .filter(
+          "d17 is not null and country = 'US' and event_type = 'sync'"
+        )
+        .select("d17", "device_id", "device_type")
+        .withColumn("day", lit(day))
+        .dropDuplicates()
 
     df.write
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", true)
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/matching_estid_2")
+      .format("parquet")
+      .partitionBy("day")
+      .mode("append")
+      .save("/datascience/sharethis/estid_table/")
   }
 
   def process_geo(spark: SparkSession) {
@@ -733,6 +717,58 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
+
+  /**
+    *
+    *
+    *
+    * Downloading safegraph data for GCBA study (porque no hay job que haga polygon matching aun)
+    *
+    *
+    *
+    */
+
+ def get_safegraph_data(
+      spark: SparkSession,
+      nDays: Integer,
+      country: String,
+      since: Integer = 1
+  ) = {
+    //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
+    // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
+    // Also we generate a new column call 'geocode' that will be used for the join
+    val format = "yyyy/MM/dd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+        //dictionary for timezones
+    val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
+    
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/data/geo/safegraph/"
+    val hdfs_files = days.map(day => path + "%s/*.gz".format(day))
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .csv(hdfs_files: _*)
+      .dropDuplicates("ad_id", "latitude", "longitude")
+      .filter("country = '%s'".format(country))
+      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "HH"))
+      .withColumn("Day", date_format(col("Time"), "d"))
+      .withColumn("Month", date_format(col("Time"), "M"))
+                        .write
+                        .format("csv")
+                        .option("sep", "\t")
+                        .option("header", "true")
+                        .save("/datascience/geo/safegraph_30d_ar_15-02")
+
+    df_safegraph
+  }
+
   /**
     *
     *
@@ -912,6 +948,24 @@ val records_common = the_join.select(col("identifier"))
     days.map(day => parseDay(day))
   }
 
+/**
+    *
+    *
+    *
+    *      Data GCBA for campaigns
+    *
+    *
+    *
+    */
+ def gcba_campaign_day(spark:SparkSession, day:String){
+    
+    val df = spark.read.format("csv").option("sep","\t").option("header",true)                         
+                        .load("/data/eventqueue/%s/*.tsv.gz".format(day))                        
+                        .select("id_partner","all_segments","url")   
+                        .filter( col("id_partner") === "349" &&  col("all_segments").isin(List("76522,76536,76543"):_*))
+
+    df.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/gcba_campaign_%s".format(day))                  
+}
   /**
     *
     *
@@ -1040,52 +1094,13 @@ val records_common = the_join.select(col("identifier"))
 //        filter(day => fs.exists(new org.apache.hadoop.fs.Path(path + day + "*")))
 
   }
- /**
-  def sampleSanti(spark: SparkSession) {
-    val format = "yyyyMMdd"
-    val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
-    val start = formatter.parseDateTime("15/11/2018")
-    val days =
-      (0 until 50).map(n => start.plusDays(n)).map(_.toString(format))
-
-
-    // First we read the data in parquet format
-    days.map(
-      day =>
-        spark.read
-          .format("parquet")
-          .load("/datascience/geo/US/day=%s".format(day))
-          .coalesce(100)
-          .format("com.databricks.spark.csv")
-          .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/custom/geo/US/")
-    )
-  }
-**/
 
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    //getSTGeo(spark)
-    get_pii_AR(spark)
-    //sampleSanti(spark)
-    //spark.read.load("/datascience/sharethis/urls/day=2019*")
-    //      .filter("url LIKE '%vuse%' OR url LIKE '%vape%' OR url LIKE '%vaping%' OR url LIKE '%electr%cigar%' OR url LIKE '%smoke%alternative%' OR url LIKE '%cbd%'")
-    //      .select("estid")
-    //      .distinct
-    //      .write
-    //      .format("csv")
-    //      .mode(SaveMode.Overwrite)
-    //      .save("/datascience/audiences/custom_audiences/audience_vuse")
-    // var df_audience = spark.read.format("csv").load("/datascience/audiences/custom_audiences/audience_vuse").withColumnRenamed("_c0","d17")
-    // var mapping = spark.read.format("csv").option("sep","\t").option("header","true").load("/datascience/matching_estid_2")
-    // var joint = df_audience.join(mapping,Seq("d17"))
-    // joint.select("device_id").distinct
-    //       .write
-    //       .format("csv")
-    //       .mode(SaveMode.Overwrite)
-    //       .save("/datascience/audiences/custom_audiences/device_id_vuse_2")
+    //get_pii_AR(spark)
+    //get_safegraph_data(spark,country="argentina",nDays=30)
+    gcba_campaign_day(spark,"2019/02/18")
   }
 
 }
