@@ -43,7 +43,7 @@ object generateOrganic {
         
         /// Hacemos un broadcast de estas listas ya que son chicas
         val taxo_general_b = sc.broadcast(taxo_general)
-        val taxo_geo_b = sc.broadcast(taxo_geo)
+        // val taxo_geo_b = sc.broadcast(taxo_geo)
 
         /// Esta UDF recibe una lista de segmentos y se queda con los pertenecientes a la taxo general
         val udfGralSegments = udf((segments: Seq[String]) => segments.filter(segment => taxo_general_b.value.contains(segment)))
