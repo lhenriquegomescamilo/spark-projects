@@ -212,7 +212,7 @@ object Random {
     val data = spark.read
       .format("csv")
       .option("sep", ";")
-      .load("/data/crossdevice/tapad/Retargetly_ids_full_*")
+      .load("/data/crossdevice/tapad/Retargetly_ids_full_20190128_161746.bz2")
     val devices = data
       .withColumn("ids", split(col("_c2"), "\t"))
       .withColumn("device", explode(col("ids")))
