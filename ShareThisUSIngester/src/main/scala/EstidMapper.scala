@@ -83,7 +83,7 @@ object EstidMapper {
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     val today = DateTime.now()
-    val days = (1 until 1).map(
+    val days = (1 until 12).map(
       days =>
         getEstIdsMatching(
           spark,
