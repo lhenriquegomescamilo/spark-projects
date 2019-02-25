@@ -803,6 +803,49 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/db_pii")
   }
 
+   /**
+    *
+    *
+    *
+    * Segments for Geo Data
+    *
+    *
+    *
+    */
+ def getSegmentsforUsers(spark: SparkSession) = {
+
+          //este es el resultado del crossdevice, se pidieron solo cookies
+          val estacion_xd = spark.read.option("header", "false")
+          .option("delimiter",",")
+          .csv("hdfs://rely-hdfs/datascience/audiences/crossdeviced/estaciones_servicio_12_02_19_poimatcher_60d_DISTINCT_xd")
+          .select(col("_c1")).distinct()
+          .withColumnRenamed("_c1", "device_id")
+          estacion_xd.show(5)
+          estacion_xd.count()
+
+
+          // Ahora levantamos los datos que estan en datascience keywords
+          val today = DateTime.now()
+          val lista_files = (1 until 10).map(today.minusDays(_))
+                              .map(day => "/datascience/data_keywords/day=%s"
+                                .format(day.toString("yyyyMMdd")))
+          val segments = spark.read.format("parquet")
+                          .option("basePath","hdfs://rely-hdfs/datascience/data_keywords/")
+                          .load(lista_files: _*)
+                          .select("device_id","segments")
+
+
+
+          val estajoin = segments.join(estacion_xd,Seq("device_id"))
+
+          estajoin.write.format("csv")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/geo/AR/estaciones_servicio_12_02_19_with_segments")    
+
+
+
+ }
+
   /**
     *
     *
