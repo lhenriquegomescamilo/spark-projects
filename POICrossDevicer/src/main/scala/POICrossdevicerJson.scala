@@ -182,6 +182,7 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     val audience = spark.read.format("csv").option("sep", "\t").load(value_dictionary("poi_output_file"))
                                                               .withColumnRenamed("_c0", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
+                                                              .select("device_id").distinct()
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     val db_data = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
