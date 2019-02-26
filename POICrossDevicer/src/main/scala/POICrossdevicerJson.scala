@@ -183,13 +183,17 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
                                                               .withColumnRenamed("_c0", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
                                                               .select("device_id").distinct()
+
+//hay que arreglar el filtro del index porque no se guarda nada después de hacer el crossdevice, que igual tarda mucho
+//"index_type IN ('and', 'ios') AND device_type IN ('coo')"
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     val db_data = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
                                              .filter("index_type IN ('and', 'ios')")
                                               .withColumn("index", upper(col("index")))
                                               .select("index", "device", "device_type")
-                                              
+    
+
     // Here we do the cross-device per se.
     val cross_deviced = db_data.join(audience, db_data.col("index")===audience.col("device_id"))
                                //.select("index", "device", "device_type")
