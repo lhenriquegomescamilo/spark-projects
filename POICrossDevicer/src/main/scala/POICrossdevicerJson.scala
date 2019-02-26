@@ -175,7 +175,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     
 
-     if(value_dictionary("crossdevice")==true) {
+     if(value_dictionary("crossdevice")=="true") {
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
     val audience_name = value_dictionary("poi_output_file").split("/").last
