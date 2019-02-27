@@ -175,13 +175,14 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     
 
-     if(value_dictionary("crossdevice")==true) {
+     if(value_dictionary("crossdevice")=="true") {
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
-    val audience_name = value_dictionary("poi_output_file").split("/").last
-    val audience = spark.read.format("csv").option("sep", "\t").load(value_dictionary("poi_output_file"))
+    //val audience_name = value_dictionary("poi_output_file").split("/").last
+    val audience = spark.read.format("csv").option("sep", "\t").load("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
                                                               .withColumnRenamed("_c0", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
+                                                              .select("device_id").distinct()
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     val db_data = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
@@ -197,7 +198,7 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     println(cross_deviced.explain(extended = true))              
     
     // Finally, we store the result obtained.
-    val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
+    val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("poi_output_file"))
     cross_deviced.write.format("csv").mode(SaveMode.Overwrite).save(output_path)
   }
 }
