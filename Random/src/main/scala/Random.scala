@@ -853,16 +853,15 @@ val records_common = the_join.select(col("identifier"))
           //este es el resultado del crossdevice, se pidieron solo cookies
           val estacion_xd = spark.read.option("header", "false")
           .option("delimiter",",")
-          .csv("hdfs://rely-hdfs/datascience/audiences/crossdeviced/estaciones_servicio_12_02_19_poimatcher_60d_DISTINCT_xd")
+          .csv("hdfs://rely-hdfs/datascience/audiences/crossdeviced/estaciones_servicio_jue_vie_xd")
           .select(col("_c1")).distinct()
           .withColumnRenamed("_c1", "device_id")
-          estacion_xd.show(5)
-          estacion_xd.count()
+          
 
 
           // Ahora levantamos los datos que estan en datascience keywords
           val today = DateTime.now()
-          val lista_files = (1 until 10).map(today.minusDays(_))
+          val lista_files = (1 until 5).map(today.minusDays(_))
                               .map(day => "/datascience/data_keywords/day=%s"
                                 .format(day.toString("yyyyMMdd")))
           val segments = spark.read.format("parquet")                         
@@ -1101,8 +1100,9 @@ val records_common = the_join.select(col("identifier"))
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //get_pii_AR(spark)
     //get_safegraph_data(spark,country="argentina",nDays=30)
-    getTapadIndex(spark)
-    getTapadPerformance(spark)
+    //getTapadIndex(spark)
+    //getTapadPerformance(spark)
+    getSegmentsforUsers(
     //gcba_campaign_day(spark,"2019/02/18")
   }
 
