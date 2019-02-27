@@ -1102,7 +1102,7 @@ val records_common = the_join.select(col("identifier"))
     //get_safegraph_data(spark,country="argentina",nDays=30)
     //getTapadIndex(spark)
     //getTapadPerformance(spark)
-    getSegmentsforUsers(
+    getSegmentsforUsers(spark)
     //gcba_campaign_day(spark,"2019/02/18")
   }
 
