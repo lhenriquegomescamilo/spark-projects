@@ -879,7 +879,7 @@ val records_common = the_join.select(col("identifier"))
          // .mode(SaveMode.Overwrite)
           //.save("/datascience/geo/AR/estaciones_servicio_12_02_19_with_segments")    
 
-          val seg_group = with_seg 
+          val seg_group = estajoin 
                   .withColumn("segment", explode(split(col("_c1"), ",")))
                   .select("_c0", "segment")
                   .groupBy("segment").agg(countDistinct("_c0"))
