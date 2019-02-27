@@ -1103,7 +1103,7 @@ val records_common = the_join.select(col("identifier"))
 
   def join_cadreon_google_analytics(spark: SparkSession) {
     val ga = spark.read.format("csv").load("/datascience/data_demo/join_google_analytics/").withColumnRenamed("_c1", "device_id")
-    val cadreon = spark.read.format("csv").option("\t").load("/datascience/devicer/processed/cadreon_age").withColumnRenamed("_c1", "device_id").select("device_id")
+    val cadreon = spark.read.format("csv").option("sep", "\t").load("/datascience/devicer/processed/cadreon_age").withColumnRenamed("_c1", "device_id").select("device_id")
 
     ga.join(cadreon, Seq("device_id")).write.format("csv").save("/datascience/custom/cadreon_google_analytics")
   }
