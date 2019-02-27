@@ -853,7 +853,8 @@ val records_common = the_join.select(col("identifier"))
           //este es el resultado del crossdevice, se pidieron solo cookies
           val estacion_xd = spark.read.option("header", "false")
           .option("delimiter",",")
-          .csv("hdfs://rely-hdfs/datascience/audiences/crossdeviced/estaciones_servicio_jue_vie_xd")
+          .csv("hdfs://rely-hdfs/datascience/audiences/crossdeviced/estaciones_bp_60d_mexico_25-2-2019-11h_xd")
+
           .select(col("_c1")).distinct()
           .withColumnRenamed("_c1", "device_id")
           
@@ -874,11 +875,16 @@ val records_common = the_join.select(col("identifier"))
 
           val estajoin = segments.join(estacion_xd,Seq("device_id"))
 
-          estajoin.write.format("csv")
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/geo/AR/estaciones_servicio_12_02_19_with_segments")    
+         // estajoin.write.format("csv")
+         // .mode(SaveMode.Overwrite)
+          //.save("/datascience/geo/AR/estaciones_servicio_12_02_19_with_segments")    
 
+          val seg_group = with_seg 
+                  .withColumn("segment", explode(split(col("_c1"), ",")))
+                  .select("_c0", "segment")
+                  .groupBy("segment").agg(countDistinct("_c0"))
 
+            seg_group.write.format("csv").save("/datascience/geo/MX/estaciones_bp_segment_count")
 
  }
 
