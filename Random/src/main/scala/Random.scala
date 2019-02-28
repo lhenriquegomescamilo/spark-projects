@@ -856,6 +856,7 @@ val records_common = the_join.select(col("identifier"))
           .csv("hdfs://rely-hdfs/datascience/geo/AR/estaciones_servicio_12_02_19_poimatcher_60d_DISTINCT")
           .select(col("_c0")).distinct()
           .withColumnRenamed("_c0", "device_id")
+          .withColumn("device_id", upper(col("device_id")))
           
 
 
@@ -874,6 +875,7 @@ val records_common = the_join.select(col("identifier"))
           val segments = spark.read.format("parquet").parquet("hdfs://rely-hdfs/datascience/data_keywords/day=20190227")
                           .withColumn("segmentos",concat_ws(",",col("segments")))
                           .select("device_id","segmentos")
+                          .withColumn("device_id", upper(col("device_id")))
 
 
 
