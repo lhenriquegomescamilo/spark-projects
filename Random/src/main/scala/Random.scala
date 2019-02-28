@@ -890,7 +890,9 @@ val records_common = the_join.select(col("identifier"))
                   .select("device_id", "segment")
                   .groupBy("segment").agg(countDistinct("device_id"))
 
-            seg_group.write.format("csv").save("/datascience/geo/AR/estaciones_servicio_MP_segmentos")
+            seg_group.write.format("csv")
+            .mode(SaveMode.Overwrite)
+            .save("/datascience/geo/AR/estaciones_servicio_MP_segmentos")
 
  }
 
