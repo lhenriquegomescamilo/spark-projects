@@ -101,16 +101,16 @@ object Random {
 
   def getEstIdsMatching(spark: SparkSession, day: String) = {
     val df = spark.read
-        .format("csv")
-        .option("sep", "\t")
-        .option("header", "true")
-        .load("/data/eventqueue/%s/*.tsv.gz".format(day))
-        .filter(
-          "d17 is not null and country = 'US' and event_type = 'sync'"
-        )
-        .select("d17", "device_id", "device_type")
-        .withColumn("day", lit(day))
-        .dropDuplicates()
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+      .filter(
+        "d17 is not null and country = 'US' and event_type = 'sync'"
+      )
+      .select("d17", "device_id", "device_type")
+      .withColumn("day", lit(day))
+      .dropDuplicates()
 
     df.write
       .format("parquet")
@@ -585,7 +585,7 @@ object Random {
     // Also we generate a new column call 'geocode' that will be used for the join
 
     // First we obtain the configuration to be allowed to watch if a file exists or not
-   val conf = spark.sparkContext.hadoopConfiguration
+    val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     val nDays = 10
@@ -594,55 +594,56 @@ object Random {
 
     // Get the days to be loaded
     val format = "yyyy/MM/dd"
-    val end   = DateTime.now.minusDays(since)
+    val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    
+
     // Now we obtain the list of hdfs folders to be read
     val path = "/data/geo/safegraph/"
 
     // Now we obtain the list of hdfs folders to be read
 
-     val hdfs_files = days.map(day => path+"%s/".format(day))
-                            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
+    val hdfs_files = days
+      .map(day => path + "%s/".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(day => day + "*.gz")
 
-    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)       
-                        .filter("country = '%s'".format(country))
-                        .select("ad_id", "id_type","utc_timestamp")
-                        .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-                        .withColumn("Day", date_format(col("Time"), "d"))
-                        .withColumn("Month", date_format(col("Time"), "M"))
-                        .write
-                        .format("csv")
-                        .option("sep", "\t")
-                        .option("header", "true")
-                        .save("/datascience/geo/safegraph_10d.tsv")
-                        
-
-
-/*
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .csv(hdfs_files: _*)
+      .filter("country = '%s'".format(country))
+      .select("ad_id", "id_type", "utc_timestamp")
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Day", date_format(col("Time"), "d"))
+      .withColumn("Month", date_format(col("Time"), "M"))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .save("/datascience/geo/safegraph_10d.tsv")
+    /*
     df_safegraph.cache()
     //usarios unicos por día
-    val df_user_day_safe = (df_safegraph      
-                        .select(col("ad_id"), col("Day"))      
-                        .distinct())      
-                        .groupBy(col("Day"))      
+    val df_user_day_safe = (df_safegraph
+                        .select(col("ad_id"), col("Day"))
+                        .distinct())
+                        .groupBy(col("Day"))
                         .count()
 
             println("Unique users per day - safegraph")
             df_user_day_safe.show()
-    
+
     //usuarios unicos en un mes
 //   val df_user_month = (df_safegraph  .select(col("ad_id"), col("Month")).distinct()).groupBy(col("Month")).count()
 
     //promedio de señales por usuario por dia
-    val df_user_signal_safe = df_safegraph      
-                            .groupBy(col("ad_id"), col("Month"))      
-                            .agg(count("id_type").alias("signals"))      
+    val df_user_signal_safe = df_safegraph
+                            .groupBy(col("ad_id"), col("Month"))
+                            .agg(count("id_type").alias("signals"))
                             .agg(avg(col("signals")))
 
 
     println("Mean signals per user - safegraph",df_user_signal_safe)
- 
+
 ////////////////////////
 //Now the sample dataset
 
@@ -651,7 +652,7 @@ val df_sample = spark.read.option("header", "true").option("delimiter", ",").csv
           .withColumn("month", date_format(to_date(col("timestamp")), "M"))
 
         df_sample.cache()
-        
+
             //Unique MAIDs
             val unique_MAIDSs = df_sample.select(col("identifier")).distinct().count()
             println("Unique MAIDs - sample dataset",unique_MAIDSs)
@@ -705,7 +706,7 @@ println("Records in Sample in common users",records_common_sample)
 
 val records_common = the_join.select(col("identifier"))
                       .groupBy(col("identifier")).agg(count("timestamp").alias("records_safegraph"))
-                      .agg(count("utc_timestamp").alias("records_sample"))  
+                      .agg(count("utc_timestamp").alias("records_sample"))
                       .withColumn("ratio", col("records_safegraph") / col("records_sample"))
 
 
@@ -713,10 +714,9 @@ val records_common = the_join.select(col("identifier"))
       .mode(SaveMode.Overwrite)
       .save("/datascience/geo/sample_metrics")
 
-*/
+   */
 
   }
-
 
   /**
     *
@@ -727,8 +727,7 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     */
-
- def get_safegraph_data(
+  def get_safegraph_data(
       spark: SparkSession,
       nDays: Integer,
       country: String,
@@ -741,9 +740,9 @@ val records_common = the_join.select(col("identifier"))
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
-        //dictionary for timezones
+    //dictionary for timezones
     val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
-    
+
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
@@ -760,11 +759,11 @@ val records_common = the_join.select(col("identifier"))
       .withColumn("Hour", date_format(col("Time"), "HH"))
       .withColumn("Day", date_format(col("Time"), "d"))
       .withColumn("Month", date_format(col("Time"), "M"))
-                        .write
-                        .format("csv")
-                        .option("sep", "\t")
-                        .option("header", "true")
-                        .save("/datascience/geo/safegraph_30d_ar_15-02")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .save("/datascience/geo/safegraph_30d_ar_15-02")
 
     df_safegraph
   }
@@ -839,7 +838,7 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/db_pii")
   }
 
-   /**
+  /**
     *
     *
     *
@@ -848,53 +847,57 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     */
- def getSegmentsforUsers(spark: SparkSession) = {
+  def getSegmentsforUsers(spark: SparkSession) = {
 
-          //este es el resultado del crossdevice, se pidieron solo cookies
-          val estacion_xd = spark.read.option("header", "false")
-          .option("delimiter",",")
-          .csv("hdfs://rely-hdfs/datascience/geo/AR/estaciones_servicio_12_02_19_poimatcher_60d_DISTINCT")
-          .select(col("_c0")).distinct()
-          .withColumnRenamed("_c0", "device_id")
-          .withColumn("device_id", upper(col("device_id")))
-          
+    //este es el resultado del crossdevice, se pidieron solo cookies
+    val estacion_xd = spark.read
+      .option("header", "false")
+      .option("delimiter", ",")
+      .csv(
+        "hdfs://rely-hdfs/datascience/geo/AR/estaciones_servicio_12_02_19_poimatcher_60d_DISTINCT"
+      )
+      .select(col("_c0"))
+      .distinct()
+      .withColumnRenamed("_c0", "device_id")
+      .withColumn("device_id", upper(col("device_id")))
 
+    // Ahora levantamos los datos que estan en datascience keywords
+    //val today = DateTime.now()
+    //val lista_files = (1 until 2).map(today.minusDays(_))
+    //                    .map(day => "/datascience/data_keywords/day=%s"
+    //                      .format(day.toString("yyyyMMdd")))
+    // val segments = spark.read.format("parquet")
+    //                .option("basePath","hdfs://rely-hdfs/datascience/data_keywords/")
+    //                .load(lista_files: _*)
+    //                .withColumn("segmentos",concat_ws(",",col("segments")))
+    //                .select("device_id","segmentos")
 
-          // Ahora levantamos los datos que estan en datascience keywords
-          //val today = DateTime.now()
-          //val lista_files = (1 until 2).map(today.minusDays(_))
-          //                    .map(day => "/datascience/data_keywords/day=%s"
-          //                      .format(day.toString("yyyyMMdd")))
-          // val segments = spark.read.format("parquet")                         
-          //                .option("basePath","hdfs://rely-hdfs/datascience/data_keywords/")
-          //                .load(lista_files: _*)
-          //                .withColumn("segmentos",concat_ws(",",col("segments")))
-          //                .select("device_id","segmentos")
+    // Ahora levantamos los datos que estan en datascience keywords
+    val segments = spark.read
+      .format("parquet")
+      .parquet("hdfs://rely-hdfs/datascience/data_keywords/day=20190227")
+      .withColumn("segmentos", concat_ws(",", col("segments")))
+      .select("device_id", "segmentos")
+      .withColumn("device_id", upper(col("device_id")))
 
-               // Ahora levantamos los datos que estan en datascience keywords
-          val segments = spark.read.format("parquet").parquet("hdfs://rely-hdfs/datascience/data_keywords/day=20190227")
-                          .withColumn("segmentos",concat_ws(",",col("segments")))
-                          .select("device_id","segmentos")
-                          .withColumn("device_id", upper(col("device_id")))
+    val estajoin = segments.join(estacion_xd, Seq("device_id"))
 
+    // estajoin.write.format("csv")
+    // .mode(SaveMode.Overwrite)
+    //.save("/datascience/geo/AR/estaciones_servicio_12_02_19_with_segments")
 
+    val seg_group = estajoin
+      .withColumn("segment", explode(split(col("segmentos"), ",")))
+      .select("device_id", "segment")
+      .groupBy("segment")
+      .agg(countDistinct("device_id"))
 
-          val estajoin = segments.join(estacion_xd,Seq("device_id"))
+    seg_group.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/AR/estaciones_servicio_MP_segmentos")
 
-         // estajoin.write.format("csv")
-         // .mode(SaveMode.Overwrite)
-          //.save("/datascience/geo/AR/estaciones_servicio_12_02_19_with_segments")    
-
-          val seg_group = estajoin 
-                  .withColumn("segment", explode(split(col("segmentos"), ",")))
-                  .select("device_id", "segment")
-                  .groupBy("segment").agg(countDistinct("device_id"))
-
-            seg_group.write.format("csv")
-            .mode(SaveMode.Overwrite)
-            .save("/datascience/geo/AR/estaciones_servicio_MP_segmentos")
-
- }
+  }
 
   /**
     *
@@ -945,10 +948,21 @@ val records_common = the_join.select(col("identifier"))
     def parseDay(day: String) = {
       println("LOGGER: processing day %s".format(day))
       spark.read
-       // .format("com.databricks.spark.csv")
+      // .format("com.databricks.spark.csv")
         .load("/datascience/sharethis/loading/%s*.json".format(day))
         .filter("_c13 = 'san francisco' AND _c8 LIKE '%att%'")
-        .select("_c0", "_c1", "_c2", "_c3", "_c4", "_c5", "_c6", "_c7", "_c8", "_c9")
+        .select(
+          "_c0",
+          "_c1",
+          "_c2",
+          "_c3",
+          "_c4",
+          "_c5",
+          "_c6",
+          "_c7",
+          "_c8",
+          "_c9"
+        )
         .withColumn("_c0", udfEncrypt(col("_c0")))
         .coalesce(100)
         .write
@@ -962,7 +976,7 @@ val records_common = the_join.select(col("identifier"))
     days.map(day => parseDay(day))
   }
 
-/**
+  /**
     *
     *
     *
@@ -971,15 +985,25 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     */
- def gcba_campaign_day(spark:SparkSession, day:String){
-    
-    val df = spark.read.format("csv").option("sep","\t").option("header",true)                         
-                        .load("/data/eventqueue/%s/*.tsv.gz".format(day))                        
-                        .select("id_partner","all_segments","url")   
-                        .filter( col("id_partner") === "349" &&  col("all_segments").isin(List("76522,76536,76543"):_*))
+  def gcba_campaign_day(spark: SparkSession, day: String) {
 
-    df.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/gcba_campaign_%s".format(day))                  
-}
+    val df = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", true)
+      .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+      .select("id_partner", "all_segments", "url")
+      .filter(
+        col("id_partner") === "349" && col("all_segments")
+          .isin(List("76522,76536,76543"): _*)
+      )
+
+    df.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/AR/gcba_campaign_%s".format(day))
+  }
+
   /**
     *
     *
@@ -1031,9 +1055,12 @@ val records_common = the_join.select(col("identifier"))
     //      .save("/datascience/custom/geo_st")
   }
 
- def get_pii_AR(spark: SparkSession) {
+  def get_pii_AR(spark: SparkSession) {
 
-  val df_pii = spark.read.option("header", "true").parquet("hdfs://rely-hdfs/datascience/pii_matching/pii_table").filter(col("country") === "AR")
+    val df_pii = spark.read
+      .option("header", "true")
+      .parquet("hdfs://rely-hdfs/datascience/pii_matching/pii_table")
+      .filter(col("country") === "AR")
       .write
       .format("csv")
       .option("sep", ",")
@@ -1041,7 +1068,7 @@ val records_common = the_join.select(col("identifier"))
       .mode(SaveMode.Overwrite)
       .save("/datascience/audiences/output/pii_table_AR_11_02_19")
 
-}
+  }
 
   def get_urls_sharethis(spark: SparkSession, ndays: Int) {
 
@@ -1109,23 +1136,60 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
+  /**
+    *
+    *
+    *
+    *
+    *              GOOGLE ANALYTICS
+    *
+    *
+    *
+    *
+    */
   def join_cadreon_google_analytics(spark: SparkSession) {
-    val ga = spark.read.format("csv").load("/datascience/data_demo/join_google_analytics/").withColumnRenamed("_c1", "device_id")
-    val cadreon = spark.read.format("csv").option("sep", "\t").load("/datascience/devicer/processed/cadreon_age").withColumnRenamed("_c1", "device_id").select("device_id")
+    val ga = spark.read
+      .format("csv")
+      .load("/datascience/data_demo/join_google_analytics/")
+      .withColumnRenamed("_c1", "device_id")
+    val cadreon = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/cadreon_age")
+      .withColumnRenamed("_c1", "device_id")
+      .select("device_id")
 
-    ga.join(cadreon, Seq("device_id")).write.format("csv").save("/datascience/custom/cadreon_google_analytics")
+    ga.join(cadreon, Seq("device_id"))
+      .write
+      .format("csv")
+      .save("/datascience/custom/cadreon_google_analytics")
+  }
+
+  def get_google_analytics_stats(spark: SparkSession) {
+    val cols = (2 to 9).map("_c" + _)
+    val data = spark.read
+      .format("csv")
+      .load("/datascience/data_demo/join_google_analytics")
+      .select(cols: _*)
+    data.registerTempTable("data")
+
+    val q_std =
+      cols.map(c => "stddev(%s) as stddev%s".format(c, c)).mkString(", ")
+    val q_median = cols
+      .map(c => "percentile_approx(%s, 0.5) as median%s".format(c, c))
+      .mkString(", ")
+    val query = "SELECT %s, %s FROM data".format(q_std, q_median)
+
+    println("\n\n\n")
+    spark.sql(query)
+    println("\n\n\n")
   }
 
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    //get_pii_AR(spark)
-    //get_safegraph_data(spark,country="argentina",nDays=30)
-    //getTapadIndex(spark)
-    //getTapadPerformance(spark)
-     getSegmentsforUsers(spark)
-   // join_cadreon_google_analytics(spark)
-    //gcba_campaign_day(spark,"2019/02/18")
+
+    get_google_analytics_stats(spark)
   }
 
 }

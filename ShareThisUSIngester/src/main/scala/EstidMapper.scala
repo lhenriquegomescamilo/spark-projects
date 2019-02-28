@@ -18,7 +18,7 @@ object EstidMapper {
       .option("header", "true")
       .load("/data/eventqueue/%s/*.tsv.gz".format(day))
       .filter(
-        "d17 is not null and country = 'US' and event_type = 'sync'"
+        "d17 is not null and country = 'US' and event_type IN ('sync', 'ltm_sync')"
       )
       .select("d17", "device_id", "device_type")
       .withColumn("day", lit(day.replace("/", "")))
