@@ -13,7 +13,7 @@ import org.apache.spark.sql.functions.{
   broadcast
 }
 import org.joda.time.{Days, DateTime}
-import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs._
 
 object generateOrganic {
   def generate_organic(

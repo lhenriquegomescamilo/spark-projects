@@ -13,6 +13,7 @@ import org.apache.spark.sql.functions.{
   broadcast,
   sha2
 }
+import org.apache.hadoop.fs._
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.Path
 import main.scala.{generateOrganic, generateCrossDevice}
