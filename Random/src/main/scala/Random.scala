@@ -1166,7 +1166,7 @@ val records_common = the_join.select(col("identifier"))
   }
 
   def get_google_analytics_stats(spark: SparkSession) {
-    val cols = (2 to 9).map("_c" + _)
+    val cols = (2 to 9).map("_c" + _).toSeq
     val data = spark.read
       .format("csv")
       .load("/datascience/data_demo/join_google_analytics")
