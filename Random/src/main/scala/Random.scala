@@ -854,7 +854,6 @@ val records_common = the_join.select(col("identifier"))
           val estacion_xd = spark.read.option("header", "false")
           .option("delimiter",",")
           .csv("hdfs://rely-hdfs/datascience/audiences/crossdeviced/estaciones_bp_60d_mexico_distinct_xd")
-
           .select(col("_c1")).distinct()
           .withColumnRenamed("_c1", "device_id")
           
@@ -880,9 +879,9 @@ val records_common = the_join.select(col("identifier"))
           //.save("/datascience/geo/AR/estaciones_servicio_12_02_19_with_segments")    
 
           val seg_group = estajoin 
-                  .withColumn("segment", explode(split(col("_c1"), ",")))
-                  .select("_c0", "segment")
-                  .groupBy("segment").agg(countDistinct("_c0"))
+                  .withColumn("segment", explode(split(col("segmentos"), ",")))
+                  .select("device_id", "segment")
+                  .groupBy("segment").agg(countDistinct("device_id"))
 
             seg_group.write.format("csv").save("/datascience/geo/MX/estaciones_bp_segment_count")
 
