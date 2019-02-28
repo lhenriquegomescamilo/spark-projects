@@ -1170,7 +1170,7 @@ val records_common = the_join.select(col("identifier"))
     val data = spark.read
       .format("csv")
       .load("/datascience/data_demo/join_google_analytics")
-      .select(cols: _*)
+      .select(cols.head, cols.tail: _*)
     data.registerTempTable("data")
 
     val q_std =
