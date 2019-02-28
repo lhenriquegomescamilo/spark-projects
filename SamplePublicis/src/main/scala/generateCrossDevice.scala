@@ -14,6 +14,7 @@ import org.apache.spark.sql.functions.{
 }
 import org.joda.time.{Days, DateTime}
 import java.security.MessageDigest
+import org.apache.hadoop.fs._
 
 object generateCrossDevice {
   def generate_organic_xd(spark: SparkSession, organicPath: String, runType: String) {
@@ -64,7 +65,7 @@ object generateCrossDevice {
 
 
     // Finally we rename all the generated files
-    val hdfs = FileSystem.get(sc.hadoopConfiguration)
+    val hdfs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     val files = hdfs.listStatus(new Path(pathToJson))
     val originalPath = files.map(_.getPath())
 
@@ -91,6 +92,6 @@ object generateCrossDevice {
     val spark =
       SparkSession.builder.appName("Generate Cross device").getOrCreate()
 
-    generate_organic_xd(spark)
+    //generate_organic_xd(spark)
   }
 }
