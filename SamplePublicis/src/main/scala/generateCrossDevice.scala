@@ -75,7 +75,7 @@ object generateCrossDevice {
         e =>
           hdfs.rename(
             e,
-            Path(
+            new Path(
               pathToJson + "retargetly_MX_idmap_%s_%s_%s.tsv.bz".format(
                 runType,
                 e.toString.split("/").last.split("-")(1),
