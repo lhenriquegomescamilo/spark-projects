@@ -59,7 +59,7 @@ object generateSample {
         .format(runType, DateTime.now.toString("yyyyMMdd"))
 
     println("\n\nPUBLICIS LOG: "+pathToJson+"\n\n")
-    generateOrganic.generateOrganic(spark, ndays, runType)
-    generate_organic_xd(spark, pathToJson)
+    generateOrganic.generate_organic(spark, ndays, runType)
+    generateCrossDevice.generate_organic_xd(spark, pathToJson, runType)
   }
 }

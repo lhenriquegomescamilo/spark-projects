@@ -16,7 +16,7 @@ import org.joda.time.{Days, DateTime}
 import java.security.MessageDigest
 
 object generateCrossDevice {
-  def generate_organic_xd(spark: SparkSession, organicPath: String) {
+  def generate_organic_xd(spark: SparkSession, organicPath: String, runType: String) {
     // This function takes a list of ids, hashes all of them to SHA256, and then concatenates all of them separated by commas
     val hashUDF = udf(
       (ids: Seq[String]) =>
@@ -50,13 +50,42 @@ object generateCrossDevice {
 
     val joint = organic.join(index_xd, Seq("device_id"), "inner")
 
+    // Now we store all the information
+    val pathToJson =
+      "hdfs://rely-hdfs/datascience/data_publicis/idmap/%s/dt=%s"
+        .format(runType, DateTime.now.toString("yyyyMMdd"))
+
     joint.write
       .format("com.databricks.spark.csv")
       .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_publicis/idmap")
+      .save(pathToJson)
+
+
+    // Finally we rename all the generated files
+    val hdfs = FileSystem.get(sc.hadoopConfiguration)
+    val files = hdfs.listStatus(new Path(pathToJson))
+    val originalPath = files.map(_.getPath())
+
+    val paths = originalPath.par
+      .filter(!_.toString.contains("_SUCCESS"))
+      .foreach(
+        e =>
+          hdfs.rename(
+            e,
+            Path(
+              pathToJson + "retargetly_MX_idmap_%s_%s_%s.tsv.bz".format(
+                runType,
+                e.toString.split("/").last.split("-")(1),
+                DateTime.now.toString("yyyyMMdd")
+              )
+            )
+          )
+      )
   }
+
+
   def main(args: Array[String]) {
     /// Configuracion spark
     val spark =

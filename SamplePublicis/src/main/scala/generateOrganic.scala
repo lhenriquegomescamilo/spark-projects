@@ -151,14 +151,16 @@ object generateOrganic {
 
     val paths = originalPath.par
       .filter(!_.toString.contains("_SUCCESS"))
-      .map(
+      .foreach(
         e =>
           hdfs.rename(
-            e.toString,
-            pathToJson + "retargetly_MX_memb_%s_%s_%s.tsv.bz".format(
-              runType,
-              e.toString.split("/").last.split("-")(1),
-              DateTime.now.toString("yyyyMMdd")
+            e,
+            Path(
+              pathToJson + "retargetly_MX_memb_%s_%s_%s.tsv.bz".format(
+                runType,
+                e.toString.split("/").last.split("-")(1),
+                DateTime.now.toString("yyyyMMdd")
+              )
             )
           )
       )
