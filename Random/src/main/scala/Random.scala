@@ -1181,7 +1181,7 @@ val records_common = the_join.select(col("identifier"))
     val query = "SELECT %s, %s FROM data".format(q_std, q_median)
 
     println("\n\n\n")
-    spark.sql(query)
+    spark.sql(query).show()
     println("\n\n\n")
   }
 
