@@ -853,7 +853,7 @@ val records_common = the_join.select(col("identifier"))
           //este es el resultado del crossdevice, se pidieron solo cookies
           val estacion_xd = spark.read.option("header", "false")
           .option("delimiter",",")
-          .csv("hdfs://rely-hdfs/datascience/audiences/crossdeviced/estaciones_bp_60d_mexico_25-2-2019-11h_xd")
+          .csv("hdfs://rely-hdfs/datascience/audiences/crossdeviced/estaciones_bp_60d_mexico_distinct_xd")
 
           .select(col("_c1")).distinct()
           .withColumnRenamed("_c1", "device_id")
