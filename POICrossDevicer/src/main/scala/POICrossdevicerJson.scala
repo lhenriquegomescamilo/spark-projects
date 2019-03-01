@@ -189,7 +189,7 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     val db_data = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
-                                             .filter("index_type IN ('and', 'ios')")
+                                             .filter("index_type IN ('and', 'ios') AND device_type = 'coo'")
                                               .withColumn("index", upper(col("index")))
                                               .select("index", "device", "device_type")
     
