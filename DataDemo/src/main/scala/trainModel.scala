@@ -108,7 +108,7 @@ object TrainModel {
     )
     df_final.write
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/labeled_points_%s".format(country))
+      .save("/datascience/data_demo/labeled_points_train_%s".format(country))
   }
 
   def train_and_evaluate_model(spark: SparkSession,country:String) {
@@ -283,9 +283,9 @@ object TrainModel {
     val country = if (args.length > 0) args(0).toString else "MX"
     
     getTrainingSet(spark,country)
-    train_model(spark,country)
-    //getTestSet(spark,country)
     //getLabeledPointTrain(spark,country)
+    //train_model(spark,country)
+    //getTestSet(spark,country)
     //getLabeledPointTest(spark,country)
     //getTestSet(spark,country)
     //getLabeledPointTest(spark,country)
