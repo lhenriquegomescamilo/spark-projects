@@ -180,7 +180,7 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
     //val audience_name = value_dictionary("poi_output_file").split("/").last
     val audience = spark.read.format("csv").option("sep", "\t").load("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
-                                                              .withColumnRenamed("_c0", "device_id")
+                                                              .withColumnRenamed("_c1", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
                                                               .select("device_id").distinct()
 
