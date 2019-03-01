@@ -181,7 +181,7 @@ object TrainModel {
   def train_model(spark:SparkSession, country:String){
     import spark.implicits._
 
-    val trainingData = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_%s".format(country))
+    val trainingData = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_train_%s".format(country))
   
     val labelColumn = "label"
 
