@@ -149,7 +149,7 @@ object generateOrganic {
     // Here we process the data that will be sent.
     val userSegments = df
       .withColumn("gral_segments", udfGralSegments(col("segments"))) // obtain only gral segment list
-      .filter(size("gral_segments") > 0) // remove the users with no gral_segments
+      .filter(size(col("gral_segments")) > 0) // remove the users with no gral_segments
       .withColumn("gral_segments", udfAddDay(col("gral_segments"), col("day"))) // add the day to every segment
       .groupBy("device_id")
       .agg(collect_list("gral_segments") as "gral_segments") // obtain the list of list of segments with day
