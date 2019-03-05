@@ -180,7 +180,7 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
     //val audience_name = value_dictionary("poi_output_file").split("/").last
     val audience = spark.read.format("csv").option("sep", "\t").load("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
-                                                              .withColumnRenamed("_c0", "device_id")
+                                                              .withColumnRenamed("_c1", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
                                                               .select("device_id").distinct()
 
@@ -189,7 +189,7 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     val db_data = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
-                                             .filter("index_type IN ('and', 'ios')")
+                                             .filter("index_type IN ('and', 'ios') AND device_type = 'coo'")
                                               .withColumn("index", upper(col("index")))
                                               .select("index", "device", "device_type")
     

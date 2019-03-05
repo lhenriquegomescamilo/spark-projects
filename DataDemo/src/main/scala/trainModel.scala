@@ -40,6 +40,8 @@ object TrainModel {
       .withColumn("label", lit(1))
       .withColumnRenamed("_c1", "device_id")
       .select("device_id", "label")
+      .dropDuplicates("device_id")
+
     val gt_female = spark.read
       .format("csv")
       .option("sep", " ")
@@ -47,6 +49,7 @@ object TrainModel {
       .withColumn("label", lit(0))
       .withColumnRenamed("_c1", "device_id")
       .select("device_id", "label")
+      .dropDuplicates("device_id")
 
     val gt = gt_male.unionAll(gt_female)
 
@@ -105,7 +108,7 @@ object TrainModel {
     )
     df_final.write
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/labeled_points_%s".format(country))
+      .save("/datascience/data_demo/labeled_points_train_%s".format(country))
   }
 
   def train_and_evaluate_model(spark: SparkSession,country:String) {
@@ -178,7 +181,7 @@ object TrainModel {
   def train_model(spark:SparkSession, country:String){
     import spark.implicits._
 
-    val trainingData = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_%s".format(country))
+    val trainingData = spark.read.format("parquet").load("/datascience/data_demo/labeled_points_train_%s".format(country))
   
     val labelColumn = "label"
 
@@ -205,40 +208,22 @@ object TrainModel {
   def getTestSet(spark: SparkSession, country:String){
     val df = spark.read.parquet("/datascience/data_demo/triplets_segments/country=%s".format(country))
 
-    // val users_no_gender = spark.read
-    //   .format("csv")
-    //   .option("sep", "\t")
-    //   .load("/datascience/devicer/processed/users_no_gender")
-    //   .withColumnRenamed("_c1", "device_id")
-    //   .select("device_id")
-    //   .dropDuplicates("device_id")
-    //   .limit(3000000)
-
-    // val joint = users_no_gender.join(df, Seq("device_id"))
-
-    // joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test_set_%s/".format(country))
-
-    val gt = spark.read
+    val users_no_gender = spark.read
       .format("csv")
-      .option("sep", " ")
-      .load("/datascience/devicer/processed/ground_truth_*")
-      .withColumn("label", lit(0))
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/users_no_gender")
       .withColumnRenamed("_c1", "device_id")
       .select("device_id")
-      .collect()
-      .map(_(0))
-      .toSeq
-    val gt_b = spark.sparkContext.broadcast(gt)
+      .dropDuplicates("device_id")
+      .limit(3000000)
 
-    df.filter(!col("device_id").isin(gt_b.value: _*))
-      .withColumn("country", lit(country))
-      .write
-      .partitionBy("country")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/test_set/".format(country))
+    val joint = users_no_gender.join(df, Seq("device_id"))
+
+    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/test_set_%s/".format(country))
+  
   }
   def getLabeledPointTest(spark: SparkSession, country:String) {
-     val data = spark.read.format("parquet").load("/datascience/data_demo/test_set/country=%s".format(country)).limit(10000000*1000)
+     val data = spark.read.format("parquet").load("/datascience/data_demo/test_set_%s".format(country))
     
     // Leemo el indexer generado en el entrenamiento y lo usamos para indexar features
     val device_indexer =  new StringIndexer().setInputCol("device_id").setOutputCol("deviceIndex")
@@ -298,11 +283,13 @@ object TrainModel {
     val country = if (args.length > 0) args(0).toString else "MX"
     
     //getTrainingSet(spark,country)
-    //train_model(spark,country)
-    // getTestSet(spark,country)
     //getLabeledPointTrain(spark,country)
-    getLabeledPointTest(spark,country)
-    generate_expansion(spark,country)
+    train_model(spark,country)
+    //getTestSet(spark,country)
+    //getLabeledPointTest(spark,country)
+    //getTestSet(spark,country)
+    //getLabeledPointTest(spark,country)
+    //generate_expansion(spark,country)
   }
 
 }
