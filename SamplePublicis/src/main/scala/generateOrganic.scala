@@ -139,7 +139,7 @@ object generateOrganic {
             .toList
             .map(
               tuple =>
-                "{\"segid\": \"%s\", \"segmentstartdate\": %s}"
+                """{"segid": "%s", "segmentstartdate": %s}"""
                   .format(tuple._1, tuple._2)
             )
             .mkString(", ")

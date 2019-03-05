@@ -39,17 +39,16 @@ object generateCrossDevice {
       .load("/datascience/crossdevice/list_index")
       .withColumn("android", hashUDF(col("android")))
       .withColumn("ios", hashUDF(col("ios")))
-      .select("device_id", "android", "ios")
+      .withColumnRenamed("device_id", "rtgtly_uid")
+      .select("rtgtly_uid", "android", "ios")
 
     // Here we only load all the device ids that we have previously obtained
     val organic = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .load("/datascience/data_publicis/organic")
-      .select("device_id")
+      .format("json")
+      .load(organicPath)
+      .select("rtgtly_uid")
 
-    val joint = organic.join(index_xd, Seq("device_id"), "inner")
+    val joint = organic.join(index_xd, Seq("rtgtly_uid"), "inner")
 
     // Now we store all the information
     val pathToJson =
@@ -58,7 +57,7 @@ object generateCrossDevice {
 
     joint.write
       .format("com.databricks.spark.csv")
-      .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
+      .option("codec", "org.apache.hadoop.io.compress.BZip2Codec")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
       .save(pathToJson)
