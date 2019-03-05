@@ -8,6 +8,7 @@ import org.apache.spark.sql.functions.{
   regexp_replace,
   collect_list,
   split,
+  size,
   lit
 }
 import org.apache.spark.sql.{SaveMode, DataFrame}
