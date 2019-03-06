@@ -41,8 +41,10 @@ object GenerateTriplets {
                                     .withColumn("count",lit(1)))
 
         val df = dfs.reduce((df1,df2) => df1.union(df2))
+
+        val grouped_data = union.groupBy("device_id","feature","country").agg(sum("count").as("count"))
         
-        df.write.format("parquet")
+        grouped_data.write.format("parquet")
                 .mode(SaveMode.Overwrite)
                 .partitionBy("country")
                 .save("/datascience/data_demo/triplets_segments")
@@ -110,7 +112,7 @@ object GenerateTriplets {
         // Parseo de parametros
         val ndays = if (args.length > 0) args(0).toInt else 20
         
-        //generate_triplets_segments(spark,ndays)
-        generate_triplets_keywords(spark,ndays) 
+        generate_triplets_segments(spark,ndays)
+        //generate_triplets_keywords(spark,ndays) 
     }
   }
