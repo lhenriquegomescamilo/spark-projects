@@ -1185,11 +1185,88 @@ val records_common = the_join.select(col("identifier"))
     println("\n\n\n")
   }
 
+  /**
+    *
+    *
+    *
+    *
+    *                  ATT - STATISTICS
+    *
+    *
+    *
+    *
+    *
+   **/
+  def get_att_stats(spark: SparkSession) = {
+    val data = spark.read
+      .load("/datascience/sharethis/historic/day=2018*/")
+      .filter("isp LIKE '%att%' AND city = 'san francisco'")
+      .select("estid", "url", "os", "ip", "utc_timestamp")
+      .withColumn("utc_timestamp", col("utc_timestamp").substr(0, 10))
+      .withColumnRenamed("utc_timestamp", "day")
+    // .write
+    // .save("/datascience/custom/metrics_att_sharethis")
+    data.persist()
+
+    println("Total number of rows: %s".format(data.count()))
+    println(
+      "Total Sessions (without duplicates): %s"
+        .format(data.select("url", "estid").distinct().count())
+    )
+    println("Total different ids: %s".format(data.select("estid").distinct()))
+    println("Mean ids per day:")
+    data.groupBy("day").count().show()
+    data
+      .select("url", "estid")
+      .distinct()
+      .groupBy("estid")
+      .count()
+      .write
+      .save("/datascience/custom/estid_sessions")
+    data
+      .select("day", "estid")
+      .distinct()
+      .groupBy("estid")
+      .count()
+      .write
+      .save("/datascience/custom/estid_days")
+
+    val estid_table =
+      spark.read
+        .load("/datascience/sharethis/estid_table/day=201901*")
+        .withColumnRenamed("d17", "estid")
+
+    val joint = estid_table.join(data, Seq("estid"))
+    println("Total number of rows: %s".format(joint.count()))
+    println(
+      "Total Sessions (without duplicates): %s"
+        .format(joint.select("url", "device_id").distinct().count())
+    )
+    println("Total different device ids: %s".format(joint.select("device_id").distinct()))
+    println("Mean device ids per day:")
+    joint.groupBy("day").count().show()
+    joint
+      .select("url", "device_id")
+      .distinct()
+      .groupBy("device_id")
+      .count()
+      .write
+      .save("/datascience/custom/device_id_sessions")
+      joint
+      .select("day", "device_id")
+      .distinct()
+      .groupBy("device_id")
+      .count()
+      .write
+      .save("/datascience/custom/device_id_days")
+  }
+
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    get_google_analytics_stats(spark)
+    //get_google_analytics_stats(spark)
+    get_att_stats(spark)
   }
 
 }
