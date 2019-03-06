@@ -35,9 +35,9 @@ object GenerateTriplets {
         val dfs = days
                     .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_keywords/day=%s".format(day))))
                     .map(x => spark.read.parquet("/datascience/data_keywords/day=%s".format(x))
-                                    .select("device_id","all_segments","country")
-                                    .withColumn("all_segments",explode(col("all_segments")))
-                                    .withColumnRenamed("all_segments","feature")
+                                    .select("device_id","segments","country")
+                                    .withColumn("segments",explode(col("segments")))
+                                    .withColumnRenamed("segments","feature")
                                     .withColumn("count",lit(1)))
 
         val df = dfs.reduce((df1,df2) => df1.union(df2))
