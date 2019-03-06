@@ -42,7 +42,7 @@ object GenerateTriplets {
 
         val df = dfs.reduce((df1,df2) => df1.union(df2))
 
-        val grouped_data = union.groupBy("device_id","feature","country").agg(sum("count").as("count"))
+        val grouped_data = df.groupBy("device_id","feature","country").agg(sum("count").as("count"))
         
         grouped_data.write.format("parquet")
                 .mode(SaveMode.Overwrite)
