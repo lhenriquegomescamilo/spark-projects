@@ -937,25 +937,29 @@ def getUSaudience(spark: SparkSession) = {
 
 
 def getUSmapping(spark: SparkSession) = {
- val nDays = 30
-val today = DateTime.now()
-val other_files = (2 until nDays).map(today.minusDays(_))  .map(day => "/datascience/sharethis/estid_table/day=%s"   
-  .format(day.toString("yyyyMMdd")))
 
-val estid_mapping = spark.read.format("parquet") .option("basePath","/datascience/sharethis/estid_table/")   
-.load(other_files: _*) 
+//eso era para obtener las cookies
+// val nDays = 30
+//val today = DateTime.now()
+//val other_files = (2 until nDays).map(today.minusDays(_))  .map(day => "/datascience/sharethis/estid_table/day=%s"   
+//  .format(day.toString("yyyyMMdd")))
+
+//val estid_mapping = spark.read.format("parquet") .option("basePath","/datascience/sharethis/estid_table/")   
+//.load(other_files: _*) 
+
+val estid_mapping = spark.read.format("parquet") .load("/datascience/sharethis/estid_madid_table")  
 
 val output = spark.read.format("csv").load("/datascience/audiences/output/micro_azure_06-03/") 
 
 val joint = output
       .distinct()
-      .join(estid_mapping, output.col("_c0") === estid_mapping.col("d17"))
+      .join(estid_mapping, output.col("_c0") === estid_mapping.col("estid"))
      
 
 joint.write
   .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/audiences/output/micro_azure_06-03_mapped/")           
+      .save("/datascience/audiences/output/micro_azure_06-03_xd_madid/")           
       }    
   /**
     *
