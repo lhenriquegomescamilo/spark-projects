@@ -911,7 +911,6 @@ val records_common = the_join.select(col("identifier"))
    **/
 def getUSaudience(spark: SparkSession) = {
 
-            val today = DateTime.now()
             val nDays = 30
             val today = DateTime.now()
             val lista_files = (2 until nDays).map(today.minusDays(_))  
