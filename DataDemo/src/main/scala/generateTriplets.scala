@@ -33,8 +33,8 @@ object GenerateTriplets {
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
         
         val dfs = days
-                    .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_keywords_p/day=%s".format(day))))
-                    .map(x => spark.read.parquet("/datascience/data_keywords_p/day=%s".format(x))
+                    .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_keywords/day=%s".format(day))))
+                    .map(x => spark.read.parquet("/datascience/data_keywords/day=%s".format(x))
                                     .select("device_id","all_segments","country")
                                     .withColumn("all_segments",explode(col("all_segments")))
                                     .withColumnRenamed("all_segments","feature")
