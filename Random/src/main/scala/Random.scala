@@ -1248,7 +1248,7 @@ joint.write
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     //get_google_analytics_stats(spark)
-    getUSmapping((spark)
+    getUSmapping(spark)
   }
 
 }
