@@ -898,7 +898,69 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/geo/AR/estaciones_servicio_MP_segmentos")
 
   }
+  /**
+    *
+    *
+    *
+    *
+    * AUDIENCE for US
+    *
+    *
+    *
+    *
+   **/
+def getUSaudience(spark: SparkSession) = {
 
+            val nDays = 30
+            val today = DateTime.now()
+            val lista_files = (2 until nDays).map(today.minusDays(_))  
+            .map(day => "/datascience/sharethis/historic/day=%s"             
+            .format(day.toString("yyyyMMdd")))
+
+
+            val segments = spark.read.format("parquet")         
+                        .option("basePath","/datascience/sharethis/historic/")       
+                        .load(lista_files: _*) 
+
+
+
+            segments
+              .filter("(((((((((((((((((((((((((((((((((((((((((((((((url LIKE '%pipeline%' and url LIKE '%data%') or (url LIKE '%colab%' and url LIKE '%google%')) or (url LIKE '%shiny%' and url LIKE '%rstudio%')) or (url LIKE '%spark%' and url LIKE '%apache%')) or url LIKE '%hadoop%') or url LIKE '%scala%') or url LIKE '%kubernetes%') or url LIKE '%gitlab%') or url LIKE '%mongodb%') or url LIKE '%netbeans%') or url LIKE '%elasticsearch%') or url LIKE '%nginx%') or url LIKE '%angularjs%') or url LIKE '%bootstrap%') or url LIKE '%atlassian%') or url LIKE '%jira%') or url LIKE '%gitlab%') or url LIKE '%docker%') or url LIKE '%github%') or url LIKE '%bitbucket%') or (url LIKE '%lake%' and url LIKE '%data%')) or (url LIKE '%warehouse%' and url LIKE '%data%')) or url LIKE '%mariadb%') or (url LIKE '%machines%' and url LIKE '%virtual%')) or url LIKE '%appserver%') or (url LIKE '%learning%' and url LIKE '%machine%')) or url LIKE '%nosql%') or url LIKE '%mysql%') or (url LIKE '%sagemaker%' and url LIKE '%amazon%')) or (url LIKE '%lightsail%' and url LIKE '%amazon%')) or (url LIKE '%lambda%' and url LIKE '%aws%')) or (url LIKE '%aurora%' and url LIKE '%amazon%')) or (url LIKE '%dynamodb%' and url LIKE '%amazon%')) or (url LIKE '%s3%' and url LIKE '%amazon%')) or ((url LIKE '%platform%' and url LIKE '%cloud%') and url LIKE '%google%')) or (url LIKE '%storage%' and url LIKE '%amazon%')) or (url LIKE '%ec2%' and url LIKE '%amazon%')) or (url LIKE '%server%' and url LIKE '%web%')) or (url LIKE '%servers%' and url LIKE '%cloud%')) or (url LIKE '%hosting%' and url LIKE '%cloud%')) or url LIKE '%azure%') or url LIKE '%aws%') or ((url LIKE '%services%' and url LIKE '%cloud%') and url LIKE '%amazon%')) or ((url LIKE '%services%' and url LIKE '%web%') and url LIKE '%amazon%')) or (url LIKE '%server%' and url LIKE '%windows%')) or (url LIKE '%azure%' and url LIKE '%windows%')) or (url LIKE '%azure%' and url LIKE '%microsoft%'))")
+              .select(col("estid"))
+              .distinct()
+              .write
+                  .format("csv")
+                  .mode(SaveMode.Overwrite)
+                  .save("/datascience/audiences/output/micro_azure_06-03")
+
+                }
+
+
+def getUSmapping(spark: SparkSession) = {
+
+//eso era para obtener las cookies
+// val nDays = 30
+//val today = DateTime.now()
+//val other_files = (2 until nDays).map(today.minusDays(_))  .map(day => "/datascience/sharethis/estid_table/day=%s"   
+//  .format(day.toString("yyyyMMdd")))
+
+//val estid_mapping = spark.read.format("parquet") .option("basePath","/datascience/sharethis/estid_table/")   
+//.load(other_files: _*) 
+
+val estid_mapping = spark.read.format("parquet") .load("/datascience/sharethis/estid_madid_table")  
+
+val output = spark.read.format("csv").load("/datascience/audiences/output/micro_azure_06-03/") 
+
+val joint = output
+      .distinct()
+      .join(estid_mapping, output.col("_c0") === estid_mapping.col("estid"))
+     
+
+joint.write
+  .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/audiences/output/micro_azure_06-03_xd_madid/")           
+      }    
   /**
     *
     *
@@ -1265,7 +1327,6 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    //get_google_analytics_stats(spark)
     get_att_stats(spark)
   }
 

@@ -33,16 +33,18 @@ object GenerateTriplets {
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
         
         val dfs = days
-                    .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_keywords_p/day=%s".format(day))))
-                    .map(x => spark.read.parquet("/datascience/data_keywords_p/day=%s".format(x))
-                                    .select("device_id","all_segments","country")
-                                    .withColumn("all_segments",explode(col("all_segments")))
-                                    .withColumnRenamed("all_segments","feature")
+                    .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_keywords/day=%s".format(day))))
+                    .map(x => spark.read.parquet("/datascience/data_keywords/day=%s".format(x))
+                                    .select("device_id","segments","country")
+                                    .withColumn("segments",explode(col("segments")))
+                                    .withColumnRenamed("segments","feature")
                                     .withColumn("count",lit(1)))
 
         val df = dfs.reduce((df1,df2) => df1.union(df2))
+
+        val grouped_data = df.groupBy("device_id","feature","country").agg(sum("count").as("count"))
         
-        df.write.format("parquet")
+        grouped_data.write.format("parquet")
                 .mode(SaveMode.Overwrite)
                 .partitionBy("country")
                 .save("/datascience/data_demo/triplets_segments")
@@ -110,7 +112,7 @@ object GenerateTriplets {
         // Parseo de parametros
         val ndays = if (args.length > 0) args(0).toInt else 20
         
-        //generate_triplets_segments(spark,ndays)
-        generate_triplets_keywords(spark,ndays) 
+        generate_triplets_segments(spark,ndays)
+        //generate_triplets_keywords(spark,ndays) 
     }
   }
