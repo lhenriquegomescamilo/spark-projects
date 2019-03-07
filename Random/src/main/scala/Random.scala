@@ -903,6 +903,54 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     *
+    * Segments for Geo Data for TAPAD
+    *
+    *
+    *
+    */
+  def getSegmentsforTapad(spark: SparkSession) = {
+
+    //este es el resultado del crossdevice, se pidieron solo cookies
+    val users = spark.read.format("csv").load("/datascience/geo/AR/estaciones_servicio_jue_vie")
+    val tapad_index= spark.read.load("/datascience/custom/tapad_index")
+
+    val joined = users.join(tapad_index, tapad_index.col("device") === users.col("_c0"))
+    val clusters = joined.select(col("INDIVIDUAL_CLUSTER_ID")).distinct()
+    val all_devices = clusters.join(tapad_index, Seq("INDIVIDUAL_CLUSTER_ID"))
+    val cookies = all_devices.filter(col("device_type") ===  "RTG").dropDuplicates("device") // .select(col("device")).distinct()
+
+
+    // Ahora levantamos los datos que estan en datascience keywords
+    val since =  6
+    val nDays = 7
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+
+    val lista_files = (0 until nDays)
+          .map(end.minusDays(_))
+          .map(        day =>          "hdfs://rely-hdfs/datascience/data_keywords/day=%s"            
+          .format(day.toString("yyyyMMdd"))      )
+
+    val segments = spark.read      
+                    .format("parquet")      
+                    .option("basePath", "hdfs://rely-hdfs/datascience/data_keywords/")      
+                    .load(lista_files: _*)
+
+    val finaljoin = segments.join(cookies,cookies.col("device") === segments.col("device_id"))
+
+    finaljoin.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/AR/estaciones_servicio_MP_segmentos_TAPAD")
+
+  }
+
+
+  /**
+    *
+    *
+    *
     *
     * AUDIENCE for US
     *
@@ -1364,8 +1412,9 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-
-      join_gender_google_analytics(spark)
+      
+      getSegmentsforTapad(spark)
+      //join_gender_google_analytics(spark)
   }
 
 }
