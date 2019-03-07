@@ -1221,7 +1221,7 @@ val records_common = the_join.select(col("identifier"))
     val ga = spark.read
       .format("csv")
       .load("/datascience/data_demo/join_google_analytics/")
-      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c0", "device_id")
     val cadreon = spark.read
       .format("csv")
       .option("sep", " ")
@@ -1237,12 +1237,11 @@ val records_common = the_join.select(col("identifier"))
   def join_gender_google_analytics(spark: SparkSession) {
     val ga = spark.read
       .format("csv")
-      .option("sep", "\t")
       .load("/datascience/data_demo/join_google_analytics/")
       .withColumnRenamed("_c0", "device_id")
     val cadreon = spark.read
       .format("csv")
-      .option("sep", "\t")
+      .option("sep", " ")
       .load("/datascience/devicer/processed/ground_truth_*male")
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
