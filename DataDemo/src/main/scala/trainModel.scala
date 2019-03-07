@@ -31,7 +31,7 @@ import org.apache.spark.ml.classification.{GBTClassificationModel, GBTClassifier
 object TrainModel {
   ////////////////////////////////// Training //////////////////////////////////////////////////////////
   def getTrainingSet(spark: SparkSession, country:String) {
-    val df = spark.read.parquet("/datascience/data_demo/triplets_segments/country=%s".format(country))
+    val df = spark.read.parquet("/datascience/data_demo/triplets_keywords/country=%s".format(country))
 
     val gt_male = spark.read
       .format("csv")
@@ -59,7 +59,7 @@ object TrainModel {
     /// Hacemos el join 
     val joint = gt.join(df_filtered, Seq("device_id"))
 
-    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/training_set_%s/".format(country))
+    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/training_set_keywords_%s/".format(country))
   }
 
   def getLabeledPointTrain(spark: SparkSession, country:String) {
