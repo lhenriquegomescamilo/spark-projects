@@ -1365,7 +1365,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    join_cadreon_google_analytics(spark)
+      join_gender_google_analytics(spark)
   }
 
 }
