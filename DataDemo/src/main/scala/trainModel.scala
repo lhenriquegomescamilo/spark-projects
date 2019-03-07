@@ -53,8 +53,11 @@ object TrainModel {
 
     val gt = gt_male.unionAll(gt_female)
 
-    /// Hacemos el join y sacamos todos los segmentos de genero.
-    val joint = gt.join(df, Seq("device_id")).filter("feature NOT IN ('2','3','69207','69228','39525','40136','40881','36523')")
+    // Sacamos todos los segmentos de genero 
+    val df_filtered = df.filter("feature NOT IN ('2','3','69207','69228','39525','40136','40881','36523')")
+    
+    /// Hacemos el join 
+    val joint = gt.join(df_filtered, Seq("device_id"))
 
     joint.write.mode(SaveMode.Overwrite).save("/datascience/data_demo/training_set_%s/".format(country))
   }
