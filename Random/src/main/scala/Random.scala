@@ -1224,6 +1224,27 @@ val records_common = the_join.select(col("identifier"))
       .withColumnRenamed("_c1", "device_id")
     val cadreon = spark.read
       .format("csv")
+      .option("sep", " ")
+      .load("/datascience/devicer/processed/cadreon_age")
+      .withColumnRenamed("_c1", "device_id")
+
+    ga.join(cadreon, Seq("device_id"))
+      .write
+      .format("csv")
+      .save("/datascience/custom/cadreon_google_analytics")
+  }
+
+  def join_gender_google_analytics(spark: SparkSession) {
+    val ga = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/ground_truth_*male/")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "label")
+      .select("device_id")
+      .distinct()
+    val cadreon = spark.read
+      .format("csv")
       .option("sep", "\t")
       .load("/datascience/devicer/processed/cadreon_age")
       .withColumnRenamed("_c1", "device_id")
@@ -1232,7 +1253,7 @@ val records_common = the_join.select(col("identifier"))
     ga.join(cadreon, Seq("device_id"))
       .write
       .format("csv")
-      .save("/datascience/custom/cadreon_google_analytics")
+      .save("/datascience/data_demo/gender_google_analytics")
   }
 
   def get_google_analytics_stats(spark: SparkSession) {
@@ -1345,7 +1366,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    get_att_stats(spark)
+    join_cadreon_google_analytics(spark)
   }
 
 }
