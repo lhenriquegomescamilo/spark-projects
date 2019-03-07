@@ -1238,21 +1238,21 @@ val records_common = the_join.select(col("identifier"))
     val ga = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/devicer/processed/ground_truth_*male/")
+      .load("/datascience/data_demo/join_google_analytics/")
       .withColumnRenamed("_c1", "device_id")
-      .withColumnRenamed("_c2", "label")
-      .select("device_id")
-      .distinct()
     val cadreon = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/devicer/processed/cadreon_age")
+      .load("/datascience/devicer/processed/ground_truth_*male")
       .withColumnRenamed("_c1", "device_id")
-      .select("device_id")
+      .withColumnRenamed("_c2", "label")
+      .select("device_id", "label")
+      .distinct()
 
     ga.join(cadreon, Seq("device_id"))
       .write
       .format("csv")
+      .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/gender_google_analytics")
   }
 
