@@ -917,19 +917,19 @@ val records_common = the_join.select(col("identifier"))
     val joined = users.join(tapad_index, tapad_index.col("device") === users.col("_c0"))
     val clusters = joined.select(col("INDIVIDUAL_CLUSTER_ID")).distinct()
     val all_devices = clusters.join(tapad_index, Seq("INDIVIDUAL_CLUSTER_ID"))
-    val cookies = all_devices.filter(col("device_type") ===  "RTG").dropDuplicates("device") // .select(col("device")).distinct()
+    val cookies = all_devices.filter(col("device_type") ===  "RTG").dropDuplicates("device")
 
 
     // Ahora levantamos los datos que estan en datascience keywords
     val since =  6
     val nDays = 7
     val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(("yyyyMMdd"))
 
 
     val lista_files = (0 until nDays)
           .map(end.minusDays(_))
-          .map(        day =>          "hdfs://rely-hdfs/datascience/data_keywords/day=%s"            
+          .map(        day =>    "hdfs://rely-hdfs/datascience/data_keywords/day=%s"            
           .format(day.toString("yyyyMMdd"))      )
 
     val segments = spark.read      
