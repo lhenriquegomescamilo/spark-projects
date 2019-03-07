@@ -938,6 +938,7 @@ val records_common = the_join.select(col("identifier"))
                     .format("parquet")      
                     .option("basePath", "hdfs://rely-hdfs/datascience/data_keywords/")      
                     .load(lista_files: _*)
+                    .withColumn("segmentos",concat_ws(",",col("segments"))).select("device_id","segmentos")
 
     val finaljoin = segments.join(cookies,cookies.col("device") === segments.col("device_id"))
 
