@@ -917,7 +917,9 @@ val records_common = the_join.select(col("identifier"))
     val joined = users.join(tapad_index, tapad_index.col("device") === users.col("_c0"))
     val clusters = joined.select(col("INDIVIDUAL_CLUSTER_ID")).distinct()
     val all_devices = clusters.join(tapad_index, Seq("INDIVIDUAL_CLUSTER_ID"))
-    val cookies = all_devices.filter(col("device_type") ===  "RTG").dropDuplicates("device")
+    val cookies = all_devices.filter(col("device_type") ===  "RTG")
+                        .dropDuplicates("device")
+                        .withColumnRenamed("device_type","RTG")
 
 
     // Ahora levantamos los datos que estan en datascience keywords
