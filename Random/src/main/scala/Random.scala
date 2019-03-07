@@ -924,7 +924,7 @@ val records_common = the_join.select(col("identifier"))
     val since =  6
     val nDays = 7
     val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(("yyyyMMdd"))
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(("yyyyMMdd")))
 
 
     val lista_files = (0 until nDays)
