@@ -1288,30 +1288,31 @@ val records_common = the_join.select(col("identifier"))
     *
    **/
   def get_att_stats(spark: SparkSession) = {
-    val data = spark.read
-      .load("/datascience/sharethis/historic/day=2018*/")
-      .filter("isp LIKE '%att%' AND city = 'san francisco'")
-      .select("estid", "url", "os", "ip", "utc_timestamp")
-      .withColumn("utc_timestamp", col("utc_timestamp").substr(0, 10))
-      .withColumnRenamed("utc_timestamp", "day")
+    // val data = spark.read
+    //   .load("/datascience/sharethis/historic/day=2018*/")
+    //   .filter("isp LIKE '%att%' AND city = 'san francisco'")
+    //   .select("estid", "url", "os", "ip", "utc_timestamp")
+    //   .withColumn("utc_timestamp", col("utc_timestamp").substr(0, 10))
+    //   .withColumnRenamed("utc_timestamp", "day")
+    val data = spark.read.load("/datascience/custom/metrics_att_sharethis")
     data.persist()
-    data.write
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/metrics_att_sharethis")
+    // data.write
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/custom/metrics_att_sharethis")
 
-    println("Total number of rows: %s".format(data.count()))
-    println(
-      "Total Sessions (without duplicates): %s"
-        .format(data.select("url", "estid").distinct().count())
-    )
-    println(
-      "Total different ids: %s".format(data.select("estid").distinct().count())
-    )
+    // println("Total number of rows: %s".format(data.count()))
+    // println(
+    //   "Total Sessions (without duplicates): %s"
+    //     .format(data.select("url", "estid").distinct().count())
+    // )
+    // println(
+    //   "Total different ids: %s".format(data.select("estid").distinct().count())
+    // )
     println("Mean ids per day:")
     data.groupBy("day").count().show()
     data
       .select("url", "estid")
-      .distinct()
+      //.distinct()
       .groupBy("estid")
       .count()
       .write
@@ -1320,7 +1321,7 @@ val records_common = the_join.select(col("identifier"))
     data
       .select("day", "estid")
       .distinct()
-      .groupBy("estid")
+      .groupBy("day")
       .count()
       .write
       .mode(SaveMode.Overwrite)
@@ -1328,7 +1329,7 @@ val records_common = the_join.select(col("identifier"))
 
     val estid_table =
       spark.read
-        .load("/datascience/sharethis/estid_table/day=201901*")
+        .load("/datascience/sharethis/estid_table/day=20190*")
         .withColumnRenamed("d17", "estid")
 
     val joint = estid_table.join(data, Seq("estid"))
@@ -1345,7 +1346,7 @@ val records_common = the_join.select(col("identifier"))
     joint.groupBy("day").count().show()
     joint
       .select("url", "device_id")
-      .distinct()
+      //.distinct()
       .groupBy("device_id")
       .count()
       .write
@@ -1354,7 +1355,7 @@ val records_common = the_join.select(col("identifier"))
     joint
       .select("day", "device_id")
       .distinct()
-      .groupBy("device_id")
+      .groupBy("day")
       .count()
       .write
       .mode(SaveMode.Overwrite)
