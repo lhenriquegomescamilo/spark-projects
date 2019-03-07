@@ -911,7 +911,10 @@ val records_common = the_join.select(col("identifier"))
   def getSegmentsforTapad(spark: SparkSession) = {
 
     //este es el resultado del crossdevice, se pidieron solo cookies
-    val users = spark.read.format("csv").load("/datascience/geo/AR/estaciones_servicio_jue_vie")
+    //val users = spark.read.format("csv").load("/datascience/geo/AR/estaciones_servicio_jue_vie")
+    val users = spark.read.format("csv")
+    .load("hdfs://rely-hdfs/datascience/geo/AR/estaciones_servicio_12_02_19_poimatcher_60d_DISTINCT")
+    
     val tapad_index= spark.read.load("/datascience/custom/tapad_index")
 
     val joined = users.join(tapad_index, tapad_index.col("device") === users.col("_c0"))
@@ -923,6 +926,8 @@ val records_common = the_join.select(col("identifier"))
 
 
     // Ahora levantamos los datos que estan en datascience keywords
+     /**
+    *
     val since =  6
     val nDays = 7
     val end = DateTime.now.minusDays(since)
@@ -939,13 +944,23 @@ val records_common = the_join.select(col("identifier"))
                     .option("basePath", "hdfs://rely-hdfs/datascience/data_keywords/")      
                     .load(lista_files: _*)
                     .withColumn("segmentos",concat_ws(",",col("segments"))).select("device_id","segmentos")
+                     *
+    */
+
+  // Ahora levantamos los datos que estan en datascience keywords
+    val segments = spark.read
+      .format("parquet")
+      .parquet("hdfs://rely-hdfs/datascience/data_keywords/day=20190227")
+      .withColumn("segmentos", concat_ws(",", col("segments")))
+      .select("device_id", "segmentos")
+      .withColumn("device_id", upper(col("device_id")))
 
     val finaljoin = segments.join(cookies,cookies.col("device") === segments.col("device_id"))
 
     finaljoin.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/AR/estaciones_servicio_MP_segmentos_TAPAD")
+      .save("/datascience/geo/AR/estaciones_servicio_MP_segmentos_TAPAD_2nd")
 
   }
 
