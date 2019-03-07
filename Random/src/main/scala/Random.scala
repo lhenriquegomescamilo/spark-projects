@@ -1239,7 +1239,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .load("/datascience/data_demo/join_google_analytics/")
       .withColumnRenamed("_c0", "device_id")
-    val cadreon = spark.read
+    val gender = spark.read
       .format("csv")
       .option("sep", " ")
       .load("/datascience/devicer/processed/ground_truth_*male")
@@ -1248,7 +1248,7 @@ val records_common = the_join.select(col("identifier"))
       .select("device_id", "label")
       .distinct()
 
-    ga.join(cadreon, Seq("device_id"))
+    ga.join(gender, Seq("device_id"))
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
