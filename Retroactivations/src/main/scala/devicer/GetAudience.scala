@@ -389,7 +389,7 @@ object GetAudience {
           val fs= FileSystem.get(conf)
           val os = fs.create(new Path("/datascience/ingester/ready/%s.meta".format(file_name)))
           val json_content = """{"filePath":"/datascience/devicer/processed/%s", "priority":%s, "partnerId":%s,
-                                 "queue":"%s", "jobid":%s, "description:"%s"}""".format(file_name,priority,as_view,
+                                 "queue":"%s", "jobid":%s, "description":"%s"}""".format(file_name,priority,as_view,
                                                                                         queue,jobid,description)
           os.write(json_content.getBytes)
           fs.close()

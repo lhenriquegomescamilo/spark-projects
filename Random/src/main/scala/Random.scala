@@ -1239,7 +1239,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("sep", "\t")
       .load("/datascience/data_demo/join_google_analytics/")
-      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c0", "device_id")
     val cadreon = spark.read
       .format("csv")
       .option("sep", "\t")
