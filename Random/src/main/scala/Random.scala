@@ -924,13 +924,13 @@ val records_common = the_join.select(col("identifier"))
     val since =  6
     val nDays = 7
     val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(("yyyyMMdd")))
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString("yyyyMMdd"))
 
 
     val lista_files = (0 until nDays)
           .map(end.minusDays(_))
           .map(        day =>    "hdfs://rely-hdfs/datascience/data_keywords/day=%s"            
-          .format(day.toString("yyyyMMdd"))      )
+          .format(day.toString("yyyyMMdd")))
 
     val segments = spark.read      
                     .format("parquet")      
