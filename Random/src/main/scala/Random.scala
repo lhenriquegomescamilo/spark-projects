@@ -1438,7 +1438,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    getSegmentsforUsers(spark)
+    //getSegmentsforUsers(spark)
     //get_att_stats(spark)
     spark.read
       .load("/datascience/data_partner/id_partner=892")
