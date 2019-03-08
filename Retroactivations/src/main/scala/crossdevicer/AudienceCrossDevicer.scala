@@ -1,6 +1,6 @@
 package main.scala.crossdevicer
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col}
+import org.apache.spark.sql.functions.{upper, col, coalesce}
 import org.apache.spark.sql.SaveMode
 
 /*
@@ -33,20 +33,29 @@ object AudienceCrossDevicer {
     val audience = spark.read.format("csv").option("sep", sep).load(path_audience)
                                                               .withColumnRenamed(column_name, "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
+                                                              .withColumnRenamed("_c2", "segments")
+                                                              .distinct()
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
+    val mapUDF = udf((dev_type: String) => typeMap(dev_type))
+    
     val db_data = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
                                               .filter(index_filter)
                                               .withColumn("index", upper(col("index")))
                                               .select("index", "device", "device_type")
+                                              .withColumnRenamed("index", "device_id")
+                                              .filter("device_type IN ('coo', 'ios', 'and')")
+                                              .withColumn("device_type", mapUDF(col("device_type")))
                                               
     // Here we do the cross-device per se.
-    val cross_deviced = db_data.join(audience, db_data.col("index")===audience.col("device_id"))
-                               //.select("index", "device", "device_type")
+    val cross_deviced = db_data.join(audience, Seq("device_id"), "right_outer")
+                               .withColumn("device_id",coalesce(col("device"), col("device_id")))
+                               .withColumn("device_type",coalesce(col("device_type"), col("_c0")))
+                               .select("device_type", "device_id", "segments")
     
     // Finally, we store the result obtained.
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
-    cross_deviced.write.format("csv").mode(SaveMode.Overwrite).save(output_path)
+    cross_deviced.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(output_path)
   }
   
   type OptionMap = Map[Symbol, String]
