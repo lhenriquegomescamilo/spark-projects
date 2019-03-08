@@ -88,14 +88,14 @@ object GenerateTriplets {
                                 .withColumn("count",lit(1))
         
         /// Obtenemos las keywords provenientes de la url                             
-        val df_url_keys = df.select("device_id","url_keys","country")
-                            .withColumnRenamed("url_keys","feature")
-                            .withColumn("count",lit(1))
+        //val df_url_keys = df.select("device_id","url_keys","country")
+        //                    .withColumnRenamed("url_keys","feature")
+        //                    .withColumn("count",lit(1))
         
         /// Unimos ambas keywords y las guardamos
-        val union = df_content_keys.unionAll(df_url_keys).withColumn("feature",explode(col("feature")))
+        //val union = df_content_keys.unionAll(df_url_keys).withColumn("feature",explode(col("feature")))
 
-        val grouped_data = union.groupBy("device_id","feature","country").agg(sum("count").as("count"))
+        val grouped_data = df_content_keys.groupBy("device_id","feature","country").agg(sum("count").as("count"))
 
         /// Filtramos las palabras que tiene longitud menor a 3 y guardamos
         grouped_data.where(length(col("feature")) > 3)
@@ -112,7 +112,7 @@ object GenerateTriplets {
         // Parseo de parametros
         val ndays = if (args.length > 0) args(0).toInt else 20
         
-        generate_triplets_segments(spark,ndays)
-        //generate_triplets_keywords(spark,ndays) 
+        //generate_triplets_segments(spark,ndays)
+        generate_triplets_keywords(spark,ndays) 
     }
   }
