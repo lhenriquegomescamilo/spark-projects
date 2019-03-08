@@ -1432,8 +1432,8 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
       
-      getSegmentsforTapad(spark)
-      //join_gender_google_analytics(spark)
+      //getSegmentsforTapad(spark)
+      join_gender_google_analytics(spark)
   }
 
 }
