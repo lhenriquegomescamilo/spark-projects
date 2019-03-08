@@ -86,6 +86,7 @@ object GenerateTriplets {
                                 //.withColumn("content_keys",split(col("content_keys"),","))
                                 .withColumnRenamed("content_keys","feature")
                                 .withColumn("count",lit(1))
+                                .withColumn("feature",explode(col("feature")))
         
         /// Obtenemos las keywords provenientes de la url                             
         //val df_url_keys = df.select("device_id","url_keys","country")
