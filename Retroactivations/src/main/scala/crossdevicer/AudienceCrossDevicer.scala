@@ -1,6 +1,6 @@
 package main.scala.crossdevicer
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col, coalesce}
+import org.apache.spark.sql.functions.{upper, col, coalesce, udf}
 import org.apache.spark.sql.SaveMode
 
 /*
@@ -37,8 +37,15 @@ object AudienceCrossDevicer {
                                                               .distinct()
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
+    val typeMap = Map(
+      "coo" -> "web",
+      "and" -> "android",
+      "ios" -> "ios",
+      "con" -> "TV",
+      "dra" -> "drawbridge"
+    )
     val mapUDF = udf((dev_type: String) => typeMap(dev_type))
-    
+
     val db_data = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
                                               .filter(index_filter)
                                               .withColumn("index", upper(col("index")))
