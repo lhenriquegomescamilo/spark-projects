@@ -1440,17 +1440,18 @@ val records_common = the_join.select(col("identifier"))
 
     //getSegmentsforUsers(spark)
     //get_att_stats(spark)
-    spark.read
-      .load("/datascience/data_partner/id_partner=892")
-      .select("device_id", "all_segments")
-      .withColumn("all_segments", concat_ws(",", col("all_segments")))
-      .groupBy("device_id")
-      .agg(collect_list("all_segments").as("all_segments"))
-      .withColumn("all_segments", concat_ws(",", col("all_segments")))
-      .write
-      .format("csv")
-      .option("sep", "\t")
-      .save("/datascience/custom/lanacion_users_with_segments")
+    // spark.read
+    //   .load("/datascience/data_partner/id_partner=892")
+    //   .select("device_id", "all_segments")
+    //   .withColumn("all_segments", concat_ws(",", col("all_segments")))
+    //   .groupBy("device_id")
+    //   .agg(collect_list("all_segments").as("all_segments"))
+    //   .withColumn("all_segments", concat_ws(",", col("all_segments")))
+    //   .write
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .save("/datascience/custom/lanacion_users_with_segments")
+    spark.read.format("csv").option("sep", "\t").load("/datascience/audiences/crossdeviced/taxo_gral_joint").filter("_c0 IN ('coo', 'ios', 'and')").withColumn("_c0", mapUDF(col("_c0"))).write.format("csv").option("sep", "\t").save("/datascience/audiences/crossdeviced/taxo_gral_joint_correct_types")
   }
 
 }
