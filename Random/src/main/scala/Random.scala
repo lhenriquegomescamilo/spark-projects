@@ -1434,12 +1434,33 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/device_id_days")
   }
 
+  def typeMapping(spark: SparkSession) = {
+    val typeMap = Map(
+      "coo" -> "web",
+      "and" -> "android",
+      "ios" -> "ios",
+      "con" -> "TV",
+      "dra" -> "drawbridge"
+    )
+    val mapUDF = udf((dev_type: String) => typeMap(dev_type))
+
+    spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/audiences/crossdeviced/taxo_gral_joint")
+      .filter("_c0 IN ('coo', 'ios', 'and')")
+      .withColumn("_c0", mapUDF(col("_c0")))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/audiences/crossdeviced/taxo_gral_joint_correct_types")
+  }
+
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    //getSegmentsforUsers(spark)
-    //get_att_stats(spark)
+    typeMapping(spark)
     // spark.read
     //   .load("/datascience/data_partner/id_partner=892")
     //   .select("device_id", "all_segments")
@@ -1451,7 +1472,7 @@ val records_common = the_join.select(col("identifier"))
     //   .format("csv")
     //   .option("sep", "\t")
     //   .save("/datascience/custom/lanacion_users_with_segments")
-    spark.read.format("csv").option("sep", "\t").load("/datascience/audiences/crossdeviced/taxo_gral_joint").filter("_c0 IN ('coo', 'ios', 'and')").withColumn("_c0", mapUDF(col("_c0"))).write.format("csv").option("sep", "\t").save("/datascience/audiences/crossdeviced/taxo_gral_joint_correct_types")
+
   }
 
 }
