@@ -1444,7 +1444,7 @@ val records_common = the_join.select(col("identifier"))
       .load("/datascience/data_partner/id_partner=892")
       .select("device_id", "all_segments")
       .withColumn("all_segments", concat_ws(",", col("all_segments")))
-      .groupby("device_id")
+      .groupBy("device_id")
       .agg(collect_list("all_segments").as("all_segments"))
       .withColumn("all_segments", concat_ws(",", col("all_segments")))
       .write
