@@ -847,19 +847,13 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     */
-  def getSegmentsforUsers(spark: SparkSession) = {
+ def getSegmentsforUsers(spark: SparkSession) = {
 
     //este es el resultado del crossdevice, se pidieron solo cookies
-    val estacion_xd = spark.read
-      .option("header", "false")
-      .option("delimiter", ",")
-      .csv(
-        "hdfs://rely-hdfs/datascience/geo/AR/estaciones_servicio_12_02_19_poimatcher_60d_DISTINCT"
-      )
-      .select(col("_c0"))
-      .distinct()
-      .withColumnRenamed("_c0", "device_id")
-      .withColumn("device_id", upper(col("device_id")))
+    val estacion_xd = spark.read.option("header", "false").option("delimiter",",")
+    .csv("hdfs://rely-hdfs/datascience/audiences/crossdeviced/estaciones_servicio_12_02_19_poimatcher_60d_DISTINCT_xd")
+    .select(col("_c1")).distinct()
+    .withColumnRenamed("_c1", "device_id")
 
       // Ahora levantamos los datos que estan en datascience keywords
     
@@ -881,30 +875,10 @@ val records_common = the_join.select(col("identifier"))
                     .load(lista_files: _*)
                     .withColumn("segmentos",concat_ws(",",col("segments"))).select("device_id","segmentos")
 
-    // Ahora levantamos los datos que estan en datascience keywords
-    //val today = DateTime.now()
-    //val lista_files = (1 until 2).map(today.minusDays(_))
-    //                    .map(day => "/datascience/data_keywords/day=%s"
-    //                      .format(day.toString("yyyyMMdd")))
-    // val segments = spark.read.format("parquet")
-    //                .option("basePath","hdfs://rely-hdfs/datascience/data_keywords/")
-    //                .load(lista_files: _*)
-    //                .withColumn("segmentos",concat_ws(",",col("segments")))
-    //                .select("device_id","segmentos")
-
-    // Ahora levantamos los datos que estan en datascience keywords
-    //val segments = spark.read
-    //  .format("parquet")
-    //  .parquet("hdfs://rely-hdfs/datascience/data_keywords/day=20190227")
-    //  .withColumn("segmentos", concat_ws(",", col("segments")))
-    //  .select("device_id", "segmentos")
-    //  .withColumn("device_id", upper(col("device_id")))
+ 
 
     val estajoin = segments.join(estacion_xd, Seq("device_id"))
 
-    // estajoin.write.format("csv")
-    // .mode(SaveMode.Overwrite)
-    //.save("/datascience/geo/AR/estaciones_servicio_12_02_19_with_segments")
 
     val seg_group = estajoin
       .withColumn("segment", explode(split(col("segmentos"), ",")))
@@ -915,7 +889,7 @@ val records_common = the_join.select(col("identifier"))
     seg_group.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/AR/estaciones_servicio_MP_segmentos_7d")
+      .save("/datascience/geo/AR/estaciones_servicio_MP_DRAW_segmentos_7d")
 
   }
 
