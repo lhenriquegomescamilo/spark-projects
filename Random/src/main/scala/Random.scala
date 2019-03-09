@@ -1460,7 +1460,35 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    typeMapping(spark)
+    val uniqueUDF = udf((segments: Seq[String]) => segments.toSet.toSeq)
+
+    val expansion = spark.read
+      .format("csv")
+      .option("sep", " ")
+      .load("/datascience/custom/users_combined.csv")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c1", "segments_xp")
+    val lanacion = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/custom/lanacion_users_with_segments")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c1", "segments")
+    expansion
+      .join(lanacion, Seq("device_id"), "right_outer")
+      .withColumn(
+        "segments",
+        concat(col("segments"), lit(","), col("segments_xp"))
+      )
+      .withColumn("segments", split(col("segments"), ","))
+      .withColumn("segments", uniqueUDF("segments"))
+      .select("device_id", "segments")
+      .withColumn("segments", explode(col("segments")))
+      .groupBy("segments")
+      .count()
+      .write
+      .save("/datascience/custom/lanacion_report/")
+    // typeMapping(spark)
     // spark.read
     //   .load("/datascience/data_partner/id_partner=892")
     //   .select("device_id", "all_segments")
