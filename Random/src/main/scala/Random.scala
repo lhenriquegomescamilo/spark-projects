@@ -1488,6 +1488,8 @@ val records_common = the_join.select(col("identifier"))
       .groupBy("segments")
       .count()
       .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
       .save("/datascience/custom/lanacion_report/")
     // typeMapping(spark)
     // spark.read
