@@ -1460,7 +1460,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    val uniqueUDF = udf((segments: Seq[Option[String]]) => segments.filter(_.isDefined).map(_.getOrElse("1")).toList.toSet.toSeq)
+    val uniqueUDF = udf((segments: Seq[String]) => segments.filter(_.length>0).toList.toSet.toSeq)
 
     val expansion = spark.read
       .format("csv")
