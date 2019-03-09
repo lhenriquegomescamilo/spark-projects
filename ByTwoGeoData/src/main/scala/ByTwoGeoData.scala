@@ -138,11 +138,13 @@ object ByTwoGeoData {
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
     val start = DateTime.now.minusDays(1) //formatter.parseDateTime("24/01/2019")
-    val day = start.toString(format)
-    //val days = (1 until 1).map(start.plusDays(_)).map(_.toString(format))
+    // val day = start.toString(format)
+    val days = (3 until 5).map(start.plusDays(_)).map(_.toString(format))
 
-    getSTData(spark, day)
+    days.foreach(day => getSTData(spark, day))
+    days.foreach(day => getByTwoData(spark, day))
+    // getSTData(spark, day)
     // days.map(day => getByTwoData(spark, day))
-    getByTwoData(spark, day)
+    // getByTwoData(spark, day)
   }
 }
