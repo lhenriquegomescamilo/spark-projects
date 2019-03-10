@@ -1466,6 +1466,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("sep", " ")
       .load("/datascience/custom/users_combined.csv")
+      .repartition(100)
       .withColumnRenamed("_c0", "device_id")
       .withColumnRenamed("_c1", "segments_xp")
     val lanacion = spark.read
