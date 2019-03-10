@@ -309,6 +309,9 @@ object GetAudience {
     var queries: List[Map[String, Any]] = List()
     var errorMessage = ""
 
+    // Here we define a function that might be used when asking for an IN in a multivalue column
+    spark.udf.register("array_intersect", (xs: Seq[String], ys: Seq[String]) => xs.intersect(ys).size>0)
+
     try{
       queries = getQueriesFromFile(spark, actual_path)
     } catch {

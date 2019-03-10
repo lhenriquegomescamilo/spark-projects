@@ -134,12 +134,14 @@ object ByTwoGeoData {
 
   def main(Args: Array[String]) {
     val spark = SparkSession.builder.appName("ByTwo data").getOrCreate()
+    val ndays = if (args.length > 0) args(0).toInt else 1
+    val since = if (args.length > 1) args(1).toInt else 1
 
     val format = "yyyyMMdd"
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
     val start = DateTime.now //formatter.parseDateTime("24/01/2019")
     // val day = start.toString(format)
-    val days = (1 until 2).map(start.minusDays(_)).map(_.toString(format))
+    val days = (since until since+ndays).map(start.minusDays(_)).map(_.toString(format))
 
     days.foreach(day => getSTData(spark, day))
     days.foreach(day => getByTwoData(spark, day))
