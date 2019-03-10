@@ -132,7 +132,7 @@ object ByTwoGeoData {
       .save("/datascience/data_bytwo")
   }
 
-  def main(Args: Array[String]) {
+  def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("ByTwo data").getOrCreate()
     val ndays = if (args.length > 0) args(0).toInt else 1
     val since = if (args.length > 1) args(1).toInt else 1
