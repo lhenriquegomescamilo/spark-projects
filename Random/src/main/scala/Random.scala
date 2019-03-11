@@ -1550,15 +1550,31 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/audiences/crossdeviced/taxo_gral_joint_correct_types")
   }
 
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-
-    get_safegraph_counts(spark)
-
-
   /**
-    val uniqueUDF = udf((segments: Seq[String]) => segments.filter(_.length>0).toList.toSet.toSeq)
+   * 
+   * 
+   * 
+   * 
+   *                  LA NACION - REPORT
+   * 
+   * 
+   * 
+   * 
+   **/
+  def getLanacionReport(spark: SparkSession) = {
+    typeMapping(spark)
+    spark.read
+      .load("/datascience/data_partner/id_partner=892")
+      .select("device_id", "all_segments")
+      .withColumn("all_segments", concat_ws(",", col("all_segments")))
+      .groupBy("device_id")
+      .agg(collect_list("all_segments").as("all_segments"))
+      .withColumn("all_segments", concat_ws(",", col("all_segments")))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/lanacion_users_with_segments")
+
 
     val expansion = spark.read
       .format("csv")
@@ -1590,19 +1606,13 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/lanacion_report/")
-    // typeMapping(spark)
-    // spark.read
-    //   .load("/datascience/data_partner/id_partner=892")
-    //   .select("device_id", "all_segments")
-    //   .withColumn("all_segments", concat_ws(",", col("all_segments")))
-    //   .groupBy("device_id")
-    //   .agg(collect_list("all_segments").as("all_segments"))
-    //   .withColumn("all_segments", concat_ws(",", col("all_segments")))
-    //   .write
-    //   .format("csv")
-    //   .option("sep", "\t")
-    //   .save("/datascience/custom/lanacion_users_with_segments")
-**/
+  }
+
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
+
+    get_safegraph_counts(spark)
   }
 
 }
