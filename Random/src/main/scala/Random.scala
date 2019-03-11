@@ -1554,6 +1554,10 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
+    get_safegraph_counts(spark)
+
+
+  /**
     val uniqueUDF = udf((segments: Seq[String]) => segments.filter(_.length>0).toList.toSet.toSeq)
 
     val expansion = spark.read
@@ -1598,7 +1602,7 @@ val records_common = the_join.select(col("identifier"))
     //   .format("csv")
     //   .option("sep", "\t")
     //   .save("/datascience/custom/lanacion_users_with_segments")
-
+**/
   }
 
 }
