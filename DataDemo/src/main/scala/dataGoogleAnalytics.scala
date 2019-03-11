@@ -62,6 +62,7 @@ object DataGoogleAnalytics {
           spark.read
             .format("parquet")
             .load("/datascience/data_audiences_p/day=%s".format(x))
+            .withColumn("day", lit(x))
             .select("device_id", "url", "day", "country")
       )
 
