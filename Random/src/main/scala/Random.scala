@@ -1031,20 +1031,20 @@ val records_common = the_join.select(col("identifier"))
     //number of users by day of week, note that we need the week number (we can have more mondays than fridays in a month)
     val user_week_day = df_safegraph
                           .select(col("ad_id"), col("Weekday"), col("Week"))
-                          .distinct()).groupBy("Weekday","Week").count()     
+                          .distinct().groupBy("Weekday","Week").count()     
 
     println("Users by Weekday",user_week_day)
 
     //number of users by hour by weekday
     val user_hour = df_safegraph
                           .select(col("ad_id"), col("Hour"), col("Weekday"), col("Week"))
-                          .distinct()).groupBy("Hour","Weekday").count()     
+                          .distinct().groupBy("Hour","Weekday").count()     
 
     user_hour.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_hours_11_03_60d") 
 
     val user_timestamp = df_safegraph
                           .select(col("ad_id"), col("Week"), col("latitude"), col("longitude"), col("utc_timestamp"))
-                          .distinct())
+                          .distinct()
                           .groupBy("ad_id", "id_type", "latitude", "longitude")  
                           .agg(collect_list(col("utc_timestamp"))).as("time_pings"))   
                           .withColumn("n_timestamps", size(col("time_pings")))      
@@ -1054,7 +1054,7 @@ val records_common = the_join.select(col("identifier"))
 
     val user_pings = df_safegraph
                           .select(col("ad_id"), col("Week"), col("utc_timestamp"))
-                          .distinct())
+                          .distinct()
                           .groupBy("ad_id")  
                           .agg(count("utc_timestamp").alias("signals"))  
                              
