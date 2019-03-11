@@ -971,6 +971,100 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
+
+  /**
+    *
+    *
+    *
+    * Get Data for Safegraph to evaluate quality
+    *
+    *
+    *
+    */
+
+   def get_safegraph_counts(spark: SparkSession) = {
+    //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
+    // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
+    // Also we generate a new column call 'geocode' that will be used for the join
+   
+    //hardcoded variables
+    val nDays = 60
+    val since = 2
+    val country ="argentina"
+
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+   // Get the days to be loaded
+    val format = "yyyy/MM/dd"
+    val end   = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
+    
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/data/geo/safegraph/"
+
+    // Now we obtain the list of hdfs folders to be read
+
+    val hdfs_files = days.map(day => path+"%s/".format(day))
+                            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
+
+    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
+                                  .dropDuplicates("ad_id","latitude","longitude")
+                                  .filter("country = '%s'".format(country))
+                                  .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
+                                  .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+                                  .withColumn("Hour", date_format(col("Time"), "HH"))
+                                  .withColumn("Day", date_format(col("Time"), "d")
+                                  .withColumn("Week", date_format(col("Time"), "w"))
+                                  .withColumn("Weekday", date_format(col("Time"), "EEEE"))
+                                  .withColumn("Month", date_format(col("Time"), "M"))
+                                  
+                                  
+    //number of users by day of month                              
+    val user_day = df_safegraph
+                          .select(col("ad_id"), col("Day"), col("Month"))
+                          .distinct()).groupBy("Month","Day").count()     
+
+    println("Users by Day",user_day)
+
+    //number of users by day of week, note that we need the week number (we can have more mondays than fridays in a month)
+    val user_week_day = df_safegraph
+                          .select(col("ad_id"), col("Weekday"), col("Week"))
+                          .distinct()).groupBy("Weekday","Week").count()     
+
+    println("Users by Weekday",user_week_day)
+
+    //number of users by hour by weekday
+    val user_hour = df_safegraph
+                          .select(col("ad_id"), col("Hour"), col("Weekday"), col("Week"))
+                          .distinct()).groupBy("Hour","Weekday").count()     
+
+    user_hour.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_hours_11_03_60d") 
+
+    val user_timestamp = df_safegraph
+                          .select(col("ad_id"), col("Week"), col("latitude"), col("longitude"), col("utc_timestamp"))
+                          .distinct())
+                          .groupBy("ad_id", "id_type", "latitude", "longitude")  
+                          .agg(collect_list(col("utc_timestamp"))).as("time_pings"))   
+                          .withColumn("n_timestamps", size(col("time_pings")))      
+
+    user_timestamp.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_timestamps_11_03_60d") 
+
+
+    val user_pings = df_safegraph
+                          .select(col("ad_id"), col("Week"), col("utc_timestamp"))
+                          .distinct())
+                          .groupBy("ad_id")  
+                          .agg(count("utc_timestamp").alias("signals"))  
+                             
+
+    user_pings.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_pings_11_03_60d") 
+  
+
+   
+  }
+
   /**
     *
     *
