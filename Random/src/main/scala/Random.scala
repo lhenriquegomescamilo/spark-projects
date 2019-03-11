@@ -1015,7 +1015,7 @@ val records_common = the_join.select(col("identifier"))
                                   .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
                                   .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
                                   .withColumn("Hour", date_format(col("Time"), "HH"))
-                                  .withColumn("Day", date_format(col("Time"), "d")
+                                  .withColumn("Day", date_format(col("Time"), "d"))
                                   .withColumn("Week", date_format(col("Time"), "w"))
                                   .withColumn("Weekday", date_format(col("Time"), "EEEE"))
                                   .withColumn("Month", date_format(col("Time"), "M"))
@@ -1024,7 +1024,7 @@ val records_common = the_join.select(col("identifier"))
     //number of users by day of month                              
     val user_day = df_safegraph
                           .select(col("ad_id"), col("Day"), col("Month"))
-                          .distinct()).groupBy("Month","Day").count()     
+                          .distinct().groupBy("Month","Day").count()     
 
     println("Users by Day",user_day)
 
@@ -1584,7 +1584,7 @@ val records_common = the_join.select(col("identifier"))
       .withColumn("segments", uniqueUDF(col("segments")))
       .select("device_id", "segments")
       .withColumn("segments", explode(col("segments")))
-      .groupBy("segments")
+      .groupBy("segments")  
       .count()
       .write
       .format("csv")
