@@ -386,13 +386,19 @@ object GetAudience {
           val description = queries(0)("description")
           file_name = if(queries.length > 1) file_name+"_grouped" else file_name
           
-          
+          if (xd.toString.toBoolean){
+            val file_path = "/datascience/audiences/crossdeviced/"
+            file_name = file_name + "_xd"
+          }
+          else{
+            val file_path = "/datascience/devicer/processed/"
+          }
           val conf = new Configuration()
           conf.set("fs.defaultFS", "hdfs://rely-hdfs")
           val fs= FileSystem.get(conf)
           val os = fs.create(new Path("/datascience/ingester/ready/%s.meta".format(file_name)))
-          val json_content = """{"filePath":"/datascience/devicer/processed/%s", "priority":%s, "partnerId":%s,
-                                 "queue":"%s", "jobid":%s, "description":"%s"}""".format(file_name,priority,as_view,
+          val json_content = """{"filePath":"%s/%s", "priority":%s, "partnerId":%s,
+                                 "queue":"%s", "jobid":%s, "description":"%s"}""".format(file_path,file_name,priority,as_view,
                                                                                         queue,jobid,description)
           os.write(json_content.getBytes)
           fs.close()
