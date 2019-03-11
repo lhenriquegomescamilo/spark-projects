@@ -1045,7 +1045,7 @@ val records_common = the_join.select(col("identifier"))
     val user_timestamp = df_safegraph
                           .select(col("ad_id"), col("Week"), col("latitude"), col("longitude"), col("utc_timestamp"))
                           .distinct()
-                          .groupBy("ad_id", "id_type", "latitude", "longitude")  
+                          .groupBy("ad_id", "latitude", "longitude")  
                           .agg(collect_list(col("utc_timestamp"))).as("time_pings")   
                           .withColumn("n_timestamps", size(col("time_pings")))     
 
