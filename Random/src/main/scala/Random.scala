@@ -1046,7 +1046,7 @@ val records_common = the_join.select(col("identifier"))
                           .select(col("ad_id"), col("Week"), col("latitude"), col("longitude"), col("utc_timestamp"))
                           .distinct()
                           .groupBy("ad_id", "id_type", "latitude", "longitude")  
-                          .agg(collect_list(col("utc_timestamp"))).as("time_pings"))   
+                          .agg(collect_list(col("utc_timestamp"))).as("time_pings")   
                           .withColumn("n_timestamps", size(col("time_pings"))     
 
     user_timestamp.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_timestamps_11_03_60d") 
