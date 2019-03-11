@@ -1562,6 +1562,8 @@ val records_common = the_join.select(col("identifier"))
    * 
    **/
   def getLanacionReport(spark: SparkSession) = {
+
+    /**
     typeMapping(spark)
     spark.read
       .load("/datascience/data_partner/id_partner=892")
@@ -1606,6 +1608,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/lanacion_report/")
+       **/
   }
 
   def main(args: Array[String]) {
