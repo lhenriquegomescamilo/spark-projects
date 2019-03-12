@@ -1058,8 +1058,9 @@ val records_common = the_join.select(col("identifier"))
     val user_timestamp = df_safegraph
                           .select(col("ad_id"), col("latitude"), col("longitude"), col("utc_timestamp"))
                           .distinct()
-                          .groupBy("ad_id", "latitude", "longitude")  
-                          .withColumn("time_pings",concat_ws(",",col("utc_timestamp")))
+                          .withColumn("time_pings",concat_ws(",",col("utc_timestamp")))                        
+                          .groupBy("ad_id", "latitude", "longitude","time_pings")                           
+                          .agg(count("utc_timestamp").alias("signals"))
 
 //.withColumn("segmentos",concat_ws(",",col("segments"))).select("device_id","segmentos")
 
