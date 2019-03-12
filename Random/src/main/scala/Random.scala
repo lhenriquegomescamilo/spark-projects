@@ -1042,16 +1042,8 @@ val records_common = the_join.select(col("identifier"))
 
     user_hour.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_hours_11_03_60d") 
 
-    val user_timestamp = df_safegraph
-                          .select(col("ad_id"), col("Week"), col("latitude"), col("longitude"), col("utc_timestamp"))
-                          .distinct()
-                          .groupBy("ad_id", "latitude", "longitude")  
-                          .agg(collect_list(col("utc_timestamp")).alias("time_pings"))   
-                          .withColumn("n_timestamps", size(col("time_pings")))     
 
-    user_timestamp.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_timestamps_11_03_60d") 
-
-
+    //users and number of timestamps per user
     val user_pings = df_safegraph
                           .select(col("ad_id"), col("Week"), col("utc_timestamp"))
                           .distinct()
@@ -1060,6 +1052,19 @@ val records_common = the_join.select(col("identifier"))
                              
 
     user_pings.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_pings_11_03_60d") 
+
+
+    //users and timestamps for that user
+    val user_timestamp = df_safegraph
+                          .select(col("ad_id"), col("latitude"), col("longitude"), col("utc_timestamp"))
+                          .distinct()
+                          .groupBy("ad_id", "latitude", "longitude")  
+                          .withColumn("time_pings",concat_ws(",",col("utc_timestamp")))
+
+//.withColumn("segmentos",concat_ws(",",col("segments"))).select("device_id","segmentos")
+
+    user_timestamp.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_timestamps_11_03_60d") 
+
   
 
    
