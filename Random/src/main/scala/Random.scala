@@ -1071,6 +1071,32 @@ val records_common = the_join.select(col("identifier"))
    
   }
 
+def get_tapad_vs_drawbridge(spark: SparkSession) = {
+
+      val tapad_index = spark.read.load("/datascience/custom/tapad_index").withColumn("device", upper(col("device")))
+      val draw_index = spark.read.load("/datascience/crossdevice/double_index").withColumn("device", upper(col("device")))
+
+
+      val overlap = tapad_index.select(col("device")).join(draw_index,Seq("device"))
+      overlap.groupBy("device_type").agg(countDistinct("device"))
+        .write.format("csv").mode(SaveMode.Overwrite)
+        .save("/datascience/geo/overlap_tapad_drawbridge") 
+
+
+      val only_tapad = tapad_index.except(draw_index)
+
+      only_tapad.groupBy("device_type").agg(countDistinct("device"))
+        .write.format("csv").mode(SaveMode.Overwrite)
+        .save("/datascience/geo/only_tapad") 
+
+
+      val only_draw = draw_index.except(tapad_index)
+
+      only_draw.groupBy("device_type").agg(countDistinct("device"))
+        .write.format("csv").mode(SaveMode.Overwrite)
+        .save("/datascience/geo/only_draw") 
+
+}
   /**
     *
     *
@@ -1620,8 +1646,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-
-    get_safegraph_counts(spark)
+  get_tapad_vs_drawbridge(spark)
+ 
   }
 
 }
