@@ -386,12 +386,13 @@ object GetAudience {
           val description = queries(0)("description")
           file_name = if(queries.length > 1) file_name+"_grouped" else file_name
           
+          var file_path = ""
           if (xd.toString.toBoolean){
-            val file_path = "/datascience/audiences/crossdeviced/"
+            file_path = "/datascience/audiences/crossdeviced/"
             file_name = file_name + "_xd"
           }
           else{
-            val file_path = "/datascience/devicer/processed/"
+            file_path = "/datascience/devicer/processed/"
           }
           val conf = new Configuration()
           conf.set("fs.defaultFS", "hdfs://rely-hdfs")
