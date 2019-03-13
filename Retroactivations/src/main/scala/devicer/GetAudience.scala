@@ -338,7 +338,7 @@ object GetAudience {
       val nDays = queries(0)("ndays")
       val pipeline = queries(0)("pipeline")
       val commonFilter = queries(0)("common").toString
-      println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d".format(file, partner_ids, since, nDays))
+      println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s".format(file, partner_ids, since, nDays, commonFilter))
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
       // Now we finally get the data that will be used
