@@ -154,7 +154,8 @@ object DataGoogleAnalytics {
       val distributions = spark.read
         .format("csv")
         .option("header", "true")
-        .load("/datascience/data_demo/sites_distribution.csv")
+        .option("sep", "\t")
+        .load("/data/metadata/20190115-paths.tsv")
         .withColumnRenamed("DOMAIN", "url")
         .withColumn(
           "url",
