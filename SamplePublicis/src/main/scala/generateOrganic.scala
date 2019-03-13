@@ -164,7 +164,7 @@ object generateOrganic {
         .format(runType, DateTime.now.toString("yyyyMMdd"))
     userSegments.write
       .format("json")
-      .option("codec", "org.apache.hadoop.io.compress.BZip2Codec")
+      .option("compression", "bzip2")
       //.option("sep", "\t")
       //.option("header", true)
       .mode(SaveMode.Overwrite)
