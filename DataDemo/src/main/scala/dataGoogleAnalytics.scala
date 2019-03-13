@@ -180,6 +180,6 @@ object DataGoogleAnalytics {
     // Parseo de parametros
     val ndays = if (args.length > 0) args(0).toInt else 30
 
-    get_data_google_analytics(spark, ndays)
+    get_data_google_analytics_path(spark, ndays)
   }
 }
