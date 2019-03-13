@@ -175,21 +175,21 @@ object generateOrganic {
     val files = hdfs.listStatus(new Path(pathToJson))
     val originalPath = files.map(_.getPath())
 
-    val paths = originalPath.par
-      .filter(!_.toString.contains("_SUCCESS"))
-      .foreach(
-        e =>
-          hdfs.rename(
-            e,
-            new Path(
-              pathToJson + "/retargetly_MX_memb_%s_%s_%s.tsv.bz".format(
-                runType,
-                e.toString.split("/").last.split("-")(1),
-                DateTime.now.toString("yyyyMMdd")
-              )
-            )
-          )
-      )
+    // originalPath.par
+    //   .filter(!_.toString.contains("_SUCCESS"))
+    //   .foreach(
+    //     e =>
+    //       hdfs.rename(
+    //         e,
+    //         new Path(
+    //           pathToJson + "/retargetly_MX_memb_%s_%s_%s.json.bz".format(
+    //             runType,
+    //             e.toString.split("/").last.split("-")(1),
+    //             DateTime.now.toString("yyyyMMdd")
+    //           )
+    //         )
+    //       )
+    //   )
 
   }
   def main(args: Array[String]) {
