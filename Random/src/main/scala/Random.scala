@@ -1455,9 +1455,7 @@ def get_tapad_vs_drawbridge(spark: SparkSession) = {
 
   def join_gender_google_analytics_AR(spark: SparkSession) {
     val ga = spark.read
-      .format("csv")
-      .load("/datascience/data_demo/join_google_analytics/")
-      .withColumnRenamed("_c1", "device_id")
+      .load("/datascience/data_demo/join_google_analytics_path/country=AR")
     val gender = spark.read
       .format("csv")
       .option("sep", "\t")
