@@ -1453,6 +1453,26 @@ def get_tapad_vs_drawbridge(spark: SparkSession) = {
       .save("/datascience/data_demo/gender_google_analytics")
   }
 
+  def join_gender_google_analytics_AR(spark: SparkSession) {
+    val ga = spark.read
+      .format("csv")
+      .load("/datascience/data_demo/join_google_analytics/")
+      .withColumnRenamed("_c1", "device_id")
+    val gender = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/equifax_demo_AR_grouped")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "label")
+      .select("device_id", "label")
+
+    ga.join(gender, Seq("device_id"))
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/gender_google_analytics_AR")
+  }
+
   def get_google_analytics_stats(spark: SparkSession) {
     val cols = (2 to 9).map("_c" + _).toSeq
     val data = spark.read
@@ -1646,7 +1666,7 @@ def get_tapad_vs_drawbridge(spark: SparkSession) = {
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-  get_tapad_vs_drawbridge(spark)
+      join_gender_google_analytics_AR(spark)
  
   }
 
