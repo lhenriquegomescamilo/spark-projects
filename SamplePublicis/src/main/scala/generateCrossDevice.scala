@@ -57,7 +57,7 @@ object generateCrossDevice {
 
     joint.write
       .format("com.databricks.spark.csv")
-      .option("codec", "org.apache.hadoop.io.compress.BZip2Codec")
+      .option("compression", "bzip2")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
       .save(pathToJson)

@@ -60,6 +60,6 @@ object generateSample {
 
     println("\n\nPUBLICIS LOG: "+pathToJson+"\n\n")
     generateOrganic.generate_organic(spark, ndays, runType)
-    // generateCrossDevice.generate_organic_xd(spark, pathToJson, runType)
+    generateCrossDevice.generate_organic_xd(spark, pathToJson, runType)
   }
 }
