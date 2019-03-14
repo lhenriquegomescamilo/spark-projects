@@ -1664,7 +1664,7 @@ def get_tapad_vs_drawbridge(spark: SparkSession) = {
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-      join_gender_google_analytics_AR(spark)
+      get_att_stats(spark)
  
   }
 
