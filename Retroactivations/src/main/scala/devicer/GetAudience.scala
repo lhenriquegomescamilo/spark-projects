@@ -259,7 +259,10 @@ object GetAudience {
   * the file_name is extracted from the file path.
   **/
   def getMultipleAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String, commonFilter: String = "") = {
+    println("DEVICER LOG:\n\tCommon filter: %s\n\tCommon filter length: %d".format(commonFilter, commonFilter.length))
     val filtered = if (commonFilter.length>0) data.filter(commonFilter) else data
+    println("\n\n\n\n")
+    filtered.explain()
 
     // First we register the table
     filtered.createOrReplaceTempView("data")
@@ -276,8 +279,7 @@ object GetAudience {
 
     // Finally we store the results
     val results = spark.sql(final_query)
-    println("\n\n\n\n")
-    results.explain()
+    
     results.withColumn("segments", columns.reduce(concatUDF(_, _)))
            .filter(length(col("segments"))>0)
            .select("device_type", "device_id", "segments")
