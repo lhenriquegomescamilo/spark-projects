@@ -1504,26 +1504,26 @@ def get_tapad_vs_drawbridge(spark: SparkSession) = {
     *
    **/
   def get_att_stats(spark: SparkSession) = {
-    // val data = spark.read
-    //   .load("/datascience/sharethis/historic/day=2018*/")
-    //   .filter("isp LIKE '%att%' AND city = 'san francisco'")
-    //   .select("estid", "url", "os", "ip", "utc_timestamp")
-    //   .withColumn("utc_timestamp", col("utc_timestamp").substr(0, 10))
-    //   .withColumnRenamed("utc_timestamp", "day")
-    val data = spark.read.load("/datascience/custom/metrics_att_sharethis")
+    val data = spark.read
+      .load("/datascience/sharethis/historic/day=201902*/")
+      .filter("isp LIKE '%att%' AND city = 'san francisco'")
+      .select("estid", "url", "os", "ip", "utc_timestamp")
+      .withColumn("utc_timestamp", col("utc_timestamp").substr(0, 10))
+      .withColumnRenamed("utc_timestamp", "day")
+    // val data = spark.read.load("/datascience/custom/metrics_att_sharethis")
     data.persist()
-    // data.write
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/custom/metrics_att_sharethis")
+    data.write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/metrics_att_sharethis")
 
-    // println("Total number of rows: %s".format(data.count()))
-    // println(
-    //   "Total Sessions (without duplicates): %s"
-    //     .format(data.select("url", "estid").distinct().count())
-    // )
-    // println(
-    //   "Total different ids: %s".format(data.select("estid").distinct().count())
-    // )
+    println("Total number of rows: %s".format(data.count()))
+    println(
+      "Total Sessions (without duplicates): %s"
+        .format(data.select("url", "estid").distinct().count())
+    )
+    println(
+      "Total different ids: %s".format(data.select("estid").distinct().count())
+    )
     println("Mean ids per day:")
     data.groupBy("day").count().show()
     data
