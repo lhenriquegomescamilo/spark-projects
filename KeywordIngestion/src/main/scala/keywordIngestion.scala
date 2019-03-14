@@ -127,6 +127,7 @@ object keywordIngestion {
           regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
         )
       .drop("count")
+      .dropDuplicates("url")
 
     df
   }
@@ -208,7 +209,7 @@ object keywordIngestion {
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
     //val df_b = spark.sparkContext.broadcast(df)
     val joint = df_audiences
-      .join(URLkeys, Seq("url"), "left_outer")
+      .join(broadcast(URLkeys), Seq("url"), "left_outer")
       .na
       .fill("")
       .groupBy("device_id", "device_type", "country")
