@@ -121,7 +121,11 @@ object keywordIngestion {
       .withColumnRenamed("_c1", "content_keys")
       .withColumn("content_keys", split(col("content_keys"), "\\|"))
       .withColumnRenamed("_c2", "count")
-      .withColumnRenamed("_c3", "country")
+      .withColumnRenamed("_c3", "country_web")
+      .withColumn(
+          "url",
+          regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+        )
       .drop("count")
 
     df
@@ -158,21 +162,16 @@ object keywordIngestion {
         "segments",
         udfGetSegments(col("segments"), col("all_segments"), col("event_type"))
       ) // En este punto juntamos todos los segmentos en una misma columna
-      .withColumn("url_keys", regexp_replace(col("url"), """https*://""", ""))
       .withColumn(
-        "url_keys",
-        regexp_replace(col("url_keys"), """[/,=&\.\(\) \|]""", " , ")
-      )
-      .withColumn("url_keys", regexp_replace(col("url_keys"), """%..""", " , "))
-      .withColumn("url_keys", split(col("url_keys"), " , "))
-      .withColumn("url_keys", udfFilter(col("url_keys"))) // En esta parte nos quedamos con las keywords de cada sitio
+          "url",
+          regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+        )
       .select(
         "device_id",
         "device_type",
         "url",
         "country",
-        "segments",
-        "url_keys"
+        "segments"
       )
   }
 
@@ -209,16 +208,14 @@ object keywordIngestion {
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
     //val df_b = spark.sparkContext.broadcast(df)
     val joint = df_audiences
-      .join(URLkeys, Seq("country", "url"), "left_outer")
+      .join(URLkeys, Seq("url"), "left_outer")
       .na
       .fill("")
       .groupBy("device_id", "device_type", "country")
       .agg(
         collect_list("segments").as("segments"),
-        collect_list("content_keys").as("content_keys"),
-        collect_list("url_keys").as("url_keys")
+        collect_list("content_keys").as("content_keys")
       )
-      .withColumn("url_keys", flatten(col("url_keys")))
       .withColumn("content_keys", flatten(col("content_keys")))
       .withColumn("segments", flatten(col("segments")))
       .withColumn("day", lit(today)) // Agregamos el dia
