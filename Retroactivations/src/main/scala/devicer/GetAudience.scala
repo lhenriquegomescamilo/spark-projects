@@ -95,6 +95,9 @@ object GetAudience {
                           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
 
+    println("DEVICER LOG: list of files to be loaded.")
+    hdfs_files.foreach(println)
+
     df
   }
 
@@ -338,7 +341,7 @@ object GetAudience {
       val partner_ids = queries(0)("partner_id")
       val since = queries(0)("since")
       val nDays = queries(0)("ndays")
-      val pipeline = queries(0)("pipeline")
+      val pipeline = queries(0)("pipeline").toString.toInt
       val commonFilter = queries(0)("common").toString
       println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d".format(file, partner_ids, since, nDays, commonFilter, pipeline))
 
