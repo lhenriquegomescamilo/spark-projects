@@ -202,7 +202,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
         "spark.kryo.registrator",
         classOf[GeoSparkVizKryoRegistrator].getName
       )
-      .config("geospark.join.numpartition", 20)
+      .config("geospark.join.numpartition", 6)
       .appName("match_POI_geospark")
       .getOrCreate()
 
