@@ -202,7 +202,7 @@ object keywordIngestion {
     val flatten = udf((xs: Seq[Seq[String]]) => xs.flatten)
 
     // Primero levantamos el dataframe que tiene toda la data de los usuarios con sus urls
-    val URLkeys = getKeywordsByURL(spark, ndays, today, since)//.repartition(100)
+    val URLkeys = getKeywordsByURL(spark, ndays, today, since).repartition(100)
 
     // Ahora levantamos la data de las audiencias
     val df_audiences = getAudienceData(spark, today)
@@ -210,7 +210,7 @@ object keywordIngestion {
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
     //val df_b = spark.sparkContext.broadcast(df)
     val joint = df_audiences
-      .join(broadcast(URLkeys), Seq("url"), "left_outer")
+      .join(URLkeys, Seq("url"), "left_outer")
       .na
       .fill("")
       .groupBy("device_id", "device_type", "country")
