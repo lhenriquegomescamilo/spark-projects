@@ -9,7 +9,8 @@ import org.apache.spark.sql.functions.{
   collect_list,
   split,
   size,
-  lit
+  lit,
+  concat_ws
 }
 import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.joda.time.Days
@@ -220,7 +221,7 @@ object keywordIngestion {
       )
       .withColumn("content_keys", flatten(col("content_keys")))
       .withColumn("segments", flatten(col("segments")))
-      .withColumn("url", flatten(col("url")))
+      .withColumn("url", concat_ws("|", col("url")))
       .withColumn("day", lit(today)) // Agregamos el dia
 
     // Guardamos la data en formato parquet
