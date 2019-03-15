@@ -111,6 +111,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     //getting POIs
     val df_pois_final = get_POI_coordinates(spark, POI_file_name)
+    broadcast(df_pois_final)
     df_pois_final.createOrReplaceTempView("pointtable")
 
     var pointDf1 = spark.sql(
