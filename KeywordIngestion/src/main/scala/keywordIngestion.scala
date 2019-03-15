@@ -159,7 +159,7 @@ object keywordIngestion {
     // Finalme
     spark.read
       .parquet("/datascience/data_audiences_p/day=%s".format(today)) // Leemos la data
-      .repartition(500)
+      //.repartition(500)
       .withColumn(
         "segments",
         udfGetSegments(col("segments"), col("all_segments"), col("event_type"))
@@ -202,7 +202,7 @@ object keywordIngestion {
     val flatten = udf((xs: Seq[Seq[String]]) => xs.flatten)
 
     // Primero levantamos el dataframe que tiene toda la data de los usuarios con sus urls
-    val URLkeys = getKeywordsByURL(spark, ndays, today, since).repartition(100)
+    val URLkeys = getKeywordsByURL(spark, ndays, today, since)//.repartition(100)
 
     // Ahora levantamos la data de las audiencias
     val df_audiences = getAudienceData(spark, today)
