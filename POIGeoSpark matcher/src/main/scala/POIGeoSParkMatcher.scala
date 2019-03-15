@@ -125,7 +125,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     //getting safegraph users
     val df_users = get_safegraph_data(spark, safegraph_days, country)
-    df_users.repartition(50).createOrReplaceTempView("pointtable")
+    broadcast(df_users)
+    df_users.createOrReplaceTempView("pointtable")
     
     var pointDf2 = spark.sql(
       """select ad_id,
