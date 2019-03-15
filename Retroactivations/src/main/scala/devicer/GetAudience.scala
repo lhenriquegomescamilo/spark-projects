@@ -372,7 +372,7 @@ object GetAudience {
       if (xd.toString.toBoolean){
         val object_xd = AudienceCrossDevicer.cross_device(spark,
                                   "/datascience/devicer/processed/"+file_name,
-                                            "index_type IN ('coo')",
+                                            "index_type IN ('coo', 'and')",
                                             "\t", "_c1")
       }
 
