@@ -224,9 +224,10 @@ object GetAudience {
                   data: DataFrame, 
                   queries: List[Map[String, Any]], 
                   fileName: String, 
-                  dropDuplicates: Boolean = false) = { 
+                  dropDuplicates: Boolean = false, 
+                  commonFilter: String = "") = { 
     println("DEVICER LOG:\n\tCommon filter: %s\n\tCommon filter length: %d".format(commonFilter, commonFilter.length))
-    val filtered = if (commonFilter.length>0) data.filter(commonFilter) else data
+    val filtered = if (commonFilter.length>0 && queries.length>5) data.filter(commonFilter) else data
     println("\n\n\n\n")
     filtered.explain()
     filtered.persists("MEMORY_AND_DISK")
