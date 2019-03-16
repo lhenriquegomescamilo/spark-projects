@@ -36,11 +36,13 @@ object GetDataCustomAudience {
                           .withColumn("all_segments", split(col("all_segments"), "\u0001"))
                           .withColumn("third_party", split(col("third_party"), "\u0001"))
                           .withColumn("segments", split(col("segments"), "\u0001"))
+                          .withColumn("tags", split(col("tags"), "\u0001"))
+                          .withColumn("app_installed", split(col("app_installed"), "\u0001"))
       
       // store the results.
       ready.coalesce(40).write.mode("append")
            .partitionBy("day", "country")
-           .parquet("/datascience/data_audiences_p/".format(day))
+           .parquet("/datascience/data_audiences/".format(day))
   }
   
   /**
@@ -58,8 +60,8 @@ object GetDataCustomAudience {
     // Here we set the list of values that will be considered
     val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive")
     val countries = List("AR", "MX", "CL", "CO", "PE", "US", "BR", "UY", "EC", "BO")
-    val columns = List("device_id", "event_type", "country", "segments", "third_party", 
-                       "all_segments", "url", "title", "category", "activable", "device_type")
+    val columns = List("device_id", "event_type", "country", "segments", "third_party", "version", "tags", "id_partner",
+                       "all_segments", "url", "activable", "device_type", "app_installed", "timestamp")
     
     // Now we get the list of days to be downloaded
     val format = "yyyy/MM/dd"
