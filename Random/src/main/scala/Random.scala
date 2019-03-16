@@ -971,7 +971,6 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
-
   /**
     *
     *
@@ -981,122 +980,154 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     */
-
-   def get_safegraph_counts(spark: SparkSession) = {
+  def get_safegraph_counts(spark: SparkSession) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
-   
+
     //hardcoded variables
     val nDays = 60
     val since = 2
-    val country ="argentina"
+    val country = "argentina"
 
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
-   // Get the days to be loaded
+    // Get the days to be loaded
     val format = "yyyy/MM/dd"
-    val end   = DateTime.now.minusDays(since.toInt)
-    val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
-    
+    val end = DateTime.now.minusDays(since.toInt)
+    val days =
+      (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
+
     // Now we obtain the list of hdfs folders to be read
     val path = "/data/geo/safegraph/"
 
     // Now we obtain the list of hdfs folders to be read
 
-    val hdfs_files = days.map(day => path+"%s/".format(day))
-                            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
+    val hdfs_files = days
+      .map(day => path + "%s/".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(day => day + "*.gz")
 
-    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
-                                  .dropDuplicates("ad_id","latitude","longitude")
-                                  .filter("country = '%s'".format(country))
-                                  .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
-                                  .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-                                  .withColumn("Hour", date_format(col("Time"), "HH"))
-                                  .withColumn("Day", date_format(col("Time"), "d"))
-                                  .withColumn("Week", date_format(col("Time"), "w"))
-                                  .withColumn("Weekday", date_format(col("Time"), "EEEE"))
-                                  .withColumn("Month", date_format(col("Time"), "M"))
-                                  
-                                  
-    //number of users by day of month                              
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .csv(hdfs_files: _*)
+      .dropDuplicates("ad_id", "latitude", "longitude")
+      .filter("country = '%s'".format(country))
+      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "HH"))
+      .withColumn("Day", date_format(col("Time"), "d"))
+      .withColumn("Week", date_format(col("Time"), "w"))
+      .withColumn("Weekday", date_format(col("Time"), "EEEE"))
+      .withColumn("Month", date_format(col("Time"), "M"))
+
+    //number of users by day of month
     val user_day = df_safegraph
-                          .select(col("ad_id"), col("Day"), col("Month"))
-                          .distinct().groupBy("Month","Day").count()     
+      .select(col("ad_id"), col("Day"), col("Month"))
+      .distinct()
+      .groupBy("Month", "Day")
+      .count()
 
-    println("Users by Day",user_day)
+    println("Users by Day", user_day)
 
     //number of users by day of week, note that we need the week number (we can have more mondays than fridays in a month)
     val user_week_day = df_safegraph
-                          .select(col("ad_id"), col("Weekday"), col("Week"))
-                          .distinct().groupBy("Weekday","Week").count()     
+      .select(col("ad_id"), col("Weekday"), col("Week"))
+      .distinct()
+      .groupBy("Weekday", "Week")
+      .count()
 
-    println("Users by Weekday",user_week_day)
+    println("Users by Weekday", user_week_day)
 
     //number of users by hour by weekday
     val user_hour = df_safegraph
-                          .select(col("ad_id"), col("Hour"), col("Weekday"), col("Week"))
-                          .distinct().groupBy("Hour","Weekday").count()     
+      .select(col("ad_id"), col("Hour"), col("Weekday"), col("Week"))
+      .distinct()
+      .groupBy("Hour", "Weekday")
+      .count()
 
-    user_hour.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_hours_11_03_60d") 
-
+    user_hour.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/AR/safegraph_user_hours_11_03_60d")
 
     //users and number of timestamps per user
     val user_pings = df_safegraph
-                          .select(col("ad_id"), col("Week"), col("utc_timestamp"))
-                          .distinct()
-                          .groupBy("ad_id")  
-                          .agg(count("utc_timestamp").alias("signals"))
-                             
+      .select(col("ad_id"), col("Week"), col("utc_timestamp"))
+      .distinct()
+      .groupBy("ad_id")
+      .agg(count("utc_timestamp").alias("signals"))
 
-    user_pings.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_pings_11_03_60d") 
-
+    user_pings.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/AR/safegraph_user_pings_11_03_60d")
 
     //users and timestamps for that user
     val user_timestamp = df_safegraph
-                          .select(col("ad_id"), col("latitude"), col("longitude"), col("utc_timestamp"))
-                          .distinct()
-                          .withColumn("time_pings",concat_ws(",",col("utc_timestamp")))                        
-                          .groupBy("ad_id", "latitude", "longitude","time_pings")                           
-                          .agg(count("utc_timestamp").alias("signals"))
+      .select(
+        col("ad_id"),
+        col("latitude"),
+        col("longitude"),
+        col("utc_timestamp")
+      )
+      .distinct()
+      .withColumn("time_pings", concat_ws(",", col("utc_timestamp")))
+      .groupBy("ad_id", "latitude", "longitude", "time_pings")
+      .agg(count("utc_timestamp").alias("signals"))
 
 //.withColumn("segmentos",concat_ws(",",col("segments"))).select("device_id","segmentos")
 
-    user_timestamp.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/geo/AR/safegraph_user_timestamps_11_03_60d") 
+    user_timestamp.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/AR/safegraph_user_timestamps_11_03_60d")
 
-  
-
-   
   }
 
-def get_tapad_vs_drawbridge(spark: SparkSession) = {
+  def get_tapad_vs_drawbridge(spark: SparkSession) = {
 
-      val tapad_index = spark.read.load("/datascience/custom/tapad_index").withColumn("device", upper(col("device")))
-      val draw_index = spark.read.load("/datascience/crossdevice/double_index").withColumn("device", upper(col("device")))
+    val tapad_index = spark.read
+      .load("/datascience/custom/tapad_index")
+      .withColumn("device", upper(col("device")))
+    val draw_index = spark.read
+      .load("/datascience/crossdevice/double_index")
+      .withColumn("device", upper(col("device")))
 
+    val overlap =
+      tapad_index.select(col("device")).join(draw_index, Seq("device"))
+    overlap
+      .groupBy("device_type")
+      .agg(countDistinct("device"))
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/overlap_tapad_drawbridge")
 
-      val overlap = tapad_index.select(col("device")).join(draw_index,Seq("device"))
-      overlap.groupBy("device_type").agg(countDistinct("device"))
-        .write.format("csv").mode(SaveMode.Overwrite)
-        .save("/datascience/geo/overlap_tapad_drawbridge") 
+    val only_tapad = tapad_index.except(draw_index)
 
+    only_tapad
+      .groupBy("device_type")
+      .agg(countDistinct("device"))
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/only_tapad")
 
-      val only_tapad = tapad_index.except(draw_index)
+    val only_draw = draw_index.except(tapad_index)
 
-      only_tapad.groupBy("device_type").agg(countDistinct("device"))
-        .write.format("csv").mode(SaveMode.Overwrite)
-        .save("/datascience/geo/only_tapad") 
+    only_draw
+      .groupBy("device_type")
+      .agg(countDistinct("device"))
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/only_draw")
 
+  }
 
-      val only_draw = draw_index.except(tapad_index)
-
-      only_draw.groupBy("device_type").agg(countDistinct("device"))
-        .write.format("csv").mode(SaveMode.Overwrite)
-        .save("/datascience/geo/only_draw") 
-
-}
   /**
     *
     *
@@ -1601,15 +1632,15 @@ def get_tapad_vs_drawbridge(spark: SparkSession) = {
   }
 
   /**
-   * 
-   * 
-   * 
-   * 
-   *                  LA NACION - REPORT
-   * 
-   * 
-   * 
-   * 
+    *
+    *
+    *
+    *
+    *                  LA NACION - REPORT
+    *
+    *
+    *
+    *
    **/
   def getLanacionReport(spark: SparkSession) = {
 
@@ -1652,7 +1683,7 @@ def get_tapad_vs_drawbridge(spark: SparkSession) = {
       .withColumn("segments", uniqueUDF(col("segments")))
       .select("device_id", "segments")
       .withColumn("segments", explode(col("segments")))
-      .groupBy("segments")  
+      .groupBy("segments")
       .count()
       .write
       .format("csv")
@@ -1661,11 +1692,53 @@ def get_tapad_vs_drawbridge(spark: SparkSession) = {
        **/
   }
 
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    *                NETQUEST  REPORT
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    */
+  def getNetquestReport(spark: SparkSession) = {
+    def processDay(day: String) = {
+      println(day)
+      val data = spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .option("header", "true")
+        .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+        .filter("event_type = 'sync' AND id_partner = '31'")
+        .select("device_id", "id_partner_user", "country")
+        .write
+        .format("csv")
+        .save(
+          "/datascience/custom/netquest_report/day=%s"
+            .format(day.replace("/", ""))
+        )
+      println("Day processed: %s".format(day))
+    }
+
+    val format = "yyyy/MM/dd"
+    val days =
+      (0 until 61).map(n => DateTime.now.minusDays(n + 1).toString(format))
+    days.map(processDay(_))
+  }
+
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-      get_att_stats(spark)
- 
+    getNetquestReport(spark)
+
   }
 
 }
