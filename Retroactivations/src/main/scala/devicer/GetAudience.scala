@@ -227,7 +227,7 @@ object GetAudience {
                   dropDuplicates: Boolean = false, 
                   commonFilter: String = "") = { 
     println("DEVICER LOG:\n\tCommon filter: %s\n\tCommon filter length: %d".format(commonFilter, commonFilter.length))
-    val filtered = if (commonFilter.length>0 && queries.length>5) data.filter(commonFilter) else data
+    val filtered: DataFrame = if (commonFilter.length>0 && queries.length>5) data.filter(commonFilter) else data
     println("\n\n\n\n")
     filtered.explain()
     filtered.persists("MEMORY_AND_DISK")
@@ -272,7 +272,7 @@ object GetAudience {
   **/
   def getMultipleAudience(spark: SparkSession, data: DataFrame, queries: List[Map[String, Any]], fileName: String, commonFilter: String = "") = {
     println("DEVICER LOG:\n\tCommon filter: %s\n\tCommon filter length: %d".format(commonFilter, commonFilter.length))
-    val filtered = if (commonFilter.length>0) data.filter(commonFilter) else data
+    val filtered: DataFrame = if (commonFilter.length>0) data.filter(commonFilter) else data
     println("\n\n\n\n")
     filtered.explain()
 
@@ -300,7 +300,7 @@ object GetAudience {
            .option("sep", "\t")
            .mode("append")
            .save("/datascience/devicer/processed/"+fileName)
-    filter.unpersists()
+    filtered.unpersists()
   }
   
 
