@@ -225,7 +225,13 @@ object GetAudience {
                   queries: List[Map[String, Any]], 
                   fileName: String, 
                   dropDuplicates: Boolean = false) = { 
-    val results = queries.map(query => data.filter(query("filter").toString)
+    println("DEVICER LOG:\n\tCommon filter: %s\n\tCommon filter length: %d".format(commonFilter, commonFilter.length))
+    val filtered = if (commonFilter.length>0) data.filter(commonFilter) else data
+    println("\n\n\n\n")
+    filtered.explain()
+    filtered.persists("MEMORY_AND_DISK")
+
+    val results = queries.map(query => filtered.filter(query("filter").toString)
                                         .select("device_type", "device_id")
                                         .withColumn("segmentIds", lit(query("segment_id").toString))
                                         .distinct())
@@ -233,6 +239,8 @@ object GetAudience {
                                             .option("sep", "\t")
                                             .mode("append")
                                             .save("/datascience/devicer/processed/"+fileName))
+    filtered.unpersists()
+
     if (results.length > 1) {
       val done = spark.read.format("csv")
                         .option("sep", "\t")
@@ -269,6 +277,7 @@ object GetAudience {
 
     // First we register the table
     filtered.createOrReplaceTempView("data")
+    filtered.persists("MEMORY_AND_DISK")
 
     // Now we set all the filters
     val columns = queries.map(query => col("c_"+query("segment_id").toString))
@@ -290,6 +299,7 @@ object GetAudience {
            .option("sep", "\t")
            .mode("append")
            .save("/datascience/devicer/processed/"+fileName)
+    filter.unpersists()
   }
   
 
@@ -360,7 +370,7 @@ object GetAudience {
 
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
-      if (queries.length > 10){
+      if (queries.length > 10000000){
         getMultipleAudience(spark, data, queries, file_name, commonFilter)
       } else {
         getAudience(spark, data, queries, file_name)
