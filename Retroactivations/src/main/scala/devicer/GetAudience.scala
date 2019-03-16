@@ -230,7 +230,7 @@ object GetAudience {
     val filtered: DataFrame = if (commonFilter.length>0 && queries.length>5) data.filter(commonFilter) else data
     println("\n\n\n\n")
     filtered.explain()
-    filtered.persist(StorageLevel.MEMORY_AND_DISK())
+    filtered.persist(StorageLevel.MEMORY_AND_DISK)
 
     val results = queries.map(query => filtered.filter(query("filter").toString)
                                         .select("device_type", "device_id")
@@ -278,7 +278,7 @@ object GetAudience {
 
     // First we register the table
     filtered.createOrReplaceTempView("data")
-    filtered.persist(StorageLevel.MEMORY_AND_DISK())
+    filtered.persist(StorageLevel.MEMORY_AND_DISK)
 
     // Now we set all the filters
     val columns = queries.map(query => col("c_"+query("segment_id").toString))
