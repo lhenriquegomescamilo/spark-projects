@@ -230,7 +230,10 @@ object GetAudience {
     val filtered: DataFrame = if (commonFilter.length>0 && queries.length>5) data.filter(commonFilter) else data
     println("\n\n\n\n")
     filtered.explain()
-    filtered.persist(StorageLevel.MEMORY_AND_DISK)
+    if (queries.length>5){
+      filtered.persist(StorageLevel.MEMORY_AND_DISK)
+    }
+    
 
     val results = queries.map(query => filtered.filter(query("filter").toString)
                                         .select("device_type", "device_id")
@@ -240,7 +243,9 @@ object GetAudience {
                                             .option("sep", "\t")
                                             .mode("append")
                                             .save("/datascience/devicer/processed/"+fileName))
-    filtered.unpersist()
+    if (queries.length>5){
+      filtered.unpersist()
+    }
 
     if (results.length > 1) {
       val done = spark.read.format("csv")
