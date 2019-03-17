@@ -53,7 +53,7 @@ object DataGoogleAnalytics {
         day =>
           fs.exists(
             new org.apache.hadoop.fs.Path(
-              "/datascience/data_audiences_p/day=%s".format(day)
+              "/datascience/data_audiences/day=%s".format(day)
             )
           )
       )
@@ -61,9 +61,9 @@ object DataGoogleAnalytics {
         x =>
           spark.read
             .format("parquet")
-            .load("/datascience/data_audiences_p/day=%s".format(x))
+            .load("/datascience/data_audiences/day=%s".format(x))
             .withColumn("day", lit(x))
-            .select("device_id", "url", "day", "country")
+            .select("device_id", "url", "day", "country", "timestamp")
       )
 
     /// Concatenamos los dataframes y nos quedamos solamente con el dominio de la url
@@ -129,7 +129,7 @@ object DataGoogleAnalytics {
           day =>
             fs.exists(
               new org.apache.hadoop.fs.Path(
-                "/datascience/data_audiences_p/day=%s".format(day)
+                "/datascience/data_audiences/day=%s".format(day)
               )
             )
         )
@@ -137,9 +137,9 @@ object DataGoogleAnalytics {
           x =>
             spark.read
               .format("parquet")
-              .load("/datascience/data_audiences_p/day=%s".format(x))
+              .load("/datascience/data_audiences/day=%s".format(x))
               .withColumn("day", lit(x))
-              .select("device_id", "url", "day", "country")
+              .select("device_id", "url", "day", "country", "timestamp")
         )
   
       /// Concatenamos los dataframes y nos quedamos solamente con el dominio de la url
@@ -181,6 +181,7 @@ object DataGoogleAnalytics {
     // Parseo de parametros
     val ndays = if (args.length > 0) args(0).toInt else 30
 
+    get_data_google_analytics(spark, ndays)
     get_data_google_analytics_path(spark, ndays)
   }
 }
