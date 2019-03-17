@@ -158,7 +158,7 @@ object keywordIngestion {
 
     // Finalme
     spark.read
-      .parquet("/datascience/data_audiences_p/day=%s".format(today)) // Leemos la data
+      .parquet("/datascience/data_audiences/day=%s".format(today)) // Leemos la data
       //.repartition(500)
       .withColumn(
         "segments",
