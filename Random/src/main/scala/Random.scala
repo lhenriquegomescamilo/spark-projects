@@ -1484,9 +1484,9 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/data_demo/gender_google_analytics")
   }
 
-  def join_gender_google_analytics_AR(spark: SparkSession) {
+  def join_gender_google_analytics_AR(spark: SparkSession, path: String = "join_google_analytics_path") {
     val ga = spark.read
-      .load("/datascience/data_demo/join_google_analytics_path/country=AR")
+      .load("/datascience/data_demo/%s/country=AR".format(path))
     val gender = spark.read
       .format("csv")
       .option("sep", "\t")
@@ -1499,7 +1499,7 @@ val records_common = the_join.select(col("identifier"))
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/gender_google_analytics_AR")
+      .save("/datascience/data_demo/gender_%s_AR".format(path))
   }
 
   def get_google_analytics_stats(spark: SparkSession) {
@@ -1737,8 +1737,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    getNetquestReport(spark)
-
+      join_gender_google_analytics_AR(spark)
+      join_gender_google_analytics_AR(spark, "join_google_analytics_path")
   }
 
 }
