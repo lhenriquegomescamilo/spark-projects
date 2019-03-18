@@ -383,7 +383,7 @@ object GetAudience {
       if (queries.length > 10000000){
         getMultipleAudience(spark, data, queries, file_name, commonFilter)
       } else {
-        getAudience(spark, data, queries, file_name)
+        getAudience(spark, data, queries, file_name, false, commonFilter)
       }
       
 
