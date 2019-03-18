@@ -1741,11 +1741,58 @@ val records_common = the_join.select(col("identifier"))
     days.map(processDay(_))
   }
 
+  /**
+   * 
+   * 
+   * 
+   * 
+   * 
+   *                  Audiencia Juli - McDonald's
+   * 
+   * 
+   * 
+   * 
+  */
+  def getDataKeywords(spark: SparkSession,nDays: Int = 30, since: Int = 1): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end   = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+    
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days.map(day => path+"/day=%s".format(day))
+                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
+    df
+  }
+
+
+  def getUsersMcDonalds(spark: SparkSession) {
+    val data_keys = getDataKeywords(spark, 30, 1)
+
+    val udfSegments = udf( (segments: Seq[String]) => segments.filter(_.contains("as")).mkString(",") )
+
+    data_keys.filter("country = 'AR' AND (array_contains(segments, 'as_81488') OR array_contains(segments, 'as_81489') OR array_contains(segments, 'as_83788'))")
+             .withColumn("segments", udfSegments(col("segments")))
+             .select("device_id", "segments")
+             .write
+             .mode(SaveMode.Overwrite)
+             .format("csv")
+             .option("sep", ",")
+             .save("/datascience/custom/mcdonalds_users")
+  }
+
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-      join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", " ", "join_google_analytics", "MX")
-      join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", " ", "join_google_analytics_path", "MX")
+      // join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", " ", "join_google_analytics", "MX")
+      // join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", " ", "join_google_analytics_path", "MX")
+      getUsersMcDonalds(spark)
   }
 
 }
