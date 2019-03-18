@@ -32,7 +32,7 @@ object PipelineUS {
 
         val join = df_historic.join(matching_web,Seq("estid"),"left").join(matching_madid,Seq("estid"),"left")
 
-        join.write.save("/datascience/data_urls_us/%s".format(day))
+        join.write.save("/datascience/data_us_p/%s".format(day))
     }
     
     def get_data_us(spark: SparkSession, ndays:Int) {
