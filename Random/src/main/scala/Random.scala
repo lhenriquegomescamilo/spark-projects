@@ -1488,6 +1488,7 @@ val records_common = the_join.select(col("identifier"))
   def join_gender_google_analytics(
       spark: SparkSession,
       gtPath: String,
+      sep: String = "\t",
       gaPath: String = "join_google_analytics_path",
       country: String = "AR"
   ) {
@@ -1495,7 +1496,7 @@ val records_common = the_join.select(col("identifier"))
       .load("/datascience/data_demo/%s/country=%s".format(gaPath, country))
     val gender = spark.read
       .format("csv")
-      .option("sep", "\t")
+      .option("sep", sep)
       .load(gtPath)
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
@@ -1743,8 +1744,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-      join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", "join_google_analytics", "MX")
-      join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", "join_google_analytics_path", "MX")
+      join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", " ", "join_google_analytics", "MX")
+      join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", " ", "join_google_analytics_path", "MX")
   }
 
 }
