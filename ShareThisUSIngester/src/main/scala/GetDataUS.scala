@@ -10,6 +10,12 @@ import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
 
 object PipelineUS {
     def process_data(spark:SparkSession, day:String){
+
+        /// Configuraciones de spark
+        val sc = spark.sparkContext
+        val conf = sc.hadoopConfiguration
+        val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+        
         val df_historic = spark.read.load("/datascience/sharethis/historic/day=%s".format(day))
                                     .select("estid","url")
         
@@ -19,7 +25,7 @@ object PipelineUS {
         val format = "yyyyMMdd"
         val start = DateTime.now.minusDays(60)
         val end   = DateTime.now.minusDays(0)
-
+        
         val daysCount = Days.daysBetween(start, end).getDays()
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
         
