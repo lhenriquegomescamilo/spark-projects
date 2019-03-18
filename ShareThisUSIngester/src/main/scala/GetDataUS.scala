@@ -30,8 +30,8 @@ object PipelineUS {
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
         
         val dfs = days
-                    .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/estid_madid_table/day=%s".format(day))))
-                    .map(x => spark.read.parquet("/datascience/sharethis/estid_madid_table/day=%s".format(x))
+                    .filter(d => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/estid_table/day=%s".format(d))))
+                    .map(x => spark.read.parquet("/datascience/sharethis/estid_table/day=%s".format(x))
                     .withColumnRenamed("d17","estid"))
 
         val matching_web = dfs.reduce((df1,df2) => df1.union(df2))
