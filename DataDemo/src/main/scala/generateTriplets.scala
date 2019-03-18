@@ -77,7 +77,7 @@ object GenerateTriplets {
         val dfs = days
                     .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_keywords/day=%s".format(day))))
                     .map(x => spark.read.parquet("/datascience/data_keywords/day=%s".format(x))
-                                    .select("device_id","url_keys","content_keys","country"))
+                                    .select("device_id","content_keys","country"))
 
         val df = dfs.reduce((df1,df2) => df1.union(df2))
 
