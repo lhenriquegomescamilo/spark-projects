@@ -384,8 +384,8 @@ object GetAudience {
       
 
       // We cross device the audience if the parameter is set.
-      val xd = queries(0)("xd")
-      if (xd.toString.toBoolean){
+      val xd = queries(0)("xd").toString
+      if (Set("1", "true", "True").contains(xd)) {
         val object_xd = AudienceCrossDevicer.cross_device(spark,
                                   "/datascience/devicer/processed/"+file_name,
                                             "index_type IN ('coo', 'and')",
@@ -398,8 +398,8 @@ object GetAudience {
       hdfs.rename(srcPath, destPath)
       
       // If push parameter is true, we generate a file with the metadata.
-      val push = queries(0)("push")
-      if (push.toString.toBoolean){
+      val push = queries(0)("push").toString
+      if (Set("1", "true", "True").contains(xd)){
           val priority = queries(0)("priority")
           val as_view = queries(0)("as_view")
           val queue = queries(0)("queue")
