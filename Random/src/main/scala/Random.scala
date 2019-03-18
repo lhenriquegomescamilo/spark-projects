@@ -1463,34 +1463,40 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/cadreon_google_analytics")
   }
 
-  def join_gender_google_analytics(spark: SparkSession) {
-    val ga = spark.read
-      .format("csv")
-      .load("/datascience/data_demo/join_google_analytics/")
-      .withColumnRenamed("_c1", "device_id")
-    val gender = spark.read
-      .format("csv")
-      .option("sep", " ")
-      .load("/datascience/devicer/processed/ground_truth_*male")
-      .withColumnRenamed("_c1", "device_id")
-      .withColumnRenamed("_c2", "label")
-      .select("device_id", "label")
-      .distinct()
+  // def join_gender_google_analytics(spark: SparkSession) {
+  //   val ga = spark.read
+  //     .load("/datascience/data_demo/join_google_analytics/")
+  //     .withColumnRenamed("_c1", "device_id")
+  //   val gender = spark.read
+  //     .format("csv")
+  //     .option("sep", " ")
+  //     .load("/datascience/devicer/processed/ground_truth_*male")
+  //     .withColumnRenamed("_c1", "device_id")
+  //     .withColumnRenamed("_c2", "label")
+  //     .select("device_id", "label")
+  //     .distinct()
 
-    ga.join(gender, Seq("device_id"))
-      .write
-      .format("csv")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/gender_google_analytics")
-  }
+  //   ga.join(gender, Seq("device_id"))
+  //     .write
+  //     .format("csv")
+  //     .mode(SaveMode.Overwrite)
+  //     .save("/datascience/data_demo/gender_google_analytics")
+  // }
 
-  def join_gender_google_analytics_AR(spark: SparkSession, path: String = "join_google_analytics_path") {
+  // for MX "/datascience/devicer/processed/ground_truth_*male"
+  // for AR "/datascience/devicer/processed/equifax_demo_AR_grouped"
+  def join_gender_google_analytics(
+      spark: SparkSession,
+      gtPath: String,
+      gaPath: String = "join_google_analytics_path",
+      country: String = "AR"
+  ) {
     val ga = spark.read
-      .load("/datascience/data_demo/%s/country=AR".format(path))
+      .load("/datascience/data_demo/%s/country=%s".format(gaPath, country))
     val gender = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/devicer/processed/equifax_demo_AR_grouped")
+      .load(gtPath)
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
       .select("device_id", "label")
@@ -1499,7 +1505,7 @@ val records_common = the_join.select(col("identifier"))
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/gender_%s_AR".format(path))
+      .save("/datascience/data_demo/gender_%s_%s".format(gaPath, country))
   }
 
   def get_google_analytics_stats(spark: SparkSession) {
@@ -1737,8 +1743,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-      join_gender_google_analytics_AR(spark)
-      join_gender_google_analytics_AR(spark, "join_google_analytics")
+      join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", "join_google_analytics", "MX")
+      join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", "join_google_analytics_path", "MX")
   }
 
 }
