@@ -1777,7 +1777,7 @@ val records_common = the_join.select(col("identifier"))
 
     val udfSegments = udf( (segments: Seq[String]) => segments.filter(_.contains("as")).mkString(",") )
 
-    data_keys.filter("array_contains(segments, 'as_81488') OR array_contains(segments, 'as_81489') OR array_contains(segments, 'as_83788')")
+    data_keys.filter("country = 'AR' AND (array_contains(segments, 'as_81488') OR array_contains(segments, 'as_81489') OR array_contains(segments, 'as_83788'))")
              .withColumn("segments", udfSegments(col("segments")))
              .select("device_id", "segments")
              .write
