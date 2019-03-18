@@ -1737,8 +1737,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-      join_gender_google_analytics_AR(spark)
-      join_gender_google_analytics_AR(spark, "join_google_analytics_path")
+      //join_gender_google_analytics_AR(spark)
+      join_gender_google_analytics_AR(spark, "join_google_analytics")
   }
 
 }
