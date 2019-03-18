@@ -88,7 +88,7 @@ object GetAudience {
     val format = "yyyyMMdd"
     val end   = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_audiences_p"
+    val path = "/datascience/data_audiences"
     
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days.map(day => path+"/day=%s".format(day))
@@ -195,10 +195,11 @@ object GetAudience {
         val jobid = if (query.contains("jobid") && Option(query("jobid")).getOrElse("").toString.length>0) query("jobid") else ""
         val xd = if (query.contains("xd") && Option(query("xd")).getOrElse("").toString.length>0) query("xd") else false
         val commonFilter = if (query.contains("common") && Option(query("common")).getOrElse("").toString.length>0) query("common") else ""
+        val xdFilter = if (query.contains("xdFilter") && Option(query("xdFilter")).getOrElse("").toString.length>0) query("xdFilter") else "index_type = 'coo'"
     
         val actual_map: Map[String,Any] = Map("filter" -> filter, "segment_id" -> segmentId, "partner_id" -> partnerId,
                                                "since" -> since, "ndays" -> nDays, "push" -> push, "priority" -> priority, 
-                                               "as_view" -> as_view, "queue" -> queue, "pipeline" -> pipeline,
+                                               "as_view" -> as_view, "queue" -> queue, "pipeline" -> pipeline, "xdFilter" -> xdFilter,
                                                 "description" -> description, "jobid" -> jobid, "xd" -> xd, "common" -> commonFilter)
         
         queries = queries ::: List(actual_map)
@@ -231,6 +232,7 @@ object GetAudience {
     println("\n\n\n\n")
     filtered.explain()
     if (queries.length>5){
+      println("DEVICER LOG:\n\tPersisting data!")
       filtered.persist(StorageLevel.MEMORY_AND_DISK)
     }
     
@@ -359,7 +361,9 @@ object GetAudience {
       val nDays = queries(0)("ndays")
       val pipeline = queries(0)("pipeline").toString.toInt
       val commonFilter = queries(0)("common").toString
-      println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d".format(file, partner_ids, since, nDays, commonFilter, pipeline, queries.length))
+      val push = queries(0)("push").toString
+      val xd = queries(0)("xd").toString
+      println("DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s".format(file, partner_ids, since, nDays, commonFilter, pipeline, queries.length, push, xd))
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
       // Now we finally get the data that will be used
@@ -384,11 +388,10 @@ object GetAudience {
       
 
       // We cross device the audience if the parameter is set.
-      val xd = queries(0)("xd").toString
       if (Set("1", "true", "True").contains(xd)) {
         val object_xd = AudienceCrossDevicer.cross_device(spark,
                                   "/datascience/devicer/processed/"+file_name,
-                                            "index_type IN ('coo', 'and')",
+                                            queries(0)("xdFilter").toString,
                                             "\t", "_c1")
       }
 
@@ -398,8 +401,8 @@ object GetAudience {
       hdfs.rename(srcPath, destPath)
       
       // If push parameter is true, we generate a file with the metadata.
-      val push = queries(0)("push").toString
       if (Set("1", "true", "True").contains(xd)){
+        println("DEVICER LOG:\n\tPushing the audience to the ingester")
           val priority = queries(0)("priority")
           val as_view = queries(0)("as_view")
           val queue = queries(0)("queue")
