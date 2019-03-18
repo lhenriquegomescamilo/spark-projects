@@ -1781,6 +1781,7 @@ val records_common = the_join.select(col("identifier"))
              .withColumn("segments", udfSegments(col("segments")))
              .select("device_id", "segments")
              .write
+             .mode(SaveMode.Overwrite)
              .format("csv")
              .option("sep", ",")
              .save("/datascience/custom/mcdonalds_users")
