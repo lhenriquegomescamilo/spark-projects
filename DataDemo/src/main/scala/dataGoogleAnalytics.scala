@@ -79,9 +79,9 @@ object DataGoogleAnalytics {
     val distributions = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/data_demo/sites_distribution.csv")
-      .drop("_c0")
-      .withColumnRenamed("index", "url")
+      .option("sep", "\t")
+      .load("/data/metadata/20190316-domains-counts.tsv")
+      .withColumnRenamed("DOMAIN", "url")
       .withColumn(
         "url",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
@@ -155,8 +155,8 @@ object DataGoogleAnalytics {
         .format("csv")
         .option("header", "true")
         .option("sep", "\t")
-        .load("/data/metadata/20190115-paths.tsv")
-        .withColumnRenamed("DOMAIN", "url")
+        .load("/data/metadata/20190316-paths-counts.tsv")
+        .withColumnRenamed("PATH", "url")
         .withColumn(
           "url",
           regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
