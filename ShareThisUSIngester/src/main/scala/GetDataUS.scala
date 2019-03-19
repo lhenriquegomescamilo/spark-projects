@@ -18,26 +18,32 @@ object PipelineUS {
         
         val df_historic = spark.read.load("/datascience/sharethis/historic/day=%s".format(day))
                                     .select("estid","url")
-        
-        //val matching_madid = spark.read.load("/datascience/sharethis/estid_madid_table/")
-        //                                .withColumnRenamed("device","device_id")
+  
+//        val matching_madid = spark.read.load("/datascience/sharethis/estid_madid_table/")
+//                                        .withColumnRenamed("device","device_id")
 
         val format = "yyyyMMdd"
-        val start = DateTime.now.minusDays(10)
+        val start = DateTime.now.minusDays(60)
         val end   = DateTime.now.minusDays(0)
         
         val daysCount = Days.daysBetween(start, end).getDays()
         val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-        
+  /*      
         val dfs = days
                     .filter(d => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/estid_table/day=%s".format(d))))
                     .map(x => spark.read.parquet("/datascience/sharethis/estid_table/day=%s".format(x))
                     .withColumnRenamed("d17","estid"))
 
-        val matching_web = dfs.reduce((df1,df2) => df1.union(df2)).dropDuplicates()
+         = dfs.reduce((df1,df2) => df1.union(df2)).dropDuplicates()
         
         //val matching_union = matching_web.unionAll(matching_madid)
-        
+  */
+        val paths = days
+                    .filter(d => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/estid_table/day=%s".format(d))))
+                    .map(x => "/datascience/sharethis/estid_table/day=%s".format(x))
+
+        val matching_web = spark.read.format("parquet").basePath("/datascience/shrethis/estid_table/").load(paths: _*)
+
         val join = df_historic.join(matching_web,Seq("estid"),"left").select("device_id","url","device_type")
 
         join.write.mode(SaveMode.Overwrite).save("/datascience/data_us_p/day=%s".format(day))
