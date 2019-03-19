@@ -91,7 +91,7 @@ object GetAudience {
     val path = "/datascience/data_audiences"
     
     // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days.map(day => path+"/day=%s/country=AR".format(day))
+    val hdfs_files = days.map(day => path+"/day=%s/".format(day))
                           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
 
@@ -401,7 +401,7 @@ object GetAudience {
       hdfs.rename(srcPath, destPath)
       
       // If push parameter is true, we generate a file with the metadata.
-      if (Set("1", "true", "True").contains(xd)){
+      if (Set("1", "true", "True").contains(push)){
         println("DEVICER LOG:\n\tPushing the audience to the ingester")
           val priority = queries(0)("priority")
           val as_view = if (queries(0)("as_view").toString.length>0) queries(0)("as_view").toString.toInt else 0
