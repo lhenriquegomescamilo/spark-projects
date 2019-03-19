@@ -1,5 +1,5 @@
 package main.scala
-
+import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.SparkSession
 import scala.collection.mutable.ListBuffer
 import org.apache.hadoop.fs.{ FileSystem, Path }
@@ -40,7 +40,7 @@ object PipelineUS {
         
         val join = df_historic.join(matching_union,Seq("estid"),"left").select("device_id","url","device_type")
 
-        join.write.save("/datascience/data_us_p/day=%s".format(day))
+        join.write.mode(SaveMode.Overwrite).save("/datascience/data_us_p/day=%s".format(day))
     }
     
     def get_data_us(spark: SparkSession, ndays:Int) {
