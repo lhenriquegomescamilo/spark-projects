@@ -45,14 +45,13 @@ object PipelineUS {
         val fs = org.apache.hadoop.fs.FileSystem.get(conf)
         
         /// Obtenemos la data de los ultimos ndays
-        val days = (since until ndays+since).map(DateTime.now.plusDays(_)).map(_.toString("yyyyMMdd"))
+        val days = (since until ndays+since).map(DateTime.now.minusDays(_)).map(_.toString("yyyyMMdd"))
         
         val dfs = days
                     .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/historic/day=%s".format(day))))
                     .map(x => process_data(spark,x))
-
     }
-  
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder.appName("Get data for pipeline data US").getOrCreate()
 
