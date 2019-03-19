@@ -723,7 +723,7 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     * Downloading safegraph data for GCBA study (porque no hay job que haga polygon matching aun)
-    *
+    * Recycled for McDonalds
     *
     *
     */
@@ -752,18 +752,26 @@ val records_common = the_join.select(col("identifier"))
     val df_safegraph = spark.read
       .option("header", "true")
       .csv(hdfs_files: _*)
-      .dropDuplicates("ad_id", "latitude", "longitude")
       .filter("country = '%s'".format(country))
-      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      .dropDuplicates("ad_id")
+      .select("ad_id")
+      
+      /*
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
       .withColumn("Hour", date_format(col("Time"), "HH"))
       .withColumn("Day", date_format(col("Time"), "d"))
       .withColumn("Month", date_format(col("Time"), "M"))
+      */
+      val geo_audience =   spark.read.option("delimiter","\t")
+                            .csv("/datascience/geo/McDonaldsCalleARG_90d_argentina_19-3-2019-6h")
+
+
+      df_safegraph.join(geo_audience.select(col("_c1")), geo_audience("_c1")=== users("ad_id"), "leftanti")
       .write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .save("/datascience/geo/safegraph_30d_ar_15-02")
+      .save("/datascience/geo/geo_negative_audience_McDonaldsCalleARG_90d")
 
     df_safegraph
   }
@@ -1792,7 +1800,8 @@ val records_common = the_join.select(col("identifier"))
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
       // join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", " ", "join_google_analytics", "MX")
       // join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", " ", "join_google_analytics_path", "MX")
-      getUsersMcDonalds(spark)
+      //getUsersMcDonalds(spark)
+      get_safegraph_data(spark,90,"argentina")
   }
 
 }
