@@ -91,7 +91,7 @@ object GetAudience {
     val path = "/datascience/data_audiences"
     
     // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days.map(day => path+"/day=%s".format(day))
+    val hdfs_files = days.map(day => path+"/day=%s/country=AR".format(day))
                           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
 
@@ -422,9 +422,10 @@ object GetAudience {
           conf.set("fs.defaultFS", "hdfs://rely-hdfs")
           val fs= FileSystem.get(conf)
           val os = fs.create(new Path("/datascience/ingester/ready/%s.meta".format(file_name)))
-          val json_content = """{"filePath":"%s/%s", "priority":%s, "partnerId":%s,
+          val json_content = """{"filePath":"%s%s", "priority":%s, "partnerId":%s,
                                  "queue":"%s", "jobid":%s, "description":"%s"}""".format(file_path,file_name,priority,as_view,
-                                                                                        queue,jobid,description)
+                                                                                        queue,jobid,description).replace("\n", "")
+          println("DEVICER LOG:\n\t%s".format(json_content))
           os.write(json_content.getBytes)
           fs.close()
       }
