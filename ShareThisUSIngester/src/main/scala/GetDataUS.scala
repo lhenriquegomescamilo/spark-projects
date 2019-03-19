@@ -23,7 +23,7 @@ object PipelineUS {
                                         .withColumnRenamed("device","device_id")
 
         val format = "yyyyMMdd"
-        val start = DateTime.now.minusDays(60)
+        val start = DateTime.now.minusDays(30)
         val end   = DateTime.now.minusDays(0)
         
         val daysCount = Days.daysBetween(start, end).getDays()
