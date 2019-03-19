@@ -42,7 +42,8 @@ object PipelineUS {
                     .filter(d => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/estid_table/day=%s".format(d))))
                     .map(x => "/datascience/sharethis/estid_table/day=%s".format(x))
 
-        val matching_web = spark.read.format("parquet").basePath("/datascience/shrethis/estid_table/").load(paths: _*)
+        val matching_web = spark.read.option("basePath","/datascience/shrethis/estid_table/").format("parquet").load(paths: _*)
+
 
         val join = df_historic.join(matching_web,Seq("estid"),"left").select("device_id","url","device_type")
 
