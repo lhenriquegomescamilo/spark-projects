@@ -32,7 +32,7 @@ object PipelineUS {
         
         val matching_union = matching_web.unionAll(matching_madid)
         
-        val join = df_historic.join(matching_union,Seq("estid"),"left").select("device_id","url","device_type").na.drop()
+        val join = df_historic.join(matching_union,Seq("estid"),"left").select("device_id","url","device_type").na.drop().dropDuplicates()
 
         join.write.mode(SaveMode.Overwrite).save("/datascience/data_us_p/day=%s".format(day))
     }
