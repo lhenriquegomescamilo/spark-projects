@@ -766,7 +766,7 @@ val records_common = the_join.select(col("identifier"))
                             .csv("/datascience/geo/McDonaldsCalleARG_90d_argentina_19-3-2019-6h")
 
 
-      df_safegraph.join(geo_audience.select(col("_c1")), geo_audience("_c1")=== users("ad_id"), "leftanti")
+      df_safegraph.join(geo_audience.select(col("_c1")), geo_audience("_c1")=== df_safegraph("ad_id"), "leftanti")
       .write
       .format("csv")
       .option("sep", "\t")
