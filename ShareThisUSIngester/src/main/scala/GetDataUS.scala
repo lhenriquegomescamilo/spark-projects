@@ -22,13 +22,7 @@ object PipelineUS {
         //val matching_madid = spark.read.load("/datascience/sharethis/estid_madid_table/")
         //                                .withColumnRenamed("device","device_id")
 
-        val format = "yyyyMMdd"
-        val start = DateTime.now.minusDays(60)
-        val end   = DateTime.now.minusDays(0)
-        
-        val daysCount = Days.daysBetween(start, end).getDays()
-        val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-        
+        val days = (1 until 60).map(DateTime.now.plusDays(_)).map(_.toString("yyyyMMdd"))
         val dfs = days
                     .filter(d => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/estid_table/day=%s".format(d))))
                     .map(x => spark.read.parquet("/datascience/sharethis/estid_table/day=%s".format(x))
@@ -50,12 +44,7 @@ object PipelineUS {
         val fs = org.apache.hadoop.fs.FileSystem.get(conf)
         
         /// Obtenemos la data de los ultimos ndays
-        val format = "yyyyMMdd"
-        val start = DateTime.now.minusDays(ndays)
-        val end   = DateTime.now.minusDays(0)
-
-        val daysCount = Days.daysBetween(start, end).getDays()
-        val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+        val days = (1 until ndays+1).map(DateTime.now.plusDays(_)).map(_.toString("yyyyMMdd"))
         
         val dfs = days
                     .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/historic/day=%s".format(day))))
