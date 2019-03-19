@@ -404,9 +404,9 @@ object GetAudience {
       if (Set("1", "true", "True").contains(xd)){
         println("DEVICER LOG:\n\tPushing the audience to the ingester")
           val priority = queries(0)("priority")
-          val as_view = queries(0)("as_view")
+          val as_view = if (queries(0)("as_view").toString.length>0) queries(0)("as_view").toString.toInt else 0
           val queue = queries(0)("queue")
-          val jobid = queries(0)("jobid")
+          val jobid = if (queries(0)("jobid").toString.length>0) queries(0)("jobid").toString.toInt else 0
           val description = queries(0)("description")
           file_name = if(queries.length > 1) file_name+"_grouped" else file_name
           
