@@ -38,14 +38,14 @@ object PipelineUS {
         join.write.mode(SaveMode.Overwrite).save("/datascience/data_us_p/day=%s".format(day))
     }
     
-    def get_data_us(spark: SparkSession, ndays:Int) {
+    def get_data_us(spark: SparkSession, ndays:Int, since:Int) {
         /// Configuraciones de spark
         val sc = spark.sparkContext
         val conf = sc.hadoopConfiguration
         val fs = org.apache.hadoop.fs.FileSystem.get(conf)
         
         /// Obtenemos la data de los ultimos ndays
-        val days = (2 until ndays+1).map(DateTime.now.plusDays(_)).map(_.toString("yyyyMMdd"))
+        val days = (since until ndays+since).map(DateTime.now.plusDays(_)).map(_.toString("yyyyMMdd"))
         
         val dfs = days
                     .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/historic/day=%s".format(day))))
@@ -58,7 +58,8 @@ object PipelineUS {
 
     // Parseo de parametros
     val ndays = if (args.length > 0) args(0).toInt else 1
+    val since = if (args.length > 1) args(1).toInt else 2
 
-    get_data_us(spark,ndays)
+    get_data_us(spark,ndays,since)
   }
 }
