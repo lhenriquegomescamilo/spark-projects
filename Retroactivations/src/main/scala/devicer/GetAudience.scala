@@ -91,7 +91,7 @@ object GetAudience {
     val path = "/datascience/data_audiences"
     
     // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days.map(day => path+"/day=%s".format(day))
+    val hdfs_files = days.map(day => path+"/day=%s/country=AR".format(day))
                           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
 
@@ -404,9 +404,9 @@ object GetAudience {
       if (Set("1", "true", "True").contains(xd)){
         println("DEVICER LOG:\n\tPushing the audience to the ingester")
           val priority = queries(0)("priority")
-          val as_view = queries(0)("as_view")
+          val as_view = if (queries(0)("as_view").toString.length>0) queries(0)("as_view").toString.toInt else 0
           val queue = queries(0)("queue")
-          val jobid = queries(0)("jobid")
+          val jobid = if (queries(0)("jobid").toString.length>0) queries(0)("jobid").toString.toInt else 0
           val description = queries(0)("description")
           file_name = if(queries.length > 1) file_name+"_grouped" else file_name
           
@@ -422,9 +422,10 @@ object GetAudience {
           conf.set("fs.defaultFS", "hdfs://rely-hdfs")
           val fs= FileSystem.get(conf)
           val os = fs.create(new Path("/datascience/ingester/ready/%s.meta".format(file_name)))
-          val json_content = """{"filePath":"%s/%s", "priority":%s, "partnerId":%s,
+          val json_content = """{"filePath":"%s%s", "priority":%s, "partnerId":%s,
                                  "queue":"%s", "jobid":%s, "description":"%s"}""".format(file_path,file_name,priority,as_view,
-                                                                                        queue,jobid,description)
+                                                                                        queue,jobid,description).replace("\n", "")
+          println("DEVICER LOG:\n\t%s".format(json_content))
           os.write(json_content.getBytes)
           fs.close()
       }
