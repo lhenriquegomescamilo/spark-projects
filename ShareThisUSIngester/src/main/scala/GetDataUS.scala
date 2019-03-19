@@ -35,8 +35,10 @@ object PipelineUS {
                     .withColumnRenamed("d17","estid"))
 
         val matching_web = dfs.reduce((df1,df2) => df1.union(df2))
-
-        val join = df_historic.join(matching_web,Seq("estid"),"left").join(matching_madid,Seq("estid"),"left").select("device_id","url","device_type")
+        
+        val matching_union = matching_web.unionAll(matching_madid)
+        
+        val join = df_historic.join(matching_union,Seq("estid"),"left").select("device_id","url","device_type")
 
         join.write.save("/datascience/data_us_p/day=%s".format(day))
     }
