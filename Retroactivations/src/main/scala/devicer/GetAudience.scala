@@ -285,7 +285,7 @@ object GetAudience {
 
     // First we register the table
     filtered.createOrReplaceTempView("data")
-    filtered.persist(StorageLevel.MEMORY_AND_DISK)
+    // filtered.persist(StorageLevel.MEMORY_AND_DISK)
 
     // Now we set all the filters
     val columns = queries.map(query => col("c_"+query("segment_id").toString))
@@ -307,7 +307,7 @@ object GetAudience {
            .option("sep", "\t")
            .mode("append")
            .save("/datascience/devicer/processed/"+fileName)
-    filtered.unpersist()
+    // filtered.unpersist()
   }
   
 
