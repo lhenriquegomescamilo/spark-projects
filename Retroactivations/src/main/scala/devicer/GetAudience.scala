@@ -380,7 +380,7 @@ object GetAudience {
 
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
-      if (queries.length > 10000000){
+      if (queries.length > 10){
         getMultipleAudience(spark, data, queries, file_name, commonFilter)
       } else {
         getAudience(spark, data, queries, file_name, false, commonFilter)
@@ -411,7 +411,7 @@ object GetAudience {
           file_name = if(queries.length > 1) file_name+"_grouped" else file_name
           
           var file_path = ""
-          if (xd.toString.toBoolean){
+          if (Set("1", "true", "True").contains(xd)){
             file_path = "/datascience/audiences/crossdeviced/"
             file_name = file_name + "_xd"
           }
