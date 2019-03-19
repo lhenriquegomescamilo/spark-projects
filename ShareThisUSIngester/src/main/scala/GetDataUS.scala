@@ -34,7 +34,7 @@ object PipelineUS {
                     .map(x => spark.read.parquet("/datascience/sharethis/estid_table/day=%s".format(x))
                     .withColumnRenamed("d17","estid"))
 
-        val matching_web = dfs.reduce((df1,df2) => df1.union(df2))
+        val matching_web = dfs.reduce((df1,df2) => df1.union(df2)).dropDuplicates()
         
         val matching_union = matching_web.unionAll(matching_madid)
         
