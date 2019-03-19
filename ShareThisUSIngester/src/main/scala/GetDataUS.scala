@@ -30,6 +30,7 @@ object PipelineUS {
 
         val matching_web = dfs.reduce((df1,df2) => df1.union(df2)).dropDuplicates()
         
+        print("Get data US: Processing data ...")
         //val matching_union = matching_web.unionAll(matching_madid)
         
         val join = df_historic.join(matching_web,Seq("estid"),"left").select("device_id","url","device_type")
@@ -44,7 +45,7 @@ object PipelineUS {
         val fs = org.apache.hadoop.fs.FileSystem.get(conf)
         
         /// Obtenemos la data de los ultimos ndays
-        val days = (1 until ndays+1).map(DateTime.now.plusDays(_)).map(_.toString("yyyyMMdd"))
+        val days = (2 until ndays+1).map(DateTime.now.plusDays(_)).map(_.toString("yyyyMMdd"))
         
         val dfs = days
                     .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/historic/day=%s".format(day))))
