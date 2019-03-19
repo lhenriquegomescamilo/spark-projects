@@ -19,8 +19,8 @@ object PipelineUS {
         val df_historic = spark.read.load("/datascience/sharethis/historic/day=%s".format(day))
                                     .select("estid","url")
         
-        //val matching_madid = spark.read.load("/datascience/sharethis/estid_madid_table/")
-        //                                .withColumnRenamed("device","device_id")
+        val matching_madid = spark.read.load("/datascience/sharethis/estid_madid_table/")
+                                        .withColumnRenamed("device","device_id")
 
         val days = (1 until 60).map(DateTime.now.minusDays(_)).map(_.toString("yyyyMMdd"))
         val dfs = days
@@ -30,10 +30,9 @@ object PipelineUS {
 
         val matching_web = dfs.reduce((df1,df2) => df1.union(df2)).dropDuplicates()
         
-        print("Get data US: Processing data ...")
-        //val matching_union = matching_web.unionAll(matching_madid)
+        val matching_union = matching_web.unionAll(matching_madid)
         
-        val join = df_historic.join(matching_web,Seq("estid"),"left").select("device_id","url","device_type")
+        val join = df_historic.join(matching_union,Seq("estid"),"left").select("device_id","url","device_type").na.drop()
 
         join.write.mode(SaveMode.Overwrite).save("/datascience/data_us_p/day=%s".format(day))
     }
