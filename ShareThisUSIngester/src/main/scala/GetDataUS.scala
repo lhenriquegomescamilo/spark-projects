@@ -22,7 +22,7 @@ object PipelineUS {
         //val matching_madid = spark.read.load("/datascience/sharethis/estid_madid_table/")
         //                                .withColumnRenamed("device","device_id")
 
-        val days = (1 until 60).map(DateTime.now.plusDays(_)).map(_.toString("yyyyMMdd"))
+        val days = (1 until 60).map(DateTime.now.minusDays(_)).map(_.toString("yyyyMMdd"))
         val dfs = days
                     .filter(d => fs.exists(new org.apache.hadoop.fs.Path("/datascience/sharethis/estid_table/day=%s".format(d))))
                     .map(x => spark.read.parquet("/datascience/sharethis/estid_table/day=%s".format(x))
