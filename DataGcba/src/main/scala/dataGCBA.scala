@@ -8,9 +8,9 @@ object dataGCBA {
     def process_day(spark:SparkSession, day:String){
         val df = spark.read.format("csv").option("sep","\t").option("header",true)
                         .load("/data/eventqueue/%s/*.tsv.gz".format(day))
-                        .select("id_partner","event_type","url")
+                        .select("id_partner","event_type","url","timestamp")
                         .filter("event_type = 'tk' and id_partner = 349")
-                        .select("url")
+                        .select("url","timestamp")
         df.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/data_gcba/%s".format(day))    
     }
     def main(args: Array[String]) {
