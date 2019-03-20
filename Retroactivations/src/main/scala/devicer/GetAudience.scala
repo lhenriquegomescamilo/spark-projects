@@ -444,13 +444,14 @@ object GetAudience {
                 case 1 => getDataIdPartners(spark, ids, nDays.toString.toInt, since.toString.toInt)
                 case 2 => getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
                 case 3 => getDataKeywords(spark, nDays.toString.toInt, since.toString.toInt)
-                case 4 => getDataAudiencesDays(spark, nDays.toString.toInt, since.toString.toInt)
               }
+
 
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
       if (queries.length > 10){
         // getMultipleAudience(spark, data, queries, file_name, commonFilter)
+        val dataDays = getDataAudiencesDays(spark, nDays.toString.toInt, since.toString.toInt)
         getAudienceDays(spark, data, queries, file_name, false, commonFilter)
       } else {
         getAudience(spark, data, queries, file_name, false, commonFilter)
