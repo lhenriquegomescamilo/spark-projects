@@ -160,7 +160,7 @@ object GetAudience {
         .reduce((df1, df2) => df1.unionAll(df2))
         .distinct()
         .groupBy("device_id", "device_type")
-        .agg(collect_list("_c2") as "segments")
+        .agg(collect_list("SegmentIds") as "segments")
         .withColumn("segments", concat_ws(",", col("segments")))
         .write.format("csv")
         .option("sep", "\t")
