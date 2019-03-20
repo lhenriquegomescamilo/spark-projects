@@ -117,7 +117,7 @@ object GetAudience {
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days.map(day => path+"/day=%s/".format(day))
                           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val dfs = hdfs_files( file => spark.read.option("basePath", path).parquet(file) )
+    val dfs = hdfs_files.map( spark.read.option("basePath", path).parquet(_) )
 
     println("DEVICER LOG: list of files to be loaded.")
     hdfs_files.foreach(println)
@@ -142,7 +142,7 @@ object GetAudience {
     val results = queries.map(query => filtered.filter(query("filter").toString)
                                         .select("device_type", "device_id")
                                         .withColumn("segmentIds", lit(query("segment_id").toString)))
-    val df = results.reduce(df1, df2 => df1.unionAll(df2))
+    val df = results.reduce((df1, df2) => df1.unionAll(df2))
     if (queries.length>5){
       filtered.unpersist()
     }
@@ -157,7 +157,7 @@ object GetAudience {
                      dropDuplicates: Boolean = false, 
                      commonFilter: String = "") = { 
     data.map(getAudienceDay(spark, _, queries, commonFilter))
-        .reduce(df1, df2 => df1.unionAll(df2))
+        .reduce((df1, df2) => df1.unionAll(df2))
         .distinct()
         .groupBy("device_id", "device_type")
         .agg(collect_list("_c2") as "segments")
