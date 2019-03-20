@@ -452,7 +452,7 @@ object GetAudience {
       if (queries.length > 10){
         // getMultipleAudience(spark, data, queries, file_name, commonFilter)
         val dataDays = getDataAudiencesDays(spark, nDays.toString.toInt, since.toString.toInt)
-        getAudienceDays(spark, data, queries, file_name, false, commonFilter)
+        getAudienceDays(spark, dataDays, queries, file_name, false, commonFilter)
       } else {
         getAudience(spark, data, queries, file_name, false, commonFilter)
       }
