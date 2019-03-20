@@ -101,6 +101,74 @@ object GetAudience {
     df
   }
 
+
+  def getDataAudiencesDays(spark: SparkSession,
+                           nDays: Int = 30, since: Int = 1): Seq[DataFrame] = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end   = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences"
+    
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days.map(day => path+"/day=%s/".format(day))
+                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val dfs = hdfs_files( file => spark.read.option("basePath", path).parquet(file) )
+
+    println("DEVICER LOG: list of files to be loaded.")
+    hdfs_files.foreach(println)
+
+    dfs
+  }
+
+  
+
+  def getAudienceDay(spark: SparkSession, 
+                     data: DataFrame, 
+                     queries: List[Map[String, Any]], 
+                     commonFilter: String = "") = { 
+    val filtered: DataFrame = if (commonFilter.length>0 && queries.length>5) data.filter(commonFilter) else data
+    
+    if (queries.length>5){
+      println("DEVICER LOG:\n\tPersisting data!")
+      filtered.persist(StorageLevel.MEMORY_AND_DISK)
+    }
+    
+
+    val results = queries.map(query => filtered.filter(query("filter").toString)
+                                        .select("device_type", "device_id")
+                                        .withColumn("segmentIds", lit(query("segment_id").toString)))
+    val df = results.reduce(df1, df2 => df1.unionAll(df2))
+    if (queries.length>5){
+      filtered.unpersist()
+    }
+    
+    df
+  }
+
+  def getAudienceDays(spark: SparkSession, 
+                     data: Seq[DataFrame], 
+                     queries: List[Map[String, Any]], 
+                     fileName: String, 
+                     dropDuplicates: Boolean = false, 
+                     commonFilter: String = "") = { 
+    data.map(getAudienceDay(spark, _, queries, commonFilter))
+        .reduce(df1, df2 => df1.unionAll(df2))
+        .distinct()
+        .groupBy("device_id", "device_type")
+        .agg(collect_list("_c2") as "segments")
+        .withColumn("segments", concat_ws(",", col("segments")))
+        .write.format("csv")
+        .option("sep", "\t")
+        .mode("append")
+        .save("/datascience/devicer/processed/"+fileName+"_grouped")
+  }
+  
+
   /**
   * This method returns a DataFrame with the data from the partner data pipeline, for the interval
   * of days specified. Basically, this method loads the given path as a base path, then it
@@ -376,12 +444,14 @@ object GetAudience {
                 case 1 => getDataIdPartners(spark, ids, nDays.toString.toInt, since.toString.toInt)
                 case 2 => getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
                 case 3 => getDataKeywords(spark, nDays.toString.toInt, since.toString.toInt)
-                }
+                case 4 => getDataAudiencesDays(spark, nDays.toString.toInt, since.toString.toInt)
+              }
 
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
       if (queries.length > 10){
-        getMultipleAudience(spark, data, queries, file_name, commonFilter)
+        // getMultipleAudience(spark, data, queries, file_name, commonFilter)
+        getAudienceDays(spark, data, queries, file_name, false, commonFilter)
       } else {
         getAudience(spark, data, queries, file_name, false, commonFilter)
       }
