@@ -299,7 +299,7 @@ object GetAudience {
     val filtered: DataFrame = if (commonFilter.length>0 && queries.length>5) data.filter(commonFilter) else data
     println("\n\n\n\n")
     filtered.explain()
-    if (queries.length>5){
+    if (queries.length>5000){
       println("DEVICER LOG:\n\tPersisting data!")
       filtered.persist(StorageLevel.MEMORY_AND_DISK)
     }
@@ -313,7 +313,7 @@ object GetAudience {
                                             .option("sep", "\t")
                                             .mode("append")
                                             .save("/datascience/devicer/processed/"+fileName))
-    if (queries.length>5){
+    if (queries.length>5000){
       filtered.unpersist()
     }
 
@@ -449,7 +449,7 @@ object GetAudience {
 
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
-      if (queries.length > 10){
+      if (queries.length > 10000){
         // getMultipleAudience(spark, data, queries, file_name, commonFilter)
         val dataDays = getDataAudiencesDays(spark, nDays.toString.toInt, since.toString.toInt)
         getAudienceDays(spark, dataDays, queries, file_name, false, commonFilter)
