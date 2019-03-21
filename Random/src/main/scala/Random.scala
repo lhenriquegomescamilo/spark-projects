@@ -1844,7 +1844,7 @@ val records_common = the_join.select(col("identifier"))
         .load("/datascience/geo/AR/ar_home_90_13-03-19_USERS.csv")
         .withColumnRenamed("_c0", "device_id")
   
-      df.join(gt, Seq("device_id"))
+      df.join(geo, Seq("device_id"))
         .distinct()
         .write
         .mode(SaveMode.Overwrite)
