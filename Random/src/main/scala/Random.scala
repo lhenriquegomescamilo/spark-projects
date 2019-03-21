@@ -1837,11 +1837,12 @@ val records_common = the_join.select(col("identifier"))
       .select("estid", "domain_male")
     val estid_table = spark.read
       .load("/datascience/sharethis/estid_table")
+      .select("d17", "device_id")
       .withColumnRenamed("d17", "estid")
 
     estid_table
-      .join(estid_table, Seq("estid"))
-      .join(estid_table, Seq("device_id"))
+      .join(users_st, Seq("estid"))
+      .join(users_rely, Seq("device_id"))
       .write
       .format("csv")
       .save("/datascience/custom/sharethis_stats")
