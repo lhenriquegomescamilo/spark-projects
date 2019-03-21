@@ -1844,6 +1844,7 @@ val records_common = the_join.select(col("identifier"))
       .join(users_st, Seq("estid"))
       .join(users_rely, Seq("device_id"))
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .save("/datascience/custom/sharethis_stats")
   }
