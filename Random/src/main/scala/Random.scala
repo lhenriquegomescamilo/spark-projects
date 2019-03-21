@@ -1656,67 +1656,6 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     *
-    *                  LA NACION - REPORT
-    *
-    *
-    *
-    *
-   **/
-  def getLanacionReport(spark: SparkSession) = {
-
-    /**
-    typeMapping(spark)
-    spark.read
-      .load("/datascience/data_partner/id_partner=892")
-      .select("device_id", "all_segments")
-      .withColumn("all_segments", concat_ws(",", col("all_segments")))
-      .groupBy("device_id")
-      .agg(collect_list("all_segments").as("all_segments"))
-      .withColumn("all_segments", concat_ws(",", col("all_segments")))
-      .write
-      .format("csv")
-      .option("sep", "\t")
-      .save("/datascience/custom/lanacion_users_with_segments")
-
-
-    val expansion = spark.read
-      .format("csv")
-      .option("sep", " ")
-      .load("/datascience/custom/users_combined.csv")
-      .repartition(100)
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c1", "segments_xp")
-    val lanacion = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .load("/datascience/custom/lanacion_users_with_segments")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c1", "segments")
-    expansion
-      .join(lanacion, Seq("device_id"), "right_outer")
-      .na.fill("1")
-      .withColumn(
-        "segments",
-        concat(col("segments"), lit(","), col("segments_xp"))
-      )
-      .withColumn("segments", split(col("segments"), ","))
-      .withColumn("segments", uniqueUDF(col("segments")))
-      .select("device_id", "segments")
-      .withColumn("segments", explode(col("segments")))
-      .groupBy("segments")
-      .count()
-      .write
-      .format("csv")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/lanacion_report/")
-       **/
-  }
-
-  /**
-    *
-    *
-    *
-    *
     *
     *
     *
@@ -1849,11 +1788,70 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/sharethis_stats")
   }
 
+  /**
+    *
+    *
+    *
+    *
+    *
+    *          DATA LEO 2 - URLS PARA USUARIOS CON GROUND TRUTH
+    *
+    *
+    *
+    *
+    */
+  def getDataAudiences(
+      spark: SparkSession,
+      nDays: Int = 30,
+      since: Int = 1
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .withColumn("category", lit(""))
+      .withColumn("title", lit(""))
+
+    println("DEVICER LOG: list of files to be loaded.")
+    hdfs_files.foreach(println)
+
+    df
+  }
+
+  def joinURLs(spark: SparkSession) = {
+    val df = getDataAudiences(spark).filter("country = 'MX' AND event_type IN ('pv', 'batch')").select("device_id", "url", "timestamp")
+    val gt = spark.read
+      .format("csv")
+      .option("sep", " ")
+      .load("/datascience/devicer/processed/ground_truth_*male/*")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "label")
+      .select("device_id", "label")
+
+    df.join(gt, Seq("device_id")).write.save("/datascience/custom/urls_gt_mx")
+  }
+
+  /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-      
-    stStats(spark)
+
+    joinURLs(spark)
   }
 
 }
