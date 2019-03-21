@@ -1815,6 +1815,7 @@ val records_common = the_join.select(col("identifier"))
     df.join(gt, Seq("device_id"))
       .distinct()
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", "\t")
       .save("/datascience/custom/urls_gt_mx")
