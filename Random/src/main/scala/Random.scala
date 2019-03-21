@@ -1821,6 +1821,38 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/urls_gt_mx")
   }
 
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *          DATA JULI - ALL-SEGMENTS PARA AUDIENCIA GEO
+    *
+    *
+    *
+    *
+    */
+    def joinGeo(spark: SparkSession) = {
+      val df = getDataAudiences(spark, 5, 18)
+        .filter("country = 'AR'")
+        .select("device_id", "all_segments")
+        .withColumn(concat_ws(",", col("all_segments")))
+      val geo = spark.read
+        .format("csv")
+        .load("/datascience/geo/AR/ar_home_90_13-03-19_USERS.csv")
+        .withColumnRenamed("_c0", "device_id")
+  
+      df.join(gt, Seq("device_id"))
+        .distinct()
+        .write
+        .mode(SaveMode.Overwrite)
+        .format("csv")
+        .option("sep", "\t")
+        .save("/datascience/custom/geo_equifax_ar")
+    }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -1828,7 +1860,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    joinURLs(spark)
+    joinGeo(spark)
   }
 
 }
