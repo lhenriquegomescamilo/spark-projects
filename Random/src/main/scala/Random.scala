@@ -1832,7 +1832,9 @@ val records_common = the_join.select(col("identifier"))
   }
 
   def joinURLs(spark: SparkSession) = {
-    val df = getDataAudiences(spark).filter("country = 'MX' AND event_type IN ('pv', 'batch')").select("device_id", "url", "timestamp")
+    val df = getDataAudiences(spark)
+      .filter("country = 'MX' AND event_type IN ('pv', 'batch')")
+      .select("device_id", "url", "timestamp")
     val gt = spark.read
       .format("csv")
       .option("sep", " ")
@@ -1841,7 +1843,12 @@ val records_common = the_join.select(col("identifier"))
       .withColumnRenamed("_c2", "label")
       .select("device_id", "label")
 
-    df.join(gt, Seq("device_id")).write.save("/datascience/custom/urls_gt_mx")
+    df.join(gt, Seq("device_id"))
+      .distinct()
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/urls_gt_mx")
   }
 
   /*****************************************************/
