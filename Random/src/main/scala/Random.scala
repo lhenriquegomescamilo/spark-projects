@@ -1838,7 +1838,7 @@ val records_common = the_join.select(col("identifier"))
       val df = getDataAudiences(spark, 5, 18)
         .filter("country = 'AR'")
         .select("device_id", "all_segments")
-        .withColumn(concat_ws(",", col("all_segments")))
+        .withColumn("all_segments", concat_ws(",", col("all_segments")))
       val geo = spark.read
         .format("csv")
         .load("/datascience/geo/AR/ar_home_90_13-03-19_USERS.csv")
