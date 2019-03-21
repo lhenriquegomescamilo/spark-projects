@@ -1839,10 +1839,12 @@ val records_common = the_join.select(col("identifier"))
         .filter("country = 'AR'")
         .select("device_id", "all_segments")
         .withColumn("all_segments", concat_ws(",", col("all_segments")))
+        .withColumn("device_id", upper(col("device_id")))
       val geo = spark.read
         .format("csv")
         .load("/datascience/geo/AR/ar_home_90_13-03-19_USERS.csv")
         .withColumnRenamed("_c0", "device_id")
+        .withColumn("device_id", upper(col("device_id")))
   
       df.join(geo, Seq("device_id"))
         .distinct()
