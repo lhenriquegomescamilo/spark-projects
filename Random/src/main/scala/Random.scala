@@ -1829,15 +1829,15 @@ val records_common = the_join.select(col("identifier"))
         "/datascience/devicer/processed/US_xd-0_partner-_2019-03-21T04-20-48-364205"
       )
       .select("_c1", "_c2")
-      .withColumn("_c1", "device_id")
-      .withColumn("_c2", "segment")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "segment")
     val users_st = spark.read
       .format("json")
       .load("/datascience/sharethis/demo/dt=2019012*/*")
       .select("estid", "domain_male")
     val estid_table = spark.read
       .load("/datascience/sharethis/estid_table")
-      .withColumn("d17", "estid")
+      .withColumnRenamed("d17", "estid")
 
     estid_table
       .join(estid_table, Seq("estid"))
