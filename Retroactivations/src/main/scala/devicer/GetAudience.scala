@@ -93,7 +93,7 @@ object GetAudience {
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days.map(day => path+"/day=%s/".format(day))
                           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
+    val df = spark.read.option("basePath", path).parquet(hdfs_files:_*).withColumn("category", lit("")).withColumn("title", lit(""))
 
     println("DEVICER LOG: list of files to be loaded.")
     hdfs_files.foreach(println)
