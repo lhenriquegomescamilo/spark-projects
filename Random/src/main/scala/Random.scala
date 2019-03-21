@@ -275,7 +275,7 @@ object Random {
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_audiences_p"
+    val path = "/datascience/data_audiences"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
