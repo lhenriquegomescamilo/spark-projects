@@ -1800,37 +1800,6 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     */
-  def getDataAudiences(
-      spark: SparkSession,
-      nDays: Int = 30,
-      since: Int = 1
-  ): DataFrame = {
-    // First we obtain the configuration to be allowed to watch if a file exists or not
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-    // Get the days to be loaded
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_audiences"
-
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days
-      .map(day => path + "/day=%s/".format(day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read
-      .option("basePath", path)
-      .parquet(hdfs_files: _*)
-      .withColumn("category", lit(""))
-      .withColumn("title", lit(""))
-
-    println("DEVICER LOG: list of files to be loaded.")
-    hdfs_files.foreach(println)
-
-    df
-  }
-
   def joinURLs(spark: SparkSession) = {
     val df = getDataAudiences(spark)
       .filter("country = 'MX' AND event_type IN ('pv', 'batch')")
