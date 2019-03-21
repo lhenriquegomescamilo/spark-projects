@@ -755,18 +755,23 @@ val records_common = the_join.select(col("identifier"))
       .filter("country = '%s'".format(country))
       .dropDuplicates("ad_id")
       .select("ad_id")
-      
-      /*
+
+    /*
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
       .withColumn("Hour", date_format(col("Time"), "HH"))
       .withColumn("Day", date_format(col("Time"), "d"))
       .withColumn("Month", date_format(col("Time"), "M"))
-      */
-      val geo_audience =   spark.read.option("delimiter","\t")
-                            .csv("/datascience/geo/McDonaldsCalleARG_90d_argentina_19-3-2019-6h")
+     */
+    val geo_audience = spark.read
+      .option("delimiter", "\t")
+      .csv("/datascience/geo/McDonaldsCalleARG_90d_argentina_19-3-2019-6h")
 
-
-      df_safegraph.join(geo_audience.select(col("_c1")), geo_audience("_c1")=== df_safegraph("ad_id"), "leftanti")
+    df_safegraph
+      .join(
+        geo_audience.select(col("_c1")),
+        geo_audience("_c1") === df_safegraph("ad_id"),
+        "leftanti"
+      )
       .write
       .format("csv")
       .option("sep", "\t")
@@ -1750,58 +1755,103 @@ val records_common = the_join.select(col("identifier"))
   }
 
   /**
-   * 
-   * 
-   * 
-   * 
-   * 
-   *                  Audiencia Juli - McDonald's
-   * 
-   * 
-   * 
-   * 
-  */
-  def getDataKeywords(spark: SparkSession,nDays: Int = 30, since: Int = 1): DataFrame = {
+    *
+    *
+    *
+    *
+    *
+    *                  Audiencia Juli - McDonald's
+    *
+    *
+    *
+    *
+    */
+  def getDataKeywords(
+      spark: SparkSession,
+      nDays: Int = 30,
+      since: Int = 1
+  ): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
     val format = "yyyyMMdd"
-    val end   = DateTime.now.minusDays(since)
+    val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_keywords"
-    
+
     // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days.map(day => path+"/day=%s".format(day))
-                          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", path).parquet(hdfs_files:_*)
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     df
   }
-
 
   def getUsersMcDonalds(spark: SparkSession) {
     val data_keys = getDataKeywords(spark, 30, 1)
 
-    val udfSegments = udf( (segments: Seq[String]) => segments.filter(_.contains("as")).mkString(",") )
+    val udfSegments = udf(
+      (segments: Seq[String]) => segments.filter(_.contains("as")).mkString(",")
+    )
 
-    data_keys.filter("country = 'AR' AND (array_contains(segments, 'as_81488') OR array_contains(segments, 'as_81489') OR array_contains(segments, 'as_83788'))")
-             .withColumn("segments", udfSegments(col("segments")))
-             .select("device_id", "segments")
-             .write
-             .mode(SaveMode.Overwrite)
-             .format("csv")
-             .option("sep", ",")
-             .save("/datascience/custom/mcdonalds_users")
+    data_keys
+      .filter(
+        "country = 'AR' AND (array_contains(segments, 'as_81488') OR array_contains(segments, 'as_81489') OR array_contains(segments, 'as_83788'))"
+      )
+      .withColumn("segments", udfSegments(col("segments")))
+      .select("device_id", "segments")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", ",")
+      .save("/datascience/custom/mcdonalds_users")
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *                SHARETHIS STATS
+    *
+    *
+    *
+    *
+    */
+  def stStats(spark: SparkSession) = {
+    val users_rely = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load(
+        "/datascience/devicer/processed/US_xd-0_partner-_2019-03-21T04-20-48-364205"
+      )
+      .select("_c1", "_c2")
+      .withColumn("_c1", "device_id")
+      .withColumn("_c2", "segment")
+    val users_st = spark.read
+      .format("json")
+      .load("/datascience/sharethis/demo/dt=2019012*/*")
+      .select("estid", "domain_male")
+    val estid_table = spark.read
+      .load("/datascience/sharethis/estid_table")
+      .withColumn("d17", "estid")
+
+    estid_table
+      .join(estid_table, Seq("estid"))
+      .join(estid_table, Seq("device_id"))
+      .write
+      .format("csv")
+      .save("/datascience/custom/sharethis_stats")
   }
 
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-      // join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", " ", "join_google_analytics", "MX")
-      // join_gender_google_analytics(spark, "/datascience/devicer/processed/ground_truth_*male", " ", "join_google_analytics_path", "MX")
-      //getUsersMcDonalds(spark)
-      get_safegraph_data(spark,90,"argentina")
+      
+    stStats(spark)
   }
 
 }
