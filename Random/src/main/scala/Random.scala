@@ -1872,7 +1872,7 @@ val records_common = the_join.select(col("identifier"))
       )
       .dropDuplicates("url", "device_id")
     val users =
-      ga.groupBy("device_id").count().filter("count >= 3").select("device_id")
+      ga.groupBy("device_id").count().filter("count >= 2").select("device_id")
 
     users.cache()
     users.write
