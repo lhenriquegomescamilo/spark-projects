@@ -1875,13 +1875,17 @@ val records_common = the_join.select(col("identifier"))
       ga.groupBy("device_id").count().filter("count >= 3").select("device_id")
 
     users.cache()
-    users.write.save("/datascience/data_demo/users_to_expand_ga_MX")
+    users.write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/users_to_expand_ga_MX")
 
     ga.join(users, Seq("device_id"))
       .write
+      .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/expand_ga_dataset")
 
-    val segments = """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
+    val segments =
+      """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
       247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
       386,389,395,396,397,398,399,401,402,403,404,405,409,410,411,412,413,418,420,421,422,429,430,432,433,434,440,441,446,447,450,451,453,454,456,457,458,
       459,460,462,463,464,465,467,895,898,899,909,912,914,915,916,917,919,920,922,923,928,929,930,931,932,933,934,935,937,938,939,940,942,947,948,949,950,
@@ -1892,14 +1896,15 @@ val records_common = the_join.select(col("identifier"))
       3589,3590,3591,3592,3593,3594,3595,3596,3597,3598,3599,3600,3730,3731,3732,3733,3779,3782,3843,3844,3913,3914,3915,4097,
       5025,5310,5311""".replace("\n", "").split(",").toList.toSeq
 
-
     val triplets =
-      spark.read.load("/datascience/data_demo/triplets_segments/country=MX/")
-           .filter(col("feature").isin(segments: _*))
+      spark.read
+        .load("/datascience/data_demo/triplets_segments/country=MX/")
+        .filter(col("feature").isin(segments: _*))
 
     triplets
       .join(users, Seq("device_id"))
       .write
+      .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/expand_triplets_dataset")
   }
 
