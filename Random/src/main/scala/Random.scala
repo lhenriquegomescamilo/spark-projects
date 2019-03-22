@@ -1870,7 +1870,7 @@ val records_common = the_join.select(col("identifier"))
       .load(
         "/datascience/data_demo/join_google_analytics/country=MX/"
       )
-      .drop_duplicates("url", "device_id")
+      .dropDuplicates("url", "device_id")
     val users =
       ga.groupBy("device_id").count().filter("count >= 3").select("device_id")
 
@@ -1890,13 +1890,13 @@ val records_common = the_join.select(col("identifier"))
       3040,3041,3042,3043,3044,3045,3046,3047,3048,3049,3050,3051,3055,3076,3077,3084,3085,3086,3087,3302,3303,3308,3309,3310,3388,3389,3418,3420,3421,3422,
       3423,3450,3470,3472,3473,3564,3565,3566,3567,3568,3569,3570,3571,3572,3573,3574,3575,3576,3577,3578,3579,3580,3581,3582,3583,3584,3585,3586,3587,3588,
       3589,3590,3591,3592,3593,3594,3595,3596,3597,3598,3599,3600,3730,3731,3732,3733,3779,3782,3843,3844,3913,3914,3915,4097,
-      5025,5310,5311""".replace("\n", "").split(",").toList.toSet
+      5025,5310,5311""".replace("\n", "").split(",").toList.toSeq
 
 
     val triplets =
       spark.read.load("/datascience/data_demo/triplets_segments/country=MX/")
            .filter(col("feature").isin(segments: _*))
-               
+
     triplets
       .join(users, Seq("device_id"))
       .write
