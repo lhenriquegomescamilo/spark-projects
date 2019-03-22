@@ -293,7 +293,7 @@ object GetAudience {
                   data: DataFrame, 
                   queries: List[Map[String, Any]], 
                   fileName: String, 
-                  dropDuplicates: Boolean = false, 
+                  push: Boolean = false, 
                   commonFilter: String = "") = { 
     println("DEVICER LOG:\n\tCommon filter: %s\n\tCommon filter length: %d".format(commonFilter, commonFilter.length))
     val filtered: DataFrame = if (commonFilter.length>0 && queries.length>5) data.filter(commonFilter) else data
@@ -318,6 +318,7 @@ object GetAudience {
     }
 
     if (results.length > 1) {
+      val fileNameFinal = "/datascience/devicer/processed/"+fileName+"_grouped"
       val done = spark.read.format("csv")
                         .option("sep", "\t")
                         .load("/datascience/devicer/processed/"+fileName)
@@ -328,9 +329,42 @@ object GetAudience {
           .write.format("csv")
             .option("sep", "\t")
             .mode("append")
-            .save("/datascience/devicer/processed/"+fileName+"_grouped")
+            .save(fileNameFinal)
+
+      if (push)
+        coalesceDataset(spark, fileNameFinal)
     }
-  
+    else if (push)
+      coalesceDataset(spark, "/datascience/devicer/processed/"+fileName)
+  }
+
+
+  /**
+   * This method reads the dataset given, and coalesces it into files of 2MM so that it is easier for the dev
+   * team to ingest these files.
+   * 
+   * @param fileName: file name where the data is stored now with complete path.
+   * 
+   * As a result it stores the dataset coalesced in files of 2MM.
+  */
+  def coalesceDataset(spark: SparkSession, fileName: String) = {
+    val data = spark.read
+                    .format("csv")
+                    .option("sep", "\t")
+                    .load(fileName)
+
+    val count = data.count()
+    val n_files = count / 2000000
+
+    if (count > 2000000) {
+      data.coalesce(n_files.toInt)
+          .write
+          .format("csv")
+          .option("sep", "\t")
+          .save(fileName+"_coalesced")
+    }
+
+    count>2000000
   }
 
   /** 
@@ -476,7 +510,7 @@ object GetAudience {
         println("DEVICER LOG:\n\tPushing the audience to the ingester")
           val priority = queries(0)("priority")
           val as_view = if (queries(0)("as_view").toString.length>0) queries(0)("as_view").toString.toInt else 0
-          val queue = queries(0)("queue")
+          val queue = queries(0)("queue").toString
           val jobid = if (queries(0)("jobid").toString.length>0) queries(0)("jobid").toString.toInt else 0
           val description = queries(0)("description")
           file_name = if(queries.length > 1) file_name+"_grouped" else file_name

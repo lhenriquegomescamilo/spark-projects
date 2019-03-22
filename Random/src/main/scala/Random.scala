@@ -1821,7 +1821,6 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/urls_gt_mx")
   }
 
-
   /**
     *
     *
@@ -1834,26 +1833,62 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     */
-    def joinGeo(spark: SparkSession) = {
-      val df = getDataAudiences(spark, 5, 18)
-        .filter("country = 'AR'")
-        .select("device_id", "all_segments")
-        .withColumn("all_segments", concat_ws(",", col("all_segments")))
-        .withColumn("device_id", upper(col("device_id")))
-      val geo = spark.read
-        .format("csv")
-        .load("/datascience/geo/AR/ar_home_90_13-03-19_USERS.csv")
-        .withColumnRenamed("_c0", "device_id")
-        .withColumn("device_id", upper(col("device_id")))
-  
-      df.join(geo, Seq("device_id"))
-        .distinct()
-        .write
-        .mode(SaveMode.Overwrite)
-        .format("csv")
-        .option("sep", "\t")
-        .save("/datascience/custom/geo_equifax_ar")
-    }
+  def joinGeo(spark: SparkSession) = {
+    val df = getDataAudiences(spark, 5, 18)
+      .filter("country = 'AR'")
+      .select("device_id", "all_segments")
+      .withColumn("all_segments", concat_ws(",", col("all_segments")))
+      .withColumn("device_id", upper(col("device_id")))
+    val geo = spark.read
+      .format("csv")
+      .load("/datascience/geo/AR/ar_home_90_13-03-19_USERS.csv")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumn("device_id", upper(col("device_id")))
+
+    df.join(geo, Seq("device_id"))
+      .distinct()
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/geo_equifax_ar")
+  }
+
+  /**
+    *
+    *
+    *
+    *                  DATASET FOR EXPANSION MX
+    *
+    *
+    *
+    *
+    *
+    */
+  def getExpansionDataset(spark: SparkSession) {
+    val ga = spark.read
+      .load(
+        "/datascience/data_demo/join_google_analytics/country=MX/part-09734-fac97810-e089-4d04-a895-5aec29cd7a96.c000.snappy.parquet"
+      )
+      .drop_duplicates("url", "device_id")
+    val users =
+      ga.groupBy("device_id").count().filter("count >= 3").select("device_id")
+
+    users.cache()
+    users.write.save("/datascience/data_demo/users_to_expand_ga_MX")
+
+    ga.join(users, Seq("device_id"))
+      .write
+      .save("/datascience/data_demo/expand_ga_dataset")
+
+    val triplets =
+      spark.read.load("/datascience/data_demo/triplets_segments/country=MX/")
+
+    triplets
+      .join(users, Seq("device_id"))
+      .write
+      .save("/datascience/data_demo/expand_triplets_dataset")
+  }
 
   /*****************************************************/
   /******************     MAIN     *********************/
@@ -1862,7 +1897,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    joinGeo(spark)
+    getExpansionDataset(spark)
   }
 
 }
