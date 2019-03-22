@@ -1876,11 +1876,13 @@ val records_common = the_join.select(col("identifier"))
 
     users.cache()
     users.write
+      .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/users_to_expand_ga_MX")
 
     ga.join(users, Seq("device_id"))
       .write
+      .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/expand_ga_dataset")
 
@@ -1904,6 +1906,7 @@ val records_common = the_join.select(col("identifier"))
     triplets
       .join(users, Seq("device_id"))
       .write
+      .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/expand_triplets_dataset")
   }
