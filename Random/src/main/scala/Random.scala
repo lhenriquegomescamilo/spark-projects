@@ -1912,7 +1912,7 @@ val records_common = the_join.select(col("identifier"))
     val myUDF = udf(
       (weekday: String, hour: String) =>
         if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
-        else "$s0".format(hour)
+        else "%s0".format(hour)
     )
     val data =
       spark.read.load("/datascience/data_demo/join_google_analytics/country=MX")
