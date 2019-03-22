@@ -1928,6 +1928,7 @@ val records_common = the_join.select(col("identifier"))
       .agg(sum("count"))
       .write
       .format("csv")
+      .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/expand_ga_timestamp")
   }
