@@ -98,7 +98,7 @@ object LookAlike {
     println("LOGGER")
     println(predictions)
     predictions.take(20).foreach(println)
-    val rmse = evaluator.evaluate(predictions)
+    val rmse = evaluator.evaluate(predictions.toDF())
     println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
 
