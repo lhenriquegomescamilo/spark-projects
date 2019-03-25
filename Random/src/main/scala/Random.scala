@@ -1866,19 +1866,19 @@ val records_common = the_join.select(col("identifier"))
     *
     */
   def getExpansionDataset(spark: SparkSession) {
-    // val ga = spark.read
-    //   .load(
-    //     "/datascience/data_demo/join_google_analytics/country=MX/"
-    //   )
-    //   .dropDuplicates("url", "device_id")
-    // val users =
-    //   ga.groupBy("device_id").count().filter("count >= 2").select("device_id")
+    val ga = spark.read
+      .load(
+        "/datascience/data_demo/join_google_analytics/country=MX/"
+      )
+      .dropDuplicates("url", "device_id")
+    val users =
+      ga.groupBy("device_id").count().select("device_id")
 
     // users.cache()
-    // users.write
-    //   .format("csv")
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/data_demo/users_to_expand_ga_MX")
+    users.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/users_to_expand_ga_MX")
 
     // ga.join(users, Seq("device_id"))
     //   .write
@@ -1909,28 +1909,28 @@ val records_common = the_join.select(col("identifier"))
     //   .format("csv")
     //   .mode(SaveMode.Overwrite)
     //   .save("/datascience/data_demo/expand_triplets_dataset")
-    val myUDF = udf(
-      (weekday: String, hour: String) =>
-        if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
-        else "%s0".format(hour)
-    )
-    val data =
-      spark.read.load("/datascience/data_demo/join_google_analytics/country=MX")
-    data
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-      .withColumn("Hour", date_format(col("Time"), "HH"))
-      .withColumn("Weekday", date_format(col("Time"), "EEEE"))
-      .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
-      .groupBy("device_id", "wd")
-      .count()
-      .groupBy("device_id")
-      .pivot("wd")
-      .agg(sum("count"))
-      .write
-      .format("csv")
-      .option("header", "true")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/expand_ga_timestamp")
+    // val myUDF = udf(
+    //   (weekday: String, hour: String) =>
+    //     if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
+    //     else "%s0".format(hour)
+    // )
+    // val data =
+    //   spark.read.load("/datascience/data_demo/join_google_analytics/country=MX")
+    // data
+    //   .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+    //   .withColumn("Hour", date_format(col("Time"), "HH"))
+    //   .withColumn("Weekday", date_format(col("Time"), "EEEE"))
+    //   .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
+    //   .groupBy("device_id", "wd")
+    //   .count()
+    //   .groupBy("device_id")
+    //   .pivot("wd")
+    //   .agg(sum("count"))
+    //   .write
+    //   .format("csv")
+    //   .option("header", "true")
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/data_demo/expand_ga_timestamp")
   }
 
   /*****************************************************/
