@@ -65,8 +65,8 @@ object LookAlike {
       .map(_ match {
         case Row(user, item, rate) =>
           Rating(
-            user.asInstanceOf[Double].toInt,
-            item.asInstanceOf[Double].toInt,
+            user.asInstanceOf[Long].toInt,
+            item.asInstanceOf[Long].toInt,
             rate.asInstanceOf[Integer].toDouble
           )
       })
