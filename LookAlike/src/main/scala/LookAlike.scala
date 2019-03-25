@@ -48,9 +48,7 @@ object LookAlike {
     val indexer_devices = new StringIndexer()
       .setInputCol("device_id")
       .setOutputCol("device_id_index")
-    val indexer_segments =
-      new StringIndexer()
-        .set(StringIndexer.stringOrderType, "alphabetAsc")
+    val indexer_segments = new StringIndexer()
         .setInputCol("feature")
         .setOutputCol("feature_index")
 
