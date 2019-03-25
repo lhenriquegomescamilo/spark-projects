@@ -73,6 +73,7 @@ object LookAlike {
   }
 
   def train(
+      spark: SparkSession,
       training: RDD[Rating],
       test: RDD[(Int, Int)],
       rank: Int,
@@ -152,6 +153,7 @@ object LookAlike {
     val Array(training, test) = ratings.randomSplit(Array(0.9, 0.1))
     //training.take(20)
     train(
+      spark,
       training,
       test.map(rating => (rating.user, rating.product)),
       8,
