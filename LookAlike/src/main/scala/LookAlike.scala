@@ -45,21 +45,21 @@ object LookAlike {
   }
 
   def getRatings(triplets: DataFrame): RDD[Rating] = {
-    val indexer_devices = new StringIndexer()
-      .setInputCol("device_id")
-      .setOutputCol("device_id_index")
-    val indexer_segments = new StringIndexer()
-        .setInputCol("feature")
-        .setOutputCol("feature_index")
+    // val indexer_devices = new StringIndexer()
+    //   .setInputCol("device_id")
+    //   .setOutputCol("device_id_index")
+    // val indexer_segments = new StringIndexer()
+    //     .setInputCol("feature")
+    //     .setOutputCol("feature_index")
 
-    val data_dev_indexed =
-      indexer_devices.fit(triplets.select("device_id")).transform(triplets)
-    val data_indexed =
-      indexer_segments
-        .fit(data_dev_indexed.select("feature"))
-        .transform(data_dev_indexed)
+    // val data_dev_indexed =
+    //   indexer_devices.fit(triplets.select("device_id")).transform(triplets)
+    // val data_indexed =
+    //   indexer_segments
+    //     .fit(data_dev_indexed.select("feature"))
+    //     .transform(data_dev_indexed)
 
-    val ratings: RDD[Rating] = data_indexed
+    val ratings: RDD[Rating] = triplets//data_indexed
       .select("device_id_index", "feature_index", "count")
       .rdd
       .map(_ match {
@@ -107,7 +107,7 @@ object LookAlike {
     val sqlContext = new org.apache.spark.sql.SQLContext(spark.sparkContext)
     import sqlContext.implicits._
 
-    val triplets = getData(spark)
+    // val triplets = getData(spark)
 
     // dfZipWithIndex(
     //   triplets.select("device_id").distinct(),
@@ -129,26 +129,27 @@ object LookAlike {
     //   .partitionBy("country")
     //   .save("/datascience/data_lookalike/feature_index")
 
-    val device_index = spark.read.load("/datascience/data_lookalike/device_index/country=MX/")
-    val feature_index = spark.read.load("/datascience/data_lookalike/feature_index/country=MX/")
-    triplets.join(broadcast(feature_index), Seq("feature"))
-            .join(device_index, Seq("device_id"))
-            .withColumn("country", lit("MX"))
-            .write
-            .partitionBy("country")
-            .save("/datascience/data_lookalike/segment_triplets_with_index")
+    // val device_index = spark.read.load("/datascience/data_lookalike/device_index/country=MX/")
+    // val feature_index = spark.read.load("/datascience/data_lookalike/feature_index/country=MX/")
+    // triplets.join(broadcast(feature_index), Seq("feature"))
+    //         .join(device_index, Seq("device_id"))
+    //         .withColumn("country", lit("MX"))
+    //         .write
+    //         .partitionBy("country")
+    //         .save("/datascience/data_lookalike/segment_triplets_with_index")
 
 
-    // val ratings = getRatings(triplets)
+    val triplets = spark.read.load("/datascience/data_lookalike/segment_triplets_with_index/country=MX")
+    val ratings = getRatings(triplets)
 
-    // val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
-    // //training.take(20)
-    // train(
-    //   training,
-    //   test.map(rating => (rating.user, rating.product)),
-    //   8,
-    //   5,
-    //   0.01
-    // )
+    val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
+    //training.take(20)
+    train(
+      training,
+      test.map(rating => (rating.user, rating.product)),
+      8,
+      5,
+      0.01
+    )
   }
 }
