@@ -98,8 +98,8 @@ object LookAlike {
     println("LOGGER")
     println(predictions)
     predictions.take(20).foreach(println)
-    //val rmse = evaluator.evaluate(predictions)
-    //println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
+    val rmse = evaluator.evaluate(predictions)
+    println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
 
   def main(args: Array[String]) {
