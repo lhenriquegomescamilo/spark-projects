@@ -100,11 +100,11 @@ object LookAlike {
     val schema = StructType(
       Seq(
         StructField(name = "device_index", dataType = IntegerType, nullable = false),
-        StructField(name = "feature_index", dataType = IntegerType, nullable = false)
+        StructField(name = "feature_index", dataType = IntegerType, nullable = false),
         StructField(name = "count", dataType = DoubleType, nullable = false)
       )
     )
-    val rmse = evaluator.evaluate(predictions.toDF())
+    val rmse = evaluator.evaluate(spark.createDataFrame(predictions, schema))
     println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
 
