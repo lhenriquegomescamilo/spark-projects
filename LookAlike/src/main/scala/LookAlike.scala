@@ -23,9 +23,9 @@ object LookAlike {
     val indexer_segments =
       new StringIndexer().setInputCol("feature").setOutputCol("feature_index")
 
-    val data_dev_indexed = indexer_devices.fit(triplets).transform(triplets)
+    val data_dev_indexed = indexer_devices.fit(triplets.select("device_id").dictinct()).transform(triplets)
     val data_indexed =
-      indexer_segments.fit(triplets).transform(data_dev_indexed)
+      indexer_segments.fit(data_dev_indexed.select("feature").dictinct()).transform(data_dev_indexed)
 
     val ratings: RDD[Rating] = data_indexed
       .select("device_id_index", "feature_index", "count")
