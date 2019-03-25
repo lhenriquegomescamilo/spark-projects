@@ -11,8 +11,8 @@ object LookAlike {
   def getData(spark: SparkSession): DataFrame = {
     val data: DataFrame = spark.read
       .parquet("/datascience/data_demo/triplets_segments/country=MX/")
-      .groupBy("device_id", "feature")
-      .agg(sum(col("count")).as("count"))
+      // .groupBy("device_id", "feature")
+      // .agg(sum(col("count")).as("count"))
     data
   }
 
