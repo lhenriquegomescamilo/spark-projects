@@ -60,7 +60,7 @@ object LookAlike {
     //     .transform(data_dev_indexed)
 
     val ratings: RDD[Rating] = triplets//data_indexed
-      .select("device_id_index", "feature_index", "count")
+      .select("device_index", "feature_index", "count")
       .rdd
       .map(_ match {
         case Row(user, item, rate) =>
