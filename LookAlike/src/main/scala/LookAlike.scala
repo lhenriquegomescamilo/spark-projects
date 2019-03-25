@@ -21,7 +21,7 @@ object LookAlike {
       .setInputCol("device_id")
       .setOutputCol("device_id_index")
     val indexer_segments =
-      new StringIndexer().set("stringOrderType", "alphabetAsc").setInputCol("feature").setOutputCol("feature_index")
+      new StringIndexer().set(StringIndexer.stringOrderType, "alphabetAsc").setInputCol("feature").setOutputCol("feature_index")
 
     val data_dev_indexed = indexer_devices.fit(triplets.select("device_id")).transform(triplets)
     val data_indexed =
