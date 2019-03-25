@@ -1866,11 +1866,11 @@ val records_common = the_join.select(col("identifier"))
     *
     */
   def getExpansionDataset(spark: SparkSession) {
-    // val ga = spark.read
-    //   .load(
-    //     "/datascience/data_demo/join_google_analytics/country=MX/"
-    //   )
-    //   .dropDuplicates("url", "device_id")
+    val ga = spark.read
+      .load(
+        "/datascience/data_demo/join_google_analytics/country=MX/"
+      )
+      .dropDuplicates("url", "device_id")
     // val users =
     //   ga.groupBy("device_id").count().select("device_id")
 
@@ -1910,7 +1910,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/expand_triplets_dataset")
-      
+
     // val myUDF = udf(
     //   (weekday: String, hour: String) =>
     //     if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
