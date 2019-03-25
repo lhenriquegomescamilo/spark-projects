@@ -4,12 +4,9 @@ import org.apache.spark.mllib.recommendation.{ALS, Rating}
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.sql.functions.{sum, col, lit, broadcast}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{LongType, StructField, StructType}
-import org.apache.spark.sql.Row
-import org.apache.spark.implicits._
 
 object LookAlike {
   def getData(spark: SparkSession): DataFrame = {
@@ -99,6 +96,14 @@ object LookAlike {
     println("LOGGER")
     println(predictions)
     predictions.take(20).foreach(println)
+
+    val schema = StructType(
+      Seq(
+        StructField(name = "device_index", dataType = IntegerType, nullable = false),
+        StructField(name = "feature_index", dataType = IntegerType, nullable = false)
+        StructField(name = "count", dataType = DoubleType, nullable = false)
+      )
+    )
     val rmse = evaluator.evaluate(predictions.toDF())
     println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
