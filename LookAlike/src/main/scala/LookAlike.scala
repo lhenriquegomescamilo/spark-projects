@@ -21,11 +21,11 @@ object LookAlike {
       .setInputCol("device_id")
       .setOutputCol("device_id_index")
     val indexer_segments =
-      new StringIndexer().setInputCol("feature").setOutputCol("feature_index")
+      new StringIndexer().set("stringOrderType", "alphabetAsc").setInputCol("feature").setOutputCol("feature_index")
 
-    val data_dev_indexed = indexer_devices.fit(triplets.select("device_id").distinct()).transform(triplets)
+    val data_dev_indexed = indexer_devices.fit(triplets.select("device_id")).transform(triplets)
     val data_indexed =
-      indexer_segments.fit(data_dev_indexed.select("feature").distinct()).transform(data_dev_indexed)
+      indexer_segments.fit(data_dev_indexed.select("feature")).transform(data_dev_indexed)
 
     val ratings: RDD[Rating] = data_indexed
       .select("device_id_index", "feature_index", "count")
