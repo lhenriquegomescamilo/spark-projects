@@ -105,7 +105,7 @@ object LookAlike {
         StructField(name = "count", dataType = DoubleType, nullable = false)
       )
     )
-    val rmse = evaluator.evaluate(spark.createDataFrame(predictions.map(p => Row(p(0), p(1), p(2))), schema))
+    val rmse = evaluator.evaluate(spark.createDataFrame(predictions.map(p => Row(p.user(), p.product(), p.rating())), schema))
     println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
 
