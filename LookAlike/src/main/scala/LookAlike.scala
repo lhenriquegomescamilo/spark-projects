@@ -3,7 +3,7 @@ package main.scala
 import org.apache.spark.mllib.recommendation.{ALS, Rating}
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.evaluation.RegressionEvaluator
-import org.apache.spark.sql.functions.{sum, col}
+import org.apache.spark.sql.functions.{sum, col, lit}
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
@@ -121,15 +121,15 @@ object LookAlike {
       .partitionBy("country")
       .save("/datascience/data_lookalike/device_index")
 
-      dfZipWithIndex(
-        triplets.select("feature").distinct(),
-        0,
-        "feature_index",
-        false
-      ).withColumn("country", lit("MX"))
-        .write
-        .partitionBy("country")
-        .save("/datascience/data_lookalike/feature_index")
+    dfZipWithIndex(
+      triplets.select("feature").distinct(),
+      0,
+      "feature_index",
+      false
+    ).withColumn("country", lit("MX"))
+      .write
+      .partitionBy("country")
+      .save("/datascience/data_lookalike/feature_index")
     // val ratings = getRatings(triplets)
 
     // val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
