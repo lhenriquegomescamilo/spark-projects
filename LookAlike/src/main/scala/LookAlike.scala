@@ -6,14 +6,42 @@ import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.sql.functions.{sum, col}
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.apache.spark.sql.Row
 
 object LookAlike {
   def getData(spark: SparkSession): DataFrame = {
     val data: DataFrame = spark.read
       .parquet("/datascience/data_demo/triplets_segments/country=MX/")
-      // .groupBy("device_id", "feature")
-      // .agg(sum(col("count")).as("count"))
+    // .groupBy("device_id", "feature")
+    // .agg(sum(col("count")).as("count"))
     data
+  }
+
+  def dfZipWithIndex(
+      df: DataFrame,
+      offset: Int = 1,
+      colName: String = "id",
+      inFront: Boolean = true
+  ): DataFrame = {
+    df.sqlContext.createDataFrame(
+      df.rdd.zipWithIndex.map(
+        ln =>
+          Row.fromSeq(
+            (if (inFront) Seq(ln._2 + offset) else Seq())
+              ++ ln._1.toSeq ++
+              (if (inFront) Seq() else Seq(ln._2 + offset))
+          )
+      ),
+      StructType(
+        (if (inFront) Array(StructField(colName, LongType, false))
+         else Array[StructField]())
+          ++ df.schema.fields ++
+          (if (inFront) Array[StructField]()
+           else Array(StructField(colName, LongType, false)))
+      )
+    )
   }
 
   def getRatings(triplets: DataFrame): RDD[Rating] = {
@@ -21,11 +49,17 @@ object LookAlike {
       .setInputCol("device_id")
       .setOutputCol("device_id_index")
     val indexer_segments =
-      new StringIndexer().set(StringIndexer.stringOrderType, "alphabetAsc").setInputCol("feature").setOutputCol("feature_index")
+      new StringIndexer()
+        .set(StringIndexer.stringOrderType, "alphabetAsc")
+        .setInputCol("feature")
+        .setOutputCol("feature_index")
 
-    val data_dev_indexed = indexer_devices.fit(triplets.select("device_id")).transform(triplets)
+    val data_dev_indexed =
+      indexer_devices.fit(triplets.select("device_id")).transform(triplets)
     val data_indexed =
-      indexer_segments.fit(data_dev_indexed.select("feature")).transform(data_dev_indexed)
+      indexer_segments
+        .fit(data_dev_indexed.select("feature"))
+        .transform(data_dev_indexed)
 
     val ratings: RDD[Rating] = data_indexed
       .select("device_id_index", "feature_index", "count")
@@ -76,16 +110,36 @@ object LookAlike {
     import sqlContext.implicits._
 
     val triplets = getData(spark)
-    val ratings = getRatings(triplets)
 
-    val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
-    //training.take(20)
-    train(
-      training,
-      test.map(rating => (rating.user, rating.product)),
-      8,
-      5,
-      0.01
-    )
+    dfZipWithIndex(
+      triplets.select("device_id").distinct(),
+      0,
+      "device_index",
+      false
+    ).withColumn("country", lit("MX"))
+      .write
+      .partitionBy("country")
+      .save("/datascience/data_lookalike/device_index")
+
+      dfZipWithIndex(
+        triplets.select("feature").distinct(),
+        0,
+        "feature_index",
+        false
+      ).withColumn("country", lit("MX"))
+        .write
+        .partitionBy("country")
+        .save("/datascience/data_lookalike/feature_index")
+    // val ratings = getRatings(triplets)
+
+    // val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
+    // //training.take(20)
+    // train(
+    //   training,
+    //   test.map(rating => (rating.user, rating.product)),
+    //   8,
+    //   5,
+    //   0.01
+    // )
   }
 }
