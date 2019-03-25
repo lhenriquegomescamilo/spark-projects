@@ -9,7 +9,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.sql.Row
-import spark.implicits._
+import org.apache.spark.implicits._
 
 object LookAlike {
   def getData(spark: SparkSession): DataFrame = {
