@@ -91,7 +91,7 @@ object LookAlike {
       .setMetricName("rmse")
       .setLabelCol("value")
       .setPredictionCol("prediction")
-    val predictions = model.transform(test)
+    // val predictions = model.transform(test)
     val schema = StructType(
       Seq(
         StructField(name = "device_index", dataType = IntegerType, nullable = false),
@@ -99,7 +99,7 @@ object LookAlike {
         StructField(name = "count", dataType = DoubleType, nullable = false)
       )
     )
-    // val predictions = model.predict(test.map(rating => (rating.user, rating.product)))
+    val predictions = model.predict(test.map(rating => (rating.user, rating.product)))
 
     println("LOGGER")
     println(predictions)
