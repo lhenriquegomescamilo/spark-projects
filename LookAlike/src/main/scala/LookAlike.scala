@@ -99,14 +99,14 @@ object LookAlike {
         StructField(name = "count", dataType = DoubleType, nullable = false)
       )
     )
-    val predictions = model.predict(spark.createDataFrame(test.map(p => Row(p.user, p.product, p.rating)), schema))
+    val predictions = model.predict(test.map(rating => (rating.user, rating.product)))
 
     println("LOGGER")
     println(predictions)
     predictions.take(20).foreach(println)
 
-    val rmse = evaluator.evaluate(predictions)
-    println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
+    // val rmse = evaluator.evaluate(spark.createDataFrame(predictions.map(p => Row(p.user, p.product, p.rating)), schema))
+    // println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
 
   def main(args: Array[String]) {
