@@ -92,12 +92,6 @@ object LookAlike {
       .setLabelCol("value")
       .setPredictionCol("prediction")
     //val predictions = model.transform(test)
-    val predictions = model.predict(test)
-
-    println("LOGGER")
-    println(predictions)
-    predictions.take(20).foreach(println)
-
     val schema = StructType(
       Seq(
         StructField(name = "device_index", dataType = IntegerType, nullable = false),
@@ -105,7 +99,13 @@ object LookAlike {
         StructField(name = "count", dataType = DoubleType, nullable = false)
       )
     )
-    val rmse = evaluator.evaluate(spark.createDataFrame(predictions.map(p => Row(p.user, p.product, p.rating)), schema))
+    val predictions = model.predict(spark.createDataFrame(test.map(p => Row(p.user, p.product, p.rating)), schema))
+
+    println("LOGGER")
+    println(predictions)
+    predictions.take(20).foreach(println)
+
+    val rmse = evaluator.evaluate(predictions)
     println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
 
