@@ -75,7 +75,7 @@ object LookAlike {
   def train(
       spark: SparkSession,
       training: RDD[Rating],
-      test: RDD[(Int, Int)],
+      test: RDD[Rating],
       rank: Int,
       numIter: Int,
       lambda: Double
@@ -155,7 +155,7 @@ object LookAlike {
     train(
       spark,
       training,
-      test.map(rating => (rating.user, rating.product)),
+      test,//.map(rating => (rating.user, rating.product)),
       8,
       5,
       0.01
