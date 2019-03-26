@@ -1935,9 +1935,124 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/data_demo/expand_ga_timestamp")
   }
 
+  /**
+    *
+    *
+    *
+    *
+    *
+    *          PEDIDO DUNNHUMBY
+    *
+    *
+    *
+    *
+    *
+    */
+  def getDunnhumbyMatching(spark: SparkSession) = {
+    val pii_table = spark.read.load("/datascience/pii_matching/pii_table")
+    pii_table.cache()
+
+    // EXITO CO FILE
+    val exito_co_ml = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/Exito-CO.csv")
+      .select("distinct_correo")
+      .withColumnRenamed("distinct_correo", "pii")
+      .distinct()
+
+    pii_table
+      .join(exito_co_ml, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/exito_co_ml")
+
+    val exito_co_nid = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/Exito-CO.csv")
+      .select("distinct_documento")
+      .withColumnRenamed("distinct_documento", "pii")
+      .distinct()
+
+    pii_table
+      .join(exito_co_nid, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/exito_co_nid")
+
+    // GPA BR
+    val gpa_br_ml = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/GPA-BR.csv")
+      .select("DS_EMAIL_LOWER")
+      .withColumnRenamed("DS_EMAIL_LOWER", "pii")
+      .distinct()
+
+    pii_table
+      .join(gpa_br_ml, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/gpa_br_ml")
+
+    val gpa_br_nid = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/GPA-BR.csv")
+      .select("NR_CPF")
+      .withColumnRenamed("NR_CPF", "pii")
+      .distinct()
+
+    pii_table
+      .join(gpa_br_nid, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/gpa_br_nid")
 
 
-  
+    // RD BR
+    val rd_br_ml = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/RD-BR.csv")
+      .select("ds_email_lower")
+      .withColumnRenamed("ds_email_lower", "pii")
+      .distinct()
+
+    pii_table
+      .join(rd_br_ml, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/rd_br_ml")
+
+    val rd_br_nid = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/GPA-BR.csv")
+      .select("nr_cpf")
+      .withColumnRenamed("nr_cpf", "pii")
+      .distinct()
+
+    pii_table
+      .join(rd_br_nid, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/rd_br_nid")
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -1945,7 +2060,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    getExpansionDataset(spark)
+    getDunnhumbyMatching(spark)
   }
 
 }
