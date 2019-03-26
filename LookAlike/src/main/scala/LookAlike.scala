@@ -85,7 +85,7 @@ object LookAlike {
       .setRank(rank)
       .setIterations(numIter)
       .setLambda(lambda)
-    val model = als.fit(training)
+    val model = als.run(training)
 
     val evaluator = new RegressionEvaluator()
       .setMetricName("rmse")
@@ -104,8 +104,11 @@ object LookAlike {
     println("LOGGER")
     println(predictions)
     predictions.take(20).foreach(println)
+    val predictions_df = spark.createDataFrame(predictions.map(p => Row(p.user, p.product, p.rating)), schema).withColumnRenamed("count", "prediction")
+    val test_df = spark.createDataFrame(test.map(p => Row(p.user, p.product, p.rating)), schema)
+    test_df.join(predictions_df, Seq("device_index", "feature_index")).write.save("/datascience/data_lookalike/predictions/")
 
-    // val rmse = evaluator.evaluate(spark.createDataFrame(predictions.map(p => Row(p.user, p.product, p.rating)), schema))
+    // val rmse = evaluator.evaluate()
     // println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
   }
 
