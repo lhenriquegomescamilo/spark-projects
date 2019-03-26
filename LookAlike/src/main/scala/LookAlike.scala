@@ -91,7 +91,7 @@ object LookAlike {
       .setMetricName("rmse")
       .setLabelCol("value")
       .setPredictionCol("prediction")
-    //val predictions = model.transform(test)
+    val predictions = model.transform(test)
     val schema = StructType(
       Seq(
         StructField(name = "device_index", dataType = IntegerType, nullable = false),
@@ -99,7 +99,7 @@ object LookAlike {
         StructField(name = "count", dataType = DoubleType, nullable = false)
       )
     )
-    val predictions = model.predict(test.map(rating => (rating.user, rating.product)))
+    // val predictions = model.predict(test.map(rating => (rating.user, rating.product)))
 
     println("LOGGER")
     println(predictions)
@@ -147,7 +147,7 @@ object LookAlike {
 
 
     // val triplets = spark.read.load("/datascience/data_lookalike/segment_triplets_with_index/country=MX/")
-    val triplets = spark.read.load("/datascience/data_lookalike/segment_triplets_with_index/country=MX/part-0017*-70064560-b03f-4ebc-8631-66f4c987a21c.c000.snappy.parquet")
+    val triplets = spark.read.load("/datascience/data_lookalike/segment_triplets_with_index/country=MX/part-00170-70064560-b03f-4ebc-8631-66f4c987a21c.c000.snappy.parquet")
     val ratings = getRatings(triplets)
 
     val Array(training, test) = ratings.randomSplit(Array(0.9, 0.1))
