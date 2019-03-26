@@ -1966,6 +1966,7 @@ val records_common = the_join.select(col("identifier"))
       .join(exito_co_ml, Seq("pii"))
       .select("device_id", "pii", "country")
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .save("/datascience/custom/dunnhumby/exito_co_ml")
 
@@ -1982,6 +1983,7 @@ val records_common = the_join.select(col("identifier"))
       .join(exito_co_nid, Seq("pii"))
       .select("device_id", "pii", "country")
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .save("/datascience/custom/dunnhumby/exito_co_nid")
 
@@ -1999,6 +2001,7 @@ val records_common = the_join.select(col("identifier"))
       .join(gpa_br_ml, Seq("pii"))
       .select("device_id", "pii", "country")
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .save("/datascience/custom/dunnhumby/gpa_br_ml")
 
@@ -2015,6 +2018,7 @@ val records_common = the_join.select(col("identifier"))
       .join(gpa_br_nid, Seq("pii"))
       .select("device_id", "pii", "country")
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .save("/datascience/custom/dunnhumby/gpa_br_nid")
 
@@ -2033,6 +2037,7 @@ val records_common = the_join.select(col("identifier"))
       .join(rd_br_ml, Seq("pii"))
       .select("device_id", "pii", "country")
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .save("/datascience/custom/dunnhumby/rd_br_ml")
 
@@ -2049,6 +2054,7 @@ val records_common = the_join.select(col("identifier"))
       .join(rd_br_nid, Seq("pii"))
       .select("device_id", "pii", "country")
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .save("/datascience/custom/dunnhumby/rd_br_nid")
   }
