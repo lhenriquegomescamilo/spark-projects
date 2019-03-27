@@ -27,7 +27,7 @@ object LookAlike {
   def getData(spark: SparkSession, country: String): DataFrame = {
     val data: DataFrame = spark.read
       .parquet("/datascience/data_demo/triplets_segments/country=%s/".format(country))
-      .filter("feature<550 and feature>1500")
+      .filter("feature<550 or feature>1500")
     
     data
   }
@@ -119,7 +119,7 @@ object LookAlike {
       false
     ).withColumn("country", lit(country))
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_lookalike/device_index")
 
@@ -131,7 +131,7 @@ object LookAlike {
       false
     ).withColumn("country", lit(country))
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_lookalike/feature_index")
 
@@ -143,7 +143,7 @@ object LookAlike {
             .join(device_index, Seq("device_id"))
             .withColumn("country", lit(country))
             .write
-            .mode("append")
+            .mode(SaveMode.Overwrite)
             .partitionBy("country")
             .save("/datascience/data_lookalike/segment_triplets_with_index")
   }
