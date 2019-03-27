@@ -1880,7 +1880,7 @@ val records_common = the_join.select(col("identifier"))
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/users_to_expand_ga_MX")
 
-    val users = spark.read.format("csv").load("/datascience/data_demo/users_to_expand_ga_MX").withColumnRenamed("_c0", "device_id")
+    // val users = spark.read.format("csv").load("/datascience/data_demo/users_to_expand_ga_MX").withColumnRenamed("_c0", "device_id")
     ga.join(users, Seq("device_id"))
       .write
       .format("csv")
