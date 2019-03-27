@@ -218,8 +218,8 @@ object LookAlike {
       spark,
       training,
       test,
+      32,
       8,
-      5,
       0.01
     )
   }
