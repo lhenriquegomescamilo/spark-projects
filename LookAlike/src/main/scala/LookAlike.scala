@@ -85,6 +85,7 @@ object LookAlike {
       .setRank(rank)
       .setIterations(numIter)
       .setLambda(lambda)
+      .setBlocks(3000)
     val model = als.run(training)
 
     val evaluator = new RegressionEvaluator()
