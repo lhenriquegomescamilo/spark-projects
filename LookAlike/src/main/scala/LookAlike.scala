@@ -65,7 +65,7 @@ object LookAlike {
           Rating(
             user.toString.toInt, //.asInstanceOf[Long],//.toInt,
             item.toString.toInt, //.asInstanceOf[Long],//.toInt,
-            rate.toString.toDouble
+            if (rate.toString.toDouble>0) 1.0 else 0.0
           )
       })
 
