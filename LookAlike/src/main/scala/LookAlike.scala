@@ -119,7 +119,7 @@ object LookAlike {
       false
     ).withColumn("country", lit(country))
       .write
-      .mode(SaveMode.Overwrite)
+      .mode("append")
       .partitionBy("country")
       .save("/datascience/data_lookalike/device_index")
 
@@ -131,7 +131,7 @@ object LookAlike {
       false
     ).withColumn("country", lit(country))
       .write
-      .mode(SaveMode.Overwrite)
+      .mode("append")
       .partitionBy("country")
       .save("/datascience/data_lookalike/feature_index")
 
@@ -143,7 +143,7 @@ object LookAlike {
             .join(device_index, Seq("device_id"))
             .withColumn("country", lit(country))
             .write
-            .mode(SaveMode.Overwrite)
+            .mode("append")
             .partitionBy("country")
             .save("/datascience/data_lookalike/segment_triplets_with_index")
   }
