@@ -57,14 +57,14 @@ object LookAlike {
     //     .fit(data_dev_indexed.select("feature"))
     //     .transform(data_dev_indexed)
 
-    val ratings: RDD[Rating] = triplets//data_indexed
+    val ratings: RDD[Rating] = triplets //data_indexed
       .select("device_index", "feature_index", "count")
       .rdd
       .map(_ match {
         case Row(user, item, rate) =>
           Rating(
-            user.toString.toInt,//.asInstanceOf[Long],//.toInt,
-            item.toString.toInt,//.asInstanceOf[Long],//.toInt,
+            user.toString.toInt, //.asInstanceOf[Long],//.toInt,
+            item.toString.toInt, //.asInstanceOf[Long],//.toInt,
             rate.toString.toDouble
           )
       })
@@ -94,19 +94,40 @@ object LookAlike {
     // val predictions = model.transform(test)
     val schema = StructType(
       Seq(
-        StructField(name = "device_index", dataType = IntegerType, nullable = false),
-        StructField(name = "feature_index", dataType = IntegerType, nullable = false),
+        StructField(
+          name = "device_index",
+          dataType = IntegerType,
+          nullable = false
+        ),
+        StructField(
+          name = "feature_index",
+          dataType = IntegerType,
+          nullable = false
+        ),
         StructField(name = "count", dataType = DoubleType, nullable = false)
       )
     )
-    val predictions = model.predict(test.map(rating => (rating.user, rating.product)))
+    val predictions =
+      model.predict(test.map(rating => (rating.user, rating.product)))
 
     println("LOGGER")
     println(predictions)
     predictions.take(20).foreach(println)
-    val predictions_df = spark.createDataFrame(predictions.map(p => Row(p.user, p.product, p.rating)), schema).withColumnRenamed("count", "prediction")
-    val test_df = spark.createDataFrame(test.map(p => Row(p.user, p.product, p.rating)), schema)
-    test_df.join(predictions_df, Seq("device_index", "feature_index")).write.save("/datascience/data_lookalike/predictions/")
+    val predictions_df = spark
+      .createDataFrame(
+        predictions.map(p => Row(p.user, p.product, p.rating)),
+        schema
+      )
+      .withColumnRenamed("count", "prediction")
+    val test_df = spark.createDataFrame(
+      test.map(p => Row(p.user, p.product, p.rating)),
+      schema
+    )
+    test_df
+      .join(predictions_df, Seq("device_index", "feature_index"))
+      .write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_lookalike/predictions/")
 
     // val rmse = evaluator.evaluate()
     // println("RMSE (test) = " + rmse + " for the model trained with lambda = " + lambda + ", and numIter = " + numIter + ".")
@@ -148,9 +169,10 @@ object LookAlike {
     //         .partitionBy("country")
     //         .save("/datascience/data_lookalike/segment_triplets_with_index")
 
-
     // val triplets = spark.read.load("/datascience/data_lookalike/segment_triplets_with_index/country=MX/")
-    val triplets = spark.read.load("/datascience/data_lookalike/segment_triplets_with_index/country=MX/part-00170-70064560-b03f-4ebc-8631-66f4c987a21c.c000.snappy.parquet")
+    val triplets = spark.read.load(
+      "/datascience/data_lookalike/segment_triplets_with_index/country=MX/part-0017*-70064560-b03f-4ebc-8631-66f4c987a21c.c000.snappy.parquet"
+    )
     val ratings = getRatings(triplets)
 
     val Array(training, test) = ratings.randomSplit(Array(0.9, 0.1))
@@ -158,7 +180,7 @@ object LookAlike {
     train(
       spark,
       training,
-      test,//.map(rating => (rating.user, rating.product)),
+      test, //.map(rating => (rating.user, rating.product)),
       8,
       5,
       0.01
