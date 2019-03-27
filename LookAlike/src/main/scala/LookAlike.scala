@@ -206,21 +206,21 @@ object LookAlike {
     val sqlContext = new org.apache.spark.sql.SQLContext(spark.sparkContext)
     import sqlContext.implicits._
 
-    getTripletsWithIndex(spark, "MX")
+    // getTripletsWithIndex(spark, "MX")
 
-    // val triplets = spark.read.load(
-    //   "/datascience/data_lookalike/segment_triplets_with_index/country=MX/part-00*-70064560-b03f-4ebc-8631-66f4c987a21c.c000.snappy.parquet"
-    // )
-    // val ratings = getRatings(triplets)
+    val triplets = spark.read.load(
+      "/datascience/data_lookalike/segment_triplets_with_index/country=MX/part-0298*-0f7a6227-0847-4fee-bad0-dd9313003ffc.c000.snappy.parquet"
+    )
+    val ratings = getRatings(triplets, "device_index")
 
-    // val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
-    // train(
-    //   spark,
-    //   training,
-    //   test, //.map(rating => (rating.user, rating.product)),
-    //   8,
-    //   5,
-    //   0.01
-    // )
+    val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
+    train(
+      spark,
+      training,
+      test,
+      8,
+      5,
+      0.01
+    )
   }
 }
