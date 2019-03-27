@@ -1871,21 +1871,21 @@ val records_common = the_join.select(col("identifier"))
         "/datascience/data_demo/join_google_analytics/country=MX/"
       )
       .dropDuplicates("url", "device_id")
-    // val users =
-    //   ga.groupBy("device_id").count().select("device_id")
+    val users =
+      ga.groupBy("device_id").count().filter("count >= 2").select("device_id")
 
-    // users.cache()
-    // users.write
-    //   .format("csv")
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/data_demo/users_to_expand_ga_MX")
+    users.cache()
+    users.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/users_to_expand_ga_MX")
 
-    // val users = spark.read.format("csv").load("/datascience/data_demo/users_to_expand_ga_MX").withColumnRenamed("_c0", "device_id")
-    // ga.join(users, Seq("device_id"))
-    //   .write
-    //   .format("csv")
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/data_demo/expand_ga_dataset")
+    val users = spark.read.format("csv").load("/datascience/data_demo/users_to_expand_ga_MX").withColumnRenamed("_c0", "device_id")
+    ga.join(users, Seq("device_id"))
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/expand_ga_dataset")
 
     // val segments =
     //   """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
@@ -2066,7 +2066,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    getDunnhumbyMatching(spark)
+    getExpansionDataset(spark)
   }
 
 }
