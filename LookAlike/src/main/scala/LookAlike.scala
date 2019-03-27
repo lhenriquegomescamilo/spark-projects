@@ -171,7 +171,7 @@ object LookAlike {
 
     // val triplets = spark.read.load("/datascience/data_lookalike/segment_triplets_with_index/country=MX/")
     val triplets = spark.read.load(
-      "/datascience/data_lookalike/segment_triplets_with_index/country=MX/part-0017*-70064560-b03f-4ebc-8631-66f4c987a21c.c000.snappy.parquet"
+      "/datascience/data_lookalike/segment_triplets_with_index/country=MX/part-001*-70064560-b03f-4ebc-8631-66f4c987a21c.c000.snappy.parquet"
     )
     val ratings = getRatings(triplets)
 
