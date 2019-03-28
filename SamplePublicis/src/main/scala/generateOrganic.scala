@@ -138,7 +138,7 @@ object generateOrganic {
             .map(row => row._2.sorted.last)
             .toList
             .map(
-              tuple => Map("segid": tuple._1, "segmentstartdate": tuple._2)
+              tuple => Map("segid" -> tuple._1, "segmentstartdate" -> tuple._2)
                 //"""{"segid": "%s", "segmentstartdate": %s}"""
                 //  .format(tuple._1, tuple._2)
             )
