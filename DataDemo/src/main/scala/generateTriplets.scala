@@ -34,7 +34,7 @@ object GenerateTriplets {
         
         val dfs = days
                     .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_audiences_p/day=%s".format(day))))
-                    .map(x => spark.read.parquet("/datascience/data_audiences_p/day=%s".format(x))
+                    .map(x => spark.read.parquet("/datascience/data_audiences/day=%s".format(x))
                                     .filter("event_type IN ('batch', 'data', 'tk', 'pv')")
                                     .select("device_id","segments","country")
                                     .withColumn("segments",explode(col("segments")))
