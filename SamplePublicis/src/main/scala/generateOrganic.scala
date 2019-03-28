@@ -73,14 +73,14 @@ object generateOrganic {
         day =>
           fs.exists(
             new org.apache.hadoop.fs.Path(
-              "/datascience/data_audiences_p/day=%s".format(day)
+              "/datascience/data_audiences/day=%s".format(day)
             )
           )
       )
       .map(
         x =>
           spark.read
-            .parquet("/datascience/data_audiences_p/day=%s".format(x))
+            .parquet("/datascience/data_audiences/day=%s".format(x))
             .filter("country = 'MX'")
             .withColumn("day", lit(x))
             .withColumn(
