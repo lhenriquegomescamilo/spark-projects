@@ -35,9 +35,10 @@ object GenerateTriplets {
         val dfs = days
                     .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_audiences_p/day=%s".format(day))))
                     .map(x => spark.read.parquet("/datascience/data_audiences_p/day=%s".format(x))
-                                    .select("device_id","all_segments","country")
-                                    .withColumn("all_segments",explode(col("all_segments")))
-                                    .withColumnRenamed("all_segments","feature")
+                                    .filter("event_type IN ('batch', 'data', 'tk', 'pv')")
+                                    .select("device_id","segments","country")
+                                    .withColumn("segments",explode(col("segments")))
+                                    .withColumnRenamed("segments","feature")
                                     .withColumn("count",lit(1)))
 
         val df = dfs.reduce((df1,df2) => df1.union(df2))
@@ -105,7 +106,7 @@ object GenerateTriplets {
         // Parseo de parametros
         val ndays = if (args.length > 0) args(0).toInt else 20
         
-        //generate_triplets_segments(spark,ndays)
-        generate_triplets_keywords(spark,ndays) 
+        generate_triplets_segments(spark,ndays)
+        // generate_triplets_keywords(spark,ndays) 
     }
   }
