@@ -27,7 +27,7 @@ object FromEventqueuePII {
     data
       .withColumn("day", lit(day.replace("/", "")))
       .filter(
-        col("data_type").contains("hash") && (col("ml_sh2").isNotNull || col(
+        (col("ml_sh2").isNotNull || col(
           "mb_sh2"
         ).isNotNull || col("nid_sh2").isNotNull)
       )
@@ -64,7 +64,8 @@ object FromEventqueuePII {
         "ml_sh2",
         "day"
       )
-      .withColumnRenamed("ml_sh2", "pii").withColumn("pii_type",lit("mail"))
+      .withColumnRenamed("ml_sh2", "pii")
+      .withColumn("pii_type", lit("mail"))
     var dnis = data
       .filter("nid_sh2 is not null")
       .select(
@@ -75,7 +76,8 @@ object FromEventqueuePII {
         "nid_sh2",
         "day"
       )
-      .withColumnRenamed("nid_sh2", "pii").withColumn("pii_type",lit("nid"))
+      .withColumnRenamed("nid_sh2", "pii")
+      .withColumn("pii_type", lit("nid"))
     var mobs = data
       .filter("mb_sh2 is not null")
       .select(
@@ -86,7 +88,8 @@ object FromEventqueuePII {
         "mb_sh2",
         "day"
       )
-      .withColumnRenamed("mb_sh2", "pii").withColumn("pii_type",lit("mob"))
+      .withColumnRenamed("mb_sh2", "pii")
+      .withColumn("pii_type", lit("mob"))
     var total = mails.unionAll(dnis).unionAll(mobs)
     // We group the data and get the list of pii for each device_id with the correspondant id_partner and timestamp in a tuple.
     var grouped = total
@@ -122,7 +125,7 @@ object FromEventqueuePII {
     val nDays = 1
     val from = 1
     val format = "yyyy/MM/dd"
-    val end   = DateTime.now.minusDays(from)
+    val end = DateTime.now.minusDays(from)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we effectively download the data day by day

@@ -1950,6 +1950,7 @@ val records_common = the_join.select(col("identifier"))
     */
   def getDunnhumbyMatching(spark: SparkSession) = {
     val pii_table = spark.read.load("/datascience/pii_matching/pii_table")
+                         .withColumn("pii", lower(col("pii")))
     pii_table.cache()
 
     // EXITO CO FILE
@@ -1960,6 +1961,7 @@ val records_common = the_join.select(col("identifier"))
       .load("/datascience/custom/Exito-CO.csv")
       .select("distinct_correo")
       .withColumnRenamed("distinct_correo", "pii")
+      .withColumn("pii", lower(col("pii")))
       .distinct()
 
     pii_table
@@ -1977,6 +1979,7 @@ val records_common = the_join.select(col("identifier"))
       .load("/datascience/custom/Exito-CO.csv")
       .select("distinct_documento")
       .withColumnRenamed("distinct_documento", "pii")
+      .withColumn("pii", lower(col("pii")))
       .distinct()
 
     pii_table
@@ -1995,6 +1998,7 @@ val records_common = the_join.select(col("identifier"))
       .load("/datascience/custom/GPA-BR.csv")
       .select("DS_EMAIL_LOWER")
       .withColumnRenamed("DS_EMAIL_LOWER", "pii")
+      .withColumn("pii", lower(col("pii")))
       .distinct()
 
     pii_table
@@ -2012,6 +2016,7 @@ val records_common = the_join.select(col("identifier"))
       .load("/datascience/custom/GPA-BR.csv")
       .select("NR_CPF")
       .withColumnRenamed("NR_CPF", "pii")
+      .withColumn("pii", lower(col("pii")))
       .distinct()
 
     pii_table
@@ -2031,6 +2036,7 @@ val records_common = the_join.select(col("identifier"))
       .load("/datascience/custom/RD-BR.csv")
       .select("ds_email_lower")
       .withColumnRenamed("ds_email_lower", "pii")
+      .withColumn("pii", lower(col("pii")))
       .distinct()
 
     pii_table
@@ -2048,6 +2054,7 @@ val records_common = the_join.select(col("identifier"))
       .load("/datascience/custom/GPA-BR.csv")
       .select("nr_cpf")
       .withColumnRenamed("nr_cpf", "pii")
+      .withColumn("pii", lower(col("pii")))
       .distinct()
 
     pii_table
