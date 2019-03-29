@@ -770,11 +770,15 @@ val records_common = the_join.select(col("identifier"))
       )
       */
 
-     df_safegraph
+      val high_user = df_safegraph.groupBy("ad_id").agg(count("geocode").as("freq")).filter("freq > 50")
+
+      val high_data = high_user.join(users,Seq("ad_id"),"inner")
+
+     high_data
       .write
       .format("csv")
       .option("sep", ",")
-      .save("/datascience/geo/AR/safegraph_sample_15d")
+      .save("/datascience/geo/AR/safegraph_sample_15d_high")
 
   }
 
