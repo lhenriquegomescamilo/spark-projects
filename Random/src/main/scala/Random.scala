@@ -1804,12 +1804,12 @@ val records_common = the_join.select(col("identifier"))
     */
   def joinURLs(spark: SparkSession) = {
     val df = getDataAudiences(spark)
-      .filter("country = 'MX' AND event_type IN ('pv', 'batch')")
+      .filter("country = 'AR' AND event_type IN ('pv', 'batch')")
       .select("device_id", "url", "timestamp")
     val gt = spark.read
       .format("csv")
       .option("sep", " ")
-      .load("/datascience/devicer/processed/ground_truth_*male/*")
+      .load("/datascience/devicer/processed/equifax_demo_AR_grouped/*")
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
       .select("device_id", "label")
@@ -1820,7 +1820,7 @@ val records_common = the_join.select(col("identifier"))
       .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", "\t")
-      .save("/datascience/custom/urls_gt_mx")
+      .save("/datascience/custom/urls_gt_ar")
   }
 
   /**
@@ -2075,8 +2075,8 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    //getExpansionDataset(spark)
-     get_safegraph_data(spark,15,"argentina")
+    joinURLs(spark)
+    // get_safegraph_data(spark,15,"argentina")
   }
 
 }

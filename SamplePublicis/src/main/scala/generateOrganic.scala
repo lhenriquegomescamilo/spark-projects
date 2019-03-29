@@ -31,7 +31,7 @@ import org.apache.hadoop.fs._
                   {"segid": "m_51", "segmentstartdate": 20190209},
                   {"segid": "m_129", " segmentstartdate ": 20190209}
               ]
-              }
+            }
   *
   * @param spark: Spark Session that will be used to load all the data.
   * @param ndays: number of days to be considered to generate the dataset.
