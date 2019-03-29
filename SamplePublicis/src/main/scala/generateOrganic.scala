@@ -129,7 +129,7 @@ object generateOrganic {
     // This function removes the duplicated tuples, keeping the tuples that have the lowest day.
     val udfDropDuplicates = udf(
       (segments: Seq[Row]) =>
-        "[%s]".format(
+        //"[%s]".format(
           segments
             .map(
               row => (row(0).asInstanceOf[String], row(1).asInstanceOf[String])
@@ -142,8 +142,9 @@ object generateOrganic {
                 """{"segid": "%s", "segmentstartdate": %s}"""
                  .format(tuple._1, tuple._2)
             )
-            .mkString(", ")
-        )
+            .toSeq
+            //.mkString(", ")
+        //)
     )
 
     // Here we process the data that will be sent.
