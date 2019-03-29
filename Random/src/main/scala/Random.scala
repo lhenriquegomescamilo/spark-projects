@@ -1808,7 +1808,7 @@ val records_common = the_join.select(col("identifier"))
       .select("device_id", "url", "timestamp")
     val gt = spark.read
       .format("csv")
-      .option("sep", " ")
+      .option("sep", "\t")
       .load("/datascience/devicer/processed/equifax_demo_AR_grouped/*")
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
