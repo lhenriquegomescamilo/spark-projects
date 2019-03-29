@@ -772,7 +772,7 @@ val records_common = the_join.select(col("identifier"))
 
       val high_user = df_safegraph.groupBy("ad_id").agg(count("latitude").as("freq")).filter("freq > 500")
 
-      val high_data = high_user.join(df_safegraph,Seq("ad_id"),"inner")
+      val high_data = high_user.join(df_safegraph,Seq("ad_id"),"inner").distinct()
 
      high_data
       .write
