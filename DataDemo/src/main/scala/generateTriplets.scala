@@ -169,7 +169,7 @@ object GenerateTriplets {
 
     val triplets =
       spark.read
-        .load("/datascience/data_demo/triplets_segments/country=MX/")
+        .load("/datascience/data_demo/triplets_segments/country=AR/")
         .filter(col("feature").isin(segments: _*))
 
     triplets
@@ -177,7 +177,7 @@ object GenerateTriplets {
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/expand_triplets_dataset")
+      .save("/datascience/data_demo/triplets_dataset_ar")
   }
 
   def main(args: Array[String]) {
