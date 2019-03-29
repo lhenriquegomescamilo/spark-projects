@@ -165,39 +165,39 @@ object LookAlike {
       .setBlocks(1000)
     val model = als.run(training)
 
-    // val schema = StructType(
-    //   Seq(
-    //     StructField(
-    //       name = "device_index",
-    //       dataType = IntegerType,
-    //       nullable = false
-    //     ),
-    //     StructField(
-    //       name = "feature_index",
-    //       dataType = IntegerType,
-    //       nullable = false
-    //     ),
-    //     StructField(name = "count", dataType = DoubleType, nullable = false)
-    //   )
-    // )
-    // val predictions =
-    //   model.predict(test.map(rating => (rating.user, rating.product)))
+    val schema = StructType(
+      Seq(
+        StructField(
+          name = "device_index",
+          dataType = IntegerType,
+          nullable = false
+        ),
+        StructField(
+          name = "feature_index",
+          dataType = IntegerType,
+          nullable = false
+        ),
+        StructField(name = "count", dataType = DoubleType, nullable = false)
+      )
+    )
+    val predictions =
+      model.predict(test.map(rating => (rating.user, rating.product)))
 
-    // val predictions_df = spark
-    //   .createDataFrame(
-    //     predictions.map(p => Row(p.user, p.product, p.rating)),
-    //     schema
-    //   )
-    //   .withColumnRenamed("count", "prediction")
-    // val test_df = spark.createDataFrame(
-    //   test.map(p => Row(p.user, p.product, p.rating)),
-    //   schema
-    // )
-    // test_df
-    //   .join(predictions_df, Seq("device_index", "feature_index"))
-    //   .write
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/data_lookalike/predictions/")
+    val predictions_df = spark
+      .createDataFrame(
+        predictions.map(p => Row(p.user, p.product, p.rating)),
+        schema
+      )
+      .withColumnRenamed("count", "prediction")
+    val test_df = spark.createDataFrame(
+      test.map(p => Row(p.user, p.product, p.rating)),
+      schema
+    )
+    test_df
+      .join(predictions_df, Seq("device_index", "feature_index"))
+      .write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_lookalike/predictions/")
 
   }
 
@@ -206,7 +206,7 @@ object LookAlike {
     val sqlContext = new org.apache.spark.sql.SQLContext(spark.sparkContext)
     import sqlContext.implicits._
 
-    // getTripletsWithIndex(spark, "MX")
+    getTripletsWithIndex(spark, "MX")
 
     val triplets = spark.read.load(
       "/datascience/data_lookalike/segment_triplets_with_index/country=MX/"//part-02*-0f7a6227-0847-4fee-bad0-dd9313003ffc.c000.snappy.parquet"
