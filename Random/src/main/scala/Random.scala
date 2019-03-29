@@ -755,14 +755,12 @@ val records_common = the_join.select(col("identifier"))
       .filter("country = '%s'".format(country))
       .dropDuplicates("ad_id")
       .select("ad_id")
-
-    /*
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
       .withColumn("Hour", date_format(col("Time"), "HH"))
       .withColumn("Day", date_format(col("Time"), "d"))
       .withColumn("Month", date_format(col("Time"), "M"))
-     */
-    val geo_audience = spark.read
+     
+   /* val geo_audience = spark.read
       .option("delimiter", "\t")
       .csv("/datascience/geo/McDonaldsCalleARG_90d_argentina_19-3-2019-6h")
 
@@ -772,13 +770,14 @@ val records_common = the_join.select(col("identifier"))
         geo_audience("_c1") === df_safegraph("ad_id"),
         "leftanti"
       )
+      */
+
+     df_safegraph
       .write
       .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .save("/datascience/geo/geo_negative_audience_McDonaldsCalleARG_90d")
+      .option("sep", ",")
+      .save("/datascience/geo/AR/safegraph_sample_15d")
 
-    df_safegraph
   }
 
   /**
@@ -2073,7 +2072,8 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    getExpansionDataset(spark)
+    //getExpansionDataset(spark)
+     def get_safegraph_data(spark,15,argentina)
   }
 
 }
