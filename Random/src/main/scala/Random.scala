@@ -776,6 +776,7 @@ val records_common = the_join.select(col("identifier"))
 
      high_data
       .write
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", ",")
       .save("/datascience/geo/AR/safegraph_sample_15d_high")
