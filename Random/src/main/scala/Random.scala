@@ -2073,7 +2073,7 @@ val records_common = the_join.select(col("identifier"))
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     //getExpansionDataset(spark)
-     def get_safegraph_data(spark: spark,nDays:15,country:argentina)
+     get_safegraph_data(spark,15,argentina)
   }
 
 }
