@@ -189,7 +189,7 @@ object GenerateTriplets {
     // Parseo de parametros
     val ndays = if (args.length > 0) args(0).toInt else 20
 
-    generateTripletsForAR(spark, ndays)
+    generateTripletsForAR(spark)
     // generate_triplets_keywords(spark,ndays)
   }
 }
