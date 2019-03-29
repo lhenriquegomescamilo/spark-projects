@@ -166,6 +166,7 @@ object generateOrganic {
       .format("json")
       .option("compression", "bzip2")
       .option("quote", "")
+      .option("escape", "")
       //.option("sep", "\t")
       //.option("header", true)
       .mode(SaveMode.Overwrite)
