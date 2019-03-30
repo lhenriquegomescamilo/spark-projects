@@ -225,6 +225,3 @@ object LookAlike {
     )
   }
 }
- --conf spark.locality.wait=10s\
- --conf spark.yarn.maxAppAttempts=1\
- --conf spark.sql.files.maxPartitionBytes=268435456\
