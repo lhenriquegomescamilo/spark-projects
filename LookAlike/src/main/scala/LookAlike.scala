@@ -1,6 +1,6 @@
 package main.scala
 
-import org.apache.spark.mllib.recommendation.{ALS, Rating}
+import org.apache.spark.mllib.recommendation.{ALS, Rating, MatrixFactorizationModel}
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.sql.functions.{sum, col, lit, broadcast}
@@ -192,7 +192,7 @@ object LookAlike {
     * @param spark: Spark Session to load the data and the models.
     * @param test: RDD of ratings with the actual score given to a feature. That is the value this function tries to estimate.
     */
-  def evaluate(spark: SparkSession, test: RDD[Rating]) = {
+  def evaluate(spark: SparkSession, test: RDD[Rating], model: MatrixFactorizationModel) = {
     // First we definde the schema that will be used to construct a dataframe.
     val schema = StructType(
       Seq(
@@ -252,7 +252,7 @@ object LookAlike {
     val ratings = getRatings(triplets, "device_index")
 
     val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
-    train(
+    val model = train(
       spark,
       training,
       32,
@@ -260,6 +260,6 @@ object LookAlike {
       0.01
     )
 
-    evaluate(spark, test)
+    evaluate(spark, test, model)
   }
 }
