@@ -276,7 +276,7 @@ object GenerateTriplets {
     val df = getDataAudiences(spark)
       .filter("country = 'AR' AND event_type IN ('pv', 'batch')")
       .select("device_id", "url")
-    df.join(gt, Seq("device_id"))
+    df.join(users, Seq("device_id"))
       .distinct()
       .groupBy("device_id")
       .write
