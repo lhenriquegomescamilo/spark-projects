@@ -20,6 +20,11 @@ import org.apache.spark.SparkContext._
 import org.apache.spark.serializer.{KryoSerializer, KryoRegistrator}
 
 object LookAlike {
+  class ALSRegistrator extends KryoRegistrator {
+    override def registerClasses(kryo: Kryo) {
+      kryo.register(classOf[Rating])
+    }
+  }
 
   /**
     * This method returns the data that will be used for the look-alike modelling. Basically,
@@ -271,7 +276,6 @@ object LookAlike {
     spark.sparkContext.setCheckpointDir(
       "/datascience/data_lookalike/als_checkpoint"
     )
-    
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
