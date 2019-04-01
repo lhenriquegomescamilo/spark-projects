@@ -180,6 +180,107 @@ object GenerateTriplets {
       .save("/datascience/data_demo/triplets_dataset_ar")
   }
 
+  /**
+    * This method returns a DataFrame with the data from the audiences data pipeline, for the interval
+    * of days specified. Basically, this method loads the given path as a base path, then it
+    * also loads the every DataFrame for the days specified, and merges them as a single
+    * DataFrame that will be returned.
+    *
+    * @param spark: Spark Session that will be used to load the data from HDFS.
+    * @param nDays: number of days that will be read.
+    * @param since: number of days ago from where the data is going to be read.
+    *
+    * @return a DataFrame with the information coming from the data read.
+  **/
+  def getDataAudiences(
+      spark: SparkSession,
+      nDays: Int = 30,
+      since: Int = 1
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+    df
+  }
+
+  def getTrainingDatasetForAR(spark: SparkSession) {
+    val ga = spark.read
+      .load(
+        "/datascience/data_demo/join_google_analytics/country=AR/"
+      )
+      .dropDuplicates("url", "device_id")
+    val users = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/equifax_demo_AR_grouped/*")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "label")
+      .select("device_id", "label")
+
+    users.cache()
+
+
+    // Data de google analytics
+    ga.join(users, Seq("device_id"))
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/ga_dataset_AR_training")
+
+
+    // Data de timestamps
+    val myUDF = udf(
+      (weekday: String, hour: String) =>
+        if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
+        else "%s0".format(hour)
+    )
+    val data =
+      spark.read.load("/datascience/data_demo/join_google_analytics/country=AR")
+    data
+      .join(users, Seq("device_id"))
+      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "HH"))
+      .withColumn("Weekday", date_format(col("Time"), "EEEE"))
+      .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
+      .groupBy("device_id", "wd")
+      .count()
+      .groupBy("device_id")
+      .pivot("wd")
+      .agg(sum("count"))
+      .write
+      .format("csv")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/ga_timestamp_AR_training")
+
+
+    // Data de URLs
+    val df = getDataAudiences(spark)
+      .filter("country = 'AR' AND event_type IN ('pv', 'batch')")
+      .select("device_id", "url")
+    df.join(gt, Seq("device_id"))
+      .distinct()
+      .groupBy("device_id")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/urls_gt_ar")
+  }
+
   def main(args: Array[String]) {
     /// Configuracion spark
     val spark = SparkSession.builder
