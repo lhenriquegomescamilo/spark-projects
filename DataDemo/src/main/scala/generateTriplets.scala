@@ -278,7 +278,8 @@ object GenerateTriplets {
       .select("device_id", "url")
     df.join(users, Seq("device_id"))
       .distinct()
-      .groupBy("device_id")
+      .groupBy("device_id", "url")
+      .count()
       .write
       .mode(SaveMode.Overwrite)
       .format("csv")
