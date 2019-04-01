@@ -12,6 +12,12 @@ import org.apache.spark.sql.functions.{sum, col, lit, broadcast}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.rdd.RDD
+import com.esotericsoftware.kryo.Kryo
+import org.apache.log4j.{Level, Logger}
+import scopt.OptionParser
+import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkContext._
+import org.apache.spark.serializer.{KryoSerializer, KryoRegistrator}
 
 object LookAlike {
 
@@ -104,7 +110,8 @@ object LookAlike {
     }
 
     // In this section we perform the normalization and transform the DataFrame in an RDD of Ratings.
-    val ratings: RDD[Rating] = data.na.drop()
+    val ratings: RDD[Rating] = data.na
+      .drop()
       .select("device_index", "feature_index", "count", "total")
       .rdd
       .map(_ match {
@@ -250,17 +257,28 @@ object LookAlike {
   }
 
   def main(args: Array[String]) {
-    val spark = SparkSession.builder.appName("LookAlike modeling").getOrCreate()
-    val sqlContext = new org.apache.spark.sql.SQLContext(spark.sparkContext)
+    val conf = new SparkConf()
+      .setAppName(
+        "ALS look alike"
+      )
+      .set("spark.serializer", classOf[KryoSerializer].getName)
+      .set("spark.kryo.registrator", classOf[ALSRegistrator].getName)
+      .set("spark.kryoserializer.buffer.mb", "8")
+    val sc = new SparkContext(conf)
+    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+    val spark = sqlContext.sparkSession
     import sqlContext.implicits._
     spark.sparkContext.setCheckpointDir(
       "/datascience/data_lookalike/als_checkpoint"
     )
+    
+
+    Logger.getRootLogger.setLevel(Level.WARN)
 
     // getTripletsWithIndex(spark, "MX")
 
     val triplets = spark.read.load(
-      "/datascience/data_lookalike/segment_triplets_with_index/country=MX/"//part-02*-3023c398-0b95-4e9d-afb5-196e424c15dd.c000.snappy.parquet"
+      "/datascience/data_lookalike/segment_triplets_with_index/country=MX/" //part-02*-3023c398-0b95-4e9d-afb5-196e424c15dd.c000.snappy.parquet"
     )
     val ratings = getRatings(triplets, "device_index")
 
