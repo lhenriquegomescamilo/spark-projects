@@ -104,7 +104,7 @@ object LookAlike {
     }
 
     // In this section we perform the normalization and transform the DataFrame in an RDD of Ratings.
-    val ratings: RDD[Rating] = data
+    val ratings: RDD[Rating] = data.na.drop()
       .select("device_index", "feature_index", "count", "total")
       .rdd
       .map(_ match {
