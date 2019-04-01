@@ -5,6 +5,7 @@ import org.apache.spark.mllib.recommendation.{
   Rating,
   MatrixFactorizationModel
 }
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.sql.functions.{sum, col, lit, broadcast}
@@ -181,6 +182,8 @@ object LookAlike {
       .setIterations(numIter)
       .setLambda(lambda)
       .setRank(rank)
+      .setFinalRDDStorageLevel(StorageLevel.NONE)
+      .setIntermediateRDDStorageLevel(StorageLevel.MEMORY_AND_DISK_SER)
       .setBlocks(200)
       .setCheckpointInterval(2)
     val model = als.run(training)
