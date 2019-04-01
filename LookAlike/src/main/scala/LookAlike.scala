@@ -182,7 +182,7 @@ object LookAlike {
       .setLambda(lambda)
       .setRank(rank)
       .setBlocks(200)
-      .setFinalRDDStorageLevel(2)
+      .setCheckpointInterval(2)
     val model = als.run(training)
 
     if (save)
