@@ -1,6 +1,10 @@
 package main.scala
 
-import org.apache.spark.mllib.recommendation.{ALS, Rating, MatrixFactorizationModel}
+import org.apache.spark.mllib.recommendation.{
+  ALS,
+  Rating,
+  MatrixFactorizationModel
+}
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.sql.functions.{sum, col, lit, broadcast}
@@ -170,13 +174,15 @@ object LookAlike {
       numIter: Int,
       lambda: Double,
       save: Boolean = true
-  ) {
+  ): MatrixFactorizationModel = {
     // Build the recommendation model using ALS on the training data
     val als = new ALS()
       .setRank(rank)
       .setIterations(numIter)
       .setLambda(lambda)
+      .setRank(rank)
       .setBlocks(200)
+      .setFinalRDDStorageLevel(2)
     val model = als.run(training)
 
     if (save)
@@ -192,7 +198,11 @@ object LookAlike {
     * @param spark: Spark Session to load the data and the models.
     * @param test: RDD of ratings with the actual score given to a feature. That is the value this function tries to estimate.
     */
-  def evaluate(spark: SparkSession, test: RDD[Rating], model: MatrixFactorizationModel) = {
+  def evaluate(
+      spark: SparkSession,
+      test: RDD[Rating],
+      model: MatrixFactorizationModel
+  ) = {
     // First we definde the schema that will be used to construct a dataframe.
     val schema = StructType(
       Seq(
