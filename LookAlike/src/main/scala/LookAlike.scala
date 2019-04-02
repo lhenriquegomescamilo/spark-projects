@@ -192,7 +192,6 @@ object LookAlike {
       .setRank(rank)
       .setIterations(numIter)
       .setLambda(lambda)
-      .setRank(rank)
       .setFinalRDDStorageLevel(StorageLevel.NONE)
       .setIntermediateRDDStorageLevel(StorageLevel.MEMORY_AND_DISK_SER)
       .setBlocks(-1)
