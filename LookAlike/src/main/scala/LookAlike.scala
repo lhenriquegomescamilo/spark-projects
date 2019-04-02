@@ -196,7 +196,7 @@ object LookAlike {
       .setFinalRDDStorageLevel(StorageLevel.NONE)
       .setIntermediateRDDStorageLevel(StorageLevel.MEMORY_AND_DISK_SER)
       .setBlocks(-1)
-      .setCheckpointInterval(2)
+      .setCheckpointInterval(5)
     val model = als.run(training)
 
     if (save)
@@ -268,6 +268,8 @@ object LookAlike {
       .set("spark.serializer", classOf[KryoSerializer].getName)
       .set("spark.kryo.registrator", classOf[ALSRegistrator].getName)
       .set("spark.kryoserializer.buffer.mb", "8")
+      .set("spark.shuffle.memoryFraction","0.65") //default is 0.2 
+      .set("spark.storage.memoryFraction","0.3")
     val sc = new SparkContext(conf)
     val sqlContext = new org.apache.spark.sql.SQLContext(sc)
     val spark = sqlContext.sparkSession
@@ -289,8 +291,8 @@ object LookAlike {
     val model = train(
       spark,
       training.repartition(500),
-      32,
-      3,
+      16,
+      5,
       0.01
     )
 
