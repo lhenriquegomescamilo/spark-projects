@@ -128,7 +128,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       .format("csv")
       .option("sep", "\t")
       .load("/datascience/geo/AR/ar_home_120_07-02-19")
-      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c0", "ad_id")
       .withColumnRenamed("_c1", "count")
       .withColumnRenamed("_c2", "utc_timestamp")
       .withColumnRenamed("_c3", "latitude")
