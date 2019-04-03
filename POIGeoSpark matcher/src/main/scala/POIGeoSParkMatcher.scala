@@ -145,14 +145,15 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     )
     pointDf2.repartition(200).createOrReplaceTempView("pointdf2")
 
+
     // Here we obtain the points that are closer than the radius
     var distanceJoinDf = spark.sql(
       """select ad_id,
                 utc_timestamp,
                 price_per_m2,
-                ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  
-         from pointdf1,pointdf2 
-         where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius"""
+                ST_Distance(pointdfdist1.pointshape1, pointdfdist2.pointshape2) as distance  
+         from (select * from pointdf1 distribute by pointdf1.pointshape1) as pointdfdist1, (select * from pointdf2 distribute by pointdf2.pointshape2) as pointdfdist2
+         where ST_Distance(pointdfdist1.pointshape1, pointdfdist2.pointshape2)  < radius"""
     )
 
     println("EXPLAIN")
