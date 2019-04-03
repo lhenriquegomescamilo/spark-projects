@@ -115,7 +115,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     df_pois_final.createOrReplaceTempView("pointtable")
 
     var pointDf1 = spark.sql(
-      """select name,
+      """select price_per_m2,
                 radius,
                 ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)),
                          cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape1 
