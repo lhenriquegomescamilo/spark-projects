@@ -18,9 +18,6 @@ import org.apache.spark.serializer.KryoRegistrator
 import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 
-
-
-
 /**
   Job Summary:
   * The goal of this job is to create an audiencie based on Points Of Interests (POIs). The method takes as input a time frame (be default, december 2018) and a dataset containing the POIs. This dataset should be already formatted in three columns segment|latitude|longitude (without the index) and with the latitude and longitude with point (".") as delimiter.
@@ -89,7 +86,10 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val columnsRenamed_poi = Seq("latitude", "longitude", "price_per_m2")
 
     //renaming columns based on list
-    val df_pois_final = df_pois_parsed.toDF(columnsRenamed_poi: _*).withColumn("radius", lit(1))
+    val df_pois_final =
+      df_pois_parsed
+        .toDF(columnsRenamed_poi: _*)
+        .withColumn("radius", lit(1000))
 
     df_pois_final
   }
@@ -124,10 +124,18 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     pointDf1.createOrReplaceTempView("pointdf1")
 
     //getting safegraph users
-    val df_users = get_safegraph_data(spark, safegraph_days, country)
-    broadcast(df_users)
+    val df_users = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/geo/AR/ar_home_120_07-02-19")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c1", "count")
+      .withColumnRenamed("_c2", "utc_timestamp")
+      .withColumnRenamed("_c3", "latitude")
+      .withColumnRenamed("_c4", "longitude")
+      .filter("count > 2") //get_safegraph_data(spark, safegraph_days, country)
     df_users.createOrReplaceTempView("pointtable")
-    
+
     var pointDf2 = spark.sql(
       """select ad_id,
                 id_type,
@@ -137,31 +145,31 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
          from pointtable"""
     )
     pointDf2.createOrReplaceTempView("pointdf2")
-    
+
     // Here we obtain the points that are closer than the radius
     var distanceJoinDf = spark.sql(
       """select name,
                 ad_id,
                 id_type,
                 utc_timestamp,
+                price_per_m2,
                 ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  
          from pointdf1,pointdf2 
          where ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2)  < radius"""
     )
 
     println("EXPLAIN")
-    println(distanceJoinDf.explain())
     distanceJoinDf.explain()
     val countito = distanceJoinDf.count()
     println("conteo", countito)
     //storing result
 
-    // val filtered = 
-    //  distanceJoinDf.write
-     //   .format("csv")
-      //  .option("sep", "\t")
-       // .mode(SaveMode.Overwrite)
-       // .save(output_file)
+    val filtered =
+      distanceJoinDf.write
+        .format("csv")
+        .option("sep", "\t")
+        .mode(SaveMode.Overwrite)
+        .save(output_file)
   }
 
   type OptionMap = Map[Symbol, Any]
@@ -213,7 +221,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     // chequear que el POI_file_name este especificado y el output_file tambien
 
     val POI_file_name = "hdfs://rely-hdfs/datascience/custom/mx_nse/sales.csv"
-    val output_file = "/datascience/geo/MX/specific_POIs"
+    val output_file = "/datascience/custom/price_per_m2_AR"
 
     match_POI(spark, safegraph_days, POI_file_name, country, output_file)
   }
