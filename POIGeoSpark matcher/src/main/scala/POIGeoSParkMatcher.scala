@@ -199,10 +199,10 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       if (options.contains('nDays)) options('nDays).toString.toInt else 30
     val country =
       if (options.contains('country)) options('country).toString else "mexico"
-    val POI_file_name =
-      if (options.contains('poi_file)) options('poi_file).toString else ""
-    val output_file =
-      if (options.contains('output)) options('output).toString else ""
+    // val POI_file_name =
+    //   if (options.contains('poi_file)) options('poi_file).toString else ""
+    // val output_file =
+    //   if (options.contains('output)) options('output).toString else ""
 
     // Start Spark Session
     val spark = SparkSession
