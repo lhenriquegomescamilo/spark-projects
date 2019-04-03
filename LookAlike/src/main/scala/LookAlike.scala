@@ -289,7 +289,7 @@ object LookAlike {
     val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
     val model = train(
       spark,
-      training.repartition(500),
+      training.repartition(1000),
       16,
       5,
       0.01
