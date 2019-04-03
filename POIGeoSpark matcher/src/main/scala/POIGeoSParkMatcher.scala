@@ -138,7 +138,6 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     var pointDf2 = spark.sql(
       """select ad_id,
-                id_type,
                 utc_timestamp,
                 ST_Point(cast(cast(pointtable.latitude as double) as Decimal(24,20)), 
                          cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape2 
@@ -149,7 +148,6 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     // Here we obtain the points that are closer than the radius
     var distanceJoinDf = spark.sql(
       """select ad_id,
-                id_type,
                 utc_timestamp,
                 price_per_m2,
                 ST_Distance(pointdf1.pointshape1,pointdf2.pointshape2) as distance  
