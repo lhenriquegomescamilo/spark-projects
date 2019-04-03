@@ -279,10 +279,10 @@ object LookAlike {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getTripletsWithIndex(spark, "PE")
+    getTripletsWithIndex(spark, "BR")
 
     val triplets = spark.read.load(
-      "/datascience/data_lookalike/segment_triplets_with_index/country=PE/"// part-02*-3023c398-0b95-4e9d-afb5-196e424c15dd.c000.snappy.parquet"
+      "/datascience/data_lookalike/segment_triplets_with_index/country=BR/"// part-02*-3023c398-0b95-4e9d-afb5-196e424c15dd.c000.snappy.parquet"
     )
     val ratings = getRatings(triplets, "device_index")
 
@@ -295,6 +295,6 @@ object LookAlike {
       0.01
     )
 
-    //evaluate(spark, test, model)
+    evaluate(spark, test, model)
   }
 }

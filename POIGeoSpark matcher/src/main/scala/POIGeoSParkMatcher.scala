@@ -85,10 +85,11 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       df_pois.withColumn("radius", (col("radius").cast("float")))
 
     // Here we rename the columns
-    val columnsRenamed_poi = Seq("name", "latitude", "longitude", "radius")
+    // val columnsRenamed_poi = Seq("name", "latitude", "longitude", "radius")
+    val columnsRenamed_poi = Seq("latitude", "longitude", "price_per_m2")
 
     //renaming columns based on list
-    val df_pois_final = df_pois_parsed.toDF(columnsRenamed_poi: _*)
+    val df_pois_final = df_pois_parsed.toDF(columnsRenamed_poi: _*).withColumn("radius", lit(1))
 
     df_pois_final
   }
@@ -111,7 +112,6 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     //getting POIs
     val df_pois_final = get_POI_coordinates(spark, POI_file_name)
-    broadcast(df_pois_final)
     df_pois_final.createOrReplaceTempView("pointtable")
 
     var pointDf1 = spark.sql(
@@ -212,8 +212,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     // chequear que el POI_file_name este especificado y el output_file tambien
 
-    //val POI_file_name = "hdfs://rely-hdfs/datascience/geo/poi_test_2.csv"
-    //val output_file = "/datascience/geo/MX/specific_POIs"
+    val POI_file_name = "hdfs://rely-hdfs/datascience/custom/mx_nse/sales.csv"
+    val output_file = "/datascience/geo/MX/specific_POIs"
 
     match_POI(spark, safegraph_days, POI_file_name, country, output_file)
   }
