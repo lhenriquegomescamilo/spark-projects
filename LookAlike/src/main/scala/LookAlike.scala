@@ -157,7 +157,7 @@ object LookAlike {
       false
     ).withColumn("country", lit(country))
       .write
-      .mode(SaveMode.Overwrite)
+      .mode("append")//SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_lookalike/feature_index")
 

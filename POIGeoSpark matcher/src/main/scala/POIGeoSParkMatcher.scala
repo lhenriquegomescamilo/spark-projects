@@ -121,7 +121,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
                          cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape1 
          from pointtable"""
     )
-    pointDf1.createOrReplaceTempView("pointdf1")
+    pointDf1.repartition(200).createOrReplaceTempView("pointdf1")
 
     //getting safegraph users
     val df_users = spark.read
@@ -143,7 +143,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
                          cast(cast(pointtable.longitude as double) as Decimal(24,20))) as pointshape2 
          from pointtable"""
     )
-    pointDf2.createOrReplaceTempView("pointdf2")
+    pointDf2.repartition(200).createOrReplaceTempView("pointdf2")
 
     // Here we obtain the points that are closer than the radius
     var distanceJoinDf = spark.sql(
@@ -209,7 +209,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
         "spark.kryo.registrator",
         classOf[GeoSparkVizKryoRegistrator].getName
       )
-      .config("geospark.join.numpartition", 3)
+      .config("geospark.join.numpartition", 100)
       .appName("match_POI_geospark")
       .getOrCreate()
 
