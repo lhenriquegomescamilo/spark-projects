@@ -167,7 +167,9 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     //storing result
     val filtered =
-      distanceJoinDf.write
+      distanceJoinDf
+        .repartition(200)
+        .write
         .format("csv")
         .option("sep", "\t")
         .mode(SaveMode.Overwrite)
