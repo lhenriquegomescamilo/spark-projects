@@ -195,7 +195,7 @@ object LookAlike {
       .setFinalRDDStorageLevel(StorageLevel.NONE)
       .setIntermediateRDDStorageLevel(StorageLevel.MEMORY_AND_DISK_SER)
       .setBlocks(-1)
-      .setCheckpointInterval(5)
+      .setCheckpointInterval(10)
     val model = als.run(training)
 
     if (save)
