@@ -291,7 +291,7 @@ object LookAlike {
       spark,
       training.repartition(2000),
       16,
-      10,
+      3,
       0.01
     )
 
