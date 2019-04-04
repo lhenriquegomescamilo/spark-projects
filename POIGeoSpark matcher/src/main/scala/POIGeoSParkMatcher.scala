@@ -158,10 +158,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     println("EXPLAIN")
     distanceJoinDf.explain()
-    val countito = distanceJoinDf.count()
-    println("conteo", countito)
-    //storing result
 
+    //storing result
     val filtered =
       distanceJoinDf.write
         .format("csv")
@@ -208,8 +206,9 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       .config("spark.serializer", classOf[KryoSerializer].getName)
       .config(
         "spark.kryo.registrator",
-        classOf[GeoSparkVizKryoRegistrator].getName
+        classOf[GeoSparkKryoRegistrator].getName
       )
+      .config("geospark.join.gridtype", "kdbtree")
       .config("geospark.join.numpartition", 100)
       .appName("match_POI_geospark")
       .getOrCreate()
