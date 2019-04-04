@@ -89,7 +89,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val df_pois_final =
       df_pois_parsed
         .toDF(columnsRenamed_poi: _*)
-        .withColumn("radius", lit(1000))
+        .withColumn("radius", lit(0.01))
 
     df_pois_final
   }
@@ -157,7 +157,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       """select ad_id,
                 utc_timestamp,
                 price_per_m2
-         from (select * from pointdf1 distribute by pointdf1.pointshape1) as pointdfdist1, (select * from pointdf2 distribute by pointdf2.pointshape2) as pointdfdist2
+         from pointdf1 as pointdfdist1, pointdf2 as pointdfdist2
          where ST_Distance(pointdfdist1.pointshape1, pointdfdist2.pointshape2)  < radius"""
     )
 
@@ -169,8 +169,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       distanceJoinDf
         .repartition(200)
         .write
-        .format("csv")
-        .option("sep", "\t")
+        // .format("csv")
+        // .option("sep", "\t")
         .mode(SaveMode.Overwrite)
         .save(output_file)
   }
@@ -215,6 +215,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
         "spark.kryo.registrator",
         classOf[GeoSparkKryoRegistrator].getName
       )
+      .config("geospark.global.index", "true")
+      .config("geospark.global.indextype", "quadtree")
       .config("geospark.join.gridtype", "kdbtree")
       .config("geospark.join.numpartition", -1)
       .appName("match_POI_geospark")
