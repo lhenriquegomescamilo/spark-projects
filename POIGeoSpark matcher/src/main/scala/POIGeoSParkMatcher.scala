@@ -156,10 +156,9 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     var distanceJoinDf = spark.sql(
       """select ad_id,
                 utc_timestamp,
-                price_per_m2,
-                ST_Distance(pointdfdist2.pointshape2, pointdfdist1.pointshape1) as distance  
+                price_per_m2
          from (select * from pointdf1 distribute by pointdf1.pointshape1) as pointdfdist1, (select * from pointdf2 distribute by pointdf2.pointshape2) as pointdfdist2
-         where ST_Distance(pointdfdist2.pointshape2, pointdfdist1.pointshape1)  < radius"""
+         where ST_Distance(pointdfdist1.pointshape1, pointdfdist2.pointshape2)  < radius"""
     )
 
     println("EXPLAIN")
