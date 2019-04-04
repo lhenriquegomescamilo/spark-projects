@@ -79,7 +79,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     //creating geocodes the POIs
     val df_pois_parsed =
-      df_pois//.withColumn("radius", (col("radius").cast("float")))
+      df_pois //.withColumn("radius", (col("radius").cast("float")))
 
     // Here we rename the columns
     // val columnsRenamed_poi = Seq("name", "latitude", "longitude", "radius")
@@ -111,7 +111,14 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
   ) = {
 
     //getting POIs
-    val df_pois_final = get_POI_coordinates(spark, POI_file_name)
+    get_POI_coordinates(spark, POI_file_name)
+      .repartition(200)
+      .write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/mx_nse/sales_parquet/")
+
+    val df_pois_final =
+      spark.read.load("/datascience/custom/mx_nse/sales_parquet/")
     df_pois_final.createOrReplaceTempView("pointtable")
 
     var pointDf1 = spark.sql(
@@ -144,7 +151,6 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
          from pointtable"""
     )
     pointDf2.repartition(200).createOrReplaceTempView("pointdf2")
-
 
     // Here we obtain the points that are closer than the radius
     var distanceJoinDf = spark.sql(
@@ -209,7 +215,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
         classOf[GeoSparkKryoRegistrator].getName
       )
       .config("geospark.join.gridtype", "kdbtree")
-      .config("geospark.join.numpartition", 100)
+      .config("geospark.join.numpartition", -1)
       .appName("match_POI_geospark")
       .getOrCreate()
 
