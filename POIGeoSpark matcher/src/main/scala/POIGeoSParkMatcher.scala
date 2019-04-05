@@ -158,7 +158,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
                 utc_timestamp,
                 price_per_m2
          from pointdf1 as pointdfdist1, pointdf2 as pointdfdist2
-         where ST_Distance(pointdfdist1.pointshape1, pointdfdist2.pointshape2)  < radius"""
+         where ST_Distance(pointdfdist2.pointshape2, pointdfdist1.pointshape1)  < radius"""
     )
 
     println("EXPLAIN")
@@ -216,8 +216,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
         classOf[GeoSparkKryoRegistrator].getName
       )
       .config("geospark.global.index", "true")
-      .config("geospark.global.indextype", "quadtree")
-      .config("geospark.join.gridtype", "kdbtree")
+      .config("geospark.global.indextype", "rtree")
+      // .config("geospark.join.gridtype", "kdbtree")
       .config("geospark.join.numpartition", -1)
       .appName("match_POI_geospark")
       .getOrCreate()
