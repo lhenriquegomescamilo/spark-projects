@@ -238,9 +238,10 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     import org.datasyslab.geospark.enums.IndexType
     import org.datasyslab.geospark.spatialRDD.CircleRDD
     import org.datasyslab.geospark.enums.GridType
+    import scala.collection.JavaConverters._
 
     val sales = new PointRDD(
-      sc,
+      spark.sparkContext,
       "hdfs://rely-hdfs/datascience/custom/mx_nse/sales_csv",
       0,
       FileDataSplitter.CSV,
@@ -249,7 +250,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       StorageLevel.MEMORY_ONLY
     )
     val homes = new PointRDD(
-      sc,
+      spark.sparkContext,
       "hdfs://rely-hdfs/datascience/custom/mx_nse/homes_csv",
       0,
       FileDataSplitter.CSV,
@@ -272,7 +273,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       .rdd
       .map(
         t =>
-          (
+          "%s,%s".format(
             t._1.getUserData(),
             t._2.asScala
               .map(m => m.getUserData().toString.toDouble)
