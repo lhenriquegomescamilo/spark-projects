@@ -215,10 +215,10 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
         "spark.kryo.registrator",
         classOf[GeoSparkKryoRegistrator].getName
       )
-      .config("geospark.global.index", "true")
-      .config("geospark.global.indextype", "rtree")
+      // .config("geospark.global.index", "true")
+      // .config("geospark.global.indextype", "rtree")
       // .config("geospark.join.gridtype", "kdbtree")
-      .config("geospark.join.numpartition", 200)
+      // .config("geospark.join.numpartition", 200)
       .appName("match_POI_geospark")
       .getOrCreate()
 
@@ -242,7 +242,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
     val sales = new PointRDD(
       spark.sparkContext,
-      "hdfs://rely-hdfs/datascience/custom/mx_nse/sales_csv",
+      "hdfs://rely-hdfs/datascience/custom/mx_nse/homes_csv",
       0,
       FileDataSplitter.CSV,
       true,
@@ -251,7 +251,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     )
     val homes = new PointRDD(
       spark.sparkContext,
-      "hdfs://rely-hdfs/datascience/custom/mx_nse/homes_csv",
+      "hdfs://rely-hdfs/datascience/custom/mx_nse/sales_csv",
       0,
       FileDataSplitter.CSV,
       true,
