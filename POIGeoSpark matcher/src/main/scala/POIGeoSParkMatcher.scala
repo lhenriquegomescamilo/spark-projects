@@ -218,7 +218,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       .config("geospark.global.index", "true")
       .config("geospark.global.indextype", "rtree")
       // .config("geospark.join.gridtype", "kdbtree")
-      .config("geospark.join.numpartition", -1)
+      .config("geospark.join.numpartition", 200)
       .appName("match_POI_geospark")
       .getOrCreate()
 
@@ -229,6 +229,56 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val POI_file_name = "hdfs://rely-hdfs/datascience/custom/mx_nse/sales.csv"
     val output_file = "/datascience/custom/price_per_m2_AR"
 
-    match_POI(spark, safegraph_days, POI_file_name, country, output_file)
+    // match_POI(spark, safegraph_days, POI_file_name, country, output_file)
+
+    import org.datasyslab.geospark.spatialRDD.PointRDD
+    import org.datasyslab.geospark.enums.FileDataSplitter
+    import org.apache.spark.storage.StorageLevel
+    import org.datasyslab.geospark.spatialOperator.JoinQuery
+    import org.datasyslab.geospark.enums.IndexType
+    import org.datasyslab.geospark.spatialRDD.CircleRDD
+    import org.datasyslab.geospark.enums.GridType
+
+    val sales = new PointRDD(
+      sc,
+      "hdfs://rely-hdfs/datascience/custom/mx_nse/sales_csv",
+      0,
+      FileDataSplitter.CSV,
+      true,
+      200,
+      StorageLevel.MEMORY_ONLY
+    )
+    val homes = new PointRDD(
+      sc,
+      "hdfs://rely-hdfs/datascience/custom/mx_nse/homes_csv",
+      0,
+      FileDataSplitter.CSV,
+      true,
+      200,
+      StorageLevel.MEMORY_ONLY
+    )
+    val salesCircles = new CircleRDD(sales, 0.01)
+
+    homes.spatialPartitioning(GridType.QUADTREE);
+    salesCircles.spatialPartitioning(homes.getPartitioner())
+
+    homes.buildIndex(IndexType.RTREE, true)
+
+    homes.indexedRDD.persist(StorageLevel.MEMORY_ONLY);
+    salesCircles.spatialPartitionedRDD.persist(StorageLevel.MEMORY_ONLY)
+
+    JoinQuery
+      .DistanceJoinQuery(homes, salesCircles, true, true)
+      .rdd
+      .map(
+        t =>
+          (
+            t._1.getUserData(),
+            t._2.asScala
+              .map(m => m.getUserData().toString.toDouble)
+              .sum / t._2.asScala.size
+          )
+      )
+      .saveAsTextFile("/datascience/custom/mx_nse/join_homes_sales/")
   }
 }
