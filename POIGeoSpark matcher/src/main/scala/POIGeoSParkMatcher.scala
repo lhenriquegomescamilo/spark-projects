@@ -276,7 +276,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
           "%s,%s".format(
             t._1.getUserData(),
             t._2.asScala
-              .map(m => m.getUserData().toString.toDouble)
+              .map(m => m.getUserData().toString.filter(_!="inf").toDouble)
               .sum / t._2.asScala.size
           )
       )
