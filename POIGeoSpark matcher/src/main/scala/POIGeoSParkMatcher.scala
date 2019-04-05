@@ -245,7 +245,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       0,
       FileDataSplitter.CSV,
       true,
-      200,
+      400,
       StorageLevel.MEMORY_ONLY
     )
     val homes = new PointRDD(
@@ -254,7 +254,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       0,
       FileDataSplitter.CSV,
       true,
-      200,
+      400,
       StorageLevel.MEMORY_ONLY
     )
     val salesCircles = new CircleRDD(sales, 0.01)
