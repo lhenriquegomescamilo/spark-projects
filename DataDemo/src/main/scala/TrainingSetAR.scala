@@ -81,7 +81,7 @@ object TrainingSetAR {
       .format("csv")
       .option("sep", "\t")
       .load(
-        "/datascience/devicer/processed//datascience/devicer/to_process/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/*"
+        "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
       )
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
@@ -115,7 +115,7 @@ object TrainingSetAR {
     val users = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/*")
+      .load("/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/")
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
       .select("device_id", "label")
@@ -124,7 +124,7 @@ object TrainingSetAR {
     val joint = ga.join(users, Seq("device_id"))
 
     joint.cache()
-    
+
     joint
       .write
       .format("csv")
