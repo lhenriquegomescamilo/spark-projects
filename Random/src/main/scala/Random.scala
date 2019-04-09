@@ -1897,7 +1897,7 @@ def get_ISP_users(
                   .withColumn("third_party",concat_ws(",",col("third_party"))).show()
 
 
-    isp_location.select(col("device_id"),col("third_party"),col("Period"),col("_c2"),col("_c3"),col("_c5"))
+    isp_location //.select(col("device_id"),col("third_party"),col("Period"),col("_c2"),col("_c3"),col("_c5"))
       .distinct()
       .write
       .mode(SaveMode.Overwrite)
