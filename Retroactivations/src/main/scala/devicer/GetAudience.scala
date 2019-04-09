@@ -685,7 +685,7 @@ object GetAudience {
         queries(0)("jobid").toString.toInt
       else 0
     val description = queries(0)("description")
-    file_name = if (queries.length > 1) file_name + "_grouped" else file_name
+    var file_name = if (queries.length > 1) file_name + "_grouped" else file_name
 
     // Now we calculate the path of the file according to the properties.
     var file_path = ""
@@ -836,11 +836,10 @@ object GetAudience {
           dataDays,
           queries,
           file_name,
-          false,
           commonFilter
         )
       } else {
-        getAudience(spark, data, queries, file_name, false, commonFilter)
+        getAudience(spark, data, queries, file_name, commonFilter)
       }
 
       // We cross device the audience if the parameter is set.
@@ -861,7 +860,7 @@ object GetAudience {
 
       // If push parameter is true, we generate a file with the metadata.
       if (Set("1", "true", "True").contains(push)) {
-        generateMetaFile(file_name, queries(0), xd)
+        generateMetaFile(file_name, queries, xd)
       }
     }
   }
