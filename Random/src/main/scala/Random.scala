@@ -1873,7 +1873,7 @@ def get_ISP_users(
     val user_frequency = users_isp.groupBy("device_id").count().withColumn("Freq",col("count")/4).filter("Freq>4") 
 
     //joineamos con los que tienen la info de ISP
-    val high_freq_isp = users_freq.join(users_isp,Seq("device_id"))
+    val high_freq_isp = user_frequency.join(users_isp,Seq("device_id"))
 
    /*
     high_freq_isp.distinct()
@@ -1946,7 +1946,7 @@ def get_ISP_users(
     *
     *
     *
-    */
+  
   def getExpansionDataset(spark: SparkSession) {
     // val ga = spark.read
     //   .load(
@@ -2015,7 +2015,7 @@ def get_ISP_users(
     //   .option("header", "true")
     //   .mode(SaveMode.Overwrite)
     //   .save("/datascience/data_demo/expand_ga_timestamp")
-  }
+  }  */
 
   /**
     *
