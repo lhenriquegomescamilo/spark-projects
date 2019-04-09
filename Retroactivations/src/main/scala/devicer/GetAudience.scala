@@ -685,13 +685,13 @@ object GetAudience {
         queries(0)("jobid").toString.toInt
       else 0
     val description = queries(0)("description")
-    var file_name = if (queries.length > 1) file_name + "_grouped" else file_name
+    var file_name_final = if (queries.length > 1) file_name + "_grouped" else file_name
 
     // Now we calculate the path of the file according to the properties.
     var file_path = ""
     if (Set("1", "true", "True").contains(xd)) {
       file_path = "/datascience/audiences/crossdeviced/"
-      file_name = file_name + "_xd"
+      file_name_final = file_name_final + "_xd"
     } else {
       file_path = "/datascience/devicer/processed/"
     }
@@ -701,7 +701,7 @@ object GetAudience {
                                  "queue":"%s", "jobId":%s, "description":"%s"}"""
       .format(
         file_path,
-        file_name,
+        file_name_final,
         priority,
         as_view,
         queue,
