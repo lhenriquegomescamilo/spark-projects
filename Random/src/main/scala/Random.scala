@@ -1843,7 +1843,7 @@ def get_ISP_users(
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
-    val format = "yyyy/MM/dd"
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
@@ -2155,7 +2155,7 @@ def get_ISP_users(
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    get_ISP_users(spark,30,10)
+    get_ISP_users(spark,30,2)
     // get_safegraph_data(spark,15,"argentina")
   }
 
