@@ -1847,6 +1847,9 @@ def get_ISP_users(
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+    
     // Now we obtain the list of hdfs folders to be read
     val path = "/datascience/data_audiences/"
      val hdfs_files = days.map(day => path + "day=%s/country=AR/*".format(day))
