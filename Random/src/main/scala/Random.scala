@@ -1894,6 +1894,7 @@ def get_ISP_users(
 
     //hacemos el join entre ambos
     val isp_location = high_freq_isp.join(user_location,Seq("device_id"))
+                  .withColumn("third_party",concat_ws(",",col("third_party"))).show()
 
 
     isp_location.select(col("device_id"),col("third_party"),col("Period"),col("_c2"),col("_c3"),col("_c5"))
