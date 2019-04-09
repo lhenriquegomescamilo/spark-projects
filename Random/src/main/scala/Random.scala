@@ -1854,7 +1854,8 @@ def get_ISP_users(
     val path = "/datascience/data_audiences/"
     val hdfs_files = days.map(day => path + "day=%s/country=AR/*".format(day))
               .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-
+              .map(day => day )
+              
         
     //cargamos el df de audiences
     val df_audiences = spark.read.parquet(hdfs_files: _*) 
