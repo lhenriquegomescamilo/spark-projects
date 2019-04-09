@@ -1890,7 +1890,7 @@ def get_ISP_users(
 
     //ahora levantamos el resultado del crossdevice
     val user_location = spark.read.csv("/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/")
-    .withColumn("device", upper(col("_c1")))
+    .withColumn("device_id", upper(col("_c1")))
 
     //hacemos el join entre ambos
     val isp_location = high_freq_isp.join(user_location,Seq("device_id"))
