@@ -1852,7 +1852,7 @@ def get_ISP_users(
 
     // Now we obtain the list of hdfs folders to be read
     val path = "/datascience/data_audiences/"
-    val hdfs_files = days.map(day => path + "day=%s/country=AR/*".format(day))
+    val hdfs_files = days.map(day => path + "day=%s/country=AR/".format(day))
               .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
         
     //cargamos el df de audiences
