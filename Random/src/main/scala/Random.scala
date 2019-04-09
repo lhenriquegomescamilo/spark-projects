@@ -1852,10 +1852,9 @@ def get_ISP_users(
 
     // Now we obtain the list of hdfs folders to be read
     val path = "/datascience/data_audiences/"
-    val hdfs_files = days.map(day => path + "day=%s/country=AR/*".format(day))
+    val hdfs_files = days.map(day => path + "day=%s/country=AR/".format(day))
               .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-              .map(day => day + "*.parquet" )
-              
+
         
     //cargamos el df de audiences
     val df_audiences = spark.read.parquet(hdfs_files: _*) 
@@ -1890,7 +1889,8 @@ def get_ISP_users(
       */
 
     //ahora levantamos el resultado del crossdevice
-    val user_location = spark.read.csv("/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/").withColumn("device", upper(col("_c1")))
+    val user_location = spark.read.csv("/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/")
+    .withColumn("device", upper(col("_c1")))
 
     //hacemos el join entre ambos
     val isp_location = high_freq_isp.join(user_location,Seq("device_id"))
