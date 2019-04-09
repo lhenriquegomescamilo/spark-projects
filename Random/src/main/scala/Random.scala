@@ -1824,6 +1824,90 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/urls_gt_ar")
   }
 
+/**
+    *
+    *
+    *
+    *
+    *
+    *          Para informe de ISP (pedido por Seba, hecho por Julián
+    09-04-2019)
+    *
+   */
+def get_ISP_users(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer = 1
+  ) = {
+
+    //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
+    // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
+    // Also we generate a new column call 'geocode' that will be used for the join
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/datascience/data_audiences/"
+    val hdfs_files = days.map(day => path + "day=%s/country=AR/".format(day))
+              .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+        
+    //cargamos el df de audiences
+    val df_audiences = spark.read.parquet(hdfs_files: _*) 
+
+    //al df de audiences le añadimos una columna que dice si se conectó en horario laboral o en hogareño
+    val geo_hour = df_audiences.select("device_id", "third_party", "timestamp","device_type")             
+                    .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))                                     
+                    .withColumn("Hour", date_format(col("Time"), "HH"))
+                    .filter(!date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_*))
+                    .withColumn("Period",when((col("Hour") >= 20 || col("Hour") <= 8),"Hogar").otherwise("Trabajo")) 
+
+    //nos quedamos sólo con los usuarios que tengan algunos de los isp de interés
+    val users_isp = geo_hour
+                    .filter(array_contains(col("third_party"), 1192) || array_contains(col("third_party"), 1191)|| array_contains(col("third_party"), 1193) || array_contains(col("third_party"), 1190) || array_contains(col("third_party"), 1194) || array_contains(col("third_party"), 1069)|| array_contains(col("third_party"), 1195) )            
+     
+    //a esos usuarios les contamos cuántas veces aparecen y...lo dividimos por cuatro
+    //esto está hardcoreado vamos a levantar 30 días de datos, lo dividimos por 4 nos va a dar la conexiones semanales promedio
+    //lo filtramos y nos quedamos con los que tengan más de una por semana (mayor a 4)
+    val user_frequency = users_isp.groupBy("device_id").count().withColumn("Freq",col("count")/4).filter("Freq>4") 
+
+    //joineamos con los que tienen la info de ISP
+    val high_freq_isp = user_frequency.join(users_isp,Seq("device_id"))
+
+   /*
+    high_freq_isp.distinct()
+      .write
+      .mode(SaveMode.Overwrite)
+      .option("header", "false")
+      .format("csv")
+      .option("sep", ",")
+      .save("/datascience/geo/AR/high_freq_isp_30D")
+      */
+
+    //ahora levantamos el resultado del crossdevice
+    val user_location = spark.read.csv("/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/")
+    .withColumn("device_id", upper(col("_c1")))
+
+    //hacemos el join entre ambos
+    val isp_location = high_freq_isp.join(user_location,Seq("device_id"))
+                  .withColumn("third_party",concat_ws(",",col("third_party")))
+
+
+    isp_location.select(col("device_id"),col("third_party"),col("Period"),col("_c2"),col("_c3"),col("_c5"))
+      .distinct()
+      .write
+      .mode(SaveMode.Overwrite)
+      .option("header", "false")
+      .format("csv")
+      .option("sep", ",")
+      .save("/datascience/geo/AR/high_freq_isp_30D")
+      
+  }
+
   /**
     *
     *
@@ -1867,7 +1951,7 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     *
-    */
+  
   def getExpansionDataset(spark: SparkSession) {
     // val ga = spark.read
     //   .load(
@@ -1936,7 +2020,7 @@ val records_common = the_join.select(col("identifier"))
     //   .option("header", "true")
     //   .mode(SaveMode.Overwrite)
     //   .save("/datascience/data_demo/expand_ga_timestamp")
-  }
+  }  */
 
   /**
     *
@@ -2076,7 +2160,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    joinURLs(spark)
+    get_ISP_users(spark,30,2)
     // get_safegraph_data(spark,15,"argentina")
   }
 
