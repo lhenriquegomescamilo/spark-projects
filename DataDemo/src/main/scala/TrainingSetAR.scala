@@ -122,12 +122,15 @@ object TrainingSetAR {
 
     // Here I calculate the data of GA just for 
     val joint = ga.join(users, Seq("device_id"))
+
+    joint.cache()
+    
+    joint
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/ga_dataset_AR_training")
 
-    joint.cache()
 
     // Finally we obtain the data the is related to timestamps coming from GA
     val myUDF = udf(
@@ -152,7 +155,7 @@ object TrainingSetAR {
       .save("/datascience/data_demo/ga_timestamp_AR_training")
   }
 
-  def getDatasetFromURLs(spar: SparkSession) = {
+  def getDatasetFromURLs(spark: SparkSession) = {
     // Now we load the ground truth users
     val users = spark.read
       .format("csv")
