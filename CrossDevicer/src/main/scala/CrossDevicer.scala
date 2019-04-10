@@ -58,13 +58,13 @@ object CrossDevicer {
     val paths = days
       .map(
         day =>
-          "/datascience/data_audiences_p/day=%s".format(day.replace("-", ""))
+          "/datascience/data_audiences/day=%s".format(day.replace("-", ""))
       )
       .filter(path => fs.exists(new Path(path)))
 
     // Finally, we load all the data
     val events_data = spark.read
-      .option("basePath", "/datascience/data_audiences_p/")
+      .option("basePath", "/datascience/data_audiences/")
       .parquet(paths: _*)
       .select("device_id", "country", column)
 
