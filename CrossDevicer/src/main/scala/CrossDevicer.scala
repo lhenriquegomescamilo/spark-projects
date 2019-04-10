@@ -57,8 +57,7 @@ object CrossDevicer {
     // Now we obtain the list of files to be loaded
     val paths = days
       .map(
-        day =>
-          "/datascience/data_audiences/day=%s".format(day.replace("-", ""))
+        day => "/datascience/data_audiences/day=%s".format(day.replace("-", ""))
       )
       .filter(path => fs.exists(new Path(path)))
 
@@ -383,8 +382,19 @@ object CrossDevicer {
       .fill("")
       .withColumn("ids", concatUDF(col("segment_ids"), col("exclusion_ids")))
 
+    // Get DrawBridge Index. Here we transform the device id to upper case too.
+    val typeMap = Map(
+      "coo" -> "web",
+      "and" -> "android",
+      "ios" -> "ios",
+      "con" -> "TV",
+      "dra" -> "drawbridge"
+    )
+    val mapUDF = udf((dev_type: String) => typeMap(dev_type))
+
     joint
       .select("device_type", "device_id", "ids")
+      .withColumn("device_type", mapUDF(col("device_type")))
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
