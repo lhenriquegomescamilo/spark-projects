@@ -20,7 +20,7 @@ object IndexGenerator {
     **/
     def generate_index_double(spark: SparkSession) {
         // This is the path to the last DrawBridge id
-        val drawBridgePath = "/data/crossdevice/2019-02-21/*.gz"
+        val drawBridgePath = "/data/crossdevice/2019-04-04/*.gz"
         // First we obtain the data from DrawBridge
         val db_data = spark.read.format("csv").load(drawBridgePath)
         // Now we obtain a dataframe with only two columns: index (the device_id), and the device type
