@@ -100,6 +100,40 @@ object GetAudience {
     df
   }
 
+    /**
+    * This method returns a DataFrame with the data from the US data pipeline, for the interval
+    * of days specified. Basically, it loads every DataFrame for the days specified, and merges them as a single
+    * DataFrame that will be returned.
+    *
+    * @param spark: Spark Session that will be used to load the data from HDFS.
+    * @param nDays: number of days that will be read.
+    * @param since: number of days ago from where the data is going to be read.
+    *
+    * @return a DataFrame with the information coming from the data read.
+    */
+  def getDataUS(
+      spark: SparkSession,
+      nDays: Int = 30,
+      since: Int = 1
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_us_p"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    df
+  }
+
   /**
     * This method returns a DataFrame with the data from the audiences data pipeline, for the interval
     * of days specified. Basically, it loads the every DataFrame for the days specified, and merges them as a single
@@ -262,6 +296,7 @@ object GetAudience {
   - 1: data_partner
   - 2: data_audiences_p
   - 3: data_keywords_p
+  - 4: data_us_p
   ***/
   def getQueriesFromFile(
       spark: SparkSession,
@@ -820,6 +855,8 @@ object GetAudience {
           getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
         case 3 =>
           getDataKeywords(spark, nDays.toString.toInt, since.toString.toInt)
+        case 4 =>
+          getDataUS(spark, nDays.toString.toInt, since.toString.toInt)
       }
 
       // Lastly we store the audience applying the filters
