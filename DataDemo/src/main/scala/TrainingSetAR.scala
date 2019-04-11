@@ -64,7 +64,7 @@ object TrainingSetAR {
   /**
     * This method takes all the triplets with all the segments, for the users with ground truth in AR.
     */
-  def generateSegmentTriplets(spark: SparkSession) = {
+  def generateSegmentTriplets(spark: SparkSession, path) = {
     val segments =
       """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
       247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
@@ -80,9 +80,7 @@ object TrainingSetAR {
     val gt = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load(
-        "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
-      )
+      .load(path)
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
       .select("device_id", "label")
@@ -103,7 +101,7 @@ object TrainingSetAR {
   /**
    * This method calculates all the datasets for the AR ground truth users, based only on Google Analytics (GA) data.
   */
-  def getGARelatedData(spark: SparkSession) {
+  def getGARelatedData(spark: SparkSession, path: String) {
     // First we load the GA data
     val ga = spark.read
       .load(
@@ -115,7 +113,7 @@ object TrainingSetAR {
     val users = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/")
+      .load(path)
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
       .select("device_id", "label")
@@ -155,12 +153,12 @@ object TrainingSetAR {
       .save("/datascience/data_demo/ga_timestamp_AR_training")
   }
 
-  def getDatasetFromURLs(spark: SparkSession) = {
+  def getDatasetFromURLs(spark: SparkSession, path: String) = {
     // Now we load the ground truth users
     val users = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/*")
+      .load(path)
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
       .select("device_id", "label")
@@ -187,8 +185,9 @@ object TrainingSetAR {
       .appName("Get triplets: keywords and segments")
       .getOrCreate()
 
-    generateSegmentTriplets(spark)
-    getGARelatedData(spark)
-    getDatasetFromURLs(spark)
+    val path = "/datascience/devicer/processed/AR_4_2019-04-11T21-22-46-395560_grouped/"//"/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
+    generateSegmentTriplets(spark, path)
+    getGARelatedData(spark, path)
+    getDatasetFromURLs(spark, path)
   }
 }
