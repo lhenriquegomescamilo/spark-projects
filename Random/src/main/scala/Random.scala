@@ -757,8 +757,8 @@ val records_common = the_join.select(col("identifier"))
       .withColumn("Hour", date_format(col("Time"), "HH"))
       .withColumn("Day", date_format(col("Time"), "d"))
       .withColumn("Month", date_format(col("Time"), "M"))
-     
-   /* val geo_audience = spark.read
+
+    /* val geo_audience = spark.read
       .option("delimiter", "\t")
       .csv("/datascience/geo/McDonaldsCalleARG_90d_argentina_19-3-2019-6h")
 
@@ -768,14 +768,17 @@ val records_common = the_join.select(col("identifier"))
         geo_audience("_c1") === df_safegraph("ad_id"),
         "leftanti"
       )
-      */
+     */
 
-      val high_user = df_safegraph.groupBy("ad_id").agg(count("latitude").as("freq")).filter("freq > 500")
+    val high_user = df_safegraph
+      .groupBy("ad_id")
+      .agg(count("latitude").as("freq"))
+      .filter("freq > 500")
 
-      val high_data = high_user.join(df_safegraph,Seq("ad_id"),"inner").distinct()
+    val high_data =
+      high_user.join(df_safegraph, Seq("ad_id"), "inner").distinct()
 
-     high_data
-      .write
+    high_data.write
       .mode(SaveMode.Overwrite)
       .option("header", "false")
       .format("csv")
@@ -1824,7 +1827,7 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/urls_gt_ar")
   }
 
-/**
+  /**
     *
     *
     *
@@ -1833,8 +1836,8 @@ val records_common = the_join.select(col("identifier"))
     *          Para informe de ISP (pedido por Seba, hecho por Julián
     09-04-2019)
     *
-   */
-def get_ISP_users(
+    */
+  def get_ISP_users(
       spark: SparkSession,
       nDays: Integer,
       since: Integer = 1
@@ -1852,33 +1855,55 @@ def get_ISP_users(
 
     // Now we obtain the list of hdfs folders to be read
     val path = "/datascience/data_audiences/"
-    val hdfs_files = days.map(day => path + "day=%s/country=AR/".format(day))
-              .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val hdfs_files = days
+      .map(day => path + "day=%s/country=AR/".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-        
     //cargamos el df de audiences
-    val df_audiences = spark.read.parquet(hdfs_files: _*) 
+    val df_audiences = spark.read.parquet(hdfs_files: _*)
 
     //al df de audiences le añadimos una columna que dice si se conectó en horario laboral o en hogareño
-    val geo_hour = df_audiences.select("device_id", "third_party", "timestamp","device_type")             
-                    .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))                                     
-                    .withColumn("Hour", date_format(col("Time"), "HH"))
-                    .filter(!date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_*))
-                    .withColumn("Period",when((col("Hour") >= 20 || col("Hour") <= 8),"Hogar").otherwise("Trabajo")) 
+    val geo_hour = df_audiences
+      .select("device_id", "third_party", "timestamp", "device_type")
+      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "HH"))
+      .filter(
+        !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"): _*)
+      )
+      .withColumn(
+        "Period",
+        when((col("Hour") >= 20 || col("Hour") <= 8), "Hogar")
+          .otherwise("Trabajo")
+      )
 
     //nos quedamos sólo con los usuarios que tengan algunos de los isp de interés
     val users_isp = geo_hour
-                    .filter(array_contains(col("third_party"), 1192) || array_contains(col("third_party"), 1191)|| array_contains(col("third_party"), 1193) || array_contains(col("third_party"), 1190) || array_contains(col("third_party"), 1194) || array_contains(col("third_party"), 1069)|| array_contains(col("third_party"), 1195) )            
-     
+      .filter(
+        array_contains(col("third_party"), 1192) || array_contains(
+          col("third_party"),
+          1191
+        ) || array_contains(col("third_party"), 1193) || array_contains(
+          col("third_party"),
+          1190
+        ) || array_contains(col("third_party"), 1194) || array_contains(
+          col("third_party"),
+          1069
+        ) || array_contains(col("third_party"), 1195)
+      )
+
     //a esos usuarios les contamos cuántas veces aparecen y...lo dividimos por cuatro
     //esto está hardcoreado vamos a levantar 30 días de datos, lo dividimos por 4 nos va a dar la conexiones semanales promedio
     //lo filtramos y nos quedamos con los que tengan más de una por semana (mayor a 4)
-    val user_frequency = users_isp.groupBy("device_id").count().withColumn("Freq",col("count")/4).filter("Freq>4") 
+    val user_frequency = users_isp
+      .groupBy("device_id")
+      .count()
+      .withColumn("Freq", col("count") / 4)
+      .filter("Freq>4")
 
     //joineamos con los que tienen la info de ISP
-    val high_freq_isp = user_frequency.join(users_isp,Seq("device_id"))
+    val high_freq_isp = user_frequency.join(users_isp, Seq("device_id"))
 
-   /*
+    /*
     high_freq_isp.distinct()
       .write
       .mode(SaveMode.Overwrite)
@@ -1886,16 +1911,19 @@ def get_ISP_users(
       .format("csv")
       .option("sep", ",")
       .save("/datascience/geo/AR/high_freq_isp_30D")
-      */
+     */
 
     //ahora levantamos el resultado del crossdevice
-    val user_location = spark.read.csv("/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/")
-    .withColumn("device_id", upper(col("_c1")))
+    val user_location = spark.read
+      .csv(
+        "/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/"
+      )
+      .withColumn("device_id", upper(col("_c1")))
 
     //hacemos el join entre ambos
-    val isp_location = high_freq_isp.join(user_location,Seq("device_id"))
-                  .withColumn("third_party",concat_ws(",",col("third_party")))
-
+    val isp_location = high_freq_isp
+      .join(user_location, Seq("device_id"))
+      .withColumn("third_party", concat_ws(",", col("third_party")))
 
     isp_location
       .distinct()
@@ -1905,7 +1933,7 @@ def get_ISP_users(
       .format("csv")
       .option("sep", ",")
       .save("/datascience/geo/AR/high_freq_isp_30D")
-      
+
   }
 
   /**
@@ -1951,7 +1979,7 @@ def get_ISP_users(
     *
     *
     *
-  
+
   def getExpansionDataset(spark: SparkSession) {
     // val ga = spark.read
     //   .load(
@@ -2021,7 +2049,6 @@ def get_ISP_users(
     //   .mode(SaveMode.Overwrite)
     //   .save("/datascience/data_demo/expand_ga_timestamp")
   }  */
-
   /**
     *
     *
@@ -2036,8 +2063,9 @@ def get_ISP_users(
     *
     */
   def getDunnhumbyMatching(spark: SparkSession) = {
-    val pii_table = spark.read.load("/datascience/pii_matching/pii_table")
-                         .withColumn("pii", lower(col("pii")))
+    val pii_table = spark.read
+      .load("/datascience/pii_matching/pii_table")
+      .withColumn("pii", lower(col("pii")))
     pii_table.cache()
 
     // EXITO CO FILE
@@ -2114,7 +2142,6 @@ def get_ISP_users(
       .format("csv")
       .save("/datascience/custom/dunnhumby/gpa_br_nid")
 
-
     // RD BR
     val rd_br_ml = spark.read
       .format("csv")
@@ -2153,6 +2180,50 @@ def get_ISP_users(
       .save("/datascience/custom/dunnhumby/rd_br_nid")
   }
 
+  /**
+    *
+    *
+    *
+    *
+    *              MEDIABRANDS - CALCULO DE OVERLAP
+    *
+    *
+    *
+    *
+    */
+  def getOverlap(spark: SparkSession) = {
+    val data = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/MX_-5_2019-04-11T00-52-32-149564")
+      .select("_c1", "_c2")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "segment")
+
+    val myUDF = udf((segments: Seq[String]) => segments.sorted.mkString(","))
+
+    val grouped = data
+      .groupBy("device_id")
+      .agg(collect_list(col("segment")).as("segments"))
+      .withColumn("segments", myUDF(col("segments")))
+
+    grouped.cache()
+
+    grouped
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/overlap_mediabrands")
+
+    grouped
+      .groupBy("segments")
+      .count()
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/overlap_mediabrands_count")
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -2160,7 +2231,7 @@ def get_ISP_users(
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    get_ISP_users(spark,30,2)
+    getOverlap(spark)
     // get_safegraph_data(spark,15,"argentina")
   }
 
