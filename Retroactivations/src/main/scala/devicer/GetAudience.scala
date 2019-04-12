@@ -372,10 +372,10 @@ object GetAudience {
               .length > 0) query("description")
         else ""
       val jobid =
-        if (query.contains("jobid") && Option(query("jobid"))
+        if (query.contains("jobId") && Option(query("jobId"))
               .getOrElse("")
               .toString
-              .length > 0) query("jobid")
+              .length > 0) query("jobId")
         else ""
       val xd =
         if (query.contains("xd") && Option(query("xd"))
