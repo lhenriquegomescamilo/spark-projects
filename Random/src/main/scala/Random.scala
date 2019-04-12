@@ -2268,9 +2268,9 @@ val records_common = the_join.select(col("identifier"))
     val group_keywords: Map[String, List[String]] = Map(
       "Inflacion" -> "inflacion devaluacion suba,precios aumentos".split(" ").toList,
       "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
-        .split(" ").split(" ").toList,
+        .split(" ").toList,
       "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
-        .split(" ").split(" ").toList,
+        .split(" ").toList,
       "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas".split(" ").toList
     )
 
