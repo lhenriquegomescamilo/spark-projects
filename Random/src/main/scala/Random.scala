@@ -2308,7 +2308,7 @@ val records_common = the_join.select(col("identifier"))
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    getOverlap(spark)
+    getGCBAReport(spark)
     // get_safegraph_data(spark,15,"argentina")
   }
 
