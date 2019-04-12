@@ -14,6 +14,7 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.types.{
   DoubleType,
   StringType,
@@ -2209,8 +2210,7 @@ val records_common = the_join.select(col("identifier"))
 
     grouped.cache()
 
-    grouped
-      .write
+    grouped.write
       .format("csv")
       .option("sep", "\t")
       .save("/datascience/custom/overlap_mediabrands")
@@ -2224,6 +2224,55 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/overlap_mediabrands_count")
   }
 
+  /**
+    *
+    *
+    *
+    *
+    *
+    *                PRESENTACION GCBA
+    *
+    *
+    *
+    *
+    *
+    */
+  def getGCBAReport(spark: SparkSession) {
+    val group_keywords = Map(
+      "Inflacion" -> "inflacion devaluacion suba,precios aumentos".split(" "),
+      "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
+        .split(" "),
+      "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
+        .split(" "),
+      "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas"
+    )
+
+    val data = getDataAudiences(spark, 30, 1)
+
+    for ((group, keywords) <- group_keywords) {
+      println(group)
+      val query =
+        keywords.map(key => "lower(url) LIKE '%" + key.replace(",", "%' AND lower(url) LIKE '%") + "%'").mkString(" OR ")
+      
+      val filtered = data
+        .filter("country = 'AR' AND event_type = 'pv' AND (%s)".format(query))
+        .withColumn("group", lit(group))
+        .select("device_id", "url", "day")
+        .groupBy("device_id", "url", "day")
+        .count()
+      filtered.cache()
+      filtered.write
+        .format("csv")
+        .save("/datascience/custom/reporte_gcba/%s".format(group))
+      filtered
+        .groupBy("url", "day")
+        .agg(sum(col("count")).as("count"))
+        .write
+        .format("csv")
+        .save("/datascience/custom/reporte_gcba/%s_url_count".format(group))
+    }
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -2231,6 +2280,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
+    Logger.getRootLogger.setLevel(Level.WARN)
     getOverlap(spark)
     // get_safegraph_data(spark,15,"argentina")
   }
