@@ -1896,7 +1896,7 @@ val records_common = the_join.select(col("identifier"))
     //ña variable esa "frequencer" lo que hace es regular según la cantidad de días que se elijan:
     //si se eligió 30, queda en 4 y nos da la cantidad por semana (dividimos al mes por 4)
 
-    val frequencer = (4*days)/30
+    val frequencer = (4*nDays)/30
     val user_frequency = users_isp
       .groupBy("device_id")
       .count()
@@ -2265,13 +2265,13 @@ val records_common = the_join.select(col("identifier"))
     *
     */
   def getGCBAReport(spark: SparkSession) {
-    val group_keywords = Map(
-      "Inflacion" -> "inflacion devaluacion suba,precios aumentos".split(" "),
+    val group_keywords: = Map(
+      "Inflacion" -> "inflacion devaluacion suba,precios aumentos".split(" ").toList,
       "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
-        .split(" "),
+        .split(" ").split(" ").toList,
       "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
-        .split(" "),
-      "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas"
+        .split(" ").split(" ").toList,
+      "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas".split(" ").toList
     )
 
     val data = getDataAudiences(spark, 30, 1)
