@@ -1892,14 +1892,16 @@ val records_common = the_join.select(col("identifier"))
         ) || array_contains(col("third_party"), 1195)
       )
 
-    //a esos usuarios les contamos cuántas veces aparecen y...lo dividimos por cuatro
-    //esto está hardcoreado vamos a levantar 30 días de datos, lo dividimos por 4 nos va a dar la conexiones semanales promedio
-    //lo filtramos y nos quedamos con los que tengan más de una por semana (mayor a 4)
+    //a esos usuarios les contamos cuántas veces aparecen y...lo dividimos por cuatro por cada mes
+    //ña variable esa "frequencer" lo que hace es regular según la cantidad de días que se elijan:
+    //si se eligió 30, queda en 4 y nos da la cantidad por semana (dividimos al mes por 4)
+
+    val frequencer = (4*days)/30
     val user_frequency = users_isp
       .groupBy("device_id")
       .count()
-      .withColumn("Freq", col("count") / 4)
-      .filter("Freq>4")
+      .withColumn("Freq", col("count") / frequencer)
+      //.filter("Freq>4") sacamos el filtro para perder menos usuarios. Después podemos fitrarlo luego
 
     //joineamos con los que tienen la info de ISP
     val high_freq_isp = user_frequency.join(users_isp, Seq("device_id"))
@@ -1914,7 +1916,7 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/geo/AR/high_freq_isp_30D")
      */
 
-    //ahora levantamos el resultado del crossdevice
+    //ahora levantamos el resultado del crossdevice, estas son solo cookies. 
     val user_location = spark.read
       .csv(
         "/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/"
@@ -1925,6 +1927,22 @@ val records_common = the_join.select(col("identifier"))
     val isp_location = high_freq_isp
       .join(user_location, Seq("device_id"))
       .withColumn("third_party", concat_ws(",", col("third_party")))
+//fin de cookies
+
+
+//ahora levantamos las madid de los usuarios, estas son solo madid. 
+    val user_location_madid = spark.read
+      .csv(
+        "/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/"
+      )
+      .withColumn("device_id", upper(col("_c1")))
+
+    //hacemos el join entre ambos
+    val isp_location_madid = high_freq_isp
+      .join(user_location_madid, Seq("device_id"))
+      .withColumn("third_party", concat_ws(",", col("third_party")))
+
+//fin de madid
 
     isp_location
       .distinct()
@@ -1933,7 +1951,16 @@ val records_common = the_join.select(col("identifier"))
       .option("header", "false")
       .format("csv")
       .option("sep", ",")
-      .save("/datascience/geo/AR/high_freq_isp_30D")
+      .save("/datascience/geo/AR/high_freq_isp_cookie_90D")
+
+      isp_location_madid
+      .distinct()
+      .write
+      .mode(SaveMode.Overwrite)
+      .option("header", "false")
+      .format("csv")
+      .option("sep", ",")
+      .save("/datascience/geo/AR/high_freq_isp_madid_90D")
 
   }
 
