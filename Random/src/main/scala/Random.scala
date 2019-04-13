@@ -2289,15 +2289,50 @@ val records_common = the_join.select(col("identifier"))
         .groupBy("device_id", "url", "day")
         .count()
       filtered.cache()
-      filtered.write
-        .format("csv")
-        .save("/datascience/custom/reporte_gcba/%s".format(group))
+      // filtered.write
+      //   .format("csv")
+      //   .save("/datascience/custom/reporte_gcba/%s".format(group))
+      // filtered
+      //   .groupBy("url", "day")
+      //   .agg(sum(col("count")).as("count"))
+      //   .write
+      //   .format("csv")
+      //   .save("/datascience/custom/reporte_gcba/%s_url_count".format(group))
       filtered
-        .groupBy("url", "day")
+        .groupBy("url")
+        .agg(sum(col("count")).as("count"))
+        .orderBy(desc("count"))
+        .write
+        .format("csv")
+        .save("/datascience/custom/reporte_gcba/%s_top_url".format(group))
+
+      filtered
+        .groupBy("day")
         .agg(sum(col("count")).as("count"))
         .write
         .format("csv")
-        .save("/datascience/custom/reporte_gcba/%s_url_count".format(group))
+        .save("/datascience/custom/reporte_gcba/%s_count_day".format(group))
+
+      filtered
+        .groupBy("device_id")
+        .agg(countDistinct(col("day")).as("count"))
+        .write
+        .format("csv")
+        .save("/datascience/custom/reporte_gcba/%s_device_n_days".format(group))
+
+      filtered
+        .groupBy("device_id")
+        .agg(countDistinct(col("url")).as("count"))
+        .write
+        .format("csv")
+        .save("/datascience/custom/reporte_gcba/%s_device_distinct_urls".format(group))
+
+      filtered
+        .groupBy("device_id")
+        .agg(sum(col("count")).as("count"))
+        .write
+        .format("csv")
+        .save("/datascience/custom/reporte_gcba/%s_device_n_urls".format(group))
     }
   }
 
