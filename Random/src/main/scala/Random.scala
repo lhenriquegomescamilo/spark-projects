@@ -2266,12 +2266,13 @@ val records_common = the_join.select(col("identifier"))
     */
   def getGCBAReport(spark: SparkSession) {
     val group_keywords: Map[String, List[String]] = Map(
-      "Inflacion" -> "inflacion devaluacion suba,precios aumentos".split(" ").toList,
-      "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
-        .split(" ").toList,
-      "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
-        .split(" ").toList,
-      "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas".split(" ").toList
+      // "Inflacion" -> "inflacion devaluacion suba,precios aumentos".split(" ").toList,
+      // "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
+      //   .split(" ").toList,
+      // "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
+      //   .split(" ").toList,
+      // "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas".split(" ").toList,
+      "Transporte" -> "transporte metrobus subte colectivos tren".split(" ").toList
     )
 
     val data = getDataAudiences(spark, 30, 1)
