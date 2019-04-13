@@ -2266,13 +2266,14 @@ val records_common = the_join.select(col("identifier"))
     */
   def getGCBAReport(spark: SparkSession) {
     val group_keywords: Map[String, List[String]] = Map(
-      "Inflacion" -> "inflacion devaluacion suba,precios aumentos".split(" ").toList,
-      "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
-        .split(" ").toList,
-      "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
-        .split(" ").toList,
-      "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas".split(" ").toList
-      // "Transporte" -> "transporte metrobus subte colectivos tren".split(" ").toList
+      // "Inflacion" -> "inflacion devaluacion suba,precios aumentos".split(" ").toList,
+      // "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
+      //   .split(" ").toList,
+      // "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
+      //   .split(" ").toList,
+      // "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas".split(" ").toList
+      "Transporte" -> "transporte metrobus subte colectivos tren".split(" ").toList,
+      "Ambiente" -> "ambiente bioguia.com/ambiente".split(" ").toList
     )
 
     val data = getDataAudiences(spark, 30, 1)
@@ -2283,27 +2284,28 @@ val records_common = the_join.select(col("identifier"))
         keywords.map(key => "lower(url) LIKE '%" + key.replace(",", "%' AND lower(url) LIKE '%") + "%'").mkString(" OR ")
       
       val filtered = data
-        .filter("country = 'AR' AND event_type = 'pv' AND (%s)".format(query))
+        .filter("country = 'AR' AND event_type = 'pv' AND (%s) AND NOT lower(url) LIKE '%mapa.buenosaires%' AND NOT lower(url) LIKE '%miba.buenosaires%' AND NOT lower(url) LIKE '%www.buenosaires%'".format(query))
         .withColumn("group", lit(group))
         .select("device_id", "url", "day")
         .groupBy("device_id", "url", "day")
         .count()
       filtered.cache()
-      // filtered.write
-      //   .format("csv")
-      //   .save("/datascience/custom/reporte_gcba/%s".format(group))
-      // filtered
-      //   .groupBy("url", "day")
-      //   .agg(sum(col("count")).as("count"))
-      //   .write
-      //   .format("csv")
-      //   .save("/datascience/custom/reporte_gcba/%s_url_count".format(group))
+      filtered.write
+        .format("csv")
+        .save("/datascience/custom/reporte_gcba/%s".format(group))
+      filtered
+        .groupBy("url", "day")
+        .agg(sum(col("count")).as("count"))
+        .write
+        .format("csv")
+        .save("/datascience/custom/reporte_gcba/%s_url_count".format(group))
       filtered
         .groupBy("url")
         .agg(sum(col("count")).as("count"))
         .orderBy(desc("count"))
         .write
         .format("csv")
+        .mode(SaveMode.Overwrite)
         .save("/datascience/custom/reporte_gcba/%s_top_url".format(group))
 
       filtered
@@ -2311,6 +2313,7 @@ val records_common = the_join.select(col("identifier"))
         .agg(sum(col("count")).as("count"))
         .write
         .format("csv")
+        .mode(SaveMode.Overwrite)
         .save("/datascience/custom/reporte_gcba/%s_count_day".format(group))
 
       filtered
@@ -2318,6 +2321,7 @@ val records_common = the_join.select(col("identifier"))
         .agg(countDistinct(col("day")).as("count"))
         .write
         .format("csv")
+        .mode(SaveMode.Overwrite)
         .save("/datascience/custom/reporte_gcba/%s_device_n_days".format(group))
 
       filtered
@@ -2325,6 +2329,7 @@ val records_common = the_join.select(col("identifier"))
         .agg(countDistinct(col("url")).as("count"))
         .write
         .format("csv")
+        .mode(SaveMode.Overwrite)
         .save("/datascience/custom/reporte_gcba/%s_device_distinct_urls".format(group))
 
       filtered
@@ -2332,6 +2337,7 @@ val records_common = the_join.select(col("identifier"))
         .agg(sum(col("count")).as("count"))
         .write
         .format("csv")
+        .mode(SaveMode.Overwrite)
         .save("/datascience/custom/reporte_gcba/%s_device_n_urls".format(group))
     }
   }
