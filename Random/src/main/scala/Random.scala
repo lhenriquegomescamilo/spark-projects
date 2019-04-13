@@ -2271,7 +2271,7 @@ val records_common = the_join.select(col("identifier"))
         .split(" ").toList,
       "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
         .split(" ").toList,
-      "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas".split(" ").toList,
+      "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas".split(" ").toList
       // "Transporte" -> "transporte metrobus subte colectivos tren".split(" ").toList
     )
 
