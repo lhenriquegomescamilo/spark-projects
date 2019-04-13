@@ -1896,12 +1896,12 @@ val records_common = the_join.select(col("identifier"))
     //ña variable esa "frequencer" lo que hace es regular según la cantidad de días que se elijan:
     //si se eligió 30, queda en 4 y nos da la cantidad por semana (dividimos al mes por 4)
 
-    val frequencer = (4*nDays)/30
+    val frequencer = (4 * nDays) / 30
     val user_frequency = users_isp
       .groupBy("device_id")
       .count()
       .withColumn("Freq", col("count") / frequencer)
-      //.filter("Freq>4") sacamos el filtro para perder menos usuarios. Después podemos fitrarlo luego
+    //.filter("Freq>4") sacamos el filtro para perder menos usuarios. Después podemos fitrarlo luego
 
     //joineamos con los que tienen la info de ISP
     val high_freq_isp = user_frequency.join(users_isp, Seq("device_id"))
@@ -1916,7 +1916,7 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/geo/AR/high_freq_isp_30D")
      */
 
-    //ahora levantamos el resultado del crossdevice, estas son solo cookies. 
+    //ahora levantamos el resultado del crossdevice, estas son solo cookies.
     val user_location = spark.read
       .csv(
         "/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/"
@@ -1929,8 +1929,7 @@ val records_common = the_join.select(col("identifier"))
       .withColumn("third_party", concat_ws(",", col("third_party")))
 //fin de cookies
 
-
-//ahora levantamos las madid de los usuarios, estas son solo madid. 
+//ahora levantamos las madid de los usuarios, estas son solo madid.
     val user_location_madid = spark.read
       .csv(
         "/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/"
@@ -1953,7 +1952,7 @@ val records_common = the_join.select(col("identifier"))
       .option("sep", ",")
       .save("/datascience/geo/AR/high_freq_isp_cookie_90D")
 
-      isp_location_madid
+    isp_location_madid
       .distinct()
       .write
       .mode(SaveMode.Overwrite)
@@ -2272,7 +2271,9 @@ val records_common = the_join.select(col("identifier"))
       // "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
       //   .split(" ").toList,
       // "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas".split(" ").toList
-      "Transporte" -> "transporte metrobus subte colectivos tren".split(" ").toList,
+      "Transporte" -> "transporte metrobus subte colectivos tren"
+        .split(" ")
+        .toList,
       "Ambiente" -> "ambiente bioguia.com/ambiente".split(" ").toList
     )
 
@@ -2281,10 +2282,18 @@ val records_common = the_join.select(col("identifier"))
     for ((group, keywords) <- group_keywords) {
       println(group)
       val query =
-        keywords.map(key => "lower(url) LIKE '%" + key.replace(",", "%' AND lower(url) LIKE '%") + "%'").mkString(" OR ")
-      
+        keywords
+          .map(
+            key =>
+              "lower(url) LIKE '%" + key
+                .replace(",", "%' AND lower(url) LIKE '%") + "%'"
+          )
+          .mkString(" OR ")
+
       val filtered = data
-        .filter("country = 'AR' AND event_type = 'pv' AND (" + query + ") AND NOT lower(url) LIKE '%mapa.buenosaires%' AND NOT lower(url) LIKE '%miba.buenosaires%' AND NOT lower(url) LIKE '%www.buenosaires%'")
+        .filter(
+          "country = 'AR' AND event_type = 'pv' AND (" + query + ") AND NOT lower(url) LIKE '%mapa.buenosaires%' AND NOT lower(url) LIKE '%miba.buenosaires%' AND NOT lower(url) LIKE '%www.buenosaires%'"
+        )
         .withColumn("group", lit(group))
         .select("device_id", "url", "day")
         .groupBy("device_id", "url", "day")
@@ -2292,12 +2301,14 @@ val records_common = the_join.select(col("identifier"))
       filtered.cache()
       filtered.write
         .format("csv")
+        .mode(SaveMode.Overwrite)
         .save("/datascience/custom/reporte_gcba/%s".format(group))
       filtered
         .groupBy("url", "day")
         .agg(sum(col("count")).as("count"))
         .write
         .format("csv")
+        .mode(SaveMode.Overwrite)
         .save("/datascience/custom/reporte_gcba/%s_url_count".format(group))
       filtered
         .groupBy("url")
@@ -2330,7 +2341,10 @@ val records_common = the_join.select(col("identifier"))
         .write
         .format("csv")
         .mode(SaveMode.Overwrite)
-        .save("/datascience/custom/reporte_gcba/%s_device_distinct_urls".format(group))
+        .save(
+          "/datascience/custom/reporte_gcba/%s_device_distinct_urls"
+            .format(group)
+        )
 
       filtered
         .groupBy("device_id")
