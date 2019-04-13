@@ -2265,16 +2265,16 @@ val records_common = the_join.select(col("identifier"))
     */
   def getGCBAReport(spark: SparkSession) {
     val group_keywords: Map[String, List[String]] = Map(
-      // "Inflacion" -> "inflacion devaluacion suba,precios aumentos".split(" ").toList,
+      "Inflacion" -> "inflacion devaluacion suba,precios aumentos ganancias".split(" ").toList,
       // "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
       //   .split(" ").toList,
       // "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
       //   .split(" ").toList,
-      // "Cultura" -> "cultura arte musica pintura teatro cine taller,arte esculturas".split(" ").toList
-      "Transporte" -> "transporte metrobus subte colectivos tren"
+      "Cultura" -> "cultura musica pintura teatro taller,arte esculturas".split(" ").toList,
+      "Transporte" -> "transporte metrobus subte colectivos trenes"
         .split(" ")
-        .toList,
-      "Ambiente" -> "ambiente bioguia.com/ambiente".split(" ").toList
+        .toList
+      // "Ambiente" -> "ambiente bioguia.com/ambiente".split(" ").toList
     )
 
     val data = getDataAudiences(spark, 30, 1)
@@ -2292,7 +2292,7 @@ val records_common = the_join.select(col("identifier"))
 
       val filtered = data
         .filter(
-          "country = 'AR' AND event_type = 'pv' AND (" + query + ") AND NOT lower(url) LIKE '%mapa.buenosaires%' AND NOT lower(url) LIKE '%miba.buenosaires%' AND NOT lower(url) LIKE '%www.buenosaires%'"
+          "country = 'AR' AND event_type = 'pv' AND (" + query + ") AND NOT lower(url) LIKE '%mapa.buenosaires%' AND NOT lower(url) LIKE '%miba.buenosaires%' AND NOT lower(url) LIKE '%www.buenosaires%transporte%'"
         )
         .withColumn("group", lit(group))
         .select("device_id", "url", "day")
