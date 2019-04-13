@@ -2284,7 +2284,7 @@ val records_common = the_join.select(col("identifier"))
         keywords.map(key => "lower(url) LIKE '%" + key.replace(",", "%' AND lower(url) LIKE '%") + "%'").mkString(" OR ")
       
       val filtered = data
-        .filter("country = 'AR' AND event_type = 'pv' AND (%s) AND NOT lower(url) LIKE '%mapa.buenosaires%' AND NOT lower(url) LIKE '%miba.buenosaires%' AND NOT lower(url) LIKE '%www.buenosaires%'".format(query))
+        .filter("country = 'AR' AND event_type = 'pv' AND (" + query + ") AND NOT lower(url) LIKE '%mapa.buenosaires%' AND NOT lower(url) LIKE '%miba.buenosaires%' AND NOT lower(url) LIKE '%www.buenosaires%'")
         .withColumn("group", lit(group))
         .select("device_id", "url", "day")
         .groupBy("device_id", "url", "day")
