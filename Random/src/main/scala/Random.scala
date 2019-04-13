@@ -2265,19 +2265,19 @@ val records_common = the_join.select(col("identifier"))
     */
   def getGCBAReport(spark: SparkSession) {
     val group_keywords: Map[String, List[String]] = Map(
-      "Inflacion" -> "inflacion devaluacion suba,precios aumentos ganancias".split(" ").toList,
-      // "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
-      //   .split(" ").toList,
-      // "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron"
-      //   .split(" ").toList,
+      "Inflacion" -> "inflacion devaluacion suba,precios aumentos ganancias invertir".split(" ").toList,
+      "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
+        .split(" ").toList,
+      "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron violacion violador preso"
+        .split(" ").toList,
       "Cultura" -> "cultura musica pintura teatro taller,arte esculturas".split(" ").toList,
       "Transporte" -> "transporte metrobus subte colectivos trenes"
         .split(" ")
-        .toList
-      // "Ambiente" -> "ambiente bioguia.com/ambiente".split(" ").toList
+        .toList,
+      "Ambiente" -> "medio-ambiente medioambiente greenpeace bioguia.com/ambiente".split(" ").toList
     )
 
-    val data = getDataAudiences(spark, 30, 1)
+    val data = getDataAudiences(spark, 60, 1)
 
     for ((group, keywords) <- group_keywords) {
       println(group)
