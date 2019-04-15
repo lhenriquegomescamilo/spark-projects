@@ -2368,7 +2368,7 @@ val records_common = the_join.select(col("identifier"))
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(0)
     val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_audiences_p"
+    val path = "/datascience/data_audiences/"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
