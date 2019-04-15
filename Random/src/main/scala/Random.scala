@@ -1828,7 +1828,7 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/urls_gt_ar")
   }
 
-  /**
+/**
     *
     *
     *
@@ -1896,12 +1896,12 @@ val records_common = the_join.select(col("identifier"))
     //ña variable esa "frequencer" lo que hace es regular según la cantidad de días que se elijan:
     //si se eligió 30, queda en 4 y nos da la cantidad por semana (dividimos al mes por 4)
 
-    val frequencer = (4 * nDays) / 30
+    val frequencer = (4*days)/30
     val user_frequency = users_isp
       .groupBy("device_id")
       .count()
       .withColumn("Freq", col("count") / frequencer)
-    //.filter("Freq>4") sacamos el filtro para perder menos usuarios. Después podemos fitrarlo luego
+      //.filter("Freq>4") sacamos el filtro para perder menos usuarios. Después podemos fitrarlo luego
 
     //joineamos con los que tienen la info de ISP
     val high_freq_isp = user_frequency.join(users_isp, Seq("device_id"))
@@ -1916,10 +1916,10 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/geo/AR/high_freq_isp_30D")
      */
 
-    //ahora levantamos el resultado del crossdevice, estas son solo cookies.
+    //ahora levantamos el resultado del crossdevice, estas son solo cookies. 
     val user_location = spark.read
       .csv(
-        "/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/"
+        "/datascience/audiences/crossdeviced/zona_norte_users_15-04.csv_xd/"
       )
       .withColumn("device_id", upper(col("_c1")))
 
@@ -1929,12 +1929,13 @@ val records_common = the_join.select(col("identifier"))
       .withColumn("third_party", concat_ws(",", col("third_party")))
 //fin de cookies
 
-//ahora levantamos las madid de los usuarios, estas son solo madid.
-    val user_location_madid = spark.read
-      .csv(
-        "/datascience/audiences/crossdeviced/users_zona_norte_regiones.csv_xd/"
-      )
-      .withColumn("device_id", upper(col("_c1")))
+
+//ahora levantamos las madid de los usuarios, estas son solo madid. 
+val user_location_madid = spark.read.option("header",true)   
+      .csv(        "/datascience/geo/AR/zona_norte_users_15-04.csv"      )      
+      .withColumn("device_id", upper(col("user")))
+
+
 
     //hacemos el join entre ambos
     val isp_location_madid = high_freq_isp
@@ -1952,7 +1953,7 @@ val records_common = the_join.select(col("identifier"))
       .option("sep", ",")
       .save("/datascience/geo/AR/high_freq_isp_cookie_90D")
 
-    isp_location_madid
+      isp_location_madid
       .distinct()
       .write
       .mode(SaveMode.Overwrite)
@@ -1962,6 +1963,7 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/geo/AR/high_freq_isp_madid_90D")
 
   }
+
 
   /**
     *
