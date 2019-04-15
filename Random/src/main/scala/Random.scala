@@ -2378,8 +2378,10 @@ val user_location_madid = spark.read.option("header",true)
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
-    val filtered = df.filter(col("url").contains("taringa.net")).orderBy("timestamp").select("device_id","url","timestamp")
-    filtered.write.format("csv").save("/datascience/data_taringa")
+    val filtered = df.filter(col("url").contains("taringa.net") && not(col("url").contains("api.retargetly")))
+                    .orderBy("timestamp")
+                    .select("device_id","url","timestamp")
+    filtered.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/data_taringa")
 
 
 
