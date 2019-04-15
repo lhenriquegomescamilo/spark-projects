@@ -262,6 +262,8 @@ object GeoSparkMatcher {
       .appName("match_POI_geospark")
       .getOrCreate()
 
+    GeoSparkSQLRegistrator.registerAll(spark)
+
     val value_dictionary = get_variables(spark, path_geo_json)
 
     join(spark, value_dictionary)
