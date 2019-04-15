@@ -44,6 +44,7 @@ object GeoSparkMatcher {
       .map(_.toString(format))
 
     // Now we obtain the list of hdfs files to be read
+    val path = "/data/geo/safegraph/"
     val hdfs_files = days
       .map(day => path + "%s/".format(day))
       .filter(
