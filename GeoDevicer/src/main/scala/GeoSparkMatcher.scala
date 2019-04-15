@@ -5,6 +5,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
+import org.apache.log4j.{Level, Logger}
 
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
@@ -281,6 +282,7 @@ object GeoSparkMatcher {
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
     val value_dictionary = get_variables(spark, path_geo_json)
+    Logger.getRootLogger.setLevel(Level.WARN)
 
     // Now we remove the file if it exists already
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
