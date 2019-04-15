@@ -179,7 +179,7 @@ object GeoSparkMatcher {
       .mkString(",")
     df_pois.createOrReplaceTempView("POIs")
 
-    query =
+    val query =
       """
     SELECT ST_Transform(ST_Point(CAST(POIs.longitude AS Decimal(24,20)), 
                                  CAST(POIs.latitude  AS Decimal(24,20)),
