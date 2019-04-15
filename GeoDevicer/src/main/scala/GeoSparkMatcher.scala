@@ -224,23 +224,24 @@ object GeoSparkMatcher {
     )
 
     // TODO: Overwrite output
-    distanceJoinDf.rdd
-      .map(
-        arr =>
-          arr(0)
-            .asInstanceOf[com.vividsolutions.jts.geom.Geometry]
-            .getUserData()
-            .toString
-            .replaceAll("\\s{1,}", ",") + "," +
-            arr(1)
-              .asInstanceOf[com.vividsolutions.jts.geom.Geometry]
-              .getUserData()
-              .toString
-              .replaceAll("\\s{1,}", ",")
-      )
-      .saveAsTextFile(
-        "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
-      )
+    distanceJoinDf.write.format("csv").save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
+      // .rdd
+      // .map(
+      //   arr =>
+      //     arr(0)
+      //       .asInstanceOf[com.vividsolutions.jts.geom.Geometry]
+      //       .getUserData()
+      //       .toString
+      //       .replaceAll("\\s{1,}", ",") + "," +
+      //       arr(1)
+      //         .asInstanceOf[com.vividsolutions.jts.geom.Geometry]
+      //         .getUserData()
+      //         .toString
+      //         .replaceAll("\\s{1,}", ",")
+      // )
+      // .saveAsTextFile(
+      //   "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
+      // )
     println("LOGGER: Results already stored.")
   }
 
