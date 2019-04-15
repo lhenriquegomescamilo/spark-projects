@@ -2356,7 +2356,7 @@ val records_common = the_join.select(col("identifier"))
     }
   }
 
-  def getDataTaringa(spark: SparkSession,days:Int){
+  def getDataTaringa(spark: SparkSession,ndays:Int){
     val spark =
           SparkSession.builder.appName("Getting data for Taringa").getOrCreate()
 
@@ -2367,7 +2367,7 @@ val records_common = the_join.select(col("identifier"))
     // Get the days to be loaded
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(0)
-    val days = (0 until days).map(end.minusDays(_)).map(_.toString(format))
+    val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_audiences_p"
 
     // Now we obtain the list of hdfs folders to be read
