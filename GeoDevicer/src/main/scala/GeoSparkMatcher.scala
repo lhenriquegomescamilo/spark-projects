@@ -194,7 +194,7 @@ object GeoSparkMatcher {
     val poisDf = get_POI_coordinates(spark, value_dictionary)
 
     // TODO: pasar por parametro las reparticiones
-    safegraphDf.repartition(500).createOrReplaceTempView("safegraph")
+    safegraphDf.createOrReplaceTempView("safegraph")
     poisDf.repartition(10)
     // TODO: pasar por parametro si se quiere o no persistir
     poisDf.persist(StorageLevel.MEMORY_ONLY)
