@@ -2356,6 +2356,32 @@ val records_common = the_join.select(col("identifier"))
     }
   }
 
+  def getDataTaringa(spark: SparkSession,days:Int){
+    val spark =
+          SparkSession.builder.appName("Getting data for Taringa").getOrCreate()
+
+     // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until days).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences_p"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+    val filtered = df.filter("url LIKE %taringa.net%").orderBy("timestamp").select("device_id","url","timestamp")
+    filtered.write.format("csv").save("/datascience/data_taringa")
+
+
+
+}
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -2364,7 +2390,7 @@ val records_common = the_join.select(col("identifier"))
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    getGCBAReport(spark)
+    getDataTaringa(spark,5)
     // get_safegraph_data(spark,15,"argentina")
   }
 
