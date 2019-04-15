@@ -217,7 +217,7 @@ object GeoSparkMatcher {
     poisDf.createOrReplaceTempView("poisPoints")
 
     var distanceJoinDf = spark.sql(
-      """select *, ST_Distance(safegraph.pointshape, poisPoints.pointshape) AS distance
+      """select safegraph.pointshape as safegraph, poisPoints.pointshape as POI, ST_Distance(safegraph.pointshape, poisPoints.pointshape) AS distance
       from safegraph, poisPoints
       where ST_Distance(safegraph.pointshape, poisPoints.pointshape) < %s"""
         .format(value_dictionary("max_radius"))
