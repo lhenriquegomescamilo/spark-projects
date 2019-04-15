@@ -252,7 +252,6 @@ object GeoSparkMatcher {
     val path_geo_json =
       if (options.contains('path_geo_json)) options('path_geo_json).toString
       else ""
-    val value_dictionary = get_variables(spark, path_geo_json)
 
     // Start Spark Session
     val spark = SparkSession
@@ -268,16 +267,19 @@ object GeoSparkMatcher {
       // .config("geospark.join.numpartition", 200)
       .appName("match_POI_geospark")
       .getOrCreate()
-
+    
+    // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
+    val value_dictionary = get_variables(spark, path_geo_json)
 
-    // First we remove the file if it exists already
+    // Now we remove the file if it exists already
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     val outPutPath =
       "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
     if (fs.exists(new Path(outPutPath)))
       fs.delete(new Path(outPutPath), true)
 
+    // Finally we perform the GeoJoin
     join(spark, value_dictionary)
   }
 }
