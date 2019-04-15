@@ -252,6 +252,7 @@ object GeoSparkMatcher {
     val path_geo_json =
       if (options.contains('path_geo_json)) options('path_geo_json).toString
       else ""
+    val value_dictionary = get_variables(spark, path_geo_json)
 
     // Start Spark Session
     val spark = SparkSession
@@ -272,11 +273,10 @@ object GeoSparkMatcher {
 
     // First we remove the file if it exists already
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    val outPutPath = "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
+    val outPutPath =
+      "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
     if (fs.exists(new Path(outPutPath)))
       fs.delete(new Path(outPutPath), true)
-
-    val value_dictionary = get_variables(spark, path_geo_json)
 
     join(spark, value_dictionary)
   }
