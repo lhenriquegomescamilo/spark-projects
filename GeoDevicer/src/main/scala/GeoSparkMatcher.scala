@@ -241,6 +241,7 @@ object GeoSparkMatcher {
       .saveAsTextFile(
         "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
       )
+    println("LOGGER: Results already stored.")
   }
 
   type OptionMap = Map[Symbol, Any]
