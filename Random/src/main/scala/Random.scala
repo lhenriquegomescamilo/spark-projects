@@ -1900,7 +1900,7 @@ val records_common = the_join.select(col("identifier"))
     val user_frequency = users_isp
       .groupBy("device_id")
       .count()
-      .withColumn("Freq", col("count") / frequencer)
+      .withColumn("Freq_connections", col("count") / frequencer)
       //.filter("Freq>4") sacamos el filtro para perder menos usuarios. Después podemos fitrarlo luego
 
     //joineamos con los que tienen la info de ISP
@@ -2394,8 +2394,8 @@ val user_location_madid = spark.read.option("header",true)
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     //Logger.getRootLogger.setLevel(Level.WARN)
-    getDataTaringa(spark,5)
-    //get_ISP_users(spark,90)
+    //getDataTaringa(spark,5)
+    get_ISP_users(spark,90)
     // get_safegraph_data(spark,15,"argentina")
   }
 
