@@ -69,10 +69,10 @@ object GeoSparkMatcher {
             .length > 0) query("crossdevice").toString
       else "false"
     val nDays =
-      if (query.contains("crossdevice") && Option(query("crossdevice"))
+      if (query.contains("nDays") && Option(query("nDays"))
             .getOrElse("")
             .toString
-            .length > 0) query("crossdevice").toString
+            .length > 0) query("nDays").toString
       else "30"
     val since =
       if (query.contains("since") && Option(query("since"))
