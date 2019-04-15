@@ -132,12 +132,12 @@ object GeoSparkMatcher {
     distanceJoinDf.rdd
       .map(
         arr =>
-          a(0)
+          arr(0)
             .asInstanceOf[com.vividsolutions.jts.geom.Geometry]
             .getUserData()
             .toString
             .replaceAll("\\s{1,}", ",") + "," +
-            a(1)
+            arr(1)
               .asInstanceOf[com.vividsolutions.jts.geom.Geometry]
               .getUserData()
               .toString
