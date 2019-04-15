@@ -2376,7 +2376,7 @@ val records_common = the_join.select(col("identifier"))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
-    val filtered = df.filter("url LIKE %taringa.net%").orderBy("timestamp").select("device_id","url","timestamp")
+    val filtered = df.filter(col("url").contains("taringa.net")).orderBy("timestamp").select("device_id","url","timestamp")
     filtered.write.format("csv").save("/datascience/data_taringa")
 
 
