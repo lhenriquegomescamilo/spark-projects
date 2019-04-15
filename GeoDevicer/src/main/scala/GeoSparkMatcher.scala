@@ -11,11 +11,89 @@ import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.apache.spark.storage.StorageLevel
 
+import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
 import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 
 object GeoSparkMatcher {
+
+  /**
+    * This method returns a Map with all the parameters obtained from the JSON file.
+    *
+    * @param path_geo_json: JSON file name. This is the json where all the parameters are going to be extracted from.
+    */
+  def get_variables(
+      spark: SparkSession,
+      path_geo_json: String
+  ): Map[String, String] = {
+    // First we read the json file and store everything in a Map.
+    val file =
+      "hdfs://rely-hdfs/datascience/geo/geo_json/%s.json".format(path_geo_json)
+    val df = spark.sqlContext.read.json(file)
+    val columns = df.columns
+    val data = df
+      .collect()
+      .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
+      .toList(0)
+
+    // Now we parse the Map assigning default values.
+    val max_radius =
+      if (query.contains("max_radius") && Option(query("max_radius"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("max_radius").toString
+      else "200"
+    val country =
+      if (query.contains("country") && Option(query("country"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("country").toString
+      else "argentina"
+    val poi_output_file =
+      if (query.contains("output_file") && Option(query("output_file"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("output_file").toString
+      else "custom"
+    val path_to_pois =
+      if (query.contains("path_to_pois") && Option(query("path_to_pois"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("path_to_pois").toString
+      else ""
+    val crossdevice =
+      if (query.contains("crossdevice") && Option(query("crossdevice"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("crossdevice").toString
+      else "false"
+    val nDays =
+      if (query.contains("crossdevice") && Option(query("crossdevice"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("crossdevice").toString
+      else "30"
+    val since =
+      if (query.contains("since") && Option(query("since"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("since").toString
+      else ""
+
+    // Finally we construct the Map that is going to be returned
+    val value_dictionary: Map[String, String] = Map(
+      "max_radius" -> max_radius,
+      "country" -> country,
+      "poi_output_file" -> poi_output_file,
+      "path_to_pois" -> path_to_pois,
+      "crossdevice" -> crossdevice,
+      "nDays" -> nDays,
+      "since" -> since
+    )
+
+    value_dictionary
+  }
 
   /**
     * This method reads the safegraph data, selects the columns "ad_id" (device id), "id_type" (user id), "latitude", "longitude", creates a
