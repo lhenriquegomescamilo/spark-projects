@@ -30,6 +30,7 @@ object GeoSparkMatcher {
     // First we read the json file and store everything in a Map.
     val file =
       "hdfs://rely-hdfs/datascience/geo/geo_json/%s.json".format(path_geo_json)
+    println("LOGGER JSON FILE: " + file)
     val df = spark.sqlContext.read.json(file)
     val columns = df.columns
     val query = df
@@ -92,6 +93,15 @@ object GeoSparkMatcher {
       "since" -> since
     )
 
+    println("LOGGER PARAMETERS:")
+    println(s"""
+    "max_radius" -> $max_radius,
+    "country" -> $country,
+    "poi_output_file" -> $poi_output_file,
+    "path_to_pois" -> $path_to_pois,
+    "crossdevice" -> $crossdevice,
+    "nDays" -> $nDays,
+    "since" -> $since""")
     value_dictionary
   }
 
@@ -267,7 +277,7 @@ object GeoSparkMatcher {
       // .config("geospark.join.numpartition", 200)
       .appName("match_POI_geospark")
       .getOrCreate()
-    
+
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
     val value_dictionary = get_variables(spark, path_geo_json)
