@@ -142,12 +142,31 @@ object GeoSparkMatcher {
               .toString
               .replaceAll("\\s{1,}", ",")
       )
-      .saveAsTextFile("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
+      .saveAsTextFile(
+        "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
+      )
+  }
+
+  type OptionMap = Map[Symbol, Any]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--path_geo_json" :: value :: tail =>
+        nextOption(map ++ Map('path_geo_json -> value.toString), tail)
+    }
   }
 
   def main(args: Array[String]) {
     // Parse the parameters
     val options = nextOption(Map(), args.toList)
+    val path_geo_json =
+      if (options.contains('path_geo_json)) options('path_geo_json).toString
+      else ""
 
     // Start Spark Session
     val spark = SparkSession
@@ -163,5 +182,9 @@ object GeoSparkMatcher {
       // .config("geospark.join.numpartition", 200)
       .appName("match_POI_geospark")
       .getOrCreate()
+
+    val value_dictionary = get_variables(spark, path_geo_json)
+
+    join(spark, value_dictionary)
   }
 }
