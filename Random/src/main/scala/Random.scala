@@ -2362,7 +2362,7 @@ val user_location_madid = spark.read.option("header",true)
     val spark =
           SparkSession.builder.appName("Getting data for Taringa").getOrCreate()
 
-     // First we obtain the configuration to be allowed to watch if a file exists or not
+    // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
@@ -2394,8 +2394,8 @@ val user_location_madid = spark.read.option("header",true)
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     //Logger.getRootLogger.setLevel(Level.WARN)
-    //getDataTaringa(spark,5)
-    get_ISP_users(spark,90)
+    getDataTaringa(spark,15)
+    //get_ISP_users(spark,90)
     // get_safegraph_data(spark,15,"argentina")
   }
 
