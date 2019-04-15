@@ -175,17 +175,22 @@ object GeoSparkMatcher {
 
     val other_columns = df_pois.columns
       .filter(c => c != "latitude" && c != "longitude")
+      .map(c => "POIs." + c)
       .mkString(",")
     df_pois.createOrReplaceTempView("POIs")
-    var poisDf = spark
-      .sql("""
-          SELECT ST_Transform(ST_Point(CAST(POIs.longitude AS Decimal(24,20)), 
-                                       CAST(POIs.latitude  AS Decimal(24,20)),
-                                       %s),
-                              "epsg:4326", 
-                              "epsg:3857") AS pointshape
-          FROM POIs
-      """.format(other_columns))
+
+    val query =
+      """
+    SELECT ST_Transform(ST_Point(CAST(POIs.longitude AS Decimal(24,20)), 
+                                 CAST(POIs.latitude  AS Decimal(24,20)),
+                                 %s),
+                        "epsg:4326", 
+                        "epsg:3857") AS pointshape
+    FROM POIs""".format(other_columns)
+
+    println("LOGGER POI query:\n" + query)
+
+    var poisDf = spark.sql(query)
     poisDf
   }
 
@@ -194,7 +199,7 @@ object GeoSparkMatcher {
     val poisDf = get_POI_coordinates(spark, value_dictionary)
 
     // TODO: pasar por parametro las reparticiones
-    safegraphDf.repartition(500).createOrReplaceTempView("safegraph")
+    safegraphDf.createOrReplaceTempView("safegraph")
     poisDf.repartition(10)
     // TODO: pasar por parametro si se quiere o no persistir
     poisDf.persist(StorageLevel.MEMORY_ONLY)
@@ -203,7 +208,8 @@ object GeoSparkMatcher {
     var distanceJoinDf = spark.sql(
       """select *, ST_Distance(safegraph.pointshape, poisPoints.pointshape) AS distance
       from safegraph, poisPoints
-      where ST_Distance(safegraph.pointshape, poisPoints.pointshape) < %s""".format(value_dictionary("max_radius"))
+      where ST_Distance(safegraph.pointshape, poisPoints.pointshape) < %s"""
+        .format(value_dictionary("max_radius"))
     )
 
     // TODO: Overwrite output
@@ -261,11 +267,19 @@ object GeoSparkMatcher {
       // .config("geospark.join.numpartition", 200)
       .appName("match_POI_geospark")
       .getOrCreate()
-
+    
+    // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
-
     val value_dictionary = get_variables(spark, path_geo_json)
 
+    // Now we remove the file if it exists already
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    val outPutPath =
+      "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
+    if (fs.exists(new Path(outPutPath)))
+      fs.delete(new Path(outPutPath), true)
+
+    // Finally we perform the GeoJoin
     join(spark, value_dictionary)
   }
 }

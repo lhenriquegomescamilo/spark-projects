@@ -1900,7 +1900,7 @@ val records_common = the_join.select(col("identifier"))
     val user_frequency = users_isp
       .groupBy("device_id")
       .count()
-      .withColumn("Freq", col("count") / frequencer)
+      .withColumn("Freq_connections", col("count") / frequencer)
       //.filter("Freq>4") sacamos el filtro para perder menos usuarios. Después podemos fitrarlo luego
 
     //joineamos con los que tienen la info de ISP
