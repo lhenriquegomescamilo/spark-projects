@@ -216,8 +216,13 @@ object GeoSparkMatcher {
     poisDf.persist(StorageLevel.MEMORY_ONLY)
     poisDf.createOrReplaceTempView("poisPoints")
 
+    val getUserData = (point: Geometry) => point.getUserData().toString.replaceAll("\\s{1,}", ",")
+    spark.udf.register("getUserData", getUserData)
+
     var distanceJoinDf = spark.sql(
-      """select safegraph.pointshape as safegraph, poisPoints.pointshape as POI, ST_Distance(safegraph.pointshape, poisPoints.pointshape) AS distance
+      """select getUserData(safegraph.pointshape) as safegraph, 
+                getUserData(poisPoints.pointshape) as POI, 
+                ST_Distance(safegraph.pointshape, poisPoints.pointshape) AS distance
       from safegraph, poisPoints
       where ST_Distance(safegraph.pointshape, poisPoints.pointshape) < %s"""
         .format(value_dictionary("max_radius"))
