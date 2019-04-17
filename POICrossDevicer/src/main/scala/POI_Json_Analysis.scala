@@ -299,9 +299,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //poi_distinct_column: esta variable es importante para la creación del mapa y para el análisis de usuarios
                   val poi_distinct_column = value_dictionary("poi_distinct_column")
 
-                  //traemos el archivo de pois todos juntos
-                  val poi_all = join_safegraph_and_xd(spark, value_dictionary) 
-
+                 
                   //hacemos un groupby por usuario y por lugar de interés. 
                   //Agregamos los timestamps, esto nos va a dar gente y la cantidad de detecciones en ese punto
                   //para guardarlo como csv, previamente hay que cambiar arrays a strings
@@ -316,11 +314,11 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                               //.filter("(frequency >1)")
 
                    //creamos una función que nos dice si es usuario o no utilizando las siguientes variables
-                   val umbralmin = value_dictionary(umbralmin).toInt
-                   val umbralmax = value_dictionary(umbralmax).toInt
-                   val umbraldist = value_dictionary(umbraldist).toInt
+                   //val umbralmin = value_dictionary(umbralmin).toInt
+                   //val umbralmax = value_dictionary(umbralmax).toInt
+                   //val umbraldist = value_dictionary(umbraldist).toInt
 
-                   val hasUsedPoi = udf( (timestamps: Seq[String],stopids: Seq[String]) => ((timestamps.slice(1, timestamps.length) zip timestamps).map(t => (t._1.toInt-t._2.toInt<umbralmax) & (umbralmin<t._1.toInt-t._2.toInt)) zip (stopids.slice(1,stopids.length) zip stopids).map(s => ((s._1.toFloat<umbraldist)|(s._2.toFloat<umbraldist))) ).exists(b => b._1 & b._2))
+                   val hasUsedPoi = udf( (timestamps: Seq[String],stopids: Seq[String]) => ((timestamps.slice(1, timestamps.length) zip timestamps).map(t => (t._1.toInt-t._2.toInt<value_dictionary(umbralmax).toInt) & (value_dictionary(umbralmin).toInt<t._1.toInt-t._2.toInt)) zip (stopids.slice(1,stopids.length) zip stopids).map(s => ((s._1.toFloat<value_dictionary(umbraldist).toInt)|(s._2.toFloat<value_dictionary(umbraldist).toInt))) ).exists(b => b._1 && b._2))
                    
                    
                   //creamos una columna si nos dice si es un usuario o no usando la función.
