@@ -344,7 +344,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                                               }
         
                   ////////////////////Generating table to push audience
-                  if(value_dictionary("audience")=="1" {
+                  if(value_dictionary("audience")=="1") {
                           //También queremos generar un archivo para empujar audiencias
                           val df_audience = poi_all.select("device_type","device_id",audience_name)
                                             .groupBy("device_type","device_id").agg(collect_list(audience_name) as "segment_array")
@@ -419,7 +419,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
 
   
-    //type OptionMap = Map[Symbol, Any]
+    type OptionMap = Map[Symbol, Any]
 
   
   /**
