@@ -372,7 +372,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
 
                   ////////////////////Generating Table for Map 
-                  if(value_dictionary("map_df")=="1" {
+                  if(value_dictionary("map_df")=="1") {
                   //y por último queremos un archivo para generar el mapa
 
                         //tomamos el df con los nombres y le agregamos la columna que nos dice si un usuario estuvo entre los tiempos umbrales
@@ -419,7 +419,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
 
   
-    type OptionMap = Map[Symbol, Any]
+    //type OptionMap = Map[Symbol, Any]
 
   
   /**
