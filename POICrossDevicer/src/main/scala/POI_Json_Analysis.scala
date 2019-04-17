@@ -469,8 +469,8 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
     val value_dictionary = get_variables(spark, path_geo_json)
 
     match_POI(spark, value_dictionary)
-    
-    //agregar que incluye
+      // Finally, we perform the cross-device
+  
     cross_device(spark, value_dictionary)
 
 
