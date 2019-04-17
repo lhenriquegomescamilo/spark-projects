@@ -344,8 +344,8 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   ////////////////////Generating table to push audience
                   if(value_dictionary("audience")=="1") {
                           //También queremos generar un archivo para empujar audiencias
-                          val df_audience = poi_all.select("device_type","device_id",audience_name)
-                                            .groupBy("device_type","device_id").agg(collect_list(audience_name) as "segment_array")
+                          val df_audience = poi_all.select("device_type","device_id",value_dictionary("audience_name"))
+                                            .groupBy("device_type","device_id").agg(collect_list(value_dictionary("audience_name")) as "segment_array")
                                             .withColumn("segments", concat_ws(",", col("segment_array"))).drop("segment_array")
 
                           //cambiamos los nombres de los device types
@@ -374,12 +374,12 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //y por último queremos un archivo para generar el mapa
 
                         //tomamos el df con los nombres y le agregamos la columna que nos dice si un usuario estuvo entre los tiempos umbrales
-                        val poi_b1 = poi_b.select(poi_distinct_column,"device_id")
+                        val poi_b1 = poi_b.select(value_dictionary("poi_distinct_column"),"device_id")
                                         .join(poi_true_users.select("device_id","true_user"),Seq("Device_id"),"outer")
                                         .na.fill(false)
 
                         //contamos las detecciones y los usuarios únicos por poi de los usuarios del umbral
-                        val true_users = poi_b1.filter("true_user == true").groupBy(poi_distinct_column).agg(countDistinct("device_id") as "unique_true_users",(count("device_id") as "true_users_visits"))
+                        val true_users = poi_b1.filter("true_user == true").groupBy(value_dictionary("poi_distinct_column")).agg(countDistinct("device_id") as "unique_true_users",(count("device_id") as "true_users_visits"))
 
                         //contamos las detecciones y los usuarios únicos por poi de todos los usuarios
                         val passerby = poi_b1.groupBy(poi_distinct_column).agg(countDistinct("device_id") as "unique_paserby",count("device_id") as "total_detections")
