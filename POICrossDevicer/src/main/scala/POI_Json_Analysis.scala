@@ -313,6 +313,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                               .agg(collect_list(col("utc_timestamp")).as("times_array"),
                                     collect_list("distance").as("distance_array"))
                               .withColumn("frequency", size(col("times_array")))
+                              .distinct()
                               
                               //.filter("(frequency >1)")
 
@@ -330,10 +331,13 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
         
                   //unimos todo en un df  que tiene las columnas originales junto con un array de tiempos y un array de distancias para filtros posteriores
                   //este es un archivo un poco procesado que nos queremos guardar para tal vez hacer procesamientos posteriores
-                  val poi_d = poi_c.join(poi_true_users.select("device_id","true_user"),Seq("device_id"),"outer")
+                  val poi_d = poi_c.join(poi_true_users.select("device_id","true_user",value_dictionary("poi_column_name")),Seq("device_id"),"outer")
                                   .na.fill(false)
-                                  .withColumn("time_list", concat_ws(",", col("times_array"))).drop("times_array")
-                                  .withColumn("distance_list", concat_ws(",", col("distance_array"))).drop("distance_array")
+                                  .withColumn("time_list", concat_ws(",", col("times_array")))
+                                      .drop("times_array")
+                                  .withColumn("distance_list", concat_ws(",", col("distance_array")))
+                                      .drop("distance_array")
+
 
 
                   //tenemos que guardarlo
