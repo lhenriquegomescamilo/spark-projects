@@ -402,9 +402,8 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                         
                     }
 
-
-
-}
+        }
+      }
 
 
 
@@ -482,3 +481,4 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
   
   }
 }
+
