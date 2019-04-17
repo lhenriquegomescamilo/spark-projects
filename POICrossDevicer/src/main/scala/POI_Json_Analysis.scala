@@ -59,10 +59,10 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val umbraldist = df.select(col("umbraldist")).collect()(0)(0).toString
     
     //elegimos la columna por la que agregar, o sea, el poi que 1) vamos a querer ver en el mapa y 2) que consideramos de interés
-    val poi_distinct_column = df.select(col("poi_distinct_column")).collect()(0)(0).toString
+    val poi_column_name = df.select(col("poi_column_name")).collect()(0)(0).toString
 
     //esta columna va a ser la que agregue por audiencia, va a permitir agrupar a los usuarios. tiene que preexistir en el archivo de POIs ya que está ligado a los puntos de interés
-    val audience_name = df.select(col("audience_name")).collect()(0)(0).toString
+    val audience_column_name = df.select(col("audience_column_name")).collect()(0)(0).toString
 
 
 
@@ -213,8 +213,8 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
 
      if(value_dictionary("crossdevice")=="true") {
     // First we get the audience. Also, we transform the device id to be upper case.
-    //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
-    //val audience_name = value_dictionary("poi_output_file").split("/").last
+    //val path_audience = "/datascience/audiences/output/%s".format(audience_column_name)
+    //val audience_column_name = value_dictionary("poi_output_file").split("/").last
     val audience = spark.read.format("csv").option("sep", "\t").load("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
                                                               .withColumnRenamed("_c1", "device_id")
                                                               .withColumn("device_id", upper(col("device_id")))
@@ -258,7 +258,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   val pois = spark.read.option("header", "true").csv(value_dictionary("path_to_pois"))
 
                   //Leemos el output que genero este proceso. Son madid obtenidas de safegraph
-                  val poi_a = spark.read.option("delimiter","\t").csv("poi_output_file")
+                  val poi_a = spark.read.option("delimiter","\t").csv(value_dictionary("poi_output_file"))
 
                   //renaming columns based on list
                   //copiamos los nomnbres de las columnas
@@ -291,13 +291,13 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
      
                   //Agregaciones
                   //acá se va a tener en cuenta las variables 
-                  //audience_name: esto va a ser el número de la audiencia. en los pois va a estar mapeado a 
+                  //audience_column_name: esto va a ser el número de la audiencia. en los pois va a estar mapeado a 
                   //un punto de interés previa creación de una audiencia. Ejemplo: 877765 > Custom Geo > Walmart
                   
-                  //val audience_name = value_dictionary("audience_name")
+                  //val audience_column_name = value_dictionary("audience_column_name")
 
-                  //poi_distinct_column: esta variable es importante para la creación del mapa y para el análisis de usuarios
-                  //val poi_distinct_column = value_dictionary("poi_distinct_column")
+                  //poi_column_name: esta variable es importante para la creación del mapa y para el análisis de usuarios
+                  //val poi_column_name = value_dictionary("poi_column_name")
 
                  
                   //hacemos un groupby por usuario y por lugar de interés. 
@@ -305,7 +305,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //para guardarlo como csv, previamente hay que cambiar arrays a strings
 
 
-                  val poi_c = poi_all.groupBy(value_dictionary("poi_distinct_column"),value_dictionary("audience_name"),"device_id","device_type")
+                  val poi_c = poi_all.groupBy(value_dictionary("poi_column_name"),value_dictionary("audience_column_name"),"device_id","device_type")
                               .agg(collect_list(col("utc_timestamp")).as("times_array"),
                                     collect_list("distance").as("distance_array"))
                               .withColumn("frequency", size(col("times_array")))
@@ -344,8 +344,8 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   ////////////////////Generating table to push audience
                   if(value_dictionary("audience")=="1") {
                           //También queremos generar un archivo para empujar audiencias
-                          val df_audience = poi_all.select("device_type","device_id",value_dictionary("audience_name"))
-                                            .groupBy("device_type","device_id").agg(collect_list(value_dictionary("audience_name")) as "segment_array")
+                          val df_audience = poi_all.select("device_type","device_id",value_dictionary("audience_column_name"))
+                                            .groupBy("device_type","device_id").agg(collect_list(value_dictionary("audience_column_name")) as "segment_array")
                                             .withColumn("segments", concat_ws(",", col("segment_array"))).drop("segment_array")
 
                           //cambiamos los nombres de los device types
@@ -374,21 +374,21 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //y por último queremos un archivo para generar el mapa
 
                         //tomamos el df con los nombres y le agregamos la columna que nos dice si un usuario estuvo entre los tiempos umbrales
-                        val poi_b1 = poi_b.select(value_dictionary("poi_distinct_column"),"device_id")
+                        val poi_b1 = poi_b.select(value_dictionary("poi_column_name"),"device_id")
                                         .join(poi_true_users.select("device_id","true_user"),Seq("Device_id"),"outer")
                                         .na.fill(false)
 
                         //contamos las detecciones y los usuarios únicos por poi de los usuarios del umbral
-                        val true_users = poi_b1.filter("true_user == true").groupBy(value_dictionary("poi_distinct_column")).agg(countDistinct("device_id") as "unique_true_users",(count("device_id") as "true_users_visits"))
+                        val true_users = poi_b1.filter("true_user == true").groupBy(value_dictionary("poi_column_name")).agg(countDistinct("device_id") as "unique_true_users",(count("device_id") as "true_users_visits"))
 
                         //contamos las detecciones y los usuarios únicos por poi de todos los usuarios
-                        val passerby = poi_b1.groupBy(value_dictionary("poi_distinct_column")).agg(countDistinct("device_id") as "unique_paserby",count("device_id") as "total_detections")
+                        val passerby = poi_b1.groupBy(value_dictionary("poi_column_name")).agg(countDistinct("device_id") as "unique_paserby",count("device_id") as "total_detections")
 
                         //unimos ambos en un df
-                        val poi_metrics = passerby.join(true_users,Seq(value_dictionary("poi_distinct_column")))
+                        val poi_metrics = passerby.join(true_users,Seq(value_dictionary("poi_column_name")))
 
                         //creamos el df final con lo necesario para graficar el mapa: unimos el archivo de poi original con las métricas
-                        val poi_4_map = pois.join(poi_metrics,Seq(value_dictionary("poi_distinct_column")))
+                        val poi_4_map = pois.join(poi_metrics,Seq(value_dictionary("poi_column_name")))
 
 
                         val output_path_map = "/datascience/geo/map_data/%s_map"
