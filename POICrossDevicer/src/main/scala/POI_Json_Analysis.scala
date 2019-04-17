@@ -257,8 +257,9 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //Leemos el archivo de POIS - esto ya estuvo en el proceso. Se puede reciclar de ahí?
                   val pois = spark.read.option("header", "true").csv(value_dictionary("path_to_pois"))
 
+                  val safegraph_output_path = "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
                   //Leemos el output que genero este proceso. Son madid obtenidas de safegraph
-                  val poi_a = spark.read.option("delimiter","\t").csv(value_dictionary("poi_output_file"))
+                  val poi_a = spark.read.option("delimiter","\t").csv(safegraph_output_path)
 
                   //renaming columns based on list
                   //copiamos los nomnbres de las columnas
@@ -271,8 +272,9 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
                   //LevantamosCrossdevice
                   //Leemos el output de crossdevice que generó este proceso
-                  val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("poi_output_file"))
-                  val df_xd= spark.read.option("delimiter",",").csv(output_path)
+                  val output_path_xd = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("poi_output_file"))
+
+                  val df_xd= spark.read.option("delimiter",",").csv(output_path_xd)
                               .toDF("madid", "device_id", "device_type", "madid_")
 
                   //Hacemos un join para tomar los devices del crossdevice y asignarles las columnas 
