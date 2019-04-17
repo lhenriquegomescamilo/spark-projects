@@ -79,7 +79,9 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       "map_df" -> map_df,
       "umbralmin" -> umbralmin,
       "umbralmax" -> umbralmax,
-      "umbraldist" -> umbraldist 
+      "umbraldist" -> umbraldist, 
+      "audience_column_name" -> audience_column_name,
+      "poi_column_name" -> poi_column_name
     )
 
       value_dictionary 
