@@ -382,13 +382,13 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                         val true_users = poi_b1.filter("true_user == true").groupBy(value_dictionary("poi_distinct_column")).agg(countDistinct("device_id") as "unique_true_users",(count("device_id") as "true_users_visits"))
 
                         //contamos las detecciones y los usuarios únicos por poi de todos los usuarios
-                        val passerby = poi_b1.groupBy(poi_distinct_column).agg(countDistinct("device_id") as "unique_paserby",count("device_id") as "total_detections")
+                        val passerby = poi_b1.groupBy(value_dictionary("poi_distinct_column")).agg(countDistinct("device_id") as "unique_paserby",count("device_id") as "total_detections")
 
                         //unimos ambos en un df
-                        val poi_metrics = passerby.join(true_users,Seq(poi_distinct_column))
+                        val poi_metrics = passerby.join(true_users,Seq(value_dictionary("poi_distinct_column")))
 
                         //creamos el df final con lo necesario para graficar el mapa: unimos el archivo de poi original con las métricas
-                        val poi_4_map = pois.join(poi_metrics,Seq(poi_distinct_column))
+                        val poi_4_map = pois.join(poi_metrics,Seq(value_dictionary("poi_distinct_column")))
 
 
                         val output_path_map = "/datascience/geo/map_data/%s_map"
