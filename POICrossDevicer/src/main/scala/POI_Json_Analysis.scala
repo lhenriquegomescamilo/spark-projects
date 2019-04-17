@@ -288,7 +288,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
     
 
-     if(value_dictionary("crossdevice")=="1" &  value_dictionary("analytics_df")=="1" ) {
+     
                   //Agregaciones
                   //acá se va a tener en cuenta las variables 
                   //audience_name: esto va a ser el número de la audiencia. en los pois va a estar mapeado a 
@@ -324,7 +324,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //creamos una columna si nos dice si es un usuario o no usando la función.
                   val poi_true_users = poi_c.withColumn("true_user",hasUsedPoi(poi_c("times_array"),poi_c("distance_array")))
 
-
+        
                   //unimos todo en un df  que tiene las columnas originales junto con un array de tiempos y un array de distancias para filtros posteriores
                   //este es un archivo un poco procesado que nos queremos guardar para tal vez hacer procesamientos posteriores
                   val poi_d = poi_c.join(poi_true_users.select("device_id","true_user"),Seq("device_id"),"outer")
@@ -339,7 +339,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   poi_d.write.format("csv")
                         .mode(SaveMode.Overwrite)
                         .save(output_path_anlytics)
-                                              }
+                                              
         
                   ////////////////////Generating table to push audience
                   if(value_dictionary("audience")=="1") {
