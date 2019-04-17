@@ -411,11 +411,8 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 ///////////////////////////////      
     //println(cross_deviced.explain(extended = true))              
     
-    // Finally, we store the result obtained.
-    val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("poi_output_file"))
-    cross_deviced.write.format("csv").mode(SaveMode.Overwrite).save(output_path)
-  }
-}
+
+
 
 
   
