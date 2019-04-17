@@ -59,10 +59,10 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val umbraldist = df.select(col("umbraldist")).collect()(0)(0).toString
     
     //elegimos la columna por la que agregar, o sea, el poi que 1) vamos a querer ver en el mapa y 2) que consideramos de interés
-    val poi_distinct_column = "address"
+    val poi_distinct_column = df.select(col("poi_distinct_column")).collect()(0)(0).toString
 
     //esta columna va a ser la que agregue por audiencia, va a permitir agrupar a los usuarios. tiene que preexistir en el archivo de POIs ya que está ligado a los puntos de interés
-    val audience_name = "Calle"
+    val audience_name = df.select(col("audience_name")).collect()(0)(0).toString
 
 
 
@@ -294,10 +294,10 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //audience_name: esto va a ser el número de la audiencia. en los pois va a estar mapeado a 
                   //un punto de interés previa creación de una audiencia. Ejemplo: 877765 > Custom Geo > Walmart
                   
-                  val audience_name = value_dictionary("audience_name")
+                  //val audience_name = value_dictionary("audience_name")
 
                   //poi_distinct_column: esta variable es importante para la creación del mapa y para el análisis de usuarios
-                  val poi_distinct_column = value_dictionary("poi_distinct_column")
+                  //val poi_distinct_column = value_dictionary("poi_distinct_column")
 
                  
                   //hacemos un groupby por usuario y por lugar de interés. 
@@ -305,7 +305,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //para guardarlo como csv, previamente hay que cambiar arrays a strings
 
 
-                  val poi_c = poi_all.groupBy(poi_distinct_column,audience_name,"device_id","device_type")
+                  val poi_c = poi_all.groupBy(value_dictionary("poi_distinct_column"),value_dictionary("audience_name"),"device_id","device_type")
                               .agg(collect_list(col("utc_timestamp")).as("times_array"),
                                     collect_list("distance").as("distance_array"))
                               .withColumn("frequency", size(col("times_array")))
@@ -318,7 +318,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                    //val umbralmax = value_dictionary(umbralmax).toInt
                    //val umbraldist = value_dictionary(umbraldist).toInt
 
-                   val hasUsedPoi = udf( (timestamps: Seq[String],stopids: Seq[String]) => ((timestamps.slice(1, timestamps.length) zip timestamps).map(t => (t._1.toInt-t._2.toInt<value_dictionary(umbralmax).toInt) & (value_dictionary(umbralmin).toInt<t._1.toInt-t._2.toInt)) zip (stopids.slice(1,stopids.length) zip stopids).map(s => ((s._1.toFloat<value_dictionary(umbraldist).toInt)|(s._2.toFloat<value_dictionary(umbraldist).toInt))) ).exists(b => b._1 && b._2))
+                   val hasUsedPoi = udf( (timestamps: Seq[String],stopids: Seq[String]) => ((timestamps.slice(1, timestamps.length) zip timestamps).map(t => (t._1.toInt-t._2.toInt<(value_dictionary("umbralmax").toInt)) & ((value_dictionary("umbralmin").toInt)<t._1.toInt-t._2.toInt)) zip (stopids.slice(1,stopids.length) zip stopids).map(s => ((s._1.toFloat<(value_dictionary("umbraldist").toInt))|(s._2.toFloat<(value_dictionary("umbraldist").toInt)))) ).exists(b => b._1 && b._2))
                    
                    
                   //creamos una columna si nos dice si es un usuario o no usando la función.
