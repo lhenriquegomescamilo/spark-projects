@@ -358,12 +358,12 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                            //tenemos que guardarlo
                           
 
-                          
+                          val output_path_audience = "/datascience/geo/audiences/%s_audience"
+                                            .format(value_dictionary("poi_output_file"))
 
                           df_audience_output.write.format("csv")
                                 .mode(SaveMode.Overwrite)
-                                .save("/datascience/geo/audiences/%s_audience"
-                                            .format(value_dictionary("poi_output_file")))
+                                .save(output_path_audience)
                                     }
 
 
@@ -396,7 +396,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
                         poi_4_map.write.format("csv")
                                 .mode(SaveMode.Overwrite)
-                                .save(output_path_audience)
+                                .save(output_path_map)
                         
                     }
 
