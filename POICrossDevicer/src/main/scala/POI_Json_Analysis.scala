@@ -239,7 +239,11 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     
     // Finally, we store the result obtained.
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("poi_output_file"))
-    cross_deviced.write.format("csv").mode(SaveMode.Overwrite).save(output_path)
+    
+    cross_deviced
+            .write.format("csv")
+            .mode(SaveMode.Overwrite)
+            .save(output_path)
   }
 }
 
@@ -312,9 +316,9 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                               //.filter("(frequency >1)")
 
                    //creamos una función que nos dice si es usuario o no utilizando las siguientes variables
-                   val umbralmin = value_dictionary(umbralmin)
-                   val umbralmax = value_dictionary(umbralmax)
-                   val umbraldist = value_dictionary(umbraldist)
+                   val umbralmin = value_dictionary(umbralmin).toInt
+                   val umbralmax = value_dictionary(umbralmax).toInt
+                   val umbraldist = value_dictionary(umbraldist).toInt
 
                    val hasUsedPoi = udf( (timestamps: Seq[String],stopids: Seq[String]) => ((timestamps.slice(1, timestamps.length) zip timestamps).map(t => (t._1.toInt-t._2.toInt<umbralmax) & (umbralmin<t._1.toInt-t._2.toInt)) zip (stopids.slice(1,stopids.length) zip stopids).map(s => ((s._1.toFloat<umbraldist)|(s._2.toFloat<umbraldist))) ).exists(b => b._1 & b._2))
                    
@@ -330,12 +334,14 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
 
                   //tenemos que guardarlo
+
+                  val output_path_anlytics = "/datascience/geo/geo_processed/%s_aggregated"
+                                              .format(value_dictionary("poi_output_file"))
+
                   poi_d.write.format("csv")
                         .mode(SaveMode.Overwrite)
-                        .save(output_path)
-                        .save("/datascience/geo/geo_processed/%s_aggregated"
-                          .format(value_dictionary("poi_output_file")))
-                      }
+                        .save(output_path_anlytics)
+                                              }
         
                   ////////////////////Generating table to push audience
                   if(value_dictionary("audience")=="1" {
@@ -345,16 +351,22 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                                             .withColumn("segments", concat_ws(",", col("segment_array"))).drop("segment_array")
 
                           //cambiamos los nombres de los device types
-                          val df_audience_output = df_audience.withColumn("device_type", when(col("device_type") === "idfa", "ios").otherwise(when(col("device_type") === "aaid", "android"))).na.fill("web")
+                          val df_audience_output = df_audience
+                                        .withColumn("device_type", when(col("device_type") === "idfa", "ios")
+                                                  .otherwise(when(col("device_type") === "aaid", "android")))
+                                                  .na.fill("web")
 
 
                            //tenemos que guardarlo
+                          
+
+                          val output_path_audience = "/datascience/geo/audiences/%s_audience"
+                                            .format(value_dictionary("poi_output_file"))
+
                           df_audience_output.write.format("csv")
                                 .mode(SaveMode.Overwrite)
-                                .save(output_path)
-                                .save("/datascience/geo/audiences/%s_audience"
-                                  .format(value_dictionary("poi_output_file")))
-                          }
+                                .save(output_path_audience)
+                                    }
 
 
 
@@ -381,11 +393,13 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                         val poi_4_map = pois.join(poi_metrics,Seq(poi_distinct_column))
 
 
-                        df_audience_output.write.format("csv")
-                              .mode(SaveMode.Overwrite)
-                              .save(output_path)
-                              .save("/datascience/geo/map_data/%s_map"
-                                .format(value_dictionary("poi_output_file")))
+                        val output_path_map = "/datascience/geo/map_data/%s_map"
+                                            .format(value_dictionary("poi_output_file"))
+
+                        poi_4_map.write.format("csv")
+                                .mode(SaveMode.Overwrite)
+                                .save(output_path_audience)
+                        
                     }
 
 
@@ -395,17 +409,13 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
 
 ///////////////////////////////      
-    println(cross_deviced.explain(extended = true))              
+    //println(cross_deviced.explain(extended = true))              
     
     // Finally, we store the result obtained.
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("poi_output_file"))
     cross_deviced.write.format("csv").mode(SaveMode.Overwrite).save(output_path)
   }
 }
-
-
-
-
 
 
   
