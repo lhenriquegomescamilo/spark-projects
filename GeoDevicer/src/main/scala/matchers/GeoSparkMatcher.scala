@@ -1,5 +1,7 @@
 package main.scala.matchers
 
+import main.scala.Main
+
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
@@ -213,7 +215,7 @@ object GeoSparkMatcher {
 
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
-    val value_dictionary = get_variables(spark, path_geo_json)
+    val value_dictionary = Main.get_variables(spark, path_geo_json)
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // Now we remove the file if it exists already

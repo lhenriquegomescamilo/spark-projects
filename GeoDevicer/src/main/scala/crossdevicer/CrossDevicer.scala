@@ -55,8 +55,6 @@ object CrossDevicer {
       .withColumnRenamed("index", "device_id")
       .withColumn("device_type", mapUDF(col("device_type")))
 
-    val cross_deviced =
-      db_data.join(audience, db_data.col("index") === audience.col("device_id"))
     // Here we do the cross-device per se.
     val cross_deviced = db_data
       .join(audience, Seq("device_id"), "right_outer")

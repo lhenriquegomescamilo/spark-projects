@@ -1,5 +1,7 @@
 package main.scala.matchers
 
+import main.scala.Main
+
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
@@ -204,7 +206,7 @@ object POICrossDevicerJson {
       .appName("audience generator by keywords")
       .getOrCreate()
 
-    val value_dictionary = get_variables(spark, path_geo_json)
+    val value_dictionary = Main.get_variables(spark, path_geo_json)
 
     match_POI(spark, value_dictionary)
   }

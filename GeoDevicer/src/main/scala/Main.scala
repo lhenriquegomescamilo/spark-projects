@@ -14,6 +14,7 @@ import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
 import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
+import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 
 /**
   Job Summary:
@@ -169,7 +170,7 @@ object Main {
 
     // Finally, we perform the cross-device if requested.
     if (value_dictionary("crossdevice") != "false")
-      cross_device(spark, value_dictionary)
+      CrossDevicer.cross_device(spark, value_dictionary)
 
   }
 }
