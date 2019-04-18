@@ -224,7 +224,7 @@ object GeoSparkMatcher {
                 getUserData(poisPoints.pointshape) as POI, 
                 ST_Distance(safegraph.pointshape, poisPoints.pointshape) AS distance
       from safegraph, poisPoints
-      where ST_Distance(safegraph.pointshape, poisPoints.pointshape) < %s"""
+      where ST_Distance(poisPoints.pointshape, safegraph.pointshape) < %s"""
         .format(value_dictionary("max_radius"))
     )
 
