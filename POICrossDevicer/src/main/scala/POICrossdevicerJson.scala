@@ -164,9 +164,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     
     //we want information about the process              
     println(sqlDF.explain(extended = true))         
-    
        
-    val filtered = 
     sqlDF.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
   }
 
