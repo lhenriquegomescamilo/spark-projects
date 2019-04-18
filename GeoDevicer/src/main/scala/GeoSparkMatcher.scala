@@ -228,25 +228,7 @@ object GeoSparkMatcher {
         .format(value_dictionary("max_radius"))
     )
 
-    // TODO: Overwrite output
-    distanceJoinDf.write.format("csv").save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
-      // .rdd
-      // .map(
-      //   arr =>
-      //     arr(0)
-      //       .asInstanceOf[com.vividsolutions.jts.geom.Geometry]
-      //       .getUserData()
-      //       .toString
-      //       .replaceAll("\\s{1,}", ",") + "," +
-      //       arr(1)
-      //         .asInstanceOf[com.vividsolutions.jts.geom.Geometry]
-      //         .getUserData()
-      //         .toString
-      //         .replaceAll("\\s{1,}", ",")
-      // )
-      // .saveAsTextFile(
-      //   "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
-      // )
+    distanceJoinDf.count()//.write.format("csv").save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
     println("LOGGER: Results already stored.")
   }
 
