@@ -30,7 +30,7 @@ object POICrossDevicerJson {
       "hdfs://rely-hdfs/datascience/geo/geo_json/%s.json".format(path_geo_json)
     val df = spark.sqlContext.read.json(file)
     val columns = df.columns
-    val data = df
+    val query = df
       .collect()
       .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
       .toList(0)
