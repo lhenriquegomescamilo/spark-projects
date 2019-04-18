@@ -142,7 +142,7 @@ object POICrossDevicerJson {
 
     val df_users = get_safegraph_data(spark, value_dictionary)
     val df_pois_final = get_POI_coordinates(spark, value_dictionary)
-    val columns = df_pois_final.columns.filter(!List("latitude_poi", "longitude_poi", "radius", "geocode"))
+    val columns = df_pois_final.columns.filter(!List("latitude_poi", "longitude_poi", "radius", "geocode").contains(_))
 
     //joining datasets by geocode (added broadcast to force..broadcasting)
     val joint = df_users
