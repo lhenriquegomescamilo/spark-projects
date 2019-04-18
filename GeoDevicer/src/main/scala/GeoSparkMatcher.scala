@@ -210,7 +210,7 @@ object GeoSparkMatcher {
     val poisDf = get_POI_coordinates(spark, value_dictionary)
 
     // TODO: pasar por parametro las reparticiones
-    safegraphDf.createOrReplaceTempView("safegraph")
+    safegraphDf.repartition(1000).createOrReplaceTempView("safegraph")
     poisDf.repartition(10)
     // TODO: pasar por parametro si se quiere o no persistir
     poisDf.persist(StorageLevel.MEMORY_ONLY)
@@ -281,7 +281,7 @@ object GeoSparkMatcher {
       )
       // .config("geospark.global.index", "true")
       // .config("geospark.global.indextype", "rtree")
-      // .config("geospark.join.gridtype", "kdbtree")
+      .config("geospark.join.gridtype", "kdbtree")
       // .config("geospark.join.numpartition", 200)
       .appName("match_POI_geospark")
       .getOrCreate()
