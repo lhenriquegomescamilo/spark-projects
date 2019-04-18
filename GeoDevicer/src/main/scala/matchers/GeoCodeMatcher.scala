@@ -163,7 +163,7 @@ object POICrossDevicerJson {
                 utc_timestamp as timestamp, 
                 latitude_user,
                 longitude_user,
-                longitude_poi,
+                latitude_poi,
                 longitude_poi,
                 %s,
                 distance
