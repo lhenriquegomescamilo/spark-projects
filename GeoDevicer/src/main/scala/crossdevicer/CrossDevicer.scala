@@ -22,12 +22,14 @@ object CrossDevicer {
       spark: SparkSession,
       value_dictionary: Map[String, String],
       sep: String = "\t",
-      column_name: String = "_c1"
+      column_name: String = "_c1",
+      header: String = "false"
   ) {
     // First we get the audience. Also, we transform the device id to be upper case.
     val audience = spark.read
       .format("csv")
       .option("sep", sep)
+      .option("header", header)
       .load("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
       .withColumnRenamed(column_name, "device_id")
       .withColumn("device_id", upper(col("device_id")))

@@ -142,6 +142,7 @@ object POICrossDevicerJson {
 
     val df_users = get_safegraph_data(spark, value_dictionary)
     val df_pois_final = get_POI_coordinates(spark, value_dictionary)
+    val columns = df_pois_final.columns.filter(!List("latitude_poi", "longitude_poi", "radius", "geocode"))
 
     //joining datasets by geocode (added broadcast to force..broadcasting)
     val joint = df_users
@@ -157,14 +158,22 @@ object POICrossDevicerJson {
     // Using vincenty formula to calculate distance between user/device location and the POI.
     joint.createOrReplaceTempView("joint")
     val query =
-      """SELECT *
-                FROM (
-                  SELECT *,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
-                  COS(RADIANS(longitude_user) - RADIANS(longitude_poi)) +
-                  SIN(RADIANS(latitude_user)) * SIN(RADIANS(latitude_poi))))) as distance
-                  FROM joint 
-                )
-                WHERE distance < radius"""
+      """SELECT ad_id as device_id, 
+                id_type as device_type, 
+                utc_timestamp as timestamp, 
+                latitude_user,
+                longitude_user,
+                longitude_poi,
+                longitude_poi,
+                %s,
+                distance
+            FROM (
+              SELECT *,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
+              COS(RADIANS(longitude_user) - RADIANS(longitude_poi)) +
+              SIN(RADIANS(latitude_user)) * SIN(RADIANS(latitude_poi))))) as distance
+              FROM joint 
+            )
+            WHERE distance < radius""".format(columns.mkString(","))
 
     // Storing result
     val sqlDF = spark.sql(query)
@@ -176,6 +185,7 @@ object POICrossDevicerJson {
       sqlDF.write
         .format("csv")
         .option("sep", "\t")
+        .option("header", "true")
         .mode(SaveMode.Overwrite)
         .save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
   }

@@ -168,8 +168,8 @@ object Main {
     }
 
     // Finally, we perform the cross-device if requested.
-    if (value_dictionary("crossdevice") != "false")
-      CrossDevicer.cross_device(spark, value_dictionary)
+    if (value_dictionary("crossdevice") != "false" && value_dictionary("crossdevice") != "0")
+      CrossDevicer.cross_device(spark, value_dictionary, column_name = "device_id", header = "true")
 
   }
 }
