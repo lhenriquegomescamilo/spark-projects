@@ -159,8 +159,8 @@ object GeoSparkMatcher {
 
     // Useful function that will be used to extract the info out of the Geometry objects.
     val getUserData = (point: Geometry) =>
-      Seq(point.asinstanceof[Point].getX().toString, 
-          point.asinstanceof[Point].getY().toString, 
+      Seq(point.asInstanceOf[Point].getX().toString, 
+          point.asInstanceOf[Point].getY().toString, 
           point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq)
     spark.udf.register("getUserData", getUserData)
 
