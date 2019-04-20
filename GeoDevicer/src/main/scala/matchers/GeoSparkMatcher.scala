@@ -158,8 +158,10 @@ object GeoSparkMatcher {
     poisDf.createOrReplaceTempView("poisPoints")
 
     // Useful function that will be used to extract the info out of the Geometry objects.
-    val getUserData = (point: Point) =>
-      Seq(point.getX().toString, point.getY().toString, point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq)
+    val getUserData = (point: Geometry) =>
+      Seq(point.asinstanceof[Point].getX().toString, 
+          point.asinstanceof[Point].getY().toString, 
+          point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq)
     spark.udf.register("getUserData", getUserData)
 
     // Here we perform the actual join.
