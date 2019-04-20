@@ -167,8 +167,8 @@ object GeoSparkMatcher {
     // Here we perform the actual join.
     val poiQuery = (0 until other_columns.length).map(i => "POI[2][%s] as %s".format(i, other_columns(i))).mkString(", ")
     var distanceJoinDf = spark.sql(
-      """SELECT safegraph[0] as longitude_user,
-                safegraph[1] as latitude_user,
+      """SELECT safegraph[0][0] as longitude_user,
+                safegraph[1][0] as latitude_user,
                 safegraph[2][0] as device_id,
                 safegraph[2][1] as device_type,
                 safegraph[2][2] as timestamp,
