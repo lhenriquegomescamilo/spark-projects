@@ -172,8 +172,8 @@ object GeoSparkMatcher {
                 safegraph[2][0] as device_id,
                 safegraph[2][1] as device_type,
                 safegraph[2][2] as timestamp,
-                POI[0] as longitude_poi,
-                POI[1] as latitude_poi,
+                POI[0][0] as longitude_poi,
+                POI[1][0] as latitude_poi,
                 distance,
                 %s
          FROM (SELECT getUserData(safegraph.pointshape) as safegraph, 
