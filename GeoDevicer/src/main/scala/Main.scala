@@ -122,8 +122,8 @@ object Main {
       case Nil => map
       case "--path_geo_json" :: value :: tail =>
         nextOption(map ++ Map('path_geo_json -> value.toString), tail)
-      case "--geospark" :: value :: tail =>
-        nextOption(map ++ Map('geospark -> value.toString), tail)
+      case "--geospark" :: tail =>
+        nextOption(map ++ Map('geospark -> true), tail)
     }
   }
 
