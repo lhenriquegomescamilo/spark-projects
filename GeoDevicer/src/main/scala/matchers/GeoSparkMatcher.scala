@@ -121,7 +121,7 @@ object GeoSparkMatcher {
     println("LOGGER POI query:\n" + query)
 
     var poisDf = spark.sql(query)
-    poisDf
+    (poisDf, other_columns)
   }
 
   /**
@@ -143,7 +143,9 @@ object GeoSparkMatcher {
   def join(spark: SparkSession, value_dictionary: Map[String, String]) = {
     // First we load the data.
     val safegraphDf = get_safegraph_data(spark, value_dictionary)
-    val poisDf = get_POI_coordinates(spark, value_dictionary)
+    val poisResult = get_POI_coordinates(spark, value_dictionary)
+    val poisDf = poisResult._1
+    val other_columns = poisResult._2
 
     // This is a tweak for performance.
     // TODO: pasar por parametro las reparticiones
@@ -155,23 +157,29 @@ object GeoSparkMatcher {
 
     // Useful function that will be used to extract the info out of the Geometry objects.
     val getUserData = (point: Geometry) =>
-      point.getUserData().toString.replaceAll("\\s{1,}", ",")
+      point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq
     spark.udf.register("getUserData", getUserData)
 
     // Here we perform the actual join.
+    val poiQuery = (0 to other_columns.length).map(i => "POI[%s] as %s".format(i, other_columns[i]))
     var distanceJoinDf = spark.sql(
-      """select getUserData(safegraph.pointshape) as safegraph, 
-                getUserData(poisPoints.pointshape) as POI, 
-                ST_Distance(safegraph.pointshape, poisPoints.pointshape) AS distance
-      from safegraph, poisPoints
-      where ST_Distance(safegraph.pointshape, poisPoints.pointshape) < %s"""
-        .format(value_dictionary("max_radius"))
+      """SELECT safegraph[0] as device_id,
+                safegraph[1] as device_type,
+                safegraph[2] as timestamp,
+                %s
+         FROM (SELECT getUserData(safegraph.pointshape) as safegraph, 
+                      getUserData(poisPoints.pointshape) as POI, 
+                      ST_Distance(safegraph.pointshape, poisPoints.pointshape) AS distance
+               FROM safegraph, poisPoints
+               WHERE ST_Distance(safegraph.pointshape, poisPoints.pointshape) < %s)"""
+        .format(poiQuery, value_dictionary("max_radius"))
     )
 
     // Finally we store the results.
     distanceJoinDf.write
       .format("csv")
       .option("sep", "\t")
+      .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
     println("LOGGER: Results already stored.")
