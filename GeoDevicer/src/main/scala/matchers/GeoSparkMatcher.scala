@@ -159,15 +159,20 @@ object GeoSparkMatcher {
 
     // Useful function that will be used to extract the info out of the Geometry objects.
     val getUserData = (point: Geometry) =>
-      point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq
+      Seq(point.getX(), point.getY(), point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq)
     spark.udf.register("getUserData", getUserData)
 
     // Here we perform the actual join.
-    val poiQuery = (0 until other_columns.length).map(i => "POI[%s] as %s".format(i, other_columns(i))).mkString(", ")
+    val poiQuery = (0 until other_columns.length).map(i => "POI[2][%s] as %s".format(i, other_columns(i))).mkString(", ")
     var distanceJoinDf = spark.sql(
-      """SELECT safegraph[0] as device_id,
-                safegraph[1] as device_type,
-                safegraph[2] as timestamp,
+      """SELECT safegraph[0] as longitude_user,
+                safegraph[1] as latitude_user,
+                safegraph[2][0] as device_id,
+                safegraph[2][1] as device_type,
+                safegraph[2][2] as timestamp,
+                POI[0] as longitude_poi,
+                POI[1] as latitude_poi,
+                distance,
                 %s
          FROM (SELECT getUserData(safegraph.pointshape) as safegraph, 
                       getUserData(poisPoints.pointshape) as POI, 
