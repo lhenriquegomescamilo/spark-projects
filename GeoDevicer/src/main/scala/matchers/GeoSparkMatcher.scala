@@ -10,7 +10,7 @@ import org.apache.spark.sql.SaveMode
 import org.apache.log4j.{Level, Logger}
 
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
-import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, Point, GeometryFactory}
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.apache.spark.storage.StorageLevel
 
@@ -158,7 +158,7 @@ object GeoSparkMatcher {
     poisDf.createOrReplaceTempView("poisPoints")
 
     // Useful function that will be used to extract the info out of the Geometry objects.
-    val getUserData = (point: Geometry) =>
+    val getUserData = (point: Point) =>
       Seq(point.getX(), point.getY(), point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq)
     spark.udf.register("getUserData", getUserData)
 
