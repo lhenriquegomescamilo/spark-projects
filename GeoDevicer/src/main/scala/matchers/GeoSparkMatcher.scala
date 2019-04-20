@@ -104,7 +104,7 @@ object GeoSparkMatcher {
       .csv(value_dictionary("path_to_pois"))
 
     val other_columns = df_pois.columns
-      .filter(c => c != "latitude" && c != "longitude")
+      .filter(c => c != "latitude" && c != "longitude" && c!="radius")
       .map(c => "POIs." + c)
       .mkString(",")
     df_pois.createOrReplaceTempView("POIs")
@@ -146,6 +146,7 @@ object GeoSparkMatcher {
     val poisResult = get_POI_coordinates(spark, value_dictionary)
     val poisDf = poisResult._1
     val other_columns = poisResult._2
+    println("Other columns: "+other_columns.mkString(", "))
 
     // This is a tweak for performance.
     // TODO: pasar por parametro las reparticiones
