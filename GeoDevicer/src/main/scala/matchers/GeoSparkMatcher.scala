@@ -151,7 +151,7 @@ object GeoSparkMatcher {
 
     // This is a tweak for performance.
     // TODO: pasar por parametro las reparticiones
-    safegraphDf.repartition(1000).createOrReplaceTempView("safegraph")
+    safegraphDf.repartition(value_dictionary("nDays").toInt*100).createOrReplaceTempView("safegraph")
     poisDf.repartition(10)
     // TODO: pasar por parametro si se quiere o no persistir
     poisDf.persist(StorageLevel.MEMORY_ONLY)
