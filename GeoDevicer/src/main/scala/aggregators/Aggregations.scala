@@ -49,7 +49,7 @@ object Aggregations {
         min(col("distance")).as("min_distance")
       )
       // Now we obtain the frequency
-      .withColumn("frequency", size(col("times_array")))
+      .withColumn("frequency", size(col("timestamp_list")))
       // Here we calculate if the user is valid based on the thresholds
       .withColumn(
         "validUser",
