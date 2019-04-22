@@ -103,6 +103,7 @@ object Aggregations {
       .format("csv")
       .option("header", "true")
       .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
       .save(
         "/datascience/geo/map_data/%s_map"
           .format(value_dictionary("poi_output_file"))
