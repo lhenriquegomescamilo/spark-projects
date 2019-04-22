@@ -7,6 +7,7 @@ import org.apache.spark.sql.functions.{round, broadcast, col, abs, upper}
 import org.apache.spark.sql.SaveMode
 
 import main.scala.crossdevicer.CrossDevicer
+import main.scala.aggregators.Aggregations
 import main.scala.matchers._
 
 import org.apache.spark.serializer.KryoSerializer
@@ -171,5 +172,8 @@ object Main {
     if (value_dictionary("crossdevice") != "false" && value_dictionary("crossdevice") != "0")
       CrossDevicer.cross_device(spark, value_dictionary, column_name = "device_id", header = "true")
 
+    // If we need to calculate the aggregations, we do so as well.
+    if (value_dictionary("analytics_df")=="1")
+      Aggregations.regularAggregate(spark, value_dictionary)
   }
 }

@@ -147,13 +147,6 @@ object POICrossDevicerJson {
     //joining datasets by geocode (added broadcast to force..broadcasting)
     val joint = df_users
       .join(broadcast(df_pois_final), Seq("geocode"))
-      .withColumn("longitude_poi", round(col("longitude_poi").cast("float"), 4))
-      .withColumn("latitude_poi", round(col("latitude_poi").cast("float"), 4))
-      .withColumn(
-        "longitude_user",
-        round(col("longitude_user").cast("float"), 4)
-      )
-      .withColumn("latitude_user", round(col("latitude_user").cast("float"), 4))
 
     // Using vincenty formula to calculate distance between user/device location and the POI.
     joint.createOrReplaceTempView("joint")

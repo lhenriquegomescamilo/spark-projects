@@ -55,11 +55,12 @@ object CrossDevicer {
     val db_data = spark.read
       .format("parquet")
       .load("/datascience/crossdevice/double_index")
-      .filter("index_type IN ('and', 'ios') AND device_type = 'coo'")
+      .filter("index_type IN ('and', 'ios') AND device_type IN ('coo', 'ios', 'and')")
       .withColumn("index", upper(col("index")))
       .select("index", "device", "device_type")
       .withColumnRenamed("index", "device_id")
       .withColumnRenamed("device_type", "device_type_db")
+      .withColumn("device_id", upper(col("device_id")))
       .withColumn("device_type_db", mapUDF(col("device_type_db")))
 
     // Here we do the cross-device per se.
