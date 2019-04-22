@@ -4,9 +4,8 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 
-
 object Aggregations {
-  def regularAggregate(
+  def userAggregate(
       spark: SparkSession,
       value_dictionary: Map[String, String]
   ) = {
@@ -67,5 +66,46 @@ object Aggregations {
       .mode(SaveMode.Overwrite)
       .save(output_path_anlytics)
 
+  }
+
+  def POIAggregate(
+      spark: SparkSession,
+      value_dictionary: Map[String, String]
+  ) = {
+    // First we load the data.
+    val data = spark.read
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .load(
+        "/datascience/geo/geo_processed/%s_aggregated"
+          .format(value_dictionary("poi_output_file"))
+      )
+
+    // Here we perform the aggregation
+    data
+      // First we keep the users that are valid in a new column
+      .withColumn(
+        "device_id_valid",
+        when(col("validUser") == "true", col("device_id")).otherwise("")
+      )
+      // Now we group by the POI id
+      .groupBy(value_dictionary("poi_column_name"))
+      // Here we do all the aggregations
+      .agg(
+        countDistinct("device_id_valid").as("unique_true_users"),
+        count("device_id_valid").as("true_users_visits"),
+        countDistinct("device_id").as("unique_paserby"),
+        count("device_id").as("total_detections")
+      )
+      // Finally we store the results
+      .write
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .save(
+        "/datascience/geo/map_data/%s_map"
+          .format(value_dictionary("poi_output_file"))
+      )
   }
 }
