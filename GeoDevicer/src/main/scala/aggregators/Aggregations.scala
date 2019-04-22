@@ -41,6 +41,7 @@ object Aggregations {
 
     // Here we do the aggregation
     data
+      .withColumn("distance", col("distancd").cast("double"))
       .groupBy(value_dictionary("poi_column_name"), "device_id", "device_type")
       // We obtain the list of timestamps and distances, along with the minimum distance
       .agg(
