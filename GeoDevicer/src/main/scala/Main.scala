@@ -87,6 +87,51 @@ object Main {
             .getOrElse("")
             .toString
             .length > 0) query("since").toString
+      else "0"
+    // 1 o 0, determines if we want to calculate the analytcis DataFrame
+    val analytics_df =
+      if (query.contains("analytics_df") && Option(query("analytics_df"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("analytics_df").toString
+      else "0"
+
+    // 1 o 0, determines if we want to calculate the DataFrame where we have all the stats for every POI.
+    val map_df =
+      if (query.contains("map_df") && Option(query("map_df"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("map_df").toString
+      else "0"
+
+    // Time thresholds to consider a user to be valid.
+    val umbralmin =
+      if (query.contains("umbralmin") && Option(query("umbralmin"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("umbralmin").toString
+      else "0"
+    val umbralmax =
+      if (query.contains("umbralmax") && Option(query("umbralmax"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("umbralmax").toString
+      else "150"
+
+    // Distance threshold to consider a user to be valid.
+    val umbraldist =
+      if (query.contains("umbraldist") && Option(query("umbraldist"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("umbraldist").toString
+      else "0"
+
+    // Column that identifies every POI.
+    val poi_column_name =
+      if (query.contains("poi_column_name") && Option(query("poi_column_name"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("poi_column_name").toString
       else ""
 
     // Finally we construct the Map that is going to be returned
@@ -97,7 +142,13 @@ object Main {
       "path_to_pois" -> path_to_pois,
       "crossdevice" -> crossdevice,
       "nDays" -> nDays,
-      "since" -> since
+      "since" -> since,
+      "analytics_df" -> analytics_df,
+      "map_df" -> map_df,
+      "umbralmin" -> umbralmin,
+      "umbralmax" -> umbralmax,
+      "umbraldist" -> umbraldist,
+      "poi_column_name" -> poi_column_name
     )
 
     println("LOGGER PARAMETERS:")
@@ -108,7 +159,13 @@ object Main {
     "path_to_pois" -> $path_to_pois,
     "crossdevice" -> $crossdevice,
     "nDays" -> $nDays,
-    "since" -> $since""")
+    "since" -> $since,
+    "analytics_df" -> $analytics_df,
+    "map_df" -> $map_df,
+    "umbralmin" -> $umbralmin,
+    "umbralmax" -> $umbralmax,
+    "umbraldist" -> $umbraldist,
+    "poi_column_name" -> $poi_column_name""")
     value_dictionary
   }
 
@@ -169,11 +226,18 @@ object Main {
     }
 
     // Finally, we perform the cross-device if requested.
-    if (value_dictionary("crossdevice") != "false" && value_dictionary("crossdevice") != "0")
-      CrossDevicer.cross_device(spark, value_dictionary, column_name = "device_id", header = "true")
+    if (value_dictionary("crossdevice") != "false" && value_dictionary(
+          "crossdevice"
+        ) != "0")
+      CrossDevicer.cross_device(
+        spark,
+        value_dictionary,
+        column_name = "device_id",
+        header = "true"
+      )
 
     // If we need to calculate the aggregations, we do so as well.
-    if (value_dictionary("analytics_df")=="1")
+    if (value_dictionary("analytics_df") == "1")
       Aggregations.regularAggregate(spark, value_dictionary)
   }
 }
