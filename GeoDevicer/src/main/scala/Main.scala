@@ -237,7 +237,10 @@ object Main {
       )
 
     // If we need to calculate the aggregations, we do so as well.
-    if (value_dictionary("analytics_df") == "1")
+    if (value_dictionary("analytics_df") == "1"){
       Aggregations.userAggregate(spark, value_dictionary)
+      if (value_dictionary("map_df") == "1")
+        Aggregations.POIAggregate(spark, value_dictionary)
+    }
   }
 }

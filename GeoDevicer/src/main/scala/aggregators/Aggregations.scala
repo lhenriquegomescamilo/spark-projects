@@ -87,7 +87,7 @@ object Aggregations {
       // First we keep the users that are valid in a new column
       .withColumn(
         "device_id_valid",
-        when(col("validUser") == "true", col("device_id")).otherwise("")
+        when(col("validUser") === "true", col("device_id")).otherwise("")
       )
       // Now we group by the POI id
       .groupBy(value_dictionary("poi_column_name"))
