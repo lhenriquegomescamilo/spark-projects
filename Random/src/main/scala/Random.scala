@@ -916,6 +916,71 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/geo/AR/estaciones_servicio_MP_DRAW_segmentos_7d")
 
   }
+ /**
+    *
+    *
+    *
+    * Segments for Geo Report Sarmiento
+    *
+    *
+    *
+    */
+
+  def get_sarmiento_segments(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer = 1
+  ) = {
+
+    // Ahora levantamos los datos que estan en datascience keywords
+
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString("yyyyMMdd"))
+
+    val lista_files = (0 until nDays)
+      .map(end.minusDays(_))
+      .map(
+        day =>
+          "hdfs://rely-hdfs/datascience/data_keywords/day=%s"
+            .format(day.toString("yyyyMMdd"))
+      )
+
+    val segments = spark.read
+      .format("parquet")
+      .option("basePath", "hdfs://rely-hdfs/datascience/data_keywords/")
+      .load(lista_files: _*)
+      .select("device_id", "segments")
+
+    //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
+    val pois =  spark.read.option("header",true)
+                .option("delimiter","\t")
+                .csv("/datascience/audiences/crossdeviced/sarmiento_pois_90d_argentina_20-4-2019-10h_xd/")
+                .select("device_id","Codigo")
+
+
+   //hacemos el join 
+    val joint = pois.join(keys,Seq("device_id"))//.withColumn("segments", explode(col("segments")))
+
+    //explotamos
+    val exploded = joint.withColumn("segments",explode(col("segments")))
+
+    //reemplazamos para filtrar
+    val filtered = exploded
+                    .withColumn("segments",regexp_replace(col("segments"),"s_",""))
+                    .withColumn("segments",regexp_replace(col("segments"),"as_",""))
+    
+
+    val taxo_general = spark.read      .format("csv")      .option("sep", ",")      .option("header", "True")      .load("/datascience/data_publicis/taxonomy_publicis.csv")
+    val taxo_segments = taxo_general.select("Segment Id").as[String].collect()
+
+    filtered
+        .filter(col("segments")
+        .isin(taxo_segments: _*))
+        .groupBy("Codigo","segments").count()
+        .write.format("csv").option("header","true")
+        .mode(SaveMode.Overwrite).save("/datascience/geo/AR/sarmiento_code_segment_count_filtered")
+
+}
 
   /**
     *
@@ -2394,7 +2459,8 @@ val user_location_madid = spark.read.option("header",true)
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     //Logger.getRootLogger.setLevel(Level.WARN)
-    getDataTaringa(spark,15)
+    //getDataTaringa(spark,15)
+    get_sarmiento_segments(spark,15)
     //get_ISP_users(spark,90)
     // get_safegraph_data(spark,15,"argentina")
   }
