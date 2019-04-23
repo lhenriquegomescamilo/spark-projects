@@ -39,6 +39,7 @@ import java.util
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import org.apache.commons.codec.binary.Base64
+import spark.implicits._
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -959,7 +960,7 @@ val records_common = the_join.select(col("identifier"))
 
 
    //hacemos el join 
-    val joint = pois.join(keys,Seq("device_id"))//.withColumn("segments", explode(col("segments")))
+    val joint = pois.join(segments,Seq("device_id"))//.withColumn("segments", explode(col("segments")))
 
     //explotamos
     val exploded = joint.withColumn("segments",explode(col("segments")))
