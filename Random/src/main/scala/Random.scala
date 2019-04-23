@@ -945,6 +945,7 @@ val records_common = the_join.select(col("identifier"))
           "hdfs://rely-hdfs/datascience/data_keywords/day=%s"
             .format(day.toString("yyyyMMdd"))
       )
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
     val segments = spark.read
       .format("parquet")
