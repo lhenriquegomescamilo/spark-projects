@@ -934,26 +934,28 @@ val records_common = the_join.select(col("identifier"))
   ) = {
 
     // Ahora levantamos los datos que estan en datascience keywords
+   
 
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString("yyyyMMdd"))
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
 
-    val lista_files = (0 until nDays)
-      .map(end.minusDays(_))
-      .map(
-        day =>
-          "hdfs://rely-hdfs/datascience/data_keywords/day=%s"
-            .format(day.toString("yyyyMMdd"))
-      )
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=AR".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    
+    val segments = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    
+      
+    // Importamos implicits para que funcione el as[String]
 
-    val segments = spark.read
-      .format("parquet")
-      .option("basePath", "hdfs://rely-hdfs/datascience/data_keywords/")
-      .load(lista_files: _*)
-      .select("device_id", "segments")
-
-      //
       import spark.implicits._
 
     //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
