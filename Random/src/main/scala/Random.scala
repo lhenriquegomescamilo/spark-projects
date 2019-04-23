@@ -2472,7 +2472,8 @@ val user_location_madid = spark.read.option("header",true)
 
     //Logger.getRootLogger.setLevel(Level.WARN)
     //getDataTaringa(spark,15)
-    get_sarmiento_segments(spark,30)
+    //get_sarmiento_segments(spark,30)
+    spark.read.load("/datascience/data_us_p/").groupBy("url").count().orderBy(col("count").desc).write.format("csv").option("header","true").mode(SaveMode.Overwrite).save("/datascience/custom/top_urls")
     //get_ISP_users(spark,90)
     // get_safegraph_data(spark,15,"argentina")
   }
