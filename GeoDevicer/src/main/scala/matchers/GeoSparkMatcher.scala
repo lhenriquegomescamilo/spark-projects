@@ -1,4 +1,6 @@
-package main.scala
+package main.scala.matchers
+
+import main.scala.Main
 
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -8,7 +10,7 @@ import org.apache.spark.sql.SaveMode
 import org.apache.log4j.{Level, Logger}
 
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
-import com.vividsolutions.jts.geom.{Coordinate, Geometry, GeometryFactory}
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, Point, GeometryFactory}
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.apache.spark.storage.StorageLevel
 
@@ -20,100 +22,16 @@ import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 object GeoSparkMatcher {
 
   /**
-    * This method returns a Map with all the parameters obtained from the JSON file.
-    *
-    * @param path_geo_json: JSON file name. This is the json where all the parameters are going to be extracted from.
-    */
-  def get_variables(
-      spark: SparkSession,
-      path_geo_json: String
-  ): Map[String, String] = {
-    // First we read the json file and store everything in a Map.
-    val file =
-      "hdfs://rely-hdfs/datascience/geo/geo_json/%s.json".format(path_geo_json)
-    println("LOGGER JSON FILE: " + file)
-    val df = spark.sqlContext.read.json(file)
-    val columns = df.columns
-    val query = df
-      .collect()
-      .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
-      .toList(0)
-
-    // Now we parse the Map assigning default values.
-    val max_radius =
-      if (query.contains("max_radius") && Option(query("max_radius"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("max_radius").toString
-      else "200"
-    val country =
-      if (query.contains("country") && Option(query("country"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("country").toString
-      else "argentina"
-    val poi_output_file =
-      if (query.contains("output_file") && Option(query("output_file"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("output_file").toString
-      else "custom"
-    val path_to_pois =
-      if (query.contains("path_to_pois") && Option(query("path_to_pois"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("path_to_pois").toString
-      else ""
-    val crossdevice =
-      if (query.contains("crossdevice") && Option(query("crossdevice"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("crossdevice").toString
-      else "false"
-    val nDays =
-      if (query.contains("nDays") && Option(query("nDays"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("nDays").toString
-      else "30"
-    val since =
-      if (query.contains("since") && Option(query("since"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("since").toString
-      else ""
-
-    // Finally we construct the Map that is going to be returned
-    val value_dictionary: Map[String, String] = Map(
-      "max_radius" -> max_radius,
-      "country" -> country,
-      "poi_output_file" -> poi_output_file,
-      "path_to_pois" -> path_to_pois,
-      "crossdevice" -> crossdevice,
-      "nDays" -> nDays,
-      "since" -> since
-    )
-
-    println("LOGGER PARAMETERS:")
-    println(s"""
-    "max_radius" -> $max_radius,
-    "country" -> $country,
-    "poi_output_file" -> $poi_output_file,
-    "path_to_pois" -> $path_to_pois,
-    "crossdevice" -> $crossdevice,
-    "nDays" -> $nDays,
-    "since" -> $since""")
-    value_dictionary
-  }
-
-  /**
     * This method reads the safegraph data, selects the columns "ad_id" (device id), "id_type" (user id), "latitude", "longitude", creates a
     * geocode for each row and future spatial operations and finally removes duplicates users that were detected in the same
     * location (i.e. the same user in different lat long coordinates will be conserved, but the same user in same lat long coordinates will be dropped).
     *
     * @param spark: Spark session that will be used to load the data.
-    * @param value_dictionary: Map with all the parameters. In particular there are three parameters that has to be contained in the Map: country, since and nDays.
-    *
+    * @param value_dictionary: Map that contains all the necessary information to run the match. The following fields are required:
+    *        - nDays: number of days to be loaded from Safegraph data.
+    *        - since: number of days to be skipped in Safegraph data.
+    *        - country: country for which the Safegraph data is going to be extracted from.
+
     * @return df_safegraph: dataframe created with the safegraph data, filtered by the desired country, extracting the columns user id, device id, latitude and
     * longitude removing duplicate users that have repeated locations and with added geocode.
     */
@@ -168,8 +86,9 @@ object GeoSparkMatcher {
     * This method reads the user provided POI dataset, and renames the columns. The file provided must be correctly formatted as described below.
     *
     * @param spark: Spark session that will be used to load the data.
-    * @param file_name: path of the dataset containing the POIs. Must be correctly formated as described (name|latitude|longitude (without the index),
-    * with the latitude and longitude with point (".") as decimal delimiter.)
+    * @param value_dictionary: Map that contains all the necessary information to run the match. The following fields are required:
+    *        - max_radius: maximum distance allowed in the distance join.
+    *        - path_to_pois: path where the POIs are stored.
     *
     * @param return df_pois_final: dataframe created from the one provided by the user containing the POIS: contains the geocode and renamed columns.
     */
@@ -185,7 +104,8 @@ object GeoSparkMatcher {
       .csv(value_dictionary("path_to_pois"))
 
     val other_columns = df_pois.columns
-      .filter(c => c != "latitude" && c != "longitude")
+      .filter(c => c != "latitude" && c != "longitude" && c!="radius")
+    val query_other_columns = other_columns
       .map(c => "POIs." + c)
       .mkString(",")
     df_pois.createOrReplaceTempView("POIs")
@@ -197,51 +117,80 @@ object GeoSparkMatcher {
                                  %s),
                         "epsg:4326", 
                         "epsg:3857") AS pointshape
-    FROM POIs""".format(other_columns)
+    FROM POIs""".format(query_other_columns)
 
     println("LOGGER POI query:\n" + query)
 
     var poisDf = spark.sql(query)
-    poisDf
+    (poisDf, other_columns)
   }
 
+  /**
+    * This method performs the vincenty distance calculation between the POIs and the Safegraph data for the selected country and days.
+    * To do this, we perform a join between both dataframes using GeoSpark. This is useful when both dataframes are large, since GeoSpark
+    * creates and index that will basically map the points into buckets based on the Geo position.
+    *
+    * @param spark: Spark session that will be used to load the data.
+    * @param value_dictionary: Map that contains all the necessary information to run the match. The following fields are required:
+    *        - poi_output_file: path where the result is going to be stored.
+    *        - max_radius: maximum distance allowed in the distance join.
+    *        - nDays: number of days to be loaded from Safegraph data.
+    *        - since: number of days to be skipped in Safegraph data.
+    *        - country: country for which the Safegraph data is going to be extracted from.
+    *        - path_to_pois: path where the POIs are stored.
+    *
+    * @param return df_pois_final: dataframe created from the one provided by the user containing the POIS: contains the geocode and renamed columns.
+    */
   def join(spark: SparkSession, value_dictionary: Map[String, String]) = {
+    // First we load the data.
     val safegraphDf = get_safegraph_data(spark, value_dictionary)
-    val poisDf = get_POI_coordinates(spark, value_dictionary)
+    val poisResult = get_POI_coordinates(spark, value_dictionary)
+    val poisDf = poisResult._1
+    val other_columns = poisResult._2
+    println("LOGGER: Other columns: "+other_columns.mkString(", "))
 
+    // This is a tweak for performance.
     // TODO: pasar por parametro las reparticiones
-    safegraphDf.createOrReplaceTempView("safegraph")
+    safegraphDf.repartition(value_dictionary("nDays").toInt*100).createOrReplaceTempView("safegraph")
     poisDf.repartition(10)
     // TODO: pasar por parametro si se quiere o no persistir
     poisDf.persist(StorageLevel.MEMORY_ONLY)
     poisDf.createOrReplaceTempView("poisPoints")
 
+    // Useful function that will be used to extract the info out of the Geometry objects.
+    val getUserData = (point: Geometry) =>
+      Seq(Seq(point.asInstanceOf[Point].getX().toString), 
+          Seq(point.asInstanceOf[Point].getY().toString), 
+          point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq)
+    spark.udf.register("getUserData", getUserData)
+
+    // Here we perform the actual join.
+    val poiQuery = (0 until other_columns.length).map(i => "POI[2][%s] as %s".format(i, other_columns(i))).mkString(", ")
     var distanceJoinDf = spark.sql(
-      """select safegraph.pointshape as safegraph, poisPoints.pointshape as POI, ST_Distance(safegraph.pointshape, poisPoints.pointshape) AS distance
-      from safegraph, poisPoints
-      where ST_Distance(safegraph.pointshape, poisPoints.pointshape) < %s"""
-        .format(value_dictionary("max_radius"))
+      """SELECT safegraph[2][0] as device_id,
+                safegraph[2][1] as device_type,
+                safegraph[2][2] as timestamp,
+                safegraph[1][0] as latitude_user,
+                safegraph[0][0] as longitude_user,
+                POI[1][0] as latitude_poi,
+                POI[0][0] as longitude_poi,
+                %s,
+                distance
+         FROM (SELECT getUserData(safegraph.pointshape) as safegraph, 
+                      getUserData(poisPoints.pointshape) as POI, 
+                      ST_Distance(safegraph.pointshape, poisPoints.pointshape) AS distance
+               FROM safegraph, poisPoints
+               WHERE ST_Distance(safegraph.pointshape, poisPoints.pointshape) < %s)"""
+        .format(poiQuery, value_dictionary("max_radius"))
     )
 
-    // TODO: Overwrite output
-    distanceJoinDf.write.format("csv").save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
-      // .rdd
-      // .map(
-      //   arr =>
-      //     arr(0)
-      //       .asInstanceOf[com.vividsolutions.jts.geom.Geometry]
-      //       .getUserData()
-      //       .toString
-      //       .replaceAll("\\s{1,}", ",") + "," +
-      //       arr(1)
-      //         .asInstanceOf[com.vividsolutions.jts.geom.Geometry]
-      //         .getUserData()
-      //         .toString
-      //         .replaceAll("\\s{1,}", ",")
-      // )
-      // .saveAsTextFile(
-      //   "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
-      // )
+    // Finally we store the results.
+    distanceJoinDf.write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
     println("LOGGER: Results already stored.")
   }
 
@@ -276,14 +225,14 @@ object GeoSparkMatcher {
       )
       // .config("geospark.global.index", "true")
       // .config("geospark.global.indextype", "rtree")
-      // .config("geospark.join.gridtype", "kdbtree")
+      .config("geospark.join.gridtype", "kdbtree")
       // .config("geospark.join.numpartition", 200)
       .appName("match_POI_geospark")
       .getOrCreate()
 
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
-    val value_dictionary = get_variables(spark, path_geo_json)
+    val value_dictionary = Main.get_variables(spark, path_geo_json)
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // Now we remove the file if it exists already
