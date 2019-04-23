@@ -977,15 +977,20 @@ val records_common = the_join.select(col("identifier"))
                     .withColumn("segments",regexp_replace(col("segments"),"as_",""))
     
 
-    val taxo_general = spark.read      .format("csv")      .option("sep", ",")      .option("header", "True")      .load("/datascience/data_publicis/taxonomy_publicis.csv")
+    val taxo_general = spark.read.format("csv")
+                            .option("sep", ",")
+                            .option("header", "True")
+                            .load("/datascience/data_publicis/taxonomy_publicis.csv")
+    
     val taxo_segments = taxo_general.select("Segment Id").as[String].collect()
 
     filtered
-        .filter(col("segments")
-        .isin(taxo_segments: _*))
+        .filter(col("segments").isin(taxo_segments: _*))
         .groupBy("Codigo","segments").count()
-        .write.format("csv").option("header","true")
-        .mode(SaveMode.Overwrite).save("/datascience/geo/AR/sarmiento_code_segment_count_filtered")
+        .write.format("csv")
+        .option("header","true")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/geo/AR/sarmiento_code_segment_count_filtered")
 
 }
 
@@ -2467,7 +2472,7 @@ val user_location_madid = spark.read.option("header",true)
 
     //Logger.getRootLogger.setLevel(Level.WARN)
     //getDataTaringa(spark,15)
-    get_sarmiento_segments(spark,15)
+    get_sarmiento_segments(spark,30)
     //get_ISP_users(spark,90)
     // get_safegraph_data(spark,15,"argentina")
   }
