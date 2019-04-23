@@ -39,7 +39,7 @@ import java.util
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import org.apache.commons.codec.binary.Base64
-import org.apache.spark.implicits._
+
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -951,6 +951,9 @@ val records_common = the_join.select(col("identifier"))
       .option("basePath", "hdfs://rely-hdfs/datascience/data_keywords/")
       .load(lista_files: _*)
       .select("device_id", "segments")
+
+      //
+      import sparkSession.implicits._
 
     //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
     val pois =  spark.read.option("header",true)
