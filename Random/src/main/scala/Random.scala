@@ -961,7 +961,7 @@ val records_common = the_join.select(col("identifier"))
     //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
     val pois =  spark.read.option("header",true)
                 .option("delimiter","\t")
-                .csv("/datascience/audiences/crossdeviced/sarmiento_pois_90d_argentina_20-4-2019-10h_xd/")
+                .csv("/datascience/audiences/crossdeviced/Lat_Long_Sarmiento_90d_argentina_24-4-2019-9h_xd/")
                 .select("device_id","Codigo")
 
 
@@ -2472,8 +2472,8 @@ val user_location_madid = spark.read.option("header",true)
 
     //Logger.getRootLogger.setLevel(Level.WARN)
     //getDataTaringa(spark,15)
-    //get_sarmiento_segments(spark,30)
-    spark.read.load("/datascience/data_us_p/").groupBy("url").count().orderBy(col("count").desc).write.format("csv").option("header","true").mode(SaveMode.Overwrite).save("/datascience/custom/top_urls")
+    get_sarmiento_segments(spark,30)
+    //spark.read.load("/datascience/data_us_p/").groupBy("url").count().orderBy(col("count").desc).write.format("csv").option("header","true").mode(SaveMode.Overwrite).save("/datascience/custom/top_urls")
     //get_ISP_users(spark,90)
     // get_safegraph_data(spark,15,"argentina")
   }
