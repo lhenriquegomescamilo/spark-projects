@@ -959,10 +959,12 @@ val records_common = the_join.select(col("identifier"))
       import spark.implicits._
 
     //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
-    val pois =  spark.read.option("header",true)
-                .option("delimiter","\t")
-                .csv("/datascience/audiences/crossdeviced/Lat_Long_Sarmiento_90d_argentina_24-4-2019-9h_xd/")
-                .select("device_id","Codigo")
+    val pois =  spark.read.option("header",false)
+                .option("delimiter",",")
+                .csv("hdfs://rely-hdfs/datascience/geo/geo_processed/Lat_Long_Sarmiento_90d_argentina_24-4-2019-9h_aggregated")
+                .select("_c0","_c1")
+                .withColumnRenamed("_c0", "device_id")
+                .withColumnRenamed("_c1", "Codigo")
 
 
    //hacemos el join 
@@ -990,7 +992,7 @@ val records_common = the_join.select(col("identifier"))
         .write.format("csv")
         .option("header","true")
         .mode(SaveMode.Overwrite)
-        .save("/datascience/geo/AR/sarmiento_code_segment_count_filtered")
+        .save("/datascience/geo/AR/sarmiento_code_segment_count_filtered_24-04")
 
 }
 
