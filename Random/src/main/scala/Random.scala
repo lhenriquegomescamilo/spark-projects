@@ -1309,7 +1309,7 @@ val records_common = the_join.select(col("identifier"))
 		val mayor80 = df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
 		println("signals >=80",mayor80)
 }
-   def getAudience(spark: SparkSession) {
+   def getAudience(spark: SparkSession) = {
     val data = spark.read.format("parquet").load("/datascience/data_audiences_p/day=20190120")
                          .filter("""country = AR
                           AND ((array_contains(third_party,'4') OR (array_contains(third_party,'5'))
@@ -1322,7 +1322,7 @@ val records_common = the_join.select(col("identifier"))
     data.write.format("csv").save("/datascience/audiences/output/test_leo")
    }    
 
-  }
+  
 
   /**
     *
@@ -1377,4 +1377,4 @@ val records_common = the_join.select(col("identifier"))
       sampleTelefonica(spark)
   }
 
-}
+
