@@ -1828,7 +1828,7 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/urls_gt_ar")
   }
 
-/**
+  /**
     *
     *
     *
@@ -1896,12 +1896,12 @@ val records_common = the_join.select(col("identifier"))
     //ña variable esa "frequencer" lo que hace es regular según la cantidad de días que se elijan:
     //si se eligió 30, queda en 4 y nos da la cantidad por semana (dividimos al mes por 4)
 
-    val frequencer = (4*nDays)/30
+    val frequencer = (4 * nDays) / 30
     val user_frequency = users_isp
       .groupBy("device_id")
       .count()
       .withColumn("Freq_connections", col("count") / frequencer)
-      //.filter("Freq>4") sacamos el filtro para perder menos usuarios. Después podemos fitrarlo luego
+    //.filter("Freq>4") sacamos el filtro para perder menos usuarios. Después podemos fitrarlo luego
 
     //joineamos con los que tienen la info de ISP
     val high_freq_isp = user_frequency.join(users_isp, Seq("device_id"))
@@ -1916,7 +1916,7 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/geo/AR/high_freq_isp_30D")
      */
 
-    //ahora levantamos el resultado del crossdevice, estas son solo cookies. 
+    //ahora levantamos el resultado del crossdevice, estas son solo cookies.
     val user_location = spark.read
       .csv(
         "/datascience/audiences/crossdeviced/zona_norte_users_15-04.csv_xd/"
@@ -1929,13 +1929,11 @@ val records_common = the_join.select(col("identifier"))
       .withColumn("third_party", concat_ws(",", col("third_party")))
 //fin de cookies
 
-
-//ahora levantamos las madid de los usuarios, estas son solo madid. 
-val user_location_madid = spark.read.option("header",true)   
-      .csv(        "/datascience/geo/AR/zona_norte_users_15-04.csv"      )      
+//ahora levantamos las madid de los usuarios, estas son solo madid.
+    val user_location_madid = spark.read
+      .option("header", true)
+      .csv("/datascience/geo/AR/zona_norte_users_15-04.csv")
       .withColumn("device_id", upper(col("user")))
-
-
 
     //hacemos el join entre ambos
     val isp_location_madid = high_freq_isp
@@ -1953,7 +1951,7 @@ val user_location_madid = spark.read.option("header",true)
       .option("sep", ",")
       .save("/datascience/geo/AR/high_freq_isp_cookie_90D")
 
-      isp_location_madid
+    isp_location_madid
       .distinct()
       .write
       .mode(SaveMode.Overwrite)
@@ -1963,7 +1961,6 @@ val user_location_madid = spark.read.option("header",true)
       .save("/datascience/geo/AR/high_freq_isp_madid_90D")
 
   }
-
 
   /**
     *
@@ -2267,16 +2264,24 @@ val user_location_madid = spark.read.option("header",true)
     */
   def getGCBAReport(spark: SparkSession) {
     val group_keywords: Map[String, List[String]] = Map(
-      "Inflacion" -> "inflacion devaluacion suba,precios aumentos ganancias invertir".split(" ").toList,
+      "Inflacion" -> "inflacion devaluacion suba,precios aumentos ganancias invertir"
+        .split(" ")
+        .toList,
       "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
-        .split(" ").toList,
+        .split(" ")
+        .toList,
       "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron violacion violador preso"
-        .split(" ").toList,
-      "Cultura" -> "cultura musica pintura teatro taller,arte esculturas".split(" ").toList,
+        .split(" ")
+        .toList,
+      "Cultura" -> "cultura musica pintura teatro taller,arte esculturas"
+        .split(" ")
+        .toList,
       "Transporte" -> "transporte metrobus subte colectivos trenes"
         .split(" ")
         .toList,
-      "Ambiente" -> "medio-ambiente medioambiente greenpeace bioguia.com/ambiente".split(" ").toList
+      "Ambiente" -> "medio-ambiente medioambiente greenpeace bioguia.com/ambiente"
+        .split(" ")
+        .toList
     )
 
     val data = getDataAudiences(spark, 60, 1)
@@ -2358,9 +2363,9 @@ val user_location_madid = spark.read.option("header",true)
     }
   }
 
-  def getDataTaringa(spark: SparkSession,ndays:Int){
+  def getDataTaringa(spark: SparkSession, ndays: Int) {
     val spark =
-          SparkSession.builder.appName("Getting data for Taringa").getOrCreate()
+      SparkSession.builder.appName("Getting data for Taringa").getOrCreate()
 
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -2378,14 +2383,63 @@ val user_location_madid = spark.read.option("header",true)
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
-    val filtered = df.filter(col("url").contains("taringa.net") && not(col("url").contains("api.retargetly")))
-                    .orderBy("timestamp")
-                    .select("device_id","url","timestamp")
-    filtered.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/data_taringa")
+    val filtered = df
+      .filter(
+        col("url")
+          .contains("taringa.net") && not(col("url").contains("api.retargetly"))
+      )
+      .orderBy("timestamp")
+      .select("device_id", "url", "timestamp")
+    filtered.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_taringa")
 
+  }
 
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *                    PEDIDO TELEFONICA
+    *
+    *
+    *
+    *
+    *
+    */
+  def sampleTelefonica(spark: SparkSession) = {
+    val file = "/data/eventqueue/2019/04/15/0010.tsv.gz" // cada archivo contiene info de 5 minutos de data
+    val df = spark.read
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .load(file)
+    val df_sel = df.select(
+      "device_id",
+      "segments",
+      "user_agent",
+      "url",
+      "ml_sh2",
+      "mb_sh2",
+      "nid_sh2",
+      "time"
+    )
+    val df_filtered = df_sel
+      .withColumn("segments", split(col("segments"), "\u0001"))
+      .filter("array_contains(segments, '1194')")
+      .drop("segments")
+    df_filtered.write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/sample_telefonica/")
+  }
 
-}
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -2393,10 +2447,7 @@ val user_location_madid = spark.read.option("header",true)
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    //Logger.getRootLogger.setLevel(Level.WARN)
-    getDataTaringa(spark,15)
-    //get_ISP_users(spark,90)
-    // get_safegraph_data(spark,15,"argentina")
+      sampleTelefonica(spark)
   }
 
 }
