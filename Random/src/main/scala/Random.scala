@@ -40,7 +40,6 @@ import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import org.apache.commons.codec.binary.Base64
 
-
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
@@ -917,7 +916,8 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/geo/AR/estaciones_servicio_MP_DRAW_segmentos_7d")
 
   }
- /**
+
+  /**
     *
     *
     *
@@ -926,7 +926,6 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     */
-
   def get_sarmiento_segments(
       spark: SparkSession,
       nDays: Integer,
@@ -934,7 +933,6 @@ val records_common = the_join.select(col("identifier"))
   ) = {
 
     // Ahora levantamos los datos que estan en datascience keywords
-   
 
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -950,51 +948,54 @@ val records_common = the_join.select(col("identifier"))
     val hdfs_files = days
       .map(day => path + "/day=%s/country=AR".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    
+
     val segments = spark.read.option("basePath", path).parquet(hdfs_files: _*)
-    
-      
+
     // Importamos implicits para que funcione el as[String]
 
-      import spark.implicits._
+    import spark.implicits._
 
     //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
-    val pois =  spark.read.option("header",false)
-                .option("delimiter",",")
-                .csv("hdfs://rely-hdfs/datascience/geo/geo_processed/Lat_Long_Sarmiento_90d_argentina_24-4-2019-9h_aggregated")
-                .select("_c0","_c1")
-                .withColumnRenamed("_c0", "device_id")
-                .withColumnRenamed("_c1", "Codigo")
+    val pois = spark.read
+      .option("header", false)
+      .option("delimiter", ",")
+      .csv(
+        "hdfs://rely-hdfs/datascience/geo/geo_processed/Lat_Long_Sarmiento_90d_argentina_24-4-2019-9h_aggregated"
+      )
+      .select("_c0", "_c1")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c1", "Codigo")
 
-
-   //hacemos el join 
-    val joint = pois.join(segments,Seq("device_id"))//.withColumn("segments", explode(col("segments")))
+    //hacemos el join
+    val joint = pois.join(segments, Seq("device_id")) //.withColumn("segments", explode(col("segments")))
 
     //explotamos
-    val exploded = joint.withColumn("segments",explode(col("segments")))
+    val exploded = joint.withColumn("segments", explode(col("segments")))
 
     //reemplazamos para filtrar
     val filtered = exploded
-                    .withColumn("segments",regexp_replace(col("segments"),"s_",""))
-                    .withColumn("segments",regexp_replace(col("segments"),"as_",""))
-    
+      .withColumn("segments", regexp_replace(col("segments"), "s_", ""))
+      .withColumn("segments", regexp_replace(col("segments"), "as_", ""))
 
-    val taxo_general = spark.read.format("csv")
-                            .option("sep", ",")
-                            .option("header", "True")
-                            .load("/datascience/data_publicis/taxonomy_publicis.csv")
-    
+    val taxo_general = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "True")
+      .load("/datascience/data_publicis/taxonomy_publicis.csv")
+
     val taxo_segments = taxo_general.select("Segment Id").as[String].collect()
 
     filtered
-        .filter(col("segments").isin(taxo_segments: _*))
-        .groupBy("Codigo","segments").count()
-        .write.format("csv")
-        .option("header","true")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/geo/AR/sarmiento_code_segment_count_filtered_24-04")
+      .filter(col("segments").isin(taxo_segments: _*))
+      .groupBy("Codigo", "segments")
+      .count()
+      .write
+      .format("csv")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/AR/sarmiento_code_segment_count_filtered_24-04")
 
-}
+  }
 
   /**
     *
@@ -1297,32 +1298,1183 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/audiences/output/micro_azure_06-03_xd_madid/")
   }
 
-		df_user_day_count.cache()
-		
-							
-		val mayor2 = df_user_day_count.filter(col("signals_day")>=2).select(col("signals_day")).count()
-		println("signals >=2",mayor2)
-		
-		val mayor20 =  df_user_day_count.filter(col("signals_day")>=20).select(col("signals_day")).count()
-		println("signals >=20",mayor20)
-				
-		val mayor80 = df_user_day_count.filter(col("signals_day")>=80).select(col("signals_day")).count()
-		println("signals >=80",mayor80)
-}
-   def getAudience(spark: SparkSession) = {
-    val data = spark.read.format("parquet").load("/datascience/data_audiences_p/day=20190120")
-                         .filter("""country = AR
-                          AND ((array_contains(third_party,'4') OR (array_contains(third_party,'5'))
-                          AND (
-                                url LIKE '%messi%' OR url LIKE '%aguero%'
-                               OR (url LIKE '%copa%' AND url LIKE '%america%') 
-                               OR url LIKE '%griezmann%' OR url LIKE '%botines%' OR url LIKE '%arquero%'
-                               OR url LIKE '%corner%' OR (url LIKE '%la%' AND url LIKE '%seleccion%'))""")
-                         .select("device_id","device_type")
-    data.write.format("csv").save("/datascience/audiences/output/test_leo")
-   }    
+  /**
+    *
+    *
+    *
+    *
+    * ATT  SAMPLE
+    *
+    *
+    *
+    *
+   **/
+  def encrypt(value: String): String = {
+    val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
+    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec())
+    Base64.encodeBase64String(cipher.doFinal(value.getBytes("UTF-8")))
+  }
 
-  
+  def decrypt(encryptedValue: String): String = {
+    val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING")
+    cipher.init(Cipher.DECRYPT_MODE, keyToSpec())
+    new String(cipher.doFinal(Base64.decodeBase64(encryptedValue)))
+  }
+
+  def keyToSpec(): SecretKeySpec = {
+    var keyBytes: Array[Byte] = (SALT + KEY).getBytes("UTF-8")
+    val sha: MessageDigest = MessageDigest.getInstance("SHA-1")
+    keyBytes = sha.digest(keyBytes)
+    keyBytes = util.Arrays.copyOf(keyBytes, 16)
+    new SecretKeySpec(keyBytes, "AES")
+  }
+
+  private val SALT: String =
+    "jMhKlOuJnM34G6NHkqo9V010GhLAqOpF0BePojHgh1HgNg8^72k"
+
+  private val KEY: String = "a51hgaoqpgh5bcmhyt1zptys=="
+
+  def getSampleATT(spark: SparkSession) {
+    val udfEncrypt = udf(
+      (estid: String) => encrypt(estid)
+    )
+
+    val format = "yyyyMMdd"
+    val from = 72
+    val start = DateTime.now.minusDays(from)
+    val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+
+    def parseDay(day: String) = {
+      println("LOGGER: processing day %s".format(day))
+      spark.read
+      // .format("com.databricks.spark.csv")
+        .load("/datascience/sharethis/loading/%s*.json".format(day))
+        .filter("_c13 = 'san francisco' AND _c8 LIKE '%att%'")
+        .select(
+          "_c0",
+          "_c1",
+          "_c2",
+          "_c3",
+          "_c4",
+          "_c5",
+          "_c6",
+          "_c7",
+          "_c8",
+          "_c9"
+        )
+        .withColumn("_c0", udfEncrypt(col("_c0")))
+        .coalesce(100)
+        .write
+        .mode(SaveMode.Overwrite)
+        .format("csv")
+        .option("sep", "\t")
+        .save("/datascience/sharethis/sample_att_url/%s".format(day))
+      println("LOGGER: day %s processed successfully!".format(day))
+    }
+
+    days.map(day => parseDay(day))
+  }
+
+  /**
+    *
+    *
+    *
+    *      Data GCBA for campaigns
+    *
+    *
+    *
+    */
+  def gcba_campaign_day(spark: SparkSession, day: String) {
+
+    val df = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", true)
+      .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+      .select("id_partner", "all_segments", "url")
+      .filter(
+        col("id_partner") === "349" && col("all_segments")
+          .isin(List("76522,76536,76543"): _*)
+      )
+
+    df.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/AR/gcba_campaign_%s".format(day))
+  }
+
+  /**
+    *
+    *
+    *
+    *      US GEO Sample
+    *
+    *
+    *
+    */
+  def getSTGeo(spark: SparkSession) = {
+    val format = "yyyyMMdd"
+    val formatter = DateTimeFormat.forPattern("dd/MM/yyyy")
+    val start = formatter.parseDateTime("01/24/2019")
+    val days =
+      (0 until 40).map(n => start.plusDays(n)).map(_.toString(format))
+    val path = "/datascience/sharethis/loading/"
+    days.map(
+      day =>
+        spark.read
+          .format("csv")
+          .load(path + day + "*")
+          .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5", "_c12", "_c13")
+          .withColumnRenamed("_c0", "estid")
+          .withColumnRenamed("_c1", "utc_timestamp")
+          .withColumnRenamed("_c3", "ip")
+          .withColumnRenamed("_c10", "latitude")
+          .withColumnRenamed("_c11", "longitude")
+          .withColumnRenamed("_c12", "zipcode")
+          .withColumnRenamed("_c13", "city")
+          .withColumnRenamed("_c5", "device_type")
+          .withColumn("day", lit(day))
+          .write
+          .format("parquet")
+          .partitionBy("day")
+          .mode("append")
+          .save("/datascience/geo/US/")
+    )
+    // spark.read.format("csv")
+    //      .load("/datascience/sharethis/loading/*")
+    //      .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5")
+    //      .withColumnRenamed("_c0", "estid")
+    //      .withColumnRenamed("_c1", "utc_timestamp")
+    //      .withColumnRenamed("_c3", "ip")
+    //      .withColumnRenamed("_c10", "latitude")
+    //      .withColumnRenamed("_c11", "longitude")
+    //      .withColumnRenamed("_c5", "device_type")
+    //      .write
+    //      .format("csv")
+    //      .save("/datascience/custom/geo_st")
+  }
+
+  def get_pii_AR(spark: SparkSession) {
+
+    val df_pii = spark.read
+      .option("header", "true")
+      .parquet("hdfs://rely-hdfs/datascience/pii_matching/pii_table")
+      .filter(col("country") === "AR")
+      .write
+      .format("csv")
+      .option("sep", ",")
+      .option("header", true)
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/audiences/output/pii_table_AR_11_02_19")
+
+  }
+
+  def get_urls_sharethis(spark: SparkSession, ndays: Int) {
+
+    /**
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(ndays)
+    val end   = DateTime.now.minusDays(0)
+
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+    **/
+    val path = "/datascience/sharethis/loading/"
+    val days = List(
+      "20181220",
+      "20181221",
+      "20181222",
+      "20181223",
+      "20181224",
+      "20181225",
+      "20181226",
+      "20181227",
+      "20181228",
+      "20181229",
+      "20181230",
+      "20181231",
+      "20190101",
+      "20190103",
+      "20190105",
+      "20190107",
+      "20190103",
+      "20190109",
+      "20190111",
+      "20190113",
+      "20190115",
+      "20190117",
+      "20190119",
+      "20190121",
+      "20190123",
+      "20190124",
+      "20190125",
+      "20190126"
+    )
+    days.map(
+      day =>
+        spark.read
+          .format("csv")
+          .load(path + day + "*")
+          .select("_c0", "_c1", "_c2", "_c5")
+          .withColumnRenamed("_c0", "estid")
+          .withColumnRenamed("_c1", "utc_timestamp")
+          .withColumnRenamed("_c2", "url")
+          .withColumnRenamed("_c5", "device_type")
+          .withColumn("day", lit(day))
+          .write
+          .format("parquet")
+          .partitionBy("day")
+          .mode("append")
+          .save("/datascience/sharethis/urls/")
+    )
+//        filter(day => fs.exists(new org.apache.hadoop.fs.Path(path + day + "*")))
+
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *              GOOGLE ANALYTICS
+    *
+    *
+    *
+    *
+    */
+  def join_cadreon_google_analytics(spark: SparkSession) {
+    val ga = spark.read
+      .format("csv")
+      .load("/datascience/data_demo/join_google_analytics/")
+      .withColumnRenamed("_c1", "device_id")
+    val cadreon = spark.read
+      .format("csv")
+      .option("sep", " ")
+      .load("/datascience/devicer/processed/cadreon_age")
+      .withColumnRenamed("_c1", "device_id")
+
+    ga.join(cadreon, Seq("device_id"))
+      .write
+      .format("csv")
+      .save("/datascience/custom/cadreon_google_analytics")
+  }
+
+  // def join_gender_google_analytics(spark: SparkSession) {
+  //   val ga = spark.read
+  //     .load("/datascience/data_demo/join_google_analytics/")
+  //     .withColumnRenamed("_c1", "device_id")
+  //   val gender = spark.read
+  //     .format("csv")
+  //     .option("sep", " ")
+  //     .load("/datascience/devicer/processed/ground_truth_*male")
+  //     .withColumnRenamed("_c1", "device_id")
+  //     .withColumnRenamed("_c2", "label")
+  //     .select("device_id", "label")
+  //     .distinct()
+
+  //   ga.join(gender, Seq("device_id"))
+  //     .write
+  //     .format("csv")
+  //     .mode(SaveMode.Overwrite)
+  //     .save("/datascience/data_demo/gender_google_analytics")
+  // }
+
+  // for MX "/datascience/devicer/processed/ground_truth_*male"
+  // for AR "/datascience/devicer/processed/equifax_demo_AR_grouped"
+  def join_gender_google_analytics(
+      spark: SparkSession,
+      gtPath: String,
+      sep: String = "\t",
+      gaPath: String = "join_google_analytics_path",
+      country: String = "AR"
+  ) {
+    val ga = spark.read
+      .load("/datascience/data_demo/%s/country=%s".format(gaPath, country))
+    val gender = spark.read
+      .format("csv")
+      .option("sep", sep)
+      .load(gtPath)
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "label")
+      .select("device_id", "label")
+
+    ga.join(gender, Seq("device_id"))
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/gender_%s_%s".format(gaPath, country))
+  }
+
+  def get_google_analytics_stats(spark: SparkSession) {
+    val cols = (2 to 9).map("_c" + _).toSeq
+    val data = spark.read
+      .format("csv")
+      .load("/datascience/data_demo/join_google_analytics")
+      .select(cols.head, cols.tail: _*)
+    data.registerTempTable("data")
+
+    val q_std =
+      cols.map(c => "stddev(%s) as stddev%s".format(c, c)).mkString(", ")
+    val q_median = cols
+      .map(c => "percentile_approx(%s, 0.5) as median%s".format(c, c))
+      .mkString(", ")
+    val query = "SELECT %s, %s FROM data".format(q_std, q_median)
+
+    println("\n\n\n")
+    spark.sql(query).show()
+    println("\n\n\n")
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *                  ATT - STATISTICS
+    *
+    *
+    *
+    *
+    *
+   **/
+  def get_att_stats(spark: SparkSession) = {
+    // val data = spark.read
+    //   .load("/datascience/sharethis/historic/day=201902*/")
+    //   .filter("isp LIKE '%att%' AND city = 'san francisco'")
+    //   .select("estid", "url", "os", "ip", "utc_timestamp")
+    //   .withColumn("utc_timestamp", col("utc_timestamp").substr(0, 10))
+    //   .withColumnRenamed("utc_timestamp", "day")
+    val data = spark.read.load("/datascience/custom/metrics_att_sharethis")
+    // data.persist()
+    // data.write
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/custom/metrics_att_sharethis")
+
+    // println("Total number of rows: %s".format(data.count()))
+    // println(
+    //   "Total Sessions (without duplicates): %s"
+    //     .format(data.select("url", "estid").distinct().count())
+    // )
+    // println(
+    //   "Total different ids: %s".format(data.select("estid").distinct().count())
+    // )
+    // println("Mean ids per day:")
+    // data.groupBy("day").count().show()
+    // data
+    //   .select("url", "estid")
+    //   //.distinct()
+    //   .groupBy("estid")
+    //   .count()
+    //   .write
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/custom/estid_sessions")
+    // data
+    //   .select("day", "estid")
+    //   .distinct()
+    //   .groupBy("day")
+    //   .count()
+    //   .write
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/custom/estid_days")
+
+    val estid_table =
+      spark.read
+        .load("/datascience/sharethis/estid_table/day=20190*")
+        .withColumnRenamed("d17", "estid")
+
+    val joint = estid_table.join(data, Seq("estid"))
+    println("Total number of rows: %s".format(joint.count()))
+    println(
+      "Total Sessions (without duplicates): %s"
+        .format(joint.select("url", "device_id").distinct().count())
+    )
+    println(
+      "Total different device ids: %s"
+        .format(joint.select("device_id").distinct().count())
+    )
+    println("Mean device ids per day:")
+    joint.groupBy("day").count().show()
+    joint
+      .select("url", "device_id")
+      //.distinct()
+      .groupBy("device_id")
+      .count()
+      .write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/device_id_sessions")
+    joint
+      .select("day", "device_id")
+      .distinct()
+      .groupBy("day")
+      .count()
+      .write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/device_id_days")
+  }
+
+  def typeMapping(spark: SparkSession) = {
+    val typeMap = Map(
+      "coo" -> "web",
+      "and" -> "android",
+      "ios" -> "ios",
+      "con" -> "TV",
+      "dra" -> "drawbridge"
+    )
+    val mapUDF = udf((dev_type: String) => typeMap(dev_type))
+
+    spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/audiences/crossdeviced/taxo_gral_joint")
+      .filter("_c0 IN ('coo', 'ios', 'and')")
+      .withColumn("_c0", mapUDF(col("_c0")))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/audiences/crossdeviced/taxo_gral_joint_correct_types")
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    *                NETQUEST  REPORT
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    */
+  def getNetquestReport(spark: SparkSession) = {
+    def processDay(day: String) = {
+      println(day)
+      val data = spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .option("header", "true")
+        .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+        .filter("event_type = 'sync' AND id_partner = '31'")
+        .select("device_id", "id_partner_user", "country")
+        .write
+        .format("csv")
+        .save(
+          "/datascience/custom/netquest_report/day=%s"
+            .format(day.replace("/", ""))
+        )
+      println("Day processed: %s".format(day))
+    }
+
+    val format = "yyyy/MM/dd"
+    val days =
+      (0 until 61).map(n => DateTime.now.minusDays(n + 1).toString(format))
+    days.map(processDay(_))
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *                  Audiencia Juli - McDonald's
+    *
+    *
+    *
+    *
+    */
+  def getDataKeywords(
+      spark: SparkSession,
+      nDays: Int = 30,
+      since: Int = 1
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    df
+  }
+
+  def getUsersMcDonalds(spark: SparkSession) {
+    val data_keys = getDataKeywords(spark, 30, 1)
+
+    val udfSegments = udf(
+      (segments: Seq[String]) => segments.filter(_.contains("as")).mkString(",")
+    )
+
+    data_keys
+      .filter(
+        "country = 'AR' AND (array_contains(segments, 'as_81488') OR array_contains(segments, 'as_81489') OR array_contains(segments, 'as_83788'))"
+      )
+      .withColumn("segments", udfSegments(col("segments")))
+      .select("device_id", "segments")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", ",")
+      .save("/datascience/custom/mcdonalds_users")
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *                SHARETHIS STATS
+    *
+    *
+    *
+    *
+    */
+  def stStats(spark: SparkSession) = {
+    val users_rely = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load(
+        "/datascience/devicer/processed/US_xd-0_partner-_2019-03-21T04-20-48-364205"
+      )
+      .select("_c1", "_c2")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "segment")
+    val users_st = spark.read
+      .format("json")
+      .load("/datascience/sharethis/demo/dt=2019012*/*")
+      .select("estid", "domain_male")
+    val estid_table = spark.read
+      .load("/datascience/sharethis/estid_table")
+      .select("d17", "device_id")
+      .withColumnRenamed("d17", "estid")
+
+    estid_table
+      .join(users_st, Seq("estid"))
+      .join(users_rely, Seq("device_id"))
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .save("/datascience/custom/sharethis_stats")
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *          DATA LEO 2 - URLS PARA USUARIOS CON GROUND TRUTH
+    *
+    *
+    *
+    *
+    */
+  def joinURLs(spark: SparkSession) = {
+    val df = getDataAudiences(spark)
+      .filter("country = 'AR' AND event_type IN ('pv', 'batch')")
+      .select("device_id", "url", "timestamp")
+    val gt = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/equifax_demo_AR_grouped/*")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "label")
+      .select("device_id", "label")
+
+    df.join(gt, Seq("device_id"))
+      .distinct()
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/urls_gt_ar")
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *          Para informe de ISP (pedido por Seba, hecho por Julián
+    09-04-2019)
+    *
+    */
+  def get_ISP_users(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer = 1
+  ) = {
+
+    //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
+    // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
+    // Also we generate a new column call 'geocode' that will be used for the join
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/datascience/data_audiences/"
+    val hdfs_files = days
+      .map(day => path + "day=%s/country=AR/".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    //cargamos el df de audiences
+    val df_audiences = spark.read.parquet(hdfs_files: _*)
+
+    //al df de audiences le añadimos una columna que dice si se conectó en horario laboral o en hogareño
+    val geo_hour = df_audiences
+      .select("device_id", "third_party", "timestamp", "device_type")
+      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "HH"))
+      .filter(
+        !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"): _*)
+      )
+      .withColumn(
+        "Period",
+        when((col("Hour") >= 20 || col("Hour") <= 8), "Hogar")
+          .otherwise("Trabajo")
+      )
+
+    //nos quedamos sólo con los usuarios que tengan algunos de los isp de interés
+    val users_isp = geo_hour
+      .filter(
+        array_contains(col("third_party"), 1192) || array_contains(
+          col("third_party"),
+          1191
+        ) || array_contains(col("third_party"), 1193) || array_contains(
+          col("third_party"),
+          1190
+        ) || array_contains(col("third_party"), 1194) || array_contains(
+          col("third_party"),
+          1069
+        ) || array_contains(col("third_party"), 1195)
+      )
+
+    //a esos usuarios les contamos cuántas veces aparecen y...lo dividimos por cuatro por cada mes
+    //ña variable esa "frequencer" lo que hace es regular según la cantidad de días que se elijan:
+    //si se eligió 30, queda en 4 y nos da la cantidad por semana (dividimos al mes por 4)
+
+    val frequencer = (4 * nDays) / 30
+    val user_frequency = users_isp
+      .groupBy("device_id")
+      .count()
+      .withColumn("Freq_connections", col("count") / frequencer)
+    //.filter("Freq>4") sacamos el filtro para perder menos usuarios. Después podemos fitrarlo luego
+
+    //joineamos con los que tienen la info de ISP
+    val high_freq_isp = user_frequency.join(users_isp, Seq("device_id"))
+
+    /*
+    high_freq_isp.distinct()
+      .write
+      .mode(SaveMode.Overwrite)
+      .option("header", "false")
+      .format("csv")
+      .option("sep", ",")
+      .save("/datascience/geo/AR/high_freq_isp_30D")
+     */
+
+    //ahora levantamos el resultado del crossdevice, estas son solo cookies.
+    val user_location = spark.read
+      .csv(
+        "/datascience/audiences/crossdeviced/zona_norte_users_15-04.csv_xd/"
+      )
+      .withColumn("device_id", upper(col("_c1")))
+
+    //hacemos el join entre ambos
+    val isp_location = high_freq_isp
+      .join(user_location, Seq("device_id"))
+      .withColumn("third_party", concat_ws(",", col("third_party")))
+//fin de cookies
+
+//ahora levantamos las madid de los usuarios, estas son solo madid.
+    val user_location_madid = spark.read
+      .option("header", true)
+      .csv("/datascience/geo/AR/zona_norte_users_15-04.csv")
+      .withColumn("device_id", upper(col("user")))
+
+    //hacemos el join entre ambos
+    val isp_location_madid = high_freq_isp
+      .join(user_location_madid, Seq("device_id"))
+      .withColumn("third_party", concat_ws(",", col("third_party")))
+
+//fin de madid
+
+    isp_location
+      .distinct()
+      .write
+      .mode(SaveMode.Overwrite)
+      .option("header", "false")
+      .format("csv")
+      .option("sep", ",")
+      .save("/datascience/geo/AR/high_freq_isp_cookie_90D")
+
+    isp_location_madid
+      .distinct()
+      .write
+      .mode(SaveMode.Overwrite)
+      .option("header", "false")
+      .format("csv")
+      .option("sep", ",")
+      .save("/datascience/geo/AR/high_freq_isp_madid_90D")
+
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *          DATA JULI - ALL-SEGMENTS PARA AUDIENCIA GEO
+    *
+    *
+    *
+    *
+    */
+  def joinGeo(spark: SparkSession) = {
+    val df = getDataAudiences(spark, 5, 18)
+      .filter("country = 'AR'")
+      .select("device_id", "all_segments")
+      .withColumn("all_segments", concat_ws(",", col("all_segments")))
+      .withColumn("device_id", upper(col("device_id")))
+    val geo = spark.read
+      .format("csv")
+      .load("/datascience/geo/AR/ar_home_90_13-03-19_USERS.csv")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumn("device_id", upper(col("device_id")))
+
+    df.join(geo, Seq("device_id"))
+      .distinct()
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/geo_equifax_ar")
+  }
+
+  /**
+    *
+    *
+    *
+    *                  DATASET FOR EXPANSION MX
+    *
+    *
+    *
+    *
+    *
+
+  def getExpansionDataset(spark: SparkSession) {
+    // val ga = spark.read
+    //   .load(
+    //     "/datascience/data_demo/join_google_analytics/country=MX/"
+    //   )
+    //   .dropDuplicates("url", "device_id")
+    // val users =
+    //   ga.groupBy("device_id").count().filter("count >= 2").select("device_id")
+
+    // users.cache()
+    // users.write
+    //   .format("csv")
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/data_demo/users_to_expand_ga_MX")
+
+    // // val users = spark.read.format("csv").load("/datascience/data_demo/users_to_expand_ga_MX").withColumnRenamed("_c0", "device_id")
+    // ga.join(users, Seq("device_id"))
+    //   .write
+    //   .format("csv")
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/data_demo/expand_ga_dataset")
+
+    val segments =
+      """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
+      247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
+      386,389,395,396,397,398,399,401,402,403,404,405,409,410,411,412,413,418,420,421,422,429,430,432,433,434,440,441,446,447,450,451,453,454,456,457,458,
+      459,460,462,463,464,465,467,895,898,899,909,912,914,915,916,917,919,920,922,923,928,929,930,931,932,933,934,935,937,938,939,940,942,947,948,949,950,
+      951,952,953,955,956,957,1005,1116,1159,1160,1166,2064,2623,2635,2636,2660,2719,2720,2721,2722,2723,2724,2725,2726,2727,2733,2734,2735,2736,2737,2743,
+      3010,3011,3012,3013,3014,3015,3016,3017,3018,3019,3020,3021,3022,3023,3024,3025,3026,3027,3028,3029,3030,3031,3032,3033,3034,3035,3036,3037,3038,3039,
+      3040,3041,3042,3043,3044,3045,3046,3047,3048,3049,3050,3051,3055,3076,3077,3084,3085,3086,3087,3302,3303,3308,3309,3310,3388,3389,3418,3420,3421,3422,
+      3423,3450,3470,3472,3473,3564,3565,3566,3567,3568,3569,3570,3571,3572,3573,3574,3575,3576,3577,3578,3579,3580,3581,3582,3583,3584,3585,3586,3587,3588,
+      3589,3590,3591,3592,3593,3594,3595,3596,3597,3598,3599,3600,3730,3731,3732,3733,3779,3782,3843,3844,3913,3914,3915,4097,
+      5025,5310,5311""".replace("\n", "").split(",").toList.toSeq
+
+    val triplets =
+      spark.read
+        .load("/datascience/data_demo/triplets_segments/country=MX/")
+        .filter(col("feature").isin(segments: _*))
+
+    triplets
+      .join(users, Seq("device_id"))
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/expand_triplets_dataset")
+
+    // val myUDF = udf(
+    //   (weekday: String, hour: String) =>
+    //     if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
+    //     else "%s0".format(hour)
+    // )
+    // val data =
+    //   spark.read.load("/datascience/data_demo/join_google_analytics/country=MX")
+    // data
+    //   .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+    //   .withColumn("Hour", date_format(col("Time"), "HH"))
+    //   .withColumn("Weekday", date_format(col("Time"), "EEEE"))
+    //   .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
+    //   .groupBy("device_id", "wd")
+    //   .count()
+    //   .groupBy("device_id")
+    //   .pivot("wd")
+    //   .agg(sum("count"))
+    //   .write
+    //   .format("csv")
+    //   .option("header", "true")
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/data_demo/expand_ga_timestamp")
+  }  */
+  /**
+    *
+    *
+    *
+    *
+    *
+    *          PEDIDO DUNNHUMBY
+    *
+    *
+    *
+    *
+    *
+    */
+  def getDunnhumbyMatching(spark: SparkSession) = {
+    val pii_table = spark.read
+      .load("/datascience/pii_matching/pii_table")
+      .withColumn("pii", lower(col("pii")))
+    pii_table.cache()
+
+    // EXITO CO FILE
+    val exito_co_ml = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/Exito-CO.csv")
+      .select("distinct_correo")
+      .withColumnRenamed("distinct_correo", "pii")
+      .withColumn("pii", lower(col("pii")))
+      .distinct()
+
+    pii_table
+      .join(exito_co_ml, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/exito_co_ml")
+
+    val exito_co_nid = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/Exito-CO.csv")
+      .select("distinct_documento")
+      .withColumnRenamed("distinct_documento", "pii")
+      .withColumn("pii", lower(col("pii")))
+      .distinct()
+
+    pii_table
+      .join(exito_co_nid, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/exito_co_nid")
+
+    // GPA BR
+    val gpa_br_ml = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/GPA-BR.csv")
+      .select("DS_EMAIL_LOWER")
+      .withColumnRenamed("DS_EMAIL_LOWER", "pii")
+      .withColumn("pii", lower(col("pii")))
+      .distinct()
+
+    pii_table
+      .join(gpa_br_ml, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/gpa_br_ml")
+
+    val gpa_br_nid = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/GPA-BR.csv")
+      .select("NR_CPF")
+      .withColumnRenamed("NR_CPF", "pii")
+      .withColumn("pii", lower(col("pii")))
+      .distinct()
+
+    pii_table
+      .join(gpa_br_nid, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/gpa_br_nid")
+
+    // RD BR
+    val rd_br_ml = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/RD-BR.csv")
+      .select("ds_email_lower")
+      .withColumnRenamed("ds_email_lower", "pii")
+      .withColumn("pii", lower(col("pii")))
+      .distinct()
+
+    pii_table
+      .join(rd_br_ml, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/rd_br_ml")
+
+    val rd_br_nid = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .load("/datascience/custom/GPA-BR.csv")
+      .select("nr_cpf")
+      .withColumnRenamed("nr_cpf", "pii")
+      .withColumn("pii", lower(col("pii")))
+      .distinct()
+
+    pii_table
+      .join(rd_br_nid, Seq("pii"))
+      .select("device_id", "pii", "country")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .save("/datascience/custom/dunnhumby/rd_br_nid")
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *              MEDIABRANDS - CALCULO DE OVERLAP
+    *
+    *
+    *
+    *
+    */
+  def getOverlap(spark: SparkSession) = {
+    val data = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/MX_-5_2019-04-11T00-52-32-149564")
+      .select("_c1", "_c2")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "segment")
+
+    val myUDF = udf((segments: Seq[String]) => segments.sorted.mkString(","))
+
+    val grouped = data
+      .groupBy("device_id")
+      .agg(collect_list(col("segment")).as("segments"))
+      .withColumn("segments", myUDF(col("segments")))
+
+    grouped.cache()
+
+    grouped.write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/overlap_mediabrands")
+
+    grouped
+      .groupBy("segments")
+      .count()
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/overlap_mediabrands_count")
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *                PRESENTACION GCBA
+    *
+    *
+    *
+    *
+    *
+    */
+  def getGCBAReport(spark: SparkSession) {
+    val group_keywords: Map[String, List[String]] = Map(
+      "Inflacion" -> "inflacion devaluacion suba,precios aumentos ganancias invertir"
+        .split(" ")
+        .toList,
+      "Desempleo" -> "desempleo busqueda,empleo trabajo falta,empleo cae,empleo"
+        .split(" ")
+        .toList,
+      "Inseguridad" -> "inseguridad robo asalto secuestro motochorros detuvieron sospechoso ladron violacion violador preso"
+        .split(" ")
+        .toList,
+      "Cultura" -> "cultura musica pintura teatro taller,arte esculturas"
+        .split(" ")
+        .toList,
+      "Transporte" -> "transporte metrobus subte colectivos trenes"
+        .split(" ")
+        .toList,
+      "Ambiente" -> "medio-ambiente medioambiente greenpeace bioguia.com/ambiente"
+        .split(" ")
+        .toList
+    )
+
+    val data = getDataAudiences(spark, 60, 1)
+
+    for ((group, keywords) <- group_keywords) {
+      println(group)
+      val query =
+        keywords
+          .map(
+            key =>
+              "lower(url) LIKE '%" + key
+                .replace(",", "%' AND lower(url) LIKE '%") + "%'"
+          )
+          .mkString(" OR ")
+
+      val filtered = data
+        .filter(
+          "country = 'AR' AND event_type = 'pv' AND (" + query + ") AND NOT lower(url) LIKE '%mapa.buenosaires%' AND NOT lower(url) LIKE '%miba.buenosaires%' AND NOT lower(url) LIKE '%www.buenosaires%transporte%'"
+        )
+        .withColumn("group", lit(group))
+        .select("device_id", "url", "day")
+        .groupBy("device_id", "url", "day")
+        .count()
+      filtered.cache()
+      filtered.write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/reporte_gcba/%s".format(group))
+      filtered
+        .groupBy("url", "day")
+        .agg(sum(col("count")).as("count"))
+        .write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/reporte_gcba/%s_url_count".format(group))
+      filtered
+        .groupBy("url")
+        .agg(sum(col("count")).as("count"))
+        .orderBy(desc("count"))
+        .write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/reporte_gcba/%s_top_url".format(group))
+
+      filtered
+        .groupBy("day")
+        .agg(sum(col("count")).as("count"))
+        .write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/reporte_gcba/%s_count_day".format(group))
+
+      filtered
+        .groupBy("device_id")
+        .agg(countDistinct(col("day")).as("count"))
+        .write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/reporte_gcba/%s_device_n_days".format(group))
+
+      filtered
+        .groupBy("device_id")
+        .agg(countDistinct(col("url")).as("count"))
+        .write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save(
+          "/datascience/custom/reporte_gcba/%s_device_distinct_urls"
+            .format(group)
+        )
+
+      filtered
+        .groupBy("device_id")
+        .agg(sum(col("count")).as("count"))
+        .write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/reporte_gcba/%s_device_n_urls".format(group))
+    }
+  }
+
+  def getDataTaringa(spark: SparkSession, ndays: Int) {
+    val spark =
+      SparkSession.builder.appName("Getting data for Taringa").getOrCreate()
+
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences/"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+    val filtered = df
+      .filter(
+        col("url")
+          .contains("taringa.net") && not(col("url").contains("api.retargetly"))
+      )
+      .orderBy("timestamp")
+      .select("device_id", "url", "timestamp")
+    filtered.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_taringa")
+  }
 
   /**
     *
@@ -1373,8 +2525,7 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-
-      sampleTelefonica(spark)
+    sampleTelefonica(spark)
   }
 
-
+}
