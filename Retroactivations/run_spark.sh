@@ -14,7 +14,7 @@ spark-submit\
 
 
 spark-submit\
- --class "main.scala.GetAudience"\
+ --class "main.scala.devicer.GetAudience"\
  --master yarn\
  --deploy-mode cluster\
  --driver-memory 8g\

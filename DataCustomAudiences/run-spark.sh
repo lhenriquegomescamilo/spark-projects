@@ -1,4 +1,8 @@
-spark-submit\
+#!/bin/bash
+
+source /home/rely/.bashrc
+
+/home/rely/spark/bin/spark-submit\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\

@@ -1,99 +1,209 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions.{explode,desc,lit,size,concat,col,concat_ws,collect_list,udf,broadcast}
-import org.joda.time.{Days,DateTime}
-import org.apache.hadoop.fs.Path
+import org.apache.spark.sql.functions.{
+  explode,
+  desc,
+  lit,
+  size,
+  concat,
+  col,
+  concat_ws,
+  collect_list,
+  udf,
+  broadcast
+}
+import org.joda.time.{Days, DateTime}
+import org.apache.hadoop.fs._
 
+/**
+  * This function generates the dataset requested by Publicis. Basically, it takes the information from the eventqueue and then
+  * it gets all the organic and modelled segments for every user. It removes the duplicates, keeping the segments for which the date is
+  * the lowest. Finally, it creates a set of files in bz format, with a specific layout.
+  * Layout:
+            {
+              "rtgtly_uid": "0000a2c8-661b-42cd-9773-d70efde26d9f",
+              "segids": [
+                  {"segid": "735", "segmentstartdate": 20190219},
+                  {"segid": "567", "segmentstartdate": 20190219},
+                  {"segid": "561", "segmentstartdate": 20190219},
+                  {"segid": "570", "segmentstartdate": 20190219},
+                  {"segid": "1348", "segmentstartdate": 20190219},
+                  {"segid": "m_51", "segmentstartdate": 20190209},
+                  {"segid": "m_129", " segmentstartdate ": 20190209}
+              ]
+            }
+  *
+  * @param spark: Spark Session that will be used to load all the data.
+  * @param ndays: number of days to be considered to generate the dataset.
+  * @param runType: it can be either full (for more than 1 day) or incr (for only one day).
+  *
+  * The resulting dataframe is going to be stored in hdfs://rely-hdfs/datascience/data_publicis/memb/
+ **/
 object generateOrganic {
-    def generate_organic(spark:SparkSession,ndays:Int){
-        val sc = spark.sparkContext
-        val conf = sc.hadoopConfiguration
-        val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+  def generate_organic(
+      spark: SparkSession,
+      ndays: Int,
+      runType: String = "full"
+  ) {
+    // Setting all the meta-classes that will be used to work with the data and file systems
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-        /// Lista de dias con los que se generara el sample
-        val format = "yyyyMMdd"
-        val start = DateTime.now.minusDays(ndays)
-        val end   = DateTime.now.minusDays(0)
+    /// This is the list of days that will be used to get the data from
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(ndays)
+    val end = DateTime.now.minusDays(0)
 
-        val daysCount = Days.daysBetween(start, end).getDays()
-        val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-        
-        
-        /// Leemos la data de data_audiences_p con la cual generaremos el sample.
-        val dfs = days.reverse
-                        .filter(day => fs.exists(new org.apache.hadoop.fs.Path("/datascience/data_audiences_p/day=%s".format(day))))
-                        .map(x => spark.read.parquet("/datascience/data_audiences_p/day=%s".format(x))
-                        .filter("country = 'MX' AND event_type <> 'xp'")
-                        .withColumn("day",lit(x))
-                        .select("device_id","day","segments"))
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days =
+      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-        val df = dfs.reduce((df1,df2) => df1.union(df2))
+    // This function takes all the segments and append the "m_" if the event_type is xp.
+    val udfGetSegments = udf(
+      (segments: Seq[String], event_type: String) =>
+        segments
+          .map(s => "%s%s".format((if (event_type == "xp") "m_" else ""), s))
+          .toSeq
+    )
 
-        /// Leemos los archivos con los segmentos para la taxo general y la taxo geo
-        val taxo_general = spark.read.format("csv").option("sep","\t")
-                                                    .option("header","True")
-                                                    .load("/datascience/taxo_general.csv")
-                                                    .select("Segment ID")
-                                                    .rdd.map(row=>row(0)).collect()
+    /// Once we have the list of days, we can load it into memory
+    val dfs = days.reverse
+      .filter(
+        day =>
+          fs.exists(
+            new org.apache.hadoop.fs.Path(
+              "/datascience/data_audiences/day=%s".format(day)
+            )
+          )
+      )
+      .map(
+        x =>
+          spark.read
+            .parquet("/datascience/data_audiences/day=%s".format(x))
+            .filter("country = 'MX'")
+            .withColumn("day", lit(x))
+            .withColumn(
+              "segments",
+              udfGetSegments(col("segments"), col("event_type"))
+            )
+            .select("device_id", "day", "segments")
+      )
+    val df = dfs.reduce((df1, df2) => df1.union(df2))
 
-        val taxo_geo = spark.read.format("csv").option("header","True")
-                                            .load("/datascience/taxo_geo.csv")
-                                            .select("Segment ID")
-                                            .rdd.map(row=>row(0)).collect()
-        
-        /// Hacemos un broadcast de estas listas ya que son chicas
-        val taxo_general_b = sc.broadcast(taxo_general)
-        val taxo_geo_b = sc.broadcast(taxo_geo)
+    /// Now we load and format the taxonomy
+    val taxo_general = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "True")
+      .load("/datascience/data_publicis/taxonomy_publicis.csv")
+      .select("Segment ID")
+      .rdd
+      .map(row => row(0))
+      .collect()
 
-        /// Esta UDF recibe una lista de segmentos y se queda con los pertenecientes a la taxo general
-        val udfGralSegments = udf((segments: Seq[String]) => segments.filter(segment => taxo_general_b.value.contains(segment)))
-        /// Esta UDF recibe una lista de segmentos y se queda con los pertenecientes a la taxo geo
-        val udfGeoSegments = udf((segments: Seq[String]) => segments.filter(segment => taxo_geo_b.value.contains(segment)))
-        /// Esta UDF recibe una lista de segmentos y un dia, y genera una tupla (segmento, dia)
-        val udfAddDay = udf((segments: Seq[String], day: String) => segments.map(segment => (segment, day)))
-        /// Esta UDF recibe una lista de listas de tuplas y lo que hace es convertir todo a string y aplanar estas listas
-        val udfFlattenLists = udf((listOfLists: Seq[Seq[Row]]) => listOfLists.flatMap(list => list.map(row => (row(0).asInstanceOf[String], row(1).asInstanceOf[String]))))
-        /// Esta UDF recibe una lista de tuplas y descarta las duplicadas quedandose con la de fecha mas reciente 
-        /// (dado un mismo segmento se queda con el mas reciente)
-        val udfDropDuplicates = udf((segments: Seq[Row]) => segments.map(row => (row(0).asInstanceOf[String], row(1).asInstanceOf[String]))
-                                                                    .groupBy(row => row._1)
-                                                                    .map(row => row._2.sorted.last).toList
-                                                                    .map(tuple => "%s:%s".format(tuple._1, tuple._2))
-                                                                    .mkString(","))
+    /// Given the fact that this is a very small list, we can broadcast it
+    val taxo_general_b = sc.broadcast(taxo_general)
 
-        /**
-        Los pasos a seguir son los siguientes:
-        1) Nos quedamos con los segmentos de la taxo general y de la taxo geo
-        2) Armamos una lista de tuplas (segmento, dia)
-        3) De la lista del punto anterior descartamos los duplicados y nos quedamos con los segmentos que fueron asignados
-            mas recientemente.
-        **/
-        val userSegments = df.withColumn("gral_segments", udfGralSegments(col("segments")))
-                            .withColumn("geo_segments", udfGeoSegments(col("segments")))
-                            .withColumn("gral_segments", udfAddDay(col("gral_segments"), col("day")))
-                            .withColumn("geo_segments", udfAddDay(col("geo_segments"), col("day")))
-                            .groupBy("device_id")
-                            .agg(collect_list("gral_segments") as "gral_segments",
-                                collect_list("geo_segments") as "geo_segments")
-                            .withColumn("gral_segments", udfFlattenLists(col("gral_segments")))
-                            .withColumn("geo_segments", udfFlattenLists(col("geo_segments")))
-                            .withColumn("gral_segments", udfDropDuplicates(col("gral_segments")))
-                            .withColumn("geo_segments", udfDropDuplicates(col("geo_segments")))
+    /// This function filter out all the segments that don't belong to the general taxonomy.
+    val udfGralSegments = udf(
+      (segments: Seq[String]) =>
+        segments.filter(segment => taxo_general_b.value.contains(segment))
+    )
+    /// Given a list of segments and a day, this function generates a list of tuples of the form (segment, day)
+    val udfAddDay = udf(
+      (segments: Seq[String], day: String) =>
+        segments.map(segment => (segment, day))
+    )
+    // This UDF takes a list of list, where the final element is a Row object. Each Row actually represents
+    // the (segment, day) tuple. Basically, this function flattens the list of lists into a single list of tuples.
+    val udfFlattenLists = udf(
+      (listOfLists: Seq[Seq[Row]]) =>
+        listOfLists.flatMap(
+          list =>
+            list.map(
+              row => (row(0).asInstanceOf[String], row(1).asInstanceOf[String])
+            )
+        )
+    )
+    // This function removes the duplicated tuples, keeping the tuples that have the lowest day.
+    val udfDropDuplicates = udf(
+      (segments: Seq[Row]) =>
+        //"[%s]".format(
+          segments
+            .map(
+              row => (row(0).asInstanceOf[String], row(1).asInstanceOf[String])
+            )
+            .groupBy(row => row._1)
+            .map(row => row._2.sorted.last)
+            .toList
+            .map(
+              tuple => Map("segid" -> tuple._1, "segmentstartdate" -> tuple._2)
+                // """{"segid": "%s", "segmentstartdate": %s}"""
+                //  .format(tuple._1, tuple._2)
+            )
+            .toSeq
+            //.mkString(", ")
+        //)
+    )
 
-        userSegments.write.format("csv").option("sep", "\t")
-                            .option("header",true)
-                            .mode(SaveMode.Overwrite)
-                            .save("/datascience/data_publicis/organic")
+    // Here we process the data that will be sent.
+    val userSegments = df
+      .withColumn("gral_segments", udfGralSegments(col("segments"))) // obtain only gral segment list
+      .filter(size(col("gral_segments")) > 0) // remove the users with no gral_segments
+      .withColumn("gral_segments", udfAddDay(col("gral_segments"), col("day"))) // add the day to every segment
+      .groupBy("device_id")
+      .agg(collect_list("gral_segments") as "gral_segments") // obtain the list of list of segments with day
+      .withColumn("gral_segments", udfFlattenLists(col("gral_segments"))) // flatten the list of lists into a single list
+      .withColumn("segids", udfDropDuplicates(col("gral_segments"))) // remove duplicates from the list
+      .withColumnRenamed("device_id", "rtgtly_uid")
+      .select("rtgtly_uid", "segids")
 
-    }
-    def main(args: Array[String]) {
-        /// Configuracion spark
-        val spark = SparkSession.builder.appName("Generate Organic Data").getOrCreate()
-        
-        /// Parseo de parametros
-        val ndays = if (args.length > 0) args(0).toInt else 30
+    // Last step is to store the data in the format required (.tsv.bz)
+    val pathToJson =
+      "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
+        .format(runType, DateTime.now.toString("yyyyMMdd"))
+    userSegments.write
+      .format("json")
+      .option("compression", "bzip2")
+      .option("quote", "")
+      .option("escape", "")
+      //.option("sep", "\t")
+      //.option("header", true)
+      .mode(SaveMode.Overwrite)
+      .save(pathToJson)
 
-        generate_organic(spark,ndays)
+    // Finally we rename all the generated files to stick to the format requested.
+    val hdfs = FileSystem.get(sc.hadoopConfiguration)
+    val files = hdfs.listStatus(new Path(pathToJson))
+    val originalPath = files.map(_.getPath())
 
-    }
+    originalPath.par
+      .filter(!_.toString.contains("_SUCCESS"))
+      .foreach(
+        e =>
+          hdfs.rename(
+            e,
+            new Path(
+              pathToJson + "/retargetly_MX_memb_%s_%s_%s.json.bz2".format(
+                runType,
+                e.toString.split("/").last.split("-")(1),
+                DateTime.now.toString("yyyyMMdd")
+              )
+            )
+          )
+      )
+
+  }
+  def main(args: Array[String]) {
+    /// Configuracion spark
+    val spark =
+      SparkSession.builder.appName("Generate Organic Data").getOrCreate()
+
+    /// Parseo de parametros
+    val ndays = if (args.length > 0) args(0).toInt else 30
+
+    generate_organic(spark, ndays)
+
+  }
 }
