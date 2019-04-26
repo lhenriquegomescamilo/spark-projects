@@ -40,6 +40,7 @@ import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import org.apache.commons.codec.binary.Base64
 
+
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
@@ -916,6 +917,84 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/geo/AR/estaciones_servicio_MP_DRAW_segmentos_7d")
 
   }
+ /**
+    *
+    *
+    *
+    * Segments for Geo Report Sarmiento
+    *
+    *
+    *
+    */
+
+  def get_sarmiento_segments(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer = 1
+  ) = {
+
+    // Ahora levantamos los datos que estan en datascience keywords
+   
+
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=AR".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    
+    val segments = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    
+      
+    // Importamos implicits para que funcione el as[String]
+
+      import spark.implicits._
+
+    //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
+    val pois =  spark.read.option("header",false)
+                .option("delimiter",",")
+                .csv("hdfs://rely-hdfs/datascience/geo/geo_processed/Lat_Long_Sarmiento_90d_argentina_24-4-2019-9h_aggregated")
+                .select("_c0","_c1")
+                .withColumnRenamed("_c0", "device_id")
+                .withColumnRenamed("_c1", "Codigo")
+
+
+   //hacemos el join 
+    val joint = pois.join(segments,Seq("device_id"))//.withColumn("segments", explode(col("segments")))
+
+    //explotamos
+    val exploded = joint.withColumn("segments",explode(col("segments")))
+
+    //reemplazamos para filtrar
+    val filtered = exploded
+                    .withColumn("segments",regexp_replace(col("segments"),"s_",""))
+                    .withColumn("segments",regexp_replace(col("segments"),"as_",""))
+    
+
+    val taxo_general = spark.read.format("csv")
+                            .option("sep", ",")
+                            .option("header", "True")
+                            .load("/datascience/data_publicis/taxonomy_publicis.csv")
+    
+    val taxo_segments = taxo_general.select("Segment Id").as[String].collect()
+
+    filtered
+        .filter(col("segments").isin(taxo_segments: _*))
+        .groupBy("Codigo","segments").count()
+        .write.format("csv")
+        .option("header","true")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/geo/AR/sarmiento_code_segment_count_filtered_24-04")
+
+}
 
   /**
     *
