@@ -1339,7 +1339,7 @@ val records_common = the_join.select(col("identifier"))
     *
     */
   def sampleTelefonica(spark: SparkSession) = {
-    val file = "/data/eventqueue/2019/04/15/0010.tsv.gz" // cada archivo contiene info de 5 minutos de data
+    val file = "/data/eventqueue/2019/04/1*" // cada archivo contiene info de 5 minutos de data
     val df = spark.read
       .format("csv")
       .option("header", "true")
