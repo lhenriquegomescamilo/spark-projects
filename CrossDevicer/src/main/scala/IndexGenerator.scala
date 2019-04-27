@@ -3,6 +3,7 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
+import org.apache.hadoop.fs._
 
 object IndexGenerator {
 
@@ -46,6 +47,19 @@ object IndexGenerator {
     //   .partitionBy("index_type", "device_type")
     //   .save("/datascience/crossdevice/double_index")
 
+    // First we retrieve the file that contains all the retargetly ids from TapAd
+    val hdfs = FileSystem.get(sc.hadoopConfiguration)
+    val files = hdfs.listStatus(new Path("/data/crossdevice/tapad/"))
+    val last_file = files
+      .map(_.getPath())
+      .map(_.toString)
+      .filter(_.contains("Retargetly_ids_full"))
+      .filter(!_.contains("trigger"))
+      .toList
+      .sorted
+      .last
+
+    // Now we load the data and generate 3 columns: device, device_type, and tapad_id
     val mapUDF = udf(
       (device_type: String) =>
         if (device_type == "RTG") "coo"
@@ -65,14 +79,17 @@ object IndexGenerator {
       .select("tapad_id", "device", "device_type")
       .withColumn("device_type", mapUDF(col("device_type")))
 
+    // Then we perform a self-join based on the tapad_id
     val index = data
       .withColumnRenamed("device", "index")
       .withColumnRenamed("device_type", "index_type")
       .join(data, Seq("tapad_id"))
 
+    // Finally we store the results
     index
       .coalesce(120)
       .select("index", "index_type", "device", "device_type")
+      .write
       .mode(SaveMode.Overwrite)
       .format("parquet")
       .partitionBy("index_type", "device_type")
