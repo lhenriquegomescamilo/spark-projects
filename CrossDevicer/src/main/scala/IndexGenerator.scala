@@ -70,25 +70,29 @@ object IndexGenerator {
       .format("csv")
       .option("sep", ";")
       .load(last_file)
+      .sample(.1)
       .repartition(300)
       .withColumn("device", explode(split(col("_c2"), "\t")))
       .withColumnRenamed("_c1", "tapad_id")
       .withColumn("device", split(col("device"), "="))
       .withColumn("device_type", col("device").getItem(0))
       .withColumn("device", col("device").getItem(1))
-      .select("tapad_id", "device", "device_type")
       .withColumn("device_type", mapUDF(col("device_type")))
+      .select("tapad_id", "device", "device_type")
 
     // Then we perform a self-join based on the tapad_id
     val index = data
       .withColumnRenamed("device", "index")
       .withColumnRenamed("device_type", "index_type")
       .join(data, Seq("tapad_id"))
+      .na.fill("")
+      .select("index", "index_type", "device", "device_type")
+
+    println(index.printSchema)
 
     // Finally we store the results
     index
       .coalesce(120)
-      .select("index", "index_type", "device", "device_type")
       .write
       .mode(SaveMode.Overwrite)
       .format("parquet")
