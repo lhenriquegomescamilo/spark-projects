@@ -48,7 +48,7 @@ object IndexGenerator {
     //   .save("/datascience/crossdevice/double_index")
 
     // First we retrieve the file that contains all the retargetly ids from TapAd
-    val hdfs = FileSystem.get(sc.hadoopConfiguration)
+    val hdfs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     val files = hdfs.listStatus(new Path("/data/crossdevice/tapad/"))
     val last_file = files
       .map(_.getPath())
@@ -69,7 +69,7 @@ object IndexGenerator {
     val data = spark.read
       .format("csv")
       .option("sep", ";")
-      .load("/data/crossdevice/tapad/Retargetly_ids_full_20190413_200728.bz2")
+      .load(last_file)
       .repartition(300)
       .withColumn("device", explode(split(col("_c2"), "\t")))
       .withColumnRenamed("_c1", "tapad_id")
