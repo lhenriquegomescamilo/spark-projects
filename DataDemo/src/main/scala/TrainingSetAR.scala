@@ -288,7 +288,7 @@ object TrainingSetAR {
       .save("/datascience/data_demo/triplets_dataset_ar_forExpansion")
   }
 
-  def getDatasetFromURLs(spark: SparkSession, path: String) = {
+  def getDatasetFromURLsForExpansion(spark: SparkSession, path: String) = {
     // Now we load the ground truth users
     val users = spark.read
       .format("csv")
