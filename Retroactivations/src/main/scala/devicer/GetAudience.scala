@@ -882,6 +882,7 @@ object GetAudience {
 
       // We cross device the audience if the parameter is set.
       if (Set("1", "true", "True").contains(xd)) {
+        println("LOGGER: the audience will be cross-deviced. XD parameter value: %s".format(xd))
         val object_xd = AudienceCrossDevicer.cross_device(
           spark,
           "/datascience/devicer/processed/" + file_name,
