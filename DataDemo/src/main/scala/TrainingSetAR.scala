@@ -226,7 +226,7 @@ object TrainingSetAR {
     joint.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/ga_dataset_AR_training")
+      .save("/datascience/data_demo/ga_dataset_AR_forExpansion")
 
     // Finally we obtain the data the is related to timestamps coming from GA
     val myUDF = udf(
