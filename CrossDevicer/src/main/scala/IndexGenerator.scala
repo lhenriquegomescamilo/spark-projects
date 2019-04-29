@@ -114,7 +114,7 @@ object IndexGenerator {
     // the third column is the list of types that corresponds to the devices
     val df = spark.read
       .format("parquet")
-      .load("/datascience/crossdevice/double_index")
+      .load("/datascience/crossdevice/double_index_tapad")
       .filter("index_type = 'coo'")
       .groupBy("index")
       .agg(
@@ -168,6 +168,6 @@ object IndexGenerator {
       .getOrCreate()
 
     generate_index_double(spark)
-    generate_index_lists(spark)
+    // generate_index_lists(spark)
   }
 }
