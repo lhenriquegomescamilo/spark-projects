@@ -296,7 +296,7 @@ object GenerateTriplets {
     // Parseo de parametros
     val ndays = if (args.length > 0) args(0).toInt else 20
 
-    generate_triplets_segments(spark, nDays)
+    generate_triplets_segments(spark, ndays)
     // generate_triplets_keywords(spark,ndays)
     // getTrainingDatasetForAR(spark)
   }
