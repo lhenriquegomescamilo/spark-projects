@@ -327,7 +327,7 @@ object TrainingSetAR {
       .getOrCreate()
 
     val path =
-      "/datascience/devicer/processed/AR_4_2019-04-11T21-22-46-395560_grouped/" //"/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
+      "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
     getDataForExpansion(spark, path)
   }
 }
