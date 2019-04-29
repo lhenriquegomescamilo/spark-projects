@@ -2505,12 +2505,13 @@ val records_common = the_join.select(col("identifier"))
       "ml_sh2",
       "mb_sh2",
       "nid_sh2",
-      "time"
+      "time",
+      "share_data"
     )
     val df_filtered = df_sel
       .withColumn("segments", split(col("segments"), "\u0001"))
-      .filter("array_contains(segments, '1194')")
-      .drop("segments")
+      .filter("array_contains(segments, '1194') and share_data == '1'")
+      .drop("segments","share_data")
     df_filtered.write
       .format("csv")
       .option("sep", "\t")
