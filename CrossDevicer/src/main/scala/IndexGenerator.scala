@@ -70,7 +70,6 @@ object IndexGenerator {
       .format("csv")
       .option("sep", ";")
       .load(last_file)
-      .sample(.1)
       .repartition(300)
       .withColumn("device", explode(split(col("_c2"), "\t")))
       .withColumnRenamed("_c1", "tapad_id")
@@ -97,7 +96,7 @@ object IndexGenerator {
       .mode(SaveMode.Overwrite)
       .format("parquet")
       .partitionBy("index_type", "device_type")
-      .save("/datascience/crossdevice/double_index_tapad")
+      .save("/datascience/crossdevice/double_index")
   }
 
   /**
@@ -114,7 +113,7 @@ object IndexGenerator {
     // the third column is the list of types that corresponds to the devices
     val df = spark.read
       .format("parquet")
-      .load("/datascience/crossdevice/double_index_tapad")
+      .load("/datascience/crossdevice/double_index")
       .filter("index_type = 'coo'")
       .groupBy("index")
       .agg(
@@ -135,9 +134,6 @@ object IndexGenerator {
             .map(tuple => tuple._1),
           (devices zip types)
             .filter(tuple => tuple._2.substring(0, 3) == "ios")
-            .map(tuple => tuple._1),
-          (devices zip types)
-            .filter(tuple => tuple._2.substring(0, 3) == "con")
             .map(tuple => tuple._1)
         )
     )
@@ -149,7 +145,6 @@ object IndexGenerator {
       .withColumn("android", col("devices._2"))
       .withColumn("ios", col("devices._3"))
       .withColumn("cookies", col("devices._1"))
-      .withColumn("tv", col("devices._4"))
       .withColumnRenamed("index", "device_id")
       .drop("devices")
 
@@ -167,7 +162,9 @@ object IndexGenerator {
       .appName("audience generator by keywords")
       .getOrCreate()
 
+    println("\n\nLOGGER: RUNNING INDEX DOUBLE\n\n")
     generate_index_double(spark)
-    // generate_index_lists(spark)
+    println("\n\nLOGGER: RUNNING INDEX LIST\n\n")
+    generate_index_lists(spark)
   }
 }
