@@ -77,8 +77,8 @@ object HomeJobs {
     
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(country))
-
-    val geo_hour = df_users.     //select("ad_id", "id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
+   //select("ad_id", "id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
+    val geo_hour = df_users  
                                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
                                             .withColumn("Hour", date_format(col("Time"), "HH"))
                                                 .filter(
