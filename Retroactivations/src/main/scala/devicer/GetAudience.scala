@@ -16,6 +16,7 @@ import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.spark.sql.DataFrame
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.storage.StorageLevel
+import org.apache.log4j.{Level, Logger}
 
 /*
  * This object receives an audience and cross-device it using a cross-deviced index.
@@ -881,6 +882,7 @@ object GetAudience {
 
       // We cross device the audience if the parameter is set.
       if (Set("1", "true", "True").contains(xd)) {
+        println("LOGGER: the audience will be cross-deviced. XD parameter value: %s".format(xd))
         val object_xd = AudienceCrossDevicer.cross_device(
           spark,
           "/datascience/devicer/processed/" + file_name,
@@ -905,6 +907,8 @@ object GetAudience {
   def main(args: Array[String]) {
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Spark devicer").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
 
     val files = getQueryFiles(spark)
     files.foreach(file => processFile(spark, file))
