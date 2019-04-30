@@ -94,7 +94,7 @@ object HomeJobs {
                         .agg(count(col("latitude_user")).as("freq"),
                             round(avg(col("latitude_user")),4).as("avg_latitude"),
                             (round(avg(col("longitude_user")),4)).as("avg_longitude"))
-                    .select("ad_id","freq","geocode","avg_latitude","avg_longitude")
+                    .select("ad_id","id_type","freq","geocode","avg_latitude","avg_longitude")
 
      
     
@@ -105,10 +105,11 @@ object HomeJobs {
 
     val final_users = dataset_users.map(
                             row =>  (row._2.ad_id,
+                                    row._2.id_type,
                                     row._2.freq,
                                     row._2.geocode,
                                     row._2.avg_latitude,
-                                    row._2.avg_longitude )).toDF("ad_id","freq","geocode","avg_latitude","avg_longitude")
+                                    row._2.avg_longitude )).toDF("ad_id","id_type","freq","geocode","avg_latitude","avg_longitude")
 
 
 
