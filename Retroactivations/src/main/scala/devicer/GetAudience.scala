@@ -101,7 +101,7 @@ object GetAudience {
     df
   }
 
-    /**
+  /**
     * This method returns a DataFrame with the data from the US data pipeline, for the interval
     * of days specified. Basically, it loads every DataFrame for the days specified, and merges them as a single
     * DataFrame that will be returned.
@@ -396,6 +396,12 @@ object GetAudience {
               .toString
               .length > 0) query("xdFilter")
         else "index_type = 'coo'"
+      val limit =
+        if (query.contains("limit") && Option(query("limit"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("limit")
+        else "-1"
 
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
@@ -412,7 +418,8 @@ object GetAudience {
         "description" -> description,
         "jobid" -> jobid,
         "xd" -> xd,
-        "common" -> commonFilter
+        "common" -> commonFilter,
+        "limit" -> limit
       )
 
       queries = queries ::: List(actual_map)
@@ -445,7 +452,8 @@ object GetAudience {
       data: DataFrame,
       queries: List[Map[String, Any]],
       fileName: String,
-      commonFilter: String = ""
+      commonFilter: String = "",
+      limit: Int
   ) = {
     println(
       "DEVICER LOG:\n\tCommon filter: %s\n\tCommon filter length: %d"
@@ -480,8 +488,12 @@ object GetAudience {
           .withColumn("segmentIds", lit(query("segment_id").toString))
           .distinct()
     )
+    // If there is a limit on the number of rows, we also apply it
+    val results_limited = if (limit>0) results.map(
+      singleDf => singleDf.limit(limit)
+    ) else results
     // Now we store every single audience separately
-    results.foreach(
+    results_limited.foreach(
       dataframe =>
         dataframe.write
           .format("csv")
@@ -498,7 +510,7 @@ object GetAudience {
     // If the number of queries is greater than one, then we merge all the audiences,
     // into one single DataFrame where every device id now contains a list of segments
     // separated by commas.
-    if (results.length > 1) {
+    if (results_limited.length > 1) {
       val fileNameFinal = "/datascience/devicer/processed/" + fileName + "_grouped"
       val done = spark.read
         .format("csv")
@@ -696,9 +708,9 @@ object GetAudience {
     * This method parses all the information given in the original json files, so that it
     * can generate a new json file that will be used by the Ingester to push the recently
     * downloaded audiences into the corresponding DSPs.
-    * 
+    *
     * @param file_name: File where we store all the audiences.
-    * @param queries: list of parsed queries with all the information. Only the first 
+    * @param queries: list of parsed queries with all the information. Only the first
     * query is used to extract the properties.
     * @param xd: whether or not the audience has been cross-deviced.
     */
@@ -721,7 +733,8 @@ object GetAudience {
         queries(0)("jobid").toString.toInt
       else 0
     val description = queries(0)("description")
-    var file_name_final = if (queries.length > 1) file_name + "_grouped" else file_name
+    var file_name_final =
+      if (queries.length > 1) file_name + "_grouped" else file_name
 
     // Now we calculate the path of the file according to the properties.
     var file_path = ""
@@ -814,6 +827,7 @@ object GetAudience {
       val commonFilter = queries(0)("common").toString
       val push = queries(0)("push").toString
       val xd = queries(0)("xd").toString
+      val limit = queries(0)("limit").toString.toInt
       println(
         "DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
           .format(
@@ -877,12 +891,15 @@ object GetAudience {
           commonFilter
         )
       } else {
-        getAudience(spark, data, queries, file_name, commonFilter)
+        getAudience(spark, data, queries, file_name, commonFilter, limit)
       }
 
       // We cross device the audience if the parameter is set.
       if (Set("1", "true", "True").contains(xd)) {
-        println("LOGGER: the audience will be cross-deviced. XD parameter value: %s".format(xd))
+        println(
+          "LOGGER: the audience will be cross-deviced. XD parameter value: %s"
+            .format(xd)
+        )
         val object_xd = AudienceCrossDevicer.cross_device(
           spark,
           "/datascience/devicer/processed/" + file_name,

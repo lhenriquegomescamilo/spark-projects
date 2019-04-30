@@ -201,11 +201,16 @@ object TrainingSetAR {
   /**
     * This method calculates all the datasets for the AR ground truth users, based only on Google Analytics (GA) data.
     */
-  def getGARelatedDataForExpansion(spark: SparkSession, path: String) {
+  def getGARelatedDataForExpansion(
+      spark: SparkSession,
+      path: String,
+      country: String
+  ) {
     // First we load the GA data
     val ga = spark.read
       .load(
-        "/datascience/data_demo/join_google_analytics/country=AR/"
+        "/datascience/data_demo/join_google_analytics/country=%s/"
+          .format(country)
       )
       .dropDuplicates("url", "device_id")
 
@@ -218,15 +223,48 @@ object TrainingSetAR {
       .withColumnRenamed("_c2", "label")
       .select("device_id", "label")
 
-    // Here I calculate the data of GA just for
+    // Here I calculate the data of GA just for the users that do not have ground truth data.
     val joint = ga.join(users, Seq("device_id"), "left_anti")
 
     joint.cache()
 
-    joint.write
+    // First of all we store the URLs, separated by ';', for every user.
+    joint
+      .select("device_id", "url")
+      .groupBy("device_id")
+      .agg(collect_list(col("url")).as("url"))
+      .withColumn("url", concat_ws(",", col("url")))
+      .orderBy(asc("device_id"))
+      .write
+      .format("csv")
+      .save(
+        "/datascience/data_demo/dataForExpansion/country=%s/ga_url_domains"
+          .format(country)
+      )
+
+    // In this part we calculate the probabilities for every user.
+
+    joint
+      .select("device_id", "2", "3", "4", "5", "6", "7", "8", "9")
+      .groupBy("device_id")
+      .agg(
+        collect_list("2").as("2"),
+        collect_list("3").as("3"),
+        collect_list("4").as("4"),
+        collect_list("5").as("5"),
+        collect_list("6").as("6"),
+        collect_list("7").as("7"),
+        collect_list("8").as("8"),
+        collect_list("9").as("9")
+      )
+      // .withColumn("2", )
+      .write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/ga_dataset_AR_forExpansion")
+      .save(
+        "/datascience/data_demo/dataForExpansion/country=%s/ga_dataset_probabilities"
+          .format(country)
+      )
 
     // Finally we obtain the data the is related to timestamps coming from GA
     val myUDF = udf(
@@ -248,13 +286,29 @@ object TrainingSetAR {
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/ga_timestamp_AR_for_expansion")
+      .save(
+        "/datascience/data_demo/dataForExpansion/country=%s/ga_timestamp"
+          .format(country)
+      )
   }
 
   /**
-    * This method takes all the triplets with all the segments, for the users with ground truth in AR.
+    * This method takes all the triplets with all the segments, for the users without ground truth in AR. Then it groups by the
+    * user and generates a list of the segments separated by ;.
+    *
+    * @param spark: Spark session that will be used to load the data.
+    * @param path: path where the ground truth data is present.
+    * @param country: country for which the triplets of data is going to be loaded.
+    *
+    * It stores the data (tuples where the first column is the device_id and the second one is the list of segments separated by ';') in
+                          /datascience/data_demo/dataForExpansion/{country}/triplets.
     */
-  def generateSegmentTripletsForExpansion(spark: SparkSession, path: String) = {
+  def generateSegmentTripletsForExpansion(
+      spark: SparkSession,
+      path: String,
+      country: String
+  ) = {
+    // List of segments that will be considered. The rest of the records are going to be filtered out.
     val segments =
       """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
         247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
@@ -267,6 +321,7 @@ object TrainingSetAR {
         3589,3590,3591,3592,3593,3594,3595,3596,3597,3598,3599,3600,3730,3731,3732,3733,3779,3782,3843,3844,3913,3914,3915,4097,
         5025,5310,5311""".replace("\n", "").split(",").toList.toSeq
 
+    // Here we load the Ground Truth data
     val gt = spark.read
       .format("csv")
       .option("sep", "\t")
@@ -275,20 +330,37 @@ object TrainingSetAR {
       .withColumnRenamed("_c2", "label")
       .select("device_id", "label")
 
+    // Now we load the triplets, for a particular country. Here we do the group by.
     val triplets =
       spark.read
-        .load("/datascience/data_demo/triplets_segments/country=AR/")
+        .load(
+          "/datascience/data_demo/triplets_segments/country=%s/".format(country)
+        )
         .filter(col("feature").isin(segments: _*))
+        .select("device_id", "feature")
+        .distinct()
+        .groupBy("device_id")
+        .agg(collect_list(col("feature")).as("feature"))
+        .withColumn("feature", concat_ws(";", col("feature")))
 
+    // Finally we perform the join between the users with no ground truth (left_anti join).
     triplets
       .join(gt, Seq("device_id"), "left_anti")
+      .orderBy(asc("device_id"))
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/triplets_dataset_ar_forExpansion")
+      .save(
+        "/datascience/data_demo/dataForExpansion/country=%s/triplets"
+          .format(country)
+      )
   }
 
-  def getDatasetFromURLsForExpansion(spark: SparkSession, path: String) = {
+  def getDatasetFromURLsForExpansion(
+      spark: SparkSession,
+      path: String,
+      country: String
+  ) = {
     // Now we load the ground truth users
     val users = spark.read
       .format("csv")
@@ -297,11 +369,14 @@ object TrainingSetAR {
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "label")
       .select("device_id", "label")
+      .distinct()
 
     // Data from data audiences
     val df = getDataAudiences(spark)
       .filter("country = 'AR' AND event_type IN ('pv', 'batch')")
       .select("device_id", "url")
+      .distinct()
+    // .withColumn("url", )
 
     // Here we store the data
     df.join(users, Seq("device_id"), "left_anti")
@@ -312,7 +387,9 @@ object TrainingSetAR {
       .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", "\t")
-      .save("/datascience/custom/urls_gt_ar_forExpansion")
+      .save(
+        "/datascience/data_demo/dataForExpansion/%s/urls_gt".format(country)
+      )
   }
 
   def getDataForExpansion(spark: SparkSession, path: String) = {
