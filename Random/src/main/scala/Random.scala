@@ -2530,7 +2530,7 @@ val records_common = the_join.select(col("identifier"))
       .groupBy("country","id_type")
       .agg(countDistinct("ad_id").alias("unique_users"))
 
-     user_country 
+     user_country.write
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/geo/safegraph_user_by_country_01_05")    
