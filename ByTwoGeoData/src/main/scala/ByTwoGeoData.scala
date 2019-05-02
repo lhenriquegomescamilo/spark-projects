@@ -144,8 +144,8 @@ object ByTwoGeoData {
     val days = (since until since+ndays).map(start.minusDays(_)).map(_.toString(format))
 
     days.foreach(day => getSTData(spark, day))
-    days.foreach(day => getByTwoData(spark, day))
-    getSTData(spark, day)
+    // days.foreach(day => getByTwoData(spark, day))
+    // getSTData(spark, day)
     // getByTwoData(spark, day)
   }
 }
