@@ -2521,8 +2521,8 @@ var myUdf_1d = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbrid
 var drawbridge_1 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw))
 .withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_1d(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
 
-var dfs_1 = Seq(cookie, android, ios,drawbridge)
-var file_2019_01_17_1 =dfs.reduce(_ union _).withColumn("file",lit("2019-01-17"))
+var dfs_1 = Seq(cookie_1, android_1, ios_1,drawbridge_1)
+var file_2019_01_17_1 =dfs_1.reduce(_ union _).withColumn("file",lit("2019-01-17"))
 ////////////////
 
 var path_draw_2 = "2019-02-21"
@@ -2545,8 +2545,8 @@ var drawbridge_2 = spark.read.format("csv").load("/data/crossdevice/%s/".format(
 .withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_2d(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
 
 
-var dfs_2 = Seq(cookie, android, ios,drawbridge)
-var file_2019_02_21_2 =dfs.reduce(_ union _).withColumn("file",lit("2019-02-21"))
+var dfs_2 = Seq(cookie_1, android_1, ios_1,drawbridge_1)
+var file_2019_02_21_2 =dfs_2.reduce(_ union _).withColumn("file",lit("2019-02-21"))
 /////////////////
 
 var path_draw_3 = "2019-04-04"
@@ -2568,8 +2568,8 @@ var myUdf_3d = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbrid
 var drawbridge_3 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw))
 .withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_3d(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
 
-var dfs_3 = Seq(cookie, android, ios,drawbridge)
-var file_2019_04_04_3 =dfs.reduce(_ union _).withColumn("file",lit("2019-04-04"))
+var dfs_3 = Seq(cookie_3, android_3, ios_3,drawbridge_3)
+var file_2019_04_04_3 =dfs_3.reduce(_ union _).withColumn("file",lit("2019-04-04"))
 
 ///////////////
 val dfs_all = Seq(file_2019_01_17_1, file_2019_02_21_2,file_2019_04_04_3)
