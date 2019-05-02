@@ -6,7 +6,7 @@ import org.joda.time.DateTime
 import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime,count, avg}
 import org.apache.spark.sql.SaveMode
 
-case class Record(ad_id: String, id_type:String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
+case class Record(ad_id: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
 
 object HomeJobs {
 
@@ -34,8 +34,9 @@ object HomeJobs {
 
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .dropDuplicates("ad_id","latitude","longitude")
-                                  .filter("country = '%s'".format(country))     // .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
-                                                              .withColumnRenamed("latitude", "latitude_user")
+                                  .filter("country = '%s'".format(country))
+                                  .select("ad_id", "latitude", "longitude","utc_timestamp")
+                                  .withColumnRenamed("latitude", "latitude_user")
                                   .withColumnRenamed("longitude", "longitude_user")
                                   .withColumn("geocode", ((abs(col("latitude_user").cast("float"))*10).cast("int")*10000)+(abs(col("longitude_user").cast("float")*100).cast("int")))
 
@@ -78,7 +79,7 @@ object HomeJobs {
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
-    val geo_hour = df_users.     //select("ad_id", "id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
+    val geo_hour = df_users.select("ad_id", "latitude_user", "longitude_user","utc_timestamp","geocode")
                                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
                                             .withColumn("Hour", date_format(col("Time"), "HH"))
                                                 .filter(
@@ -93,7 +94,7 @@ object HomeJobs {
                         .agg(count(col("latitude_user")).as("freq"),
                             round(avg(col("latitude_user")),4).as("avg_latitude"),
                             (round(avg(col("longitude_user")),4)).as("avg_longitude"))
-                    //.select("ad_id","id_type","freq","geocode","avg_latitude","avg_longitude")
+                    .select("ad_id","freq","geocode","avg_latitude","avg_longitude")
 
      
     
@@ -104,11 +105,10 @@ object HomeJobs {
 
     val final_users = dataset_users.map(
                             row =>  (row._2.ad_id,
-                                    row._2.id_type,
                                     row._2.freq,
                                     row._2.geocode,
                                     row._2.avg_latitude,
-                                    row._2.avg_longitude )).toDF("ad_id","id_type","freq","geocode","avg_latitude","avg_longitude")
+                                    row._2.avg_longitude )).toDF("ad_id","freq","geocode","avg_latitude","avg_longitude")
 
 
 
