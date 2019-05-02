@@ -1,20 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{
-  upper,
-  col,
-  abs,
-  udf,
-  regexp_replace,
-  split,
-  lit,
-  explode,
-  length,
-  to_timestamp,
-  from_unixtime,
-  date_format,
-  sum
-}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
