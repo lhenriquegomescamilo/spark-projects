@@ -145,7 +145,7 @@ object ByTwoGeoData {
 
     days.foreach(day => getSTData(spark, day))
     days.foreach(day => getByTwoData(spark, day))
-    // getSTData(spark, day)
+    getSTData(spark, day)
     // getByTwoData(spark, day)
   }
 }
