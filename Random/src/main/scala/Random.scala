@@ -2483,6 +2483,68 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     *
+    *                    USER GEO POR PAIS
+    *
+    *
+    *
+    *
+    *
+    */ 
+  def safegraph_by_country(
+      spark: SparkSession,
+      nDays: Integer,
+       since: Integer = 1
+  ) = {
+
+    //hardcoded variables
+    //val nDays = 40
+    //val since = 2
+    
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyy/MM/dd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days =
+      (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/data/geo/safegraph/"
+
+    // Now we obtain the list of hdfs folders to be read
+
+    val hdfs_files = days
+      .map(day => path + "%s/".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(day => day + "*.gz")
+
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .csv(hdfs_files: _*)
+           
+    //number of users by country
+    val user_country = df_safegraph
+      .select(col("ad_id"), col("id_type"),col("country"))
+      .groupBy("country","id_type")
+      .agg(countDistinct("ad_id").alias("unique_users"))
+
+     user_country 
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/safegraph_user_by_country_01_05")    
+
+
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
     *                    PEDIDO TELEFONICA
     *
     *
@@ -2527,7 +2589,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    sampleTelefonica(spark)
+    //sampleTelefonica(spark)
+    safegraph_by_country(spark,40)
   }
 
 }
