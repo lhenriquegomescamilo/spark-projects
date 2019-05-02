@@ -2491,14 +2491,12 @@ val records_common = the_join.select(col("identifier"))
     *
     */ 
   def safegraph_by_country(
-      spark: SparkSession,
-      nDays: Integer,
-       since: Integer = 1
+      spark: SparkSession      
   ) = {
 
     //hardcoded variables
-    //val nDays = 40
-    //val since = 2
+    val nDays = 40
+    val since = 2
     
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -2590,7 +2588,7 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //sampleTelefonica(spark)
-    safegraph_by_country(spark,40)
+    safegraph_by_country(spark)
   }
 
 }
