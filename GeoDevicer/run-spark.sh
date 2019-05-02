@@ -12,4 +12,4 @@ spark-submit\
   --conf spark.kryo.registrator=org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator\
   --conf spark.yarn.maxAppAttempts=1\
   --conf spark.sql.broadcastTimeout=3000000\
-  "/home/rely/spark-projects/GeoDevicer/target/scala-2.11/geodevicer_2.11-1.0.jar" --path_geo_json sarmiento_pois_5d_argentina_2-5-2019-8h
+  "/home/rely/spark-projects/GeoDevicer/target/scala-2.11/geodevicer_2.11-1.0.jar" --path_geo_json sarmiento_pois_5d_argentina_2-5-2019-8h --geospark
