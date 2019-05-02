@@ -233,7 +233,7 @@ object TrainingSetAR {
       .select("device_id", "url")
       .groupBy("device_id")
       .agg(collect_list(col("url")).as("url"))
-      .withColumn("url", concat_ws(",", col("url")))
+      .withColumn("url", concat_ws(";", col("url")))
       .orderBy(asc("device_id"))
       .write
       .format("csv")
@@ -244,20 +244,45 @@ object TrainingSetAR {
 
     // In this part we calculate the probabilities for every user.
 
-    joint
-      .select("device_id", "2", "3", "4", "5", "6", "7", "8", "9")
+    joint.registerTempTable("ga")
+
+    val probabilities = spark.sql(
+      """SELECT device_id,
+                LOG(MALE/total_genero) as MALE_PROB, 
+                LOG(FEMALE/total_genero) as FEMALE_PROB,
+                LOG(AGE18/total_age) as AGE18_PROB,
+                LOG(AGE25/total_age) as AGE25_PROB,
+                LOG(AGE35/total_age) as AGE35_PROB,
+                LOG(AGE45/total_age) as AGE45_PROB,
+                LOG(AGE55/total_age) as AGE55_PROB,
+                LOG(AGE65/total_age) as AGE65_PROB
+                FROM (SELECT device_id,
+                             MALE+100 as MALE, FEMALE+100 as FEMALE,
+                             MALE + FEMALE + 200 AS total_genero,
+                             AGE18+100 AS AGE18, AGE25+100 AS AGE25, AGE35+100 AS AGE35, AGE45+100 AS AGE45, AGE55+100 AS AGE55, AGE65+100 AS AGE65,
+                             AGE18+AGE25+AGE35+AGE45+AGE55+AGE65+600 AS total_age
+                      FROM ga)"""
+    )
+    probabilities
       .groupBy("device_id")
       .agg(
-        collect_list("2").as("2"),
-        collect_list("3").as("3"),
-        collect_list("4").as("4"),
-        collect_list("5").as("5"),
-        collect_list("6").as("6"),
-        collect_list("7").as("7"),
-        collect_list("8").as("8"),
-        collect_list("9").as("9")
+        sum(col("FEMALE_PROB")).as("FEMALE_PROB"),
+        sum(col("MALE_PROB")).as("MALE_PROB"),
+        sum(col("AGE18_PROB")).as("AGE18_PROB"),
+        sum(col("AGE25_PROB")).as("AGE25_PROB"),
+        sum(col("AGE35_PROB")).as("AGE35_PROB"),
+        sum(col("AGE45_PROB")).as("AGE45_PROB"),
+        sum(col("AGE55_PROB")).as("AGE55_PROB"),
+        sum(col("AGE65_PROB")).as("AGE65_PROB")
       )
-      // .withColumn("2", )
+      .withColumn("FEMALE_PROB", exp(col("FEMALE_PROB")))
+      .withColumn("MALE_PROB", exp(col("MALE_PROB")))
+      .withColumn("AGE18_PROB", exp(col("AGE18_PROB")))
+      .withColumn("AGE25_PROB", exp(col("AGE25_PROB")))
+      .withColumn("AGE35_PROB", exp(col("AGE35_PROB")))
+      .withColumn("AGE45_PROB", exp(col("AGE45_PROB")))
+      .withColumn("AGE55_PROB", exp(col("AGE55_PROB")))
+      .withColumn("AGE65_PROB", exp(col("AGE65_PROB")))
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
