@@ -2498,65 +2498,65 @@ val records_common = the_join.select(col("identifier"))
     val spark =
       SparkSession.builder.appName("Getting data for Taringa").getOrCreate()
 
-val path_draw = "2019-01-17"
+var path_draw = "2019-01-17"
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
-val cookie = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("cookie"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
+var cookie = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("cookie"))
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("android_idfa")))
-val android = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "android").withColumn("id_type",lit("android"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("android_idfa")))
+var android = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "android").withColumn("id_type",lit("android"))
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("ios_idfa")) )
-val ios = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("ios"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("ios_idfa")) )
+var ios = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("ios"))
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbridge_consumer")) )
-val drawbridge = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbridge_consumer")) )
+var drawbridge = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
 
-val dfs = Seq(cookie, android, ios,drawbridge)
-val file_2019_01_17 =dfs.reduce(_ union _).withColumn("file",lit("2019-01-17"))
+var dfs = Seq(cookie, android, ios,drawbridge)
+var file_2019_01_17 =dfs.reduce(_ union _).withColumn("file",lit("2019-01-17"))
 ////////////////
 
-val path_draw = "2019-02-21"
+var path_draw = "2019-02-21"
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
-val cookie = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("cookie"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
+var cookie = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("cookie"))
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("android_idfa")))
-val android = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "android").withColumn("id_type",lit("android"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("android_idfa")))
+var android = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "android").withColumn("id_type",lit("android"))
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("ios_idfa")) )
-val ios = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("ios"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("ios_idfa")) )
+var ios = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("ios"))
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbridge_consumer")) )
-val drawbridge = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbridge_consumer")) )
+var drawbridge = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
 
 
-val dfs = Seq(cookie, android, ios,drawbridge)
-val file_2019_02_21 =dfs.reduce(_ union _).withColumn("file",lit("2019-02-21"))
+var dfs = Seq(cookie, android, ios,drawbridge)
+var file_2019_02_21 =dfs.reduce(_ union _).withColumn("file",lit("2019-02-21"))
 /////////////////
 
-val path_draw = "2019-04-04"
+var path_draw = "2019-04-04"
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
-val cookie = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("cookie"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
+var cookie = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("cookie"))
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("android_idfa")))
-val android = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "android").withColumn("id_type",lit("android"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("android_idfa")))
+var android = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "android").withColumn("id_type",lit("android"))
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("ios_idfa")) )
-val ios = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("ios"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("ios_idfa")) )
+var ios = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("ios"))
 
-val myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbridge_consumer")) )
-val drawbridge = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
+var myUdf = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbridge_consumer")) )
+var drawbridge = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw)).withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
 
-val dfs = Seq(cookie, android, ios,drawbridge)
-val file_2019_04_04 =dfs.reduce(_ union _).withColumn("file",lit("2019-04-04"))
+var dfs = Seq(cookie, android, ios,drawbridge)
+var file_2019_04_04 =dfs.reduce(_ union _).withColumn("file",lit("2019-04-04"))
 
 ///////////////
 val dfs_all = Seq(file_2019_01_17, file_2019_02_21,file_2019_04_04)
