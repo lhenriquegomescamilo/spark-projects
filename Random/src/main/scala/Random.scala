@@ -2476,6 +2476,170 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/data_taringa")
   }
 
+  
+
+///////////
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *                    drawbridge_montly
+    *
+    *
+    *
+    *
+    *
+    */ 
+ def getDrawMonthly(spark: SparkSession) {
+    val spark =
+      SparkSession.builder.appName("Getting data for Taringa").getOrCreate()
+
+var path_draw_1 = "2019-01-17"
+
+
+
+var myUdf_1a = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
+var cookie_1 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_1))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_1a(col("db_id"))))
+.agg(sum(col("db_id")) as "total").withColumn("id_type",lit("cookie"))
+
+var myUdf_1b = udf( (ids: Seq[String]) => ids.filter(id => id.contains("android_idfa")))
+var android_1 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_1))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_1b(col("db_id"))))
+.agg(sum(col("db_id")) as "android").withColumn("id_type",lit("android"))
+
+var myUdf_1c = udf( (ids: Seq[String]) => ids.filter(id => id.contains("ios_idfa")) )
+var ios_1 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_1))
+.withColumn("db_id", split(col("_c0"), "\\|"))
+.withColumn("db_id", size(myUdf_1c(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("ios"))
+
+var myUdf_1d = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbridge_consumer")) )
+var drawbridge_1 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_1))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_1d(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
+
+var dfs_1 = Seq(cookie_1, android_1, ios_1,drawbridge_1)
+var file_2019_01_17_1 =dfs_1.reduce(_ union _).withColumn("file",lit("2019-01-17"))
+////////////////
+
+var path_draw_2 = "2019-02-21"
+
+
+var myUdf_2a = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
+var cookie_2 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_2))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_2a(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("cookie"))
+
+var myUdf_2b = udf( (ids: Seq[String]) => ids.filter(id => id.contains("android_idfa")))
+var android_2 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_2))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_2b(col("db_id")))).agg(sum(col("db_id")) as "android").withColumn("id_type",lit("android"))
+
+var myUdf_2c = udf( (ids: Seq[String]) => ids.filter(id => id.contains("ios_idfa")) )
+var ios_2 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_2))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_2c(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("ios"))
+
+var myUdf_2d = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbridge_consumer")) )
+var drawbridge_2 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_2))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_2d(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
+
+
+var dfs_2 = Seq(cookie_2, android_2, ios_2,drawbridge_2)
+var file_2019_02_21_2 =dfs_2.reduce(_ union _).withColumn("file",lit("2019-02-21"))
+/////////////////
+
+var path_draw_3 = "2019-04-04"
+
+
+var myUdf_3a = udf( (ids: Seq[String]) => ids.filter(id => id.contains("cookie")) )
+var cookie_3 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_3))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_3a(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("cookie"))
+
+var myUdf_3b = udf( (ids: Seq[String]) => ids.filter(id => id.contains("android_idfa")))
+var android_3 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_3))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_3b(col("db_id")))).agg(sum(col("db_id")) as "android").withColumn("id_type",lit("android"))
+
+var myUdf_3c = udf( (ids: Seq[String]) => ids.filter(id => id.contains("ios_idfa")) )
+var ios_3 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_3))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_3c(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("ios"))
+
+var myUdf_3d = udf( (ids: Seq[String]) => ids.filter(id => id.contains("drawbridge_consumer")) )
+var drawbridge_3 = spark.read.format("csv").load("/data/crossdevice/%s/".format(path_draw_3))
+.withColumn("db_id", split(col("_c0"), "\\|")).withColumn("db_id", size(myUdf_3d(col("db_id")))).agg(sum(col("db_id")) as "total").withColumn("id_type",lit("drawbridge"))
+
+var dfs_3 = Seq(cookie_3, android_3, ios_3,drawbridge_3)
+var file_2019_04_04_3 =dfs_3.reduce(_ union _).withColumn("file",lit("2019-04-04"))
+
+///////////////
+val dfs_all = Seq(file_2019_01_17_1, file_2019_02_21_2,file_2019_04_04_3)
+val every_month = dfs_all.reduce(_ union _)
+
+every_month.write.format("csv")
+  .mode(SaveMode.Overwrite)
+  .save("/datascience/geo/drawbridge_monthly") 
+}
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *                    USER GEO POR PAIS
+    *
+    *
+    *
+    *
+    *
+    */ 
+  def safegraph_by_country(
+      spark: SparkSession      
+  ) = {
+
+    //hardcoded variables
+    val nDays = 40
+    val since = 2
+    
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyy/MM/dd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days =
+      (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/data/geo/safegraph/"
+
+    // Now we obtain the list of hdfs folders to be read
+
+    val hdfs_files = days
+      .map(day => path + "%s/".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(day => day + "*.gz")
+
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .csv(hdfs_files: _*)
+           
+    //number of users by country
+    val user_country = df_safegraph
+      .select(col("ad_id"), col("id_type"),col("country"))
+      .groupBy("country","id_type")
+      .agg(countDistinct("ad_id").alias("unique_users"))
+
+     user_country.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/safegraph_user_by_country_01_05")    
+
+
+  }
+
   /**
     *
     *
@@ -2527,7 +2691,8 @@ val records_common = the_join.select(col("identifier"))
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    sampleTelefonica(spark)
+    //sampleTelefonica(spark)
+    getDrawMonthly(spark)
   }
 
 }
