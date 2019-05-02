@@ -2559,7 +2559,7 @@ var dfs_3 = Seq(cookie, android, ios,drawbridge)
 var file_2019_04_04_3 =dfs.reduce(_ union _).withColumn("file",lit("2019-04-04"))
 
 ///////////////
-val dfs_all = Seq(file_2019_01_17, file_2019_02_21,file_2019_04_04)
+val dfs_all = Seq(file_2019_01_17_1, file_2019_02_21_2,file_2019_04_04_3)
 val every_month = dfs_all.reduce(_ union _)
 
 every_month.write.format("csv")
