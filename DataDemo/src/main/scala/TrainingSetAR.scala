@@ -269,6 +269,7 @@ object TrainingSetAR {
       .withColumn("AGE45_PROB", exp(col("AGE45_PROB")))
       .withColumn("AGE55_PROB", exp(col("AGE55_PROB")))
       .withColumn("AGE65_PROB", exp(col("AGE65_PROB")))
+      .orderBy(asc("device_id"))
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
@@ -293,6 +294,7 @@ object TrainingSetAR {
       .groupBy("device_id")
       .pivot("wd")
       .agg(sum("count"))
+      .orderBy(asc("device_id"))
       .write
       .format("csv")
       .option("header", "true")
@@ -391,15 +393,18 @@ object TrainingSetAR {
 
     // Here we store the data
     df.join(users, Seq("device_id"), "left_anti")
-      .distinct()
-      .groupBy("device_id", "url")
-      .count()
+      .drop_duplicates("device_id", "url")
+      .select("device_id", "url")
+      .groupBy("device_id")
+      .agg(collect_list(col("url")).as("url"))
+      .withColumn("url", concat_ws(";", col("url")))
+      .orderBy(asc("device_id"))
       .write
       .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", "\t")
       .save(
-        "/datascience/data_demo/dataForExpansion/%s/urls_gt".format(country)
+        "/datascience/data_demo/dataForExpansion/country=%s/urls_gt".format(country)
       )
   }
 
