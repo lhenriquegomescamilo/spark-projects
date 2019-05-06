@@ -2696,7 +2696,7 @@ every_month.write.format("csv")
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //sampleTelefonica(spark)
-    get_sarmiento_segments(spark,60)
+    get_sarmiento_segments(spark,2)
     //getDrawMonthly(spark)
   }
 
