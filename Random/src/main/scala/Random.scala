@@ -960,7 +960,7 @@ val records_common = the_join.select(col("identifier"))
       .option("header", false)
       .option("delimiter", ",")
       .csv(
-        "hdfs://rely-hdfs/datascience/geo/geo_processed/Lat_Long_Sarmiento_90d_argentina_24-4-2019-9h_aggregated"
+        "hdfs://rely-hdfs/datascience/geo/geo_processed/sarmiento_pois_actualizado_60d_argentina_6-5-2019-5h_aggregated"
       )
       .select("_c0", "_c1")
       .withColumnRenamed("_c0", "device_id")
@@ -993,7 +993,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/AR/sarmiento_code_segment_count_filtered_24-04")
+      .save("/datascience/geo/AR/sarmiento_pois_actualizado_60d_argentina_6-5-2019-5h_segments")
 
   }
 
@@ -2692,7 +2692,8 @@ every_month.write.format("csv")
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //sampleTelefonica(spark)
-    getDrawMonthly(spark)
+    get_sarmiento_segments(spark,60)
+    //getDrawMonthly(spark)
   }
 
 }
