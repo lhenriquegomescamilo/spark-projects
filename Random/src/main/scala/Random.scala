@@ -962,7 +962,8 @@ val records_common = the_join.select(col("identifier"))
       .csv(
         "hdfs://rely-hdfs/datascience/geo/geo_processed/sarmiento_pois_actualizado_60d_argentina_6-5-2019-5h_aggregated"
       )
-      //.select("_c0", "_c1")
+      .select("device_id", "Codigo")
+      .distinct()
       //.withColumnRenamed("_c0", "device_id")
       //.withColumnRenamed("_c1", "Codigo")
 
@@ -972,21 +973,24 @@ val records_common = the_join.select(col("identifier"))
     //explotamos
     val exploded = joint.withColumn("segments", explode(col("segments")))
 
+
+
+
     //reemplazamos para filtrar
     val filtered = exploded
       .withColumn("segments", regexp_replace(col("segments"), "s_", ""))
       .withColumn("segments", regexp_replace(col("segments"), "as_", ""))
 
-    val taxo_general = spark.read
-      .format("csv")
-      .option("sep", ",")
-      .option("header", "True")
-      .load("/datascience/data_publicis/taxonomy_publicis.csv")
+   // val taxo_general = spark.read
+    //  .format("csv")
+     // .option("sep", ",")
+      //.option("header", "True")
+     // .load("/datascience/data_publicis/taxonomy_publicis.csv")
 
-    val taxo_segments = taxo_general.select("Segment Id").as[String].collect()
+    // val taxo_segments = taxo_general.select("Segment Id").as[String].collect()
 
+//.filter(col("segments").isin(taxo_segments: _*))
     filtered
-      .filter(col("segments").isin(taxo_segments: _*))
       .groupBy("Codigo", "segments")
       .count()
       .write
