@@ -957,14 +957,14 @@ val records_common = the_join.select(col("identifier"))
 
     //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
     val pois = spark.read
-      .option("header", false)
-      .option("delimiter", ",")
+      .option("header", true)
+      .option("delimiter","\t")
       .csv(
         "hdfs://rely-hdfs/datascience/geo/geo_processed/sarmiento_pois_actualizado_60d_argentina_6-5-2019-5h_aggregated"
       )
-      .select("_c0", "_c1")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c1", "Codigo")
+      //.select("_c0", "_c1")
+      //.withColumnRenamed("_c0", "device_id")
+      //.withColumnRenamed("_c1", "Codigo")
 
     //hacemos el join
     val joint = pois.join(segments, Seq("device_id")) //.withColumn("segments", explode(col("segments")))
