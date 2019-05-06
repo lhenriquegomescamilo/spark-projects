@@ -960,7 +960,7 @@ val records_common = the_join.select(col("identifier"))
       .option("header", true)
       .option("delimiter","\t")
       .csv(
-        "hdfs://rely-hdfs/datascience/geo/geo_processed/sarmiento_pois_actualizado_60d_argentina_6-5-2019-5h_aggregated"
+          "hdfs://rely-hdfs/datascience/audiences/crossdeviced/sarmiento_pois_actualizado_60d_argentina_6-5-2019-5h_xd/"
       )
       .select("device_id", "Codigo")
       .distinct()
