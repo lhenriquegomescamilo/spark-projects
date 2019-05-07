@@ -994,7 +994,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/AR/sarmiento_pois_actualizado_60d_argentina_7-5-2019-5h_segments")
+      .save("/datascience/geo/AR/sarmiento_pois_actualizado_60d_30dsegments")
 
   }
 
