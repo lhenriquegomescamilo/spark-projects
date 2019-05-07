@@ -960,8 +960,7 @@ val records_common = the_join.select(col("identifier"))
       .option("header", true)
       .option("delimiter","\t")
       .csv(
-          "hdfs://rely-hdfs/datascience/audiences/crossdeviced/sarmiento_pois_actualizado_60d_argentina_6-5-2019-5h_xd/"
-      )
+          "/datascience/audiences/crossdeviced/sarmiento_pois_90d_argentina_20-4-2019-12h_xd" )
       .select("device_id", "Codigo")
       .distinct()
       //.withColumnRenamed("_c0", "device_id")
@@ -994,7 +993,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/AR/sarmiento_pois_actualizado_60d_30dsegments")
+      .save("/datascience/geo/AR/sarmiento_pois_actualizado_90d_30dsegments")
 
   }
 
