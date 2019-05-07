@@ -973,9 +973,6 @@ val records_common = the_join.select(col("identifier"))
     //explotamos
     val exploded = joint.withColumn("segments", explode(col("segments")))
 
-
-
-
     //reemplazamos para filtrar
     val filtered = exploded
       .withColumn("segments", regexp_replace(col("segments"), "s_", ""))
@@ -997,7 +994,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/AR/sarmiento_pois_actualizado_60d_argentina_6-5-2019-5h_segments")
+      .save("/datascience/geo/AR/sarmiento_pois_actualizado_60d_argentina_7-5-2019-5h_segments")
 
   }
 
