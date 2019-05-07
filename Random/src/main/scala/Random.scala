@@ -974,9 +974,9 @@ val records_common = the_join.select(col("identifier"))
     val exploded = joint.withColumn("segments", explode(col("segments")))
 
     //reemplazamos para filtrar
-    val filtered = exploded
-      .withColumn("segments", regexp_replace(col("segments"), "s_", ""))
-      .withColumn("segments", regexp_replace(col("segments"), "as_", ""))
+   // val filtered = exploded
+   //   .withColumn("segments", regexp_replace(col("segments"), "s_", ""))
+    //  .withColumn("segments", regexp_replace(col("segments"), "as_", ""))
 
    // val taxo_general = spark.read
     //  .format("csv")
@@ -987,7 +987,7 @@ val records_common = the_join.select(col("identifier"))
     // val taxo_segments = taxo_general.select("Segment Id").as[String].collect()
 
 //.filter(col("segments").isin(taxo_segments: _*))
-    filtered
+    exploded
       .groupBy("Codigo", "segments")
       .count()
       .write
@@ -2693,7 +2693,7 @@ every_month.write.format("csv")
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //sampleTelefonica(spark)
-    get_sarmiento_segments(spark,5)
+    get_sarmiento_segments(spark,30)
     //getDrawMonthly(spark)
   }
 
