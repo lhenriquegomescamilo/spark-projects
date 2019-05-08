@@ -128,7 +128,7 @@ object TrainingSetAR {
         else "%s0".format(hour)
     )
     joint
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))) - 3 * 3600) // AR time transformation
+      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp") - 3 * 3600))) // AR time transformation
       .withColumn("Hour", date_format(col("Time"), "HH"))
       .withColumn("Weekday", date_format(col("Time"), "EEEE"))
       .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
@@ -286,7 +286,7 @@ object TrainingSetAR {
         else "%s0".format(hour)
     )
     joint
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))) - 3 * 3600) // AR time transformation
+      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp") - 3 * 3600))) // AR time transformation
       .withColumn("Hour", date_format(col("Time"), "HH"))
       .withColumn("Weekday", date_format(col("Time"), "EEEE"))
       .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
