@@ -223,6 +223,7 @@ object TrainingSetAR {
       .orderBy(asc("device_id"))
       .write
       .format("csv")
+      .mode(SaveMode.Overwrite)
       .save(
         "/datascience/data_demo/dataForExpansion/country=%s/ga_url_domains"
           .format(country)
