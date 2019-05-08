@@ -128,7 +128,7 @@ object TrainingSetAR {
         else "%s0".format(hour)
     )
     joint
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))) - 3 * 3600) // AR time transformation
       .withColumn("Hour", date_format(col("Time"), "HH"))
       .withColumn("Weekday", date_format(col("Time"), "EEEE"))
       .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
@@ -245,8 +245,8 @@ object TrainingSetAR {
                 FROM (SELECT device_id,
                              MALE+100 as MALE, FEMALE+100 as FEMALE,
                              MALE + FEMALE + 200 AS total_genero,
-                             AGE18+100 AS AGE18, AGE25+100 AS AGE25, AGE35+100 AS AGE35, AGE45+100 AS AGE45, AGE55+100 AS AGE55, AGE65+100 AS AGE65,
-                             AGE18+AGE25+AGE35+AGE45+AGE55+AGE65+600 AS total_age
+                             AGE18+20 AS AGE18, AGE25+20 AS AGE25, AGE35+20 AS AGE35, AGE45+20 AS AGE45, AGE55+20 AS AGE55, AGE65+20 AS AGE65,
+                             AGE18+AGE25+AGE35+AGE45+AGE55+AGE65+120 AS total_age
                       FROM ga)"""
     )
     probabilities
@@ -285,7 +285,7 @@ object TrainingSetAR {
         else "%s0".format(hour)
     )
     joint
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))) - 3 * 3600) // AR time transformation
       .withColumn("Hour", date_format(col("Time"), "HH"))
       .withColumn("Weekday", date_format(col("Time"), "EEEE"))
       .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
@@ -409,9 +409,9 @@ object TrainingSetAR {
   }
 
   def getDataForExpansion(spark: SparkSession, path: String, country: String) = {
-    generateSegmentTripletsForExpansion(spark, path, country)
+    // generateSegmentTripletsForExpansion(spark, path, country)
     getGARelatedDataForExpansion(spark, path, country)
-    getDatasetFromURLsForExpansion(spark, path, country)
+    // getDatasetFromURLsForExpansion(spark, path, country)
   }
 
   def main(args: Array[String]) {
