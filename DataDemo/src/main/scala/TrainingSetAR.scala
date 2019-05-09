@@ -172,9 +172,9 @@ object TrainingSetAR {
   }
 
   def getTrainingSet(spark: SparkSession, path: String) = {
-    generateSegmentTriplets(spark, path)
+   // generateSegmentTriplets(spark, path)
     getGARelatedData(spark, path)
-    getDatasetFromURLs(spark, path)
+  //  getDatasetFromURLs(spark, path)
   }
 
   /**
@@ -410,9 +410,9 @@ object TrainingSetAR {
   }
 
   def getDataForExpansion(spark: SparkSession, path: String, country: String) = {
-    // generateSegmentTripletsForExpansion(spark, path, country)
+    generateSegmentTripletsForExpansion(spark, path, country)
     getGARelatedDataForExpansion(spark, path, country)
-    // getDatasetFromURLsForExpansion(spark, path, country)
+    getDatasetFromURLsForExpansion(spark, path, country)
   }
 
   def main(args: Array[String]) {
@@ -420,8 +420,10 @@ object TrainingSetAR {
       .appName("Get triplets: keywords and segments")
       .getOrCreate()
 
-    val path =
-      "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
-    getDataForExpansion(spark, path, "AR")
+    //val path =
+    //  "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
+    //getDataForExpansion(spark, path, "AR")
+    val path = "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
+    getTrainingSet(spark, path)
   }
 }
