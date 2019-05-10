@@ -77,7 +77,11 @@ object AudienceCrossDevicer {
       // Finally, we store the result obtained.
       val output_path =
         "/datascience/audiences/crossdeviced/%s_xd".format(audience_name)
-      cross_deviced.write
+
+      // HOTFIX: we append the original users from the audience to the crossdevice file
+      val final_df = audience.unionAll(cross_deviced)
+
+      final_df.write
         .format("csv")
         .option("sep", "\t")
         .mode(SaveMode.Overwrite)
