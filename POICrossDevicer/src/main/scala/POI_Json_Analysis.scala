@@ -158,7 +158,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     else {
             val df_pois_pre = df_pois_parsed.
                                 withColumn("radius", lit(value_dictionary("max_radius").toInt))
-                                
+
        if (df_pois_pre.columns.contains(lit(value_dictionary("audience_column_name")))) {
                         val df_pois_final =  df_pois_pre
 
@@ -291,7 +291,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   val poi_col = pois.columns
 
                   //armamos una lista nueva con las columnas originales en el archivo de POIs + las nuevas que genera el proceso
-                  val names = Array("geocode","device_id","device_type","lat","long","utc_timestamp") ++ poi_col ++ Array("radius","distance")
+                  val names = Array("geocode","device_id","device_type","lat","long","utc_timestamp") ++ poi_col ++ Array("radius","distance","audience")
                   //renombramos
                   val poi_b = poi_a.toDF(names:_*)
 
