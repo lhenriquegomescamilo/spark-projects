@@ -154,13 +154,13 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
 
     if (df_pois_pre.columns.contains(lit(value_dictionary("audience_column_name")))) {
-                        val poi_all = poi_all_pre
+                        val df_pois_final =  df_pois_pre
 
-                        poi_all}
-    else {              val poi_all = poi_all_pre
+                        df_pois_final}
+    else {              val df_pois_final =  df_pois_pre
                           .withColumn("audience", lit(value_dictionary("audience_column_name")))
                           
-                          poi_all}                                         
+                          df_pois_final}                                         
     // Here we rename the columns
     //val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "radius", "geocode")
 
@@ -429,7 +429,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                     ////////////////////Getting web segments for users
               if(value_dictionary("crossdevice")=="1" 
                 &  value_dictionary("audience")=="1" &  
-                value_dictionary("web_days")>0) {
+                value_dictionary("web_days").toInt>0) {
 
               // Esta sección sólo va a tener sentido si se eligió hacer un crossdevice 
 
@@ -439,8 +439,9 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
               // Get the days to be loaded
                   val format = "yyyyMMdd"
+                  val since = 1
                   val end = DateTime.now.minusDays(since)
-                  val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+                  val days = (0 until value_dictionary("web_days").toInt).map(end.minusDays(_)).map(_.toString(format))
                   val path = "/datascience/data_keywords"
 
                   // Now we obtain the list of hdfs folders to be read
