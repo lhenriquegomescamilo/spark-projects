@@ -480,7 +480,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   **/
                   //hacemos el join
 
-                  val joint = df_audience_output.select("device_id")
+                  val joint = poi_all.select("device_id")
                               .join(segments, Seq("device_id")) //.withColumn("segments", explode(col("segments")))
 
                   //explotamos
