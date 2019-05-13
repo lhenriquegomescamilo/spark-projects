@@ -64,7 +64,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     //esta columna va a ser la que agregue por audiencia, va a permitir agrupar a los usuarios. tiene que preexistir en el archivo de POIs ya que está ligado a los puntos de interés
     val audience_column_name = df.select(col("audience_column_name")).collect()(0)(0).toString
 
-
+    //esta variable determina cuántos días de audiences se van a levantar para hacer el join con la audiencia
+    val web_days = df.select(col("web_days")).collect()(0)(0).toString
 
     val value_dictionary: Map [String, String] = Map(
       "max_radius" -> max_radius , 
@@ -81,7 +82,8 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
       "umbralmax" -> umbralmax,
       "umbraldist" -> umbraldist, 
       "audience_column_name" -> audience_column_name,
-      "poi_column_name" -> poi_column_name
+      "poi_column_name" -> poi_column_name,
+      "web_days" -> web_days
     )
 
       value_dictionary 
@@ -141,13 +143,24 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
                                 .withColumnRenamed("longitude","longitude_poi")
                                 
     if (df_pois_parsed.columns.contains("radius")) {
-             val df_pois_final = df_pois_parsed
+             val df_pois_pre = df_pois_parsed
 
-            df_pois_final}
+            df_pois_pre}
     else {
-            val df_pois_final = df_pois_parsed.
+            val df_pois_pre = df_pois_parsed.
                                 withColumn("radius", lit(value_dictionary("max_radius").toInt))
-       df_pois_final}                             
+       df_pois_pre}
+
+
+
+    if df_pois_pre.columns.contains(lit(value_dictionary("audience_column_name"))) {
+                        val poi_all = poi_all_pre
+
+                        poi_all}
+    else {              val poi_all = poi_all_pre
+                          .withColumn("audience", lit(value_dictionary("audience_column_name")))
+                          
+                          poi_all}                                         
     // Here we rename the columns
     //val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "radius", "geocode")
 
@@ -290,7 +303,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //Juntamos MAdid y crossdevice               
                   val poi_all = List(poi_b,poi_xd).reduce(_.unionByName (_))
 
-    
+                     
 
      
                   //Agregaciones
@@ -307,6 +320,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //hacemos un groupby por usuario y por lugar de interés. 
                   //Agregamos los timestamps, esto nos va a dar gente y la cantidad de detecciones en ese punto
                   //para guardarlo como csv, previamente hay que cambiar arrays a strings
+
 
 
                   val poi_c = poi_all.groupBy(value_dictionary("poi_column_name"),value_dictionary("audience_column_name"),"device_id","device_type")
@@ -354,7 +368,8 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   if(value_dictionary("audience")=="1") {
                           //También queremos generar un archivo para empujar audiencias
                           val df_audience = poi_all.select("device_type","device_id",value_dictionary("audience_column_name"))
-                                            .groupBy("device_type","device_id").agg(collect_list(value_dictionary("audience_column_name")) as "segment_array")
+                                            .groupBy("device_type","device_id")
+                                            .agg(collect_set(value_dictionary("audience_column_name")) as "segment_array")
                                             .withColumn("segments", concat_ws(",", col("segment_array"))).drop("segment_array")
 
                           //cambiamos los nombres de los device types
@@ -371,6 +386,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                                             .format(value_dictionary("poi_output_file"))
 
                           df_audience_output.write.format("csv")
+                                .option("sep", "\t")
                                 .mode(SaveMode.Overwrite)
                                 .save(output_path_audience)
                                     }
@@ -408,6 +424,66 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                                 .save(output_path_map)
                         
                     }
+
+
+                    ////////////////////Getting web segments for users
+              if(value_dictionary("crossdevice")=="1" 
+                &  value_dictionary("audience")=="1" &  
+                value_dictionary("web_days")>0) {
+
+              // Esta sección sólo va a tener sentido si se eligió hacer un crossdevice 
+
+              // First we obtain the configuration to be allowed to watch if a file exists or not
+                 val conf = spark.sparkContext.hadoopConfiguration
+                 val fs = FileSystem.get(conf)
+
+              // Get the days to be loaded
+                  val format = "yyyyMMdd"
+                  val end = DateTime.now.minusDays(since)
+                  val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+                  val path = "/datascience/data_keywords"
+
+                  // Now we obtain the list of hdfs folders to be read
+                  val hdfs_files = days
+                    .map(day => path + "/day=%s/country=AR".format(day))
+                    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+                  val segments = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+                  // Importamos implicits para que funcione el as[String]
+
+                  import spark.implicits._
+
+                  //cargamos la data de los (XD y Madid). Sólo nos quedamos con los códigos y el device_id
+                  //Esto lo generó el proceso si se pidió audiencia. 
+
+                  /**
+                  val output_path_audience = "/datascience/geo/audiences/%s_audience".format(value_dictionary("poi_output_file"))
+
+                         
+                  val pois = spark.read
+                    .option("delimiter","\t")
+                    .csv(output_path_audience )
+                    .select("_c1")
+                    .withColumnRenamed("_c1", "device_id")
+                  **/
+                  //hacemos el join
+
+                  val joint = df_audience_output.select("device_id")
+                              .join(segments, Seq("device_id")) //.withColumn("segments", explode(col("segments")))
+
+                  //explotamos
+                  //val exploded = joint.withColumn("segments", explode(col("segments")))
+
+                  val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
+                                                            .format(value_dictionary("poi_output_file"))
+
+                  joint
+                    .option("header", "true")
+                    .mode(SaveMode.Overwrite)
+                    .save(output_path_segments)
+
+  }
 
         }
       }
