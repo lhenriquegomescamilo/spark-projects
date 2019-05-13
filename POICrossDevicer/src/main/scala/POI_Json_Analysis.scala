@@ -153,7 +153,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
 
 
-    if df_pois_pre.columns.contains(lit(value_dictionary("audience_column_name"))) {
+    if (df_pois_pre.columns.contains(lit(value_dictionary("audience_column_name")))) {
                         val poi_all = poi_all_pre
 
                         poi_all}
