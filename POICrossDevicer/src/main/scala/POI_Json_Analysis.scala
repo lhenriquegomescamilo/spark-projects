@@ -484,18 +484,20 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
                   val joint = poi_all.select("device_id")
                               .join(segments, Seq("device_id")) //.withColumn("segments", explode(col("segments")))
+                              .withColumn("segments", concat_ws(",", col("segments")))
 
+                 /***
                   //explotamos
                   val segment_final = joint.withColumn("segments_", explode(col("segments")))
                                 .agg(collect_list(col("segments_")).as("segments_"))
                                 .withColumn("segments", concat_ws(",", col("segments_")))
                                   .select("device_id","segments")
                                 
-
+                    ***/
                    val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
                                                             .format(value_dictionary("poi_output_file"))
 
-                  segment_final.write.format("csv")
+                  joint.write.format("csv")
                     .mode(SaveMode.Overwrite)
                     .save(output_path_segments)
 
