@@ -145,13 +145,14 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     if (df_pois_parsed.columns.contains("radius")) {
              val df_pois_pre = df_pois_parsed
 
-            if (df_pois_pre.columns.contains(lit(value_dictionary("audience_column_name")))) {
-                        val df_pois_final =  df_pois_pre
+            if (value_dictionary("audience_column_name")=="no_push") {
+                        val df_pois_final =  df_pois_pre.
+                                              withColumn("audience", lit(value_dictionary("audience_column_name")))
 
                         df_pois_final}
-    else {              val df_pois_final =  df_pois_pre
-                          .withColumn("audience", lit(value_dictionary("audience_column_name")))
-                          
+
+            else {   val df_pois_final =  df_pois_pre
+        
                           df_pois_final}                               }
 
 
@@ -159,13 +160,14 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
             val df_pois_pre = df_pois_parsed.
                                 withColumn("radius", lit(value_dictionary("max_radius").toInt))
 
-       if (df_pois_pre.columns.contains(lit(value_dictionary("audience_column_name")))) {
-                        val df_pois_final =  df_pois_pre
+            if (value_dictionary("audience_column_name")=="no_push") {
+                        val df_pois_final =  df_pois_pre.
+                                              withColumn("audience", lit(value_dictionary("audience_column_name")))
 
                         df_pois_final}
-    else {              val df_pois_final =  df_pois_pre
-                          .withColumn("audience", lit(value_dictionary("audience_column_name")))
-                          
+                        
+            else {   val df_pois_final =  df_pois_pre
+        
                           df_pois_final}                               }
 
 
