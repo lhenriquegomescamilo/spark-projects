@@ -291,7 +291,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   val poi_col = pois.columns
 
                   //armamos una lista nueva con las columnas originales en el archivo de POIs + las nuevas que genera el proceso
-                  val names = Array("geocode","device_id","device_type","lat","long","utc_timestamp") ++ poi_col ++ Array("radius","distance")
+                  val names = Array("geocode","device_id","device_type","lat","long","utc_timestamp") ++ poi_col ++ Array("radius","auidence","distance")
                   //renombramos
                   val poi_b = poi_a.toDF(names:_*)
 
