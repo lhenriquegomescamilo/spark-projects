@@ -486,7 +486,15 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                               .join(segments, Seq("device_id")) //.withColumn("segments", explode(col("segments")))
 
                   //explotamos
-                  //val exploded = joint.withColumn("segments", explode(col("segments")))
+                  val exploded = joint.withColumn("segments_", explode(col("segments")))
+                                
+
+                  val explode_to_list = exploded.agg(collect_list(col("segments_")).as("segments_"))
+                  val segment_final = explode_to_list.withColumn("segments", concat_ws(",", col("segments_")))
+                                      .select("device_id","segments")
+
+
+
 
                   val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
                                                             .format(value_dictionary("poi_output_file"))
