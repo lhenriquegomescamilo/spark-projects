@@ -922,6 +922,20 @@ object GetAudience {
     }
   }
 
+    type OptionMap = Map[Symbol, Int]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--priority" :: tail =>
+        nextOption(map ++ Map('exclusion -> 0), tail)
+    }
+  }
+
   def main(args: Array[String]) {
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Spark devicer").getOrCreate()
