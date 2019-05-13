@@ -781,11 +781,12 @@ object GetAudience {
     * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
     * the file_name is extracted from the file path.
   **/
-  def processFile(spark: SparkSession, file: String) {
+  def processFile(spark: SparkSession, file: String, path: String) {
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
 
-    var actual_path = "/datascience/devicer/to_process/%s".format(file)
+    //var actual_path = "/datascience/devicer/to_process/%s".format(file)
+    var actual_path = "%s%s".format(path,file)
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
     var queries: List[Map[String, Any]] = List()
@@ -925,10 +926,21 @@ object GetAudience {
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Spark devicer").getOrCreate()
 
+    val options = nextOption(Map(), Args.toList)
+    val priority = if (options.contains('priority)) true else false
+
     Logger.getRootLogger.setLevel(Level.WARN)
 
     val files = getQueryFiles(spark)
-    files.foreach(file => processFile(spark, file))
+
+    if (priority){
+      val path = "/datascience/devicer/to_process/"
+    }
+    else {
+      val path = "/datascience/devicer/priority/"
+    }
+    
+    files.foreach(file => processFile(spark, file, path))
   }
 
 }
