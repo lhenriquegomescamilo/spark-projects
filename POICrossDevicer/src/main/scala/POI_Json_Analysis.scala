@@ -151,7 +151,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
                         df_pois_final}
 
-            else {   val df_pois_final =  df_pois_pre
+            else {   val df_pois_final =  df_pois_pre.withColumnRenamed(value_dictionary("audience_column_name"),"audience")
         
                           df_pois_final}                               }
 
@@ -166,7 +166,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 
                         df_pois_final}
                         
-            else {   val df_pois_final =  df_pois_pre
+            else {   val df_pois_final =  df_pois_pre.withColumnRenamed(value_dictionary("audience_column_name"),"audience")
         
                           df_pois_final}                               }
 
@@ -335,7 +335,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
 
 
-                  val poi_c = poi_all.groupBy(value_dictionary("poi_column_name"),value_dictionary("audience_column_name"),"device_id","device_type")
+                  val poi_c = poi_all.groupBy(value_dictionary("poi_column_name"),audience,"device_id","device_type")
                               .agg(collect_list(col("utc_timestamp")).as("times_array"),
                                     collect_list("distance").as("distance_array"))
                               .withColumn("frequency", size(col("times_array")))
@@ -379,9 +379,9 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   ////////////////////Generating table to push audience
                   if(value_dictionary("audience")=="1") {
                           //También queremos generar un archivo para empujar audiencias
-                          val df_audience = poi_all.select("device_type","device_id",value_dictionary("audience_column_name"))
+                          val df_audience = poi_all.select("device_type","device_id","audience")
                                             .groupBy("device_type","device_id")
-                                            .agg(collect_set(value_dictionary("audience_column_name")) as "segment_array")
+                                            .agg(collect_set("audience") as "segment_array")
                                             .withColumn("segments", concat_ws(",", col("segment_array"))).drop("segment_array")
 
                           //cambiamos los nombres de los device types
