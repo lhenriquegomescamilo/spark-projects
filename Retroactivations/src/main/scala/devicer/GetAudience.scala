@@ -947,13 +947,7 @@ object GetAudience {
 
     val files = getQueryFiles(spark)
 
-    var path = ""
-    if (priority){
-      path = "/datascience/devicer/to_process/"
-    }
-    else {
-      path = "/datascience/devicer/priority/"
-    }
+    var path =  if (priority) "/datascience/devicer/priority/"  else "/datascience/devicer/to_process/"
     
     files.foreach(file => processFile(spark, file, path))
   }
