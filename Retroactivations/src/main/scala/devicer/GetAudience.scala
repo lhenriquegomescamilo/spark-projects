@@ -781,12 +781,12 @@ object GetAudience {
     * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
     * the file_name is extracted from the file path.
   **/
-  def processFile(spark: SparkSession, file: String, actual_path: String) {
+  def processFile(spark: SparkSession, file: String, path: String) {
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
 
     //var actual_path = "/datascience/devicer/to_process/%s".format(file)
-    //var actual_path = "%s%s".format(path,file)
+    var actual_path = path+file
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
     var queries: List[Map[String, Any]] = List()
@@ -949,7 +949,7 @@ object GetAudience {
 
     var path =  if (priority) "/datascience/devicer/priority/"  else "/datascience/devicer/to_process/"
     
-    files.foreach(file => processFile(spark, file, path+file))
+    files.foreach(file => processFile(spark, file, path))
   }
 
 }
