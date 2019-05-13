@@ -786,7 +786,7 @@ object GetAudience {
     val hdfs = FileSystem.get(hadoopConf)
 
     //var actual_path = "/datascience/devicer/to_process/%s".format(file)
-    var actual_path = "%s%s".format(path,file)
+    var actual_path = path+file
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
     var queries: List[Map[String, Any]] = List()
