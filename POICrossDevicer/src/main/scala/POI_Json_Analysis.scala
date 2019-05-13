@@ -489,7 +489,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
                                                             .format(value_dictionary("poi_output_file"))
 
-                  joint
+                  joint.write.format("csv")
                     .option("header", "true")
                     .mode(SaveMode.Overwrite)
                     .save(output_path_segments)
