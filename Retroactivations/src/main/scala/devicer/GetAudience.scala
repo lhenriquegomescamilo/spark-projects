@@ -792,6 +792,9 @@ object GetAudience {
     var queries: List[Map[String, Any]] = List()
     var errorMessage = ""
 
+    println(
+        "DEVICER LOG: actual path is: " + actual_path)
+
     // Here we define a function that might be used when asking for an IN in a multivalue column
     spark.udf.register(
       "array_intersect",
