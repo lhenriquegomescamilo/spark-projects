@@ -335,7 +335,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
 
 
-                  val poi_c = poi_all.groupBy(value_dictionary("poi_column_name"),audience,"device_id","device_type")
+                  val poi_c = poi_all.groupBy(value_dictionary("poi_column_name"),"audience","device_id","device_type")
                               .agg(collect_list(col("utc_timestamp")).as("times_array"),
                                     collect_list("distance").as("distance_array"))
                               .withColumn("frequency", size(col("times_array")))
