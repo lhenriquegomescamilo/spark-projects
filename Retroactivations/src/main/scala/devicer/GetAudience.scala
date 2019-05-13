@@ -781,11 +781,12 @@ object GetAudience {
     * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
     * the file_name is extracted from the file path.
   **/
-  def processFile(spark: SparkSession, file: String) {
+  def processFile(spark: SparkSession, file: String, path: String) {
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
 
-    var actual_path = "/datascience/devicer/to_process/%s".format(file)
+    //var actual_path = "/datascience/devicer/to_process/%s".format(file)
+    var actual_path = "%s%s".format(path,file)
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
     var queries: List[Map[String, Any]] = List()
@@ -921,14 +922,40 @@ object GetAudience {
     }
   }
 
+    type OptionMap = Map[Symbol, Int]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--priority" :: tail =>
+        nextOption(map ++ Map('exclusion -> 0), tail)
+    }
+  }
+
   def main(args: Array[String]) {
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Spark devicer").getOrCreate()
 
+    val options = nextOption(Map(), args.toList)
+    val priority = if (options.contains('priority)) true else false
+
     Logger.getRootLogger.setLevel(Level.WARN)
 
     val files = getQueryFiles(spark)
-    files.foreach(file => processFile(spark, file))
+
+    var path = ""
+    if (priority){
+      path = "/datascience/devicer/to_process/"
+    }
+    else {
+      path = "/datascience/devicer/priority/"
+    }
+    
+    files.foreach(file => processFile(spark, file, path))
   }
 
 }
