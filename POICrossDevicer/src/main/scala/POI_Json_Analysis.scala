@@ -145,22 +145,32 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     if (df_pois_parsed.columns.contains("radius")) {
              val df_pois_pre = df_pois_parsed
 
-            df_pois_pre}
-    else {
-            val df_pois_pre = df_pois_parsed.
-                                withColumn("radius", lit(value_dictionary("max_radius").toInt))
-       df_pois_pre}
-
-
-
-    if (df_pois_pre.columns.contains(lit(value_dictionary("audience_column_name")))) {
+            if (df_pois_pre.columns.contains(lit(value_dictionary("audience_column_name")))) {
                         val df_pois_final =  df_pois_pre
 
                         df_pois_final}
     else {              val df_pois_final =  df_pois_pre
                           .withColumn("audience", lit(value_dictionary("audience_column_name")))
                           
-                          df_pois_final}                                         
+                          df_pois_final}                               }
+
+
+    else {
+            val df_pois_pre = df_pois_parsed.
+                                withColumn("radius", lit(value_dictionary("max_radius").toInt))
+                                
+       if (df_pois_pre.columns.contains(lit(value_dictionary("audience_column_name")))) {
+                        val df_pois_final =  df_pois_pre
+
+                        df_pois_final}
+    else {              val df_pois_final =  df_pois_pre
+                          .withColumn("audience", lit(value_dictionary("audience_column_name")))
+                          
+                          df_pois_final}                               }
+
+
+
+              
     // Here we rename the columns
     //val columnsRenamed_poi = Seq("name", "latitude_poi", "longitude_poi", "radius", "geocode")
 
