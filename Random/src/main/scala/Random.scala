@@ -2286,6 +2286,83 @@ val records_common = the_join.select(col("identifier"))
       .save("/datascience/custom/dunnhumby/rd_br_nid")
   }
 
+   /**
+    *
+    *
+    *
+    * Segments for User Agent
+    *
+    *
+    *
+    */
+  def get_celulares_segments(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer = 1
+  ) = {
+
+    // Ahora levantamos los datos que estan en datascience keywords
+
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=AR".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    val segments = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+    // Importamos implicits para que funcione el as[String]
+
+    import spark.implicits._
+
+    //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
+    val pois = spark.read
+      .option("header", true)
+      .option("delimiter","\t")
+      .csv(
+          "/datascience/audiences/crossdeviced/telefonica_raw.csv" )
+      .select("Retargetly ID")
+      .distinct()
+      .withColumnRenamed("Retargetly ID", "device_id")
+      //.withColumnRenamed("_c1", "Codigo")
+
+    //hacemos el join
+    val joint = pois.join(segments, Seq("device_id")) //.withColumn("segments", explode(col("segments")))
+
+    //explotamos
+    val exploded = joint.withColumn("segments", explode(col("segments")))
+
+    //reemplazamos para filtrar
+   // val filtered = exploded
+   //   .withColumn("segments", regexp_replace(col("segments"), "s_", ""))
+    //  .withColumn("segments", regexp_replace(col("segments"), "as_", ""))
+
+   // val taxo_general = spark.read
+    //  .format("csv")
+     // .option("sep", ",")
+      //.option("header", "True")
+     // .load("/datascience/data_publicis/taxonomy_publicis.csv")
+
+    // val taxo_segments = taxo_general.select("Segment Id").as[String].collect()
+
+//.filter(col("segments").isin(taxo_segments: _*))
+    exploded
+      .format("csv")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/AR/celulares_argentina_sample-14-05")
+
+  }
+
   /**
     *
     *
@@ -2692,7 +2769,7 @@ every_month.write.format("csv")
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     //sampleTelefonica(spark)
-    get_sarmiento_segments(spark,30)
+    get_celulares_segments(spark,30)
     //getDrawMonthly(spark)
   }
 
