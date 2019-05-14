@@ -483,8 +483,12 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //hacemos el join
 
                   val joint = poi_all.select("device_id")
-                              .join(segments, Seq("device_id")) //.withColumn("segments", explode(col("segments")))
-                              .withColumn("segments", concat_ws(",", col("segments")))
+                              .join(segments, Seq("device_id"))
+                              .withColumn("segments", explode(col("segments")))
+                              .agg(collect_set("segments") as "segment_array")
+                              .withColumn("segments", concat_ws(",", col("segment_array")))
+                              .drop("segment_array")
+                              
 
                  /***
                   //explotamos
