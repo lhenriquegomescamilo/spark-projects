@@ -2356,9 +2356,9 @@ val records_common = the_join.select(col("identifier"))
 
 //.filter(col("segments").isin(taxo_segments: _*))
     exploded
-      .format("csv")
-      .option("header", "true")
+      .write
       .mode(SaveMode.Overwrite)
+      .format("csv")
       .save("/datascience/geo/AR/celulares_argentina_sample-14-05")
 
   }
