@@ -2327,7 +2327,7 @@ val records_common = the_join.select(col("identifier"))
     //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
     val pois = spark.read
       .option("header", true)
-      .option("delimiter","\t")
+      .option("delimiter",",")
       .csv(
           "/datascience/audiences/crossdeviced/telefonica_raw.csv" )
       .select("Retargetly ID")
