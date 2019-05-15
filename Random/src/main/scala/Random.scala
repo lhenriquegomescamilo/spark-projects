@@ -2340,6 +2340,7 @@ val records_common = the_join.select(col("identifier"))
 
     //explotamos
     val exploded = joint.withColumn("segments", explode(col("segments")))
+                        .select("device_id","segments")
 
     //reemplazamos para filtrar
    // val filtered = exploded
