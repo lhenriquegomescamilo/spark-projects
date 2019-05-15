@@ -944,16 +944,19 @@ object GetAudience {
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Spark devicer").getOrCreate()
 
-    val options = nextOption(Map(), args.toList)
-    val priority = if (options.contains('priority)) true else false
+    //val options = nextOption(Map(), args.toList)
+    //val priority = if (options.contains('priority)) true else false
+
+    val p = if (args.length > 0) args(0).toInt else 0
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    var path =  if (priority) "/datascience/devicer/priority/"  else "/datascience/devicer/to_process/"
-     println(
-          "LOGGER: Path: %s"
-            .format(path)
-        )
+    val path = p match {
+        case 0 => "/datascience/devicer/to_process/"
+          
+        case 1 => "/datascience/devicer/priority/"
+      }
+
     val files = getQueryFiles(spark,path)
 
     files.foreach(file => processFile(spark, file, path))
