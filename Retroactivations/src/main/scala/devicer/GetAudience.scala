@@ -955,7 +955,10 @@ object GetAudience {
         case 0 => "/datascience/devicer/to_process/"
           
         case 1 => "/datascience/devicer/priority/"
+
       }
+
+     println("LOGGER: Path: %s".format(path))
 
     val files = getQueryFiles(spark,path)
 
