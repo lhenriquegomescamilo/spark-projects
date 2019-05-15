@@ -793,7 +793,8 @@ object GetAudience {
     var errorMessage = ""
 
     println(
-        "DEVICER LOG: actual path is: " + actual_path)
+        "DEVICER LOG: actual path is: %s".format(actual_path)
+    )
 
     // Here we define a function that might be used when asking for an IN in a multivalue column
     spark.udf.register(
@@ -949,7 +950,10 @@ object GetAudience {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     var path =  if (priority) "/datascience/devicer/priority/"  else "/datascience/devicer/to_process/"
-
+     println(
+          "LOGGER: Path: %s"
+            .format(path)
+        )
     val files = getQueryFiles(spark,path)
 
     files.foreach(file => processFile(spark, file, path))
