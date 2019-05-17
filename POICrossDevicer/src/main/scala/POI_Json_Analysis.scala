@@ -295,9 +295,9 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   val poi_col = pois.columns
 
                   //armamos una lista nueva con las columnas originales en el archivo de POIs + las nuevas que genera el proceso
-                  val names = Array("geocode","device_id","device_type","lat","long","utc_timestamp") ++ poi_col ++ Array("radius","audience","distance")
+                  val names = Array("geocode","device_id","device_type","lat","long","utc_timestamp") ++ poi_col ++ Array("radius","distance")
                   //renombramos
-                  val poi_b = poi_a.withColumnRenamed("ad_id","device_id") //.toDF(names:_*)
+                  val poi_b = poi_a.toDF(names:_*)
 
                   //LevantamosCrossdevice
                   //Leemos el output de crossdevice que generó este proceso
