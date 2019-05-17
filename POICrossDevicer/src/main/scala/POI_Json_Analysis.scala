@@ -229,6 +229,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     val filtered = 
     sqlDF.write.format("csv").option("sep", "\t")
         .mode(SaveMode.Overwrite)
+        .option("header", "true")
         .save("/datascience/geo/%s"
         .format(value_dictionary("poi_output_file")))
   }
@@ -269,6 +270,7 @@ def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     
     cross_deviced
             .write.format("csv")
+            .option("header", "true")
             .mode(SaveMode.Overwrite)
             .save(output_path)
   }
@@ -286,7 +288,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
                   val safegraph_output_path = "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
                   //Leemos el output que genero este proceso. Son madid obtenidas de safegraph
-                  val poi_a = spark.read.option("delimiter","\t").csv(safegraph_output_path)
+                  val poi_a = spark.read.option("delimiter","\t").option("header", "true").csv(safegraph_output_path)
 
                   //renaming columns based on list
                   //copiamos los nomnbres de las columnas
@@ -295,7 +297,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                   //armamos una lista nueva con las columnas originales en el archivo de POIs + las nuevas que genera el proceso
                   val names = Array("geocode","device_id","device_type","lat","long","utc_timestamp") ++ poi_col ++ Array("radius","audience","distance")
                   //renombramos
-                  val poi_b = poi_a.toDF(names:_*)
+                  val poi_b = poi_a //.toDF(names:_*)
 
                   //LevantamosCrossdevice
                   //Leemos el output de crossdevice que generó este proceso
@@ -372,6 +374,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                                               .format(value_dictionary("poi_output_file"))
 
                   poi_d.write.format("csv")
+                        .option("header", "true")
                         .mode(SaveMode.Overwrite)
                         .save(output_path_anlytics)
                                               
@@ -399,6 +402,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
                           df_audience_output.write.format("csv")
                                 .option("sep", "\t")
+                                .option("header", "true")
                                 .mode(SaveMode.Overwrite)
                                 .save(output_path_audience)
                                     }
@@ -432,6 +436,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                                             .format(value_dictionary("poi_output_file"))
 
                         poi_4_map.write.format("csv")
+                                .option("header", "true")
                                 .mode(SaveMode.Overwrite)
                                 .save(output_path_map)
                         
@@ -502,6 +507,7 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
                                                             .format(value_dictionary("poi_output_file"))
 
                   joint.write.format("csv")
+                    .option("header", "true")
                     .mode(SaveMode.Overwrite)
                     .save(output_path_segments)
 
