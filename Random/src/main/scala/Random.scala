@@ -986,7 +986,7 @@ val records_common = the_join.select(col("identifier"))
 
 //.filter(col("segments").isin(taxo_segments: _*))
     exploded
-      .groupBy("Codigo", "segments")
+      .groupBy("name", "segments")
       .count()
       .write
       .format("csv")
