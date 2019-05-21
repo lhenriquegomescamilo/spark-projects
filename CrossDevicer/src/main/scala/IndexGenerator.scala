@@ -49,7 +49,7 @@ object IndexGenerator {
 
     // First we retrieve the file that contains all the retargetly ids from TapAd
     val hdfs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    val files = hdfs.listStatus(new Path("/data/crossdevice/2019-05-06/"))
+    val files = hdfs.listStatus(new Path("/data/crossdevice/"))
     val last_file = files
       .map(_.getPath())
       .map(_.toString)
