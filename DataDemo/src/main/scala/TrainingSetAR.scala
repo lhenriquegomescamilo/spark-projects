@@ -186,11 +186,29 @@ object TrainingSetAR {
     */
   /**
     * This method calculates all the datasets for the AR ground truth users, based only on Google Analytics (GA) data.
+    * It generates three datasets, each of which are sorted by device id:
+          1. ga_url_domains: this dataset has two columns: device id and url domains. The URL domains is a list of 
+          URL domains separated by ';'.
+          2. ga_dataset_probabilities: this dataset contains a device id along with a probability associated for every 
+          age category and gender category. These are the columns generated: device_id, MALE_PROB, FEMALE_PROB, AGE18_PROB, 
+          AGE25_PROB, AGE35_PROB, AGE45_PROB, AGE55_PROB, AGE65_PROB.
+          3. ga_timestamp: It contains the data related to the timestamps. It contains 48 columns where each column has the
+          following format: [hour][0 or 1]. The hour is the hour of the day extracted from the timestamp, and 0 if it is a
+          weekday and 1 if it is a weekend.
+    * 
+    * @param spark: Spark session object that will be used to load the data.
+    * @param path: path where the ground truth user ids are stored. This dataset has to have these three columns:
+                      - _c0: device type (this column will not be used)
+                      - _c1: device id
+                      - _c2: segment id or label
+    * @param country: country for which the Google analytics data has to be downloaded.
+    * @param joinType: type of join that will be performed. It can be either 'expansion' or 'training'.
     */
   def getGARelatedDataForExpansion(
       spark: SparkSession,
       path: String,
-      country: String
+      country: String,
+      joinType: String
   ) {
     // First we load the GA data
     val ga = spark.read
@@ -286,7 +304,7 @@ object TrainingSetAR {
         else "%s0".format(hour)
     )
     joint
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp") - 3 * 3600))) // AR time transformation
+      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp") - (if (country=="AR") 3 else 5) * 3600))) // AR time transformation
       .withColumn("Hour", date_format(col("Time"), "HH"))
       .withColumn("Weekday", date_format(col("Time"), "EEEE"))
       .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
