@@ -957,21 +957,11 @@ val records_common = the_join.select(col("identifier"))
     import spark.implicits._
 
     //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
-<<<<<<< HEAD
-    val pois = spark.read
-      .option("header", true)
-      .option("delimiter", "\t")
-      .csv(
-        "/datascience/audiences/crossdeviced/sarmiento_pois_90d_argentina_20-4-2019-12h_xd"
-      )
-      .select("device_id", "Codigo")
-=======
     val pois = spark.read      
               .option("header", true)      
               .option("delimiter",",")      
               .csv("hdfs://rely-hdfs/datascience/geo/geo_processed/Sarmiento_2797_puntos_60d_argentina_20-5-2019-7h_aggregated")
       .select("device_id", "name")
->>>>>>> a403a1e9d9003b755bfcd75a04baee174fb1c202
       .distinct()
     //.withColumnRenamed("_c0", "device_id")
     //.withColumnRenamed("_c1", "Codigo")
