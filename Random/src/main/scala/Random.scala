@@ -2128,7 +2128,7 @@ val url_by_user = spark.read.format("csv")
 
 val user_count_plus_10 = url_by_user.filter("detections > 10").count()
 
-val user_avg = url_by_user.agg(avg("detections") as "average").select("average").toString(collect()(0)
+val user_avg = url_by_user.agg(avg("detections") as "average").select("average").collect()(0).toString
 
 //guardamos las metricas
 conf.set("fs.defaultFS", "hdfs://rely-hdfs")
