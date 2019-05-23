@@ -3106,7 +3106,7 @@ user_granularity.write
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     // user_agents(spark)
-    get_voto_users(spark,2)
+    get_voto_users(spark,180)
     //getUserAgentForAgeUsers(spark)
   }
 
