@@ -76,11 +76,13 @@ object DataGoogleAnalytics {
       .withColumn("url", regexp_replace(col("url"), "/.*", ""))
 
     /// Leemos el archivo que tiene las distribuciones para cada URL
+    val filename = "/data/metadata/20190316-domains-counts.tsv"
+  
     val distributions = spark.read
       .format("csv")
       .option("header", "true")
       .option("sep", "\t")
-      .load("/data/metadata/20190316-domains-counts.tsv")
+      .load(filename)
       .withColumnRenamed("DOMAIN", "url")
       .withColumn(
         "url",
@@ -95,7 +97,7 @@ object DataGoogleAnalytics {
       .format("parquet")
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/join_google_analytics")
+      .save("/datascience/data_demo/data_google_analytics_domain")
   }
 
   /**
@@ -151,11 +153,13 @@ object DataGoogleAnalytics {
         )
   
       /// Leemos el archivo que tiene las distribuciones para cada URL
+      val filename = "/data/metadata/20190316-paths-counts.tsv"
+
       val distributions = spark.read
         .format("csv")
         .option("header", "true")
         .option("sep", "\t")
-        .load("/data/metadata/20190316-paths-counts.tsv")
+        .load(filename)
         .withColumnRenamed("PATH", "url")
         .withColumn(
           "url",
@@ -169,7 +173,7 @@ object DataGoogleAnalytics {
         .format("parquet")
         .partitionBy("country")
         .mode(SaveMode.Overwrite)
-        .save("/datascience/data_demo/join_google_analytics_path")
+        .save("/datascience/data_demo/data_google_analytics_path")
     }
 
 
