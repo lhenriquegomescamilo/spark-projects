@@ -31,6 +31,6 @@ object GetCreatedSegments {
       .appName("Get created segments by the devicer")
       .getOrCreate()
     
-    getCreatedSegments()
+    getCreatedSegments(spark)
   }
 }
