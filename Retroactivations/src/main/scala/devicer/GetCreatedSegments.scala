@@ -14,7 +14,7 @@ import java.time.DateTimeException
 object GetCreatedSegments {
 
   def getCreatedSegments(spark: SparkSession) {
-    val lastDay = DateTimeException.now.minusDays(1).toString("yyyyMMdd")
+    val lastDay = DateTime.now.minusDays(1).toString("yyyyMMdd")
     spark.read
       .load("/datascience/data_audiences/day=%s/".format(lastDay))
       .filter("event_type IN ('campaign', 'retroactive')")
@@ -31,6 +31,6 @@ object GetCreatedSegments {
       .appName("Get created segments by the devicer")
       .getOrCreate()
     
-    getCreatedSegments()
+    getCreatedSegments(spark)
   }
 }
