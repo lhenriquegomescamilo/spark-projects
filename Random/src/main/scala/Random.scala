@@ -2083,6 +2083,8 @@ val records_common = the_join.select(col("identifier"))
                         .select("device_id","segments","url")
                         .filter("array_contains (segments,20107) OR array_contains (segments,20108) OR array_contains (segments,20109) OR array_contains (segments,20110)")
                         .filter(col("url").isNotNull)
+                        .select("device_id","url")
+                        .distinct()
 
 
     //Cargamos la audiencia de voto
@@ -2948,7 +2950,7 @@ voto_url.write
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     
     user_agents(spark)
-     get_voto_users(spark,60)
+     get_voto_users(spark,2)
   }
 
 }
