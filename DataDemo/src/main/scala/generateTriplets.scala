@@ -160,10 +160,9 @@ object GenerateTriplets {
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_demo/triplets_keywords")
-
   }
 
-/**
+  /**
   def generateTripletsForAR(spark: SparkSession) = {
     val segments =
       """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
@@ -300,7 +299,7 @@ object GenerateTriplets {
       .option("sep", "\t")
       .save("/datascience/custom/urls_gt_ar")
   }
-**/
+  **/
 
   def main(args: Array[String]) {
     /// Configuracion spark
