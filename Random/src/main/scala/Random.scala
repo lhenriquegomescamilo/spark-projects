@@ -2079,7 +2079,7 @@ val records_common = the_join.select(col("identifier"))
     //cargamos el df de audiences
     //filtramos por los segmentos de income de equifax
     //filtramos para que la url no sea nula
-    val df_audiences = spark.read.parquet(hdfs_files: _*)
+    val data_audience = spark.read.parquet(hdfs_files: _*)
                         .select("device_id","segments","url")
                         .filter("array_contains (segments,20107) OR array_contains (segments,20108) OR array_contains (segments,20109) OR array_contains (segments,20110)")
                         .filter(col("url").isNotNull)
