@@ -2042,6 +2042,70 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
+
+  
+   /**
+    *
+    *
+    *
+    *
+    *
+    *          Para informe de Votantes (pedido por Seba, hecho por Julián
+    23-05-2019)
+    *
+    */
+  def get_voto_users(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer = 1
+  ) = {
+
+    //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
+    // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
+    // Also we generate a new column call 'geocode' that will be used for the join
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/datascience/data_audiences/"
+    val hdfs_files = days
+      .map(day => path + "day=%s/country=AR/".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    //cargamos el df de audiences
+    //filtramos por los segmentos de income de equifax
+    //filtramos para que la url no sea nula
+    val data_audience = spark.read.parquet(hdfs_files: _*)
+                        .select("device_id","segments","url")
+                        .filter("array_contains (segments,20107) OR array_contains (segments,20108) OR array_contains (segments,20109) OR array_contains (segments,20110)")
+                        .filter(col("url").isNotNull)
+
+
+    //Cargamos la audiencia de voto
+    val voto_audience = spark.read.format("csv")
+        .option("delimiter","\t")
+        .load("/datascience/devicer/processed/AR_1111118_2019-05-22T19-50-01-452066")
+        .select("_c0","_c1")
+        .toDF("device_type","device_id")
+        .distinct()
+    
+   //hacemos el join 
+   val voto_url = voto_audience.join(data_audience,Seq("device_id"))
+      
+//guardamos
+voto_url.write
+      .mode(SaveMode.Overwrite)
+      .option("header", "true")
+      .format("csv")
+      .option("sep", ",")
+      .save("/datascience/geo/audiences/voto_url_23-05")
+
+  }
+
   /**
     *
     *
@@ -2884,6 +2948,7 @@ val records_common = the_join.select(col("identifier"))
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     
     user_agents(spark)
+     get_voto_users(spark,60)
   }
 
 }
