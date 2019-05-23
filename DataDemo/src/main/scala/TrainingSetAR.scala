@@ -244,7 +244,7 @@ object TrainingSetAR {
       .dropDuplicates("url", "device_id")
 
     // Here I calculate the data of GA just for the users that do not have ground truth data.
-    val joint = ga.join(gtDF, Seq("device_id"), joinType)
+    val joint = gtDF.join(ga, Seq("device_id"), joinType)
 
     joint.cache()
 
@@ -261,7 +261,7 @@ object TrainingSetAR {
       .option("sep", "\t")
       .save(
         "/datascience/data_demo/name=%s/country=%s/ga_url_domains"
-          .format(name, joinType, country)
+          .format(name, country)
       )
 
     // In this part we calculate the probabilities for every user.
@@ -321,27 +321,27 @@ object TrainingSetAR {
         if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
         else "%s0".format(hour)
     )
-    joint
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp") - (if (country=="AR") 3 else 5) * 3600))) // AR time transformation
-      .withColumn("Hour", date_format(col("Time"), "HH"))
-      .withColumn("Weekday", date_format(col("Time"), "EEEE"))
-      .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
-      .groupBy("device_id", "wd")
-      .count()
-      .groupBy("device_id")
-      .pivot("wd")
-      .agg(sum("count"))
-      .orderBy(asc("device_id"))
-      .write
-      .format("csv")
-      .option("header", "true")
-      .option("sep", "\t")
-      .mode(SaveMode.Overwrite)
-      .save(
-        "/datascience/data_demo/name=%s/country=%s/ga_timestamp"
-          .format(name, country)
-      )
-    join
+    val res = joint
+                .withColumn("Time", to_timestamp(from_unixtime(col("timestamp") - (if (country=="AR") 3 else 5) * 3600))) // AR time transformation
+                .withColumn("Hour", date_format(col("Time"), "HH"))
+                .withColumn("Weekday", date_format(col("Time"), "EEEE"))
+                .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
+                .groupBy("device_id", "wd")
+                .count()
+                .groupBy("device_id")
+                .pivot("wd")
+                .agg(sum("count"))
+                .orderBy(asc("device_id"))
+                .write
+                .format("csv")
+                .option("header", "true")
+                .option("sep", "\t")
+                .mode(SaveMode.Overwrite)
+                .save(
+                  "/datascience/data_demo/name=%s/country=%s/ga_timestamp"
+                    .format(name, country)
+                )
+    res
   }
 
   /**
@@ -393,18 +393,18 @@ object TrainingSetAR {
         .withColumn("feature", concat_ws(";", col("feature")))
 
     // Finally we perform the join between the users with no ground truth (left_anti join).
-    triplets
-      .join(gtDF, Seq("device_id"), joinType)
-      .orderBy(asc("device_id"))
-      .write
-      .format("csv")
-      .mode(SaveMode.Overwrite)
-      .option("sep", "\t")
-      .save(
-        "/datascience/data_demo/name=%s/country=%s/segment_triplets"
-          .format(name, country)
-      )
-    triplets
+    val res = triplets
+              .join(gtDF, Seq("device_id"), joinType)
+              .orderBy(asc("device_id"))
+              .write
+              .format("csv")
+              .mode(SaveMode.Overwrite)
+              .option("sep", "\t")
+              .save(
+                "/datascience/data_demo/name=%s/country=%s/segment_triplets"
+                  .format(name, country)
+              )
+    res
   }
 
   /**
@@ -434,21 +434,21 @@ object TrainingSetAR {
       .distinct()
 
     // Here we store the data
-    df.join(gtDF, Seq("device_id"), joinType )
-      .select("device_id", "url")
-      .distinct()
-      .groupBy("device_id")
-      .agg(collect_list(col("url")).as("url"))
-      .withColumn("url", concat_ws(";", col("url")))
-      .orderBy(asc("device_id"))
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("csv")
-      .option("sep", "\t")
-      .save(
-        "/datascience/data_demo/name=%s/country=%s/urls".format(name, country)
-      )
-    df
+    val res = gtDF.join(df, Seq("device_id"), joinType )
+                .select("device_id", "url")
+                .distinct()
+                .groupBy("device_id")
+                .agg(collect_list(col("url")).as("url"))
+                .withColumn("url", concat_ws(";", col("url")))
+                .orderBy(asc("device_id"))
+                .write
+                .mode(SaveMode.Overwrite)
+                .format("csv")
+                .option("sep", "\t")
+                .save(
+                  "/datascience/data_demo/name=%s/country=%s/urls".format(name, country)
+                )
+    res
   }
 
   /** PIPELINES **/
@@ -460,7 +460,7 @@ object TrainingSetAR {
     getDatasetFromURLs(spark, segments, country, "left", name)
   }
 
-  def getTrainingData(spark: SparkSession, path: String, country: String) = {
+  def getTrainingData(spark: SparkSession, path: String, country: String, name:String) = {
     val gt = getGTDataFrame(spark,path)
     val ga = getGARelatedData(spark, gt, country, "inner", name)
     val segments = generateSegmentTriplets(spark, ga, country, "left", name)
@@ -477,6 +477,7 @@ object TrainingSetAR {
     //  "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
     //getDataForExpansion(spark, path, "AR")
     val path = "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
-    getTrainingSet(spark, path)
+    //getTrainingSet(spark, path)
+    getTrainingData(spark,path,"MX","training_MX")
   }
 }
