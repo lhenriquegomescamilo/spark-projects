@@ -2083,10 +2083,9 @@ val records_common = the_join.select(col("identifier"))
     //filtramos para que la url no sea nula
     val data_audience = spark.read
       .parquet(hdfs_files: _*)
-      .select("device_id", "segments", "url")
+      .select("device_id", "all_segments", "url")
       .filter(
-        "array_contains (segments,20107) OR array_contains (segments,20108) OR array_contains (segments,20109) OR array_contains (segments,20110)"
-      )
+        "array_contains (all_segments,20107) OR array_contains (all_segments,20108) OR array_contains (all_segments,20109) OR array_contains (all_segments,20110)")
       .filter(col("url").isNotNull)
       .select("device_id", "url")
       .distinct()
@@ -3075,7 +3074,8 @@ user_granularity.write
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     // user_agents(spark)
-    getUserAgentForAgeUsers(spark)
+    get_voto_users(spark,90)
+    //getUserAgentForAgeUsers(spark)
   }
 
 }
