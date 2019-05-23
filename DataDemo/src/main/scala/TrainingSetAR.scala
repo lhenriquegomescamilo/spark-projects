@@ -238,7 +238,7 @@ object TrainingSetAR {
     // First we load the GA data
     val ga = spark.read
       .load(
-        "/datascience/data_demo/google_analytics/country=%s/"
+        "/datascience/data_demo/data_google_analytics_domain/country=%s/"
           .format(country)
       )
       .dropDuplicates("url", "device_id")
@@ -341,6 +341,7 @@ object TrainingSetAR {
         "/datascience/data_demo/name=%s/country=%s/ga_timestamp"
           .format(name, country)
       )
+    join
   }
 
   /**
@@ -365,6 +366,7 @@ object TrainingSetAR {
       name: String
   ) = {
     // List of segments that will be considered. The rest of the records are going to be filtered out.
+    /**
     val segments =
       """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
         247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
@@ -376,14 +378,14 @@ object TrainingSetAR {
         3423,3450,3470,3472,3473,3564,3565,3566,3567,3568,3569,3570,3571,3572,3573,3574,3575,3576,3577,3578,3579,3580,3581,3582,3583,3584,3585,3586,3587,3588,
         3589,3590,3591,3592,3593,3594,3595,3596,3597,3598,3599,3600,3730,3731,3732,3733,3779,3782,3843,3844,3913,3914,3915,4097,
         5025,5310,5311,35360,35361,35362,35363""".replace("\n", "").split(",").toList.toSeq
-
+    **/
     // Now we load the triplets, for a particular country. Here we do the group by.
     val triplets =
       spark.read
         .load(
           "/datascience/data_demo/triplets_segments/country=%s/".format(country)
         )
-        .filter(col("feature").isin(segments: _*))
+        //.filter(col("feature").isin(segments: _*))
         .select("device_id", "feature")
         .distinct()
         .groupBy("device_id")
@@ -402,6 +404,7 @@ object TrainingSetAR {
         "/datascience/data_demo/name=%s/country=%s/segment_triplets"
           .format(name, country)
       )
+    triplets
   }
 
   /**
@@ -445,12 +448,24 @@ object TrainingSetAR {
       .save(
         "/datascience/data_demo/name=%s/country=%s/urls".format(name, country)
       )
+    df
   }
 
-  def getDataForExpansion(spark: SparkSession, path: String, country: String) = {
-    generateSegmentTripletsForExpansion(spark, path, country)
-    getGARelatedDataForExpansion(spark, path, country)
-    getDatasetFromURLsForExpansion(spark, path, country)
+  /** PIPELINES **/
+  def getExpansionData(spark: SparkSession, path: String, country: String, name:String) = {
+    val gt = getGTDataFrame(spark,path)
+    val ga = getGARelatedData(spark, gt, country, "leftanti", name)
+    val segments = generateSegmentTriplets(spark, ga, country, "left", name)
+
+    getDatasetFromURLs(spark, segments, country, "left", name)
+  }
+
+  def getTrainingData(spark: SparkSession, path: String, country: String) = {
+    val gt = getGTDataFrame(spark,path)
+    val ga = getGARelatedData(spark, gt, country, "inner", name)
+    val segments = generateSegmentTriplets(spark, ga, country, "left", name)
+    
+    getDatasetFromURLs(spark, segments, country, "left", name)
   }
 
   def main(args: Array[String]) {
