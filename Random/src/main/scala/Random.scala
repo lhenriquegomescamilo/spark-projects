@@ -2109,6 +2109,40 @@ val records_common = the_join.select(col("identifier"))
       .option("sep", ",")
       .save("/datascience/geo/audiences/voto_url_90_23-05")
 
+
+//levantamos el resultado del join en random y contamos los usuarios
+
+
+val user_count = spark.read.format("csv").option("header",true)
+                .load("/datascience/geo/audiences/voto_url_90_23-05/")
+                .filter(col("url")
+                .isNotNull)
+                .select("device_id")
+                .distinct().count()
+
+val url_by_user = spark.read.format("csv")
+                  .option("header",true)
+                  .load("/datascience/geo/audiences/voto_url_90_23-05/part-00186-7d712eb2-70de-4560-9b21-cbb38f793341-c000.csv")
+                  .filter(col("url").isNotNull).groupBy("device_id")
+                  .agg(countDistinct("url") as "detections")
+
+val user_count_plus_10 = url_by_user.filter("detections > 10").count()
+
+val user_avg = url_by_user.agg(avg("detections") as "average").select("average").as[String].collect()(0)
+
+//guardamos las metricas
+val conf = new Configuration()
+conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+val fs= FileSystem.get(conf)
+val os = fs.create(new Path("/datascience/geo/audiences/voto_url_90_23-05_metrics.log"))
+
+val json_content = """{"user_w_url": "%s", "user_count_plus10": "%s", "user_avg":"%s" }"""
+                        .format(user_count,user_count_plus_10,user_avg)
+
+
+os.write(json_content.getBytes)
+fs.close()
+
   }
 
   /**
@@ -3074,7 +3108,7 @@ user_granularity.write
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     // user_agents(spark)
-    get_voto_users(spark,90)
+    get_voto_users(spark,2)
     //getUserAgentForAgeUsers(spark)
   }
 
