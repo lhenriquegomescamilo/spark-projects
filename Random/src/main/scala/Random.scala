@@ -2131,9 +2131,7 @@ val user_count_plus_10 = url_by_user.filter("detections > 10").count()
 val user_avg = url_by_user.agg(avg("detections") as "average").select("average").as[String].collect()(0)
 
 //guardamos las metricas
-val conf = new Configuration()
 conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-val fs= FileSystem.get(conf)
 val os = fs.create(new Path("/datascience/geo/audiences/voto_url_90_23-05_metrics.log"))
 
 val json_content = """{"user_w_url": "%s", "user_count_plus10": "%s", "user_avg":"%s" }"""
