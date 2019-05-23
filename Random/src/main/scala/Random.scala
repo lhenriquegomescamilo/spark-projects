@@ -957,10 +957,12 @@ val records_common = the_join.select(col("identifier"))
     import spark.implicits._
 
     //cargamos la data de los usuarios XD. Sólo nos quedamos con los códigos y el device_id
-    val pois = spark.read      
-              .option("header", true)      
-              .option("delimiter",",")      
-              .csv("hdfs://rely-hdfs/datascience/geo/geo_processed/Sarmiento_2797_puntos_60d_argentina_20-5-2019-7h_aggregated")
+    val pois = spark.read
+      .option("header", true)
+      .option("delimiter", ",")
+      .csv(
+        "hdfs://rely-hdfs/datascience/geo/geo_processed/Sarmiento_2797_puntos_60d_argentina_20-5-2019-7h_aggregated"
+      )
       .select("device_id", "name")
       .distinct()
     //.withColumnRenamed("_c0", "device_id")
@@ -993,7 +995,9 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/AR/sarmiento_pois_actualizado_60d_30dsegments_20_05")
+      .save(
+        "/datascience/geo/AR/sarmiento_pois_actualizado_60d_30dsegments_20_05"
+      )
 
   }
 
@@ -2042,9 +2046,7 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
-
-  
-   /**
+  /**
     *
     *
     *
@@ -2079,27 +2081,32 @@ val records_common = the_join.select(col("identifier"))
     //cargamos el df de audiences
     //filtramos por los segmentos de income de equifax
     //filtramos para que la url no sea nula
-    val data_audience = spark.read.parquet(hdfs_files: _*)
-                        .select("device_id","segments","url")
-                        .filter("array_contains (segments,20107) OR array_contains (segments,20108) OR array_contains (segments,20109) OR array_contains (segments,20110)")
-                        .filter(col("url").isNotNull)
-                        .select("device_id","url")
-                        .distinct()
-
+    val data_audience = spark.read
+      .parquet(hdfs_files: _*)
+      .select("device_id", "segments", "url")
+      .filter(
+        "array_contains (segments,20107) OR array_contains (segments,20108) OR array_contains (segments,20109) OR array_contains (segments,20110)"
+      )
+      .filter(col("url").isNotNull)
+      .select("device_id", "url")
+      .distinct()
 
     //Cargamos la audiencia de voto
-    val voto_audience = spark.read.format("csv")
-        .option("delimiter","\t")
-        .load("/datascience/devicer/processed/AR_1111118_2019-05-22T19-50-01-452066")
-        .select("_c0","_c1")
-        .toDF("device_type","device_id")
-        .distinct()
-    
-   //hacemos el join 
-   val voto_url = voto_audience.join(data_audience,Seq("device_id"))
-      
+    val voto_audience = spark.read
+      .format("csv")
+      .option("delimiter", "\t")
+      .load(
+        "/datascience/devicer/processed/AR_1111118_2019-05-22T19-50-01-452066"
+      )
+      .select("_c0", "_c1")
+      .toDF("device_type", "device_id")
+      .distinct()
+
+    //hacemos el join
+    val voto_url = voto_audience.join(data_audience, Seq("device_id"))
+
 //guardamos
-voto_url.write
+    voto_url.write
       .mode(SaveMode.Overwrite)
       .option("header", "true")
       .format("csv")
@@ -2938,8 +2945,45 @@ voto_url.write
         )
       println("Day %s processed!".format(day))
     }
-    val days = (2 until 20).map(DateTime.now.minusDays(_)).map(_.toString("yyyy/MM/dd"))
+    val days =
+      (2 until 20).map(DateTime.now.minusDays(_)).map(_.toString("yyyy/MM/dd"))
     days.map(parse_day("AR", _))
+  }
+
+  /**
+    *
+    *
+    *
+    *              DESCARGA DE USER AGENT PARA USERS CON EDAD DE EQUIFAX
+    *
+    *
+    *
+    *
+    */
+  def getUserAgentForAgeUsers(spark: SparkSession) {
+    val data = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load(
+        "/datascience/devicer/processed/AR_4_2019-04-11T21-22-46-395560_grouped/"
+      )
+      .withColumnRenamed("_c1", "device_id")
+      .select("device_id", "_c2")
+    val userAgents = spark.read
+      .format("csv")
+      .load("/datascience/user_agents/AR/")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c1", "user_agent")
+      .select("device_id", "user_agent")
+
+    data
+      .join(userAgents, Seq("device_id"))
+      .distinct()
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/name=edades/country=AR/userAgents")
   }
 
   /*****************************************************/
@@ -2948,9 +2992,9 @@ voto_url.write
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    
-   // user_agents(spark)
-     get_voto_users(spark,60)
+
+    // user_agents(spark)
+    getUserAgentForAgeUsers(spark)
   }
 
 }
