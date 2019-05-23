@@ -2091,8 +2091,8 @@ val records_common = the_join.select(col("identifier"))
     val voto_audience = spark.read.format("csv")
         .option("delimiter","\t")
         .load("/datascience/devicer/processed/AR_1111118_2019-05-22T19-50-01-452066")
-        .select("_c0","_c1")
-        .toDF("device_type","device_id")
+        .select("_c1")
+        .toDF("device_id")
         .distinct()
     
    //hacemos el join 
@@ -2104,7 +2104,7 @@ voto_url.write
       .option("header", "true")
       .format("csv")
       .option("sep", ",")
-      .save("/datascience/geo/audiences/voto_url_23-05")
+      .save("/datascience/geo/audiences/voto_url_90_23-05")
 
   }
 
@@ -2801,6 +2801,90 @@ voto_url.write
       .save("/datascience/geo/drawbridge_monthly")
   }
 
+/**
+    *
+    *
+    *
+    *
+    *
+    *
+    *                    Metricas Sample Data
+    *
+    *
+    * */
+
+    def sample_metrics_geo_brco(
+      spark: SparkSession
+  ) = {
+
+   val sample_data = spark.read.format("csv").option("delimiter","\t").load("/datascience/geo/samples/startapp/20190501/part_0.csv.gz").toDF("ad_id", "timestamp", "country", "longitude","latitude","etc")
+
+//usuarios únicos por día
+val user_detections = sample_data.withColumn("Day", date_format(col("timestamp"), "d")).groupBy("country","day").agg(countDistinct("ad_id") as "unique_users")
+
+//detecciones por día
+val day_detections = sample_data.withColumn("Day", date_format(col("timestamp"), "d")).groupBy("country","day").agg(count("timestamp") as "detections")
+
+//detecciones por usuario por día
+val user_granularity = sample_data.withColumn("Day", date_format(col("timestamp"), "d")).groupBy("ad_id","country","day").agg(count("timestamp") as "time_granularity")
+
+//detecciones por usuario por día, promedio
+val mean_user_granularity = user_granularity.groupBy("ad_id","country").agg(mean("time_granularity") as "avg_granularity")
+
+//usuarios por deteccion BR
+val plus2bra = user_granularity.filter("country == 'BR'").filter("time_granularity > 2").count()
+val plus20bra = user_granularity.filter("country == 'BR'").filter("time_granularity > 20").count()
+val plus80bra = user_granularity.filter("country == 'BR'").filter("time_granularity > 80").count()
+
+//usuarios por deteccion CO
+val plus2co = user_granularity.filter("country == 'CO'").filter("time_granularity > 2").count()
+val plus20co = user_granularity.filter("country == 'CO'").filter("time_granularity > 20").count()
+val plus80co = user_granularity.filter("country == 'CO'").filter("time_granularity > 80").count()
+
+//usuarios por deteccion CL
+val plus2cl = user_granularity.filter("country == 'CL'").filter("time_granularity > 2").count()
+val plus20cl = user_granularity.filter("country == 'CL'").filter("time_granularity > 20").count()
+val plus80cl = user_granularity.filter("country == 'CL'").filter("time_granularity > 80").count()
+
+//guardamos las metricas de cantidad de usuarios con detecciones
+val conf = new Configuration()
+conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+val fs= FileSystem.get(conf)
+val os = fs.create(new Path("/datascience/geo/samples/metrics/metrics.log"))
+
+val json_content = """{"plus2bra": "%s", "plus20bra": "%s", "plus80bra":"%s", "plus2co":"%s","plus20co":"%s","plus80co":"%s","plus2cl":"%s","plus20cl":"%s","plus80cl":"%s" }""".format(plus2bra,plus20bra,plus80bra,plus2co,plus20co,plus80co,plus2cl,plus20cl,plus80cl)
+
+
+os.write(json_content.getBytes)
+fs.close()
+
+
+//guardamos los dataframes generados para posterior análisis
+user_detections.write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .save("/datascience/geo/samples/metrics/sample_user_detections")
+      
+day_detections.write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .save("/datascience/geo/samples/metrics/sample_day_detections")   
+
+
+user_granularity.write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .save("/datascience/geo/samples/metrics/sample_user_granularity")
+
+  }
+
+
   /**
     *
     *
@@ -2950,7 +3034,7 @@ voto_url.write
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
     
    // user_agents(spark)
-     get_voto_users(spark,60)
+     get_voto_users(spark,90)
   }
 
 }
