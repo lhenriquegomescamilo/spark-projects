@@ -2946,8 +2946,9 @@ voto_url.write
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-    //get_voto_users(
-    user_agents(spark,60)
+    
+    user_agents(spark)
+     get_voto_users(spark,60)
   }
 
 }
