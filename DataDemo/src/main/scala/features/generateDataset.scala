@@ -238,7 +238,7 @@ object GenerateDataset {
     // First we load the GA data
     val ga = spark.read
       .load(
-        "/datascience/data_demo/data_google_analytics_domain/country=%s/"
+        "/datascience/data_demo/google_analytics_domain/country=%s/"
           .format(country)
       )
       .dropDuplicates("url", "device_id")
