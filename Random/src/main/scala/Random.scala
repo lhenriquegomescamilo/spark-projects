@@ -2067,7 +2067,7 @@ val records_common = the_join.select(col("identifier"))
     // Also we generate a new column call 'geocode' that will be used for the join
    
    //comento acá, había corrido bien esta parte pero no la de levantar y guardar la data
-   /* val format = "yyyyMMdd"
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
@@ -2109,18 +2109,18 @@ val records_common = the_join.select(col("identifier"))
       .option("header", "true")
       .format("csv")
       .option("sep", ",")
-      .save("/datascience/geo/audiences/voto_url_90_23-05")
+      .save("/datascience/geo/audiences/voto_url_180_24-05")
 
-*/
+
 //levantamos el resultado del join en random y contamos los usuarios
 
 //esto va a haber que comentarlo para reusarlo entero...
-val conf = spark.sparkContext.hadoopConfiguration
-val fs = FileSystem.get(conf)
+//val conf = spark.sparkContext.hadoopConfiguration
+//val fs = FileSystem.get(conf)
 //....hasta acá
 
 val user_count = spark.read.format("csv").option("header",true)
-                .load("/datascience/geo/audiences/voto_url_90_23-05/")
+                .load("/datascience/geo/audiences/voto_url_180_24-05/")
                 .filter(col("url")
                 .isNotNull)
                 .select("device_id")
@@ -2128,7 +2128,7 @@ val user_count = spark.read.format("csv").option("header",true)
 
 val url_by_user = spark.read.format("csv")
                   .option("header",true)
-                  .load("/datascience/geo/audiences/voto_url_90_23-05/")
+                  .load("/datascience/geo/audiences/voto_url_180_24-05/")
                   .filter(col("url").isNotNull).groupBy("device_id")
                   .agg(countDistinct("url") as "detections")
 
@@ -2138,7 +2138,7 @@ val user_avg = url_by_user.agg(avg("detections") as "average").select("average")
 
 //guardamos las metricas
 conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-val os = fs.create(new Path("/datascience/geo/audiences/voto_url_90_23-05_metrics.log"))
+val os = fs.create(new Path("/datascience/geo/audiences/voto_url_180_24-05_metrics.log"))
 
 val json_content = """{"user_w_url": "%s", "user_count_plus10": "%s", "user_avg":"%s" }"""
                         .format(user_count,user_count_plus_10,user_avg)
