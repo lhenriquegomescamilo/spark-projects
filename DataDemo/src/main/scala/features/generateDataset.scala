@@ -457,12 +457,14 @@ object GenerateDataset {
                   .format("csv")
                   .option("sep", "\t")
                   .load("/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities".format(name, country))
+                  .withColumnRenamed("_c0","device_id")
     
     generateSegmentTriplets(spark, ga, country, "left", name)
     val segments = spark.read
                   .format("csv")
                   .option("sep", "\t")
                   .load("/datascience/data_demo/name=%s/country=%s/segment_triplets".format(name, country))
+                  .withColumnRenamed("_c0","device_id")
 
     getDatasetFromURLs(spark, segments, country, "left", name)
   }
