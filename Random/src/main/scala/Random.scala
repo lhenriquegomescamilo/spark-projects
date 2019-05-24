@@ -2857,7 +2857,7 @@ fs.close()
     def sample_metrics_geo_brco(
       spark: SparkSession
   ) = {
-
+/*
 //hardcoded variables
     val nDays = 16
     val since = 9
@@ -2896,33 +2896,6 @@ val user_granularity = sample_data.withColumn("Day", date_format(col("timestamp"
 //detecciones por usuario por día, promedio
 val mean_user_granularity = user_granularity.groupBy("ad_id","country").agg(mean("time_granularity") as "avg_granularity")
 
-//usuarios por deteccion BR
-val plus2bra = user_granularity.filter("country == 'BR'").filter("time_granularity > 2").count()
-val plus20bra = user_granularity.filter("country == 'BR'").filter("time_granularity > 20").count()
-val plus80bra = user_granularity.filter("country == 'BR'").filter("time_granularity > 80").count()
-
-//usuarios por deteccion CO
-val plus2co = user_granularity.filter("country == 'CO'").filter("time_granularity > 2").count()
-val plus20co = user_granularity.filter("country == 'CO'").filter("time_granularity > 20").count()
-val plus80co = user_granularity.filter("country == 'CO'").filter("time_granularity > 80").count()
-
-//usuarios por deteccion CL
-val plus2cl = user_granularity.filter("country == 'CL'").filter("time_granularity > 2").count()
-val plus20cl = user_granularity.filter("country == 'CL'").filter("time_granularity > 20").count()
-val plus80cl = user_granularity.filter("country == 'CL'").filter("time_granularity > 80").count()
-
-//guardamos las metricas de cantidad de usuarios con detecciones
-
-conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-val os = fs.create(new Path("/datascience/geo/samples/metrics/metrics.log"))
-
-val json_content = """{"plus2bra": "%s", "plus20bra": "%s", "plus80bra":"%s", "plus2co":"%s","plus20co":"%s","plus80co":"%s","plus2cl":"%s","plus20cl":"%s","plus80cl":"%s" }""".format(plus2bra,plus20bra,plus80bra,plus2co,plus20co,plus80co,plus2cl,plus20cl,plus80cl)
-
-
-os.write(json_content.getBytes)
-fs.close()
-
-
 //guardamos los dataframes generados para posterior análisis
 user_detections.write
       .mode(SaveMode.Overwrite)
@@ -2945,6 +2918,42 @@ user_granularity.write
       .option("sep", ",")
       .option("header", "true")
       .save("/datascience/geo/samples/metrics/sample_user_granularity")
+
+      */
+      
+*/
+
+//Estaba mal hecho el cálculo de granularidad promedio, volvemos a correrlo
+val granularity =  spark.read.format("csv")
+          .option("header",true)
+          .load("/datascience/geo/samples/metrics/sample_user_granularity")
+
+val avg_granularity = granularity
+              .groupBy("ad_id","country")
+              .agg(avg("time_granularity") as "avg_granularity")
+
+
+//usuarios por deteccion BR
+val plus2bra = avg_granularity.filter("country == 'BR'").filter("avg_granularity > 2").count()
+val plus20bra = avg_granularity.filter("country == 'BR'").filter("avg_granularity > 20").count()
+val plus80bra = avg_granularity.filter("country == 'BR'").filter("avg_granularity > 80").count()
+
+//usuarios por deteccion CO
+val plus2co = avg_granularity.filter("country == 'CO'").filter("avg_granularity > 2").count()
+val plus20co = avg_granularity.filter("country == 'CO'").filter("avg_granularity > 20").count()
+val plus80co = avg_granularity.filter("country == 'CO'").filter("avg_granularity > 80").count()
+
+//guardamos las metricas
+val conf = new Configuration()
+conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+val fs= FileSystem.get(conf)
+val os = fs.create(new Path("/datascience/geo/samples/metrics.log"))
+
+val json_content = """{"plus2bra": "%s", "plus20bra": "%s", "plus80bra":"%s", "plus2co":"%s","plus20co":"%s","plus80co":"%s"}""".format(plus2bra,plus20bra,plus80bra,plus2co,plus20co,plus80co)
+
+
+os.write(json_content.getBytes)
+fs.close()
 
   }
 
