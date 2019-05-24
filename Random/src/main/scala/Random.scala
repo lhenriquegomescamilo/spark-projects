@@ -2920,8 +2920,7 @@ user_granularity.write
       .save("/datascience/geo/samples/metrics/sample_user_granularity")
 
       */
-      
-*/
+    
 
 //Estaba mal hecho el cálculo de granularidad promedio, volvemos a correrlo
 val granularity =  spark.read.format("csv")
