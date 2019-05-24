@@ -196,7 +196,7 @@ object GenerateDataset {
    * 
    * @return: DataFrame with two columns: device_id and label.
   */
-  def getGTDataFrame(spark: SparkSession, path: String) {
+  def getGTDataFrame(spark: SparkSession, path: String): DataFrame {
     // Now we load the ground truth users
     val users = spark.read
       .format("csv")

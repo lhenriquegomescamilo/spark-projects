@@ -1,7 +1,7 @@
 package main.scala.monthly
 import main.scala.features.GenerateTriplets
 import main.scala.features.DataGoogleAnalytics
-import main.scala.features.GenerateDatasets
+import main.scala.features.GenerateDataset
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
@@ -37,7 +37,7 @@ object GenerateMonthlyData{
     val ga_domain = DataGoogleAnalytics.get_data_google_analytics(spark, ndays, filename_domain)
     val ga_path = DataGoogleAnalytics.get_data_google_analytics_path(spark, ndays, filename_path)    
 
-    val training = GenerateDatasets.getTrainingData(spark, path, country, name_training)
-    val expansion = GenerateDatasets.getExpansionData(spark, path, country, name_expansion)
+    val training = GenerateDataset.getTrainingData(spark, path, country, name_training)
+    val expansion = GenerateDataset.getExpansionData(spark, path, country, name_expansion)
   }
 }
