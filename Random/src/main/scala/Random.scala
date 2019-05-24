@@ -2065,7 +2065,9 @@ val records_common = the_join.select(col("identifier"))
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
-    val format = "yyyyMMdd"
+   
+   //comento acá, había corrido bien esta parte pero no la de levantar y guardar la data
+   /* val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
@@ -2109,7 +2111,7 @@ val records_common = the_join.select(col("identifier"))
       .option("sep", ",")
       .save("/datascience/geo/audiences/voto_url_90_23-05")
 
-
+*/
 //levantamos el resultado del join en random y contamos los usuarios
 
 
@@ -2122,7 +2124,7 @@ val user_count = spark.read.format("csv").option("header",true)
 
 val url_by_user = spark.read.format("csv")
                   .option("header",true)
-                  .load("/datascience/geo/audiences/voto_url_90_23-05/part-00186-7d712eb2-70de-4560-9b21-cbb38f793341-c000.csv")
+                  .load("/datascience/geo/audiences/voto_url_90_23-05/")
                   .filter(col("url").isNotNull).groupBy("device_id")
                   .agg(countDistinct("url") as "detections")
 
