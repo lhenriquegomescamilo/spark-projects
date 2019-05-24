@@ -38,7 +38,7 @@ object GenerateMonthlyData{
     //val ga_path = DataGoogleAnalytics.get_data_google_analytics_path(spark, ndays, filename_path)    
     println("LOGGER: GA data generated")
     
-    /val training = GenerateDataset.getTrainingData(spark, path_gt, country, training_name)
+    //val training = GenerateDataset.getTrainingData(spark, path_gt, country, training_name)
     //val expansion = GenerateDataset.getExpansionData(spark, path_gt, country, expansion_name)
   }
 }
