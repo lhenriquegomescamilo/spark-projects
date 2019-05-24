@@ -105,6 +105,7 @@ object HomeJobs {
 
     val final_users = dataset_users.map(
                             row =>  (row._2.ad_id,
+                                    row._2.id_type,
                                     row._2.freq,
                                     row._2.geocode,
                                     row._2.avg_latitude,
