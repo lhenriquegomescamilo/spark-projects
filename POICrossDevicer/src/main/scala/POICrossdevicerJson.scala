@@ -54,39 +54,51 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     //println(file,max_radius,country,poi_output_file,path_to_pois,crossdevice,nDays,"------------------aag87ytg-------------------------")
 
   }
+  //este archivo viejo se va a modificar para levantar sample data GEO que compartieron
 
   def get_safegraph_data(spark: SparkSession, value_dictionary: Map[String,String]) = {
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
    
+    //hardcoded variables
+    val nDays = 20
+    val since = 9
+
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val format = "yyyy/MM/dd"
-    val end   = DateTime.now.minusDays(value_dictionary("since").toInt)
-    val days = (0 until value_dictionary("nDays").toInt).map(end.minusDays(_)).map(_.toString(format))
-    
-    // Now we obtain the list of hdfs folders to be read
-    val path = "/data/geo/safegraph/"
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we obtain the list of hdfs folders to be read
+    val path = "/datascience/geo/samples/startapp/"
 
-     val hdfs_files = days.map(day => path+"%s/".format(day))
-                            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
+    // Now we obtain the list of hdfs folders to be read
 
-    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
-                                  .dropDuplicates("ad_id","latitude","longitude")
-                                  .filter("country = '%s'".format(value_dictionary("country")))
-                                  .select("ad_id", "id_type", "latitude", "longitude","utc_timestamp")
-                                  .withColumnRenamed("latitude", "latitude_user")
+    val hdfs_files = days      
+                  .map(day => path + "%s/".format(day))      
+                  .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))      .map(day => day + "*.csv.gz")
+
+
+      
+    val df_safegraph = spark.read      
+                      .option("header", "true")  
+                      .option("delimiter","\t")    
+                      .csv(hdfs_files: _*)      
+                      .toDF("ad_id", "timestamp", "country", "longitude","latitude","etc")
+                      .dropDuplicates("ad_id","latitude","longitude")
+                      .filter("country = '%s'".format(value_dictionary("country")))
+                      .withColumnRenamed("latitude", "latitude_user")
                                   .withColumnRenamed("longitude", "longitude_user")
                                   .withColumn("geocode", ((abs(col("latitude_user").cast("float"))*10).cast("int")*10000)+(abs(col("longitude_user").cast("float")*100).cast("int")))
 
     df_safegraph
-  }
+
+    }
 
 /**
   This method reads the user provided POI dataset, adds a geocode for each POI and renames the columns. The file provided must be correctly formatted as described below.
@@ -173,7 +185,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
 def cross_device(spark: SparkSession, value_dictionary: Map [String,String]) = {
     
 
-     if(value_dictionary("crossdevice")=="true") {
+     if(value_dictionary("crossdevice")=="1") {
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
     //val audience_name = value_dictionary("poi_output_file").split("/").last

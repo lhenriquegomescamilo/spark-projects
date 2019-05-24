@@ -2858,8 +2858,32 @@ fs.close()
       spark: SparkSession
   ) = {
 
-   val sample_data = spark.read.format("csv").option("delimiter","\t").load("/datascience/geo/samples/startapp/20190501/part_0.csv.gz").toDF("ad_id", "timestamp", "country", "longitude","latitude","etc")
+//hardcoded variables
+    val nDays = 16
+    val since = 9
 
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days =
+      (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/datascience/geo/samples/startapp/"
+
+    // Now we obtain the list of hdfs folders to be read
+
+    val hdfs_files = days      .map(day => path + "%s/".format(day))      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))      .map(day => day + "*.csv.gz")
+
+
+      
+ val sample_data = spark.read      .option("header", "true")  .option("delimiter","\t")    .csv(hdfs_files: _*)      .toDF("ad_id", "timestamp", "country", "longitude","latitude","etc")
+
+   
 //usuarios únicos por día
 val user_detections = sample_data.withColumn("Day", date_format(col("timestamp"), "d")).groupBy("country","day").agg(countDistinct("ad_id") as "unique_users")
 
@@ -2888,9 +2912,8 @@ val plus20cl = user_granularity.filter("country == 'CL'").filter("time_granulari
 val plus80cl = user_granularity.filter("country == 'CL'").filter("time_granularity > 80").count()
 
 //guardamos las metricas de cantidad de usuarios con detecciones
-val conf = new Configuration()
+
 conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-val fs= FileSystem.get(conf)
 val os = fs.create(new Path("/datascience/geo/samples/metrics/metrics.log"))
 
 val json_content = """{"plus2bra": "%s", "plus20bra": "%s", "plus80bra":"%s", "plus2co":"%s","plus20co":"%s","plus80co":"%s","plus2cl":"%s","plus20cl":"%s","plus80cl":"%s" }""".format(plus2bra,plus20bra,plus80bra,plus2co,plus20co,plus80co,plus2cl,plus20cl,plus80cl)
@@ -3112,7 +3135,7 @@ user_granularity.write
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     // user_agents(spark)
-    get_voto_users(spark,180)
+    sample_metrics_geo_brco(spark)
     //getUserAgentForAgeUsers(spark)
   }
 
