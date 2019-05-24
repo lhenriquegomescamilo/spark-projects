@@ -2912,9 +2912,8 @@ val plus20cl = user_granularity.filter("country == 'CL'").filter("time_granulari
 val plus80cl = user_granularity.filter("country == 'CL'").filter("time_granularity > 80").count()
 
 //guardamos las metricas de cantidad de usuarios con detecciones
-val conf = new Configuration()
+
 conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-val fs= FileSystem.get(conf)
 val os = fs.create(new Path("/datascience/geo/samples/metrics/metrics.log"))
 
 val json_content = """{"plus2bra": "%s", "plus20bra": "%s", "plus80bra":"%s", "plus2co":"%s","plus20co":"%s","plus80co":"%s","plus2cl":"%s","plus20cl":"%s","plus80cl":"%s" }""".format(plus2bra,plus20bra,plus80bra,plus2co,plus20co,plus80co,plus2cl,plus20cl,plus80cl)
