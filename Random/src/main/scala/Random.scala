@@ -2114,6 +2114,10 @@ val records_common = the_join.select(col("identifier"))
 */
 //levantamos el resultado del join en random y contamos los usuarios
 
+//esto va a haber que comentarlo para reusarlo entero...
+val conf = spark.sparkContext.hadoopConfiguration
+val fs = FileSystem.get(conf)
+//....hasta acá
 
 val user_count = spark.read.format("csv").option("header",true)
                 .load("/datascience/geo/audiences/voto_url_90_23-05/")
