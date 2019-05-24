@@ -486,7 +486,7 @@ object GetAudience {
           .filter(query("filter").toString)
           .select("device_type", "device_id")
           .withColumn("segmentIds", lit(query("segment_id").toString))
-          //.distinct()
+          .distinct()
     )
     // If there is a limit on the number of rows, we also apply it
     val results_limited = if (limit>0) results.map(
@@ -516,7 +516,7 @@ object GetAudience {
         .format("csv")
         .option("sep", "\t")
         .load("/datascience/devicer/processed/" + fileName)
-        //.distinct()
+        .distinct()
       done
         .groupBy("_c0", "_c1")
         .agg(collect_list("_c2") as "segments")
