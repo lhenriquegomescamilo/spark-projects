@@ -3179,47 +3179,42 @@ user_granularity.write
     val ints =
       "created id_partner id_segment_source share_data tagged click_count conversion_count impression_count activable job_id"
         .split(" ")
-        .map(StructField(_, IntegerType, true))
-        .toArray
-    val doubles = "latitude longitude accuracy altitude altaccuracy"
-      .split(" ")
-      .map(StructField(_, DoubleType, true))
-      .toArray
+        .toSeq
+    val doubles =
+      "latitude longitude accuracy altitude altaccuracy".split(" ").toSeq
     val array_strings = "tags app_data app_installed".split(" ").toSeq
-    val array_strings_structs =
-      array_strings.map(StructField(_, StringType, true)).toArray
     val array_ints =
       "segments clusters first_party second_party third_party all_clusters all_segments all_segments_xd gt removed_segments platforms"
         .split(" ")
-    val array_ints_structs =
-      array_ints.map(StructField(_, StringType, true)).toArray
-    val longs = "ip".split(" ").map(StructField(_, LongType, true)).toArray
-    val strings =
-      """time timestamp user device_id device_type web_id android_id ios_id event_type data_type nav_type version country user_country id_partner_user user_agent browser url secondary_url referer sec title category sub_category search_keyword vertical mb_sh2 mb_sh5 ml_sh2 ml_sh5 nid_sh2 nid_sh5 track_code track_type advertiser_id advertiser_name campaign_id campaign_name placement_id site_id app_name wifi_name p223 p240 d2 d9 d10 d11 d13 d14 d17 d18 d19 d20 d21 d22 url_subdomain url_domain url_path referer_subdomain referer_domain referer_path d23"""
-        .split(" ")
-        .map(StructField(_, StringType, true))
-        .toArray
-
-    val customSchema = StructType(
-      ints ++ doubles ++ longs ++ array_strings_structs ++ array_ints_structs ++ strings
-    )
+    val longs = "ip".split(" ").toSeq
 
     val data = spark.read
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .schema(customSchema)
       .load("/data/eventqueue/2019/05/23/21*")
 
-    val withStrings = array_strings.foldLeft(data)(
+    val withArrayStrings = array_strings.foldLeft(data)(
       (df, c) => df.withColumn(c, split(col(c), "\u0001"))
     )
-    val df = array_ints.foldLeft(withStrings)(
+    val withInts = ints.foldLeft(withArrayStrings)(
+      (df, c) => df.withColumn(c, col(c).cast("int"))
+    )
+    val withDoubles = doubles.foldLeft(withInts)(
+      (df, c) => df.withColumn(c, col(c).cast("double"))
+    )
+    val withLongs = longs.foldLeft(withDoubles)(
+      (df, c) => df.withColumn(c, col(c).cast("long"))
+    )
+    val df = array_ints.foldLeft(withLongs)(
       (df, c) =>
         df.withColumn(c, split(col(c), "\u0001"))
           .withColumn(c, col(c).cast("array<int>"))
     )
-    df.coalesce(12).write.save("/datascience/custom/testParquet")
+    df.coalesce(12)
+      .write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/testParquet")
   }
 
   /*****************************************************/
