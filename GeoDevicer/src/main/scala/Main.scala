@@ -225,6 +225,12 @@ object Main {
       POICrossDevicerJson.match_POI(spark, value_dictionary)
     }
 
+     // If we need to calculate the aggregations, we do so as well.
+    if (value_dictionary("analytics_df") == "1"){
+      Aggregations.userAggregate(spark, value_dictionary)
+      if (value_dictionary("map_df") == "1")
+        Aggregations.POIAggregate(spark, value_dictionary)
+
     // Finally, we perform the cross-device if requested.
     if (value_dictionary("crossdevice") != "false" && value_dictionary(
           "crossdevice"
@@ -236,11 +242,7 @@ object Main {
         header = "true"
       )
 
-    // If we need to calculate the aggregations, we do so as well.
-    if (value_dictionary("analytics_df") == "1"){
-      Aggregations.userAggregate(spark, value_dictionary)
-      if (value_dictionary("map_df") == "1")
-        Aggregations.POIAggregate(spark, value_dictionary)
+   
     }
   }
 }
