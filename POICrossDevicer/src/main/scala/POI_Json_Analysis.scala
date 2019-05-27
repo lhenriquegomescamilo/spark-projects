@@ -472,27 +472,17 @@ def make_analytics_map(spark: SparkSession, value_dictionary: Map [String,String
 
                   import spark.implicits._
 
-                  //cargamos la data de los (XD y Madid). Sólo nos quedamos con los códigos y el device_id
-                  //Esto lo generó el proceso si se pidió audiencia. 
+                  //if(web_agreggator = "audience"
 
-                  /**
-                  val output_path_audience = "/datascience/geo/audiences/%s_audience".format(value_dictionary("poi_output_file"))
+                  //if  value_dictionary("poi_column_name")
+                  //    value_dictionary("audience_column_name")
 
-                         
-                  val pois = spark.read
-                    .option("delimiter","\t")
-                    .csv(output_path_audience )
-                    .select("_c1")
-                    .withColumnRenamed("_c1", "device_id")
-                  **/
-                  //hacemos el join
-
-                  val joint = poi_all.select("device_id")
+                 val joint = poi_all.select("device_id",value_dictionary("poi_column_name"))
                               .join(segments, Seq("device_id"))
                               .withColumn("segments", explode(col("segments")))
-                              .agg(collect_set("segments") as "segment_array")
-                              .withColumn("segments", concat_ws(",", col("segment_array")))
-                              .drop("segment_array")
+                              .groupBy("name", "segments")
+                              .agg(countDistinct(col("device_id")) as "unique_count" )
+                              
                               
 
                  /***
