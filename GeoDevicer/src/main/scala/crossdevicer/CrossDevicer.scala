@@ -49,9 +49,9 @@ object CrossDevicer {
       "con" -> "TV",
       "dra" -> "drawbridge",
       "idfa" -> "ios",
-      "aaid"->"android"
-      
-    )    val mapUDF = udf((dev_type: String) => typeMap(dev_type))
+      "aaid"->"android",
+      "unkown"->"unkown") 
+    val mapUDF = udf((dev_type: String) => typeMap(dev_type))
 
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     // BIG ASSUMPTION: we only want the cookies out of the cross-device.
