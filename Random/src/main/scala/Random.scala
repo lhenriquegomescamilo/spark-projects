@@ -15,12 +15,7 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.types.{
-  DoubleType,
-  StringType,
-  StructField,
-  StructType
-}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Encoders, SparkSession}
 import org.joda.time.Days
 import org.joda.time.DateTime
@@ -2065,8 +2060,8 @@ val records_common = the_join.select(col("identifier"))
     //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
     // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
     // Also we generate a new column call 'geocode' that will be used for the join
-   
-   //comento acá, había corrido bien esta parte pero no la de levantar y guardar la data
+
+    //comento acá, había corrido bien esta parte pero no la de levantar y guardar la data
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
@@ -2087,22 +2082,26 @@ val records_common = the_join.select(col("identifier"))
       .parquet(hdfs_files: _*)
       .select("device_id", "all_segments", "url")
       .filter(
-        "array_contains (all_segments,20107) OR array_contains (all_segments,20108) OR array_contains (all_segments,20109) OR array_contains (all_segments,20110)")
+        "array_contains (all_segments,20107) OR array_contains (all_segments,20108) OR array_contains (all_segments,20109) OR array_contains (all_segments,20110)"
+      )
       .filter(col("url").isNotNull)
       .select("device_id", "url")
       .distinct()
 
     //Cargamos la audiencia de voto
-    val voto_audience = spark.read.format("csv")
-        .option("delimiter","\t")
-        .load("/datascience/devicer/processed/AR_1111118_2019-05-22T19-50-01-452066")
-        .select("_c1")
-        .toDF("device_id")
-        .distinct()
-    
-   //hacemos el join 
-   val voto_url = voto_audience.join(data_audience,Seq("device_id"))
-      
+    val voto_audience = spark.read
+      .format("csv")
+      .option("delimiter", "\t")
+      .load(
+        "/datascience/devicer/processed/AR_1111118_2019-05-22T19-50-01-452066"
+      )
+      .select("_c1")
+      .toDF("device_id")
+      .distinct()
+
+    //hacemos el join
+    val voto_url = voto_audience.join(data_audience, Seq("device_id"))
+
 //guardamos
     voto_url.write
       .mode(SaveMode.Overwrite)
@@ -2111,7 +2110,6 @@ val records_common = the_join.select(col("identifier"))
       .option("sep", ",")
       .save("/datascience/geo/audiences/voto_url_180_24-05")
 
-
 //levantamos el resultado del join en random y contamos los usuarios
 
 //esto va a haber que comentarlo para reusarlo entero...
@@ -2119,33 +2117,43 @@ val records_common = the_join.select(col("identifier"))
 //val fs = FileSystem.get(conf)
 //....hasta acá
 
-val user_count = spark.read.format("csv").option("header",true)
-                .load("/datascience/geo/audiences/voto_url_180_24-05/")
-                .filter(col("url")
-                .isNotNull)
-                .select("device_id")
-                .distinct().count()
+    val user_count = spark.read
+      .format("csv")
+      .option("header", true)
+      .load("/datascience/geo/audiences/voto_url_180_24-05/")
+      .filter(col("url").isNotNull)
+      .select("device_id")
+      .distinct()
+      .count()
 
-val url_by_user = spark.read.format("csv")
-                  .option("header",true)
-                  .load("/datascience/geo/audiences/voto_url_180_24-05/")
-                  .filter(col("url").isNotNull).groupBy("device_id")
-                  .agg(countDistinct("url") as "detections")
+    val url_by_user = spark.read
+      .format("csv")
+      .option("header", true)
+      .load("/datascience/geo/audiences/voto_url_180_24-05/")
+      .filter(col("url").isNotNull)
+      .groupBy("device_id")
+      .agg(countDistinct("url") as "detections")
 
-val user_count_plus_10 = url_by_user.filter("detections > 10").count()
+    val user_count_plus_10 = url_by_user.filter("detections > 10").count()
 
-val user_avg = url_by_user.agg(avg("detections") as "average").select("average").collect()(0).toString
+    val user_avg = url_by_user
+      .agg(avg("detections") as "average")
+      .select("average")
+      .collect()(0)
+      .toString
 
 //guardamos las metricas
-conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-val os = fs.create(new Path("/datascience/geo/audiences/voto_url_180_24-05_metrics.log"))
+    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    val os = fs.create(
+      new Path("/datascience/geo/audiences/voto_url_180_24-05_metrics.log")
+    )
 
-val json_content = """{"user_w_url": "%s", "user_count_plus10": "%s", "user_avg":"%s" }"""
-                        .format(user_count,user_count_plus_10,user_avg)
+    val json_content =
+      """{"user_w_url": "%s", "user_count_plus10": "%s", "user_avg":"%s" }"""
+        .format(user_count, user_count_plus_10, user_avg)
 
-
-os.write(json_content.getBytes)
-fs.close()
+    os.write(json_content.getBytes)
+    fs.close()
 
   }
 
@@ -2842,7 +2850,7 @@ fs.close()
       .save("/datascience/geo/drawbridge_monthly")
   }
 
-/**
+  /**
     *
     *
     *
@@ -2853,11 +2861,10 @@ fs.close()
     *
     *
     * */
-
-    def sample_metrics_geo_brco(
+  def sample_metrics_geo_brco(
       spark: SparkSession
   ) = {
-/*
+    /*
 //hardcoded variables
     val nDays = 16
     val since = 9
@@ -2880,10 +2887,10 @@ fs.close()
     val hdfs_files = days      .map(day => path + "%s/".format(day))      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))      .map(day => day + "*.csv.gz")
 
 
-      
+
  val sample_data = spark.read      .option("header", "true")  .option("delimiter","\t")    .csv(hdfs_files: _*)      .toDF("ad_id", "timestamp", "country", "longitude","latitude","etc")
 
-   
+
 //usuarios únicos por día
 val user_detections = sample_data.withColumn("Day", date_format(col("timestamp"), "d")).groupBy("country","day").agg(countDistinct("ad_id") as "unique_users")
 
@@ -2903,13 +2910,13 @@ user_detections.write
       .option("sep", ",")
       .option("header", "true")
       .save("/datascience/geo/samples/metrics/sample_user_detections")
-      
+
 day_detections.write
       .mode(SaveMode.Overwrite)
       .format("csv")
       .option("sep", ",")
       .option("header", "true")
-      .save("/datascience/geo/samples/metrics/sample_day_detections")   
+      .save("/datascience/geo/samples/metrics/sample_day_detections")
 
 
 user_granularity.write
@@ -2919,43 +2926,60 @@ user_granularity.write
       .option("header", "true")
       .save("/datascience/geo/samples/metrics/sample_user_granularity")
 
-      */
-    
+     */
 
 //Estaba mal hecho el cálculo de granularidad promedio, volvemos a correrlo
-val granularity =  spark.read.format("csv")
-          .option("header",true)
-          .load("/datascience/geo/samples/metrics/sample_user_granularity")
+    val granularity = spark.read
+      .format("csv")
+      .option("header", true)
+      .load("/datascience/geo/samples/metrics/sample_user_granularity")
 
-val avg_granularity = granularity
-              .groupBy("ad_id","country")
-              .agg(avg("time_granularity") as "avg_granularity")
-
+    val avg_granularity = granularity
+      .groupBy("ad_id", "country")
+      .agg(avg("time_granularity") as "avg_granularity")
 
 //usuarios por deteccion BR
-val plus2bra = avg_granularity.filter("country == 'BR'").filter("avg_granularity > 2").count()
-val plus20bra = avg_granularity.filter("country == 'BR'").filter("avg_granularity > 20").count()
-val plus80bra = avg_granularity.filter("country == 'BR'").filter("avg_granularity > 80").count()
+    val plus2bra = avg_granularity
+      .filter("country == 'BR'")
+      .filter("avg_granularity > 2")
+      .count()
+    val plus20bra = avg_granularity
+      .filter("country == 'BR'")
+      .filter("avg_granularity > 20")
+      .count()
+    val plus80bra = avg_granularity
+      .filter("country == 'BR'")
+      .filter("avg_granularity > 80")
+      .count()
 
 //usuarios por deteccion CO
-val plus2co = avg_granularity.filter("country == 'CO'").filter("avg_granularity > 2").count()
-val plus20co = avg_granularity.filter("country == 'CO'").filter("avg_granularity > 20").count()
-val plus80co = avg_granularity.filter("country == 'CO'").filter("avg_granularity > 80").count()
+    val plus2co = avg_granularity
+      .filter("country == 'CO'")
+      .filter("avg_granularity > 2")
+      .count()
+    val plus20co = avg_granularity
+      .filter("country == 'CO'")
+      .filter("avg_granularity > 20")
+      .count()
+    val plus80co = avg_granularity
+      .filter("country == 'CO'")
+      .filter("avg_granularity > 80")
+      .count()
 
 //guardamos las metricas
-val conf = new Configuration()
-conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-val fs= FileSystem.get(conf)
-val os = fs.create(new Path("/datascience/geo/samples/metrics.log"))
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    val fs = FileSystem.get(conf)
+    val os = fs.create(new Path("/datascience/geo/samples/metrics.log"))
 
-val json_content = """{"plus2bra": "%s", "plus20bra": "%s", "plus80bra":"%s", "plus2co":"%s","plus20co":"%s","plus80co":"%s"}""".format(plus2bra,plus20bra,plus80bra,plus2co,plus20co,plus80co)
+    val json_content =
+      """{"plus2bra": "%s", "plus20bra": "%s", "plus80bra":"%s", "plus2co":"%s","plus20co":"%s","plus80co":"%s"}"""
+        .format(plus2bra, plus20bra, plus80bra, plus2co, plus20co, plus80co)
 
-
-os.write(json_content.getBytes)
-fs.close()
+    os.write(json_content.getBytes)
+    fs.close()
 
   }
-
 
   /**
     *
@@ -3135,6 +3159,69 @@ fs.close()
       .save("/datascience/data_demo/name=edades/country=AR/userAgents")
   }
 
+  /**
+    *
+    *
+    *
+    *
+    *
+    *            TEST PARQUET
+    *
+    *
+    *
+    *
+    *
+    *
+    */
+  def testParquet(spark: SparkSession) {
+    import spark.implicits._
+
+    val ints =
+      "created id_partner id_segment_source share_data tagged click_count conversion_count impression_count activable job_id"
+        .split(" ")
+        .map(StructField(_, IntegerType, true))
+        .toArray
+    val doubles = "latitude longitude accuracy altitude altaccuracy"
+      .split(" ")
+      .map(StructField(_, DoubleType, true))
+      .toArray
+    val array_strings = "tags app_data app_installed".split(" ").toSeq
+    val array_strings_structs =
+      array_strings.map(StructField(_, StringType, true)).toArray
+    val array_ints =
+      "segments clusters first_party second_party third_party all_clusters all_segments all_segments_xd gt removed_segments platforms"
+        .split(" ")
+    val array_ints_structs =
+      array_ints.map(StructField(_, StringType, true)).toArray
+    val longs = "ip".split(" ").map(StructField(_, LongType, true)).toArray
+    val strings =
+      """time timestamp user device_id device_type web_id android_id ios_id event_type data_type nav_type version country user_country id_partner_user user_agent browser url secondary_url referer sec title category sub_category search_keyword vertical mb_sh2 mb_sh5 ml_sh2 ml_sh5 nid_sh2 nid_sh5 track_code track_type advertiser_id advertiser_name campaign_id campaign_name placement_id site_id app_name wifi_name p223 p240 d2 d9 d10 d11 d13 d14 d17 d18 d19 d20 d21 d22 url_subdomain url_domain url_path referer_subdomain referer_domain referer_path d23"""
+        .split(" ")
+        .map(StructField(_, StringType, true))
+        .toArray
+
+    val customSchema = StructType(
+      ints ++ doubles ++ longs ++ array_strings_structs ++ array_ints_structs ++ strings
+    )
+
+    val data = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .schema(customSchema)
+      .load("/data/eventqueue/2019/05/23/21*")
+
+    val withStrings = array_strings.foldLeft(data)(
+      (df, c) => df.withColumn(c, split(col(c), "\u0001"))
+    )
+    val df = array_ints.foldLeft(withStrings)(
+      (df, c) =>
+        df.withColumn(c, split(col(c), "\u0001"))
+          .withColumn(c, col(c).cast("array<int>"))
+    )
+    df.coalesce(12).write.save("/datascience/custom/testParquet")
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -3142,9 +3229,7 @@ fs.close()
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
-    // user_agents(spark)
-    sample_metrics_geo_brco(spark)
-    //getUserAgentForAgeUsers(spark)
+    testParquet(spark)
   }
 
 }
