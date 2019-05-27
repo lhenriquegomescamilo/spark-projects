@@ -85,8 +85,7 @@ object CrossDevicer {
       .join(        
         audience    
         .select("device_id","device_type","validUser","frequency",
-                  value_dictionary("poi_column_name"),
-                  value_dictionary("audience_column_name"))          
+                  value_dictionary("poi_column_name"))      //,     value_dictionary("audience_column_name")    
         .distinct(),        
         Seq("device_id"),
             "right_outer")      
