@@ -62,7 +62,6 @@ object CrossDevicer {
       .withColumnRenamed("index", "device_id")
       .withColumnRenamed("device_type", "device_type_db")
       .withColumn("device_id", upper(col("device_id")))
-      .withColumn("device_type_db", mapUDF(col("device_type_db")))
 
     // Here we do the cross-device per se.
     /*
