@@ -3213,8 +3213,9 @@ user_granularity.write
     )
     df.coalesce(12)
       .write
+      .option("spark.sql.parquet.compression.codec", "gzip")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/testParquet")
+      .save("/datascience/custom/testParquetGzip")
   }
 
   /*****************************************************/
