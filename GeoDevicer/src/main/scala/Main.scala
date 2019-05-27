@@ -134,6 +134,32 @@ object Main {
             .length > 0) query("poi_column_name").toString
       else ""
 
+    // Column that identifies the audience, if present.
+    val poi_column_name =
+      if (query.contains("audience_column_name") && Option(query("audience_column_name"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("audience_column_name").toString
+      else "no_push"
+
+    // Number of days to look up in data_keywords
+    val web_days =
+      if (query.contains("web_days") && Option(query("web_days"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("web_days").toString
+      else "0"
+
+// Column to aggregate the segment count for web behaviour from data_keywords
+    val web_column =
+      if (query.contains("web_column") && Option(query("web_column"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("web_days").toString
+      else poi_column_name
+
+
+
     // Finally we construct the Map that is going to be returned
     val value_dictionary: Map[String, String] = Map(
       "max_radius" -> max_radius,
@@ -240,6 +266,9 @@ object Main {
         value_dictionary,
         column_name = "device_id",
         header = "true"
+
+
+
       )
 
    
