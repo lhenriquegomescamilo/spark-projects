@@ -30,15 +30,15 @@ object GenerateMonthlyData{
     val filename_path = "/data/metadata/20190316-paths-counts.tsv"
     val filename_domain = "/data/metadata/20190316-domains-counts.tsv"
 
-    //val triplets_segments = GenerateTriplets.generate_triplets_segments(spark, ndays)
+    val triplets_segments = GenerateTriplets.generate_triplets_segments(spark, ndays)
     //val triplets_keywords = GenerateTriplets.generate_triplets_keywords(spark, ndays)
     println("LOGGER: Triplets segments generated")
 
-    //val ga_domain = DataGoogleAnalytics.get_data_google_analytics(spark, ndays, filename_domain)
+    val ga_domain = DataGoogleAnalytics.get_data_google_analytics(spark, ndays, filename_domain)
     //val ga_path = DataGoogleAnalytics.get_data_google_analytics_path(spark, ndays, filename_path)    
     println("LOGGER: GA data generated")
     
-    //val training = GenerateDataset.getTrainingData(spark, path_gt, country, training_name)
+    val training = GenerateDataset.getTrainingData(spark, path_gt, country, training_name)
     val expansion = GenerateDataset.getExpansionData(spark, path_gt, country, expansion_name)
   }
 }
