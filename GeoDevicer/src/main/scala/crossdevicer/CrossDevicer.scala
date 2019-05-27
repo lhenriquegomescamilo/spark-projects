@@ -30,15 +30,16 @@ object CrossDevicer {
       .format("csv")
       .option("sep", sep)
       .option("header", header)
-      .load("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
-      .withColumnRenamed(column_name, "device_id")
+      .load("/datascience/geo/geo_processed/%s_aggregated".format(value_dictionary("poi_output_file")))
       .withColumn("device_id", upper(col("device_id")))
+    
+    /*
     val columns_to_select = audience.columns.filter(
       !"timestamp,latitude_user,longitude_user,latitude_poi,longitude_poi,distance"
         .split(",")
         .toList
         .contains(_)
-    )
+    )*/
 
     // Useful function to transform the naming from CrossDevice index to Rely naming.
     val typeMap = Map(
@@ -64,10 +65,11 @@ object CrossDevicer {
       .withColumn("device_type_db", mapUDF(col("device_type_db")))
 
     // Here we do the cross-device per se.
+    /*
     val cross_deviced = db_data
       .join(
         audience
-          .select(columns_to_select.head, columns_to_select.tail: _*)
+          .select("validUser","frequency","device_id","device_type",value_dictionary("poi_column_name"),value_dictionary("audience_column_name"))
           .distinct(),
         Seq("device_id"),
         "right_outer"
@@ -78,7 +80,21 @@ object CrossDevicer {
         coalesce(col("device_type_db"), col("device_type"))
       )
       .drop(col("device"))
+      .drop(col("device_type_db"))*/
+      val cross_deviced = db_data      
+      .join(        
+        audience    
+        .select("device_id","device_type","validUser","frequency",
+                  value_dictionary("poi_column_name"),
+                  value_dictionary("audience_column_name"))          
+        .distinct(),        
+        Seq("device_id"),
+            "right_outer")      
+      .withColumn("device_id", coalesce(col("device"), col("device_id")))      
+      .withColumn("device_type",coalesce(col("device_type_db"), col("device_type")))
+      .drop(col("device"))
       .drop(col("device_type_db"))
+      .withColumn("device_type", mapUDF(col("device_type")))
 
     // We want information about the process
     cross_deviced.explain(extended = true)
