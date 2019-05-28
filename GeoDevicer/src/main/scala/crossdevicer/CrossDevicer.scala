@@ -3,6 +3,7 @@ package main.scala.crossdevicer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{upper, col, coalesce, udf}
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.functions._
 
 object CrossDevicer {
 
