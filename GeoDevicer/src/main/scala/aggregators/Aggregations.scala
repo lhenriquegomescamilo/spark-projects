@@ -139,7 +139,7 @@ object Aggregations {
 
         // Now we obtain the list of hdfs folders to be read
         val hdfs_files = days
-                    .map(day => path + "/day=%s/country=%s".format(day,value_dictionary("country"))
+                    .map(day => path + "/day=%s/country=%s".format(day,value_dictionary("country")))
                     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
         val segments = spark.read.option("basePath", path).parquet(hdfs_files: _*)
