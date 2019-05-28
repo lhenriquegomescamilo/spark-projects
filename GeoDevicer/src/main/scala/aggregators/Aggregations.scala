@@ -112,7 +112,7 @@ object Aggregations {
         "/datascience/geo/map_data/%s_map"
           .format(value_dictionary("poi_output_file"))
       )
-
+}
 
 
     def get_segments  (
