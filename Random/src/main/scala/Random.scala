@@ -3131,10 +3131,15 @@ val user_segments = data_segments.withColumn("all_segments", explode(col("all_se
 val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514/part-00191-f7503588-c33b-4a72-bed4-5402350f70ba-c000.csv").filter(col("_c1").isNotNull).toDF("device_id","UserAgent")
 
 //acá generamos las columnas que queremos del user agent y esto es lo que nos queremos guardar para después joinear con el resto 
-val dfParsedUA = df.withColumn("parsedUa", parseUaCol(col("UserAgent"))).select(col("device_id"),col("parsedUa.device.brand"),col("parsedUa.device.model"),col("parsedUa.userAgent.family"),col("parsedUa.os.family"),concat(col("parsedUa.os.major"),lit("."),col("parsedUa.os.minor")) as "version").toDF("device_id","brand","model","browser","os_name","os_version")
-//Part 3. Join
+//val dfParsedUA = df.withColumn("parsedUa", parseUaCol(col("UserAgent"))).select(col("device_id"),col("parsedUa.device.brand"),col("parsedUa.device.model"),col("parsedUa.userAgent.family"),col("parsedUa.os.family"),concat(col("parsedUa.os.major"),lit("."),col("parsedUa.os.minor")) as "version").toDF("device_id","brand","model","browser","os_name","os_version")
 
-val final_df = user_segments.join(dfParsedUA,Seq("device_id"))
+val dfParsedUA = df.select("device_id", "UserAgent").rdd.map( row => (row(0), Parser.default.parse(row(1).toString)) ).map( row=> List(row._2.device.brand.getOrElse(""),row._2.device.model.getOrElse(""),row._2.userAgent.family,row._2.os.family,row._2.os.major.getOrElse(""),row._2.os.minor.getOrElse("")).mkString(",") )
+dfParsedUA.saveAsTextFile("/datascience/audiences/output/celulares_user_agent_ua_parsed/")
+
+//Part 3. Join
+val dfParsedRecover = spark.read.format("csv").option("header",false).load("/datascience/audiences/output/celulares_user_agent_ua_parsed.csv")
+                      .toDF("device_id","brand","model","browser","os_name","os_version","os_version2")
+val final_df = user_segments.join(dfParsedRecover,Seq("device_id"))
 
 final_df.write
       .format("csv")
