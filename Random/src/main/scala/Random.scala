@@ -3132,7 +3132,7 @@ val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514
 
 val dfParsedUA = df.select("device_id", "UserAgent").rdd
 .map( row => (row(0), Parser.default.parse(row(1).toString)) )
-.map( row=> List(row._1,row._2.device.brand.getOrElse("")row._2.device.model.getOrElse(""),row._2.userAgent.family,row._2.os.family,row._2.os.major.getOrElse(""),row._2.os.minor.getOrElse("")).mkString(",") )
+.map( row=> List(row._1,row._2.device.brand.getOrElse(""),row._2.device.model.getOrElse(""),row._2.userAgent.family,row._2.os.family,row._2.os.major.getOrElse(""),row._2.os.minor.getOrElse("")).mkString(",") )
 
 //guardamos el dataset
 dfParsedUA.saveAsTextFile("/datascience/audiences/output/celulares_user_agent_ua_parsed_3/")
