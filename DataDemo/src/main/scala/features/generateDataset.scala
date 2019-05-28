@@ -479,6 +479,19 @@ object GenerateDataset {
                   .load("/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities".format(name, country))
                   .withColumnRenamed("_c0","device_id")
     
+    gt.join(ga,Seq("device_id"),"inner")
+                .select("device_id", "label")
+                .distinct()
+                .orderBy(asc("device_id"))
+                .write
+                .mode(SaveMode.Overwrite)
+                .format("csv")
+                .option("sep", "\t")
+                .save(
+                  "/datascience/data_demo/name=%s/country=%s/gt".format(name, country)
+                )
+    
+    
     generateSegmentTriplets(spark, ga, country, "left", name)
     val segments = spark.read
                   .format("csv")
