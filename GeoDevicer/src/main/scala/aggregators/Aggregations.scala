@@ -132,16 +132,22 @@ object Aggregations {
         val conf = spark.sparkContext.hadoopConfiguration
         val fs = FileSystem.get(conf)
 
+       
+        val country_iso =
+      if (value_dictionary("country") == "argentina")
+           "AR"
+      else "MX"
+
         // Get the days to be loaded
         val format = "yyyyMMdd"
         val since = 1
         val end = DateTime.now.minusDays(since)
         val days = (0 until value_dictionary("web_days").toInt).map(end.minusDays(_)).map(_.toString(format))
-        val path = "/datascience/data_keywords"
+        val path = "/datascience/data_audiences"
 
         // Now we obtain the list of hdfs folders to be read
         val hdfs_files = days
-                    .map(day => path + "/day=%s/country=%s".format(day,value_dictionary("country")))
+                    .map(day => path + "/day=%s/country=%s".format(day,country_iso))
                     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
         val segments = spark.read.option("basePath", path).parquet(hdfs_files: _*)
