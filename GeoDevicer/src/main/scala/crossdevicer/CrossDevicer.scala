@@ -50,7 +50,7 @@ object CrossDevicer {
       "dra" -> "drawbridge",
       "idfa" -> "ios",
       "aaid"->"android",
-      "unkown"->"unkown") 
+      "unknown"->"unknown") 
     val mapUDF = udf((dev_type: String) => typeMap(dev_type))
 
     // Get DrawBridge Index. Here we transform the device id to upper case too.
