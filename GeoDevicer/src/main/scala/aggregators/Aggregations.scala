@@ -3,6 +3,8 @@ package main.scala.aggregators
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.joda.time.DateTime
 
 object Aggregations {
 
@@ -114,7 +116,7 @@ object Aggregations {
       )
 }
 
-
+/*
     def get_segments  (
       spark: SparkSession,
       value_dictionary: Map[String, String]
@@ -153,7 +155,17 @@ object Aggregations {
         //if  value_dictionary("poi_column_name")
         //    value_dictionary("audience_column_name")
 
-        val joint = poi_all.select("device_id",value_dictionary("poi_column_name"))
+        val data = spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .load(
+        "/datascience/geo/geo_processed/%s_aggregated"
+          .format(value_dictionary("poi_output_file"))
+        )
+
+
+        val joint = data.select("device_id",value_dictionary("poi_column_name"))
                               .join(segments, Seq("device_id"))
                               .withColumn("segments", explode(col("segments")))
                               .groupBy("name", "segments")
@@ -170,7 +182,7 @@ object Aggregations {
                     .save(output_path_segments)
 
   }
-
+*/
 
 
   //add segments
