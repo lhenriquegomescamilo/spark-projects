@@ -3086,6 +3086,61 @@ user_granularity.write
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/sample_telefonica_20+/")
   }
+/**
+    *
+    *
+    *
+    *
+    *           Descarga de Usuarios con user agent y segmentos equifax.
+    *
+    *
+    *
+    *
+    *
+    */
+  def user_agents_segments(spark: SparkSession) {
+    import org.uaparser.scala.Parser
+    import org.apache.spark.sql.functions.udf
+
+//Parte 1. Data Audiences. Extracción de usuarios con segmentos de equifax
+val data =  spark.read.format("parquet").load("/datascience/data_audiences/day=20190516/country=AR/part-00033-f69b9f84-6664-4aeb-ac7b-da3f1c1058db.c000.snappy.parquet")
+
+//Cargamos segmentos equifax 
+val equifax = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/AR/equi.tsv")
+val equi_segment = equifax.select("SegmentId").collect().map(_(0)).toList
+
+//Filtro de segmentos equifax
+val array_equifax_filter = equi_segment.map(segment => "array_contains (all_segments,%s)".format(segment)).mkString(" OR ")
+
+val data_segments = data.filter(array_equifax_filter).select("device_id","all_segments")
+
+//explotamos la columna de segments, nos quedamos con los valores únicos y después agregamos todo en una columna separada por coma
+val user_segments = data_segments.withColumn("all_segments", explode(col("all_segments"))).distinct().withColumn("all_segments", concat_ws(",", col("all_segments")))
+
+//Parte 2. Parsing del User Agent
+
+//creamos la funcion para parsear el user agent.
+
+val parseUaCol = udf((s : String) =>  {
+   Parser.get.parse(s)
+})
+
+val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514/part-00191-f7503588-c33b-4a72-bed4-5402350f70ba-c000.csv").filter(col("_c1").isNotNull).toDF("device_id","UserAgent")
+
+//acá generamos las columnas que queremos del user agent y esto es lo que nos queremos guardar para después joinear con el resto 
+val dfParsedUA = df.withColumn("parsedUa", parseUaCol(col("UserAgent"))).select(col("device_id"),col("parsedUa.device.brand"),col("parsedUa.device.model"),col("parsedUa.userAgent.family"),col("parsedUa.os.family"),concat(col("parsedUa.os.major"),lit("."),col("parsedUa.os.minor")) as "version").toDF("device_id","brand","model","browser","os_name","os_version")
+
+
+//Part 3. Join
+
+val final_df = user_segments.join(dfParsedUA,Seq("device_id"))
+
+final_df.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/audiences/output/celulares_user_agent_segmentos_28_05")
+  }
+
 
   /**
     *
