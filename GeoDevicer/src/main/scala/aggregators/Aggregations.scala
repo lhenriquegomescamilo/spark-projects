@@ -18,7 +18,7 @@ object Aggregations {
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .load("/datascience/geo/%s_madid_cookies".format(value_dictionary("poi_output_file")))
+      .load("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
 
     // This function takes two lists: timestamps and distances. It checks that the user has been in a POI a number of minutes within the range:
     //                  umbralmin < n_minutes_in_poi < umbralmax
