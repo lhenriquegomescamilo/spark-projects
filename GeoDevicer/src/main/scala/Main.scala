@@ -174,7 +174,9 @@ object Main {
       "umbralmin" -> umbralmin,
       "umbralmax" -> umbralmax,
       "umbraldist" -> umbraldist,
-      "poi_column_name" -> poi_column_name
+      "poi_column_name" -> poi_column_name,
+       "audience_column_name" -> audience_column_name,
+        "web_days" -> web_days
     )
 
     println("LOGGER PARAMETERS:")
@@ -191,7 +193,9 @@ object Main {
     "umbralmin" -> $umbralmin,
     "umbralmax" -> $umbralmax,
     "umbraldist" -> $umbraldist,
-    "poi_column_name" -> $poi_column_name""")
+    "poi_column_name" -> $poi_column_name,
+    "audience_column_name" -> $audience_column_name,
+    "web_days" -> $web_days""")
     value_dictionary
   }
 
