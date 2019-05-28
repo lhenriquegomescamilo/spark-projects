@@ -65,23 +65,7 @@ object CrossDevicer {
       .withColumnRenamed("device_type", "device_type_db")
       .withColumn("device_id", upper(col("device_id")))
 
-    // Here we do the cross-device per se.
-    /*
-    val cross_deviced = db_data
-      .join(
-        audience
-          .select("validUser","frequency","device_id","device_type",value_dictionary("poi_column_name"),value_dictionary("audience_column_name"))
-          .distinct(),
-        Seq("device_id"),
-        "right_outer"
-      )
-      .withColumn("device_id", coalesce(col("device"), col("device_id")))
-      .withColumn(
-        "device_type",
-        coalesce(col("device_type_db"), col("device_type"))
-      )
-      .drop(col("device"))
-      .drop(col("device_type_db"))*/
+   
       val cross_deviced = db_data      
       .join(        
         audience    
@@ -96,14 +80,18 @@ object CrossDevicer {
       .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))
 
+      val cross_deviced_agg = cross_deviced.groupBy("device_id","device_type","validUser","frequency")
+      .agg(collect_list(value_dictionary("poi_column_name")) as value_dictionary("poi_column_name"))
+      .withColumn(value_dictionary("poi_column_name"), concat_ws(",", col(value_dictionary("poi_column_name"))))
+
     // We want information about the process
-    cross_deviced.explain(extended = true)
+    cross_deviced_agg.explain(extended = true)
 
     // Finally, we store the result obtained.
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(
       value_dictionary("poi_output_file")
     )
-    cross_deviced.write
+    cross_deviced_agg.write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
