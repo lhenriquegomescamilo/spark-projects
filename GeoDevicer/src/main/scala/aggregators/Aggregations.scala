@@ -116,7 +116,7 @@ object Aggregations {
       )
 }
 
-/*
+  //add segments
     def get_segments  (
       spark: SparkSession,
       value_dictionary: Map[String, String]
@@ -148,7 +148,7 @@ object Aggregations {
 
         // Importamos implicits para que funcione el as[String]
 
-        import spark.implicits._
+        //import spark.implicits._
 
         //hay que elegir una opción para la agregación de los segmentos
         //if(web_agreggator = "audience"
@@ -160,7 +160,7 @@ object Aggregations {
         .option("header", "true")
         .option("sep", "\t")
         .load(
-        "/datascience/geo/geo_processed/%s_aggregated"
+        "/datascience/audiences/crossdeviced/%s_xd"
           .format(value_dictionary("poi_output_file"))
         )
 
@@ -182,10 +182,10 @@ object Aggregations {
                     .save(output_path_segments)
 
   }
-*/
 
 
-  //add segments
+
+
 
 
 }
