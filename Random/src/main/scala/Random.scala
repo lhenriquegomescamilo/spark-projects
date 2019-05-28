@@ -3135,11 +3135,11 @@ val dfParsedUA = df.select("device_id", "UserAgent").rdd
 .map( row=> List(row._1,row._2.device.brand.getOrElse(""),row._2.device.model.getOrElse(""),row._2.userAgent.family,row._2.os.family,row._2.os.major.getOrElse(""),row._2.os.minor.getOrElse("")).mkString(",") )
 
 //guardamos el dataset
-dfParsedUA.saveAsTextFile("/datascience/audiences/output/celulares_user_agent_ua_parsed_3/")
+dfParsedUA.saveAsTextFile("/datascience/audiences/output/celulares_user_agent_ua_parsed_4/")
 
 //Part 3. Join
-val dfParsedRecover = spark.read.format("csv").option("header",false).load("/datascience/audiences/output/celulares_user_agent_ua_parsed_3")
-                      .toDF("device_id","brand","model","browser","os_name","os_version")
+val dfParsedRecover = spark.read.format("csv").option("header",false).load("/datascience/audiences/output/celulares_user_agent_ua_parsed_4")
+                      .toDF("device_id","brand","model","browser","os_name","os_version_0","os_version_1")
 val final_df = user_segments.join(dfParsedRecover,Seq("device_id"))
 
 final_df.write
