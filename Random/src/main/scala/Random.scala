@@ -3100,7 +3100,6 @@ user_granularity.write
     */
   def user_agents_segments(spark: SparkSession) {
     import org.uaparser.scala.Parser
-    import org.apache.spark.sql.functions.udf
 
 //Parte 1. Data Audiences. Extracción de usuarios con segmentos de equifax
 val data =  spark.read.format("parquet").load("/datascience/data_audiences/day=20190516/country=AR/part-00033-f69b9f84-6664-4aeb-ac7b-da3f1c1058db.c000.snappy.parquet")
@@ -3131,8 +3130,6 @@ val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514
 
 //acá generamos las columnas que queremos del user agent y esto es lo que nos queremos guardar para después joinear con el resto 
 val dfParsedUA = df.withColumn("parsedUa", parseUaCol(col("UserAgent"))).select(col("device_id"),col("parsedUa.device.brand"),col("parsedUa.device.model"),col("parsedUa.userAgent.family"),col("parsedUa.os.family"),concat(col("parsedUa.os.major"),lit("."),col("parsedUa.os.minor")) as "version").toDF("device_id","brand","model","browser","os_name","os_version")
-
-
 //Part 3. Join
 
 val final_df = user_segments.join(dfParsedUA,Seq("device_id"))
