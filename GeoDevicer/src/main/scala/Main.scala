@@ -266,10 +266,10 @@ object Main {
         value_dictionary,
         column_name = "device_id",
         header = "true"
-
-
-
-      )
+  )
+      // Finally, we perform the cross-device if requested.
+    if (value_dictionary("web_days").toInt>0)
+      Aggregations.get_segments(spark, value_dictionary)
 
    
     }
