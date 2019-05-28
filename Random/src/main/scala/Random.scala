@@ -3118,7 +3118,10 @@ val array_equifax_filter = equi_segment.map(segment => "array_contains (all_segm
 val data_segments = data.filter(array_equifax_filter).select("device_id","all_segments")
 
 //explotamos la columna de segments, nos quedamos con los valores únicos y después agregamos todo en una columna separada por coma
-val user_segments = data_segments.withColumn("all_segments", explode(col("all_segments"))).distinct().withColumn("all_segments", concat_ws(",", col("all_segments")))
+val user_segments = data_segments.withColumn("all_segments", explode(col("all_segments")))
+                    .distinct()
+                    .groupBy("device_id").agg(collect_list("all_segments") as "all_segments")
+                    .withColumn("all_segments", concat_ws(",", col("all_segments")))
 
 //Parte 2. Parsing del User Agent
 
