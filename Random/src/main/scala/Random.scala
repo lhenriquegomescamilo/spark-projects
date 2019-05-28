@@ -3104,6 +3104,8 @@ user_granularity.write
 import org.uaparser.scala.Parser
 import org.apache.spark.sql.functions.udf
 
+ val conf = spark.sparkContext.hadoopConfiguration
+ val fs = FileSystem.get(conf)
 
 //Parte 1. Data Audiences. Extracción de usuarios con segmentos de equifax
 val data =  spark.read.format("parquet").load("/datascience/data_audiences/day=20190516/country=AR/part-00033-f69b9f84-6664-4aeb-ac7b-da3f1c1058db.c000.snappy.parquet")
@@ -3137,11 +3139,18 @@ val dfParsedUA = df.select("device_id", "UserAgent").rdd
 .map( row => (row(0), Parser.default.parse(row(1).toString)) )
 .map( row=> List(row._1,row._2.device.brand.getOrElse(""),row._2.device.model.getOrElse(""),row._2.userAgent.family,row._2.os.family,row._2.os.major.getOrElse(""),row._2.os.minor.getOrElse("")).mkString(",") )
 
+
+//establecemos dónde guardar la data
+val output = "/datascience/audiences/output/celulares_user_agent_ua_parsed_temp/"
+
+//chequeamos si se puede borrar en caso de que exista
+try { fs.delete(new org.apache.hadoop.fs.Path(output), true) } catch { case _ : Throwable => { } }
+
 //guardamos el dataset
-dfParsedUA.saveAsTextFile("/datascience/audiences/output/celulares_user_agent_ua_parsed_4/")
+dfParsedUA.saveAsTextFile(output)
 
 //Part 3. Join
-val dfParsedRecover = spark.read.format("csv").option("header",false).load("/datascience/audiences/output/celulares_user_agent_ua_parsed_4")
+val dfParsedRecover = spark.read.format("csv").option("header",false).load(output)
                       .toDF("device_id","brand","model","browser","os_name","os_version_0","os_version_1")
 val final_df = user_segments.join(dfParsedRecover,Seq("device_id"))
 
