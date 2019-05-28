@@ -3279,8 +3279,8 @@ final_df.write
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
-
-    testParquet(spark)
+  user_agents_segments(spark)
+    //testParquet(spark)
   }
 
 }
