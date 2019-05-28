@@ -3104,9 +3104,6 @@ user_granularity.write
 import org.uaparser.scala.Parser
 import org.apache.spark.sql.functions.udf
 
-val parseUaCol = udf((s : String) =>  {
-   Parser.default.parse(s)
-})
 
 //Parte 1. Data Audiences. Extracción de usuarios con segmentos de equifax
 val data =  spark.read.format("parquet").load("/datascience/data_audiences/day=20190516/country=AR/part-00033-f69b9f84-6664-4aeb-ac7b-da3f1c1058db.c000.snappy.parquet")
