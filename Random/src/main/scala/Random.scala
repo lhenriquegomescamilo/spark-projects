@@ -3122,7 +3122,7 @@ val user_segments = data_segments.withColumn("all_segments", explode(col("all_se
 //creamos la funcion para parsear el user agent.
 
 val parseUaCol = udf((s : String) =>  {
-   Parser.get.parse(s)
+   Parser.get.default(s)
 })
 
 val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514/part-00191-f7503588-c33b-4a72-bed4-5402350f70ba-c000.csv").filter(col("_c1").isNotNull).toDF("device_id","UserAgent")
