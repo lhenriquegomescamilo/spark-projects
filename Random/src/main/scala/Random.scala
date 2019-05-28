@@ -3137,7 +3137,7 @@ dfParsedUA.saveAsTextFile("/datascience/audiences/output/celulares_user_agent_ua
 
 //Part 3. Join
 val dfParsedRecover = spark.read.format("csv").option("header",false).load("/datascience/audiences/output/celulares_user_agent_ua_parsed_2")
-                      .toDF("device_id","brand","model","browser","os_name","os_version","os_version2")
+                      .toDF("device_id","brand","model","browser","os_name","os_version")
 val final_df = user_segments.join(dfParsedRecover,Seq("device_id"))
 
 final_df.write
