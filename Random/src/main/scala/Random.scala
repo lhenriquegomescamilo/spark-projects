@@ -3099,7 +3099,14 @@ user_granularity.write
     *
     */
   def user_agents_segments(spark: SparkSession) {
-    import org.uaparser.scala.Parser
+
+//creamos la funcion para parsear el user agent.   
+import org.uaparser.scala.Parser
+import org.apache.spark.sql.functions.udf
+
+val parseUaCol = udf((s : String) =>  {
+   Parser.default.parse(s)
+})
 
 //Parte 1. Data Audiences. Extracción de usuarios con segmentos de equifax
 val data =  spark.read.format("parquet").load("/datascience/data_audiences/day=20190516/country=AR/part-00033-f69b9f84-6664-4aeb-ac7b-da3f1c1058db.c000.snappy.parquet")
@@ -3118,13 +3125,8 @@ val user_segments = data_segments.withColumn("all_segments", explode(col("all_se
 
 //Parte 2. Parsing del User Agent
 
-//creamos la funcion para parsear el user agent.
 
-val parser = Parser.default
 
-val parseUaCol = udf((s : String) =>  {
-   parser.parse(s)
-})
 
 val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514/part-00191-f7503588-c33b-4a72-bed4-5402350f70ba-c000.csv").filter(col("_c1").isNotNull).toDF("device_id","UserAgent")
 
