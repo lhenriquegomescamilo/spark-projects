@@ -135,7 +135,7 @@ object Main {
       else ""
 
     // Column that identifies the audience, if present.
-    val poi_column_name =
+    val audience_column_name =
       if (query.contains("audience_column_name") && Option(query("audience_column_name"))
             .getOrElse("")
             .toString
@@ -254,7 +254,7 @@ object Main {
      // If we need to calculate the aggregations, we do so as well.
     if (value_dictionary("analytics_df") == "1"){
       Aggregations.userAggregate(spark, value_dictionary)
-      if (value_dictionary("map_df") == "1")
+    if (value_dictionary("map_df") == "1")
         Aggregations.POIAggregate(spark, value_dictionary)
 
     // Finally, we perform the cross-device if requested.
