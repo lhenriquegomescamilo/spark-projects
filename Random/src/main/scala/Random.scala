@@ -3143,7 +3143,7 @@ val data_segments = data.filter(array_equifax_filter).select("device_id","all_se
 
 data_segments.write
       .format("csv")
-      option("header",true)
+      .option("header",true)
       .mode(SaveMode.Overwrite)
       .save("/datascience/audiences/output/user_segments_equifax_29_05_temp")
 }
@@ -3163,7 +3163,9 @@ import org.apache.spark.sql.functions.udf
  val nDays = 2
  val since = 8
 //Parte 2. Parsing del User Agent
-
+  val format = "yyyyMMdd"
+ val end = DateTime.now.minusDays(since)
+ val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
 
 val path_UA = "/datascience/user_agents"
 // Now we obtain the list of hdfs folders to be read
