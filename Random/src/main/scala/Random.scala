@@ -3117,7 +3117,7 @@ import org.apache.spark.sql.functions.udf
  // Get the days to be loaded - data_audiences
  val format = "yyyyMMdd"
  val end = DateTime.now.minusDays(since)
- val days = (0 until value_dictionary("web_days").toInt).map(end.minusDays(_)).map(_.toString(format))
+ val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
  val path = "/datascience/data_audiences"
 
 // We obtain the list of hdfs folders to be read
@@ -3147,14 +3147,13 @@ val user_segments = data_segments.withColumn("all_segments", explode(col("all_se
  //*******
 //Parte 2. Parsing del User Agent
 
-// Now we obtain the list of hdfs folders to be read
+
 val path_UA = "/datascience/user_agents"
 // Now we obtain the list of hdfs folders to be read
-val hdfs_files_UA = days
-                    .map(day => path_UA + "/%s/day=%s".format(country_iso,day))                
-                    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+val hdfs_files_UA = days.map(day => path_UA + "/%s/day=%s".format(country_iso,day))                
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path_UA)))
 
-val df = spark.read.option("basePath", pathUA).parquet(hdfs_files_UA: _*)
+val df = spark.read.option("basePath", path_UA).csv(hdfs_files_UA: _*)
 
 //val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514/part-00191-f7503588-c33b-4a72-bed4-5402350f70ba-c000.csv").filter(col("_c1").isNotNull).toDF("device_id","UserAgent")
 
