@@ -173,8 +173,8 @@ object Aggregations {
 
         val joint = data.select("device_id",value_dictionary("poi_column_name"))
                               .join(segments, Seq("device_id"))
-                              .withColumn("segments", explode(col("segments")))
-                              .groupBy("name", "segments")
+                              .withColumn("all_segments", explode(col("all_segments")))
+                              .groupBy(value_dictionary("poi_column_name"), "all_segments")
                               .agg(countDistinct(col("device_id")) as "unique_count" )
                               
                               
