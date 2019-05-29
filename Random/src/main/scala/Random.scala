@@ -3139,6 +3139,7 @@ val equi_segment = equifax.select("SegmentId").collect().map(_(0)).toList
 val array_equifax_filter = equi_segment.map(segment => "array_contains (all_segments,%s)".format(segment)).mkString(" OR ")
 
 val data_segments = data.filter(array_equifax_filter).select("device_id","all_segments")
+            .withColumn("all_segments", concat_ws(",", col("all_segments")))
 
 
 data_segments.write
@@ -3203,7 +3204,7 @@ def ua_segment_join(spark: SparkSession) {
   val dfParsedRecover = spark.read.format("csv").option("header",false).load("/datascience/audiences/output/celulares_user_agent_ua_parsed_temp/")
                       .toDF("device_id","brand","model","browser","os_name","os_version_0","os_version_1")
 
-  val dfSegmentRecover = spark.read.format("csv").load("/datascience/audiences/output/user_segments_equifax_29_05_temp")
+  val dfSegmentRecover = spark.read.format("csv").option("header",true).load("/datascience/audiences/output/user_segments_equifax_29_05_temp")
 
   val final_df = dfSegmentRecover.join(dfParsedRecover,Seq("device_id"))
 
