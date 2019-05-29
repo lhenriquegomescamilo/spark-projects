@@ -151,7 +151,7 @@ object Aggregations {
                     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
         val segments = spark.read.option("header", true).option("basePath", path).parquet(hdfs_files: _*)
-                      .select("device_id","all_segments","segments")
+                      .select("device_id","all_segments")
 
         // Importamos implicits para que funcione el as[String]
 
