@@ -288,9 +288,9 @@ object GenerateDataset {
                               IF(AGE45 is null, 0, AGE45+20) as AGE45,
                               IF(AGE55 is null, 0, AGE55+20) as AGE55,
                               IF(AGE65 is null, 0, AGE65+20) as AGE65,
-                                ( IF(AGE18 is null, 0, AGE18) + IF(AGE25 is null, 0, AGE25) + 
+                                  IF(AGE18 is null, 0, AGE18) + IF(AGE25 is null, 0, AGE25) + 
                                   IF(AGE35 is null, 0, AGE35) + IF(AGE45 is null, 0, AGE45) +
-                                  IF(AGE55 is null, 0, AGE55) + IF(AGE65 is null, 0, AGE65) + 120) as total_age,
+                                  IF(AGE55 is null, 0, AGE55) + IF(AGE65 is null, 0, AGE65) + 120 as total_age
                       FROM ga)"""
     )
     probabilities
