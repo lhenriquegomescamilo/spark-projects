@@ -244,7 +244,7 @@ object GenerateDataset {
       .dropDuplicates("url", "device_id")
 
     // Here I calculate the data of GA just for the users that do not have ground truth data.
-    val joint = ga.join(gtDF, Seq("device_id"), joinType)
+    val joint = ga.join(gtDF, Seq("device_id"), joinType).na.fill(0)
 
     joint.cache()
 
@@ -255,7 +255,6 @@ object GenerateDataset {
       .agg(collect_list(col("url")).as("url"))
       .withColumn("url", concat_ws(";", col("url")))
       .orderBy(asc("device_id"))
-      .na.fill(0)
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
