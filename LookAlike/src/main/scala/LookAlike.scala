@@ -157,7 +157,7 @@ object LookAlike {
       false
     ).withColumn("country", lit(country))
       .write
-      .mode("append")//SaveMode.Overwrite)
+      .mode("append") //SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_lookalike/feature_index")
 
@@ -259,6 +259,63 @@ object LookAlike {
       .save("/datascience/data_lookalike/predictions/")
   }
 
+  /**
+    * This function takes a set of triplets, transforms them into a dense vector per user, and then contruct
+    * a similarity matrix. Once the similarity matrix is created, it returns all the MatrixEntry obtained
+    * and stores them into a file as a csv.
+    */
+  def getSimilarities(spark: SparkSession) {
+    // Imports
+    import org.apache.spark.mllib.linalg.{Vector, Vectors}
+    import spark.implicits._
+    import org.apache.spark.mllib.linalg.distributed.RowMatrix
+    import org.apache.spark.sql.functions._
+    import scala.collection.mutable.WrappedArray
+
+    // Read the data
+    val data = spark.read
+      .load(
+        "/datascience/data_demo/triplets_segments/country=PE"
+      )
+      .dropDuplicates("feature", "device_id")
+    val segments =
+      "26, 32, 59, 61, 96, 250, 129, 144, 396, 397".split(", ").toList
+    val segmentsIndex = segments.zipWithIndex.toDF("feature", "index")
+
+    // Here we select the specified segments.
+    val joint = data
+      .filter(col("feature").isin(segments: _*))
+      .join(broadcast(segmentsIndex), Seq("feature"))
+      .select("device_id", "index")
+      .rdd
+      .map(row => (row(0), row(1)))
+
+    // Now we construct a dense vector for every user.
+    val grouped = joint.groupByKey()
+    val rows = grouped.map(
+      row =>
+        Vectors
+          .sparse(
+            10,
+            row._2.map(_.toString.toInt).toArray,
+            Array.fill(row._2.size)(1.0)
+          )
+          .toDense
+          .asInstanceOf[Vector]
+    )
+
+    // Now we construct the similarity matrix
+    val mat = new RowMatrix(rows)
+    val simsPerfect = mat.columnSimilarities(.4)
+
+    // Finally, we store the similarity matrix
+    simsPerfect.entries
+      .map(entry => List(entry.i, entry.j, entry.value).mkString(","))
+      .saveAsTextFile(
+        "/datascience/data_lookalike/similarity_matrix/country=PE"
+      )
+  }
+
   def main(args: Array[String]) {
     val conf = new SparkConf()
       .setAppName(
@@ -267,8 +324,8 @@ object LookAlike {
       .set("spark.serializer", classOf[KryoSerializer].getName)
       .set("spark.kryo.registrator", classOf[ALSRegistrator].getName)
       .set("spark.kryoserializer.buffer.mb", "8")
-      .set("spark.shuffle.memoryFraction","0.65") //default is 0.2 
-      .set("spark.storage.memoryFraction","0.3")
+      .set("spark.shuffle.memoryFraction", "0.65") //default is 0.2
+      .set("spark.storage.memoryFraction", "0.3")
     val sc = new SparkContext(conf)
     val sqlContext = new org.apache.spark.sql.SQLContext(sc)
     val spark = sqlContext.sparkSession
@@ -279,22 +336,23 @@ object LookAlike {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getTripletsWithIndex(spark, "AR")
+    // getTripletsWithIndex(spark, "AR")
 
-    val triplets = spark.read.load(
-      "/datascience/data_lookalike/segment_triplets_with_index/country=AR/"// part-02*-3023c398-0b95-4e9d-afb5-196e424c15dd.c000.snappy.parquet"
-    )
-    val ratings = getRatings(triplets, "device_index")
+    // val triplets = spark.read.load(
+    //   "/datascience/data_lookalike/segment_triplets_with_index/country=AR/" // part-02*-3023c398-0b95-4e9d-afb5-196e424c15dd.c000.snappy.parquet"
+    // )
+    // val ratings = getRatings(triplets, "device_index")
 
-    val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
-    val model = train(
-      spark,
-      training.repartition(2000),
-      16,
-      3,
-      0.01
-    )
+    // val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
+    // val model = train(
+    //   spark,
+    //   training.repartition(2000),
+    //   16,
+    //   3,
+    //   0.01
+    // )
 
-    evaluate(spark, test, model)
+    // evaluate(spark, test, model)
+    getSimilarities(spark)
   }
 }
