@@ -134,6 +134,32 @@ object Main {
             .length > 0) query("poi_column_name").toString
       else ""
 
+    // Column that identifies the audience, if present.
+    val audience_column_name =
+      if (query.contains("audience_column_name") && Option(query("audience_column_name"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("audience_column_name").toString
+      else "no_push"
+
+    // Number of days to look up in data_keywords
+    val web_days =
+      if (query.contains("web_days") && Option(query("web_days"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("web_days").toString
+      else "0"
+
+// Column to aggregate the segment count for web behaviour from data_keywords
+    val web_column =
+      if (query.contains("web_column") && Option(query("web_column"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("web_days").toString
+      else poi_column_name
+
+
+
     // Finally we construct the Map that is going to be returned
     val value_dictionary: Map[String, String] = Map(
       "max_radius" -> max_radius,
@@ -148,7 +174,9 @@ object Main {
       "umbralmin" -> umbralmin,
       "umbralmax" -> umbralmax,
       "umbraldist" -> umbraldist,
-      "poi_column_name" -> poi_column_name
+      "poi_column_name" -> poi_column_name,
+       "audience_column_name" -> audience_column_name,
+        "web_days" -> web_days
     )
 
     println("LOGGER PARAMETERS:")
@@ -165,7 +193,9 @@ object Main {
     "umbralmin" -> $umbralmin,
     "umbralmax" -> $umbralmax,
     "umbraldist" -> $umbraldist,
-    "poi_column_name" -> $poi_column_name""")
+    "poi_column_name" -> $poi_column_name,
+    "audience_column_name" -> $audience_column_name,
+    "web_days" -> $web_days""")
     value_dictionary
   }
 
@@ -228,7 +258,7 @@ object Main {
      // If we need to calculate the aggregations, we do so as well.
     if (value_dictionary("analytics_df") == "1"){
       Aggregations.userAggregate(spark, value_dictionary)
-      if (value_dictionary("map_df") == "1")
+    if (value_dictionary("map_df") == "1")
         Aggregations.POIAggregate(spark, value_dictionary)
 
     // Finally, we perform the cross-device if requested.
@@ -240,7 +270,10 @@ object Main {
         value_dictionary,
         column_name = "device_id",
         header = "true"
-      )
+  )
+      // Finally, we perform the cross-device if requested.
+    if (value_dictionary("web_days").toInt>0)
+      Aggregations.get_segments(spark, value_dictionary)
 
    
     }

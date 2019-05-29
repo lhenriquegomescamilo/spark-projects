@@ -3,8 +3,12 @@ package main.scala.aggregators
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.joda.time.DateTime
 
 object Aggregations {
+
+ 
   def userAggregate(
       spark: SparkSession,
       value_dictionary: Map[String, String]
@@ -67,6 +71,8 @@ object Aggregations {
       .save(output_path_anlytics)
 
   }
+//this function sis used to create the map
+
 
   def POIAggregate(
       spark: SparkSession,
@@ -108,5 +114,84 @@ object Aggregations {
         "/datascience/geo/map_data/%s_map"
           .format(value_dictionary("poi_output_file"))
       )
+}
+
+  //add segments
+    def get_segments  (
+      spark: SparkSession,
+      value_dictionary: Map[String, String]
+  ) = {
+
+        ////////////////////Getting web segments for users
+            //  if(value_dictionary("crossdevice")=="1" 
+            //    &  value_dictionary("audience")=="1" &  
+            //    value_dictionary("web_days").toInt>0) {
+           // Esta sección sólo va a tener sentido si se eligió hacer un crossdevice 
+
+        // First we obtain the configuration to be allowed to watch if a file exists or not
+        val conf = spark.sparkContext.hadoopConfiguration
+        val fs = FileSystem.get(conf)
+
+       
+        val country_iso =
+      if (value_dictionary("country") == "argentina")
+           "AR"
+      else "MX"
+
+        // Get the days to be loaded
+        val format = "yyyyMMdd"
+        val since = 1
+        val end = DateTime.now.minusDays(since)
+        val days = (0 until value_dictionary("web_days").toInt).map(end.minusDays(_)).map(_.toString(format))
+        val path = "/datascience/data_audiences"
+
+        // Now we obtain the list of hdfs folders to be read
+        val hdfs_files = days
+                    .map(day => path + "/day=%s/country=%s".format(day,country_iso))
+                    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+        val segments = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+        // Importamos implicits para que funcione el as[String]
+
+        //import spark.implicits._
+
+        //hay que elegir una opción para la agregación de los segmentos
+        //if(web_agreggator = "audience"
+        //if  value_dictionary("poi_column_name")
+        //    value_dictionary("audience_column_name")
+
+        val data = spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .load(
+        "/datascience/audiences/crossdeviced/%s_xd"
+          .format(value_dictionary("poi_output_file"))
+        )
+
+
+        val joint = data.select("device_id",value_dictionary("poi_column_name"))
+                              .join(segments, Seq("device_id"))
+                              .withColumn("segments", explode(col("segments")))
+                              .groupBy("name", "segments")
+                              .agg(countDistinct(col("device_id")) as "unique_count" )
+                              
+                              
+
+        val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
+                                                            .format(value_dictionary("poi_output_file"))
+
+        joint.write.format("csv")
+                    .option("header", "true")
+                    .mode(SaveMode.Overwrite)
+                    .save(output_path_segments)
+
   }
+
+
+
+
+
+
 }

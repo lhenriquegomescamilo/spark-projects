@@ -244,7 +244,7 @@ object GenerateDataset {
       .dropDuplicates("url", "device_id")
 
     // Here I calculate the data of GA just for the users that do not have ground truth data.
-    val joint = ga.join(gtDF, Seq("device_id"), joinType)
+    val joint = ga.join(gtDF, Seq("device_id"), joinType).na.fill(0)
 
     joint.cache()
 
@@ -395,6 +395,7 @@ object GenerateDataset {
     // Finally we perform the join between the users with no ground truth (left_anti join).
     gtDF.join(triplets, Seq("device_id"), joinType)
         .orderBy(asc("device_id"))
+        .select("device_id","feature")
         .write
         .format("csv")
         .mode(SaveMode.Overwrite)
@@ -423,11 +424,11 @@ object GenerateDataset {
       gtDF: DataFrame,
       country: String,
       joinType: String,
-      name: String
+      name: String  
   ) = {
     // Data from data audiences
     val df = getDataAudiences(spark)
-      .filter("country = 'AR' AND event_type IN ('pv', 'batch')")
+      .filter("country = '%s' AND event_type IN ('pv', 'batch')".format(country))
       .select("device_id", "url")
       .distinct()
 
@@ -478,6 +479,19 @@ object GenerateDataset {
                   .option("sep", "\t")
                   .load("/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities".format(name, country))
                   .withColumnRenamed("_c0","device_id")
+    
+    gt.join(ga,Seq("device_id"),"inner")
+                .select("device_id", "label")
+                .distinct()
+                .orderBy(asc("device_id"))
+                .write
+                .mode(SaveMode.Overwrite)
+                .format("csv")
+                .option("sep", "\t")
+                .save(
+                  "/datascience/data_demo/name=%s/country=%s/gt".format(name, country)
+                )
+    
     
     generateSegmentTriplets(spark, ga, country, "left", name)
     val segments = spark.read
