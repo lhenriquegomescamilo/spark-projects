@@ -3097,12 +3097,11 @@ user_granularity.write
     *
     *
     *
-    */
-  def user_agents_segments(spark: SparkSession) {
+    */ 
 
-//creamos la funcion para parsear el user agent.   
-import org.uaparser.scala.Parser
-import org.apache.spark.sql.functions.udf
+def user_agents_segments(spark: SparkSession) {
+
+ def user_segments(spark: SparkSession) {
 
  val conf = spark.sparkContext.hadoopConfiguration
  val fs = FileSystem.get(conf)
@@ -3125,7 +3124,9 @@ val hdfs_files_audiences = days
                     .map(day => path + "/day=%s/country=%s".format(day,country_iso))
                     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-val data = spark.read.option("basePath", path).parquet(hdfs_files_audiences: _*)
+val data = spark.read.option("basePath", path)
+            .parquet(hdfs_files_audiences: _*)
+            .dropDuplicates("device_id")
 
 
 //val data =  spark.read.format("parquet").load("/datascience/data_audiences/day=20190516/country=AR/part-00033-f69b9f84-6664-4aeb-ac7b-da3f1c1058db.c000.snappy.parquet")
@@ -3139,12 +3140,28 @@ val array_equifax_filter = equi_segment.map(segment => "array_contains (all_segm
 
 val data_segments = data.filter(array_equifax_filter).select("device_id","all_segments")
 
-//explotamos la columna de segments, nos quedamos con los valores únicos y después agregamos todo en una columna separada por coma
-val user_segments = data_segments.withColumn("all_segments", explode(col("all_segments")))
-                    .distinct()
-                    .groupBy("device_id").agg(collect_list("all_segments") as "all_segments")
-                    .withColumn("all_segments", concat_ws(",", col("all_segments")))
+
+data_segments.write
+      .format("csv")
+      option("header",true)
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/audiences/output/user_segments_equifax_29_05_temp")
+}
  //*******
+
+ def user_agent_parsing(spark: SparkSession) {
+
+//creamos la funcion para parsear el user agent.   
+import org.uaparser.scala.Parser
+import org.apache.spark.sql.functions.udf
+
+ val conf = spark.sparkContext.hadoopConfiguration
+ val fs = FileSystem.get(conf)
+
+ //hardcoded variables
+ val country_iso = "AR"
+ val nDays = 2
+ val since = 8
 //Parte 2. Parsing del User Agent
 
 
@@ -3156,6 +3173,7 @@ val hdfs_files_UA = days.map(day => path_UA + "/%s/day=%s".format(country_iso,da
 val df = spark.read.option("basePath", path_UA).csv(hdfs_files_UA: _*)
         .toDF("device_id","UserAgent","day")
         .filter(col("UserAgent").isNotNull)
+        .dropDuplicates("device_id")
 
 //val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514/part-00191-f7503588-c33b-4a72-bed4-5402350f70ba-c000.csv").filter(col("_c1").isNotNull).toDF("device_id","UserAgent")
 
@@ -3175,18 +3193,29 @@ try { fs.delete(new org.apache.hadoop.fs.Path(output), true) } catch { case _ : 
 
 //guardamos el dataset
 dfParsedUA.saveAsTextFile(output)
-
+}
 //*******
 //Part 3. Join
-val dfParsedRecover = spark.read.format("csv").option("header",false).load(output)
+def ua_segment_join(spark: SparkSession) {
+
+  val dfParsedRecover = spark.read.format("csv").option("header",false).load("/datascience/audiences/output/celulares_user_agent_ua_parsed_temp/")
                       .toDF("device_id","brand","model","browser","os_name","os_version_0","os_version_1")
-val final_df = user_segments.join(dfParsedRecover,Seq("device_id"))
+
+  val dfSegmentRecover = spark.read.format("csv").load("/datascience/audiences/output/user_segments_equifax_29_05_temp")
+
+  val final_df = dfSegmentRecover.join(dfParsedRecover,Seq("device_id"))
 
 final_df.write
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/audiences/output/celulares_user_agent_segmentos_29_05")
   }
+
+user_segments(spark)
+user_agent_parsing(spark)
+ua_segment_join(spark)
+
+}
 
 
   /**
