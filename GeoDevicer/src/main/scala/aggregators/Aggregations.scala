@@ -166,7 +166,7 @@ object Aggregations {
         .option("header", "true")
         .option("sep", "\t")
         .load(
-        "/datascience/audiences/crossdeviced/%s_xd"
+        "/datascience/geo/geo_processed/%s_aggregated"
           .format(value_dictionary("poi_output_file"))
         )
 

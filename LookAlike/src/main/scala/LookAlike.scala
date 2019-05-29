@@ -157,7 +157,7 @@ object LookAlike {
       false
     ).withColumn("country", lit(country))
       .write
-      .mode("append")//SaveMode.Overwrite)
+      .mode("append") //SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_lookalike/feature_index")
 
@@ -259,6 +259,75 @@ object LookAlike {
       .save("/datascience/data_lookalike/predictions/")
   }
 
+  /**
+    * This function takes a set of triplets, transforms them into a dense vector per user, and then contruct
+    * a similarity matrix. Once the similarity matrix is created, it returns all the MatrixEntry obtained
+    * and stores them into a file as a csv.
+    */
+  def getSimilarities(spark: SparkSession) {
+    // Imports
+    import org.apache.spark.mllib.linalg.{Vector, Vectors}
+    import spark.implicits._
+    import org.apache.spark.mllib.linalg.distributed.RowMatrix
+    import org.apache.spark.sql.functions._
+    import scala.collection.mutable.WrappedArray
+
+    // Read the data
+    val data = spark.read
+      .load(
+        "/datascience/data_demo/triplets_segments/country=PE"
+      )
+      .dropDuplicates("feature", "device_id")
+    val segments =
+      """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
+      247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
+      386,389,395,396,397,398,399,401,402,403,404,405,409,410,411,412,413,418,420,421,422,429,430,432,433,434,440,441,446,447,450,451,453,454,456,457,458,
+      459,460,462,463,464,465,467,895,898,899,909,912,914,915,916,917,919,920,922,923,928,929,930,931,932,933,934,935,937,938,939,940,942,947,948,949,950,
+      951,952,953,955,956,957,1005,1116,1159,1160,1166,2064,2623,2635,2636,2660,2719,2720,2721,2722,2723,2724,2725,2726,2727,2733,2734,2735,2736,2737,2743,
+      3010,3011,3012,3013,3014,3015,3016,3017,3018,3019,3020,3021,3022,3023,3024,3025,3026,3027,3028,3029,3030,3031,3032,3033,3034,3035,3036,3037,3038,3039,
+      3040,3041,3042,3043,3044,3045,3046,3047,3048,3049,3050,3051,3055,3076,3077,3084,3085,3086,3087,3302,3303,3308,3309,3310,3388,3389,3418,3420,3421,3422,
+      3423,3450,3470,3472,3473,3564,3565,3566,3567,3568,3569,3570,3571,3572,3573,3574,3575,3576,3577,3578,3579,3580,3581,3582,3583,3584,3585,3586,3587,3588,
+      3589,3590,3591,3592,3593,3594,3595,3596,3597,3598,3599,3600,3730,3731,3732,3733,3779,3782,3843,3844,3913,3914,3915,4097,
+      5025,5310,5311,35360,35361,35362,35363"""
+        .replace("\n", "")
+        .split(",")
+        .toList
+    val segmentsIndex = segments.zipWithIndex.toDF("feature", "index")
+
+    // Here we select the specified segments.
+    val joint = data
+      .filter(col("feature").isin(segments: _*))
+      .join(broadcast(segmentsIndex), Seq("feature"))
+      .select("device_id", "index")
+      .rdd
+      .map(row => (row(0), row(1)))
+
+    // Now we construct a dense vector for every user.
+    val grouped = joint.groupByKey()
+    val rows = grouped.map(
+      row =>
+        Vectors
+          .sparse(
+            segments.size,
+            row._2.map(_.toString.toInt).toArray,
+            Array.fill(row._2.size)(1.0)
+          )
+          .toDense
+          .asInstanceOf[Vector]
+    )
+
+    // Now we construct the similarity matrix
+    val mat = new RowMatrix(rows)
+    val simsPerfect = mat.columnSimilarities(.4)
+
+    // Finally, we store the similarity matrix
+    simsPerfect.entries
+      .map(entry => List(entry.i, entry.j, entry.value).mkString(","))
+      .saveAsTextFile(
+        "/datascience/data_lookalike/similarity_matrix/country=PE"
+      )
+  }
+
   def main(args: Array[String]) {
     val conf = new SparkConf()
       .setAppName(
@@ -267,8 +336,8 @@ object LookAlike {
       .set("spark.serializer", classOf[KryoSerializer].getName)
       .set("spark.kryo.registrator", classOf[ALSRegistrator].getName)
       .set("spark.kryoserializer.buffer.mb", "8")
-      .set("spark.shuffle.memoryFraction","0.65") //default is 0.2 
-      .set("spark.storage.memoryFraction","0.3")
+      .set("spark.shuffle.memoryFraction", "0.65") //default is 0.2
+      .set("spark.storage.memoryFraction", "0.3")
     val sc = new SparkContext(conf)
     val sqlContext = new org.apache.spark.sql.SQLContext(sc)
     val spark = sqlContext.sparkSession
@@ -279,22 +348,23 @@ object LookAlike {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getTripletsWithIndex(spark, "AR")
+    // getTripletsWithIndex(spark, "AR")
 
-    val triplets = spark.read.load(
-      "/datascience/data_lookalike/segment_triplets_with_index/country=AR/"// part-02*-3023c398-0b95-4e9d-afb5-196e424c15dd.c000.snappy.parquet"
-    )
-    val ratings = getRatings(triplets, "device_index")
+    // val triplets = spark.read.load(
+    //   "/datascience/data_lookalike/segment_triplets_with_index/country=AR/" // part-02*-3023c398-0b95-4e9d-afb5-196e424c15dd.c000.snappy.parquet"
+    // )
+    // val ratings = getRatings(triplets, "device_index")
 
-    val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
-    val model = train(
-      spark,
-      training.repartition(2000),
-      16,
-      3,
-      0.01
-    )
+    // val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
+    // val model = train(
+    //   spark,
+    //   training.repartition(2000),
+    //   16,
+    //   3,
+    //   0.01
+    // )
 
-    evaluate(spark, test, model)
+    // evaluate(spark, test, model)
+    getSimilarities(spark)
   }
 }
