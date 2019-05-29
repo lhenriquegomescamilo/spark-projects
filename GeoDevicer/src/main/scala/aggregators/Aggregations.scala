@@ -177,24 +177,24 @@ object Aggregations {
                               .withColumn("all_segments", explode(col("all_segments")))
                               .groupBy(value_dictionary("poi_column_name"), "all_segments")
                               .agg(countDistinct(col("device_id")) as "unique_count" )
-                              
+
+
+       joint.write.format("csv")
+                    .option("header", "true")
+                    .mode(SaveMode.Overwrite)
+                    .save(output_path_segments)
+             
+             /*                 
         val total_by_poi = data.groupBy(value_dictionary("poi_column_name"))
                             .agg(countDistinct(col("device_id")) as "total_count_poi" )
-
+                            
         val total_by_segment = segments.groupBy("all_segments")
                               .agg(countDistinct(col("device_id")) as "total_count_sgement" )                      
 
         val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
                                                             .format(value_dictionary("poi_output_file"))
 
-
-
-        joint.write.format("csv")
-                    .option("header", "true")
-                    .mode(SaveMode.Overwrite)
-                    .save(output_path_segments)
-
-        total_by_segment.write.format("csv")
+                                                            total_by_segment.write.format("csv")
                     .option("header", "true")
                     .mode(SaveMode.Overwrite)
                     .save(output_path_segments + "_total_by_segment")            
@@ -203,7 +203,14 @@ object Aggregations {
         total_by_poi.write.format("csv")
                     .option("header", "true")
                     .mode(SaveMode.Overwrite)
-                    .save(output_path_segments + "_total_by_poi")               
+                    .save(output_path_segments + "_total_by_poi") 
+                    */
+
+
+
+       
+
+                      
   }
 
 
