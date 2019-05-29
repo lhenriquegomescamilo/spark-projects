@@ -3153,7 +3153,9 @@ val path_UA = "/datascience/user_agents"
 val hdfs_files_UA = days.map(day => path_UA + "/%s/day=%s".format(country_iso,day))                
           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path_UA)))
 
-val df = spark.read.option("basePath", path_UA).csv(hdfs_files_UA: _*).toDF("device_id","UserAgent","day")
+val df = spark.read.option("basePath", path_UA).csv(hdfs_files_UA: _*)
+        .toDF("device_id","UserAgent","day")
+        .filter(col("UserAgent").isNotNull)
 
 //val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514/part-00191-f7503588-c33b-4a72-bed4-5402350f70ba-c000.csv").filter(col("_c1").isNotNull).toDF("device_id","UserAgent")
 
