@@ -278,11 +278,17 @@ object GenerateDataset {
                 LOG(AGE45/total_age) as AGE45_PROB,
                 LOG(AGE55/total_age) as AGE55_PROB,
                 LOG(AGE65/total_age) as AGE65_PROB
-                FROM (SELECT device_id,
-                             MALE+100 as MALE, FEMALE+100 as FEMALE,
-                             MALE + FEMALE + 200 AS total_genero,
-                             AGE18+20 AS AGE18, AGE25+20 AS AGE25, AGE35+20 AS AGE35, AGE45+20 AS AGE45, AGE55+20 AS AGE55, AGE65+20 AS AGE65,
-                             AGE18+AGE25+AGE35+AGE45+AGE55+AGE65+120 AS total_age
+                FROM (SELECT  device_id,
+                              IF(MALE is null, 0, MALE+100) as MALE,
+                              IF(FEMALE is null, 0, FEMALE+100) as FEMALE,
+                              MALE + FEMALE + 200 AS total_genero,
+                              IF(AGE18 is null, 0, AGE18+20) as AGE18,
+                              IF(AGE25 is null, 0, AGE25+20) as AGE25,
+                              IF(AGE35 is null, 0, AGE35+20) as AGE35,
+                              IF(AGE45 is null, 0, AGE45+20) as AGE45,
+                              IF(AGE55 is null, 0, AGE55+20) as AGE55,
+                              IF(AGE65 is null, 0, AGE65+20) as AGE65,
+                              AGE18+AGE25+AGE35+AGE45+AGE55+AGE65+120 AS total_age
                       FROM ga)"""
     )
     probabilities
