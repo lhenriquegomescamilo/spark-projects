@@ -308,7 +308,7 @@ object LookAlike {
       row =>
         Vectors
           .sparse(
-            10,
+            segments.size,
             row._2.map(_.toString.toInt).toArray,
             Array.fill(row._2.size)(1.0)
           )
