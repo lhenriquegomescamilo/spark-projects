@@ -3107,8 +3107,28 @@ import org.apache.spark.sql.functions.udf
  val conf = spark.sparkContext.hadoopConfiguration
  val fs = FileSystem.get(conf)
 
-//Parte 1. Data Audiences. Extracción de usuarios con segmentos de equifax
-val data =  spark.read.format("parquet").load("/datascience/data_audiences/day=20190516/country=AR/part-00033-f69b9f84-6664-4aeb-ac7b-da3f1c1058db.c000.snappy.parquet")
+ //hardcoded variables
+ val country_iso = "AR"
+ val nDays = 2
+ val since = 8
+
+ //*******
+ //Parte 1. Data Audiences. Extracción de usuarios con segmentos de equifax
+ // Get the days to be loaded - data_audiences
+ val format = "yyyyMMdd"
+ val end = DateTime.now.minusDays(since)
+ val days = (0 until value_dictionary("web_days").toInt).map(end.minusDays(_)).map(_.toString(format))
+ val path = "/datascience/data_audiences"
+
+// We obtain the list of hdfs folders to be read
+val hdfs_files_audiences = days
+                    .map(day => path + "/day=%s/country=%s".format(day,country_iso))
+                    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+val data = spark.read.option("basePath", path).parquet(hdfs_files_audiences: _*)
+
+
+//val data =  spark.read.format("parquet").load("/datascience/data_audiences/day=20190516/country=AR/part-00033-f69b9f84-6664-4aeb-ac7b-da3f1c1058db.c000.snappy.parquet")
 
 //Cargamos segmentos equifax 
 val equifax = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/AR/equi.tsv")
@@ -3124,13 +3144,19 @@ val user_segments = data_segments.withColumn("all_segments", explode(col("all_se
                     .distinct()
                     .groupBy("device_id").agg(collect_list("all_segments") as "all_segments")
                     .withColumn("all_segments", concat_ws(",", col("all_segments")))
-
+ //*******
 //Parte 2. Parsing del User Agent
 
+// Now we obtain the list of hdfs folders to be read
+val path_UA = "/datascience/user_agents"
+// Now we obtain the list of hdfs folders to be read
+val hdfs_files_UA = days
+                    .map(day => path_UA + "/%s/day=%s".format(country_iso,day))                
+                    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
+val df = spark.read.option("basePath", pathUA).parquet(hdfs_files_UA: _*)
 
-
-val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514/part-00191-f7503588-c33b-4a72-bed4-5402350f70ba-c000.csv").filter(col("_c1").isNotNull).toDF("device_id","UserAgent")
+//val df = spark.read.format("csv").load("/datascience/user_agents/AR/day=20190514/part-00191-f7503588-c33b-4a72-bed4-5402350f70ba-c000.csv").filter(col("_c1").isNotNull).toDF("device_id","UserAgent")
 
 //acá generamos las columnas que queremos del user agent y esto es lo que nos queremos guardar para después joinear con el resto 
 //val dfParsedUA = df.withColumn("parsedUa", parseUaCol(col("UserAgent"))).select(col("device_id"),col("parsedUa.device.brand"),col("parsedUa.device.model"),col("parsedUa.userAgent.family"),col("parsedUa.os.family"),concat(col("parsedUa.os.major"),lit("."),col("parsedUa.os.minor")) as "version").toDF("device_id","brand","model","browser","os_name","os_version")
@@ -3149,6 +3175,7 @@ try { fs.delete(new org.apache.hadoop.fs.Path(output), true) } catch { case _ : 
 //guardamos el dataset
 dfParsedUA.saveAsTextFile(output)
 
+//*******
 //Part 3. Join
 val dfParsedRecover = spark.read.format("csv").option("header",false).load(output)
                       .toDF("device_id","brand","model","browser","os_name","os_version_0","os_version_1")
@@ -3157,7 +3184,7 @@ val final_df = user_segments.join(dfParsedRecover,Seq("device_id"))
 final_df.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/audiences/output/celulares_user_agent_segmentos_28_05")
+      .save("/datascience/audiences/output/celulares_user_agent_segmentos_29_05")
   }
 
 
