@@ -3117,7 +3117,7 @@ import org.apache.spark.sql.functions.udf
  // Get the days to be loaded - data_audiences
  val format = "yyyyMMdd"
  val end = DateTime.now.minusDays(since)
- val days = (0 until value_dictionary("web_days").toInt).map(end.minusDays(_)).map(_.toString(format))
+ val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
  val path = "/datascience/data_audiences"
 
 // We obtain the list of hdfs folders to be read
