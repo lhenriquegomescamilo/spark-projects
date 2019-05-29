@@ -179,6 +179,9 @@ object Aggregations {
                               .agg(countDistinct(col("device_id")) as "unique_count" )
 
 
+      val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
+                                                            .format(value_dictionary("poi_output_file"))
+
        joint.write.format("csv")
                     .option("header", "true")
                     .mode(SaveMode.Overwrite)
@@ -191,8 +194,7 @@ object Aggregations {
         val total_by_segment = segments.groupBy("all_segments")
                               .agg(countDistinct(col("device_id")) as "total_count_sgement" )                      
 
-        val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
-                                                            .format(value_dictionary("poi_output_file"))
+        
 
                                                             total_by_segment.write.format("csv")
                     .option("header", "true")
