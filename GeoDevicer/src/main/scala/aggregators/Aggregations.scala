@@ -120,7 +120,7 @@ object Aggregations {
  def getDataPipeline(
       spark: SparkSession,
       path: String,
-      value_dictionary: Map[String, String]): DataFrame = {
+      value_dictionary: Map[String, String]) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
