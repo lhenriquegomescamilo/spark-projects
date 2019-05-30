@@ -281,14 +281,16 @@ object GenerateDataset {
                 FROM (SELECT  device_id,
                               IF(MALE is null, 0, MALE+100) as MALE,
                               IF(FEMALE is null, 0, FEMALE+100) as FEMALE,
-                              MALE + FEMALE + 200 AS total_genero,
+                              IF(MALE is null, 0, MALE) + IF(FEMALE is null, 0, FEMALE) + 200 as total_genero,
                               IF(AGE18 is null, 0, AGE18+20) as AGE18,
                               IF(AGE25 is null, 0, AGE25+20) as AGE25,
                               IF(AGE35 is null, 0, AGE35+20) as AGE35,
                               IF(AGE45 is null, 0, AGE45+20) as AGE45,
                               IF(AGE55 is null, 0, AGE55+20) as AGE55,
                               IF(AGE65 is null, 0, AGE65+20) as AGE65,
-                              AGE18+AGE25+AGE35+AGE45+AGE55+AGE65+120 AS total_age
+                                  IF(AGE18 is null, 0, AGE18) + IF(AGE25 is null, 0, AGE25) + 
+                                  IF(AGE35 is null, 0, AGE35) + IF(AGE45 is null, 0, AGE45) +
+                                  IF(AGE55 is null, 0, AGE55) + IF(AGE65 is null, 0, AGE65) + 120 as total_age
                       FROM ga)"""
     )
     probabilities
