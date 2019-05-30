@@ -3132,8 +3132,9 @@ val data = spark.read.option("basePath", path)
 //val data =  spark.read.format("parquet").load("/datascience/data_audiences/day=20190516/country=AR/part-00033-f69b9f84-6664-4aeb-ac7b-da3f1c1058db.c000.snappy.parquet")
 
 //Cargamos segmentos equifax 
-val equifax = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/AR/equi.tsv")
-val equi_segment = equifax.select("SegmentId").collect().map(_(0)).toList
+//val equifax = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/AR/equi.tsv")
+//val equi_segment = equifax.select("SegmentId").collect().map(_(0)).toList
+val equi_segment = List(2,3,4,5,6,7,8,9,20107,20108,20109,20110,20117,20118,20121,20122,20123,35360,35361,35362,35363)
 
 //Filtro de segmentos equifax
 val array_equifax_filter = equi_segment.map(segment => "array_contains (all_segments,%s)".format(segment)).mkString(" OR ")
