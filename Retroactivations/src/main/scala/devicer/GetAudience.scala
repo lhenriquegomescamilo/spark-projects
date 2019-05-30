@@ -866,7 +866,7 @@ object GetAudience {
         case 0 =>
           if (
               (partner_ids.toString.length > 0 && country == "")  || 
-              (partner_ids.toString.length > 0 && !(partner_ids.split(",").contains("1")))
+              (partner_ids.toString.length > 0 && !(ids.contains("1")))
               )
             getDataIdPartners(
               spark,
