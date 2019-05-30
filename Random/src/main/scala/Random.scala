@@ -3220,27 +3220,28 @@ user_granularity.write
     *
     */
   def user_agents(spark: SparkSession) {
-    def parse_day(country: String, day: String) {
+    def parse_day(day: String) {
       spark.read
         .format("csv")
         .option("header", "true")
         .option("sep", "\t")
         .load("/data/eventqueue/%s/".format(day))
         .select("device_id", "user_agent", "country")
-        .filter("country = 'AR'")
-        .select("device_id", "user_agent")
+        .filter("country IN ('AR', 'CL', 'CO', 'BR', 'MX', 'US', 'PE')")
+        .select("device_id", "user_agent", "country")
+        .withColumn("day", day.replace("""/""", ""))
         .dropDuplicates("device_id")
         .write
-        .format("csv")
+        .format("parquet")
+        .partitionBy("day", "country")
+        .mode("append")
         .save(
-          "/datascience/user_agents/%s/day=%s/"
-            .format(country, day.replace("""/""", ""))
+          "/datascience/data_useragents/"
         )
       println("Day %s processed!".format(day))
     }
-    val days =
-      (2 until 20).map(DateTime.now.minusDays(_)).map(_.toString("yyyy/MM/dd"))
-    days.map(parse_day("AR", _))
+    val day = DateTime.now.minusDays(1).toString("yyyy/MM/dd")
+    parse_day("AR", day)
   }
 
   /**
