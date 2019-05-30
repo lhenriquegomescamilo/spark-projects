@@ -3126,13 +3126,15 @@ user_granularity.write
   //*******
 
   def user_agent_parsing(spark: SparkSession) {
+
     //creamos la funcion para parsear el user agent.
     import org.uaparser.scala.Parser
     import org.apache.spark.sql.functions.udf
 
     val path_UA = "/datascience/user_agents"
     val df = spark.read
-      .option(path_UA)
+      .format("csv")
+      .load(path_UA)
       .toDF("device_id", "UserAgent", "day")
       .filter(col("UserAgent").isNotNull)
       .dropDuplicates("device_id")
