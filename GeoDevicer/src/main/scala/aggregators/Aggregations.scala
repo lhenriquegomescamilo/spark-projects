@@ -2,13 +2,16 @@ package main.scala.aggregators
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.SaveMode
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
 
 object Aggregations {
 
- 
+
+
+
   def userAggregate(
       spark: SparkSession,
       value_dictionary: Map[String, String]
@@ -116,46 +119,55 @@ object Aggregations {
       )
 }
 
+ def getDataPipeline(
+      spark: SparkSession,
+      basePath: String,
+      value_dictionary: Map[String, String],
+
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    //specifying country
+    val country_iso =
+      if (value_dictionary("country") == "argentina")
+           "AR"
+      else "MX"
+
+    val nDays = value_dictionary("web_days")
+    val since = 1
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day,country_iso))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", basePath).parquet(hdfs_files: _*)
+
+    df
+  }
+
+
+
   //add segments
     def get_segments  (
       spark: SparkSession,
       value_dictionary: Map[String, String]
   ) = {
 
-        ////////////////////Getting web segments for users
-            //  if(value_dictionary("crossdevice")=="1" 
-            //    &  value_dictionary("audience")=="1" &  
-            //    value_dictionary("web_days").toInt>0) {
-           // Esta sección sólo va a tener sentido si se eligió hacer un crossdevice 
+        val audiences = getDataPipeline(spark,"/datascience/data_audiences",value_dictionary)
+        val user_segments = audiences.select("device_id","all_segments","timestamp")
 
-        // First we obtain the configuration to be allowed to watch if a file exists or not
-        val conf = spark.sparkContext.hadoopConfiguration
-        val fs = FileSystem.get(conf)
+        //Nos quedamos únicamente con la versión del usuario de mayor timestamp
+        val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").desc)
+        val dfTop = segments.withColumn("rn", row_number.over(w)).where($"rn" === 1).drop("rn")
 
-       
-        val country_iso =
-      if (value_dictionary("country") == "argentina")
-           "AR"
-      else "MX"
-
-        // Get the days to be loaded
-        val format = "yyyyMMdd"
-        val since = 1
-        val end = DateTime.now.minusDays(since)
-        val days = (0 until value_dictionary("web_days").toInt).map(end.minusDays(_)).map(_.toString(format))
-        val path = "/datascience/data_audiences"
-
-        // Now we obtain the list of hdfs folders to be read
-        val hdfs_files = days
-                    .map(day => path + "/day=%s/country=%s".format(day,country_iso))
-                    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-
-        val segments = spark.read.option("header", true).option("basePath", path).parquet(hdfs_files: _*)
-                      .select("device_id","all_segments")
-
-        // Importamos implicits para que funcione el as[String]
-
-        //import spark.implicits._
+        val segments = dfTop.select("device_id","all_segments")
 
         //hay que elegir una opción para la agregación de los segmentos
         //if(web_agreggator = "audience"
