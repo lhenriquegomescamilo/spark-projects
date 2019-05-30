@@ -46,6 +46,7 @@ object POICrossDevicerJson {
     val days = (0 until value_dictionary("nDays").toInt)
       .map(end.minusDays(_))
       .map(_.toString(format))
+      .filter(x => !(x contains "05/27"))
 
     // Now we obtain the list of hdfs files to be read
     val path = "/data/geo/safegraph/"
