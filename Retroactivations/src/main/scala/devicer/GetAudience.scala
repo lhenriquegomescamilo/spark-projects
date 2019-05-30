@@ -402,6 +402,12 @@ object GetAudience {
               .toString
               .length > 0) query("limit")
         else "-1"
+      val country =
+        if (query.contains("country") && Option(query("country"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("country")
+        else ""
 
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
@@ -419,7 +425,8 @@ object GetAudience {
         "jobid" -> jobid,
         "xd" -> xd,
         "common" -> commonFilter,
-        "limit" -> limit
+        "limit" -> limit,
+        "country" -> country
       )
 
       queries = queries ::: List(actual_map)
@@ -833,6 +840,8 @@ object GetAudience {
       val push = queries(0)("push").toString
       val xd = queries(0)("xd").toString
       val limit = queries(0)("limit").toString.toInt
+      val country = queries(0)("country").toString
+
       println(
         "DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
           .format(
@@ -855,7 +864,10 @@ object GetAudience {
       // Here we select the pipeline where we will gather the data
       val data = pipeline match {
         case 0 =>
-          if (partner_ids.toString.length > 0)
+          if (
+              (partner_ids.toString.length > 0 && country == "")  || 
+              (partner_ids.toString.length > 0 && !partner_ids.split(",").contains("1"))
+              )
             getDataIdPartners(
               spark,
               ids,
@@ -878,9 +890,12 @@ object GetAudience {
         case 4 =>
           getDataUS(spark, nDays.toString.toInt, since.toString.toInt)
       }
-
+    
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
+      // Flag to indicate if execution failed
+      var failed = False
+      
       if (queries.length > 10000) {
         // getMultipleAudience(spark, data, queries, file_name, commonFilter)
         val dataDays = getDataAudiencesDays(
@@ -895,12 +910,17 @@ object GetAudience {
           file_name,
           commonFilter
         )
-      } else {
-        getAudience(spark, data, queries, file_name, commonFilter, limit)
-      }
-
+      } else {   
+          try {
+            getAudience(spark, data, queries, file_name, commonFilter, limit)
+          }
+          catch {
+            failed = True
+          }
+        }
+      
       // We cross device the audience if the parameter is set.
-      if (Set("1", "true", "True").contains(xd)) {
+      if (!failed && Set("1", "true", "True").contains(xd)) {
         println(
           "LOGGER: the audience will be cross-deviced. XD parameter value: %s"
             .format(xd)
@@ -913,14 +933,17 @@ object GetAudience {
           "_c1"
         )
       }
+      
+
 
       // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
       srcPath = new Path(actual_path)
-      destPath = new Path("/datascience/devicer/done/")
+      destFolder = if (failed) "/datascience/devicer/errors/" else "/datascience/devicer/done/" 
+      destPath = new Path(destFolder) 
       hdfs.rename(srcPath, destPath)
 
       // If push parameter is true, we generate a file with the metadata.
-      if (Set("1", "true", "True").contains(push)) {
+      if (!failed && Set("1", "true", "True").contains(push)) {
         generateMetaFile(file_name, queries, xd)
       }
     }
