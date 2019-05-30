@@ -3131,6 +3131,9 @@ user_granularity.write
     import org.uaparser.scala.Parser
     import org.apache.spark.sql.functions.udf
 
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
     val path_UA = "/datascience/user_agents"
     val df = spark.read
       .format("csv")
