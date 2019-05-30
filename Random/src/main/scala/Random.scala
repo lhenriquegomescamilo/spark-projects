@@ -3136,8 +3136,8 @@ user_granularity.write
 
     //hardcoded variables
     val country_iso = "AR"
-    val nDays = 2
-    val since = 8
+    val nDays = 10
+    val since = 40
     //Parte 2. Parsing del User Agent
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
