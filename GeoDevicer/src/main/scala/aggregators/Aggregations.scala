@@ -119,7 +119,7 @@ object Aggregations {
 
  def getDataPipeline(
       spark: SparkSession,
-      basePath: String,
+      path: String,
       value_dictionary: Map[String, String]): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -143,7 +143,7 @@ object Aggregations {
     val hdfs_files = days
       .map(day => path + "/day=%s/country=%s".format(day,country_iso))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", basePath).parquet(hdfs_files: _*)
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
     df
   }
@@ -156,7 +156,7 @@ object Aggregations {
       value_dictionary: Map[String, String]
   ) = {
 
-        val audiences = getDataPipeline(spark,"/datascience/data_audiences",value_dictionary)
+        val audiences = getDataPipeline(spark,"/datascience/data_audiences","basePath",value_dictionary)
         val user_segments = audiences.select("device_id","all_segments","timestamp")
 
         //Nos quedamos únicamente con la versión del usuario de mayor timestamp
