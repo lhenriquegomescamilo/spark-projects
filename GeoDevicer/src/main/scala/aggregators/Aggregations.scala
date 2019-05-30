@@ -156,7 +156,7 @@ object Aggregations {
       value_dictionary: Map[String, String]
   ) = {
 
-        val audiences = getDataPipeline(spark,"/datascience/data_audiences","basePath",value_dictionary)
+        val audiences = getDataPipeline(spark,"/datascience/data_audiences",value_dictionary)
         val user_segments = audiences.select("device_id","all_segments","timestamp")
 
         //Nos quedamos únicamente con la versión del usuario de mayor timestamp
