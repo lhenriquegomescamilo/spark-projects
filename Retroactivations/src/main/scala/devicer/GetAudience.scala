@@ -915,7 +915,7 @@ object GetAudience {
             getAudience(spark, data, queries, file_name, commonFilter, limit)
           }
           catch {
-            val failed = true
+            failed = true
           }
         }
       
