@@ -3102,55 +3102,27 @@ user_granularity.write
   def user_agents_segments(spark: SparkSession) {
 
     def user_segments(spark: SparkSession) {
+      import org.apache.spark.sql.expressions.Window
 
-      val conf = spark.sparkContext.hadoopConfiguration
-      val fs = FileSystem.get(conf)
+      val data = getDataAudiences(spark, nDays = 2, since = 8)
 
-      //hardcoded variables
-      val country_iso = "AR"
-      val nDays = 2
-      val since = 8
-
-      //*******
-      //Parte 1. Data Audiences. Extracción de usuarios con segmentos de equifax
-      // Get the days to be loaded - data_audiences
-      val format = "yyyyMMdd"
-      val end = DateTime.now.minusDays(since)
-      val days =
-        (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
-      val path = "/datascience/data_audiences"
-
-      // We obtain the list of hdfs folders to be read
-      val hdfs_files_audiences = days
-        .map(day => path + "/day=%s/country=%s".format(day, country_iso))
-        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-
-      val data = spark.read
-        .option("basePath", path)
-        .parquet(hdfs_files_audiences: _*)
-        .dropDuplicates("device_id")
-
-      //val data =  spark.read.format("parquet").load("/datascience/data_audiences/day=20190516/country=AR/part-00033-f69b9f84-6664-4aeb-ac7b-da3f1c1058db.c000.snappy.parquet")
-
-      //Cargamos segmentos equifax
-      //val equifax = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/AR/equi.tsv")
-      //val equi_segment = equifax.select("SegmentId").collect().map(_(0)).toList
       val equi_segment = List(2, 3, 4, 5, 6, 7, 8, 9, 20107, 20108, 20109,
-        20110, 20117, 20118, 20121, 20122, 20123, 35360, 35361, 35362, 35363)
+        20110, 20117, 20118, 20121, 20122, 20123, 20125, 20126, 35360, 35361, 35362, 35363)
 
       //Filtro de segmentos equifax
       val array_equifax_filter = equi_segment
-        .map(segment => "array_contains (all_segments, '%s')".format(segment))
+        .map(segment => "array_contains(all_segments, '%s')".format(segment))
         .mkString(" OR ")
 
       val data_segments = data
-        .filter(array_equifax_filter)
-        .select("device_id", "all_segments")
-        .withColumn("all_segments", concat_ws(",", col("all_segments")))
+        .filter("country = 'AR' AND (%s)".format(array_equifax_filter))
+        .select("device_id", "all_segments", "timestamp")
 
-      data_segments.write
-        .format("csv")
-        .option("header", true)
+      val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").desc)
+
+      val dfTop = df.withColumn("rn", row_number.over(w)).where($"rn" === 1).drop("rn")
+
+      dfTop.write
         .mode(SaveMode.Overwrite)
         .save("/datascience/audiences/output/user_segments_equifax_29_05_temp")
     }
@@ -3402,7 +3374,7 @@ user_granularity.write
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    
+
     user_agents_segments(spark)
     //testParquet(spark)
   }
