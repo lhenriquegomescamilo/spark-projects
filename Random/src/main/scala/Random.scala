@@ -3120,7 +3120,7 @@ user_granularity.write
 
       val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").desc)
 
-      val dfTop = df.withColumn("rn", row_number.over(w)).where($"rn" === 1).drop("rn")
+      val dfTop = data_segments.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn")
 
       dfTop.write
         .mode(SaveMode.Overwrite)
