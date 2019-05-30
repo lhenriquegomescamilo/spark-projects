@@ -136,8 +136,8 @@ object Aggregations {
 
     // Get the days to be loaded
     val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
@@ -161,7 +161,7 @@ object Aggregations {
 
         //Nos quedamos únicamente con la versión del usuario de mayor timestamp
         val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").desc)
-        val dfTop = segments.withColumn("rn", row_number.over(w)).where($"rn" === 1).drop("rn")
+        val dfTop = user_segments.withColumn("rn", row_number.over(w)).where($"rn" === 1).drop("rn")
 
         val segments = dfTop.select("device_id","all_segments")
 
