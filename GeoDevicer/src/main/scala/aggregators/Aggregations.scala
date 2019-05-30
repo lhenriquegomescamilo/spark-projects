@@ -10,8 +10,6 @@ import org.joda.time.DateTime
 object Aggregations {
 
 
-
-
   def userAggregate(
       spark: SparkSession,
       value_dictionary: Map[String, String]
@@ -122,9 +120,7 @@ object Aggregations {
  def getDataPipeline(
       spark: SparkSession,
       basePath: String,
-      value_dictionary: Map[String, String],
-
-  ): DataFrame = {
+      value_dictionary: Map[String, String]): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -226,10 +222,5 @@ object Aggregations {
 
                       
   }
-
-
-
-
-
 
 }
