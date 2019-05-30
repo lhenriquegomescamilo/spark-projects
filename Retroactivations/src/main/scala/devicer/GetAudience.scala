@@ -866,7 +866,7 @@ object GetAudience {
         case 0 =>
           if (
               (partner_ids.toString.length > 0 && country == "")  || 
-              (partner_ids.toString.length > 0 && !partner_ids.split(",").contains("1"))
+              (partner_ids.toString.length > 0 && !(partner_ids.split(",").contains("1")))
               )
             getDataIdPartners(
               spark,
@@ -894,7 +894,7 @@ object GetAudience {
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
       // Flag to indicate if execution failed
-      var failed = False
+      var failed = false
       
       if (queries.length > 10000) {
         // getMultipleAudience(spark, data, queries, file_name, commonFilter)
@@ -915,7 +915,7 @@ object GetAudience {
             getAudience(spark, data, queries, file_name, commonFilter, limit)
           }
           catch {
-            failed = True
+            failed = true
           }
         }
       
@@ -938,7 +938,7 @@ object GetAudience {
 
       // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
       srcPath = new Path(actual_path)
-      destFolder = if (failed) "/datascience/devicer/errors/" else "/datascience/devicer/done/" 
+      val destFolder = if (failed) "/datascience/devicer/errors/" else "/datascience/devicer/done/" 
       destPath = new Path(destFolder) 
       hdfs.rename(srcPath, destPath)
 
