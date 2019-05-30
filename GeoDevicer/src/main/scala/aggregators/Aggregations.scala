@@ -182,9 +182,10 @@ object Aggregations {
 
         val joint = data.select("device_id",value_dictionary("poi_column_name"))
                               .join(segments, Seq("device_id"))
-                              .withColumn("all_segments", explode(col("all_segments")))
-                              .groupBy(value_dictionary("poi_column_name"), "all_segments")
-                              .agg(countDistinct(col("device_id")) as "unique_count" )
+                              .withColumn("all_segments", concat_ws(",", col("all_segments")))
+                              //.withColumn("all_segments", explode(col("all_segments")))
+                              //.groupBy(value_dictionary("poi_column_name"), "all_segments")
+                              //.agg(countDistinct(col("device_id")) as "unique_count" )
 
 
       val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
