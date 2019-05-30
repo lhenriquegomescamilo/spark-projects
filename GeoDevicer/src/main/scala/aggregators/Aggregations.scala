@@ -161,7 +161,7 @@ object Aggregations {
 
         //Nos quedamos únicamente con la versión del usuario de mayor timestamp
         val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").desc)
-        val dfTop = user_segments.withColumn("rn", row_number.over(w)).where($"rn" === 1).drop("rn")
+        val dfTop = user_segments.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn")
 
         val segments = dfTop.select("device_id","all_segments")
 
