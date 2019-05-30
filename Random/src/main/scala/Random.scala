@@ -3126,33 +3126,13 @@ user_granularity.write
   //*******
 
   def user_agent_parsing(spark: SparkSession) {
-
     //creamos la funcion para parsear el user agent.
     import org.uaparser.scala.Parser
     import org.apache.spark.sql.functions.udf
 
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-    //hardcoded variables
-    val country_iso = "AR"
-    val nDays = 10
-    val since = 40
-    //Parte 2. Parsing del User Agent
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days =
-      (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
-
     val path_UA = "/datascience/user_agents"
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files_UA = days
-      .map(day => path_UA + "/%s/day=%s".format(country_iso, day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path_UA)))
-
     val df = spark.read
-      .option("basePath", path_UA)
-      .csv(hdfs_files_UA: _*)
+      .option(path_UA)
       .toDF("device_id", "UserAgent", "day")
       .filter(col("UserAgent").isNotNull)
       .dropDuplicates("device_id")
