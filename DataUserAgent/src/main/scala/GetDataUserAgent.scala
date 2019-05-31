@@ -54,7 +54,6 @@ object GetDataUserAgent {
         )
       )
       .select("device_id", "user_agent", "country")
-      .withColumn("day", lit(day.replace("""/""", "")))
       .dropDuplicates("device_id")
       .rdd // Now we parse the user agents
       .map(row => (row(0), row(2), Parser.default.parse(row(2).toString)))
@@ -75,6 +74,7 @@ object GetDataUserAgent {
     // Finally we store the information in parquet files
     val df = spark
       .createDataFrame(parsed, schema)
+      .withColumn("day", lit(day.replace("""/""", "")))
       .coalesce(40)
     df.printSchema
 
