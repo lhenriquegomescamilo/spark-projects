@@ -3182,7 +3182,7 @@ user_granularity.write
     val dfParsedRecover = spark.read
       .format("parquet")
       //.load("/datascience/data_useragents/day=20190520/country=AR/")
-      .load("/datascience/data_useragents/*/country=AR/")
+      .load("/datascience/data_useragents/")
       .dropDuplicates("device_id")
 
     val dfSegmentRecover = spark.read
@@ -3196,7 +3196,7 @@ user_granularity.write
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save(
-        "/datascience/audiences/output/celulares_user_agent_segmentos_31_05"
+        "/datascience/audiences/output/celulares_user_agent_segmentos_31_05_all_country"
       )
   }
 
