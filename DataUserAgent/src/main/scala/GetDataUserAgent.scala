@@ -57,7 +57,7 @@ object GetDataUserAgent {
       .select("device_id", "user_agent", "country")
       .dropDuplicates("device_id")
       .rdd // Now we parse the user agents
-      .map(row => (row(0), row(2), parser.parse(row(2).toString)))
+      .map(row => (row(0), row(2), parser.value.parse(row(2).toString)))
       .map(
         row =>
           Row(
