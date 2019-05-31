@@ -73,7 +73,7 @@ object GetDataUserAgent {
       )
 
     spark
-      .createDataFrame(parsed)
+      .createDataFrame(parsed, schema)
       .coalesce(40)
       // Finally we store the information in parquet files
       .write
