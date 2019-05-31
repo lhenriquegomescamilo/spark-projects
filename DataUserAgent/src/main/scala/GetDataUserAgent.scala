@@ -4,6 +4,7 @@ import org.apache.spark.sql.{SparkSession, Row}
 import org.joda.time.{DateTime, Days}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.uaparser.scala.Parser
+import org.apache.log4j.{Level, Logger}
 
 object GetDataUserAgent {
 
@@ -55,8 +56,7 @@ object GetDataUserAgent {
       .select("device_id", "user_agent", "country")
       .withColumn("day", lit(day.replace("""/""", "")))
       .dropDuplicates("device_id")
-      // Now we parse the user agents
-      .rdd
+      .rdd // Now we parse the user agents
       .map(row => (row(0), row(2), Parser.default.parse(row(2).toString)))
       .map(
         row =>
@@ -72,11 +72,13 @@ object GetDataUserAgent {
           )
       )
 
-    spark
+    // Finally we store the information in parquet files
+    val df = spark
       .createDataFrame(parsed, schema)
       .coalesce(40)
-      // Finally we store the information in parquet files
-      .write
+    df.printSchema
+
+    df.write
       .format("parquet")
       .partitionBy("day", "country")
       .mode("append")
@@ -142,6 +144,8 @@ object GetDataUserAgent {
     val options = nextOption(Map(), args.toList)
     val nDays = if (options.contains('nDays)) options('nDays) else 1
     val from = if (options.contains('from)) options('from) else 1
+
+    Logger.getRootLogger.setLevel(Level.WARN)
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
