@@ -45,35 +45,36 @@ object GetDataUserAgent {
       .add(StructField("os", StringType, true))
       .add(StructField("os_min_version", StringType, true))
       .add(StructField("os_max_version", StringType, true))
+    val parser = Parser.default
 
     // Here we filter the ros and
-    val df = data
+    val parsed = data
       .filter(
         "event_type = 'pv' AND length(user_agent)>0 AND country IN (%s)".format(
           countries.map("'%s'".format(_)).mkString(", ")
         )
       )
       .select("device_id", "user_agent", "country")
-    //   .dropDuplicates("device_id")
-    //   .rdd // Now we parse the user agents
-    //   .map(row => (row(0), row(2), Parser.default.parse(row(2).toString)))
-    //   .map(
-    //     row =>
-    //       Row(
-    //         row._1, // device_id
-    //         row._2, // country
-    //         row._3.device.brand.getOrElse(""),
-    //         row._3.device.model.getOrElse(""),
-    //         row._3.userAgent.family,
-    //         row._3.os.family,
-    //         row._3.os.major.getOrElse(""),
-    //         row._3.os.minor.getOrElse("")
-    //       )
-    //   )
+      .dropDuplicates("device_id")
+      .rdd // Now we parse the user agents
+      .map(row => (row(0), row(2), parser.parse(row(2).toString)))
+      .map(
+        row =>
+          Row(
+            row._1, // device_id
+            row._2, // country
+            row._3.device.brand.getOrElse(""),
+            row._3.device.model.getOrElse(""),
+            row._3.userAgent.family,
+            row._3.os.family,
+            row._3.os.major.getOrElse(""),
+            row._3.os.minor.getOrElse("")
+          )
+      )
 
-    // // Finally we store the information in parquet files
-    // val df = spark
-    //   .createDataFrame(parsed, schema)
+    // Finally we store the information in parquet files
+    val df = spark
+      .createDataFrame(parsed, schema)
       .withColumn("day", lit(day.replace("""/""", "")))
       .coalesce(40)
     df.printSchema
