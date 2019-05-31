@@ -3,7 +3,7 @@ import org.apache.spark.sql.functions.{lit, length, split, col, udf}
 import org.apache.spark.sql.{SparkSession, Row}
 import org.joda.time.{DateTime, Days}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.uaparser.scala.Parser
+import org.uaparser.scala.{Parser, CachingParser}
 import org.apache.log4j.{Level, Logger}
 
 object GetDataUserAgent {
@@ -45,7 +45,7 @@ object GetDataUserAgent {
       .add(StructField("os", StringType, true))
       .add(StructField("os_min_version", StringType, true))
       .add(StructField("os_max_version", StringType, true))
-    val parser = Parser.get
+    val parser = spark.sparkContext.broadcast(CachingParser.default(100000))
 
     // Here we filter the ros and
     val parsed = data
