@@ -3099,6 +3099,7 @@ user_granularity.write
     *
     *
     */
+/**
   def user_segments(spark: SparkSession) {
     import org.apache.spark.sql.expressions.Window
 
@@ -3123,8 +3124,10 @@ user_granularity.write
       .mode(SaveMode.Overwrite)
       .save("/datascience/audiences/output/user_segments_equifax_29_05_temp")
   }
-  //*******
 
+  */
+  //*******
+/**
   def user_agent_parsing(spark: SparkSession) {
 
     //creamos la funcion para parsear el user agent.
@@ -3171,30 +3174,19 @@ user_granularity.write
     //guardamos el dataset
     dfParsedUA.saveAsTextFile(output)
   }
-
+*/
   //*******
   //Part 3. Join
   def ua_segment_join(spark: SparkSession) {
 
     val dfParsedRecover = spark.read
-      .format("csv")
-      .option("header", false)
-      .load(
-        "/datascience/audiences/output/celulares_user_agent_ua_parsed_temp/"
-      )
-      .toDF(
-        "device_id",
-        "brand",
-        "model",
-        "browser",
-        "os_name",
-        "os_version_0",
-        "os_version_1"
-      )
+      .format("parquet")
+      .load("/datascience/data_useragents/day=20190520/country=AR/")
+      //.load("/datascience/data_useragents/*/country=AR/")
+      .dropDuplicates("device_id")
 
     val dfSegmentRecover = spark.read
-      .format("csv")
-      .option("header", true)
+      .format("parquet")
       .load("/datascience/audiences/output/user_segments_equifax_29_05_temp")
 
     val final_df = dfSegmentRecover.join(dfParsedRecover, Seq("device_id"))
@@ -3349,9 +3341,11 @@ user_granularity.write
     Logger.getRootLogger.setLevel(Level.WARN)
 
     //user_segments(spark)
-    println("LOGGER: USER SEGMENTS FINISHED!")
-    user_agent_parsing(spark)
-    println("LOGGER: USER AGENTS FINISHED!")
+    //println("LOGGER: USER SEGMENTS FINISHED!")
+     //user_agent_parsing(spark)
+     //println("LOGGER: USER AGENTS FINISHED!")
+     //ua_segment_join(spark)
+     //println("LOGGER: JOIN FINISHED!")
     ua_segment_join(spark)
     println("LOGGER: JOIN FINISHED!")
   }
