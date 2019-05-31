@@ -1,7 +1,8 @@
 package main.scala
-import org.apache.spark.sql.functions.{lit, length, split, col}
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions.{lit, length, split, col, udf}
+import org.apache.spark.sql.{SparkSession, Row}
 import org.joda.time.{DateTime, Days}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 object GetDataUserAgent {
 
@@ -32,16 +33,48 @@ object GetDataUserAgent {
       .load("/data/eventqueue/%s/".format(day))
       .select("device_id", "user_agent", "country")
 
-    // Here we filter the ros and 
-    data
+    // schema to be used for the parsed rdd
+    val schema = new StructType()
+      .add(StructField("device_id", StringType, false))
+      .add(StructField("country", StringType, true))
+      .add(StructField("brand", StringType, true))
+      .add(StructField("model", StringType, true))
+      .add(StructField("browser", StringType, true))
+      .add(StructField("os", StringType, true))
+      .add(StructField("os_min_version", StringType, true))
+      .add(StructField("os_max_version", StringType, true))
+
+    // Here we filter the ros and
+    val parsed = data
       .filter(
-        "event_type = 'pv' AND length(user_agent)>0 AND country IN (%s)".format(countries.map("'%s'".format(_)).mkString(", "))
+        "event_type = 'pv' AND length(user_agent)>0 AND country IN (%s)".format(
+          countries.map("'%s'".format(_)).mkString(", ")
+        )
       )
       .select("device_id", "user_agent", "country")
       .withColumn("day", lit(day.replace("""/""", "")))
       .dropDuplicates("device_id")
+      // Now we parse the user agents
+      .rdd
+      .map(row => (row(0), row(2), Parser.default.parse(row(2).toString)))
+      .map(
+        row =>
+          Row(
+            row._1, // device_id
+            row._2, // country
+            row._3.device.brand.getOrElse(""),
+            row._3.device.model.getOrElse(""),
+            row._3.userAgent.family,
+            row._3.os.family,
+            row._3.os.major.getOrElse(""),
+            row._3.os.minor.getOrElse("")
+          )
+      )
+
+    spark
+      .createDataFrame(parsed)
       .coalesce(40)
-    // Finally we store the information in parquet files
+      // Finally we store the information in parquet files
       .write
       .format("parquet")
       .partitionBy("day", "country")
