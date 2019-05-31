@@ -3,6 +3,7 @@ import org.apache.spark.sql.functions.{lit, length, split, col, udf}
 import org.apache.spark.sql.{SparkSession, Row}
 import org.joda.time.{DateTime, Days}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.uaparser.scala.Parser
 
 object GetDataUserAgent {
 
