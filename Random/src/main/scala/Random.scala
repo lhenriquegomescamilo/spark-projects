@@ -3210,7 +3210,7 @@ user_granularity.write
     *
     *
     *
-    */
+    
   def user_agents(spark: SparkSession) {
     def parse_day(day: String) {
       spark.read
@@ -3235,7 +3235,7 @@ user_granularity.write
     val day = DateTime.now.minusDays(1).toString("yyyy/MM/dd")
     parse_day("AR", day)
   }
-
+*/
   /**
     *
     *
@@ -3335,17 +3335,13 @@ user_granularity.write
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
+    val spark = SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    //user_segments(spark)
-    //println("LOGGER: USER SEGMENTS FINISHED!")
-     //user_agent_parsing(spark)
-     //println("LOGGER: USER AGENTS FINISHED!")
-     //ua_segment_join(spark)
-     //println("LOGGER: JOIN FINISHED!")
+    
+        
+    
     ua_segment_join(spark)
     println("LOGGER: JOIN FINISHED!")
   }
