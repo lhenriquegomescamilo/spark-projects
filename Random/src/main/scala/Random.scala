@@ -3190,6 +3190,7 @@ user_granularity.write
       .load("/datascience/audiences/output/user_segments_equifax_29_05_temp")
 
     val final_df = dfSegmentRecover.join(dfParsedRecover, Seq("device_id"))
+    .withColumn("all_segments",concat_ws(",",col("all_segments")))
 
     final_df.write
       .format("csv")
