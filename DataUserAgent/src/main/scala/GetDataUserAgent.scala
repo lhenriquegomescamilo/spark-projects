@@ -45,7 +45,7 @@ object GetDataUserAgent {
       .add(StructField("os", StringType, true))
       .add(StructField("os_min_version", StringType, true))
       .add(StructField("os_max_version", StringType, true))
-    val parser = Parser.default
+    val parser = Parser.get
 
     // Here we filter the ros and
     val parsed = data
