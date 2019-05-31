@@ -45,6 +45,7 @@ object GetDataUserAgent {
       .add(StructField("os", StringType, true))
       .add(StructField("os_min_version", StringType, true))
       .add(StructField("os_max_version", StringType, true))
+      .add(StructField("user_agent", StringType, true))
     val parser = spark.sparkContext.broadcast(CachingParser.default(100000))
 
     // Here we filter the ros and
@@ -57,7 +58,7 @@ object GetDataUserAgent {
       .select("device_id", "user_agent", "country")
       .dropDuplicates("device_id")
       .rdd // Now we parse the user agents
-      .map(row => (row(0), row(2), parser.value.parse(row(2).toString)))
+      .map(row => (row(0), row(2), parser.value.parse(row(1).toString), row(1)))
       .map(
         row =>
           Row(
@@ -68,7 +69,8 @@ object GetDataUserAgent {
             row._3.userAgent.family,
             row._3.os.family,
             row._3.os.major.getOrElse(""),
-            row._3.os.minor.getOrElse("")
+            row._3.os.minor.getOrElse(""),
+            row._4
           )
       )
 
