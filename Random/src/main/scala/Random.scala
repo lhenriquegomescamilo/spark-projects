@@ -3099,21 +3099,21 @@ user_granularity.write
     *
     *
     */
-/**
+
   def user_segments(spark: SparkSession) {
     import org.apache.spark.sql.expressions.Window
 
     val data = getDataAudiences(spark, nDays = 2, since = 8)
 
-    val equi_segment = List(20107, 20108, 20109, 20110, 20117, 20118, 20121, 20122, 20123, 20125, 20126, 35360, 35361, 35362, 35363)
+    //val equi_segment = List(20107, 20108, 20109, 20110, 20117, 20118, 20121, 20122, 20123, 20125, 20126, 35360, 35361, 35362, 35363)
 
     //Filtro de segmentos equifax
-    val array_equifax_filter = equi_segment
-      .map(segment => "array_contains(all_segments, '%s')".format(segment))
-      .mkString(" OR ")
+    //val array_equifax_filter = equi_segment
+    //  .map(segment => "array_contains(all_segments, '%s')".format(segment))
+    //  .mkString(" OR ")
 
     val data_segments = data
-      .filter("country = 'AR' AND (%s)".format(array_equifax_filter))
+      .filter("country = 'AR' OR country = 'MX' OR country = 'CL'")// AND (%s).format(array_equifax_filter))
       .select("device_id", "all_segments", "timestamp")
 
     val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").desc)
@@ -3122,10 +3122,10 @@ user_granularity.write
 
     dfTop.write
       .mode(SaveMode.Overwrite)
-      .save("/datascience/audiences/output/user_segments_equifax_29_05_temp")
+      .save("/datascience/audiences/output/user_segments_equifax_03_06_temp")
   }
 
-  */
+
   //*******
 /**
   def user_agent_parsing(spark: SparkSession) {
@@ -3187,7 +3187,7 @@ user_granularity.write
 
     val dfSegmentRecover = spark.read
       .format("parquet")
-      .load("/datascience/audiences/output/user_segments_equifax_29_05_temp")
+      .load("/datascience/audiences/output/user_segments_equifax_03_06_temp")
 
     val final_df = dfSegmentRecover.join(dfParsedRecover, Seq("device_id"))
     .withColumn("all_segments",concat_ws(",",col("all_segments")))
@@ -3196,7 +3196,7 @@ user_granularity.write
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save(
-        "/datascience/audiences/output/celulares_user_agent_segmentos_31_05_all_country"
+        "/datascience/audiences/output/celulares_user_agent_segmentos_03_06_all_country"
       )
   }
 
@@ -3342,7 +3342,7 @@ user_granularity.write
 
     
         
-    
+    user_segments(spark)
     ua_segment_join(spark)
     println("LOGGER: JOIN FINISHED!")
   }
