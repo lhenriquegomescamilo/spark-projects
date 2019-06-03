@@ -3,6 +3,7 @@ import org.apache.spark.sql.SparkSession
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.functions.{col,concat_ws}
 
 object TaringaIngester {
     def process_day(spark:SparkSession, day:String){
@@ -16,11 +17,12 @@ object TaringaIngester {
                         .select("device_id","all_segments","url","timestamp")
                         .write.format("csv")
                         .option("header","true")
+                        .mode(SaveMode.Overwrite)
                         .save("/datascience/taringa_ingester/data_%s_%s".format(day,c))
         }
     
     }
-    
+
     def main(args: Array[String]) {
         /// Configuracion spark
         val spark = SparkSession.builder.appName("Data GCBA Process").getOrCreate()
