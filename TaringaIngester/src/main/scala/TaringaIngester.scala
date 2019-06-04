@@ -28,8 +28,8 @@ object TaringaIngester {
         val spark = SparkSession.builder.appName("Data GCBA Process").getOrCreate()
 
          /// Parseo de parametros
-        val since = if (args.length > 0) args(0).toInt else 1
-        val ndays = if (args.length > 1) args(1).toInt else 0
+        val since = if (args.length > 0) args(0).toInt else 0
+        val ndays = if (args.length > 1) args(1).toInt else 1
 
         val format = "YYYYMMdd"
         val start = DateTime.now.minusDays(since+ndays)
