@@ -401,7 +401,7 @@ object GetAudience {
               .getOrElse("")
               .toString
               .length > 0) query("limit")
-        else "-1"
+        else "30000000"
       val country =
         if (query.contains("country") && Option(query("country"))
               .getOrElse("")
