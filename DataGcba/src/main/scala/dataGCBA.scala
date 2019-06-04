@@ -21,8 +21,7 @@ object dataGCBA {
         val since = if (args.length > 0) args(0).toInt else 0
         val ndays = if (args.length > 1) args(1).toInt else 1
 
-        //val today = DateTime.now().toString("yyyy/MM/dd")
-        val format = "yyyy/MM/dd"
+        val format = "YYYYMMdd"
         val start = DateTime.now.minusDays(since+ndays)
         val end   = DateTime.now.minusDays(since)
 
