@@ -964,11 +964,12 @@ object GetAudience {
   }
 
   def main(args: Array[String]) {
+    
+    // Setting logger config
+    Logger.getRootLogger.setLevel(Level.WARN)
+    
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Spark devicer").getOrCreate()
-
-    //val options = nextOption(Map(), args.toList)
-    //val priority = if (options.contains('priority)) true else false
 
     val p = if (args.length > 0) args(0).toInt else 0
 
