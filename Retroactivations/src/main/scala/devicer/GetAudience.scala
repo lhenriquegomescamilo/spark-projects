@@ -275,10 +275,23 @@ object GetAudience {
     //val pathToProcess = "/datascience/devicer/to_process/"
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
+    //val filesReady = fs
+    //  .listStatus(new Path(pathToProcess))
+    //  .map(x => x.getPath.toString.split("/").last)
+    //  .toList
+
+    // Now we order the files according to their date (filename, timestamp).
     val filesReady = fs
       .listStatus(new Path(pathToProcess))
-      .map(x => x.getPath.toString.split("/").last)
-      .toList
+      .map(f => 
+            ( f.getPath.toString.split("/").last.toString, 
+              f.getModificationTime
+            )
+          )
+    // Now we sort the list by the second component (timestamp)
+    scala.util.Sorting.stableSort(filesReady, 
+                                  (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
+                                  )
 
     // Now we get the list of files that have been processed already
     val pathDone = "/datascience/devicer/done/"
@@ -288,7 +301,8 @@ object GetAudience {
       .toList
 
     // Finally we return the ones that have not been processed yet
-    filesReady diff filesDone
+    //filesReady diff filesDone
+    filesReady.filterNot(filesDone.contains(_))
   }
 
   /***
