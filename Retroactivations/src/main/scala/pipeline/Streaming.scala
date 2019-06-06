@@ -8,28 +8,53 @@ object Streaming {
 
   def main(args: Array[String]) {
     val spark =
-      SparkSession.builder.appName("Eventqueue Streaming")
-      .config("spark.sql.streaming.pollingDelay", 4000).getOrCreate()
+      SparkSession.builder
+        .appName("Eventqueue Streaming")
+        .config("spark.sql.streaming.pollingDelay", 4000)
+        .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
+
+    val columns =
+      """device_id, id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
+                     search_keyword, tags, track_code, campaign_name, campaign_id, site_id, 
+                     placement_id, advertiser_name, advertiser_id, app_name, app_installed, 
+                     version, country, activable"""
+        .replace("\n", "")
+        .replace(" ", "")
+        .split(",")
+        .toList
+    val event_types = List(
+      "tk",
+      "pv",
+      "data",
+      "batch",
+      "sync",
+      "xp",
+      "retroactive",
+      "xd",
+      "xd_xp"
+    )
+
+    var finalSchema = columns.foldLeft(new StructType())(
+      (schema, col) => schema.add(col, "string")
+    )
+
+    val ints =
+      "id_partner activable"
+        .split(" ")
+        .toSeq
+    val array_strings = "tags app_installed".split(" ").toSeq
+    val array_ints =
+      "segments first_party all_segments"
+        .split(" ")
 
     val data = spark.readStream
       .option("sep", "\t")
       .option("header", "true")
+      .schema(finalSchema)
       .format("csv")
       .load("/data/eventqueue/2019/06/06/")
-
-    val ints =
-      "created id_partner id_segment_source share_data tagged click_count conversion_count impression_count activable job_id"
-        .split(" ")
-        .toSeq
-    val doubles =
-      "latitude longitude accuracy altitude altaccuracy".split(" ").toSeq
-    val array_strings = "tags app_data app_installed".split(" ").toSeq
-    val array_ints =
-      "segments clusters first_party second_party third_party all_clusters all_segments all_segments_xd gt removed_segments platforms"
-        .split(" ")
-    val longs = "ip".split(" ").toSeq
 
     val withArrayStrings = array_strings.foldLeft(data)(
       (df, c) => df.withColumn(c, split(col(c), "\u0001"))
@@ -37,21 +62,19 @@ object Streaming {
     val withInts = ints.foldLeft(withArrayStrings)(
       (df, c) => df.withColumn(c, col(c).cast("int"))
     )
-    val withDoubles = doubles.foldLeft(withInts)(
-      (df, c) => df.withColumn(c, col(c).cast("double"))
-    )
-    val withLongs = longs.foldLeft(withDoubles)(
-      (df, c) => df.withColumn(c, col(c).cast("long"))
-    )
-    val finalDF = array_ints.foldLeft(withLongs)(
-      (df, c) =>
-        df.withColumn(c, split(col(c), "\u0001"))
-          .withColumn(c, col(c).cast("array<int>"))
-    )
+    val finalDF = array_ints
+      .foldLeft(withInts)(
+        (df, c) =>
+          df.withColumn(c, split(col(c), "\u0001"))
+            .withColumn(c, col(c).cast("array<int>"))
+      )
+      .filter(
+        length(col("device_id")) > 0 && col("event_type").isin(event_types: _*)
+      )
 
     val query = finalDF
-      .coalesce(1)
       .withColumn("day", lit("20190606"))
+      .coalesce(1)
       .writeStream
       .outputMode("append")
       .format("parquet")
