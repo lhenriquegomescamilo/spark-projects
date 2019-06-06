@@ -79,6 +79,7 @@ object Streaming {
       .writeStream
       .outputMode("append")
       .format("parquet")
+      .option("checkpointLocation", "/datascience/checkpoint/")
       .partitionBy("day", "country")
       .option("path", "/datascience/data_audiences_streaming/")
       .start()
