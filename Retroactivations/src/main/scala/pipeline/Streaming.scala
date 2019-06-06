@@ -82,7 +82,7 @@ object Streaming {
       .format("parquet")
       .option("checkpointLocation", "/datascience/checkpoint/")
       .partitionBy("day", "country")
-      .option("path", "/datascience/data_audiences_streaming/")
+      .option("path", "/datascience/data_audiences_streaming2/")
       .trigger(ProcessingTime("1260 seconds"))
       .start()
 
