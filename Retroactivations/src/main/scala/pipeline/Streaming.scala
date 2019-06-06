@@ -3,6 +3,7 @@ package main.scala.pipeline
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
 
 object Streaming {
 
