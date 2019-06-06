@@ -288,6 +288,8 @@ object GetAudience {
               f.getModificationTime
             )
           )
+      .toList
+
     // Now we sort the list by the second component (timestamp)
     scala.util.Sorting.stableSort(filesReady, 
                                   (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
