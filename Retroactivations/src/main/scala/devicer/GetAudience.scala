@@ -408,6 +408,12 @@ object GetAudience {
               .toString
               .length > 0) query("country")
         else ""
+      val revenue =
+        if (query.contains("revenue") && Option(query("revenue"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("revenue")
+        else 0
 
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
@@ -426,7 +432,8 @@ object GetAudience {
         "xd" -> xd,
         "common" -> commonFilter,
         "limit" -> limit,
-        "country" -> country
+        "country" -> country,
+        "revenue" -> revenue
       )
 
       queries = queries ::: List(actual_map)
@@ -488,12 +495,21 @@ object GetAudience {
     // For every query we apply the filter and get only the distinct ids along with the
     // device type and segment id.
     val results = queries.map(
-      query =>
-        filtered
-          .filter(query("filter").toString)
-          .select("device_type", "device_id")
-          .withColumn("segmentIds", lit(query("segment_id").toString))
-          .distinct()
+      query => 
+        query("revenue") match {
+            case 0 =>
+                  filtered
+                  .filter(query("filter").toString)
+                  .select("device_type", "device_id")
+                  .withColumn("segmentIds", lit(query("segment_id").toString))
+                  .distinct()
+            case 1 =>
+                filtered
+                .filter(query("filter").toString)
+                .select("device_type", "device_id","id_partner")
+                .withColumn("segmentIds", lit(query("segment_id").toString))
+                .distinct()
+        }
     )
     // If there is a limit on the number of rows, we also apply it
     val results_limited = if (limit>0) results.map(
