@@ -83,7 +83,7 @@ object Streaming {
       .option("checkpointLocation", "/datascience/checkpoint/")
       .partitionBy("day", "country")
       .option("path", "/datascience/data_audiences_streaming/")
-      .trigger(ProcessingTime("120 seconds"))
+      .trigger(ProcessingTime("1260 seconds"))
       .start()
 
     query.awaitTermination()
