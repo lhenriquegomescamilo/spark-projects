@@ -11,7 +11,7 @@ object Streaming {
     val spark =
       SparkSession.builder
         .appName("Eventqueue Streaming")
-        .config("spark.sql.streaming.pollingDelay", 4000)
+        .config("spark.sql.streaming.pollingDelay", 1000)
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
@@ -75,7 +75,7 @@ object Streaming {
 
     val query = finalDF
       .withColumn("day", lit("20190606"))
-      .coalesce(1)
+      .coalesce(8)
       .writeStream
       .outputMode("append")
       .format("parquet")
