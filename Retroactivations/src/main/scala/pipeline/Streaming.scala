@@ -4,6 +4,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.streaming.ProcessingTime
 
 object Streaming {
 
@@ -81,7 +82,8 @@ object Streaming {
       .format("parquet")
       .option("checkpointLocation", "/datascience/checkpoint/")
       .partitionBy("day", "country")
-      .option("path", "/datascience/data_audiences_streaming/")
+      .option("path", "/datascience/data_audiences_streaming2/")
+      .trigger(ProcessingTime("1260 seconds"))
       .start()
 
     query.awaitTermination()
