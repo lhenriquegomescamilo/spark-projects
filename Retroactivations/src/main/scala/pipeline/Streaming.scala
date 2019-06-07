@@ -86,6 +86,7 @@ object Streaming {
       .option("path", "/datascience/data_audiences_streaming2/")
       // .trigger(ProcessingTime("1260 seconds"))
       // .save("/datascience/data_audiences_streaming2/")
+      .start()
       .awaitTermination()
   }
 }
