@@ -12,7 +12,7 @@ object Streaming {
     val spark =
       SparkSession.builder
         .appName("Eventqueue Streaming")
-        .config("spark.sql.streaming.pollingDelay", 1000)
+        // .config("spark.sql.streaming.pollingDelay", 1000)
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
@@ -56,7 +56,7 @@ object Streaming {
       .option("header", "true")
       .schema(finalSchema)
       .format("csv")
-      .load("/data/eventqueue/2019/06/06/")
+      .load("/data/eventqueue/2019/06/07/")
 
     val withArrayStrings = array_strings.foldLeft(data)(
       (df, c) => df.withColumn(c, split(col(c), "\u0001"))
@@ -70,22 +70,22 @@ object Streaming {
           df.withColumn(c, split(col(c), "\u0001"))
             .withColumn(c, col(c).cast("array<int>"))
       )
-      .filter(
-        length(col("device_id")) > 0 && col("event_type").isin(event_types: _*)
-      )
+    //   .filter(
+    //     length(col("device_id")) > 0 && col("event_type").isin(event_types: _*)
+    //   )
 
     val query = finalDF
-      .withColumn("day", lit("20190606"))
+      .withColumn("day", lit("20190607"))
       .coalesce(8)
-      .writeStream
+      .write//Stream
       .outputMode("append")
       .format("parquet")
-      .option("checkpointLocation", "/datascience/checkpoint/")
+      // .option("checkpointLocation", "/datascience/checkpoint/")
       .partitionBy("day", "country")
-      .option("path", "/datascience/data_audiences_streaming2/")
-      .trigger(ProcessingTime("1260 seconds"))
-      .start()
+      // .option("path", "/datascience/data_audiences_streaming2/")
+      // .trigger(ProcessingTime("1260 seconds"))
+      .save("/datascience/data_audiences_streaming2/")
 
-    query.awaitTermination()
+    // query.awaitTermination()
   }
 }
