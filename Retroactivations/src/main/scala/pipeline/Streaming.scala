@@ -78,15 +78,14 @@ object Streaming {
       .withColumn("day", lit("20190607"))
       .coalesce(8)
       .write//Stream
-      // .outputMode("append")
-      .mode("append")
+      .outputMode("append")
+      // .mode("append")
       .format("parquet")
-      // .option("checkpointLocation", "/datascience/checkpoint/")
+      .option("checkpointLocation", "/datascience/checkpoint/")
       .partitionBy("day", "country")
-      // .option("path", "/datascience/data_audiences_streaming2/")
+      .option("path", "/datascience/data_audiences_streaming2/")
       // .trigger(ProcessingTime("1260 seconds"))
-      .save("/datascience/data_audiences_streaming2/")
-
-    // query.awaitTermination()
+      // .save("/datascience/data_audiences_streaming2/")
+      .awaitTermination()
   }
 }
