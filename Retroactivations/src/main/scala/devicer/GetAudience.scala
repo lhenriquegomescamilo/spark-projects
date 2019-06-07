@@ -275,10 +275,25 @@ object GetAudience {
     //val pathToProcess = "/datascience/devicer/to_process/"
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
+    //val filesReady = fs
+    //  .listStatus(new Path(pathToProcess))
+    //  .map(x => x.getPath.toString.split("/").last)
+    //  .toList
+
+    // Now we order the files according to their date (filename, timestamp).
     val filesReady = fs
       .listStatus(new Path(pathToProcess))
-      .map(x => x.getPath.toString.split("/").last)
+      .map(f => 
+            ( f.getPath.toString.split("/").last.toString, 
+              f.getModificationTime
+            )
+          )
       .toList
+
+    // Now we sort the list by the second component (timestamp)
+    scala.util.Sorting.stableSort(filesReady, 
+                                  (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
+                                  )
 
     // Now we get the list of files that have been processed already
     val pathDone = "/datascience/devicer/done/"
@@ -288,7 +303,8 @@ object GetAudience {
       .toList
 
     // Finally we return the ones that have not been processed yet
-    filesReady diff filesDone
+    //filesReady diff filesDone
+    filesReady.filterNot(filesDone.contains(_))
   }
 
   /***
@@ -408,6 +424,12 @@ object GetAudience {
               .toString
               .length > 0) query("country")
         else ""
+      val revenue =
+        if (query.contains("revenue") && Option(query("revenue"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("revenue")
+        else 0
 
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
@@ -426,7 +448,8 @@ object GetAudience {
         "xd" -> xd,
         "common" -> commonFilter,
         "limit" -> limit,
-        "country" -> country
+        "country" -> country,
+        "revenue" -> revenue
       )
 
       queries = queries ::: List(actual_map)
@@ -488,12 +511,21 @@ object GetAudience {
     // For every query we apply the filter and get only the distinct ids along with the
     // device type and segment id.
     val results = queries.map(
-      query =>
-        filtered
-          .filter(query("filter").toString)
-          .select("device_type", "device_id")
-          .withColumn("segmentIds", lit(query("segment_id").toString))
-          .distinct()
+      query => 
+        query("revenue") match {
+            case 0 =>
+                  filtered
+                  .filter(query("filter").toString)
+                  .select("device_type", "device_id")
+                  .withColumn("segmentIds", lit(query("segment_id").toString))
+                  .distinct()
+            case 1 =>
+                filtered
+                .filter(query("filter").toString)
+                .select("device_type", "device_id","id_partner")
+                .withColumn("segmentIds", lit(query("segment_id").toString))
+                .distinct()
+        }
     )
     // If there is a limit on the number of rows, we also apply it
     val results_limited = if (limit>0) results.map(
