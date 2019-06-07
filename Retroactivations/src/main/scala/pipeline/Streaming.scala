@@ -33,7 +33,7 @@ object Streaming {
         .toList
     val columns =
       """device_id, id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
-                     search_keyword, tags, track_code, campaign_name, campaign_id, site_id, 
+                     search_keyword, tags, track_code, campaign_name, campaign_id, site_id, time,
                      placement_id, advertiser_name, advertiser_id, app_name, app_installed, 
                      version, country, activable"""
         .replace("\n", "")
@@ -72,6 +72,8 @@ object Streaming {
       .format("csv")
       .load("/datascience/streamTest/")
       .select(columns.head, columns.tail: _*)
+      .withColumn("hour", date_format(to_date(col("time")), "yyyyMMddhh"))
+      
 
     val withArrayStrings = array_strings.foldLeft(data)(
       (df, c) => df.withColumn(c, split(col(c), "\u0001"))
@@ -90,13 +92,12 @@ object Streaming {
       )
 
     val query = finalDF
-      .withColumn("day", lit("20190607"))
       .coalesce(8)
       .writeStream
       .outputMode("append")
       .format("parquet")
       .option("checkpointLocation", "/datascience/checkpoint/")
-      .partitionBy("day", "country")
+      .partitionBy("hour", "country")
       .option("path", "/datascience/data_audiences_streaming2/")
       // .trigger(ProcessingTime("1260 seconds"))
       .start()
