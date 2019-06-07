@@ -77,7 +77,7 @@ object Streaming {
     val query = finalDF
       .withColumn("day", lit("20190607"))
       .coalesce(8)
-      .write//Stream
+      .writeStream
       .outputMode("append")
       // .mode("append")
       .format("parquet")
