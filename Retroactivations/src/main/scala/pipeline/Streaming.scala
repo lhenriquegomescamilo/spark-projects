@@ -17,6 +17,20 @@ object Streaming {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    val all_columns =
+      """timestamp,time,user,device_id,device_type,web_id,android_id,ios_id,event_type,data_type,nav_type,
+                         version,country,user_country,ip,created,id_partner,id_partner_user,id_segment_source,share_data,
+                         segments,clusters,first_party,second_party,third_party,all_clusters,all_segments,all_segments_xd,gt,
+                         user_agent,browser,url,secondary_url,referer,sec,tagged,tags,title,category,sub_category,search_keyword,
+                         vertical,mb_sh2,mb_sh5,ml_sh2,ml_sh5,nid_sh2,nid_sh5,track_code,track_type,advertiser_id,advertiser_name,
+                         campaign_id,campaign_name,placement_id,site_id,click_count,conversion_count,impression_count,app_data,
+                         app_installed,app_name,wifi_name,latitude,longitude,accuracy,altitude,altaccuracy,p223,p240,d2,d9,d10,
+                         d11,d13,d14,d17,d18,d19,d20,d21,d22,url_subdomain,url_domain,url_path,referer_subdomain,referer_domain,
+                         referer_path,d23,removed_segments,activable,platforms,job_id"""
+        .replace("\n", "")
+        .replace(" ", "")
+        .split(",")
+        .toList
     val columns =
       """device_id, id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
                      search_keyword, tags, track_code, campaign_name, campaign_id, site_id, 
@@ -38,7 +52,7 @@ object Streaming {
       "xd_xp"
     )
 
-    var finalSchema = columns.foldLeft(new StructType())(
+    var finalSchema = all_columns.foldLeft(new StructType())(
       (schema, col) => schema.add(col, "string")
     )
 
@@ -56,7 +70,8 @@ object Streaming {
       .option("header", "true")
       .schema(finalSchema)
       .format("csv")
-      .load("/data/eventqueue/2019/06/07/")
+      .load("/datascience/streamTest/")
+      .select(columns.head, columns.tail: _*)
 
     val withArrayStrings = array_strings.foldLeft(data)(
       (df, c) => df.withColumn(c, split(col(c), "\u0001"))
@@ -70,22 +85,20 @@ object Streaming {
           df.withColumn(c, split(col(c), "\u0001"))
             .withColumn(c, col(c).cast("array<int>"))
       )
-    //   .filter(
-    //     length(col("device_id")) > 0 && col("event_type").isin(event_types: _*)
-    //   )
+      .filter(
+        length(col("device_id")) > 0 && col("event_type").isin(event_types: _*)
+      )
 
     val query = finalDF
       .withColumn("day", lit("20190607"))
       .coalesce(8)
       .writeStream
       .outputMode("append")
-      // .mode("append")
       .format("parquet")
       .option("checkpointLocation", "/datascience/checkpoint/")
       .partitionBy("day", "country")
       .option("path", "/datascience/data_audiences_streaming2/")
       // .trigger(ProcessingTime("1260 seconds"))
-      // .save("/datascience/data_audiences_streaming2/")
       .start()
       .awaitTermination()
   }
