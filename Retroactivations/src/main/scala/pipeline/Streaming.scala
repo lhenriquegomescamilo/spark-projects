@@ -78,7 +78,8 @@ object Streaming {
       .withColumn("day", lit("20190607"))
       .coalesce(8)
       .write//Stream
-      .outputMode("append")
+      // .outputMode("append")
+      .mode("append")
       .format("parquet")
       // .option("checkpointLocation", "/datascience/checkpoint/")
       .partitionBy("day", "country")
