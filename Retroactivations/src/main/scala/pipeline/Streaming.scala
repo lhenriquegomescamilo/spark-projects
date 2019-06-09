@@ -72,8 +72,11 @@ object Streaming {
       .format("csv")
       .load("/datascience/streamTest/")
       .select(columns.head, columns.tail: _*)
-      .withColumn("hour", date_format(to_date(col("time")), "yyyyMMddhh"))
-      
+      .withColumn(
+        "datetime",
+        to_utc_timestamp(regexp_replace(col("time"), "T", " "), "utc")
+      )
+      .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
 
     val withArrayStrings = array_strings.foldLeft(data)(
       (df, c) => df.withColumn(c, split(col(c), "\u0001"))
