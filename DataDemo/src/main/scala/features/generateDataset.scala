@@ -313,6 +313,18 @@ object GenerateDataset {
       .withColumn("AGE45_PROB", exp(col("AGE45_PROB")))
       .withColumn("AGE55_PROB", exp(col("AGE55_PROB")))
       .withColumn("AGE65_PROB", exp(col("AGE65_PROB")))
+      .withColumn("TOTAL_GENDER", col("MALE_PROB") + col("FEMALE_PROB"))
+      .withColumn("TOTAL_AGE", col("AGE18_PROB") + col("AGE25_PROB") + col("AGE35_PROB") +
+                               col("AGE45_PROB") + col("AGE55_PROB") + col("AGE65_PROB"))
+      .withColumn("FEMALE_PROB", col("FEMALE_PROB") / col("TOTAL_GENDER"))
+      .withColumn("MALE_PROB", col("MALE_PROB") / col("TOTAL_GENDER"))
+      .withColumn("AGE18_PROB", col("AGE18_PROB") / col("TOTAL_AGE"))
+      .withColumn("AGE25_PROB", col("AGE25_PROB") / col("TOTAL_AGE"))
+      .withColumn("AGE35_PROB", col("AGE35_PROB") / col("TOTAL_AGE"))
+      .withColumn("AGE45_PROB", col("AGE45_PROB") / col("TOTAL_AGE"))
+      .withColumn("AGE55_PROB", col("AGE55_PROB") / col("TOTAL_AGE"))
+      .withColumn("AGE65_PROB", col("AGE65_PROB") / col("TOTAL_AGE"))
+
       .orderBy(asc("device_id"))
       .write
       .format("csv")
