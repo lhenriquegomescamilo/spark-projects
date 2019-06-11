@@ -1,4 +1,4 @@
-name := "Generate features for Url Classifier"
+name := "Url Classifier"
 
 version := "1.0"
 
