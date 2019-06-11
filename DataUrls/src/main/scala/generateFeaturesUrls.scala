@@ -103,9 +103,8 @@ object GenerateFeaturesUrls {
             )
     }
     
-    def get_dataset_keywords(spark: SparkSession, ndays: Int){
-    
-    }
+    //def get_dataset_keywords(spark: SparkSession, ndays: Int){
+    //}
     
     def get_dataset_devices(spark: SparkSession, ndays: Int, since: Int, name: String, country: String){
         val conf = spark.sparkContext.hadoopConfiguration
@@ -143,9 +142,8 @@ object GenerateFeaturesUrls {
 
     def main(args: Array[String]) {
         /// Configuracion spark
-        val spark = SparkSession.builder
-        .appName("Get Features: Url Classifier")
-        .getOrCreate()
+        val spark = SparkSession.builder.appName("Get Features: Url Classifier")
+                                .getOrCreate()
 
         // Parseo de parametros
         val ndays = if (args.length > 0) args(0).toInt else 5
