@@ -39,15 +39,7 @@ object GenerateTriplets {
 
     def get_datasets_gt(spark: SparkSession){
         
-        val interest_filter = "country = 'AR' and ( array_contains(segments, '36')
-                                                    or array_contains(segments, '59')
-                                                    or array_contains(segments, '61')
-                                                    or array_contains(segments, '129')
-                                                    or array_contains(segments, '144')
-                                                    or array_contains(segments, '145')
-                                                    or array_contains(segments, '165')
-                                                    or array_contains(segments, '224')
-                                                    or array_contains(segments, '247') )"
+        val interest_filter = "country = 'AR' and ( array_contains(segments, '36') or array_contains(segments, '59') or array_contains(segments, '61') or array_contains(segments, '129') or array_contains(segments, '144') or array_contains(segments, '145') or array_contains(segments, '165') or array_contains(segments, '224') or array_contains(segments, '247') )"
 
         val df_interest = spark.read.load("/datascience/data_audiences/day=20190603")
                                 .filter(interest_filter)
