@@ -1,4 +1,4 @@
-package main.scala.features
+package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{
   upper,
