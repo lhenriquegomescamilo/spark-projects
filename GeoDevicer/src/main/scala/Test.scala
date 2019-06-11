@@ -86,8 +86,8 @@ object Test {
   }
 
   def join(spark: SparkSession) = {
-    polygonDf = getPolygons(spark)
-    sg_data = getSafegraphData(spark)
+    val polygonDf = getPolygons(spark)
+    val sg_data = getSafegraphData(spark)
 
     polygonDf.createOrReplaceTempView("poisPoints")
     sg_data.createOrReplaceTempView("safegraph")
@@ -125,12 +125,6 @@ object Test {
   }
 
   def main(args: Array[String]) {
-    // Parse the parameters
-    val options = nextOption(Map(), args.toList)
-    val path_geo_json =
-      if (options.contains('path_geo_json)) options('path_geo_json).toString
-      else ""
-
     // Start Spark Session
     val spark = SparkSession
       .builder()
