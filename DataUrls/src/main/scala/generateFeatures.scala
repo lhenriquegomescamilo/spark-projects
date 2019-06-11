@@ -73,14 +73,14 @@ object GenerateTriplets {
         // Get the days to be loaded
         val format = "yyyyMMdd"
         val end = DateTime.now.minusDays(since)
-        val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+        val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
         val path = "/datascience/data_audiences"
 
         // Now we obtain the list of hdfs folders to be read
         val hdfs_files = days
             .map(day => path + "/day=%s".format(day))
             .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-        val df = spark.read.option("basePath", path).parquet(hdfs_files: _*).select(Seq("url","timestamp"))
+        val df = spark.read.option("basePath", path).parquet(hdfs_files: _*).select("url","timestamp")
 
         df.withColumn("Time", to_timestamp(from_unixtime(col("timestamp") - (if (country=="AR") 3 else 5) * 3600))) // AR time transformation
             .withColumn("Hour", date_format(col("Time"), "HH"))
@@ -121,7 +121,7 @@ object GenerateTriplets {
             .map(day => path + "/day=%s".format(day))
             .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-        val df = spark.read.option("basePath", path).parquet(hdfs_files: _*).select(Seq("url","timestamp"))
+        val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
         df.groupBy("url","device_type")
             .agg(count("device_id").as("count"))
@@ -149,8 +149,8 @@ object GenerateTriplets {
         // Parseo de parametros
         val ndays = if (args.length > 0) args(0).toInt else 5
         val since = if (args.length > 1) args(1).toInt else 1
-        val name = if (args.length > 2) args(2).toInt else ""
-        val country = if (args.length > 3) args(3).toInt else ""
+        val name = if (args.length > 2) args(2).toString else ""
+        val country = if (args.length > 3) args(3).toString else ""
         
         get_datasets_gt(spark)
         get_dataset_timestamps(spark, ndays, since, name, country)
