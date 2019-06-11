@@ -151,8 +151,9 @@ object GenerateFeaturesUrls {
         val name = if (args.length > 2) args(2).toString else ""
         val country = if (args.length > 3) args(3).toString else ""
         
-        get_datasets_gt(spark)
-        get_dataset_timestamps(spark, ndays, since, name, country)
+        //get_datasets_gt(spark)
+        //get_dataset_timestamps(spark, ndays, since, name, country)
+        get_dataset_devices(spark, ndays, since, name, country)
 
     }
 }
