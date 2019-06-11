@@ -1,4 +1,4 @@
-package main.scala.matchers
+package main.scala
 
 import main.scala.Main
 
