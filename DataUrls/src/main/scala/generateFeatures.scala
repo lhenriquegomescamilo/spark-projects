@@ -13,7 +13,8 @@ import org.apache.spark.sql.functions.{
   to_timestamp,
   from_unixtime,
   date_format,
-  sum
+  sum,
+  count
 }
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
@@ -113,7 +114,7 @@ object GenerateTriplets {
         // Get the days to be loaded
         val format = "yyyyMMdd"
         val end = DateTime.now.minusDays(since)
-        val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+        val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
         val path = "/datascience/data_audiences"
 
         // Now we obtain the list of hdfs folders to be read
