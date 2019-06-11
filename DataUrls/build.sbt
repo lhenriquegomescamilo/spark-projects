@@ -1,4 +1,4 @@
-name := "Generate Triplets"
+name := "Generate features for Url Classifier"
 
 version := "1.0"
 

@@ -1,5 +1,5 @@
 spark-submit\
-  --class "main.scala.monthly.GenerateMonthlyData"\
+  --class "main.scala.GenerateFeaturesUrls"\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\
@@ -9,4 +9,4 @@ spark-submit\
   --queue default\
   --conf spark.sql.shuffle.partitions=500\
   --conf spark.yarn.maxAppAttempts=1\
-  /home/rely/spark-projects/DataDemo/target/scala-2.11/generate-triplets_2.11-1.0.jar
+  /home/rely/spark-projects/DataUrls/target/scala-2.11/generate-triplets_2.11-1.0.jar
