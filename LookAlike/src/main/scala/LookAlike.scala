@@ -303,7 +303,7 @@ object LookAlike {
       .map(row => (row(0), row(1)))
 
     // Now we construct a dense vector for every user.
-    val grouped = joint.groupByKey()
+    val grouped = joint.groupByKey().filter(row => row._2.size > 1)
     val rows = grouped.map(
       row =>
         Vectors
