@@ -24,7 +24,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
 
-object GenerateTriplets {
+object GenerateFeaturesUrls {
 
   /**
     * Este metodo se encarga de generar una lista de triplets de la pinta <device_id, segment, count>
