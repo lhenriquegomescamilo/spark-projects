@@ -87,7 +87,7 @@ object Test {
 
   def join(spark: SparkSession) = {
     val polygonDf = getPolygons(spark)
-    val sg_data = getSafegraphData(spark)
+    val sg_data = get_safegraph_data(spark)
 
     polygonDf.createOrReplaceTempView("poisPoints")
     sg_data.createOrReplaceTempView("safegraph")
