@@ -137,4 +137,5 @@ val intersection = spark.sql(
 
     // Finally we perform the GeoJoin
     join(spark)
-
+}
+}
