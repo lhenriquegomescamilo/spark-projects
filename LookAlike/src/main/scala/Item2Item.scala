@@ -20,7 +20,7 @@ import org.apache.spark.serializer.{KryoSerializer, KryoRegistrator}
 
 
 
-object LookAlike {
+object Item2Item {
   /**
     * This method returns the data that will be used for the look-alike modelling. Basically,
     * it is a set of triplets with 3 columns:
