@@ -1,7 +1,5 @@
 package main.scala
 
-import main.scala.Main
-
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
@@ -85,8 +83,8 @@ object asignarNSE {
     val polygonGDf = getPolygons(spark)
     val homesGDF = get_processed_homes(spark)
 
-    ageb_nse.createOrReplaceTempView("ageb_nse_polygons")
-    safegraphDf.createOrReplaceTempView("user_homes")
+    polygonGDf.createOrReplaceTempView("ageb_nse_polygons")
+    homesGDF.createOrReplaceTempView("user_homes")
 
    
 
