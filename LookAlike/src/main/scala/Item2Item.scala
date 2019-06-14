@@ -214,9 +214,8 @@ object Item2Item {
        .format("csv")
        .option("sep",",")
        .option("header","true")
-       .mode(SaveMode.Overwrite)(
-        "/datascience/data_lookalike/metrics/country=PE"
-      )
+       .mode(SaveMode.Overwrite)
+       .save("/datascience/data_lookalike/metrics/country=PE")
 
   }
 
