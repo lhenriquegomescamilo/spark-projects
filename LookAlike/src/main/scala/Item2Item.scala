@@ -118,11 +118,11 @@ object Item2Item {
     val simMatrix = userSegmentMatrix.columnSimilarities(simThreshold)
 
     // We store the similarity matrix
-    simMatrix.entries
+    /*simMatrix.entries
       .map(entry => List(entry.i, entry.j, entry.value).mkString(","))
       .saveAsTextFile(
         "/datascience/data_lookalike/similarity_matrix/country=PE"
-      )
+      )*/
 
     // it makes the matrix symmetric
     // main diagonal is 0
@@ -153,6 +153,7 @@ object Item2Item {
       .map(tup => (tup._2, tup._1))
     )
     .map(tup => (tup._2))
+    .cache()
 
     var nUsers = userEvalMatrix.count()
     // 1) root-mean-square error 
@@ -174,7 +175,10 @@ object Item2Item {
       var nSelected = if (nRelevant>k) k else nRelevant
       
       if (nRelevant > minSegmentSupport){
-        var selected = userEvalMatrix.map(tup=> (tup._1.apply(segmentIdx), tup._2.apply(segmentIdx)) ).takeOrdered(nSelected)(Ordering[Double].on(tup=> -1 * tup._1))
+        var selected = userEvalMatrix
+          .map(tup=> (tup._1.apply(segmentIdx), tup._2.apply(segmentIdx)))
+          .filter(tup=> tup._1 > 0) // select scores > 0
+          .takeOrdered(nSelected)(Ordering[Double].on(tup=> -1 * tup._1))
         var tp = selected.map(tup=>tup._2).sum
         // precision & recall
         var precision = tp / nSelected
