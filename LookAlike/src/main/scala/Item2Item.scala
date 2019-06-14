@@ -154,9 +154,9 @@ object Item2Item {
     )
     .map(tup => (tup._2))
 
-
+    var nUsers = userEvalMatrix.count()
     // 1) root-mean-square error 
-    var rmse = Math.sqrt(userEvalMatrix.map(tup => Vectors.sqdist(tup._1, tup._2) / tup._1.size).sum() / userEvalMatrix.count())
+    var rmse = Math.sqrt(userEvalMatrix.map(tup => Vectors.sqdist(tup._1, tup._2) / tup._1.size).sum() / nUsers)
 
     //2) information retrieval metrics - recall@k - precision@k - f1@k
     var meanPrecisionAtK = 0.0
@@ -199,16 +199,25 @@ object Item2Item {
     println(s"segments: ${segments.length}")
     println(s"segmentCount: $segmentCount")
 
-    // TODO save results
-    /*val pw = new PrintWriter(new File("/datascience/data_lookalike/similarity_matrix/country=PE/metrics.txt"))
-    pw.write(s"RMSE: $rmse")
-    pw.write(s"precision@k: $meanPrecisionAtK")
-    pw.write(s"recall@k: $meanRecallAtK")
-    pw.writes"f1@k: $meanF1AtK")
-    pw.writes"k: $k")
-    pw.write(s"segments: ${segments.length}")
-    pw.writes"segmentCount: $segmentCount")
-    pw.close*/
+    val metricsDF = Seq(
+        ("rmse", rmse),
+        ("precision@k", meanPrecisionAtK),
+        ("recall@k", meanRecallAtK),
+        ("f1@k", meanF1AtK),
+        ("k", k),
+        ("users", nUsers),
+        ("segments", segments.length),
+        ("segmentMinSupportCount", segmentCount),
+        ("segmentMinSupport", minSegmentSupport),
+      ).toDF("metric", "value")
+       .write
+       .format("csv")
+       .option("sep",",")
+       .option("header","true")
+       .mode(SaveMode.Overwrite)(
+        "/datascience/data_lookalike/metrics/country=PE"
+      )
+
   }
 
 
