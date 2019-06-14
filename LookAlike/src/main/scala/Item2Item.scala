@@ -208,7 +208,7 @@ object Item2Item {
         ("users", nUsers),
         ("segments", segments.length),
         ("segmentMinSupportCount", segmentCount),
-        ("segmentMinSupport", minSegmentSupport),
+        ("segmentMinSupport", minSegmentSupport)
       ).toDF("metric", "value")
        .write
        .format("csv")
