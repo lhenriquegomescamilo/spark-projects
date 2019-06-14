@@ -127,7 +127,7 @@ object LookAlike {
     // it makes the matrix symmetric
     // main diagonal is 0
     var simSymmetric = new CoordinateMatrix(
-      simsPersimMatrixfect
+      simMatrix
       .entries
       .union(simMatrix
              .entries
@@ -156,7 +156,7 @@ object LookAlike {
 
 
     // 1) root-mean-square error 
-    var rmse = Math.sqrt(userEvalMatrix.map(tup => Vectors.sqdist(tup._1, tup._2) / tup._1.size).sum() / userPredSeg.count())
+    var rmse = Math.sqrt(userEvalMatrix.map(tup => Vectors.sqdist(tup._1, tup._2) / tup._1.size).sum() / userEvalMatrix.count())
 
     //2) information retrieval metrics - recall@k - precision@k - f1@k
     var meanPrecisionAtK = 0.0
@@ -173,7 +173,7 @@ object LookAlike {
       // Number of users to select with highest score
       var nSelected = if (nRelevant>k) k else nRelevant
       
-      if (nRelevant > min_segment_support){
+      if (nRelevant > minSegmentSupport){
         var selected = userEvalMatrix.map(tup=> (tup._1.apply(segmentIdx), tup._2.apply(segmentIdx)) ).takeOrdered(nSelected)(Ordering[Double].on(tup=> -1 * tup._1))
         var tp = selected.map(tup=>tup._2).sum
         // precision & recall
@@ -199,7 +199,8 @@ object LookAlike {
     println(s"segments: ${segments.length}")
     println(s"segmentCount: $segmentCount")
 
-    val pw = new PrintWriter(new File("/datascience/data_lookalike/similarity_matrix/country=PE/metrics.txt"))
+    // TODO save results
+    /*val pw = new PrintWriter(new File("/datascience/data_lookalike/similarity_matrix/country=PE/metrics.txt"))
     pw.write(s"RMSE: $rmse")
     pw.write(s"precision@k: $meanPrecisionAtK")
     pw.write(s"recall@k: $meanRecallAtK")
@@ -207,7 +208,7 @@ object LookAlike {
     pw.writes"k: $k")
     pw.write(s"segments: ${segments.length}")
     pw.writes"segmentCount: $segmentCount")
-    pw.close
+    pw.close*/
   }
 
 
