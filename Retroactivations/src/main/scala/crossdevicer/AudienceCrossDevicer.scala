@@ -63,7 +63,7 @@ object AudienceCrossDevicer {
         .filter(index_filter)
         .withColumn("index", upper(col("index")))
         .select("index", "device", "device_type")
-        .filter("index IN ('coo', 'ios', 'and')")
+        .filter("device_type IN ('coo', 'ios', 'and')")
         .withColumn("device_type", mapUDF(col("device_type")))
 
       // Here we do the cross-device per se.
