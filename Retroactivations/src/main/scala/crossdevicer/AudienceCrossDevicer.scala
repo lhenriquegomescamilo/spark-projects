@@ -43,11 +43,11 @@ object AudienceCrossDevicer {
       .withColumnRenamed(column_name, "device_id")
     if (audience_file.columns.toList.contains("device_id")) {
       val audience = audience_file
-        .withColumn("device_id", upper(col("device_id")))
+        .withColumn("index", upper(col("device_id")))
         .withColumnRenamed("_c2", "segments")
         .distinct()
 
-      // Get DrawBridge Index. Here we transform the device id to upper case too.
+      // Get crossdevice Index. Here we transform the device id to upper case too.
       val typeMap = Map(
         "coo" -> "web",
         "and" -> "android",
@@ -63,13 +63,12 @@ object AudienceCrossDevicer {
         .filter(index_filter)
         .withColumn("index", upper(col("index")))
         .select("index", "device", "device_type")
-        .withColumnRenamed("index", "device_id")
-        .filter("device_type IN ('coo', 'ios', 'and')")
+        .filter("index IN ('coo', 'ios', 'and')")
         .withColumn("device_type", mapUDF(col("device_type")))
 
       // Here we do the cross-device per se.
       val cross_deviced = db_data
-        .join(audience, Seq("device_id"), "right_outer")
+        .join(audience, Seq("index"), "right_outer")
         .withColumn("device_id", coalesce(col("device"), col("device_id")))
         .withColumn("device_type", coalesce(col("device_type"), col("_c0")))
         .select("device_type", "device_id", "segments")

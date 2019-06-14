@@ -133,7 +133,7 @@ object Test {
         "spark.kryo.registrator",
         classOf[GeoSparkKryoRegistrator].getName
       )
-      .config("geospark.join.gridtype", "kdbtree")
+      .config("geospark.join.gridtype", "rtree")
       .appName("match_POI_geospark")
       .getOrCreate()
 
