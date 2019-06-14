@@ -87,7 +87,7 @@ object Item2Item {
         .replace("\n", "")
         .split(",")
         .toList
-    val segmentsIndex = segments.zipWithIndex.toDF("feature", "index")
+    val segmentsIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
 
     // Here we select the specified segments
     val joint = data
