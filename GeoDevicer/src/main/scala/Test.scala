@@ -140,7 +140,7 @@ object Test {
                 safegraph.longitude, 
                 polygons.CVEGEO as polygonId
          FROM safegraph, polygons
-         WHERE ST_Contains(polygons.myshape, safegraph.pointshapeß"""
+         WHERE ST_Contains(polygons.myshape, safegraph.pointshape)"""
     )
 
     intersection.write
