@@ -50,7 +50,7 @@ object Test {
     val df_safegraph = spark.read
       .option("header", "true")
       .csv(
-        "/data/geo/safegraph/2019/06/07/part-00000-tid-5892072171300048383-aeb39518-b59c-4473-82b6-4e06da388b9d-797647-c000.csv.gz"
+        "/data/geo/safegraph/2019/06/07/"
       )
       .filter("country = '%s'".format("mexico"))
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
