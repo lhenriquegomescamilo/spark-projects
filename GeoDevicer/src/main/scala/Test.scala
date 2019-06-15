@@ -52,17 +52,22 @@ object Test {
       .csv(
         "/data/geo/safegraph/2019/06/07/part-00000-tid-5892072171300048383-aeb39518-b59c-4473-82b6-4e06da388b9d-797647-c000.csv.gz"
       )
-      .filter("country = '%s'".format("argentina"))
+      .filter("country = '%s'".format("mexico"))
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
 
     df_safegraph.createOrReplaceTempView("data")
     var safegraphDf = spark
       .sql("""
-              SELECT ST_Point(CAST(data.longitude AS Decimal(24,20)), 
-                                            CAST(data.latitude AS Decimal(24,20)), 
-                                            data.ad_id,
-                                            data.id_type,
-                                            data.utc_timestamp) AS pointshape
+              SELECT data.ad_id,
+                     data.id_type,
+                     data.utc_timestamp,
+                     data.latitude,
+                     data.longitude,
+                     ST_Point(CAST(data.longitude AS Decimal(24,20)), 
+                              CAST(data.latitude AS Decimal(24,20)), 
+                              data.ad_id,
+                              data.id_type,
+                              data.utc_timestamp) AS pointshape
               FROM data
           """)
 
@@ -70,26 +75,50 @@ object Test {
   }
 
   def getPolygons(spark: SparkSession) = {
+    //Establecemos el path del geojson. Vamos a levantarlos dos veces.
+
     val geojson_path_formated =
-      "/datascience/geo/polygons/AR/provincias/GeoJsonFormated"
+      "/datascience/geo/polygons/MX/NSE/geojson/MX_ageb_NSE_formatted"
+
+    //Primer carga. Tomamos nombres
+    //acá levantamos el geojson como JSON,  lo vamos a usar para quedarnos con los nombres. Le asignamos un ID ficticio al dataframe.
+    val names = spark.read
+      .json(geojson_path_formated)
+      .withColumn("rowId1", monotonically_increasing_id())
+      .withColumn("CVEGEO", col("properties.CVEGEO"))
+      .select("rowId1", "CVEGEO")
+
+    //Segunda carga. Tomamos poligonos
+    //acá volvemos a levantar el geojson como CSV. De esta manera geospark puede leerlo como tal y asignarle la geometría.
     var polygonJsonDfFormated = spark.read
       .format("csv")
       .option("sep", "\t")
       .option("header", "false")
       .load(geojson_path_formated)
-    polygonJsonDfFormated.createOrReplaceTempView("polygontable")
 
-    var polygonDf = spark.sql(
-      "select ST_GeomFromGeoJSON(polygontable._c0) as myshape from polygontable"
-    )
-    polygonDf
+    //le asignamos la geometría a lo que cargamos recién y le creamos un ID ficticio al dataframe para poder hacer un join con el anterior.
+    polygonJsonDfFormated.createOrReplaceTempView("polygontable")
+    var polygonDf = spark
+      .sql(
+        """SELECT ST_GeomFromGeoJSON(polygontable._c0) AS myshape 
+           FROM polygontable"""
+      )
+      .withColumn("rowId1", monotonically_increasing_id())
+
+    //Join entre nombres y polígonos
+    //unimos ambas en un solo dataframe
+    val ageb_nse = names
+      .join(polygonDf, Seq("rowId1"))
+      .drop("rowId1")
+
+    ageb_nse
   }
 
   def join(spark: SparkSession) = {
     val polygonDf = getPolygons(spark)
     val sg_data = get_safegraph_data(spark)
 
-    polygonDf.createOrReplaceTempView("poisPoints")
+    polygonDf.createOrReplaceTempView("polygons")
     sg_data.createOrReplaceTempView("safegraph")
 
     val getSafegraphData = (point: Geometry) =>
@@ -104,16 +133,14 @@ object Test {
     spark.udf.register("getPolygonData", getPolygonData)
 
     val intersection = spark.sql(
-      """SELECT safegraph[2][0] as device_id,
-                    safegraph[2][1] as device_type,
-                    safegraph[2][2] as timestamp,
-                    safegraph[1][0] as latitude_user,
-                    safegraph[0][0] as longitude_user,
-                    polygon[0] as province
-             FROM (SELECT getSafegraphData(safegraph.pointshape) as safegraph, 
-                          getPolygonData(poisPoints.myshape) as polygon
-                   FROM safegraph, poisPoints
-                   WHERE ST_Contains(poisPoints.myshape, safegraph.pointshape))"""
+      """SELECT safegraph.ad_id,
+                safegraph.id_type,
+                safegraph.utc_timestamp,
+                safegraph.latitude,
+                safegraph.longitude, 
+                polygons.CVEGEO as polygonId
+         FROM safegraph, polygons
+         WHERE ST_Contains(polygons.myshape, safegraph.pointshapeß"""
     )
 
     intersection.write
@@ -133,7 +160,7 @@ object Test {
         "spark.kryo.registrator",
         classOf[GeoSparkKryoRegistrator].getName
       )
-      .config("geospark.join.gridtype", "rtree")
+      // .config("geospark.join.gridtype", "rtree")
       .appName("match_POI_geospark")
       .getOrCreate()
 
