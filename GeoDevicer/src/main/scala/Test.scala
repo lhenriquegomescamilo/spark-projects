@@ -6,6 +6,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.SaveMode
 import org.apache.log4j.{Level, Logger}
 
@@ -25,15 +26,15 @@ import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 
 object Test {
-  def get_safegraph_data(spark: SparkSession) = {
+  def get_safegraph_data(spark: SparkSession, nDays: Int, since: Int) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
     val format = "yyyy/MM/dd"
-    val end = DateTime.now.minusDays(1)
-    val days = (0 until 3)
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays)
       .map(end.minusDays(_))
       .map(_.toString(format))
 
@@ -42,36 +43,41 @@ object Test {
     val hdfs_files = days
       .map(day => path + "%s/".format(day))
       .filter(
-        path => fs.exists(new org.apache.hadoop.fs.Path("/data/geo/safegraph/"))
+        dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath))
       )
-      .map(day => day + "*.gz")
+
+    // This is the Safegraph data schema
+    val schema =
+      new StructType()
+        .add("utc_timestamp", "long")
+        .add("ad_id", "string")
+        .add("id_type", "string")
+        .add("geo_hash", "string")
+        .add("latitude", "double")
+        .add("longitude", "double")
+        .add("horizontal_accuracy", "float")
+        .add("country", "string")
 
     // Finally we read, filter by country, rename the columns and return the data
-    val df_safegraph = spark.read
-      .option("header", "true")
-      .csv(
-        "/data/geo/safegraph/2019/06/07/"
-      )
-      .filter("country = '%s'".format("mexico"))
-      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+    val dfs = (days zip hdfs_files).map(
+      file =>
+        spark.read
+          .option("header", "true")
+          .schema(schema)
+          .csv(file)
+          .withColumn(
+            "day",
+            lit(file.slice(file.length - 10, file.length).replace("/", ""))
+          )
+    )
 
-    df_safegraph.createOrReplaceTempView("data")
-    var safegraphDf = spark
-      .sql("""
-              SELECT data.ad_id,
-                     data.id_type,
-                     data.utc_timestamp,
-                     data.latitude,
-                     data.longitude,
-                     ST_Point(CAST(data.longitude AS Decimal(24,20)), 
-                              CAST(data.latitude AS Decimal(24,20)), 
-                              data.ad_id,
-                              data.id_type,
-                              data.utc_timestamp) AS pointshape
-              FROM data
-          """)
+    df_safegraph = dfs.reduce((df1, df2) => df1.union(df2))
 
-    safegraphDf
+    df_safegraph.write
+      .format("parquet")
+      .partitionBy("day", "country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/safegraph_pipeline/")
   }
 
   def getPolygons(spark: SparkSession) = {
@@ -115,40 +121,40 @@ object Test {
   }
 
   def join(spark: SparkSession) = {
-    val polygonDf = getPolygons(spark)
+    // val polygonDf = getPolygons(spark)
     val sg_data = get_safegraph_data(spark)
 
-    polygonDf.createOrReplaceTempView("polygons")
-    sg_data.createOrReplaceTempView("safegraph")
+    // polygonDf.createOrReplaceTempView("polygons")
+    // sg_data.createOrReplaceTempView("safegraph")
 
-    val getSafegraphData = (point: Geometry) =>
-      Seq(
-        Seq(point.asInstanceOf[Point].getX().toString),
-        Seq(point.asInstanceOf[Point].getY().toString),
-        point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq
-      )
-    spark.udf.register("getSafegraphData", getSafegraphData)
-    val getPolygonData = (point: Geometry) =>
-      point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq
-    spark.udf.register("getPolygonData", getPolygonData)
+    // val getSafegraphData = (point: Geometry) =>
+    //   Seq(
+    //     Seq(point.asInstanceOf[Point].getX().toString),
+    //     Seq(point.asInstanceOf[Point].getY().toString),
+    //     point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq
+    //   )
+    // spark.udf.register("getSafegraphData", getSafegraphData)
+    // val getPolygonData = (point: Geometry) =>
+    //   point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq
+    // spark.udf.register("getPolygonData", getPolygonData)
 
-    val intersection = spark.sql(
-      """SELECT safegraph.ad_id,
-                safegraph.id_type,
-                safegraph.utc_timestamp,
-                safegraph.latitude,
-                safegraph.longitude, 
-                polygons.CVEGEO as polygonId
-         FROM safegraph, polygons
-         WHERE ST_Contains(polygons.myshape, safegraph.pointshape)"""
-    )
+    // val intersection = spark.sql(
+    //   """SELECT safegraph.ad_id,
+    //             safegraph.id_type,
+    //             safegraph.utc_timestamp,
+    //             safegraph.latitude,
+    //             safegraph.longitude,
+    //             polygons.CVEGEO as polygonId
+    //      FROM safegraph, polygons
+    //      WHERE ST_Contains(polygons.myshape, safegraph.pointshape)"""
+    // )
 
-    intersection.write
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/testPolygons")
+    // intersection.write
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .option("header", "true")
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/geo/testPolygons")
   }
 
   def main(args: Array[String]) {
@@ -169,6 +175,7 @@ object Test {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // Finally we perform the GeoJoin
-    join(spark)
+    // join(spark)
+    get_safegraph_data(spark, 3, 1)
   }
 }

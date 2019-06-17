@@ -10,7 +10,12 @@ import org.apache.spark.sql.SaveMode
 import org.apache.log4j.{Level, Logger}
 
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
-import com.vividsolutions.jts.geom.{Coordinate, Geometry, Point, GeometryFactory}
+import com.vividsolutions.jts.geom.{
+  Coordinate,
+  Geometry,
+  Point,
+  GeometryFactory
+}
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.apache.spark.storage.StorageLevel
 
@@ -104,7 +109,7 @@ object GeoSparkMatcher {
       .csv(value_dictionary("path_to_pois"))
 
     val other_columns = df_pois.columns
-      .filter(c => c != "latitude" && c != "longitude" && c!="radius")
+      .filter(c => c != "latitude" && c != "longitude" && c != "radius")
     val query_other_columns = other_columns
       .map(c => "POIs." + c)
       .mkString(",")
@@ -147,11 +152,13 @@ object GeoSparkMatcher {
     val poisResult = get_POI_coordinates(spark, value_dictionary)
     val poisDf = poisResult._1
     val other_columns = poisResult._2
-    println("LOGGER: Other columns: "+other_columns.mkString(", "))
+    println("LOGGER: Other columns: " + other_columns.mkString(", "))
 
     // This is a tweak for performance.
     // TODO: pasar por parametro las reparticiones
-    safegraphDf.repartition(value_dictionary("nDays").toInt*100).createOrReplaceTempView("safegraph")
+    safegraphDf
+      .repartition(value_dictionary("nDays").toInt * 100)
+      .createOrReplaceTempView("safegraph")
     poisDf.repartition(10)
     // TODO: pasar por parametro si se quiere o no persistir
     poisDf.persist(StorageLevel.MEMORY_ONLY)
@@ -159,13 +166,17 @@ object GeoSparkMatcher {
 
     // Useful function that will be used to extract the info out of the Geometry objects.
     val getUserData = (point: Geometry) =>
-      Seq(Seq(point.asInstanceOf[Point].getX().toString), 
-          Seq(point.asInstanceOf[Point].getY().toString), 
-          point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq)
+      Seq(
+        Seq(point.asInstanceOf[Point].getX().toString),
+        Seq(point.asInstanceOf[Point].getY().toString),
+        point.getUserData().toString.replaceAll("\\s{1,}", ",").split(",").toSeq
+      )
     spark.udf.register("getUserData", getUserData)
 
     // Here we perform the actual join.
-    val poiQuery = (0 until other_columns.length).map(i => "POI[2][%s] as %s".format(i, other_columns(i))).mkString(", ")
+    val poiQuery = (0 until other_columns.length)
+      .map(i => "POI[2][%s] as %s".format(i, other_columns(i)))
+      .mkString(", ")
     var distanceJoinDf = spark.sql(
       """SELECT safegraph[2][0] as device_id,
                 safegraph[2][1] as device_type,
