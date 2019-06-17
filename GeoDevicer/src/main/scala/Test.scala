@@ -76,7 +76,7 @@ object Test {
     df_safegraph.write
       .format("parquet")
       .partitionBy("day", "country")
-      .mode(SaveMode.Overwrite)
+      .mode("append")
       .save("/datascience/geo/safegraph_pipeline/")
   }
 
