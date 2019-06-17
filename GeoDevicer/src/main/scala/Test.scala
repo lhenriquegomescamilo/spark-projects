@@ -59,7 +59,7 @@ object Test {
         .add("country", "string")
 
     // Finally we read, filter by country, rename the columns and return the data
-    val dfs = (days zip hdfs_files).map(
+    val dfs =  hdfs_files.map(
       file =>
         spark.read
           .option("header", "true")
