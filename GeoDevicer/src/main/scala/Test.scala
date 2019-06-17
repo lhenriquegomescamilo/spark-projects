@@ -176,6 +176,6 @@ object Test {
 
     // Finally we perform the GeoJoin
     // join(spark)
-    get_safegraph_data(spark, 3, 1)
+    get_safegraph_data(spark, 30, 4)
   }
 }
