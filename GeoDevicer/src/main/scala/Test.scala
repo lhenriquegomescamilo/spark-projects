@@ -71,7 +71,7 @@ object Test {
           )
     )
 
-    df_safegraph = dfs.reduce((df1, df2) => df1.union(df2))
+    val df_safegraph = dfs.reduce((df1, df2) => df1.union(df2))
 
     df_safegraph.write
       .format("parquet")
