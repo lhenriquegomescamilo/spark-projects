@@ -122,7 +122,7 @@ object Test {
 
   def join(spark: SparkSession) = {
     // val polygonDf = getPolygons(spark)
-    val sg_data = get_safegraph_data(spark)
+    // val sg_data = get_safegraph_data(spark)
 
     // polygonDf.createOrReplaceTempView("polygons")
     // sg_data.createOrReplaceTempView("safegraph")
