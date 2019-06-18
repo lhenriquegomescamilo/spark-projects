@@ -38,7 +38,7 @@ object GenerateFeaturesUrls {
     */
     
 
-    def get_datasets_gt(spark: SparkSession, ndays: int, since: int){
+    def get_datasets_gt(spark: SparkSession, ndays: Int, since: Int){
         
         val interest_filter = "country = 'AR' and ( array_contains(segments, '36') or array_contains(segments, '59') or array_contains(segments, '61') or array_contains(segments, '129') or array_contains(segments, '144') or array_contains(segments, '145') or array_contains(segments, '165') or array_contains(segments, '224') or array_contains(segments, '247') )"
 
