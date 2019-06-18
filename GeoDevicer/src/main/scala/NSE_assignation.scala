@@ -31,8 +31,8 @@ object asignarNSE {
 		//cargamos los homes
 		val homes = spark.read.format("csv")
 					.option("delimiter","\t")
-					.load("/datascience/geo/MX/mx_home_90_13-03-19")
-					.toDF("ad_id","freq","id_type","latitude","longitude")
+					.load("/datascience/geo/AR/MX_homes_17_06")
+					.toDF("ad_id","id_type","freq","geocode","latitude","longitude")
 
 		//Aplicando geometría a los puntos
 
