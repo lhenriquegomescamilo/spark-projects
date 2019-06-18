@@ -177,8 +177,8 @@ object Item2Item {
       .reduce((a, b) => (a, b).zipped.map(_ + _))
 
     // for each segment
-    //for (segmentIdx <- 0 until segments.length){
-      for (segmentIdx <- 0 until 35){
+    for (segmentIdx <- 0 until segments.length){
+      //  for (segmentIdx <- 0 until 35){
       // number of users assigned to segment
       var nRelevant = segmentSupports.apply(segmentIdx).toInt
       
@@ -211,8 +211,8 @@ object Item2Item {
     println(s"recall@k: $meanRecallAtK")
     println(s"f1@k: $meanF1AtK")
     println(s"k: $k")
-    //println(s"segments: ${segments.length}")
-    println(s"segments: 35")
+    println(s"segments: ${segments.length}")
+    //println(s"segments: 35")
     println(s"segmentCount: $segmentCount")
 
     val metricsDF = Seq(
@@ -222,8 +222,8 @@ object Item2Item {
         ("f1@k", meanF1AtK),
         ("k", k.toDouble),
         ("users", nUsers.toDouble),
-        //("segments", segments.length.toDouble),
-        ("segments", 35.0),
+        ("segments", segments.length.toDouble),
+        //("segments", 35.0),
         ("segmentMinSupportCount", segmentCount.toDouble),
         ("segmentMinSupport", minSegmentSupport.toDouble)
       ).toDF("metric", "value")
