@@ -1,9 +1,12 @@
 package main.scala
 
+import main.scala.Main
+
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.SaveMode
 import org.apache.log4j.{Level, Logger}
 
@@ -21,6 +24,7 @@ import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
 import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
+
 
 //////////////////////////////////////////////////////////////////////////////////
 
