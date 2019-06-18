@@ -184,7 +184,7 @@ object GenerateFeaturesUrls {
                 .option("header", "true")
                 .option("sep", "\t")
                 .mode(SaveMode.Overwrite)
-                .save("/datascience/data_urls/name=training_AR/country=AR/dataset_devices"
+                .save("/datascience/data_urls/name=training_AR/country=AR/dataset_devices")
 
     }
 
