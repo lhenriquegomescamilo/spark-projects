@@ -133,7 +133,7 @@ object Item2Item {
 
 
     // Now we construct the similarity matrix
-    val simMatrix = null
+    var simMatrix = null
     if (simMatrixHits == "count"){
       simMatrix = new RowMatrix(countRows).columnSimilarities(simThreshold)
       println(s"Similarity matrix: counts")
@@ -160,7 +160,7 @@ object Item2Item {
 
 
     // Now we construct the similarity matrix
-    val userSegmentMatrix = null
+    var userSegmentMatrix = null
     if (userMatrixHits == "count"){
       userSegmentMatrix = new RowMatrix(countRows)
       println(s"User matrix: counts")
