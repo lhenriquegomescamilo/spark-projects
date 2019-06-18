@@ -28,7 +28,7 @@ import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 
 //////////////////////////////////////////////////////////////////////////////////
 
-object asignarNSE {
+object NSE_assignation {
   def get_processed_homes(spark: SparkSession) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     
