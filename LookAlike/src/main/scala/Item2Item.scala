@@ -170,7 +170,7 @@ object Item2Item {
       println(s"User matrix: normalized count")
     }
     else{ 
-      userMatrixHits = new RowMatrix(binaryRows)
+      userSegmentMatrix = new RowMatrix(binaryRows)
       println(s"User matrix: binary")
     }
 
