@@ -133,7 +133,7 @@ object Item2Item {
 
 
     // Now we construct the similarity matrix
-    var RowMatrix: simMatrix = null
+    var simMatrix: RowMatrix = null
     if (simMatrixHits == "count"){
       simMatrix = new RowMatrix(countRows).columnSimilarities(simThreshold)
       println(s"Similarity matrix: counts")
@@ -160,7 +160,7 @@ object Item2Item {
 
 
     // Now we construct the similarity matrix
-    var RowMatrix: userSegmentMatrix = null
+    var userSegmentMatrix: RowMatrix = null
     if (userMatrixHits == "count"){
       userSegmentMatrix = new RowMatrix(countRows)
       println(s"User matrix: counts")
