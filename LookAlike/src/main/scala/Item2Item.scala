@@ -178,7 +178,7 @@ object Item2Item {
 
     // for each segment
     //for (segmentIdx <- 0 until segments.length){
-      for (segmentIdx <- 0 35){
+      for (segmentIdx <- 0 until 35){
       // number of users assigned to segment
       var nRelevant = segmentSupports.apply(segmentIdx).toInt
       
