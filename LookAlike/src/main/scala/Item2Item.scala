@@ -98,10 +98,10 @@ object Item2Item {
     val joint = groupedData
       .filter(col("feature").isin(segments: _*))
       .join(broadcast(segmentsIndex), Seq("feature"))
-      .select("device_id", "segment_idx")
+      .select("device_id", "index", "count")
       .rdd
-      .map(row => (row(0), row(1)))
-
+      .map(row => (row(0), (row(1), row(2))))
+      
     // groups by device_id and selects users with more than 1 segment
     val grouped = joint.groupByKey().filter( row => row._2.size > 1)
 
