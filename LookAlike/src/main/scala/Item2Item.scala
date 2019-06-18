@@ -133,16 +133,17 @@ object Item2Item {
 
 
     // Now we construct the similarity matrix
+    val simMatrix = null
     if (simMatrixHits == "count"){
-      val simMatrix = new RowMatrix(countRows).columnSimilarities(simThreshold)
+      simMatrix = new RowMatrix(countRows).columnSimilarities(simThreshold)
       println(s"Similarity matrix: counts")
     }
     else if (simMatrixHits == "normalized"){
-      val simMatrix = new RowMatrix(normRows).columnSimilarities(simThreshold)
+      simMatrix = new RowMatrix(normRows).columnSimilarities(simThreshold)
       println(s"Similarity matrix: normalized counts")
     }
     else{ 
-      val simMatrix = new RowMatrix(binaryRows).columnSimilarities(simThreshold)
+      simMatrix = new RowMatrix(binaryRows).columnSimilarities(simThreshold)
       println(s"Similarity matrix: binary")
     }
 
@@ -159,19 +160,19 @@ object Item2Item {
 
 
     // Now we construct the similarity matrix
+    val userSegmentMatrix = null
     if (userMatrixHits == "count"){
-      val userSegmentMatrix = new RowMatrix(countRows)
+      userSegmentMatrix = new RowMatrix(countRows)
       println(s"User matrix: counts")
     }
     else if (userMatrixHits == "normalized"){
-      val userSegmentMatrix = new RowMatrix(normRows)
+      userSegmentMatrix = new RowMatrix(normRows)
       println(s"User matrix: normalized count")
     }
     else{ 
-      val userMatrixHits = new RowMatrix(binaryRows)
+      userMatrixHits = new RowMatrix(binaryRows)
       println(s"User matrix: binary")
     }
-
 
     // it calculates the prediction scores
     // it doesn't use the current segment to make prediction,
