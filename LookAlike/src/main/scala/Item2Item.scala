@@ -139,6 +139,7 @@ object Item2Item {
     // it doesn't use the current segment to make prediction,
     // because the main diagonal of similarity matrix is 0 
     var scoreMatrix = userSegmentMatrix.multiply(simSymmetric.toBlockMatrix().toLocalMatrix())
+    // this operation preserves partitioning
 
     // ---- Evaluation metrics ---------------------
     // it merges scores with segments per user
@@ -159,6 +160,9 @@ object Item2Item {
     // 1) root-mean-square error 
     var rmse = Math.sqrt(userEvalMatrix.map(tup => Vectors.sqdist(tup._1, tup._2) / tup._1.size).sum() / nUsers)
 
+    // generate broadcast with l1
+    var rmse_normalized = Math.sqrt(userEvalMatrix.map(tup => Vectors.sqdist(tup._1, tup._2) / tup._1.size).sum() / nUsers)
+
     //2) information retrieval metrics - recall@k - precision@k - f1@k
     var meanPrecisionAtK = 0.0
     var meanRecallAtK = 0.0
@@ -167,14 +171,21 @@ object Item2Item {
     var minSegmentSupport = 100
     var segmentCount = 0
 
+    val segmentSupports = userSegmentMatrix
+      .rows
+      .map(a => a.toArray)
+      .reduce((a, b) => (a, b).zipped.map(_ + _))
+
     // for each segment
-    for (segmentIdx <- 0 until segments.length){
+    //for (segmentIdx <- 0 until segments.length){
+      for (segmentIdx <- 0 35){
       // number of users assigned to segment
-      var nRelevant = userEvalMatrix.map(tup => tup._2.apply(segmentIdx)).sum().toInt
-      // Number of users to select with highest score
-      var nSelected = if (nRelevant>k) k else nRelevant
+      var nRelevant = segmentSupports.apply(segmentIdx).toInt
       
       if (nRelevant > minSegmentSupport){
+        // Number of users to select with highest score
+        var nSelected = if (nRelevant>k) k else nRelevant
+
         var selected = userEvalMatrix
           .map(tup=> (tup._1.apply(segmentIdx), tup._2.apply(segmentIdx)))
           .filter(tup=> tup._1 > 0) // select scores > 0
@@ -200,7 +211,8 @@ object Item2Item {
     println(s"recall@k: $meanRecallAtK")
     println(s"f1@k: $meanF1AtK")
     println(s"k: $k")
-    println(s"segments: ${segments.length}")
+    //println(s"segments: ${segments.length}")
+    println(s"segments: 35")
     println(s"segmentCount: $segmentCount")
 
     val metricsDF = Seq(
@@ -208,11 +220,12 @@ object Item2Item {
         ("precision@k", meanPrecisionAtK),
         ("recall@k", meanRecallAtK),
         ("f1@k", meanF1AtK),
-        ("k", k),
-        ("users", nUsers),
-        ("segments", segments.length),
-        ("segmentMinSupportCount", segmentCount),
-        ("segmentMinSupport", minSegmentSupport)
+        ("k", k.toDouble),
+        ("users", nUsers.toDouble),
+        //("segments", segments.length.toDouble),
+        ("segments", 35.0),
+        ("segmentMinSupportCount", segmentCount.toDouble),
+        ("segmentMinSupport", minSegmentSupport.toDouble)
       ).toDF("metric", "value")
        .write
        .format("csv")
