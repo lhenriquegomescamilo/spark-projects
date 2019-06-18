@@ -56,8 +56,8 @@ object Item2Item {
     */
   def getSimilarities(spark: SparkSession,
                       simThreshold: Double = 0.05,
-                      simMatrixHits: String: "binary",
-                      userMatrixHits: String: "binary") {
+                      simMatrixHits: String = "binary",
+                      userMatrixHits: String = "binary") {
     // Imports
     import org.apache.spark.mllib.linalg.{Vector, Vectors}
     import spark.implicits._
