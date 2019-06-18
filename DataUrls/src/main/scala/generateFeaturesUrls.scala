@@ -155,7 +155,7 @@ object GenerateFeaturesUrls {
             )
     }
 
-    def get_dataset_training(spark: SparkSession){
+    def get_datasets_training(spark: SparkSession){
         val features_timestamp = spark.read.format("csv")
                                     .option("header","true")
                                     .option("sep", "\t")
@@ -200,7 +200,7 @@ object GenerateFeaturesUrls {
         val name = if (args.length > 2) args(2).toString else ""
         val country = if (args.length > 3) args(3).toString else ""
         
-        get_datasets_gt(spark,days,since)
+        get_datasets_gt(spark,ndays,since)
         //get_dataset_timestamps(spark, ndays, since, name, country)
         //get_dataset_devices(spark, ndays, since, name, country)
         get_datasets_training(spark)
