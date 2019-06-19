@@ -98,7 +98,7 @@ object Item2Item {
     val joint = groupedData
       .filter(col("feature").isin(segments: _*))
       .join(broadcast(segmentsIndex), Seq("feature"))
-      .select("device_id", "index", "count")
+      .select("device_id", "segment_idx", "count")
       .rdd
       .map(row => (row(0), (row(1), row(2))))
       
