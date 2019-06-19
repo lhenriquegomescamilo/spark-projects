@@ -229,7 +229,7 @@ object Item2Item {
           .map(tup=> (tup._1.apply(segmentIdx), tup._2.apply(segmentIdx)))
           .filter(tup=> tup._1 > 0) // select scores > 0
           .takeOrdered(nSelected)(Ordering[Double].on(tup=> -1 * tup._1))
-        var tp = selected.map(tup=>tup._2).sum
+        var tp = selected.map(tup=> if (tup._2 > 0) 1.0 else 0.0).sum
         // precision & recall
         var precision = tp / nSelected
         var recall = tp / nRelevant
