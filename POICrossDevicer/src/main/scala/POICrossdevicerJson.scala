@@ -62,7 +62,7 @@ This method reads the safegraph data, selects the columns "ad_id" (device id), "
     // Also we generate a new column call 'geocode' that will be used for the join
    
     //hardcoded variables
-    val nDays = 20
+    val nDays = 90
     val since = 9
 
     // First we obtain the configuration to be allowed to watch if a file exists or not
