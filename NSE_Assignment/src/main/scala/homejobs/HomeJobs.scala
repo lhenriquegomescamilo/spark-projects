@@ -23,8 +23,8 @@ object HomeJobs {
 
     // Get the days to be loaded
     val format = "yyyy/MM/dd"
-    val end   = DateTime.now.minusDays(value_dictionary("since"))
-    val days = (0 until value_dictionary("nDays")).map(end.minusDays(_)).map(_.toString(format))
+    val end   = DateTime.now.minusDays(value_dictionary("since").toInt)
+    val days = (0 until value_dictionary("nDays").toInt).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we obtain the list of hdfs folders to be read
     val path = "/data/geo/safegraph/"
@@ -81,13 +81,13 @@ object HomeJobs {
 
   def get_homejobs(spark: SparkSession,value_dictionary: Map[String, String]) = {
     import spark.implicits._
-    val df_users = get_safegraph_data(spark, safegraph_days, country)
+    val df_users = get_safegraph_data(spark, value_dictionary)
 
     //dictionary for timezones
     val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
     
     //setting timezone depending on country
-    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+    spark.conf.set("spark.sql.session.timeZone", timezone(value_dictionary("country")))
 
     val geo_hour = df_users.select("ad_id","id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
                                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))

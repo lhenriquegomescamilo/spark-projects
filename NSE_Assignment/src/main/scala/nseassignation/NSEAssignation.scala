@@ -89,8 +89,8 @@ object NSE_assignation {
 
 
   def join(spark: SparkSession,value_dictionary: Map[String, String]) = {
-    val polygonGDf = getPolygons(spark)
-    val homesGDF = get_processed_homes(spark)
+    val polygonGDf = getPolygons(spark,value_dictionary)
+    val homesGDF = get_processed_homes(spark,value_dictionary)
 
     polygonGDf.createOrReplaceTempView("ageb_nse_polygons")
     homesGDF.createOrReplaceTempView("user_homes")
@@ -121,7 +121,7 @@ val intersection = spark.sql(
       .option("sep", "\t")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .load("/datascience/geo/%s_w_NSE".format(value_dictionary("output_file")))
+      .save("/datascience/geo/%s_w_NSE".format(value_dictionary("output_file")))
       
   }
 

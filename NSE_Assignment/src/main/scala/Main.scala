@@ -7,9 +7,9 @@ import org.apache.spark.sql.functions.{round, broadcast, col, abs, upper}
 import org.apache.spark.sql.SaveMode
 
 //Acá traemos los paquetes propios
-import main.scala.homejobs._
+import main.scala.HomeJobs._
 import main.scala.crossdevicer._
-import main.scala.nseassignation._
+import main.scala.NSEAssignation._
 
 
 
