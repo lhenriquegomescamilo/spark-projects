@@ -212,7 +212,7 @@ object Item2Item {
 
     val segmentSupports = userSegmentMatrix
       .rows
-      .map(a => a.toArray)
+      .map(a => a.toArray.map(v => if (v > 0) 1.0 else 0.0 ))
       .reduce((a, b) => (a, b).zipped.map(_ + _))
 
     // for each segment
