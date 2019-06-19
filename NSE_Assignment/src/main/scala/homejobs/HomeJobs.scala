@@ -97,7 +97,7 @@ object HomeJobs {
                                                                 col("Hour") >= value_dictionary("HourFrom") || col("Hour") <= value_dictionary("HourTo") 
                                                                             } 
                                                     else {
-                                                          (col("Hour") <= HourFrom && col("Hour") >= HourTo ) && 
+                                                          (col("Hour") <= value_dictionary("HourFrom") && col("Hour") >= value_dictionary("HourTo")) && 
                                                                 !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_*) })
 
     val df_count  = geo_hour.groupBy(col("ad_id"),col("id_type"),col("geocode"))

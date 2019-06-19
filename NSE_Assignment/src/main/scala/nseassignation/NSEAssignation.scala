@@ -144,7 +144,7 @@ val intersection = spark.sql(
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // Finally we perform the GeoJoin
-    join(spark)
+    join(spark,value_dictionary)
 }
 //
 }
