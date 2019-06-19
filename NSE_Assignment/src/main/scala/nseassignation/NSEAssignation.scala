@@ -38,7 +38,7 @@ object NSE_assignation {
  		//cargamos los homes
 		val homes = spark.read.format("csv")
 					.option("delimiter","\t")
-					.load("/datascience/geo/%s").format(value_dictionary("output_file"))
+					.load("/datascience/geo/%s".format(value_dictionary("output_file")))
 					.toDF("ad_id","id_type","freq","geocode","latitude","longitude")
 
 		//Aplicando geometría a los puntos
@@ -121,7 +121,7 @@ val intersection = spark.sql(
       .option("sep", "\t")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .load("/datascience/geo/%s_w_NSE").format(value_dictionary("output_file"))
+      .load("/datascience/geo/%s_w_NSE".format(value_dictionary("output_file")))
       
   }
 

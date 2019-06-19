@@ -23,8 +23,8 @@ object HomeJobs {
 
     // Get the days to be loaded
     val format = "yyyy/MM/dd"
-    val end   = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val end   = DateTime.now.minusDays(value_dictionary("since"))
+    val days = (0 until value_dictionary("nDays")).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we obtain the list of hdfs folders to be read
     val path = "/data/geo/safegraph/"
@@ -36,7 +36,7 @@ object HomeJobs {
 
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .dropDuplicates("ad_id","latitude","longitude")
-                                  .filter("country = '%s'".format(country))
+                                  .filter("country = '%s'".format(value_dictionary("country")))
                                   .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
                                   .withColumnRenamed("latitude", "latitude_user")
                                   .withColumnRenamed("longitude", "longitude_user")
@@ -50,7 +50,7 @@ object HomeJobs {
 
   /**
    * This method parses the parameters sent.
-   */
+   
   def nextOption(map: OptionMap, list: List[String]): OptionMap = {
     def isSwitch(s: String) = (s(0) == '-')
     list match {
@@ -69,7 +69,7 @@ object HomeJobs {
         nextOption(map ++ Map('output -> value.toString), tail)
     }
   }
-
+*/
 /*
    safegraph_days: Integer, 
    country: String, 
@@ -93,8 +93,8 @@ object HomeJobs {
                                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
                                             .withColumn("Hour", date_format(col("Time"), "HH"))
                                                 .filter(
-                                                    if (UseType=="home") { 
-                                                                col("Hour") >= HourFrom || col("Hour") <= HourTo 
+                                                    if (value_dictionary("UseType")=="home") { 
+                                                                col("Hour") >= value_dictionary("HourFrom") || col("Hour") <= value_dictionary("HourTo") 
                                                                             } 
                                                     else {
                                                           (col("Hour") <= HourFrom && col("Hour") >= HourTo ) && 
@@ -127,8 +127,6 @@ object HomeJobs {
 
     final_users.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(value_dictionary("output_file"))
   }
-
-   type OptionMap = Map[Symbol, Any]
 
   /**
     * This method parses the parameters sent.

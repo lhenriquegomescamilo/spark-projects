@@ -7,9 +7,11 @@ import org.apache.spark.sql.functions.{round, broadcast, col, abs, upper}
 import org.apache.spark.sql.SaveMode
 
 //Acá traemos los paquetes propios
-import main.scala.crossdevicer.CrossDevicer
-import main.scala.aggregators.Aggregations
-import main.scala.matchers._
+import main.scala.homejobs._
+import main.scala.crossdevicer._
+import main.scala.nseassignation._
+
+
 
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
