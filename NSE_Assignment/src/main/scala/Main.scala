@@ -183,23 +183,12 @@ object Main {
 
     // Here we perform the operation
 
-   GeoSparkMatcher.join(spark, value_dictionary)
+   HomeJobs.get_homejobs(spark, value_dictionary)
 
 
-    // Finally, we perform the cross-device if requested.
-    if (value_dictionary("crossdevice") != "false" && value_dictionary(
-          "crossdevice"
-        ) != "0")
-      CrossDevicer.cross_device(
-        spark,
-        value_dictionary,
-        column_name = "device_id",
-        header = "true"
-  )
-      // Finally, we perform the cross-device if requested.
-    if (value_dictionary("web_days").toInt>0)
-      Aggregations.get_segments(spark, value_dictionary)
-
+   CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
+    
+    
    
     }
   }
