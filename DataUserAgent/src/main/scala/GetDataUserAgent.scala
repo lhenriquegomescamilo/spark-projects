@@ -33,7 +33,7 @@ object GetDataUserAgent {
       .option("header", "true")
       .option("sep", "\t")
       .load("/data/eventqueue/%s/".format(day))
-      .select("device_id", "user_agent", "country")
+      .select("device_id", "user_agent", "country", "url")
 
     // schema to be used for the parsed rdd
     val schema = new StructType()
@@ -51,11 +51,11 @@ object GetDataUserAgent {
     // Here we filter the ros and
     val parsed = data
       .filter(
-        "event_type = 'pv' AND length(user_agent)>0 AND country IN (%s)".format(
+        "event_type IN ('pv', 'tk') AND length(user_agent)>0 AND country IN (%s)".format(
           countries.map("'%s'".format(_)).mkString(", ")
         )
       )
-      .select("device_id", "user_agent", "country")
+      .select("device_id", "user_agent", "country", "url")
       .dropDuplicates("device_id")
       .rdd // Now we parse the user agents
       .map(row => (row(0), row(2), parser.value.parse(row(1).toString), row(1)))
