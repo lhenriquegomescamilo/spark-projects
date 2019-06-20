@@ -54,7 +54,10 @@ object Item2Item {
     * @param spark: Spark session that will be used to load the data.
     * @param simThreshold
     */
-  def getSimilarities(spark: SparkSession, simThreshold: Double = 0.05) {
+  def getSimilarities(spark: SparkSession,
+                      simThreshold: Double = 0.05,
+                      simMatrixHits: String = "binary",
+                      userMatrixHits: String = "binary") {
     // Imports
     import org.apache.spark.mllib.linalg.{Vector, Vectors}
     import spark.implicits._
@@ -70,7 +73,9 @@ object Item2Item {
       .load(
         "/datascience/data_demo/triplets_segments/country=PE"
       )
-      .dropDuplicates("feature", "device_id")
+    
+    // group by (device - segment)
+    val groupedData = data.groupBy("device_id", "feature").agg(sum("count").cast("int").as("count"))
 
     // Segments definition
     val segments =
@@ -90,39 +95,57 @@ object Item2Item {
     val segmentsIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
 
     // Here we select the specified segments
-    val joint = data
+    val joint = groupedData
       .filter(col("feature").isin(segments: _*))
       .join(broadcast(segmentsIndex), Seq("feature"))
-      .select("device_id", "segment_idx")
+      .select("device_id", "segment_idx", "count")
       .rdd
-      .map(row => (row(0), row(1)))
+      .map(row => (row(0), (row(1), row(2))))
+      
+    // groups by device_id and selects users with more than 1 segment
+    val grouped = joint.groupByKey().filter( row => row._2.size > 1)
 
-    // agrupa por deice_id y se queda con los usuarios con más de un segmento asignado
-    val rows = joint
-      .groupByKey()
-      .filter( row => row._2.size > 1 ) // it selects users with more than 1 segment
-      .map(
-        row =>
-          Vectors
-            .sparse(
-              segments.size,
-              row._2.map(_.toString.toInt).toArray,
-              Array.fill(row._2.size)(1.0)
-            )
-            .toDense
-            .asInstanceOf[Vector]
-      )
+    // 3 versions of user-segment matrix:
+
+    // binary version
+    val binaryRows = grouped
+      .map(row => Vectors.sparse(
+                    segments.size,
+                    row._2.map(t => t._1.toString.toInt).toArray, 
+                    Array.fill(row._2.size)(1.0))
+                  .toDense.asInstanceOf[Vector])
+    // counters version
+    val countRows = grouped
+      .map(row => Vectors.sparse(
+                    segments.size,
+                    row._2.map(t => t._1.toString.toInt).toArray,
+                    row._2.map(t => t._2.toString.toDouble).toArray)
+                  .toDense.asInstanceOf[Vector])
+
+    // normalized counters version
+    val normRows = grouped
+      .map(row => (row._1, row._2, row._2.map(t => t._2.toString.toDouble).toArray.sum)) // sum counts by device id
+      .map(row => Vectors.sparse(
+                    segments.size,
+                    row._2.map(t => t._1.toString.toInt).toArray,
+                    row._2.map(t => t._2.toString.toDouble/row._3).toArray)
+                  .toDense.asInstanceOf[Vector])
+
 
     // Now we construct the similarity matrix
-    val userSegmentMatrix = new RowMatrix(rows)
-    val simMatrix = userSegmentMatrix.columnSimilarities(simThreshold)
-
-    // We store the similarity matrix
-    /*simMatrix.entries
-      .map(entry => List(entry.i, entry.j, entry.value).mkString(","))
-      .saveAsTextFile(
-        "/datascience/data_lookalike/similarity_matrix/country=PE"
-      )*/
+    var simMatrix: CoordinateMatrix = null
+    if (simMatrixHits == "count"){
+      simMatrix = new RowMatrix(countRows).columnSimilarities(simThreshold)
+      println(s"Similarity matrix: counts")
+    }
+    else if (simMatrixHits == "normalized"){
+      simMatrix = new RowMatrix(normRows).columnSimilarities(simThreshold)
+      println(s"Similarity matrix: normalized counts")
+    }
+    else{ 
+      simMatrix = new RowMatrix(binaryRows).columnSimilarities(simThreshold)
+      println(s"Similarity matrix: binary")
+    }
 
     // it makes the matrix symmetric
     // main diagonal is 0
@@ -135,10 +158,27 @@ object Item2Item {
       )  
       ,simMatrix.numRows(), simMatrix.numCols())
 
+
+    // Now we construct the similarity matrix
+    var userSegmentMatrix: RowMatrix = null
+    if (userMatrixHits == "count"){
+      userSegmentMatrix = new RowMatrix(countRows)
+      println(s"User matrix: counts")
+    }
+    else if (userMatrixHits == "normalized"){
+      userSegmentMatrix = new RowMatrix(normRows)
+      println(s"User matrix: normalized count")
+    }
+    else{ 
+      userSegmentMatrix = new RowMatrix(binaryRows)
+      println(s"User matrix: binary")
+    }
+
     // it calculates the prediction scores
     // it doesn't use the current segment to make prediction,
     // because the main diagonal of similarity matrix is 0 
     var scoreMatrix = userSegmentMatrix.multiply(simSymmetric.toBlockMatrix().toLocalMatrix())
+    // this operation preserves partitioning
 
     // ---- Evaluation metrics ---------------------
     // it merges scores with segments per user
@@ -159,6 +199,9 @@ object Item2Item {
     // 1) root-mean-square error 
     var rmse = Math.sqrt(userEvalMatrix.map(tup => Vectors.sqdist(tup._1, tup._2) / tup._1.size).sum() / nUsers)
 
+    // generate broadcast with l1
+    //var rmse_normalized = Math.sqrt(userEvalMatrix.map(tup => Vectors.sqdist(tup._1, tup._2) / tup._1.size).sum() / nUsers)
+
     //2) information retrieval metrics - recall@k - precision@k - f1@k
     var meanPrecisionAtK = 0.0
     var meanRecallAtK = 0.0
@@ -167,19 +210,26 @@ object Item2Item {
     var minSegmentSupport = 100
     var segmentCount = 0
 
+    val segmentSupports = userSegmentMatrix
+      .rows
+      .map(a => a.toArray.map(v => if (v > 0) 1.0 else 0.0 ))
+      .reduce((a, b) => (a, b).zipped.map(_ + _))
+
     // for each segment
     for (segmentIdx <- 0 until segments.length){
+      //  for (segmentIdx <- 0 until 35){
       // number of users assigned to segment
-      var nRelevant = userEvalMatrix.map(tup => tup._2.apply(segmentIdx)).sum().toInt
-      // Number of users to select with highest score
-      var nSelected = if (nRelevant>k) k else nRelevant
+      var nRelevant = segmentSupports.apply(segmentIdx).toInt
       
       if (nRelevant > minSegmentSupport){
+        // Number of users to select with highest score
+        var nSelected = if (nRelevant>k) k else nRelevant
+
         var selected = userEvalMatrix
           .map(tup=> (tup._1.apply(segmentIdx), tup._2.apply(segmentIdx)))
           .filter(tup=> tup._1 > 0) // select scores > 0
           .takeOrdered(nSelected)(Ordering[Double].on(tup=> -1 * tup._1))
-        var tp = selected.map(tup=>tup._2).sum
+        var tp = selected.map(tup=> if (tup._2 > 0) 1.0 else 0.0).sum
         // precision & recall
         var precision = tp / nSelected
         var recall = tp / nRelevant
@@ -201,6 +251,7 @@ object Item2Item {
     println(s"f1@k: $meanF1AtK")
     println(s"k: $k")
     println(s"segments: ${segments.length}")
+    //println(s"segments: 35")
     println(s"segmentCount: $segmentCount")
 
     val metricsDF = Seq(
@@ -208,11 +259,12 @@ object Item2Item {
         ("precision@k", meanPrecisionAtK),
         ("recall@k", meanRecallAtK),
         ("f1@k", meanF1AtK),
-        ("k", k),
-        ("users", nUsers),
-        ("segments", segments.length),
-        ("segmentMinSupportCount", segmentCount),
-        ("segmentMinSupport", minSegmentSupport)
+        ("k", k.toDouble),
+        ("users", nUsers.toDouble),
+        ("segments", segments.length.toDouble),
+        //("segments", 35.0),
+        ("segmentMinSupportCount", segmentCount.toDouble),
+        ("segmentMinSupport", minSegmentSupport.toDouble)
       ).toDF("metric", "value")
        .write
        .format("csv")
@@ -235,6 +287,6 @@ object Item2Item {
     )
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getSimilarities(spark)
+    getSimilarities(spark, 0.05, "binary", "binary")
   }
 }
