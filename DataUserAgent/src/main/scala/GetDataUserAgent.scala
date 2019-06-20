@@ -46,6 +46,7 @@ object GetDataUserAgent {
       .add(StructField("os_min_version", StringType, true))
       .add(StructField("os_max_version", StringType, true))
       .add(StructField("user_agent", StringType, true))
+      .add(StructField("url", StringType, true))
     val parser = spark.sparkContext.broadcast(CachingParser.default(100000))
 
     // Here we filter the ros and
