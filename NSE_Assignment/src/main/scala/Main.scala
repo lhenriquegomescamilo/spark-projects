@@ -187,7 +187,7 @@ object Main {
 
    HomeJobs.get_homejobs(spark, value_dictionary)
    
-   NSEAssignation.join(spark, value_dictionary)
+   NSEAssignation.nse_join(spark, value_dictionary)
 
    CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
     
