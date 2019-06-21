@@ -1,4 +1,4 @@
-package main.scala.NSEAssignation
+package main.scala.nseassignation
 
 
 import main.scala.Main
