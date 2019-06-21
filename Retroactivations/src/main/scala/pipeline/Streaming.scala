@@ -137,24 +137,47 @@ object Streaming {
       .option("subscribe", "event_queue")
       .option("kafka.max.partition.fetch.bytes", "52428800")
       .load()
-      .withColumn(
-        "datetime",
-        to_utc_timestamp(regexp_replace(col("time"), "T", " "), "utc")
-      )
-      .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
 
     val csvData = df
       .selectExpr("CAST(value AS STRING)")
       .as[(String)]
       .withColumn("value", split(col("value"), "\t"))
 
-// val frame = spark.createDataFrame(csvData.rdd.map( record => Row.fromSeq(record(0).toString.split("\t").toSeq) ), finalSchema)
+    val frame = all_columns.zipWithIndex
+      .foldLeft(csvData)(
+        (df, t) => df.withColumn(t._1, col("value").getItem(t._2))
+      )
+      .withColumn(
+        "datetime",
+        to_utc_timestamp(regexp_replace(col("time"), "T", " "), "utc")
+      )
+      .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
 
-    val frame = all_columns.zipWithIndex.foldLeft(csvData)(
-      (df, t) => df.withColumn(t._1, col("value").getItem(t._2))
+    val withArrayStrings = array_strings.foldLeft(frame)(
+      (df, c) => df.withColumn(c, split(col(c), "\u0001"))
     )
+    val withInts = ints.foldLeft(withArrayStrings)(
+      (df, c) => df.withColumn(c, col(c).cast("int"))
+    )
+    val finalDF = array_ints
+      .foldLeft(withInts)(
+        (df, c) =>
+          df.withColumn(c, split(col(c), "\u0001"))
+            .withColumn(c, col(c).cast("array<int>"))
+      )
+      .filter(
+        length(col("device_id")) > 0 && col("event_type").isin(event_types: _*)
+      )
 
-    val query = frame.writeStream.format("console")
+    val query = frame.writeStream
+      .outputMode("append")
+      .format("parquet")
+      .option("checkpointLocation", "/datascience/checkpoint/")
+      .partitionBy("hour", "country")
+      .option("path", "/datascience/data_eventqueue/")
+      // .trigger(ProcessingTime("1260 seconds"))
+      .start()
+      .awaitTermination()
   }
 
   def main(args: Array[String]) {
@@ -166,5 +189,6 @@ object Streaming {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    streamKafka(spark)
   }
 }
