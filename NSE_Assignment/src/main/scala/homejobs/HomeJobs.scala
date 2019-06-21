@@ -1,4 +1,4 @@
-package main.scala.HomeJobs
+package main.scala.homejobs
 
 import main.scala.Main
 
