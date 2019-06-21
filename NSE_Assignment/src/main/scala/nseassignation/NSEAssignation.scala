@@ -1,6 +1,5 @@
 package  main.scala.nseassignation
 
-
 import main.scala.Main
 
 import org.apache.spark.sql.SparkSession
@@ -29,7 +28,7 @@ import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 
 //////////////////////////////////////////////////////////////////////////////////
 
-object NSE_assignation {
+object NSEAssignation {
 
   def get_processed_homes(spark: SparkSession, value_dictionary: Map[String, String]) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
