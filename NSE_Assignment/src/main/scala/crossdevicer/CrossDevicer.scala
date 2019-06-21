@@ -86,7 +86,7 @@ object CrossDevicer {
 
 
     // We want information about the process
-    cross_deviced_.explain(extended = true)
+    //cross_deviced_.explain(extended = true)
 
     // Finally, we store the result obtained.
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("poi_output_file")
