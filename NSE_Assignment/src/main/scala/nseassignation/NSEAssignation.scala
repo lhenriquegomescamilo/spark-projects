@@ -37,7 +37,7 @@ object NSEAssignation {
  		//cargamos los homes
 		val homes = spark.read.format("csv")
 					.option("delimiter","\t")
-					.load("/datascience/geo/%s".format(value_dictionary("output_file")))
+					.load(("/datascience/geo/%s".format(value_dictionary("output_file"))))
 					.toDF("ad_id","id_type","freq","geocode","latitude","longitude")
 
 		//Aplicando geometría a los puntos
@@ -124,8 +124,29 @@ val intersection = spark.sql(
       
   }
 
+ type OptionMap = Map[Symbol, Any]
+ /**
+    * This method parses the parameters sent.
+    */
+
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--path_geo_json" :: value :: tail =>
+        nextOption(map ++ Map('path_geo_json -> value.toString), tail)
+    }
+  }
 
   def main(args: Array[String]) {
+
+
+    val options = nextOption(Map(), args.toList)
+    val path_geo_json =
+      if (options.contains('path_geo_json)) options('path_geo_json).toString
+      else ""
+
+
     // Start Spark Session
     val spark = SparkSession
       .builder()
@@ -138,9 +159,13 @@ val intersection = spark.sql(
       .appName("match_POI_geospark")
       .getOrCreate()
 
+  val value_dictionary = Main.get_variables(spark, path_geo_json)
+
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
     Logger.getRootLogger.setLevel(Level.WARN)
+    
+    
 
     // Finally we perform the GeoJoin
     nse_join(spark,value_dictionary)

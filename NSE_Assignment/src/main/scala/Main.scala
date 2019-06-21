@@ -58,10 +58,10 @@ object Main {
 
     //esto tiene que ser automático según el country, que lo tome del json
     val path_to_polygons =
-      if (query.contains("path_to_pois") && Option(query("path_to_pois"))
+      if (query.contains("path_to_polygons") && Option(query("path_to_polygons"))
             .getOrElse("")
             .toString
-            .length > 0) query("path_to_pois").toString
+            .length > 0) query("path_to_polygons").toString
       else ""
 
     //esto tiene que ser automático, que lo tome desde el json
@@ -135,6 +135,7 @@ object Main {
     "output_file" -> $output_file,    
     "crossdevice" -> $crossdevice,
     "nDays" -> $nDays,
+    "since" -> $since,
     "HourFrom" -> $HourFrom,
       "HourTo" -> $HourTo,
       "UseType" -> $UseType)""")
