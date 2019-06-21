@@ -125,7 +125,7 @@ object HomeJobs {
 
 
 
-    final_users.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save(value_dictionary("output_file"))
+    final_users.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save("/datascience/geo/%s".format(value_dictionary("output_file")))
   }
 
   /**
