@@ -87,7 +87,7 @@ object NSEAssignation {
   }
 
 
-  def join(spark: SparkSession,value_dictionary: Map[String, String]) = {
+  def nse_join(spark: SparkSession,value_dictionary: Map[String, String]) = {
     val polygonGDf = getPolygons(spark,value_dictionary)
     val homesGDF = get_processed_homes(spark,value_dictionary)
 
@@ -143,7 +143,8 @@ val intersection = spark.sql(
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // Finally we perform the GeoJoin
-    join(spark,value_dictionary)
-}
+    nse_join(spark,value_dictionary)
+
+    }
 //
 }
