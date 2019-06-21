@@ -91,7 +91,7 @@ object CrossDevicer {
     // Finally, we store the result obtained.
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("poi_output_file")
     )
-    cross_deviced_.write
+    cross_deviced.write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
