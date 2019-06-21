@@ -117,7 +117,8 @@ object keywordIngestion {
 
     val df = spark.read
       .format("csv")
-      .load(dfs: _*)
+      // .load(dfs: _*)
+      .load("/datascience/data_keyword_ingestion/2019-05-24_leo.csv")
       .withColumnRenamed("_c0", "url")
       .withColumnRenamed("_c1", "content_keys")
       .withColumn("content_keys", split(col("content_keys"), "\\|"))
