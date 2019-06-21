@@ -34,7 +34,7 @@ object CrossDevicer {
       .load("/datascience/geo/%s_w_NSE".format(value_dictionary("output_file")))
       .withColumn("ad_id", upper(col("ad_id")))
       .withColumnRenamed("ad_id","device_id")
-      .withColumnRenamed("id_type","device_tye")
+      .withColumnRenamed("id_type","device_type")
       .withColumnRenamed("freq","frequency")
     
     /*
