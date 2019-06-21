@@ -126,6 +126,14 @@ val intersection = spark.sql(
 
 
   def main(args: Array[String]) {
+
+
+    val options = nextOption(Map(), args.toList)
+    val path_geo_json =
+      if (options.contains('path_geo_json)) options('path_geo_json).toString
+      else ""
+
+
     // Start Spark Session
     val spark = SparkSession
       .builder()
@@ -138,9 +146,13 @@ val intersection = spark.sql(
       .appName("match_POI_geospark")
       .getOrCreate()
 
+  val value_dictionary = Main.get_variables(spark, path_geo_json)
+  
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
     Logger.getRootLogger.setLevel(Level.WARN)
+    
+    
 
     // Finally we perform the GeoJoin
     nse_join(spark,value_dictionary)
