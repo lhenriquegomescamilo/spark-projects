@@ -124,7 +124,18 @@ val intersection = spark.sql(
       
   }
 
-
+ /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--path_geo_json" :: value :: tail =>
+        nextOption(map ++ Map('path_geo_json -> value.toString), tail)
+    }
+  }
+  
   def main(args: Array[String]) {
 
 
@@ -147,7 +158,7 @@ val intersection = spark.sql(
       .getOrCreate()
 
   val value_dictionary = Main.get_variables(spark, path_geo_json)
-  
+
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
     Logger.getRootLogger.setLevel(Level.WARN)
