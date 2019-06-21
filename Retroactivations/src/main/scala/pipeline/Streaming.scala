@@ -60,7 +60,7 @@ object Streaming {
       "segments first_party all_segments"
         .split(" ")
 
-    val day = DateTime.now.toString("yyyy/MM/dd")
+    val day = DateTime.now.toString("yyyy/MM/dd/")
 
     val data = spark.readStream
       .option("sep", "\t")
@@ -68,7 +68,7 @@ object Streaming {
       .option("maxFilesPerTrigger", 4)
       .schema(finalSchema)
       .format("csv")
-      .load("/data/eventqueue/")
+      .load("/data/eventqueue/%s".format(day))
       .select(columns.head, columns.tail: _*)
       .withColumn(
         "datetime",
