@@ -31,7 +31,7 @@ object CrossDevicer {
       .format("csv")
       .option("sep", sep)
       .option("header", header)
-      .load(value_dictionary("output_file")+"_w_NSE")
+      .load("/datascience/geo/%s_w_NSE".format(value_dictionary("output_file")))
       .withColumn("device_id", upper(col("device_id")))
     
     /*
