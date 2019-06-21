@@ -167,7 +167,7 @@ object Streaming {
             .withColumn(c, col(c).cast("array<int>"))
       )
       .filter(
-        length(col("device_id")) > 0 && col("event_type").isin(event_types: _*)
+        length(col("device_id")) > 0
       )
 
     val query = frame.writeStream
