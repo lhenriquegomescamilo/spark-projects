@@ -124,9 +124,11 @@ val intersection = spark.sql(
       
   }
 
+ type OptionMap = Map[Symbol, Any]
  /**
     * This method parses the parameters sent.
     */
+
   def nextOption(map: OptionMap, list: List[String]): OptionMap = {
     def isSwitch(s: String) = (s(0) == '-')
     list match {
@@ -135,7 +137,7 @@ val intersection = spark.sql(
         nextOption(map ++ Map('path_geo_json -> value.toString), tail)
     }
   }
-  
+
   def main(args: Array[String]) {
 
 
