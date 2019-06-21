@@ -103,6 +103,7 @@ object Streaming {
     import org.apache.spark.sql.streaming._
     import org.apache.spark.sql._
     import org.apache.spark.sql.types._
+    import sparkSession.implicits._
 
     val all_columns =
       """timestamp,time,user,device_id,device_type,web_id,android_id,ios_id,event_type,data_type,nav_type,
