@@ -5,6 +5,9 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.streaming.ProcessingTime
+import java.sql.Date
+import java.time.DateTimeException
+import org.joda.time.DateTime
 
 object Streaming {
 
@@ -57,12 +60,15 @@ object Streaming {
       "segments first_party all_segments"
         .split(" ")
 
+    val day = DateTime.now.toString("yyyy/MM/dd")
+
     val data = spark.readStream
       .option("sep", "\t")
       .option("header", "true")
+      .option("maxFilesPerTrigger", 4)
       .schema(finalSchema)
       .format("csv")
-      .load("/datascience/streamTest/")
+      .load("/data/eventqueue/")
       .select(columns.head, columns.tail: _*)
       .withColumn(
         "datetime",
@@ -87,13 +93,13 @@ object Streaming {
       )
 
     val query = finalDF
-      .coalesce(8)
+      // .coalesce(8)
       .writeStream
       .outputMode("append")
       .format("parquet")
       .option("checkpointLocation", "/datascience/checkpoint/")
       .partitionBy("hour", "country")
-      .option("path", "/datascience/data_audiences_streaming2/")
+      .option("path", "/datascience/data_audiences_streaming/")
       // .trigger(ProcessingTime("1260 seconds"))
       .start()
       .awaitTermination()
@@ -190,6 +196,6 @@ object Streaming {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    streamKafka(spark)
+    streamCSVs(spark)
   }
 }
