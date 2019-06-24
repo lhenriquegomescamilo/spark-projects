@@ -51,7 +51,7 @@ object POICrossDevicerJson {
     // Now we obtain the list of hdfs files to be read
     val path = "/datascience/geo/safegraph_pipeline/"
     val hdfs_files = days
-      .map(day => path +  "day=0%s/country=%s/".format(day,country))
+      .map(day => path +  "day=0%s/country=%s/".format(day,value_dictionary("country")))
       .filter(
         path => fs.exists(new org.apache.hadoop.fs.Path(path))
       )
