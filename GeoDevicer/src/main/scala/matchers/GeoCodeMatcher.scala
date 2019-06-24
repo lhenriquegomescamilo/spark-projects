@@ -41,7 +41,7 @@ object POICrossDevicerJson {
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val format = "yyMMdd"
+    val format = "yyyy/MM/dd"
     val end = DateTime.now.minusDays(value_dictionary("since").toInt)
     val days = (0 until value_dictionary("nDays").toInt)
       .map(end.minusDays(_))
@@ -49,18 +49,21 @@ object POICrossDevicerJson {
       .filter(x => !(x contains "05/27"))
 
     // Now we obtain the list of hdfs files to be read
-    val path = "/datascience/geo/safegraph_pipeline/" //"day=/country=%s".format(value_dictionary("country"))
+    val path = "/data/geo/safegraph/"
     val hdfs_files = days
-      .map(day => path + "day=0%s/country=%s/".format(day,value_dictionary("country")))
-      .filter( path => fs.exists(new org.apache.hadoop.fs.Path(path))   )
-      .map(day => day + "*.snappy.parquet")
+      .map(day => path + "%s/".format(day))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path("/data/geo/safegraph/"))
+      )
+      .map(day => day + "*.gz")
 
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read
       .option("header", "true")
       .csv(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
-      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp") //.filter("country = '%s'".format(value_dictionary("country")))
+      .filter("country = '%s'".format(value_dictionary("country")))
+      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
       .withColumnRenamed("latitude", "latitude_user")
       .withColumnRenamed("longitude", "longitude_user")
       .withColumn(
