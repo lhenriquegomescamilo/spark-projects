@@ -60,7 +60,7 @@ object POICrossDevicerJson {
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read
       .option("header", "true")
-      .csv(hdfs_files: _*)
+      .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
       .filter("country = '%s'".format(value_dictionary("country")))
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
