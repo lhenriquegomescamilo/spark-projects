@@ -46,16 +46,16 @@ object POICrossDevicerJson {
     val days = (0 until value_dictionary("nDays").toInt)
       .map(end.minusDays(_))
       .map(_.toString(format))
-      .filter(x => !(x contains "05/27"))
+      .filter(x => !(x contains "0190527"))
 
     // Now we obtain the list of hdfs files to be read
-    val path = "/data/geo/safegraph/"
+    val path = "/datascience/geo/safegraph_pipeline/"
     val hdfs_files = days
-      .map(day => path + "%s/".format(day))
+      .map(day => path +  "day=0%s/country=%s/".format(day,country))
       .filter(
-        path => fs.exists(new org.apache.hadoop.fs.Path("/data/geo/safegraph/"))
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
       )
-      .map(day => day + "*.gz")
+      .map(day => day + "*.snappy.parquet")
 
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read
