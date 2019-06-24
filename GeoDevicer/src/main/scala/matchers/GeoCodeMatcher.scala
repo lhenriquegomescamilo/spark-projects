@@ -62,7 +62,6 @@ object POICrossDevicerJson {
       .option("header", "true")
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
-      .filter("country = '%s'".format(value_dictionary("country")))
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
       .withColumnRenamed("latitude", "latitude_user")
       .withColumnRenamed("longitude", "longitude_user")
