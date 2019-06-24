@@ -52,12 +52,7 @@ object POICrossDevicerJson {
     val path = "/datascience/geo/safegraph_pipeline/" //"day=/country=%s".format(value_dictionary("country"))
     val hdfs_files = days
       .map(day => path + "day=0%s/country=%s/".format(day,value_dictionary("country")))
-      .filter(
-        path => 
-          fs.exists(new org.apache.hadoop.fs.Path(
-            "/datascience/geo/safegraph_pipeline/"
-            .format(day,value_dictionary("country")))
-              )
+      .filter( path => fs.exists(new org.apache.hadoop.fs.Path(path))   )
       .map(day => day + "*.snappy.parquet")
 
     // Finally we read, filter by country, rename the columns and return the data
