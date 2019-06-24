@@ -55,7 +55,7 @@ object POICrossDevicerJson {
       .filter(
         path => fs.exists(new org.apache.hadoop.fs.Path("/datascience/geo/safegraph_pipeline/"))
       )
-      .map(day => day + "*.snappy.parquet")
+      .map(day => path + "day=0%s/country=%s/*.snappy.parquet".format(day,value_dictionary("country")))
 
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read
