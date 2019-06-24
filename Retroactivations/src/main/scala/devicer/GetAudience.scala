@@ -943,12 +943,12 @@ object GetAudience {
           commonFilter
         )
       } else {   
-          try {
+          // try {
             getAudience(spark, data, queries, file_name, commonFilter, limit)
-          }
-          catch {
-            case e: Exception => {failed = true}
-          }
+          // }
+          // catch {
+          //   case e: Exception => {failed = true}
+          // }
         }
       
       // We cross device the audience if the parameter is set.
