@@ -41,7 +41,7 @@ object POICrossDevicerJson {
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val format = "yyyy/MM/dd"
+    val format = "yyMMdd"
     val end = DateTime.now.minusDays(value_dictionary("since").toInt)
     val days = (0 until value_dictionary("nDays").toInt)
       .map(end.minusDays(_))
