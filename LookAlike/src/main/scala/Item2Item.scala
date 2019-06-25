@@ -105,6 +105,18 @@ object Item2Item {
     // groups by device_id and selects users with more than 1 segment
     val grouped = joint.groupByKey().filter( row => row._2.size > 1)
 
+
+    // TODO:
+    // 1) split/train test 
+    //    val Array(training, test) = grouped.randomSplit(Array[Double](0.7, 0.3), 18)
+    // 2) split functions to create similarity matrix
+    // 3) To generate score we need to keeps index
+    //      use IndexedRowMatrix to keep row index (https://spark.apache.org/docs/latest/mllib-data-types.html#indexedrowmatrix)
+    //      Format: IndexedRow -> new IndexedRow(index: Long, vector: Vector) 
+    // 4) Test cosine similarity instead multiply
+
+
+
     // 3 versions of user-segment matrix:
 
     // binary version
@@ -131,10 +143,12 @@ object Item2Item {
                     row._2.map(t => t._2.toString.toDouble/row._3).toArray)
                   .toDense.asInstanceOf[Vector])
 
+    
 
     // Now we construct the similarity matrix
     var simMatrix: CoordinateMatrix = null
     if (simMatrixHits == "count"){
+
       simMatrix = new RowMatrix(countRows).columnSimilarities(simThreshold)
       println(s"Similarity matrix: counts")
     }
