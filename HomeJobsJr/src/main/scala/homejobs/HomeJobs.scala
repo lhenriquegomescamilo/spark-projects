@@ -12,35 +12,45 @@ case class Record(ad_id: String, id_type: String, freq: BigInt, geocode: BigInt 
 
 object HomeJobs {
 
-   def get_safegraph_data(spark: SparkSession,value_dictionary: Map[String, String]) = {
-    import spark.implicits._
-    //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
-    // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
-    // Also we generate a new column call 'geocode' that will be used for the join
-   
+  def get_safegraph_data(
+      spark: SparkSession,
+      value_dictionary: Map[String, String]
+  ) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val format = "yyyy/MM/dd"
-    val end   = DateTime.now.minusDays(value_dictionary("since").toInt)
-    val days = (0 until value_dictionary("nDays").toInt).map(end.minusDays(_)).map(_.toString(format))
-    
-    // Now we obtain the list of hdfs folders to be read
-    val path = "/data/geo/safegraph/"
+    val format = "yyMMdd"
+    val end = DateTime.now.minusDays(value_dictionary("since").toInt)
+    val days = (0 until value_dictionary("nDays").toInt)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
 
-    // Now we obtain the list of hdfs folders to be read
+    // Now we obtain the list of hdfs files to be read
+    val path = "/datascience/geo/safegraph_pipeline/"
+    val hdfs_files = days
+      .map(day => path +  "day=0%s/country=%s/".format(day,value_dictionary("country")))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
+      .map(day => day + "*.snappy.parquet")
 
-     val hdfs_files = days.map(day => path+"%s/".format(day))
-                            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
-
-    val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
-                                  .dropDuplicates("ad_id","latitude","longitude")
-                                  .filter("country = '%s'".format(value_dictionary("country")))
-                                  .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
-                                  .withColumnRenamed("latitude", "latitude_user")
-                                  .withColumnRenamed("longitude", "longitude_user")
-                                  .withColumn("geocode", ((abs(col("latitude_user").cast("float"))*10).cast("int")*10000)+(abs(col("longitude_user").cast("float")*100).cast("int")))
+    // Finally we read, filter by country, rename the columns and return the data
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .parquet(hdfs_files: _*)
+      .dropDuplicates("ad_id", "latitude", "longitude")
+      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      .withColumnRenamed("latitude", "latitude_user")
+      .withColumnRenamed("longitude", "longitude_user")
+      .withColumn(
+        "geocode",
+        ((abs(col("latitude_user").cast("float")) * 10)
+          .cast("int") * 10000) + (abs(
+          col("longitude_user").cast("float") * 100
+        ).cast("int"))
+      )
 
     df_safegraph
   }
