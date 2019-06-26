@@ -9,7 +9,6 @@ import org.apache.spark.sql.SaveMode
 //Acá traemos los paquetes propios
 import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
-import main.scala.nseassignation.NSEAssignation
 
 
 
