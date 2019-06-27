@@ -58,19 +58,13 @@ object POICrossDevicerJsonOldPipeline {
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .dropDuplicates("ad_id","latitude","longitude")
-                                  .filter("country = '%s'".format(value_dictionary("country"))
+                                  .filter("country = '%s'".format(value_dictionary("country")))
                                   .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
                                   .withColumnRenamed("latitude", "latitude_user")
                                   .withColumnRenamed("longitude", "longitude_user")
                                   .withColumn("geocode", ((abs(col("latitude_user").cast("float"))*10).cast("int")*10000)+(abs(col("longitude_user").cast("float")*100).cast("int")))
 
     df_safegraph
-
-    
-
-    df_safegraph
-
-
   }
 
   /**
