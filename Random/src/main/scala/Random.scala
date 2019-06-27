@@ -3200,6 +3200,81 @@ user_granularity.write
       )
   }
 
+/**
+    *
+    *
+    *
+    *
+    *           Descarga de User agents.
+    *
+    *
+    *
+    *
+    *
+    
+  def user_agents(spark: SparkSession) {
+    def parse_day(day: String) {
+      spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .load("/data/eventqueue/%s/".format(day))
+        .select("device_id", "user_agent", "country")
+        .filter("country IN ('AR', 'CL', 'CO', 'BR', 'MX', 'US', 'PE')")
+        .select("device_id", "user_agent", "country")
+        .withColumn("day", day.replace("""/""", ""))
+        .dropDuplicates("device_id")
+        .write
+        .format("parquet")
+        .partitionBy("day", "country")
+        .mode("append")
+        .save(
+          "/datascience/data_useragents/"
+        )
+      println("Day %s processed!".format(day))
+    }
+    val day = DateTime.now.minusDays(1).toString("yyyy/MM/dd")
+    parse_day("AR", day)
+  }
+*/
+  /**
+    *
+    *
+    *
+    *              DESCARGA DE USER AGENT PARA USERS CON EDAD DE EQUIFAX
+    *
+    *
+    *
+    *
+    */
+  def getUserAgentForAgeUsers(spark: SparkSession) {
+    val data = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load(
+        "/datascience/devicer/processed/AR_4_2019-04-11T21-22-46-395560_grouped/"
+      )
+      .withColumnRenamed("_c1", "device_id")
+      .select("device_id", "_c2")
+    val userAgents = spark.read
+      .format("csv")
+      .load("/datascience/user_agents/AR/")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c1", "user_agent")
+      .select("device_id", "user_agent")
+
+    data
+      .join(userAgents, Seq("device_id"))
+      .distinct()
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_demo/name=edades/country=AR/userAgents")
+  }
+
+
+
   /**
     *
     *
@@ -3279,6 +3354,51 @@ user_granularity.write
     *
     *
     *
+    *            NARANJA
+    *
+    *
+    *
+    *
+    *
+    *
+    */
+  def naranjasaves(spark: SparkSession) {
+    
+val data = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/todo_naranja_update-26-06-19_200d_argentina_26-6-2019-13h")
+
+//Retargetly > Custom GEO > Terceros Físicos Buenos Aires Provincia 14-3-2019
+//Retargetly > Custom GEO > Locales Naranja
+//Retargetly > Custom GEO > Terceros Físicos Ciudad de Córdoba y Rio Cuarto 14-3-2019
+//Retargetly > Custom GEO > Terceros Físicos Salta Capital
+//Retargetly > Custom GEO > Terceros Físicos San Salvador Jujuy
+
+
+// 3erofisba
+data.select("device_id","device_type","audience","brand").filter("audience == '3erofisba' AND distance < 51 ").select("device_id","device_type","audience").distinct().write      .format("csv")      .mode(SaveMode.Overwrite)      .save("/datascience/geo/naranja_3erofisba_27-06_less_50")  
+
+//3erofiscordoba
+data.select("device_id","device_type","audience","brand").filter("audience == '3erofiscordoba' AND distance < 51").select("device_id","device_type","audience").distinct().write      .format("csv")      .mode(SaveMode.Overwrite)      .save("/datascience/geo/naranja_3erofiscordoba_27-06_less_50")  
+
+// naranja
+data.select("device_id","device_type","audience","brand").filter("audience == 'naranja' AND distance < 51").select("device_id","device_type","audience").distinct().write      .format("csv")      .mode(SaveMode.Overwrite)      .save("/datascience/geo/naranja_naranja_27-06_less_50")  
+
+//Retargetly > Custom GEO > Terceros Físicos Salta Capital
+data.select("device_id","device_type","audience","brand").filter("audience == '3erofissata' AND distance < 51 ").select("device_id","device_type","audience").distinct().write      .format("csv")      .mode(SaveMode.Overwrite)      .save("/datascience/geo/naranja_3erofissata_27-06_less_50")  
+
+//Retargetly > Custom GEO > Terceros Físicos San Salvador Jujuy
+data.select("device_id","device_type","audience","brand").filter("audience == '3erofisjujuy' AND distance < 51 ").select("device_id","device_type","audience").distinct().write      .format("csv")      .mode(SaveMode.Overwrite)      .save("/datascience/geo/naranja_3erofisjujuy_27-06_less_50")  
+
+//pagofacil&rapipago
+data.select("device_id","device_type","audience","brand").filter("brand == 'pagofacil' OR brand == 'rapipago' AND distance < 51").select("device_id","device_type","audience").distinct().write      .format("csv")      .mode(SaveMode.Overwrite)      .save("/datascience/geo/naranja_pagofacil&rapipago_27-06_less_50")  
+
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
     *            TEST PARQUET
     *
     *
@@ -3342,8 +3462,9 @@ user_granularity.write
 
     
         
-    user_segments(spark)
-    ua_segment_join(spark)
+    //user_segments(spark)
+    //ua_segment_join(spark)
+    naranjasaves(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 
