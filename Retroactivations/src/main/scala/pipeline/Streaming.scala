@@ -88,6 +88,7 @@ object Streaming {
 
     // Current day
     val day = DateTime.now.minusDays(from).toString("yyyy/MM/dd/")
+    println("STREAMING LOGGER:\n\tDay: %s".format(day))
 
     // Here we read the pipeline
     val data = spark.readStream
@@ -255,11 +256,11 @@ object Streaming {
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    println("STREAMING LOGGER:\n\tFrom: %s\n\tPipeline:%s".format(from, pipeline))
+    println("STREAMING LOGGER:\n\tFrom: %s\n\tPipeline: %s".format(from, pipeline))
 
-    // if (pipeline == "audiences")
-    //   streamCSVs(spark, from)
-    // if (pipeline == "kafka")
-    //   streamKafka(spark)
+    if (pipeline == "audiences")
+      streamCSVs(spark, from)
+    if (pipeline == "kafka")
+      streamKafka(spark)
   }
 }
