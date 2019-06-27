@@ -16,7 +16,7 @@ import scala.collection.Map
    The method then proceeds to filter the users by a desired minimum distance returning a final dataset with user id and device type.
    The current method will provide the basis for future more customizable geolocation jobs.
   */
-object POICrossDevicerJson {
+object POICrossDevicerJsonOldPipeline {
 
   /**
     * This method reads the safegraph data, selects the columns "ad_id" (device id), "id_type" (user id), "latitude", "longitude", creates a
@@ -56,30 +56,9 @@ object POICrossDevicerJson {
                             .map(day => day+"*.gz")
     
     // Finally we read, filter by country, rename the columns and return the data
-    val df_safegraph = spark.read
-      .option("header", "true")
-      .parquet(hdfs_files: _*)
-      .dropDuplicates("ad_id", "latitude", "longitude")
-      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
-      .withColumnRenamed("latitude", "latitude_user")
-      .withColumnRenamed("longitude", "longitude_user")
-      .withColumn(
-        "geocode",
-        ((abs(col("latitude_user").cast("float")) * 10)
-          .cast("int") * 10000) + (abs(
-          col("longitude_user").cast("float") * 100
-        ).cast("int"))
-      )
-
-
-  
-    
-
-     
-
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
                                   .dropDuplicates("ad_id","latitude","longitude")
-                                  .filter("country = '%s'".format(country))
+                                  .filter("country = '%s'".format(value_dictionary("country"))
                                   .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
                                   .withColumnRenamed("latitude", "latitude_user")
                                   .withColumnRenamed("longitude", "longitude_user")
@@ -87,8 +66,11 @@ object POICrossDevicerJson {
 
     df_safegraph
 
+    
 
     df_safegraph
+
+
   }
 
   /**
