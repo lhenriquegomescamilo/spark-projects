@@ -74,7 +74,7 @@ object CrossDevicer {
       val cross_deviced = db_data      
       .join(        
         audience    
-        .select("device_id","device_type","frequency")                 
+        .select("device_id","device_type","frequency","latitude","longitude")                 
         .distinct(),        
         Seq("device_id"),
             "right_outer")      
@@ -83,6 +83,7 @@ object CrossDevicer {
       .drop(col("device"))
       .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))
+      .withColumn("device_id", sha2(col("device_id"),256)) //hash
 
 
     // We want information about the process
