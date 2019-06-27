@@ -174,7 +174,7 @@ object GenerateFeaturesUrls {
         val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
         val df_brand = df.groupBy("url","brand").pivot("brand").agg(count("device_id"))
-        val df_model = df.groupBy("url","mode").pivot("model").agg(count("device_id"))
+        val df_model = df.groupBy("url","model").pivot("model").agg(count("device_id"))
         val df_browser = df.groupBy("url","browser").pivot("browser").agg(count("device_id"))
         val df_os = df.groupBy("url","os").pivot("os").agg(count("device_id"))
 
