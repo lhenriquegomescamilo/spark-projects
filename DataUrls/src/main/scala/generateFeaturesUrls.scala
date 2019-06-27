@@ -155,6 +155,44 @@ object GenerateFeaturesUrls {
             )
     }
 
+    def get_dataset_user_agent(spark: SparkSession, ndays: Int, since: Int, name: String, country: String){
+        
+        val conf = spark.sparkContext.hadoopConfiguration
+        val fs = FileSystem.get(conf)
+
+        // Get the days to be loaded
+        val format = "yyyyMMdd"
+        val end = DateTime.now.minusDays(since)
+        val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
+        val path = "/datascience/data_useragents"
+
+        // Now we obtain the list of hdfs folders to be read
+        val hdfs_files = days
+            .map(day => path + "/day=%s".format(day))
+            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+        val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+        val df_brand = df.groupBy("url").pivot("browser").agg(count("device_id"))
+        val df_model = df.groupBy("url").pivot("model").agg(count("device_id"))
+        val df_browser = df.groupBy("url").pivot("browser").agg(count("device_id"))
+        val df_os = df.groupBy("url").pivot("os").agg(count("device_id"))
+
+        val df_join = df_brand.join(df_model,Seq("url")).join(df_browser,Seq("url")).join(df_os,Seq("url"))
+
+        df_join
+            .na.fill(0)
+            .write
+            .format("csv")
+            .option("header", "true")
+            .option("sep", "\t")
+            .mode(SaveMode.Overwrite)
+            .save(
+                "/datascience/data_urls/name=%s/country=%s/features_user_agent"
+                .format(name, country)
+            )
+    }
+
     def get_datasets_training(spark: SparkSession){
         val features_timestamp = spark.read.format("csv")
                                     .option("header","true")
@@ -200,9 +238,31 @@ object GenerateFeaturesUrls {
         val name = if (args.length > 2) args(2).toString else ""
         val country = if (args.length > 3) args(3).toString else ""
         
-        get_datasets_gt(spark,ndays,since)
+        //get_datasets_gt(spark,ndays,since)
         //get_dataset_timestamps(spark, ndays, since, name, country)
         //get_dataset_devices(spark, ndays, since, name, country)
-        get_datasets_training(spark)
+        //get_dataset_devices(spark, ndays, since, name, country)
+        get_dataset_user_agent(spark, ndays, since, name, country)
+
+        val gt = spark.read.format("csv")
+                .option("header","true")
+                .load("/datascience/data_urls/gt")
+
+        val features_user_agent = spark.read.format("csv")
+                        .option("header","true")
+                        .option("sep", "\t")
+                        .load("/datascience/data_urls/name=training_AR/country=AR/features_user_agent")
+
+        gt.join(features_devices,Seq("url")).na.fill(0)   
+        .write
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/data_urls/name=training_AR/country=AR/dataset_user_agent")
+        
+
+
+        //get_datasets_training(spark)
     }
 }
