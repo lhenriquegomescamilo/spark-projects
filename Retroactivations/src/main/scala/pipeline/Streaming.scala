@@ -18,10 +18,11 @@ object Streaming {
     * It only keeps a selected number of columns.
     *
     * @param spark: Spark session that will be used to load and write the data.
+    * @param from: Number of days to be skipped to read the data.
     *
     * As a result this function writes the data in /datascience/data_audiences_streaming/ partitioned by Country and Day.
     */
-  def streamCSVs(spark: SparkSession) = {
+  def streamCSVs(spark: SparkSession, from: Integer) = {
     // This is the list of all the columns that each CSV file has.
     val all_columns =
       """timestamp,time,user,device_id,device_type,web_id,android_id,ios_id,event_type,data_type,nav_type,
@@ -48,6 +49,10 @@ object Streaming {
         .replace(" ", "")
         .split(",")
         .toList
+
+    // This is the list of countries that will be considered.
+    val countries =
+      List("AR", "MX", "CL", "CO", "PE", "US", "BR", "UY", "EC", "BO")
 
     // This is the list of event types that will be considered.
     val event_types = List(
@@ -82,7 +87,7 @@ object Streaming {
         .split(" ")
 
     // Current day
-    val day = DateTime.now.toString("yyyy/MM/dd/")
+    val day = DateTime.now.minusDays(from).toString("yyyy/MM/dd/")
 
     // Here we read the pipeline
     val data = spark.readStream
@@ -121,7 +126,9 @@ object Streaming {
       // Here we do the filtering, where we keep the event types previously specified
       .filter(
         length(col("device_id")) > 0 && col("event_type")
-          .isin(event_types: _*) && col("id_partner").cast(IntegerType) < 5000
+          .isin(event_types: _*) && col("id_partner")
+          .cast(IntegerType) < 5000 && col("country")
+          .isin(countries: _*)
       )
 
     // In the last step we write the batch that has been read into /datascience/data_audiences_streaming/
@@ -218,7 +225,7 @@ object Streaming {
       .awaitTermination()
   }
 
-  type OptionMap = Map[Symbol, Int]
+  type OptionMap = Map[Symbol, String]
 
   /**
     * This method parses the parameters sent.
@@ -227,19 +234,20 @@ object Streaming {
     def isSwitch(s: String) = (s(0) == '-')
     list match {
       case Nil => map
-      case "--nDays" :: value :: tail =>
-        nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--pipeline" :: value :: tail =>
+        nextOption(map ++ Map('pipeline -> value.toString), tail)
       case "--from" :: value :: tail =>
-        nextOption(map ++ Map('from -> value.toInt), tail)
+        nextOption(map ++ Map('from -> value.toString), tail)
     }
   }
-
 
   def main(args: Array[String]) {
     // Parse the parameters
     val options = nextOption(Map(), args.toList)
-    val nDays = if (options.contains('nDays)) options('nDays) else 1
-    val from = if (options.contains('from)) options('from) else 1
+    val from = if (options.contains('from)) options('from).toInt else 0
+    val pipeline =
+      if (options.contains('pipeline)) options('pipeline) else "audiences"
+
     val spark =
       SparkSession.builder
         .appName("Eventqueue Streaming")
@@ -248,7 +256,9 @@ object Streaming {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    
-    streamCSVs(spark)
+    if (pipeline == "audiences")
+      streamCSVs(spark, from)
+    if (pipeline == "kafka")
+      streamKafka(spark)
   }
 }
