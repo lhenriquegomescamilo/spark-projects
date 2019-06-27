@@ -253,7 +253,7 @@ object GenerateFeaturesUrls {
                         .option("sep", "\t")
                         .load("/datascience/data_urls/name=training_AR/country=AR/features_user_agent")
 
-        gt.join(features_devices,Seq("url")).na.fill(0)   
+        gt.join(features_user_agent,Seq("url")).na.fill(0)   
         .write
         .format("csv")
         .option("header", "true")
