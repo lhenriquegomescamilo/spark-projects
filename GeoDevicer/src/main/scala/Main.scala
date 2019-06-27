@@ -250,7 +250,7 @@ object Main {
 
     // Here we perform the join
     if (geospark) {
-      GeoSparkMatcher.join(spark, value_dictionary)
+      GeoCodeMatcherOldPipeline.join(spark, value_dictionary)
     } else {
       POICrossDevicerJson.match_POI(spark, value_dictionary)
     }
