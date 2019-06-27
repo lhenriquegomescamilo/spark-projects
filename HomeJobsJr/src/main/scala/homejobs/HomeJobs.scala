@@ -1,6 +1,6 @@
 package main.scala.homejobs
 
-import main.scala.Main
+import main.scala.HomeJobsJr
 
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{ FileSystem, Path }
@@ -135,7 +135,11 @@ object HomeJobs {
 
 
 
-    final_users.write.format("csv").option("sep", "\t").mode(SaveMode.Overwrite).save("/datascience/geo/%s".format(value_dictionary("output_file")))
+    final_users.write.format("csv")
+      .option("header", true)
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/%s".format(value_dictionary("output_file")))
   }
 
   /**
@@ -162,7 +166,7 @@ object HomeJobs {
       .appName("audience generator by keywords")
       .getOrCreate()
 
-    val value_dictionary = Main.get_variables(spark, path_geo_json)
+    val value_dictionary = HomeJobsJr.get_variables(spark, path_geo_json)
 
     get_homejobs(spark, value_dictionary)
   }

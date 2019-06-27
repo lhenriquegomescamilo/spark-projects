@@ -25,7 +25,7 @@ import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
    The method then proceeds to filter the users by a desired minimum distance returning a final dataset with user id and device type.
    The current method will provide the basis for future more customizable geolocation jobs.
   */
-object Main {
+object HomeJobsJr {
 
   /**
     * This method returns a Map with all the parameters obtained from the JSON file.
@@ -111,6 +111,13 @@ object Main {
             .toString
             .length > 0) query("UseType").toString
       else "home"
+
+    val minFreq = 
+      if (query.contains("minFreq") && Option(query("minFreq"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("minFreq").toString
+      else "0"
     
 
 

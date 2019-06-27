@@ -888,6 +888,7 @@ object GetAudience {
             xd
           )
       )
+      println("DEVICER LOG: \n\t%s".format(queries(0)("filter").toString))
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
       // Now we finally get the data that will be used
