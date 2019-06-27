@@ -329,6 +329,7 @@ object GenerateDataset {
       .write
       .format("csv")
       .option("sep", "\t")
+      .option("header","true")
       .mode(SaveMode.Overwrite)
       .save(
         "/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities"
