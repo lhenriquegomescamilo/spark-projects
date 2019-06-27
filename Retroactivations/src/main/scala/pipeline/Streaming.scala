@@ -22,7 +22,7 @@ object Streaming {
     *
     * As a result this function writes the data in /datascience/data_audiences_streaming/ partitioned by Country and Day.
     */
-  def streamCSVs(spark: SparkSession, from: Integer) = {
+  def streamCSVs(spark: SparkSession, from: Integer, processType: String) = {
     // This is the list of all the columns that each CSV file has.
     val all_columns =
       """timestamp,time,user,device_id,device_type,web_id,android_id,ios_id,event_type,data_type,nav_type,
@@ -91,21 +91,39 @@ object Streaming {
     println("STREAMING LOGGER:\n\tDay: %s".format(day))
 
     // Here we read the pipeline
-    val data = spark.readStream
-      .option("sep", "\t")
-      .option("header", "true")
-      .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
-      .schema(finalSchema) // Defining the schema
-      .format("csv")
-      .load("/data/eventqueue/%s".format(day))
-      .select(columns.head, columns.tail: _*) // Here we select the columns to work with
-      // Now we change the type of the column time to timestamp
-      .withColumn(
-        "datetime",
-        to_utc_timestamp(regexp_replace(col("time"), "T", " "), "utc")
-      )
-      // Calculate the hour
-      .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
+
+    val data = if (processType == "stream") {
+      spark.readStream
+        .option("sep", "\t")
+        .option("header", "true")
+        .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
+        .schema(finalSchema) // Defining the schema
+        .format("csv")
+        .load("/data/eventqueue/%s".format(day))
+        .select(columns.head, columns.tail: _*) // Here we select the columns to work with
+        // Now we change the type of the column time to timestamp
+        .withColumn(
+          "datetime",
+          to_utc_timestamp(regexp_replace(col("time"), "T", " "), "utc")
+        )
+        // Calculate the hour
+        .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
+    } else {
+      spark.read
+        .option("sep", "\t")
+        .option("header", "true")
+        .schema(finalSchema) // Defining the schema
+        .format("csv")
+        .load("/data/eventqueue/%s".format(day))
+        .select(columns.head, columns.tail: _*) // Here we select the columns to work with
+        // Now we change the type of the column time to timestamp
+        .withColumn(
+          "datetime",
+          to_utc_timestamp(regexp_replace(col("time"), "T", " "), "utc")
+        )
+        // Calculate the hour
+        .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
+    }
 
     // Now we transform the columns that are array of strings
     val withArrayStrings = array_strings.foldLeft(data)(
@@ -133,15 +151,23 @@ object Streaming {
       )
 
     // In the last step we write the batch that has been read into /datascience/data_audiences_streaming/
-    val query = finalDF.writeStream
-      .outputMode("append")
-      .format("parquet")
-      .option("checkpointLocation", "/datascience/checkpoint/")
-      .partitionBy("hour", "country")
-      .option("path", "/datascience/data_audiences_streaming/")
-      // .trigger(ProcessingTime("1260 seconds"))
-      .start()
-      .awaitTermination()
+    if (processType == "stream") {
+      finalDF.writeStream
+        .outputMode("append")
+        .format("parquet")
+        .option("checkpointLocation", "/datascience/checkpoint/")
+        .partitionBy("hour", "country")
+        .option("path", "/datascience/data_audiences_streaming/")
+        // .trigger(ProcessingTime("1260 seconds"))
+        .start()
+        .awaitTermination()
+    } else {
+      finalDF.write
+        .mode("append")
+        .format("parquet")
+        .partitionBy("hour", "country")
+        .save("/datascience/data_audiences_streaming/")
+    }
   }
 
   def streamKafka(spark: SparkSession) = {
@@ -256,7 +282,9 @@ object Streaming {
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    println("STREAMING LOGGER:\n\tFrom: %s\n\tPipeline: %s".format(from, pipeline))
+    println(
+      "STREAMING LOGGER:\n\tFrom: %s\n\tPipeline: %s".format(from, pipeline)
+    )
 
     if (pipeline == "audiences")
       streamCSVs(spark, from)
