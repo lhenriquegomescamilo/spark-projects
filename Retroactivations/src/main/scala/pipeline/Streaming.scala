@@ -255,10 +255,11 @@ object Streaming {
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
+    println("STREAMING LOGGER:\n\tFrom: %s\n\tPipeline:%s".format(from, pipeline))
 
-    if (pipeline == "audiences")
-      streamCSVs(spark, from)
-    if (pipeline == "kafka")
-      streamKafka(spark)
+    // if (pipeline == "audiences")
+    //   streamCSVs(spark, from)
+    // if (pipeline == "kafka")
+    //   streamKafka(spark)
   }
 }
