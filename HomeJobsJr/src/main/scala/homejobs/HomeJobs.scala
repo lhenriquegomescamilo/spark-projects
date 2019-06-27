@@ -162,7 +162,7 @@ object HomeJobs {
       .appName("audience generator by keywords")
       .getOrCreate()
 
-    val value_dictionary = Main.get_variables(spark, path_geo_json)
+    val value_dictionary = HomeJobsJr.get_variables(spark, path_geo_json)
 
     get_homejobs(spark, value_dictionary)
   }
