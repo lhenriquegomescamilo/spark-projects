@@ -84,6 +84,8 @@ object CrossDevicer {
       .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))
       .withColumn("device_id", sha2(col("device_id"),256)) //hash
+      .filter(col("frequency") > value_dictionary("minFreq"))
+      .drop("frequency")
 
 
     // We want information about the process

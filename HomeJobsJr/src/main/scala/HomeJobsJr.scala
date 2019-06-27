@@ -111,6 +111,13 @@ object HomeJobsJr {
             .toString
             .length > 0) query("UseType").toString
       else "home"
+
+    val minFreq = 
+      if (query.contains("minFreq") && Option(query("minFreq"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("minFreq").toString
+      else "0"
     
 
 
