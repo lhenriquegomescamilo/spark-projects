@@ -11,7 +11,19 @@ import org.joda.time.DateTime
 
 object Streaming {
 
-  def streamCSVs(spark: SparkSession) = {
+  /**
+    * This function takes all the information from the CSV files in the /data/eventqueue folder and generates their corresponding parquet files.
+    * It keeps a listener so that for every new file added to the folder it processes it and stores it as a parquet version.
+    * The maximum number of files processed in each iteration is 4.
+    * It only keeps a selected number of columns.
+    *
+    * @param spark: Spark session that will be used to load and write the data.
+    * @param from: Number of days to be skipped to read the data.
+    *
+    * As a result this function writes the data in /datascience/data_audiences_streaming/ partitioned by Country and Day.
+    */
+  def streamCSVs(spark: SparkSession, from: Integer) = {
+    // This is the list of all the columns that each CSV file has.
     val all_columns =
       """timestamp,time,user,device_id,device_type,web_id,android_id,ios_id,event_type,data_type,nav_type,
                          version,country,user_country,ip,created,id_partner,id_partner_user,id_segment_source,share_data,
@@ -26,6 +38,8 @@ object Streaming {
         .replace(" ", "")
         .split(",")
         .toList
+
+    // This is the list of selected columns.
     val columns =
       """device_id, id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
                      search_keyword, tags, track_code, campaign_name, campaign_id, site_id, time,
@@ -35,6 +49,12 @@ object Streaming {
         .replace(" ", "")
         .split(",")
         .toList
+
+    // This is the list of countries that will be considered.
+    val countries =
+      List("AR", "MX", "CL", "CO", "PE", "US", "BR", "UY", "EC", "BO")
+
+    // This is the list of event types that will be considered.
     val event_types = List(
       "tk",
       "pv",
@@ -47,54 +67,73 @@ object Streaming {
       "xd_xp"
     )
 
+    // This is the schema that will be used for the set of all columns
     var finalSchema = all_columns.foldLeft(new StructType())(
       (schema, col) => schema.add(col, "string")
     )
 
+    // This is the list of columns that are integers
     val ints =
       "id_partner activable"
         .split(" ")
         .toSeq
+
+    // List of columns that are arrays of strings
     val array_strings = "tags app_installed".split(" ").toSeq
+
+    // List of columns that are arrays of integers
     val array_ints =
       "segments first_party all_segments"
         .split(" ")
 
-    val day = DateTime.now.toString("yyyy/MM/dd/")
+    // Current day
+    val day = DateTime.now.minusDays(from).toString("yyyy/MM/dd/")
+    println("STREAMING LOGGER:\n\tDay: %s".format(day))
 
+    // Here we read the pipeline
     val data = spark.readStream
       .option("sep", "\t")
       .option("header", "true")
-      .option("maxFilesPerTrigger", 4)
-      .schema(finalSchema)
+      .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
+      .schema(finalSchema) // Defining the schema
       .format("csv")
       .load("/data/eventqueue/%s".format(day))
-      .select(columns.head, columns.tail: _*)
+      .select(columns.head, columns.tail: _*) // Here we select the columns to work with
+      // Now we change the type of the column time to timestamp
       .withColumn(
         "datetime",
         to_utc_timestamp(regexp_replace(col("time"), "T", " "), "utc")
       )
+      // Calculate the hour
       .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
 
+    // Now we transform the columns that are array of strings
     val withArrayStrings = array_strings.foldLeft(data)(
       (df, c) => df.withColumn(c, split(col(c), "\u0001"))
     )
+
+    // We do the same with the columns that are integers
     val withInts = ints.foldLeft(withArrayStrings)(
       (df, c) => df.withColumn(c, col(c).cast("int"))
     )
+
+    // Finally, we repeat the process with the columns that are array of integers
     val finalDF = array_ints
       .foldLeft(withInts)(
         (df, c) =>
           df.withColumn(c, split(col(c), "\u0001"))
             .withColumn(c, col(c).cast("array<int>"))
       )
+      // Here we do the filtering, where we keep the event types previously specified
       .filter(
-        length(col("device_id")) > 0 && col("event_type").isin(event_types: _*)
+        length(col("device_id")) > 0 && col("event_type")
+          .isin(event_types: _*) && col("id_partner")
+          .cast(IntegerType) < 5000 && col("country")
+          .isin(countries: _*)
       )
 
-    val query = finalDF
-      // .coalesce(8)
-      .writeStream
+    // In the last step we write the batch that has been read into /datascience/data_audiences_streaming/
+    val query = finalDF.writeStream
       .outputMode("append")
       .format("parquet")
       .option("checkpointLocation", "/datascience/checkpoint/")
@@ -187,7 +226,29 @@ object Streaming {
       .awaitTermination()
   }
 
+  type OptionMap = Map[Symbol, String]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--pipeline" :: value :: tail =>
+        nextOption(map ++ Map('pipeline -> value.toString), tail)
+      case "--from" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toString), tail)
+    }
+  }
+
   def main(args: Array[String]) {
+    // Parse the parameters
+    val options = nextOption(Map(), args.toList)
+    val from = if (options.contains('from)) options('from).toInt else 0
+    val pipeline =
+      if (options.contains('pipeline)) options('pipeline) else "audiences"
+
     val spark =
       SparkSession.builder
         .appName("Eventqueue Streaming")
@@ -195,7 +256,11 @@ object Streaming {
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
+    println("STREAMING LOGGER:\n\tFrom: %s\n\tPipeline: %s".format(from, pipeline))
 
-    streamCSVs(spark)
+    if (pipeline == "audiences")
+      streamCSVs(spark, from)
+    if (pipeline == "kafka")
+      streamKafka(spark)
   }
 }
