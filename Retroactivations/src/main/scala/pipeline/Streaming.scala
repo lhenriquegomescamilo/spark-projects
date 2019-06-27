@@ -22,7 +22,11 @@ object Streaming {
     *
     * As a result this function writes the data in /datascience/data_audiences_streaming/ partitioned by Country and Day.
     */
-  def streamCSVs(spark: SparkSession, from: Integer, processType: String) = {
+  def streamCSVs(
+      spark: SparkSession,
+      from: Integer,
+      processType: String = "stream"
+  ) = {
     // This is the list of all the columns that each CSV file has.
     val all_columns =
       """timestamp,time,user,device_id,device_type,web_id,android_id,ios_id,event_type,data_type,nav_type,
@@ -265,6 +269,8 @@ object Streaming {
         nextOption(map ++ Map('pipeline -> value.toString), tail)
       case "--from" :: value :: tail =>
         nextOption(map ++ Map('from -> value.toString), tail)
+        case "--type" :: value :: tail =>
+          nextOption(map ++ Map('type -> value.toString), tail)
     }
   }
 
@@ -274,6 +280,7 @@ object Streaming {
     val from = if (options.contains('from)) options('from).toInt else 0
     val pipeline =
       if (options.contains('pipeline)) options('pipeline) else "audiences"
+    val processType = if (options.contains('type)) options('type) else "stream"
 
     val spark =
       SparkSession.builder
@@ -287,7 +294,7 @@ object Streaming {
     )
 
     if (pipeline == "audiences")
-      streamCSVs(spark, from)
+      streamCSVs(spark, from, processType)
     if (pipeline == "kafka")
       streamKafka(spark)
   }
