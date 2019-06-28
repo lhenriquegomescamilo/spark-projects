@@ -170,7 +170,14 @@ object Main {
       "since" -> since,
       "HourFrom" -> HourFrom,
       "HourTo" -> HourTo,
-      "UseType" -> UseType)
+      "UseType" -> UseType,
+      "minFreq" -> minFreq,
+      "priority" -> priority,
+      "queue" -> queue,
+      "jobid" -> jobid,
+      "description" -> description,
+      "as_view" -> as_view,
+    )
 
     println("LOGGER PARAMETERS:")
     println(s"""
@@ -182,7 +189,12 @@ object Main {
     "since" -> $since,
     "HourFrom" -> $HourFrom,
       "HourTo" -> $HourTo,
-      "UseType" -> $UseType)""")
+      "UseType" -> $UseType,
+    "minFreq" -> $minFreq,
+    "priority" -> $priority,
+    "queue" -> $queue,
+    "jobid" -> $jobid,
+    "description" -> $description)""")
     value_dictionary
   }
 
