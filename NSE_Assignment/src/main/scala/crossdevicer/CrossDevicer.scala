@@ -82,6 +82,21 @@ object CrossDevicer {
       .drop(col("device"))
       .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))
+      //.select("device_type","device_id","NSE","CVEGEO","frequency")
+
+    val preoutput = if (value_dictionary("pushvalid").toString=="1") {
+                          cross_deviced.filter("validUser == true")
+                            .filter(col("frequency")>minFreq)
+                            .withColumnRenamed("NSE","audience")
+                            .select("device_type","device_id","audience","frequency","CVEGEO") 
+                                                           } 
+                  else { 
+                        cross_deviced
+                          .filter(col("frequency")>minFreq)
+                          .withColumnRenamed("NSE","audience")
+                          .select("device_type","device_id","audience","frequency","CVEGEO")
+                        }
+    
 
 
     // We want information about the process
@@ -90,7 +105,7 @@ object CrossDevicer {
     // Finally, we store the result obtained.
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("output_file")
     )
-    cross_deviced.write
+    preoutput.write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
