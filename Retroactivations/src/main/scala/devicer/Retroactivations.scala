@@ -1,5 +1,6 @@
 package main.scala
 import org.apache.spark.sql.functions.{lit, length, split, col}
+import org.apache.spark.sql.types.IntegerType
 import org.apache.spark.sql.SparkSession
 import org.joda.time.{DateTime, Days}
 
@@ -27,7 +28,7 @@ object GetDataPartnerID {
       val by_columns = data.select(columns.head, columns.tail: _*).na.fill("")
       
       // Here we filter by event_type 
-      val filtered = by_columns.filter(length(col("device_id"))>0 && col("event_type").isin(event_types:_*))
+      val filtered = by_columns.filter(length(col("device_id"))>0 && col("event_type").isin(event_types:_*) && col("id_partner").cast(IntegerType)<5000)//.repartition(500)
       
       // transform the multi-value columns into lists
       val ready = filtered.withColumn("day", lit(day.replace("/", "")))

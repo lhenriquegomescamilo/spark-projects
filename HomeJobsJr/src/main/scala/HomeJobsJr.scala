@@ -6,9 +6,11 @@ import org.joda.time.DateTime
 import org.apache.spark.sql.functions.{round, broadcast, col, abs, upper}
 import org.apache.spark.sql.SaveMode
 
+//Acá traemos los paquetes propios
+import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
-import main.scala.aggregators.Aggregations
-import main.scala.matchers._
+
+
 
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
@@ -23,7 +25,7 @@ import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
    The method then proceeds to filter the users by a desired minimum distance returning a final dataset with user id and device type.
    The current method will provide the basis for future more customizable geolocation jobs.
   */
-object Main {
+object HomeJobsJr {
 
   /**
     * This method returns a Map with all the parameters obtained from the JSON file.
@@ -46,31 +48,31 @@ object Main {
       .toList(0)
 
     // Now we parse the Map assigning default values.
-    val max_radius =
-      if (query.contains("max_radius") && Option(query("max_radius"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("max_radius").toString
-      else "200"
     val country =
       if (query.contains("country") && Option(query("country"))
             .getOrElse("")
             .toString
             .length > 0) query("country").toString
       else "argentina"
-    val poi_output_file =
+
+    //esto tiene que ser automático según el country, que lo tome del json
+    val path_to_polygons =
+      if (query.contains("path_to_polygons") && Option(query("path_to_polygons"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("path_to_polygons").toString
+      else ""
+
+    //esto tiene que ser automático, que lo tome desde el json
+    val output_file =
       if (query.contains("output_file") && Option(query("output_file"))
             .getOrElse("")
             .toString
             .length > 0) query("output_file").toString
       else "custom"
-    val path_to_pois =
-      if (query.contains("path_to_pois") && Option(query("path_to_pois"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("path_to_pois").toString
-      else ""
-    val crossdevice =
+    
+
+     val crossdevice =
       if (query.contains("crossdevice") && Option(query("crossdevice"))
             .getOrElse("")
             .toString
@@ -88,114 +90,61 @@ object Main {
             .toString
             .length > 0) query("since").toString
       else "0"
-    // 1 o 0, determines if we want to calculate the analytcis DataFrame
-    val analytics_df =
-      if (query.contains("analytics_df") && Option(query("analytics_df"))
+
+    val HourFrom = 
+      if (query.contains("HourFrom") && Option(query("HourFrom"))
             .getOrElse("")
             .toString
-            .length > 0) query("analytics_df").toString
+            .length > 0) query("since").toString
+      else "19"
+
+    val HourTo = 
+      if (query.contains("HourTo") && Option(query("HourTo"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("HourTo").toString
+      else "7"
+
+    val UseType = 
+      if (query.contains("UseType") && Option(query("UseType"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("UseType").toString
+      else "home"
+
+    val minFreq = 
+      if (query.contains("minFreq") && Option(query("minFreq"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("minFreq").toString
       else "0"
-
-    // 1 o 0, determines if we want to calculate the DataFrame where we have all the stats for every POI.
-    val map_df =
-      if (query.contains("map_df") && Option(query("map_df"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("map_df").toString
-      else "0"
-
-    // Time thresholds to consider a user to be valid.
-    val umbralmin =
-      if (query.contains("umbralmin") && Option(query("umbralmin"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("umbralmin").toString
-      else "0"
-    val umbralmax =
-      if (query.contains("umbralmax") && Option(query("umbralmax"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("umbralmax").toString
-      else "150"
-
-    // Distance threshold to consider a user to be valid.
-    val umbraldist =
-      if (query.contains("umbraldist") && Option(query("umbraldist"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("umbraldist").toString
-      else "0"
-
-    // Column that identifies every POI.
-    val poi_column_name =
-      if (query.contains("poi_column_name") && Option(query("poi_column_name"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("poi_column_name").toString
-      else ""
-
-    // Column that identifies the audience, if present.
-    val audience_column_name =
-      if (query.contains("audience_column_name") && Option(query("audience_column_name"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("audience_column_name").toString
-      else "no_push"
-
-    // Number of days to look up in data_keywords
-    val web_days =
-      if (query.contains("web_days") && Option(query("web_days"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("web_days").toString
-      else "0"
-
-// Column to aggregate the segment count for web behaviour from data_keywords
-    val web_column =
-      if (query.contains("web_column") && Option(query("web_column"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("web_days").toString
-      else poi_column_name
+    
 
 
 
     // Finally we construct the Map that is going to be returned
     val value_dictionary: Map[String, String] = Map(
-      "max_radius" -> max_radius,
       "country" -> country,
-      "poi_output_file" -> poi_output_file,
-      "path_to_pois" -> path_to_pois,
+      "path_to_polygons" ->path_to_polygons,
+      "output_file" ->output_file,
       "crossdevice" -> crossdevice,
       "nDays" -> nDays,
       "since" -> since,
-      "analytics_df" -> analytics_df,
-      "map_df" -> map_df,
-      "umbralmin" -> umbralmin,
-      "umbralmax" -> umbralmax,
-      "umbraldist" -> umbraldist,
-      "poi_column_name" -> poi_column_name,
-       "audience_column_name" -> audience_column_name,
-        "web_days" -> web_days
-    )
+      "HourFrom" -> HourFrom,
+      "HourTo" -> HourTo,
+      "UseType" -> UseType)
 
     println("LOGGER PARAMETERS:")
     println(s"""
-    "max_radius" -> $max_radius,
     "country" -> $country,
-    "poi_output_file" -> $poi_output_file,
-    "path_to_pois" -> $path_to_pois,
+    "path_to_polygons" -> $path_to_polygons,
+    "output_file" -> $output_file,    
     "crossdevice" -> $crossdevice,
     "nDays" -> $nDays,
     "since" -> $since,
-    "analytics_df" -> $analytics_df,
-    "map_df" -> $map_df,
-    "umbralmin" -> $umbralmin,
-    "umbralmax" -> $umbralmax,
-    "umbraldist" -> $umbraldist,
-    "poi_column_name" -> $poi_column_name,
-    "audience_column_name" -> $audience_column_name,
-    "web_days" -> $web_days""")
+    "HourFrom" -> $HourFrom,
+      "HourTo" -> $HourTo,
+      "UseType" -> $UseType)""")
     value_dictionary
   }
 
@@ -210,8 +159,6 @@ object Main {
       case Nil => map
       case "--path_geo_json" :: value :: tail =>
         nextOption(map ++ Map('path_geo_json -> value.toString), tail)
-      case "--geospark" :: tail =>
-        nextOption(map ++ Map('geospark -> true), tail)
     }
   }
 
@@ -221,12 +168,10 @@ object Main {
     val path_geo_json =
       if (options.contains('path_geo_json)) options('path_geo_json).toString
       else ""
-    val geospark = if (options.contains('geospark)) true else false
-
+   
     // Start Spark Session based on the type of matcher that will be used.
     val spark =
-      if (geospark)
-        SparkSession
+       SparkSession
           .builder()
           .config("spark.serializer", classOf[KryoSerializer].getName)
           .config(
@@ -239,43 +184,19 @@ object Main {
           // .config("geospark.join.numpartition", 200)
           .appName("GeoSpark Matcher")
           .getOrCreate()
-      else
-        SparkSession.builder
-          .appName("GeoCode Matcher")
-          .getOrCreate()
+     
 
     // Parsing parameters from json file.
-    if (geospark) GeoSparkSQLRegistrator.registerAll(spark)
+    GeoSparkSQLRegistrator.registerAll(spark)
     val value_dictionary = get_variables(spark, path_geo_json)
 
-    // Here we perform the join
-    if (geospark) {
-      GeoSparkMatcher.join(spark, value_dictionary)
-    } else {
-      POICrossDevicerJsonOldPipeline.match_POI(spark, value_dictionary)
-    }
+    // Here we perform the operation
 
-     // If we need to calculate the aggregations, we do so as well.
-    if (value_dictionary("analytics_df") == "1"){
-      Aggregations.userAggregate(spark, value_dictionary)
-    if (value_dictionary("map_df") == "1")
-        Aggregations.POIAggregate(spark, value_dictionary)
-
-    // Finally, we perform the cross-device if requested.
-    if (value_dictionary("crossdevice") != "false" && value_dictionary(
-          "crossdevice"
-        ) != "0")
-      CrossDevicer.cross_device(
-        spark,
-        value_dictionary,
-        column_name = "device_id",
-        header = "true"
-  )
-      // Finally, we perform the cross-device if requested.
-    if (value_dictionary("web_days").toInt>0)
-      Aggregations.get_segments(spark, value_dictionary)
-
+   HomeJobs.get_homejobs(spark, value_dictionary)
+   
+   CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
+    
+    
    
     }
   }
-}
