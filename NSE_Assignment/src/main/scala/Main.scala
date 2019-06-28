@@ -259,7 +259,7 @@ object Main {
    
 
     // Now we generate the content for the json file.
-   if (value_dictionary("push").toInt==1) {
+   if (value_dictionary("push")=="1") {
    
     val json_content = """{"filePath":"%s_xd", "priority":%s,
                                      "queue":"%s", "jobId":%s, "description":"%s","as_view":%s}"""
@@ -279,7 +279,7 @@ object Main {
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
     val os = fs.create(
-      new Path("/datascience/geo/ready/%s_test.meta".format(value_dictionary("output_file")))
+      new Path("/datascience/devicer/processed/%s_test.meta".format(value_dictionary("output_file")))
     )
     os.write(json_content.getBytes)
     fs.close() 
