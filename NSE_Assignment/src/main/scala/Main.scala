@@ -202,6 +202,7 @@ object Main {
     "queue" -> $queue,
     "jobid" -> $jobid,
     "description" -> $description,
+    "as_view"-> $as_view,
     "push" -> $push)""")
     value_dictionary
   }
