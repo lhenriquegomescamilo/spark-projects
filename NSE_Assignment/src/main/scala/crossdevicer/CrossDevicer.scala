@@ -83,8 +83,12 @@ object CrossDevicer {
       .drop(col("device"))
       .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))
+      .filter(col("frequency")>value_dictionary("minFreq"))
+      .withColumnRenamed("NSE","audience")
+      .select("device_type","device_id","audience","frequency","CVEGEO") 
       //.select("device_type","device_id","NSE","CVEGEO","frequency")
 
+/*
     val preoutput = if (value_dictionary("pushvalid").toString=="1") {
                           cross_deviced.filter("validUser == true")
                             .filter(col("frequency")>value_dictionary("minFreq"))
@@ -98,7 +102,7 @@ object CrossDevicer {
                           .select("device_type","device_id","audience","frequency","CVEGEO")
                         }
     
-
+*/
 
     // We want information about the process
     //cross_deviced_.explain(extended = true)
