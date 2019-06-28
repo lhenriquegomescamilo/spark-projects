@@ -156,6 +156,13 @@ object Main {
             .toString
             .length > 0) query("as_view").toString
       else "0"
+
+  val push =
+    if (query.contains("push") && Option(query("push"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("as_view").toString
+      else "1"
        
 
 
@@ -176,7 +183,8 @@ object Main {
       "queue" -> queue,
       "jobid" -> jobid,
       "description" -> description,
-      "as_view" -> as_view,
+      "as_view" -> as_view
+      "push"-> push,
     )
 
     println("LOGGER PARAMETERS:")
@@ -188,13 +196,14 @@ object Main {
     "nDays" -> $nDays,
     "since" -> $since,
     "HourFrom" -> $HourFrom,
-      "HourTo" -> $HourTo,
-      "UseType" -> $UseType,
+    "HourTo" -> $HourTo,
+    "UseType" -> $UseType,
     "minFreq" -> $minFreq,
     "priority" -> $priority,
     "queue" -> $queue,
     "jobid" -> $jobid,
-    "description" -> $description)""")
+    "description" -> $description,
+    "push" -> $push)""")
     value_dictionary
   }
 
@@ -250,7 +259,7 @@ object Main {
    
 
     // Now we generate the content for the json file.
-   if (value_dictionary("push")==1) {
+   if (value_dictionary("push").toInt==1) {
    
     val json_content = """{"filePath":"%s_xd", "priority":%s,
                                      "queue":"%s", "jobId":%s, "description":"%s","as_view":%s}"""
