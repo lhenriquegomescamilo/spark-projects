@@ -4,6 +4,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{upper, col, coalesce, udf}
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.functions._
+import org.apache.hadoop.conf.Configuration
 
 object CrossDevicer {
 
@@ -86,13 +87,13 @@ object CrossDevicer {
 
     val preoutput = if (value_dictionary("pushvalid").toString=="1") {
                           cross_deviced.filter("validUser == true")
-                            .filter(col("frequency")>minFreq)
+                            .filter(col("frequency")>value_dictionary("minFreq"))
                             .withColumnRenamed("NSE","audience")
                             .select("device_type","device_id","audience","frequency","CVEGEO") 
                                                            } 
                   else { 
                         cross_deviced
-                          .filter(col("frequency")>minFreq)
+                          .filter(col("frequency")>value_dictionary("minFreq"))
                           .withColumnRenamed("NSE","audience")
                           .select("device_type","device_id","audience","frequency","CVEGEO")
                         }
