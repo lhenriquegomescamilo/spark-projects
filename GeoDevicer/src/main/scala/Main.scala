@@ -252,7 +252,7 @@ object Main {
     if (geospark) {
       GeoSparkMatcher.join(spark, value_dictionary)
     } else {
-      GeoSparkMatcher.match_POI(spark, value_dictionary)
+      POICrossDevicerJson.match_POI(spark, value_dictionary)
     }
 
      // If we need to calculate the aggregations, we do so as well.
