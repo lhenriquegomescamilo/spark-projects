@@ -101,7 +101,7 @@ object Streaming {
         .option("sep", "\t")
         .option("header", "true")
         .option("latestFirst", "true")
-        .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
+        // .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
         .schema(finalSchema) // Defining the schema
         .format("csv")
         .load("/data/eventqueue/%s".format(day))
