@@ -113,6 +113,19 @@ object Main {
             .length > 0) query("UseType").toString
       else "home"
     
+    val minFreq = 
+      if (query.contains("minFreq") && Option(query("minFreq"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("minFreq").toString
+      else "0"
+
+    val pushvalid = 
+      if (query.contains("pushvalid") && Option(query("pushvalid"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("pushvalid").toString
+      else "0"
 
 
 
@@ -191,8 +204,33 @@ object Main {
    NSEAssignation.nse_join(spark, value_dictionary)
 
    CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
-    
-    
    
+
+    // Now we generate the content for the json file.
+   if (value_dictionary("push")==1) {
+   
+    val json_content = """{"filePath":"%s_xd", "priority":%s,
+                                     "queue":"%s", "jobId":%s, "description":"%s","as_view":%s}"""
+      .format(
+        value_dictionary("output_file"),
+        value("priority"),
+        value_dictionary("queue"),
+        value_dictionary("jobid"),
+        value_dictionary("description"),
+        value_dictionary("as_view")
+      )
+      .replace("\n", "")
+    println("DEVICER LOG:\n\t%s".format(json_content))
+
+    // Finally we store the json.
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    val fs = FileSystem.get(conf)
+    val os = fs.create(
+      new Path("/datascience/geo/ready/%s_test.meta".format(file_name))
+    )
+    os.write(json_content.getBytes)
+    fs.close() 
+                                    }
     }
   }
