@@ -126,6 +126,42 @@ object Main {
             .toString
             .length > 0) query("pushvalid").toString
       else "0"
+   
+   val priority =
+    if (query.contains("priority") && Option(query("priority"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("priority").toString
+      else "0"
+
+   val queue =
+    if (query.contains("queue") && Option(query("queue"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("queue").toString
+      else "0"
+
+   val jobid =
+    if (query.contains("jobid") && Option(query("jobid"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("jobid").toString
+      else "0"
+
+  val description =
+    if (query.contains("description") && Option(query("description"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("description").toString
+      else "0"
+
+  val as_view =
+    if (query.contains("as_view") && Option(query("as_view"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("as_view").toString
+      else "0"
+       
 
 
 
@@ -213,7 +249,7 @@ object Main {
                                      "queue":"%s", "jobId":%s, "description":"%s","as_view":%s}"""
       .format(
         value_dictionary("output_file"),
-        value("priority"),
+        value_dictionary("priority"),
         value_dictionary("queue"),
         value_dictionary("jobid"),
         value_dictionary("description"),
@@ -227,7 +263,7 @@ object Main {
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
     val os = fs.create(
-      new Path("/datascience/geo/ready/%s_test.meta".format(file_name))
+      new Path("/datascience/geo/ready/%s_test.meta".format(value_dictionary("output_file")))
     )
     os.write(json_content.getBytes)
     fs.close() 
