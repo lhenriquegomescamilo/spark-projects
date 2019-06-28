@@ -110,7 +110,7 @@ object CrossDevicer {
     // Finally, we store the result obtained.
     val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("output_file")
     )
-    preoutput.write
+    cross_deviced.write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
