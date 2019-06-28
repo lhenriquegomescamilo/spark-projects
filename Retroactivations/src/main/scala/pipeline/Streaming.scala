@@ -100,7 +100,7 @@ object Streaming {
       spark.readStream
         .option("sep", "\t")
         .option("header", "true")
-        .option("latestFirst", "true")
+        .option("maxFileAge", "0")
         // .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
         .schema(finalSchema) // Defining the schema
         .format("csv")
