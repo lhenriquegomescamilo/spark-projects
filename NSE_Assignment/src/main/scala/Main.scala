@@ -5,6 +5,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.{round, broadcast, col, abs, upper}
 import org.apache.spark.sql.SaveMode
+import org.apache.hadoop.conf.Configuration
 
 //Acá traemos los paquetes propios
 import main.scala.homejobs.HomeJobs
@@ -113,6 +114,56 @@ object Main {
             .length > 0) query("UseType").toString
       else "home"
     
+    val minFreq = 
+      if (query.contains("minFreq") && Option(query("minFreq"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("minFreq").toString
+      else "0"
+
+      
+   val priority =
+    if (query.contains("priority") && Option(query("priority"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("priority").toString
+      else "0"
+
+   val queue =
+    if (query.contains("queue") && Option(query("queue"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("queue").toString
+      else "0"
+
+   val jobid =
+    if (query.contains("jobid") && Option(query("jobid"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("jobid").toString
+      else "0"
+
+  val description =
+    if (query.contains("description") && Option(query("description"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("description").toString
+      else "0"
+
+  val as_view =
+    if (query.contains("as_view") && Option(query("as_view"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("as_view").toString
+      else "0"
+
+  val push =
+    if (query.contains("push") && Option(query("push"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("as_view").toString
+      else "1"
+       
 
 
 
@@ -126,7 +177,14 @@ object Main {
       "since" -> since,
       "HourFrom" -> HourFrom,
       "HourTo" -> HourTo,
-      "UseType" -> UseType)
+      "UseType" -> UseType,
+      "minFreq" -> minFreq,
+      "priority" -> priority,
+      "queue" -> queue,
+      "jobid" -> jobid,
+      "description" -> description,
+      "as_view" -> as_view,
+      "push"-> push)
 
     println("LOGGER PARAMETERS:")
     println(s"""
@@ -137,8 +195,15 @@ object Main {
     "nDays" -> $nDays,
     "since" -> $since,
     "HourFrom" -> $HourFrom,
-      "HourTo" -> $HourTo,
-      "UseType" -> $UseType)""")
+    "HourTo" -> $HourTo,
+    "UseType" -> $UseType,
+    "minFreq" -> $minFreq,
+    "priority" -> $priority,
+    "queue" -> $queue,
+    "jobid" -> $jobid,
+    "description" -> $description,
+    "as_view"-> $as_view,
+    "push" -> $push)""")
     value_dictionary
   }
 
@@ -191,8 +256,33 @@ object Main {
    NSEAssignation.nse_join(spark, value_dictionary)
 
    CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
-    
-    
    
+
+    // Now we generate the content for the json file.
+   if (value_dictionary("push").toInt==1) {
+   
+    val json_content = """{"filePath":"%s_xd", "priority":%s,
+                                     "queue":"%s", "jobId":%s, "description":"%s","as_view":%s}"""
+      .format(
+        value_dictionary("output_file"),
+        value_dictionary("priority"),
+        value_dictionary("queue"),
+        value_dictionary("jobid"),
+        value_dictionary("description"),
+        value_dictionary("as_view")
+      )
+      .replace("\n", "")
+    println("DEVICER LOG:\n\t%s".format(json_content))
+
+    // Finally we store the json.
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    val fs = FileSystem.get(conf)
+    val os = fs.create(
+      new Path("/datascience/geo/ready/%s_test.meta".format(value_dictionary("output_file")))
+    )
+    os.write(json_content.getBytes)
+    fs.close() 
+                                    }
     }
   }
