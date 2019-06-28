@@ -121,13 +121,7 @@ object Main {
             .length > 0) query("minFreq").toString
       else "0"
 
-    val pushvalid = 
-      if (query.contains("pushvalid") && Option(query("pushvalid"))
-            .getOrElse("")
-            .toString
-            .length > 0) query("pushvalid").toString
-      else "0"
-   
+      
    val priority =
     if (query.contains("priority") && Option(query("priority"))
             .getOrElse("")
