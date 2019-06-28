@@ -183,9 +183,8 @@ object Main {
       "queue" -> queue,
       "jobid" -> jobid,
       "description" -> description,
-      "as_view" -> as_view
-      "push"-> push,
-    )
+      "as_view" -> as_view,
+      "push"-> push)
 
     println("LOGGER PARAMETERS:")
     println(s"""
