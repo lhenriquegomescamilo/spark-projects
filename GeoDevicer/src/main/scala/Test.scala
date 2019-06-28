@@ -73,6 +73,7 @@ object Test {
 
     val df_safegraph = dfs.reduce((df1, df2) => df1.union(df2))
 
+    // In the last step we write the data partitioned by day and country.
     df_safegraph.write
       .format("parquet")
       .partitionBy("day", "country")
@@ -171,11 +172,10 @@ object Test {
       .getOrCreate()
 
     // Initialize the variables
-    GeoSparkSQLRegistrator.registerAll(spark)
+    // GeoSparkSQLRegistrator.registerAll(spark)
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // Finally we perform the GeoJoin
-    // join(spark)
-    get_safegraph_data(spark, 11, 1)
+    get_safegraph_data(spark, 1, 1)
   }
 }
