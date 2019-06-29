@@ -100,8 +100,8 @@ object Streaming {
       spark.readStream
         .option("sep", "\t")
         .option("header", "true")
-        .option("maxFileAge", "0")
-        // .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
+        // .option("maxFileAge", "0")
+        .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
         .schema(finalSchema) // Defining the schema
         .format("csv")
         .load("/data/eventqueue/%s".format(day))
