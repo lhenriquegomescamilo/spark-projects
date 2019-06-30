@@ -3322,7 +3322,7 @@ user_granularity.write
     *
     *
     */
-  def getUserAgentForAgeUsers(spark: SparkSession) {
+  def getUserAgentForAgeUsers_1(spark: SparkSession) {
     val data = spark.read
       .format("csv")
       .option("sep", "\t")
