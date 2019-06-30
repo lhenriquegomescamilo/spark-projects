@@ -3527,6 +3527,7 @@ user_granularity.write
           .option("basePath", "/datascience/data_audiences_streaming/")
           .load("/datascience/data_audiences_streaming/hour=%s*".format(day))
           .write
+          .mode("append")
           .partitionBy("hour", "id_partner")
           .save("/datascience/data_partner_streaming/")
     )
