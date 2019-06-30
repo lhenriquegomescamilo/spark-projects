@@ -25,7 +25,8 @@ object Streaming {
   def streamCSVs(
       spark: SparkSession,
       from: Integer,
-      processType: String = "stream"
+      processType: String = "stream",
+      partition: String = "country"
   ) = {
     // This is the list of all the columns that each CSV file has.
     val all_columns =
@@ -161,7 +162,7 @@ object Streaming {
         .outputMode("append")
         .format("parquet")
         .option("checkpointLocation", "/datascience/checkpoint/")
-        .partitionBy("hour", "country")
+        .partitionBy("hour", partition)
         .option("path", "/datascience/data_audiences_streaming/")
         // .trigger(ProcessingTime("1260 seconds"))
         .start()
@@ -170,7 +171,7 @@ object Streaming {
       finalDF.write
         .mode("append")
         .format("parquet")
-        .partitionBy("hour", "country")
+        .partitionBy("hour", partition)
         .save("/datascience/data_audiences_streaming/")
     }
   }
@@ -270,8 +271,8 @@ object Streaming {
         nextOption(map ++ Map('pipeline -> value.toString), tail)
       case "--from" :: value :: tail =>
         nextOption(map ++ Map('from -> value.toString), tail)
-        case "--type" :: value :: tail =>
-          nextOption(map ++ Map('type -> value.toString), tail)
+      case "--type" :: value :: tail =>
+        nextOption(map ++ Map('type -> value.toString), tail)
     }
   }
 
@@ -296,6 +297,8 @@ object Streaming {
 
     if (pipeline == "audiences")
       streamCSVs(spark, from, processType)
+    if (pipeline == "partner")
+      streamCSVs(spark, from, processType, "id_partner")
     if (pipeline == "kafka")
       streamKafka(spark)
   }
