@@ -264,7 +264,7 @@ object Main {
     val json_content = """{"filePath":"%s_xd", "priority":%s,
                                      "queue":"%s", "jobId":%s, "description":"%s","as_view":%s}"""
       .format(
-        "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("output_file"),
+        "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("output_file")),
         value_dictionary("priority"),
         value_dictionary("queue"),
         value_dictionary("jobid"),
