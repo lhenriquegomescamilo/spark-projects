@@ -279,18 +279,18 @@ object GenerateDataset {
                 LOG(AGE55/total_age) as AGE55_PROB,
                 LOG(AGE65/total_age) as AGE65_PROB
                 FROM (SELECT  device_id,
-                              IF(MALE is null, 0, MALE+100) as MALE,
-                              IF(FEMALE is null, 0, FEMALE+100) as FEMALE,
-                              IF(MALE is null, 0, MALE) + IF(FEMALE is null, 0, FEMALE) + 200 as total_genero,
-                              IF(AGE18 is null, 0, AGE18+20) as AGE18,
-                              IF(AGE25 is null, 0, AGE25+20) as AGE25,
-                              IF(AGE35 is null, 0, AGE35+20) as AGE35,
-                              IF(AGE45 is null, 0, AGE45+20) as AGE45,
-                              IF(AGE55 is null, 0, AGE55+20) as AGE55,
-                              IF(AGE65 is null, 0, AGE65+20) as AGE65,
+                              IF(MALE is null, 100, MALE+100) as MALE,
+                              IF(FEMALE is null, 100, FEMALE+100) as FEMALE,
+                              IF(MALE is null, 0, MALE) + IF(FEMALE is null, 0, FEMALE) + 200.0 as total_genero,
+                              IF(AGE18 is null, 20, AGE18+20) as AGE18,
+                              IF(AGE25 is null, 20, AGE25+20) as AGE25,
+                              IF(AGE35 is null, 20, AGE35+20) as AGE35,
+                              IF(AGE45 is null, 20, AGE45+20) as AGE45,
+                              IF(AGE55 is null, 20, AGE55+20) as AGE55,
+                              IF(AGE65 is null, 20, AGE65+20) as AGE65,
                                   IF(AGE18 is null, 0, AGE18) + IF(AGE25 is null, 0, AGE25) + 
                                   IF(AGE35 is null, 0, AGE35) + IF(AGE45 is null, 0, AGE45) +
-                                  IF(AGE55 is null, 0, AGE55) + IF(AGE65 is null, 0, AGE65) + 120 as total_age
+                                  IF(AGE55 is null, 0, AGE55) + IF(AGE65 is null, 0, AGE65) + 120.0 as total_age
                       FROM ga)"""
     )
     probabilities
@@ -324,12 +324,11 @@ object GenerateDataset {
       .withColumn("AGE45_PROB", col("AGE45_PROB") / col("TOTAL_AGE"))
       .withColumn("AGE55_PROB", col("AGE55_PROB") / col("TOTAL_AGE"))
       .withColumn("AGE65_PROB", col("AGE65_PROB") / col("TOTAL_AGE"))
-
+      .drop("TOTAL_GENDER","TOTAL_AGE")
       .orderBy(asc("device_id"))
       .write
       .format("csv")
       .option("sep", "\t")
-      .option("header","true")
       .mode(SaveMode.Overwrite)
       .save(
         "/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities"
@@ -415,8 +414,8 @@ object GenerateDataset {
 
     // Finally we perform the join between the users with no ground truth (left_anti join).
     gtDF.join(triplets, Seq("device_id"), joinType)
-        .orderBy(asc("device_id"))
         .select("device_id","feature")
+        .orderBy(asc("device_id"))
         .write
         .format("csv")
         .mode(SaveMode.Overwrite)
@@ -512,7 +511,6 @@ object GenerateDataset {
                 .save(
                   "/datascience/data_demo/name=%s/country=%s/gt".format(name, country)
                 )
-    
     
     generateSegmentTriplets(spark, ga, country, "left", name)
     val segments = spark.read
