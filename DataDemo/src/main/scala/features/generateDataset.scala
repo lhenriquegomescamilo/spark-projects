@@ -244,7 +244,7 @@ object GenerateDataset {
       .dropDuplicates("url", "device_id")
 
     // Here we filter the users from 30 days if we are calculating the expansion set
-    if (joinType == "anti_left"){
+    if (joinType == "left_anti"){
       // Get the days to be loaded
       val conf = spark.sparkContext.hadoopConfiguration
       val fs = FileSystem.get(conf)
