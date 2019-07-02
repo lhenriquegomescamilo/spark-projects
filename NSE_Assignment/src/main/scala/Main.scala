@@ -161,7 +161,7 @@ object Main {
     if (query.contains("push") && Option(query("push"))
             .getOrElse("")
             .toString
-            .length > 0) query("as_view").toString
+            .length > 0) query("push").toString
       else "1"
        
 
@@ -259,12 +259,12 @@ object Main {
    
 
     // Now we generate the content for the json file.
-   //if (value_dictionary("push")=="1") {}
+   if (value_dictionary("push")=="1") {
    
-    val json_content = """{"filePath":"%s_xd", "priority":%s,
+    val json_content = """{"filePath":"%s", "priority":%s,
                                      "queue":"%s", "jobId":%s, "description":"%s","as_view":%s}"""
       .format(
-        value_dictionary("output_file"),
+        "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("output_file")),
         value_dictionary("priority"),
         value_dictionary("queue"),
         value_dictionary("jobid"),
@@ -283,6 +283,7 @@ object Main {
     )
     os.write(json_content.getBytes)
     fs.close() 
+    }
                                     
     }
   }
