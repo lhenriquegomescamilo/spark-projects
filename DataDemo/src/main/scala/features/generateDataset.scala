@@ -246,6 +246,9 @@ object GenerateDataset {
     // Here we filter the users from 30 days if we are calculating the expansion set
     if (joinType == "anti_left"){
       // Get the days to be loaded
+      val conf = spark.sparkContext.hadoopConfiguration
+      val fs = FileSystem.get(conf)
+
       val format = "yyyyMMdd"
       val end = DateTime.now.minusDays(1)
       val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format))
