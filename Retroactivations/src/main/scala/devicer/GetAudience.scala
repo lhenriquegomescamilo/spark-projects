@@ -435,7 +435,7 @@ object GetAudience {
               .getOrElse("")
               .toString
               .length > 0) query("unique")
-        else 0
+        else 1
 
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
