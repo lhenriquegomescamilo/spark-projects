@@ -537,7 +537,7 @@ object GetAudience {
     )
 
     // Here we select distinct users if needed
-    val results_distinct = if(queries(0)("unique") > 0) results.map(
+    val results_distinct = if(queries(0)("unique").toString.toInt > 0) results.map(
       df => df.distinct()) else results
 
     // If there is a limit on the number of rows, we also apply it
