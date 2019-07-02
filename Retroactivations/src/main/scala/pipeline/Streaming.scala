@@ -290,7 +290,7 @@ object Streaming {
         // .config("spark.sql.streaming.pollingDelay", 1000)
         .getOrCreate()
 
-    Logger.getRootLogger.setLevel(Level.WARN)
+    // Logger.getRootLogger.setLevel(Level.WARN)
     println(
       "STREAMING LOGGER:\n\tFrom: %s\n\tPipeline: %s".format(from, pipeline)
     )
