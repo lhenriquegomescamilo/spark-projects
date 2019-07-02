@@ -430,6 +430,12 @@ object GetAudience {
               .toString
               .length > 0) query("revenue")
         else 0
+      val unique =
+        if (query.contains("unique") && Option(query("unique"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("unique")
+        else 1
 
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
@@ -449,7 +455,8 @@ object GetAudience {
         "common" -> commonFilter,
         "limit" -> limit,
         "country" -> country,
-        "revenue" -> revenue
+        "revenue" -> revenue,
+        "unique" -> unique
       )
 
       queries = queries ::: List(actual_map)
@@ -510,6 +517,7 @@ object GetAudience {
 
     // For every query we apply the filter and get only the distinct ids along with the
     // device type and segment id.
+    
     val results = queries.map(
       query => 
         query("revenue") match {
@@ -527,10 +535,15 @@ object GetAudience {
                 .distinct()
         }
     )
+
+    // Here we select distinct users if needed
+    val results_distinct = if(queries(0)("unique") > 0) results.map(
+      df => df.distinct()) else results
+
     // If there is a limit on the number of rows, we also apply it
-    val results_limited = if (limit>0) results.map(
+    val results_limited = if (limit>0) results_distinct.map(
       singleDf => singleDf.limit(limit)
-    ) else results
+    ) else results_distinct
     // Now we store every single audience separately
     results_limited.foreach(
       dataframe =>

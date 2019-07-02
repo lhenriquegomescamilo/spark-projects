@@ -236,12 +236,32 @@ object GenerateDataset {
       name: String
   ) {
     // First we load the GA data
-    val ga = spark.read
+    var ga = spark.read
       .load(
         "/datascience/data_demo/google_analytics_domain/country=%s/"
           .format(country)
       )
       .dropDuplicates("url", "device_id")
+
+    // Here we filter the users from 30 days if we are calculating the expansion set
+    if (joinType == "left_anti"){
+      // Get the days to be loaded
+      val conf = spark.sparkContext.hadoopConfiguration
+      val fs = FileSystem.get(conf)
+
+      val format = "yyyyMMdd"
+      val end = DateTime.now.minusDays(1)
+      val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format))
+      val path = "/datascience/data_audiences"
+
+      // Now we obtain the list of hdfs folders to be read
+      val hdfs_files = days.map(day => path + "/day=%s".format(day)).filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+      val devices = df.select("device_id").distinct()
+
+      ga = ga.join(devices,Seq("device_id"))
+    }
 
     // Here I calculate the data of GA just for the users that do not have ground truth data.
     val joint = ga.join(gtDF, Seq("device_id"), joinType).na.fill(0)
