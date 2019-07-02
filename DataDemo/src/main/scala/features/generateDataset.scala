@@ -236,7 +236,7 @@ object GenerateDataset {
       name: String
   ) {
     // First we load the GA data
-    val ga = spark.read
+    var ga = spark.read
       .load(
         "/datascience/data_demo/google_analytics_domain/country=%s/"
           .format(country)
@@ -257,9 +257,9 @@ object GenerateDataset {
 
       val devices = df.select("device_id").distinct()
 
-      val ga = ga.join(devices,Seq("device_id"))
+      ga = ga.join(devices,Seq("device_id"))
     }
-    
+
     // Here I calculate the data of GA just for the users that do not have ground truth data.
     val joint = ga.join(gtDF, Seq("device_id"), joinType).na.fill(0)
 
