@@ -93,7 +93,9 @@ object Streaming {
 
     // Current day
     val day = DateTime.now.minusDays(from).toString("yyyy/MM/dd/")
-    println("STREAMING LOGGER:\n\tDay: %s".format(day))
+    println(
+      "STREAMING LOGGER:\n\tDay: %s\n\tProcessType: %s".format(day, processType)
+    )
 
     // Here we read the pipeline
 
@@ -105,7 +107,7 @@ object Streaming {
         .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
         .schema(finalSchema) // Defining the schema
         .format("csv")
-        .load("/datascience/streaming/")//"/data/eventqueue/%s".format(day))
+        .load("/datascience/streaming/") //"/data/eventqueue/%s".format(day))
         .select(columns.head, columns.tail: _*) // Here we select the columns to work with
         // Now we change the type of the column time to timestamp
         .withColumn(
@@ -130,6 +132,8 @@ object Streaming {
         // Calculate the hour
         .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
     }
+
+    println("STREAMING LOGGER:\n\tData: %s".format(data))
 
     // Now we transform the columns that are array of strings
     val withArrayStrings = array_strings.foldLeft(data)(
@@ -156,8 +160,11 @@ object Streaming {
           .isin(countries: _*)
       )
 
+    println("STREAMING LOGGER:\n\tFinal DF: %s".format(finalDF))
+
     // In the last step we write the batch that has been read into /datascience/data_audiences_streaming/
     if (processType == "stream") {
+      println("STREAMING LOGGER: Storing the streaming")
       finalDF.writeStream
         .outputMode("append")
         .format("parquet")
