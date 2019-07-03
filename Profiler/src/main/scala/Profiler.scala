@@ -240,7 +240,7 @@ val dev = get_safegraph_data(spark)
 val my_users = dev.groupBy("ad_id").agg(count("utc_timestamp") as "detections") 
                 .filter(col("detections") >= location_min)
 
-val filtered = dev.join(my_users,Seq("ad_id"),"inner").filter("country == 'argentina'" )
+val filtered = dev.join(my_users,Seq("ad_id"),"inner")
 
 //Esto lo luego haríamos un crossdevice y guardamos la base 1.
 
