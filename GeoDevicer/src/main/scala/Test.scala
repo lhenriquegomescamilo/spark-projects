@@ -176,6 +176,6 @@ object Test {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // Finally we perform the GeoJoin
-    get_safegraph_data(spark, 1, 1)
+    get_safegraph_data(spark, 3, 2)
   }
 }
