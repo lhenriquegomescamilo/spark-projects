@@ -121,6 +121,9 @@ object GenerateFeaturesUrls {
     def get_dataset_keywords(spark: SparkSession, ndays: Int, since:Int, name:String, country:String){
         
         // Getting data from selected keywords
+        val conf = spark.sparkContext.hadoopConfiguration
+        val fs = FileSystem.get(conf)
+
         val format = "yyyy-MM-dd"
         val start = DateTime.now.minusDays(since + ndays)
         val end = DateTime.now.minusDays(since)
