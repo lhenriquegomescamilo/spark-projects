@@ -153,7 +153,7 @@ def get_ua (
 //Acá abajo procesamos los datos
 /////////////////////////////
 def get_activiy (
-spark: SparkSession): {
+spark: SparkSession) = {
 
 val activity_min = 10
 
@@ -178,7 +178,7 @@ user_activity.write.format("csv")
 
 /////////////////////////////
 def get_apps (
-spark: SparkSession): {
+spark: SparkSession) = {
 
 val app_min = 1
 
@@ -201,7 +201,7 @@ apps.write.format("csv")
 
 
 def get_3rd_party(
-spark: SparkSession): {
+spark: SparkSession) = {
 
 val third_party_min = 20
 
@@ -217,7 +217,7 @@ segments.write
 
 
 def  geo_high (
-spark: SparkSession): {
+spark: SparkSession) = {
 
 val location_min = 50
 
@@ -243,8 +243,8 @@ with_array.write
 /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
-  def main(args: Array[String]) : {
-    val spark =
+  def main(args: Array[String]) = 
+    { val spark =
       SparkSession.builder.appName("Test").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
@@ -259,6 +259,6 @@ with_array.write
     get_3rd_party(spark)
     geo_high(spark)
   }
-  
+
 }
 
