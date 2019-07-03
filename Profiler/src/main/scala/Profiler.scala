@@ -1,41 +1,12 @@
 package main.scala
-import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions._
-import org.joda.time.{Days, DateTime}
-import org.joda.time.format.DateTimeFormat
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.{SaveMode, DataFrame}
-import org.apache.spark.ml.attribute.Attribute
-import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
-//import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
-import org.apache.spark.ml.linalg.Vectors
-import org.apache.spark.mllib.regression.LabeledPoint
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.evaluation.RegressionEvaluator
-import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
-import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Encoders, SparkSession}
-import org.joda.time.Days
-import org.joda.time.DateTime
-import org.apache.hadoop.conf.Configuration
-import org.apache.spark.ml.classification.{
-  RandomForestClassificationModel,
-  RandomForestClassifier
-}
-import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
-import org.apache.spark.ml.classification.{
-  GBTClassificationModel,
-  GBTClassifier
-}
-import java.security.MessageDigest
-import java.util
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
-import org.apache.commons.codec.binary.Base64
-import java.time.DateTimeException
 
+
+import org.apache.spark.sql.SparkSession
+import org.apache.hadoop.fs.{ FileSystem, Path }
+import org.joda.time.DateTime
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.SaveMode
+import scala.collection.Map
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
@@ -75,12 +46,13 @@ object Profiler {
 
 /////////////////////////////
 def get_ua (
-      spark: SparkSession,
-      nDays: Int = 10,
-      since: Int = 1,
-      country : String = "AR"
-  ): DataFrame = {
+      spark: SparkSession) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
+    
+    val nDays = 10,
+    val since = 1,
+    val country = "AR"
+
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
@@ -109,17 +81,15 @@ def get_ua (
       nDays: Int = 10,
       since: Int = 1,
       country : String = "argentina" //,value_dictionary: Map[String, String]
-  ) = {
+  ) : DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
     val format = "yyMMdd"
-    val end = DateTime.now.minusDays(since).toInt
-    val days = (0 until nDays.toInt)
-      .map(end.minusDays(_))
-      .map(_.toString(format))
+    val end = DateTime.now.minusDays(since).toInt)
+    val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we obtain the list of hdfs files to be read
     val path = "/datascience/geo/safegraph_pipeline/"
@@ -153,10 +123,11 @@ def get_ua (
 //Acá abajo procesamos los datos
 /////////////////////////////
 def get_activiy (
-spark: SparkSession) = {
+spark: SparkSession): {
 
 val activity_min = 10
 
+val daud = getDataAudiences(spark)
 val activity = daud.select("device_id","timestamp").groupBy("device_id").agg(collect_set(col("timestamp")) as "detections").withColumn("activity",size(col("detections"))).filter(col("activity")>= activity_min )
 val high_activity = daud.join(activity,Seq("device_id"),"inner")
 //high_activity.select(col("device_id")).distinct().count
@@ -169,7 +140,7 @@ val user_activity = high_activity.select("device_id","event_type","url","timesta
       collect_list(col("timestamp")) as "time_visit",
       collect_list(col("event_type")) as "event_types")
 
-user_activity.write.format("csv")
+activity.write.format("csv")
 .option("header",true)
 .option("sep", "\t").mode(SaveMode.Overwrite)
 .save("/datascience/geo/MiniMuestra/%s".format("activity"))
@@ -178,18 +149,15 @@ user_activity.write.format("csv")
 
 /////////////////////////////
 def get_apps (
-spark: SparkSession) = {
+spark: SparkSession): {
 
 val app_min = 1
+val daud = getDataAudiences(spark)
 
-val apps = daud.select("device_id","app_installed")
-          .withColumn("app_installed",explode(col("app_installed")))
-          .groupBy("device_id")
-          .agg(collect_set(col("app_installed")) as "apps")
-          .withColumn("appstotal",size(col("apps"))).filter(col("appstotal") > app_min)
-          .withColumn("appstotal",col("appstotal")-1)
+val apps = daud.select("device_id","app_installed").withColumn("app_installed",explode(col("app_installed"))).groupBy("device_id").agg(collect_set(col("app_installed")) as "apps").withColumn("appstotal",size(col("apps"))).filter(col("appstotal") > app_min).withColumn("appstotal",col("appstotal")-1)
 
-apps.write.format("csv")
+apps.write
+.format("csv")
 .option("header",true)
 .option("sep", "\t").mode(SaveMode.Overwrite)
 .save("/datascience/geo/MiniMuestra/%s".format("apps"))
@@ -201,10 +169,11 @@ apps.write.format("csv")
 
 
 def get_3rd_party(
-spark: SparkSession) = {
+spark: SparkSession): {
 
 val third_party_min = 20
 
+val daud = getDataAudiences(spark)
 val segments = daud.select("device_id","third_party").withColumn("third_party",explode(col("third_party"))).groupBy("device_id").agg(collect_set(col("third_party")) as "third_party").withColumn("segment_total",size(col("third_party"))).filter(col("segment_total") > third_party_min)
 
 segments.write
@@ -217,7 +186,7 @@ segments.write
 
 
 def  geo_high (
-spark: SparkSession) = {
+spark: SparkSession): {
 
 val location_min = 50
 
@@ -243,8 +212,8 @@ with_array.write
 /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
-  def main(args: Array[String]) = 
-    { val spark =
+  def main(args: Array[String]) : {
+    val spark =
       SparkSession.builder.appName("Test").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
@@ -259,6 +228,5 @@ with_array.write
     get_3rd_party(spark)
     geo_high(spark)
   }
-
 }
 
