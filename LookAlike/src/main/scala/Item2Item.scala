@@ -322,7 +322,10 @@ object Item2Item {
       "/datascience/data_lookalike/i2i_checkpoint"
     )
     Logger.getRootLogger.setLevel(Level.WARN)
-
-    testModel(spark, "PE", "binary", "binary", 1000)
+    val country = if (args.length > 0) args(0).toString else "PE"
+    val k = if (args.length > 1) args(1).toString.toInt else 1000
+    val simHits = if (args.length > 2) args(2).toString else "binary"
+    val predHits = if (args.length > 3) args(3).toString else "binary"
+    testModel(spark, country, simHits, predHits, k)
   }
 }
