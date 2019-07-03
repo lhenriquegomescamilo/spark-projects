@@ -91,7 +91,6 @@ object Item2Item {
                               usersSegmentsData,
                               segments.size,
                               simMatrix,
-                              segmentsIndex,
                               predMatrixHits)
     // 6) Metrics
     calculateRelevanceMetrics(spark, predictData, country, k, 100)
@@ -241,6 +240,7 @@ object Item2Item {
                         country: String,
                         k: Int = 1000,
                         minSegmentSupport: Int = 100) {
+      import spark.implicits._              
       data.cache()
 
       var nUsers = data.count()
