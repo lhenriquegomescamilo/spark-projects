@@ -167,7 +167,7 @@ object Item2Item {
               data: RDD[(Any, Iterable[(Any, Any)])],
               nSegments: Int,
               similartyMatrix: CoordinateMatrix,
-              predMatrixHits: String = "binary") : RDD[(Any, Iterable[(Any, Any)], Vector)]  =  {
+              predMatrixHits: String = "binary") : RDD[(Any, Array[(Int)], Vector)]  =  {
 
     var indexedData = data
       .filter( row => row._2.size > 1) // filter users 
@@ -221,13 +221,12 @@ object Item2Item {
     var scoreMatrix = userSegmentMatrix.multiply(similartyMatrix.toBlockMatrix().toLocalMatrix())
     // this operation preserves partitioning
 
-
-    var userPredictionMatrix =(scoreMatrix
-        .rows
-        .map(row => (row.index, row.vector))
-        .join(indexedData.map(t => (t._1, (t._2, t._3)))) // (device_idx, (device_id, segments))
-        .map(tup => (tup._2._2._1, tup._2._2._2, tup._2._1))
-        )// <device_id, Array segment_idx,  scores segments Vector>
+    var userPredictionMatrix = (scoreMatrix
+      .rows
+      .map(row => (row.index, row.vector))
+      .join(indexedData.map(t => (t._1, (t._2, t._3)))) // (device_idx, (device_id, segments))
+      .map(tup => (tup._2._2._1, tup._2._2._2.map(t =>  t._1.toString.toInt).toArray, tup._2._1))
+    )// <device_id, array segments index, predictios segments>
 
     userPredictionMatrix
   }
