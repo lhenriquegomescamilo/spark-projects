@@ -46,9 +46,9 @@ object Profiler {
       spark: SparkSession) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
 
-    val nDays = 10
-    val since = 1
-    val country = "AR"
+    val nDays: Int = 10,
+    val since: Int = 1,
+    val country : String = "AR"
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -68,6 +68,8 @@ object Profiler {
       .parquet(hdfs_files: _*)
       .withColumn("category", lit(""))
       .withColumn("title", lit(""))
+
+      df
 
   }
 
@@ -98,7 +100,8 @@ def get_ua (
       .parquet(hdfs_files: _*)
       .withColumn("category", lit(""))
       .withColumn("title", lit(""))
-
+      
+      df
   }
 
 
@@ -242,7 +245,7 @@ with_array.write
   def main(args: Array[String]) = {
     val spark = SparkSession.builder.appName("Test").getOrCreate()
 
-       val daud = getDataAudiences(spark)
+    val daud = getDataAudiences(spark)
     daud.cache()
 
     val useragent = get_ua(spark)
