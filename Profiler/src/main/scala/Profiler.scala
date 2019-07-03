@@ -108,8 +108,7 @@ def get_ua (
       spark: SparkSession,
       nDays: Int = 10,
       since: Int = 1,
-      country : String = "argentina",
-      //,value_dictionary: Map[String, String]
+      country : String = "argentina" //,value_dictionary: Map[String, String]
   ) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -233,10 +232,7 @@ with_array.write
 .option("sep", "\t").mode(SaveMode.Overwrite)
 .save("/datascience/geo/MiniMuestra/%s".format("geo"))
 
-}
-
-
-
+ }
 /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -256,5 +252,5 @@ with_array.write
     get_3rd_party(spark)
     geo_high(spark)
   }
-
 }
+
