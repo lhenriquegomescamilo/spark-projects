@@ -268,10 +268,11 @@ with_array.write
 
     val useragent = get_ua(spark)
 
-    get_activiy(spark)
+    
     get_apps(spark)
     get_3rd_party(spark)
     geo_high(spark)
+    get_activiy(spark)
   }
 }
 
