@@ -118,9 +118,48 @@ object GenerateFeaturesUrls {
             )
     }
     
-    //def get_dataset_keywords(spark: SparkSession, ndays: Int){
-    //}
-    
+    def get_dataset_keywords(spark: SparkSession, ndays: Int, since:Int, name:String, country:String){
+        
+        // Getting data from selected keywords
+        val format = "yyyy-MM-dd"
+        val start = DateTime.now.minusDays(since + ndays)
+        val end = DateTime.now.minusDays(since)
+
+        val daysCount = Days.daysBetween(start, end).getDays()
+        val days =
+            (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+        val dfs = (0 until daysCount)
+            .map(start.plusDays(_))
+            .map(_.toString(format))
+            .filter(
+            day =>
+                fs.exists(
+                new Path("/datascience/selected_keywords/%s.csv".format(day))
+                )
+            )
+            .map(day => spark.read.format("csv").option("header","true").load("/datascience/selected_keywords/%s.csv".format(day)))
+        
+        // Union of all dataframes
+        val df = dfs.reduce(_ union _).dropDuplicates()
+
+        // Filtering urls from country
+        val df_filtered = df.filter("country = '%s'".format(country))
+                            .select("url_raw","hits","kw")
+                            .withColumnRenamed("url_raw","url")
+        
+        // Saving Features
+        df_filtered.write
+            .format("csv")
+            .option("header", "true")
+            .option("sep", "\t")
+            .mode(SaveMode.Overwrite)
+            .save(
+                "/datascience/data_urls/name=%s/country=%s/features_keywords"
+                .format(name, country)
+            )
+    }
+
     def get_dataset_devices(spark: SparkSession, ndays: Int, since: Int, name: String, country: String){
         val conf = spark.sparkContext.hadoopConfiguration
         val fs = FileSystem.get(conf)
@@ -193,20 +232,31 @@ object GenerateFeaturesUrls {
     }
 
     def get_datasets_training(spark: SparkSession){
+        
+        val gt = spark.read.format("csv")
+                        .option("header","true")
+                        .load("/datascience/data_urls/gt")
+/**
         val features_timestamp = spark.read.format("csv")
                                     .option("header","true")
                                     .option("sep", "\t")
                                     .load("/datascience/data_urls/name=training_AR/country=AR/features_timestamp")
 
-        val gt = spark.read.format("csv")
-                        .option("header","true")
-                        .load("/datascience/data_urls/gt")
-
         val features_devices = spark.read.format("csv")
                             .option("header","true")
                             .option("sep", "\t")
                             .load("/datascience/data_urls/name=training_AR/country=AR/features_devices")
+**/
+        val features_user_agent = spark.read.format("csv")
+                .option("header","true")
+                .option("sep", "\t")
+                .load("/datascience/data_urls/name=training_AR/country=AR/features_user_agent")
 
+        val features_keywords = spark.read.format("csv")
+                                    .option("header","true")
+                                    .option("sep", "\t")
+                                    .load("/datascience/data_urls/name=training_AR/country=AR/features_keywords")
+/**
         gt.join(features_timestamp,Seq("url")).na.fill(0)
                 .write
                 .format("csv")
@@ -222,6 +272,23 @@ object GenerateFeaturesUrls {
                 .option("sep", "\t")
                 .mode(SaveMode.Overwrite)
                 .save("/datascience/data_urls/name=training_AR/country=AR/dataset_devices")
+**/
+
+        gt.join(features_user_agent,Seq("url"))
+        .write
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/data_urls/name=training_AR/country=AR/dataset_user_agent")
+
+        gt.join(features_keywords,Seq("url"))
+        .write
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/data_urls/name=training_AR/country=AR/dataset_keywords")
 
     }
 
@@ -242,26 +309,8 @@ object GenerateFeaturesUrls {
         //get_dataset_devices(spark, ndays, since, name, country)
         //get_dataset_devices(spark, ndays, since, name, country)
         get_dataset_user_agent(spark, ndays, since, name, country)
+        get_dataset_keywords(spark, ndays, since, name, country)
 
-        val gt = spark.read.format("csv")
-                .option("header","true")
-                .load("/datascience/data_urls/gt")
-
-        val features_user_agent = spark.read.format("csv")
-                        .option("header","true")
-                        .option("sep", "\t")
-                        .load("/datascience/data_urls/name=training_AR/country=AR/features_user_agent")
-
-        gt.join(features_user_agent,Seq("url")).na.fill(0)   
-        .write
-        .format("csv")
-        .option("header", "true")
-        .option("sep", "\t")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/data_urls/name=training_AR/country=AR/dataset_user_agent")
-        
-
-
-        //get_datasets_training(spark)
+        get_datasets_training(spark)
     }
 }
