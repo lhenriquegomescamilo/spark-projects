@@ -173,15 +173,14 @@ object GenerateFeaturesUrls {
 
         val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
-        val df_brand = df.groupBy("url","brand").pivot("brand").agg(count("device_id")).na.fill(0)
-        val df_model = df.groupBy("url","model").pivot("model").agg(count("device_id")).na.fill(0)
-        val df_browser = df.groupBy("url","browser").pivot("browser").agg(count("device_id")).na.fill(0)
-        val df_os = df.groupBy("url","os").pivot("os").agg(count("device_id")).na.fill(0)
+        val triplets_brand = df.groupBy("url","brand").agg(count("device_id").as("count")).withColumnRenamed("brand","feature")
+        val triplets_model = df.groupBy("url","model").agg(count("device_id").as("count")).withColumnRenamed("model","feature")
+        val triplets_browser = df.groupBy("url","browser").agg(count("device_id").as("count")).withColumnRenamed("browser","feature")
+        val triplets_os = df.groupBy("url","os").agg(count("device_id").as("count")).withColumnRenamed("os","feature")
 
-        val df_join = df_brand.join(df_model,Seq("url")).join(df_browser,Seq("url")).join(df_os,Seq("url")).na.fill(0)
+        val features_ua = triplets_brand.union(triplets_model).union(triplets_browser).union(triplets_os)
 
-        df_join
-            .na.fill(0)
+        features_ua
             .write
             .format("csv")
             .option("header", "true")
@@ -233,7 +232,7 @@ object GenerateFeaturesUrls {
                                 .getOrCreate()
 
         // Parseo de parametros
-        val ndays = if (args.length > 0) args(0).toInt else 3
+        val ndays = if (args.length > 0) args(0).toInt else 10
         val since = if (args.length > 1) args(1).toInt else 1
         val name = if (args.length > 2) args(2).toString else ""
         val country = if (args.length > 3) args(3).toString else ""
