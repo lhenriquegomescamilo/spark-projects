@@ -101,12 +101,12 @@ object Streaming {
 
     val data = if (processType == "stream") {
       spark.readStream
+        .format("csv")
         .option("sep", "\t")
         .option("header", "true")
         // .option("maxFileAge", "0")
         .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
         .schema(finalSchema) // Defining the schema
-        .format("csv")
         .load("/datascience/streaming/") //"/data/eventqueue/%s".format(day))
         .select(columns.head, columns.tail: _*) // Here we select the columns to work with
         // Now we change the type of the column time to timestamp
