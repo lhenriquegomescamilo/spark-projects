@@ -46,7 +46,7 @@ object Profiler {
       spark: SparkSession) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
 
-    val nDays: Int = 10
+    val nDays: Int = 2
     val since: Int = 1
     val country : String = "AR"
 
@@ -78,7 +78,7 @@ def get_ua (
       spark: SparkSession) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     
-    val nDays = 10
+    val nDays = 2
     val since = 1
     val country = "AR"
 
@@ -108,7 +108,7 @@ def get_ua (
 /////
  def get_safegraph_data(
       spark: SparkSession,
-      nDays: Int = 10,
+      nDays: Int = 2,
       since: Int = 1,
       country : String = "argentina" //,value_dictionary: Map[String, String]
   ) : DataFrame = {
