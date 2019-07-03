@@ -136,8 +136,6 @@ def get_ua (
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
-      .withColumnRenamed("latitude", "latitude_user")
-      .withColumnRenamed("longitude", "longitude_user")
       .withColumn(
         "geocode",
         ((abs(col("latitude_user").cast("float")) * 10)
@@ -240,7 +238,7 @@ val dev = get_safegraph_data(spark)
 val my_users = dev.groupBy("ad_id").agg(count("utc_timestamp") as "detections") 
                 .filter(col("detections") >= location_min)
 
-val filtered = dev.join(my_users,Seq("ad_id"),"inner").filter("country == 'argentina'" )
+val filtered = dev.join(my_users,Seq("ad_id"),"inner")
 
 //Esto lo luego haríamos un crossdevice y guardamos la base 1.
 
