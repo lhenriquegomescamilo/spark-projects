@@ -152,17 +152,31 @@ object Streaming {
           df.withColumn(c, split(col(c), "\u0001"))
             .withColumn(c, col(c).cast("array<int>"))
       )
-      // Here we do the filtering, where we keep the event types previously specified
-      .filter(
-        length(col("device_id")) > 0 && col("event_type")
-          .isin(event_types: _*) && col("id_partner")
-          .cast(IntegerType) < 5000 && col("country")
-          .isin(countries: _*)
-      )
+
+    // Here we do the filtering, where we keep the event types previously specified
+    val filtered =
+      if (partition == "country")
+        finalDF
+          .filter(
+            length(col("device_id")) > 0 && col("event_type")
+              .isin(event_types: _*) && col("id_partner")
+              .cast(IntegerType) < 5000 && col("country")
+              .isin(countries: _*)
+          )
+      else
+        finalDF
+          .filter(
+            length(col("device_id")) > 0 && col("event_type")
+              .isin(event_types: _*) && col("id_partner")
+              .cast(IntegerType) < 5000
+          )
 
     println("STREAMING LOGGER:\n\tFinal DF: %s".format(finalDF))
 
-    // In the last step we write the batch that has been read into /datascience/data_audiences_streaming/
+    // In the last step we write the batch that has been read into /datascience/data_audiences_streaming/ or /datascience/data_partner_streaming/
+    val outputPath =
+      if (partition == "country") "/datascience/data_audiences_streaming/"
+      else "/datascience/data_partner_streaming/"
     if (processType == "stream") {
       println("STREAMING LOGGER: Storing the streaming")
       finalDF.writeStream
@@ -170,7 +184,7 @@ object Streaming {
         .format("parquet")
         .option("checkpointLocation", "/datascience/checkpoint/")
         .partitionBy("hour", partition)
-        .option("path", "/datascience/data_audiences_streaming/")
+        .option("path", outputPath)
         // .trigger(ProcessingTime("1260 seconds"))
         .start()
         .awaitTermination()
@@ -179,7 +193,7 @@ object Streaming {
         .mode("append")
         .format("parquet")
         .partitionBy("hour", partition)
-        .save("/datascience/data_audiences_streaming/")
+        .save(outputPath)
     }
   }
 
