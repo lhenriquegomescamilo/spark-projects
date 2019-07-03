@@ -25,19 +25,12 @@ import org.apache.spark.sql.{Encoders, SparkSession}
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.hadoop.conf.Configuration
+
+import org.apache.spark.sql.SparkSession
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.{round, broadcast, col, abs, upper}
 import org.apache.spark.sql.SaveMode
-
-import main.scala.crossdevicer.CrossDevicer
-import main.scala.aggregators.Aggregations
-import main.scala.matchers._
-
-import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.serializer.KryoRegistrator
-import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
-import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
-import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -120,7 +113,7 @@ def get_ua (
 
     // Get the days to be loaded
     val format = "yyMMdd"
-    val end = DateTime.now.minusDays(since).toInt
+    val end = DateTime.now.minusDays(since.toInt)
     val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we obtain the list of hdfs files to be read
