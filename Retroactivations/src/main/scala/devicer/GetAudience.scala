@@ -490,7 +490,8 @@ object GetAudience {
       queries: List[Map[String, Any]],
       fileName: String,
       commonFilter: String = "",
-      limit: Int
+      limit: Int,
+      unique: Int
   ) = {
     println(
       "DEVICER LOG:\n\tCommon filter: %s\n\tCommon filter length: %d"
@@ -526,18 +527,16 @@ object GetAudience {
                   .filter(query("filter").toString)
                   .select("device_type", "device_id")
                   .withColumn("segmentIds", lit(query("segment_id").toString))
-                  .distinct()
             case 1 =>
                 filtered
                 .filter(query("filter").toString)
                 .select("device_type", "device_id","id_partner")
                 .withColumn("segmentIds", lit(query("segment_id").toString))
-                .distinct()
         }
     )
 
     // Here we select distinct users if needed
-    val results_distinct = if(queries(0)("unique").toString.toInt > 0) results.map(
+    val results_distinct = if(unique > 0) results.map(
       df => df.distinct()) else results
 
     // If there is a limit on the number of rows, we also apply it
@@ -886,6 +885,7 @@ object GetAudience {
       val xd = queries(0)("xd").toString
       val limit = queries(0)("limit").toString.toInt
       val country = queries(0)("country").toString
+      val uinque = queries(0)("unique").toString.toInt
 
       println(
         "DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
@@ -958,7 +958,7 @@ object GetAudience {
         )
       } else {   
           // try {
-            getAudience(spark, data, queries, file_name, commonFilter, limit)
+            getAudience(spark, data, queries, file_name, commonFilter, limit, unique)
           // }
           // catch {
           //   case e: Exception => {failed = true}
