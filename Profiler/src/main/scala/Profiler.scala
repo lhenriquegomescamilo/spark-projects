@@ -78,7 +78,7 @@ def get_ua (
       spark: SparkSession,
       nDays: Int = 10,
       since: Int = 1,
-      country : String = "AR",
+      country : String = "AR"
   ): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -240,7 +240,7 @@ with_array.write
 /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
-  def main(args: Array[String]) {
+  def main(args: Array[String]) : {
     val spark =
       SparkSession.builder.appName("Test").getOrCreate()
 
