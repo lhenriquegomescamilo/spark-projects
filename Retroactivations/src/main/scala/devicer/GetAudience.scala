@@ -885,7 +885,7 @@ object GetAudience {
       val xd = queries(0)("xd").toString
       val limit = queries(0)("limit").toString.toInt
       val country = queries(0)("country").toString
-      val uinque = queries(0)("unique").toString.toInt
+      val unique = queries(0)("unique").toString.toInt
 
       println(
         "DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
