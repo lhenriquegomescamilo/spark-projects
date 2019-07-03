@@ -170,7 +170,7 @@ val user_activity = high_activity.select("device_id","event_type","url","timesta
       collect_list(col("timestamp")) as "time_visit",
       collect_list(col("event_type")) as "event_types")
 .withColumn("site_visits", concat_ws(",", col("site_visits")))
-.withColumn("timestamp", concat_ws(",", col("timestamp")))
+.withColumn("timestamp", concat_ws(",", col("time_visit")))
 .withColumn("event_type", concat_ws(",", col("event_types")))
 
 activity.write.format("csv")
@@ -245,7 +245,10 @@ val filtered = dev.join(my_users,Seq("ad_id"),"inner").filter("country == 'argen
 //Esto lo luego haríamos un crossdevice y guardamos la base 1.
 
 //acá generamos los datos de loation de los usuarios con sus timestamps
-val with_array = filtered.withColumn("location",concat(lit("("),col("latitude"),lit(","),col("longitude"),lit(")"))).groupBy("ad_id","detections").agg(concat_ws(";",collect_list(col("utc_timestamp"))).as("times_array"), concat_ws(";",collect_list("location")).as("location_array"))
+val with_array = filtered.withColumn("location",concat(lit("("),col("latitude"),lit(","),col("longitude"),lit(")")))
+.groupBy("ad_id","detections").
+agg(concat_ws(";",collect_list(col("utc_timestamp"))).as("times_array"), 
+  concat_ws(";",collect_list("location")).as("location_array"))
 
 with_array.write
 .format("csv")
