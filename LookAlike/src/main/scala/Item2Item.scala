@@ -84,12 +84,12 @@ object Item2Item {
       .groupByKey()  // group by device_id
 
     // 4) Generate similarities matrix
-    val simMatrix = getSimilarities(spark, usersSegmentsData, segmentsIndex.size, 0.05, simMatrixHits)
+    val simMatrix = getSimilarities(spark, usersSegmentsData, segments.size, 0.05, simMatrixHits)
 
     // 5) Predictions
     val predictData = predict(spark,
                               usersSegmentsData,
-                              segmentsIndex.size,
+                              segments.size,
                               simMatrix,
                               segmentsIndex,
                               predMatrixHits)
@@ -251,8 +251,7 @@ object Item2Item {
       var meanRecallAtK = 0.0
       var meanF1AtK = 0.0
       var segmentCount = 0
-      val segmentSupports = (predictData.flatMap(tup => tup._2)).countByValue()
-
+      val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
       
       // for each segment
       for (segmentIdx <- 0 until nSegments){
@@ -292,7 +291,7 @@ object Item2Item {
       println(s"segments: $nSegments")
       println(s"segmentCount: $segmentCount")
       println(s"minSegmentSupport: $segmentCount")
-      
+
       val metricsDF = Seq(
         ("precision@k", meanPrecisionAtK),
         ("recall@k", meanRecallAtK),
