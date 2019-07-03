@@ -43,11 +43,13 @@ object Profiler {
 
 /////////////////////////////
    def getDataAudiences(
-      spark: SparkSession,
-      nDays: Int = 10,
-      since: Int = 1,
-      country : String = "AR"): DataFrame = {
+      spark: SparkSession) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
+
+    val nDays = 10
+    val since = 1
+    val country = "AR"
+
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
