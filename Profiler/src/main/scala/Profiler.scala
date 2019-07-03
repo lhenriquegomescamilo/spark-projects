@@ -109,7 +109,7 @@ def get_ua (
  def get_safegraph_data(
       spark: SparkSession,
       nDays: Int = 2,
-      since: Int = 1,
+      since: Int = 10,
       country : String = "argentina" //,value_dictionary: Map[String, String]
   ) : DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
