@@ -116,7 +116,7 @@ def get_ua (
 
     // Get the days to be loaded
     val format = "yyMMdd"
-    val end = DateTime.now.minusDays(since).toInt)
+    val end = DateTime.now.minusDays(since).toInt
     val days = (0 until nDays.toInt)
       .map(end.minusDays(_))
       .map(_.toString(format))
@@ -163,10 +163,13 @@ val high_activity = daud.join(activity,Seq("device_id"),"inner")
 //3534
 //de esto vamos a querer el event type y la url/domain
 
-val user_activity = high_activity.select("device_id","event_type","url","timestamp","activity").groupBy("device_id","activity").agg(collect_list(col("url"))  as "site_visits",collect_list(col("timestamp")) as "time_visit",collect_list(col("event_type")) as "event_types")
+val user_activity = high_activity.select("device_id","event_type","url","timestamp","activity")
+.groupBy("device_id","activity")
+.agg(collect_list(col("url"))  as "site_visits",
+      collect_list(col("timestamp")) as "time_visit",
+      collect_list(col("event_type")) as "event_types")
 
-activity.write
-.format("csv")
+user_activity.write.format("csv")
 .option("header",true)
 .option("sep", "\t").mode(SaveMode.Overwrite)
 .save("/datascience/geo/MiniMuestra/%s".format("activity"))
@@ -179,10 +182,14 @@ spark: SparkSession): {
 
 val app_min = 1
 
-val apps = daud.select("device_id","app_installed").withColumn("app_installed",explode(col("app_installed"))).groupBy("device_id").agg(collect_set(col("app_installed")) as "apps").withColumn("appstotal",size(col("apps"))).filter(col("appstotal") > app_min).withColumn("appstotal",col("appstotal")-1)
+val apps = daud.select("device_id","app_installed")
+          .withColumn("app_installed",explode(col("app_installed")))
+          .groupBy("device_id")
+          .agg(collect_set(col("app_installed")) as "apps")
+          .withColumn("appstotal",size(col("apps"))).filter(col("appstotal") > app_min)
+          .withColumn("appstotal",col("appstotal")-1)
 
-apps.write
-.format("csv")
+apps.write.format("csv")
 .option("header",true)
 .option("sep", "\t").mode(SaveMode.Overwrite)
 .save("/datascience/geo/MiniMuestra/%s".format("apps"))
@@ -252,5 +259,6 @@ with_array.write
     get_3rd_party(spark)
     geo_high(spark)
   }
+  
 }
 
