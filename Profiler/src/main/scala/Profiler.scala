@@ -50,8 +50,7 @@ object Profiler {
       spark: SparkSession,
       nDays: Int = 10,
       since: Int = 1,
-      country : String = "AR",
-  ): DataFrame = {
+      country : String = "AR"): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -238,9 +237,7 @@ with_array.write
 
 
 
-  }
-
-  /*****************************************************/
+/*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(args: Array[String]) {
@@ -258,11 +255,6 @@ with_array.write
     get_apps(spark)
     get_3rd_party(spark)
     geo_high(spark)
-
-    //user_segments(spark)
-    //ua_segment_join(spark)
-    process_pipeline_partner(spark)
-    println("LOGGER: JOIN FINISHED!")
   }
 
 }
