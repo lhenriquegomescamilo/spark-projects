@@ -1,34 +1,37 @@
 package main.scala
 
+
 import org.apache.spark.mllib.recommendation.{
   ALS,
   Rating,
   MatrixFactorizationModel
 }
-import org.apache.spark.storage.StorageLevel
-import org.apache.spark.ml.feature.StringIndexer
-import org.apache.spark.ml.evaluation.RegressionEvaluator
-import org.apache.spark.sql.functions.{sum, col, lit, broadcast}
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
-import org.apache.spark.rdd.RDD
+
+import java.io._
+import scala.collection.mutable.WrappedArray
 import com.esotericsoftware.kryo.Kryo
+
+import org.apache.spark.rdd.RDD
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.SparkContext._
 import org.apache.spark.serializer.{KryoSerializer, KryoRegistrator}
 
 
+import org.apache.spark.storage.StorageLevel
+import org.apache.spark.ml.feature.StringIndexer
+import org.apache.spark.ml.evaluation.RegressionEvaluator
 
-// Imports
-import org.apache.spark.mllib.linalg.{Vector, Vectors}
-import spark.implicits._
-import org.apache.spark.mllib.linalg.distributed.RowMatrix
 import org.apache.spark.sql.functions._
-import scala.collection.mutable.WrappedArray
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
+
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
+import org.apache.spark.mllib.linalg.distributed.RowMatrix
+import org.apache.spark.mllib.linalg.distributed.IndexedRow
 import org.apache.spark.mllib.linalg.distributed.MatrixEntry
+import org.apache.spark.mllib.linalg.distributed.IndexedRowMatrix
 import org.apache.spark.mllib.linalg.distributed.CoordinateMatrix
-import java.io._
 
 
 object Item2Item {
@@ -41,7 +44,7 @@ object Item2Item {
                 simMatrixHits: String = "binary",
                 predMatrixHits: String = "binary",
                 k: Int = 1000) {
-
+    import spark.implicits._
    // 1) Segments definition
     val segments =
       """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
@@ -81,13 +84,13 @@ object Item2Item {
       .groupByKey()  // group by device_id
 
     // 4) Generate similarities matrix
-    val simMatrix = getSimilarities(spark, usersSegmentsData, 0.05, simMatrixHits)
+    val simMatrix = getSimilarities(spark, usersSegmentsData, segments.size, 0.05, simMatrixHits)
 
     // 5) Predictions
     val predictData = predict(spark,
                               usersSegmentsData,
+                              segments.size,
                               simMatrix,
-                              segmentsIndex,
                               predMatrixHits)
     // 6) Metrics
     calculateRelevanceMetrics(spark, predictData, country, k, 100)
@@ -99,6 +102,7 @@ object Item2Item {
   */
   def getSimilarities(spark: SparkSession,
                       data: RDD[(Any, Iterable[(Any, Any)])],
+                      nSegments: Int,
                       simThreshold: Double = 0.05,
                       simMatrixHits: String = "binary") : CoordinateMatrix = {
 
@@ -112,7 +116,7 @@ object Item2Item {
         filteredData
           .filter( row => row._2.size > 1)
           .map(row => Vectors.sparse(
-                      segments.size,
+                      nSegments,
                       row._2.map(t => t._1.toString.toInt).toArray,
                       row._2.map(t => t._2.toString.toDouble).toArray)
                     .toDense.asInstanceOf[Vector])
@@ -122,7 +126,7 @@ object Item2Item {
         filteredData
         .map(row => (row._1, row._2, row._2.map(t => t._2.toString.toDouble).toArray.sum)) // sum counts by device id
         .map(row => Vectors.sparse(
-                      segments.size,
+                      nSegments,
                       row._2.map(t => t._1.toString.toInt).toArray,
                       row._2.map(t => t._2.toString.toDouble/row._3).toArray)
                     .toDense.asInstanceOf[Vector])
@@ -131,7 +135,7 @@ object Item2Item {
         println(s"Similarity matrix: binary")
         filteredData 
           .map(row => Vectors.sparse(
-                      segments.size,
+                      nSegments,
                       row._2.map(t => t._1.toString.toInt).toArray, 
                       Array.fill(row._2.size)(1.0))
                     .toDense.asInstanceOf[Vector])
@@ -161,8 +165,9 @@ object Item2Item {
   */
   def predict(spark: SparkSession,
               data: RDD[(Any, Iterable[(Any, Any)])],
+              nSegments: Int,
               similartyMatrix: CoordinateMatrix,
-              predMatrixHits: String = "binary") : RDD[(Any, Iterable[(Any, Any)], Vector)]  =  {
+              predMatrixHits: String = "binary") : RDD[(Any, Array[(Int)], Vector)]  =  {
 
     var indexedData = data
       .filter( row => row._2.size > 1) // filter users 
@@ -177,7 +182,7 @@ object Item2Item {
         .map(row => new IndexedRow 
           (row._1, 
           Vectors.sparse(
-            segments.size,
+            nSegments,
             row._3.map(t => t._1.toString.toInt).toArray,
             row._3.map(t => t._2.toString.toDouble).toArray)
           .toDense.asInstanceOf[Vector]))
@@ -189,7 +194,7 @@ object Item2Item {
           .map(row => new IndexedRow 
             (row._1, 
             Vectors.sparse(
-                        segments.size,
+                        nSegments,
                         row._2.map(t => t._1.toString.toInt).toArray,
                         row._2.map(t => t._2.toString.toDouble/row._3).toArray)
                       .toDense.asInstanceOf[Vector]))
@@ -200,7 +205,7 @@ object Item2Item {
         .map(row => new IndexedRow 
           (row._1, 
           Vectors.sparse(
-            segments.size,
+            nSegments,
             row._3.map(t => t._1.toString.toInt).toArray, 
             Array.fill(row._3.size)(1.0))
           .toDense.asInstanceOf[Vector]
@@ -216,13 +221,12 @@ object Item2Item {
     var scoreMatrix = userSegmentMatrix.multiply(similartyMatrix.toBlockMatrix().toLocalMatrix())
     // this operation preserves partitioning
 
-
-    var userPredictionMatrix =(scoreMatrix
-        .rows
-        .map(row => (row.index, row.vector))
-        .join(indexedData.map(t => (t._1, (t._2, t._3)))) // (device_idx, (device_id, segments))
-        .map(tup => (tup._2._2._1, tup._2._2._2, tup._2._1))
-        )// <device_id, Array segment_idx,  scores segments Vector>
+    var userPredictionMatrix = (scoreMatrix
+      .rows
+      .map(row => (row.index, row.vector))
+      .join(indexedData.map(t => (t._1, (t._2, t._3)))) // (device_idx, (device_id, segments))
+      .map(tup => (tup._2._2._1, tup._2._2._2.map(t =>  t._1.toString.toInt).toArray, tup._2._1))
+    )// <device_id, array segments index, predictios segments>
 
     userPredictionMatrix
   }
@@ -235,19 +239,21 @@ object Item2Item {
                         country: String,
                         k: Int = 1000,
                         minSegmentSupport: Int = 100) {
+      import spark.implicits._              
       data.cache()
 
       var nUsers = data.count()
-      
+      var nSegments = data.map(t=>t._3.size).take(1)(0)
+
       //2) information retrieval metrics - recall@k - precision@k - f1@k
       var meanPrecisionAtK = 0.0
       var meanRecallAtK = 0.0
       var meanF1AtK = 0.0
       var segmentCount = 0
-      val segmentSupports = (predictData.flatMap(tup => tup._2)).countByValue()
-
+      val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
+      
       // for each segment
-      for (segmentIdx <- 0 until segments.length){
+      for (segmentIdx <- 0 until nSegments){
         //  for (segmentIdx <- 0 until 35){
         // number of users assigned to segment
         var nRelevant = segmentSupports.getOrElse(segmentIdx, 0).toString().toInt
@@ -281,18 +287,18 @@ object Item2Item {
       println(s"f1@k: $meanF1AtK")
       println(s"k: $k")
       println(s"users: $nUsers")
-      println(s"segments: ${segments.length}")
+      println(s"segments: $nSegments")
       println(s"segmentCount: $segmentCount")
       println(s"minSegmentSupport: $segmentCount")
-      
+
       val metricsDF = Seq(
         ("precision@k", meanPrecisionAtK),
         ("recall@k", meanRecallAtK),
         ("f1@k", meanF1AtK),
         ("k", k.toDouble),
         ("users", nUsers.toDouble),
-        ("segments", segments.length.toDouble),
-        ("segmentMinSupportCount", segmentCount.toDouble),
+        ("segments", nSegments.toDouble),
+        ("selectedSegments", segmentCount.toDouble),
         ("segmentMinSupport", minSegmentSupport.toDouble)
       ).toDF("metric", "value")
        .write
@@ -300,7 +306,9 @@ object Item2Item {
        .option("sep",",")
        .option("header","true")
        .mode(SaveMode.Overwrite)
-       .save("/datascience/data_lookalike/metrics/country=%s/".format(country))
+       .save(
+         "/datascience/data_lookalike/metrics/country=%s/".format(country)
+        )
     }
 
 
@@ -314,7 +322,10 @@ object Item2Item {
       "/datascience/data_lookalike/i2i_checkpoint"
     )
     Logger.getRootLogger.setLevel(Level.WARN)
-
-    testModel(spark, "PE", "binary", "binary", 1000)
+    val country = if (args.length > 0) args(0).toString else "PE"
+    val k = if (args.length > 1) args(1).toString.toInt else 1000
+    val simHits = if (args.length > 2) args(2).toString else "binary"
+    val predHits = if (args.length > 3) args(3).toString else "binary"
+    testModel(spark, country, simHits, predHits, k)
   }
 }
