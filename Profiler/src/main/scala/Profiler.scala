@@ -136,13 +136,7 @@ def get_ua (
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
-      .withColumn(
-        "geocode",
-        ((abs(col("latitude_user").cast("float")) * 10)
-          .cast("int") * 10000) + (abs(
-          col("longitude_user").cast("float") * 100
-        ).cast("int"))
-      )
+      
 
     df_safegraph
   }
@@ -267,8 +261,8 @@ with_array.write
     val useragent = get_ua(spark)
 
     
-    get_apps(spark)
-    get_3rd_party(spark)
+    //get_apps(spark)
+    //get_3rd_party(spark)
     geo_high(spark)
     get_activiy(spark)
   }
