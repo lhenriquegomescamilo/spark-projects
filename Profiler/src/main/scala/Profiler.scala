@@ -173,7 +173,7 @@ val user_activity = high_activity.select("device_id","event_type","url","timesta
 .withColumn("time_visit", concat_ws(",", col("time_visit")))
 .withColumn("event_types", concat_ws(",", col("event_types")))
 
-activity.write.format("csv")
+user_activity.write.format("csv")
 .option("header",true)
 .option("sep", "\t").mode(SaveMode.Overwrite)
 .save("/datascience/geo/MiniMuestra/%s".format("activity"))
