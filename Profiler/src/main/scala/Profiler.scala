@@ -49,8 +49,8 @@ def get_ua (
       spark: SparkSession) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     
-    val nDays = 10,
-    val since = 1,
+    val nDays = 10
+    val since = 1
     val country = "AR"
 
     val conf = spark.sparkContext.hadoopConfiguration
@@ -88,7 +88,7 @@ def get_ua (
 
     // Get the days to be loaded
     val format = "yyMMdd"
-    val end = DateTime.now.minusDays(since).toInt)
+    val end = DateTime.now.minusDays(since).toInt
     val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we obtain the list of hdfs files to be read
@@ -212,9 +212,8 @@ with_array.write
 /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
-  def main(args: Array[String]) : {
-    val spark =
-      SparkSession.builder.appName("Test").getOrCreate()
+  def main(args: Array[String]) = {
+    val spark = SparkSession.builder.appName("Test").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
