@@ -1,4 +1,4 @@
-name := "Random"
+name := "Profiler"
 
 version := "1.0"
 
