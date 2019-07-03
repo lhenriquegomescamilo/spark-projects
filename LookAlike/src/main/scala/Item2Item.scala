@@ -91,7 +91,6 @@ object Item2Item {
                               usersSegmentsData,
                               segments.size,
                               simMatrix,
-                              segmentsIndex,
                               predMatrixHits)
     // 6) Metrics
     calculateRelevanceMetrics(spark, predictData, country, k, 100)
@@ -168,7 +167,7 @@ object Item2Item {
               data: RDD[(Any, Iterable[(Any, Any)])],
               nSegments: Int,
               similartyMatrix: CoordinateMatrix,
-              predMatrixHits: String = "binary") : RDD[(Any, Iterable[(Any, Any)], Vector)]  =  {
+              predMatrixHits: String = "binary") : RDD[(Any, Array[(Int)], Vector)]  =  {
 
     var indexedData = data
       .filter( row => row._2.size > 1) // filter users 
@@ -222,13 +221,12 @@ object Item2Item {
     var scoreMatrix = userSegmentMatrix.multiply(similartyMatrix.toBlockMatrix().toLocalMatrix())
     // this operation preserves partitioning
 
-
-    var userPredictionMatrix =(scoreMatrix
-        .rows
-        .map(row => (row.index, row.vector))
-        .join(indexedData.map(t => (t._1, (t._2, t._3)))) // (device_idx, (device_id, segments))
-        .map(tup => (tup._2._2._1, tup._2._2._2, tup._2._1))
-        )// <device_id, Array segment_idx,  scores segments Vector>
+    var userPredictionMatrix = (scoreMatrix
+      .rows
+      .map(row => (row.index, row.vector))
+      .join(indexedData.map(t => (t._1, (t._2, t._3)))) // (device_idx, (device_id, segments))
+      .map(tup => (tup._2._2._1, tup._2._2._2.map(t =>  t._1.toString.toInt).toArray, tup._2._1))
+    )// <device_id, array segments index, predictios segments>
 
     userPredictionMatrix
   }
@@ -241,6 +239,7 @@ object Item2Item {
                         country: String,
                         k: Int = 1000,
                         minSegmentSupport: Int = 100) {
+      import spark.implicits._              
       data.cache()
 
       var nUsers = data.count()
@@ -323,7 +322,10 @@ object Item2Item {
       "/datascience/data_lookalike/i2i_checkpoint"
     )
     Logger.getRootLogger.setLevel(Level.WARN)
-
-    testModel(spark, "PE", "binary", "binary", 1000)
+    val country = if (args.length > 0) args(0).toString else "PE"
+    val k = if (args.length > 1) args(1).toString.toInt else 1000
+    val simHits = if (args.length > 2) args(2).toString else "binary"
+    val predHits = if (args.length > 3) args(3).toString else "binary"
+    testModel(spark, country, simHits, predHits, k)
   }
 }

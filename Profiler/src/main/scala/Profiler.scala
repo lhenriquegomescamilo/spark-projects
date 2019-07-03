@@ -169,8 +169,11 @@ val user_activity = high_activity.select("device_id","event_type","url","timesta
 .agg(collect_list(col("url"))  as "site_visits",
       collect_list(col("timestamp")) as "time_visit",
       collect_list(col("event_type")) as "event_types")
+.withColumn("site_visits", concat_ws(",", col("site_visits")))
+.withColumn("time_visit", concat_ws(",", col("time_visit")))
+.withColumn("event_types", concat_ws(",", col("event_types")))
 
-activity.write.format("csv")
+user_activity.write.format("csv")
 .option("header",true)
 .option("sep", "\t").mode(SaveMode.Overwrite)
 .save("/datascience/geo/MiniMuestra/%s".format("activity"))
@@ -184,7 +187,12 @@ spark: SparkSession) = {
 val app_min = 1
 val daud = getDataAudiences(spark)
 
-val apps = daud.select("device_id","app_installed").withColumn("app_installed",explode(col("app_installed"))).groupBy("device_id").agg(collect_set(col("app_installed")) as "apps").withColumn("appstotal",size(col("apps"))).filter(col("appstotal") > app_min).withColumn("appstotal",col("appstotal")-1)
+val apps = daud.select("device_id","app_installed")
+.withColumn("app_installed",explode(col("app_installed")))
+.groupBy("device_id").agg(collect_set(col("app_installed")) as "apps")
+.withColumn("appstotal",size(col("apps"))).filter(col("appstotal") > app_min)
+.withColumn("appstotal",col("appstotal")-1)
+.withColumn("apps", concat_ws(",", col("apps")))
 
 apps.write
 .format("csv")
@@ -204,7 +212,14 @@ spark: SparkSession) = {
 val third_party_min = 20
 
 val daud = getDataAudiences(spark)
-val segments = daud.select("device_id","third_party").withColumn("third_party",explode(col("third_party"))).groupBy("device_id").agg(collect_set(col("third_party")) as "third_party").withColumn("segment_total",size(col("third_party"))).filter(col("segment_total") > third_party_min)
+val segments = daud
+    .select("device_id","third_party")
+    .withColumn("third_party",explode(col("third_party")))
+    .groupBy("device_id")
+    .agg(collect_set(col("third_party")) as "third_party")
+    .withColumn("segment_total",size(col("third_party")))
+    .filter(col("segment_total") > third_party_min)
+    .withColumn("third_party", concat_ws(",", col("third_party")))
 
 segments.write
 .format("csv")
@@ -230,7 +245,10 @@ val filtered = dev.join(my_users,Seq("ad_id"),"inner").filter("country == 'argen
 //Esto lo luego haríamos un crossdevice y guardamos la base 1.
 
 //acá generamos los datos de loation de los usuarios con sus timestamps
-val with_array = filtered.withColumn("location",concat(lit("("),col("latitude"),lit(","),col("longitude"),lit(")"))).groupBy("ad_id","detections").agg(concat_ws(";",collect_list(col("utc_timestamp"))).as("times_array"), concat_ws(";",collect_list("location")).as("location_array"))
+val with_array = filtered.withColumn("location",concat(lit("("),col("latitude"),lit(","),col("longitude"),lit(")")))
+.groupBy("ad_id","detections").
+agg(concat_ws(";",collect_list(col("utc_timestamp"))).as("times_array"), 
+  concat_ws(";",collect_list("location")).as("location_array"))
 
 with_array.write
 .format("csv")
