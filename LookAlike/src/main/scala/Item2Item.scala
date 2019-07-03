@@ -238,7 +238,8 @@ object Item2Item {
       data.cache()
 
       var nUsers = data.count()
-      
+      var nSegments = data.map(t=>t._3.size).take(1)(0)
+
       //2) information retrieval metrics - recall@k - precision@k - f1@k
       var meanPrecisionAtK = 0.0
       var meanRecallAtK = 0.0
@@ -246,8 +247,9 @@ object Item2Item {
       var segmentCount = 0
       val segmentSupports = (predictData.flatMap(tup => tup._2)).countByValue()
 
+      
       // for each segment
-      for (segmentIdx <- 0 until segments.length){
+      for (segmentIdx <- 0 until nSegments){
         //  for (segmentIdx <- 0 until 35){
         // number of users assigned to segment
         var nRelevant = segmentSupports.getOrElse(segmentIdx, 0).toString().toInt
@@ -281,7 +283,7 @@ object Item2Item {
       println(s"f1@k: $meanF1AtK")
       println(s"k: $k")
       println(s"users: $nUsers")
-      println(s"segments: ${segments.length}")
+      println(s"segments: $nSegments")
       println(s"segmentCount: $segmentCount")
       println(s"minSegmentSupport: $segmentCount")
       
@@ -291,8 +293,8 @@ object Item2Item {
         ("f1@k", meanF1AtK),
         ("k", k.toDouble),
         ("users", nUsers.toDouble),
-        ("segments", segments.length.toDouble),
-        ("segmentMinSupportCount", segmentCount.toDouble),
+        ("segments", nSegments.toDouble),
+        ("selectedSegments", segmentCount.toDouble),
         ("segmentMinSupport", minSegmentSupport.toDouble)
       ).toDF("metric", "value")
        .write
