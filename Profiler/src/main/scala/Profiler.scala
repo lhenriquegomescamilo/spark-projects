@@ -171,7 +171,7 @@ val user_activity = high_activity.select("device_id","event_type","url","timesta
       collect_list(col("event_type")) as "event_types")
 .withColumn("site_visits", concat_ws(",", col("site_visits")))
 .withColumn("time_visit", concat_ws(",", col("time_visit")))
-.withColumn("event_type", concat_ws(",", col("event_types")))
+.withColumn("event_types", concat_ws(",", col("event_types")))
 
 activity.write.format("csv")
 .option("header",true)
