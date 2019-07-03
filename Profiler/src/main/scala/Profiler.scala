@@ -2,11 +2,30 @@ package main.scala
 
 
 import org.apache.spark.sql.SparkSession
-import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.SaveMode
 import scala.collection.Map
+import org.apache.spark.sql.{SparkSession, Row, SaveMode}
+import org.apache.spark.sql.functions._
+import org.joda.time.{Days, DateTime}
+import org.joda.time.format.DateTimeFormat
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.{SaveMode, DataFrame}
+import org.apache.spark.ml.attribute.Attribute
+import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
+import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+import org.apache.spark.ml.linalg.Vectors
+import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.evaluation.RegressionEvaluator
+import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Encoders, SparkSession}
+import org.joda.time.Days
+import org.joda.time.DateTime
+import org.apache.hadoop.conf.Configuration
+
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
@@ -215,9 +234,7 @@ with_array.write
   def main(args: Array[String]) = {
     val spark = SparkSession.builder.appName("Test").getOrCreate()
 
-    Logger.getRootLogger.setLevel(Level.WARN)
-
-    val daud = getDataAudiences(spark)
+       val daud = getDataAudiences(spark)
     daud.cache()
 
     val useragent = get_ua(spark)
