@@ -123,7 +123,7 @@ def get_ua (
 //Acá abajo procesamos los datos
 /////////////////////////////
 def get_activiy (
-spark: SparkSession): {
+spark: SparkSession) = {
 
 val activity_min = 10
 
@@ -149,7 +149,7 @@ activity.write.format("csv")
 
 /////////////////////////////
 def get_apps (
-spark: SparkSession): {
+spark: SparkSession) = {
 
 val app_min = 1
 val daud = getDataAudiences(spark)
@@ -169,7 +169,7 @@ apps.write
 
 
 def get_3rd_party(
-spark: SparkSession): {
+spark: SparkSession) = {
 
 val third_party_min = 20
 
@@ -186,7 +186,7 @@ segments.write
 
 
 def  geo_high (
-spark: SparkSession): {
+spark: SparkSession) = {
 
 val location_min = 50
 
