@@ -180,7 +180,7 @@ val activity = daud.groupBy("device_id")
 //.withColumn("time_visit", concat_ws(",", col("time_visit")))
 //.withColumn("event_types", concat_ws(",", col("event_types")))
 
-user_activity.write.format("csv")
+activity.write.format("csv")
 .option("header",true)
 .option("sep", "\t").mode(SaveMode.Overwrite)
 .save("/datascience/geo/MiniMuestra/%s".format("activity"))
