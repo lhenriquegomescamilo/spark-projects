@@ -259,16 +259,16 @@ with_array.write
   def main(args: Array[String]) = {
     //val spark = SparkSession.builder.appName("Test").getOrCreate()
 
-    val daud = getDataAudiences(spark)
-    daud.cache()
+    //val daud = getDataAudiences(spark)
+    //daud.cache()
 
     val useragent = get_ua(spark)
 
     
     //get_apps(spark)
     //get_3rd_party(spark)
-    geo_high(spark)
-    //get_activiy(spark)
+    //geo_high(spark)
+    get_activiy(spark)
   }
 }
 
