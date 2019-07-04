@@ -152,17 +152,15 @@ spark: SparkSession) = {
 
 val activity_min = 10
 
-//cambiar esto de abajo por un count:
-val activity = daud.groupBy("device_id")
-          .agg(
-            collect_list(col("timestamp")) as "detections",
-            collect_list(col("event_type")) as "event_types",
-            collect_list(col("url")) as "site_visits",
-            count("timestamp") as "activity")
-          .filter(col("activity")>activity_min)
-          .withColumn("site_visits", concat_ws(",", col("site_visits")))
-          .withColumn("time_visit", concat_ws(",", col("detections")))
-          .withColumn("event_types", concat_ws(",", col("event_types")))
+val activity = daud.groupBy("device_id")          
+              .agg(collect_list(col("timestamp")) as "timestamp",
+                    collect_list(col("event_type")) as "event_type",
+                    collect_list(col("url")) as "url",
+                    count("timestamp") as "activity")
+              .filter(col("activity")>activity_min)
+              .withColumn("url", concat_ws(",", col("url")))
+              .withColumn("timestamp", concat_ws(",", col("timestamp")))          
+              .withColumn("event_type", concat_ws(",", col("event_type")))
 
 /**
 //Proceso viejo:
