@@ -74,7 +74,7 @@ object Profiler {
 
 val spark = SparkSession.builder.appName("Test").getOrCreate()
 val daud = getDataAudiences(spark)
-daud.cache()
+
 
 /////////////////////////////
 def get_ua (
