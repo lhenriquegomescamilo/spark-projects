@@ -184,7 +184,8 @@ object Main {
       "umbraldist" -> umbraldist,
       "poi_column_name" -> poi_column_name,
        "audience_column_name" -> audience_column_name,
-        "web_days" -> web_days
+        "web_days" -> web_days,
+        "polygon_input" -> polygon_input
     )
 
     println("LOGGER PARAMETERS:")
@@ -203,7 +204,8 @@ object Main {
     "umbraldist" -> $umbraldist,
     "poi_column_name" -> $poi_column_name,
     "audience_column_name" -> $audience_column_name,
-    "web_days" -> $web_days""")
+    "web_days" -> $web_days,
+    "polygon_input"->$polygon_input""")
     value_dictionary
   }
 
