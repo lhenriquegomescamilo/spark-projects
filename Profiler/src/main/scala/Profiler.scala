@@ -157,7 +157,7 @@ val activity = daud.groupBy("device_id")
           .agg(
             collect_list(col("timestamp")) as "detections",
             collect_list(col("event_type")) as "event_types",
-            collect_list(col("site_visits")) as "url",
+            collect_list(col("url")) as "site_visits",
             count("timestamp") as "activity")
           .filter(col("activity")>activity_min)
           .withColumn("site_visits", concat_ws(",", col("site_visits")))
