@@ -73,6 +73,9 @@ object Profiler {
 
   }
 
+val daud = getDataAudiences(spark)
+daud.cache()
+
 /////////////////////////////
 def get_ua (
       spark: SparkSession) = {
@@ -149,7 +152,7 @@ spark: SparkSession) = {
 
 val activity_min = 10
 
-val daud = getDataAudiences(spark)
+//val daud = getDataAudiences(spark)
 val activity = daud.select("device_id","timestamp").groupBy("device_id").agg(collect_set(col("timestamp")) as "detections").withColumn("activity",size(col("detections"))).filter(col("activity")>= activity_min )
 val high_activity = daud.join(activity,Seq("device_id"),"inner")
 //high_activity.select(col("device_id")).distinct().count
@@ -177,7 +180,7 @@ def get_apps (
 spark: SparkSession) = {
 
 val app_min = 1
-val daud = getDataAudiences(spark)
+//val daud = getDataAudiences(spark)
 
 val apps = daud.select("device_id","app_installed")
 .withColumn("app_installed",explode(col("app_installed")))
@@ -203,7 +206,7 @@ spark: SparkSession) = {
 
 val third_party_min = 20
 
-val daud = getDataAudiences(spark)
+//val daud = getDataAudiences(spark)
 val segments = daud
     .select("device_id","third_party")
     .withColumn("third_party",explode(col("third_party")))
@@ -264,7 +267,7 @@ with_array.write
     //get_apps(spark)
     //get_3rd_party(spark)
     geo_high(spark)
-    get_activiy(spark)
+    //get_activiy(spark)
   }
 }
 
