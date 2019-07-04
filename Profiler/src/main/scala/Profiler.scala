@@ -73,6 +73,7 @@ object Profiler {
 
   }
 
+val spark = SparkSession.builder.appName("Test").getOrCreate()
 val daud = getDataAudiences(spark)
 daud.cache()
 
@@ -256,7 +257,7 @@ with_array.write
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(args: Array[String]) = {
-    val spark = SparkSession.builder.appName("Test").getOrCreate()
+    //val spark = SparkSession.builder.appName("Test").getOrCreate()
 
     val daud = getDataAudiences(spark)
     daud.cache()
