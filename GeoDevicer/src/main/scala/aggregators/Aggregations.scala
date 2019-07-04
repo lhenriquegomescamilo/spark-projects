@@ -119,7 +119,7 @@ object Aggregations {
 
 
 //This function is used to create aggregations from polygons
-def userAggregate_fromPolygon(
+def userAggregateFromPolygon(
       spark: SparkSession,
       value_dictionary: Map[String, String]
   ) = {
