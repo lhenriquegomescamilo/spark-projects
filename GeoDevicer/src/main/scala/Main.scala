@@ -262,26 +262,30 @@ object Main {
     if (geospark) {
       GeoSparkMatcher.join(spark, value_dictionary)
     } else {
-    if (value_dictionary("polygon_input") == "0") {
-      POICrossDevicerJson.match_POI(spark, value_dictionary)
-    // If we need to calculate the aggregations, we do so as well.
-    if (value_dictionary("analytics_df") == "1"){
-      Aggregations.userAggregate(spark, value_dictionary)
-    if (value_dictionary("map_df") == "1")
-        Aggregations.POIAggregate(spark, value_dictionary)
 
-    }
-    else {
-      PolygonMatcher.match_Polygon(spark, value_dictionary)
+            if (value_dictionary("polygon_input") == "1") {
+              PolygonMatcher.match_Polygon(spark, value_dictionary)
 
-    // If we need to calculate the aggregations, we do so as well.
-    if (value_dictionary("analytics_df") == "1"){
-      Aggregations.userAggregateFromPolygon(spark, value_dictionary)
-    if (value_dictionary("map_df") == "1")
-        Aggregations.PolygonAggregate(spark, value_dictionary)
-                                                }
-         }
-                                                  }
+                    // If we need to calculate the aggregations, we do so as well.
+                    if (value_dictionary("analytics_df") == "1"){
+                      Aggregations.userAggregateFromPolygon(spark, value_dictionary)
+                    if (value_dictionary("map_df") == "1")
+                        Aggregations.PolygonAggregate(spark, value_dictionary)
+                                                                }
+                 }
+                                                            
+            else {
+                
+              POICrossDevicerJson.match_POI(spark, value_dictionary)
+                        // If we need to calculate the aggregations, we do so as well.
+                        if (value_dictionary("analytics_df") == "1"){
+                          Aggregations.userAggregate(spark, value_dictionary)
+                        if (value_dictionary("map_df") == "1")
+                            Aggregations.POIAggregate(spark, value_dictionary)
+
+                        }
+                                                            }
+                    }                                        
 
      
 
