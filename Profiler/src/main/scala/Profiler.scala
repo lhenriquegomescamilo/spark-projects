@@ -157,33 +157,44 @@ val activity = daud.groupBy("device_id")
           .agg(
             collect_list(col("timestamp")) as "detections",
             collect_list(col("event_type")) as "event_types",
-            collect_list(col("url")) as "url",
+            collect_list(col("site_visits")) as "url",
             count("timestamp") as "activity")
           .filter(col("activity")>activity_min)
           .withColumn("site_visits", concat_ws(",", col("site_visits")))
-  .withColumn("time_visit", concat_ws(",", col("time_visit")))
-  .withColumn("event_types", concat_ws(",", col("event_types")))
+          .withColumn("time_visit", concat_ws(",", col("time_visit")))
+          .withColumn("event_types", concat_ws(",", col("event_types")))
 
-          //.withColumn("activity",size(col("detections"))).filter(col("activity")>= activity_min )
+/**
+//Proceso viejo:
+val activity = daud.select("device_id","timestamp").groupBy("device_id")
+          .agg(collect_set(col("timestamp")) as "detections")
+          .withColumn("activity",size(col("detections"))).filter(col("activity")>= activity_min )
 
-//val high_activity = daud.join(activity,Seq("device_id"),"inner")
+val high_activity = daud.join(activity,Seq("device_id"),"inner")
 //high_activity.select(col("device_id")).distinct().count
 //3534
 //de esto vamos a querer el event type y la url/domain
 
-//val user_activity = high_activity.select("device_id","event_type","url","timestamp","activity")
-//.groupBy("device_id","activity")
-//.agg(collect_list(col("url"))  as "site_visits",
-//      collect_list(col("timestamp")) as "time_visit",
-//      collect_list(col("event_type")) as "event_types")
-//.withColumn("site_visits", concat_ws(",", col("site_visits")))
-//.withColumn("time_visit", concat_ws(",", col("time_visit")))
-//.withColumn("event_types", concat_ws(",", col("event_types")))
+val user_activity = high_activity.select("device_id","event_type","url","timestamp","activity")
+.groupBy("device_id","activity")
+.agg(collect_list(col("url"))  as "site_visits",
+      collect_list(col("timestamp")) as "time_visit",
+      collect_list(col("event_type")) as "event_types")
+.withColumn("site_visits", concat_ws(",", col("site_visits")))
+.withColumn("time_visit", concat_ws(",", col("time_visit")))
+.withColumn("event_types", concat_ws(",", col("event_types")))
 
+user_activity.write.format("csv")
+.option("header",true)
+.option("sep", "\t").mode(SaveMode.Overwrite)
+.save("/datascience/geo/MiniMuestra/%s".format("activity"))
+**/
 activity.write.format("csv")
 .option("header",true)
 .option("sep", "\t").mode(SaveMode.Overwrite)
 .save("/datascience/geo/MiniMuestra/%s".format("activity"))
+
+
 
 }
 
@@ -275,7 +286,6 @@ with_array.write
 
     val useragent = get_ua(spark)
 
-    //esto de abajo se puede cachear antes de joinear
     
     //get_apps(spark)
     //get_3rd_party(spark)
