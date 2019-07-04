@@ -66,8 +66,7 @@ object Profiler {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .withColumn("category", lit(""))
-      .withColumn("title", lit(""))
+      .select("device_id","device_type","third_party","event_type","url","timestamp","app_installed")
 
       df
 
@@ -154,7 +153,9 @@ spark: SparkSession) = {
 val activity_min = 10
 
 //val daud = getDataAudiences(spark)
-val activity = daud.select("device_id","timestamp").groupBy("device_id").agg(collect_set(col("timestamp")) as "detections").withColumn("activity",size(col("detections"))).filter(col("activity")>= activity_min )
+val activity = daud.select("device_id","timestamp").groupBy("device_id")
+          .agg(collect_set(col("timestamp")) as "detections")
+          .withColumn("activity",size(col("detections"))).filter(col("activity")>= activity_min )
 val high_activity = daud.join(activity,Seq("device_id"),"inner")
 //high_activity.select(col("device_id")).distinct().count
 //3534
@@ -209,9 +210,9 @@ val third_party_min = 20
 
 //val daud = getDataAudiences(spark)
 val segments = daud
-    .select("device_id","third_party")
+    .select("device_id","device_type","third_party")
     .withColumn("third_party",explode(col("third_party")))
-    .groupBy("device_id")
+    .groupBy("device_id","device_type")
     .agg(collect_set(col("third_party")) as "third_party")
     .withColumn("segment_total",size(col("third_party")))
     .filter(col("segment_total") > third_party_min)
@@ -242,7 +243,7 @@ val filtered = dev.join(my_users,Seq("ad_id"),"inner")
 
 //acá generamos los datos de loation de los usuarios con sus timestamps
 val with_array = filtered.withColumn("location",concat(lit("("),col("latitude"),lit(","),col("longitude"),lit(")")))
-.groupBy("ad_id","detections").
+.groupBy("ad_id","id_type","detections").
 agg(concat_ws(";",collect_list(col("utc_timestamp"))).as("times_array"), 
   concat_ws(";",collect_list("location")).as("location_array"))
 
