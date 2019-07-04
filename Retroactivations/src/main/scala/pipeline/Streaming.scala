@@ -177,12 +177,15 @@ object Streaming {
     val outputPath =
       if (partition == "country") "/datascience/data_audiences_streaming/"
       else "/datascience/data_partner_streaming/"
+    val checkpointLocation =
+      if (partition == "country") "/datascience/checkpoint_audiences/"
+      else "/datascience/checkpoint_partner/"
     if (processType == "stream") {
       println("STREAMING LOGGER: Storing the streaming")
       finalDF.writeStream
         .outputMode("append")
         .format("parquet")
-        .option("checkpointLocation", "/datascience/checkpoint/")
+        .option("checkpointLocation", checkpointLocation)
         .partitionBy("hour", partition)
         .option("path", outputPath)
         // .trigger(ProcessingTime("1260 seconds"))

@@ -411,7 +411,7 @@ object GetAudience {
               .getOrElse("")
               .toString
               .length > 0) query("xdFilter")
-        else "index_type = 'coo'"
+        else "device_type IN ('coo', 'and', 'ios')"
       val limit =
         if (query.contains("limit") && Option(query("limit"))
               .getOrElse("")
