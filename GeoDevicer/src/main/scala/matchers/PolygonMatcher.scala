@@ -221,6 +221,6 @@ object PolygonMatcher {
       fs.delete(new Path(outPutPath), true)
 
     // Finally we perform the GeoJoin
-    join(spark, value_dictionary)
+    match_Polygon(spark, value_dictionary)
   }
 }
