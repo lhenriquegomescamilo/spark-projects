@@ -262,6 +262,28 @@ object Main {
     if (geospark) {
       GeoSparkMatcher.join(spark, value_dictionary)
     } else {
+      
+
+
+      SparkSession
+          .builder()
+          .config("spark.serializer", classOf[KryoSerializer].getName)
+          .config(
+            "spark.kryo.registrator",
+            classOf[GeoSparkKryoRegistrator].getName
+          )
+          // .config("geospark.global.index", "true")
+          // .config("geospark.global.indextype", "rtree")
+          .config("geospark.join.gridtype", "kdbtree")
+          // .config("geospark.join.numpartition", 200)
+          .appName("GeoSpark Matcher")
+          .getOrCreate()
+      else
+        SparkSession.builder
+          .appName("GeoCode Matcher")
+          .getOrCreate()
+
+      GeoSparkSQLRegistrator.registerAll(spark)
 
             if (value_dictionary("polygon_input") == "1") {
               PolygonMatcher.match_Polygon(spark, value_dictionary)
