@@ -106,9 +106,10 @@ object PolygonMatcher {
     // Acá leemos el polígono que entrega python, en formato json. Va a tener unas columnas incorrectas, así que las tiramos
     val df_polygons_raw = spark.read.json(value_dictionary("path_to_pois")).drop("_corrupt_record").na.drop()
 
-    val geojson_path_formated =      "/datascience/geo/polygons/AR/audiencias/geospark_format/%s".format(value_dictionary("path_to_pois").split("/").last)
+    val geojson_path_formated =      "/datascience/geo/polygons/AR/audiencias/geospark_format/%s"
+                      .format(value_dictionary("path_to_pois").split("/").last)
 
-    df_polygons_raw.write.format("json").mode(SaveMode.Overwrite).save (geojson_path_formated)
+    df_polygons_raw.write.format("json").mode(SaveMode.Overwrite).save(geojson_path_formated)
 
   
   // Levantamos el polígono. Le aplicamos la geometría y lo unimos con los nombres...porque json y geospark
@@ -122,7 +123,8 @@ object PolygonMatcher {
               
   //le asignamos la geometría a lo que cargamos recién      
    polygonJsonDfFormated.createOrReplaceTempView("polygontable")
-   var polygonDf = spark.sql("select ST_GeomFromGeoJSON(polygontable._c0) as myshape from polygontable"    ).withColumn("rowId1", monotonically_increasing_id())
+   var polygonDf = spark.sql("select ST_GeomFromGeoJSON(polygontable._c0) as myshape from polygontable"    )
+                .withColumn("rowId1", monotonically_increasing_id())
 
   //unimos ambas en un solo dataframe
   val poligono = names.join(polygonDf,Seq("rowId1")).drop("geometry","rowId1")
@@ -168,7 +170,7 @@ object PolygonMatcher {
       .option("sep", "\t")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/%s".format(value_dictionary("output_file")))
+      .save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
       
     }
 
