@@ -234,7 +234,8 @@ object Main {
     val geospark = if (options.contains('geospark)) true else false
 
     // Start Spark Session based on the type of matcher that will be used.
-    val spark =
+    val spark = 
+      /*
       if (geospark)
         SparkSession
           .builder()
@@ -250,18 +251,19 @@ object Main {
           .appName("GeoSpark Matcher")
           .getOrCreate()
       else
+      */
         SparkSession.builder
           .appName("GeoCode Matcher")
           .getOrCreate()
 
     // Parsing parameters from json file.
-    if (geospark) GeoSparkSQLRegistrator.registerAll(spark)
+    //if (geospark) GeoSparkSQLRegistrator.registerAll(spark)
     val value_dictionary = get_variables(spark, path_geo_json)
 
     // Here we perform the join
-    if (geospark) {
-      GeoSparkMatcher.join(spark, value_dictionary)
-    } else {
+   // if (geospark) {
+    //  GeoSparkMatcher.join(spark, value_dictionary)
+    //} else {
 
             if (value_dictionary("polygon_input") == "1") {
 
@@ -273,11 +275,10 @@ object Main {
               PolygonMatcher.match_Polygon(spark, value_dictionary)
 
                     // If we need to calculate the aggregations, we do so as well.
-                    if (value_dictionary("analytics_df") == "1"){
-                      Aggregations.userAggregateFromPolygon(spark, value_dictionary)}
-                    if (value_dictionary("map_df") == "1"){
-                        Aggregations.PolygonAggregate(spark, value_dictionary)
-                                                                }
+                    if (value_dictionary("analytics_df") == "1") Aggregations.userAggregateFromPolygon(spark, value_dictionary)
+
+                    if (value_dictionary("map_df") == "1")  Aggregations.PolygonAggregate(spark, value_dictionary)
+                                                                
                                                               }
                  
                                                             
@@ -285,13 +286,11 @@ object Main {
                 
               POICrossDevicerJson.match_POI(spark, value_dictionary)
                         // If we need to calculate the aggregations, we do so as well.
-                        if (value_dictionary("analytics_df") == "1"){
-                          Aggregations.userAggregate(spark, value_dictionary)}
-                        if (value_dictionary("map_df") == "1"){
-                            Aggregations.POIAggregate(spark, value_dictionary)}
+                        if (value_dictionary("analytics_df") == "1") Aggregations.userAggregate(spark, value_dictionary)
+                        if (value_dictionary("map_df") == "1")  Aggregations.POIAggregate(spark, value_dictionary)
 
                                                                     }
-                                                            }
+                                                           
 
                           
      
