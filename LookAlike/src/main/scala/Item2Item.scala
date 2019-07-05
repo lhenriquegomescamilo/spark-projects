@@ -273,7 +273,8 @@ object Item2Item {
 
   var transposedData = predictTuples
     .mapValues(v => List(v))
-    .reduceByKey((a, b) => mergesort(a, b, k))
+    .reduceByKey((a, b) => (a ++ b).sortWith(_._3 > _._3).take(k) ) ///mergesort(a, b, k)
+
   // transpose -> group by segment_idx and select k devices id by score
 
   var tp = transposedData
