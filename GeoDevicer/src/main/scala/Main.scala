@@ -263,24 +263,13 @@ object Main {
       GeoSparkMatcher.join(spark, value_dictionary)
     } else {
 
-              //acá cambiamos a ver si levantamos GeoSpark
-              SparkSession
-          .builder()
-          .config("spark.serializer", classOf[KryoSerializer].getName)
-          .config(
-            "spark.kryo.registrator",
-            classOf[GeoSparkKryoRegistrator].getName
-          )
-          // .config("geospark.global.index", "true")
-          // .config("geospark.global.indextype", "rtree")
-          .config("geospark.join.gridtype", "kdbtree")
-          // .config("geospark.join.numpartition", 200)
-          .appName("GeoSpark Matcher")
-          .getOrCreate()
-          
+            if (value_dictionary("polygon_input") == "1") {
+
+              //acá deberíamos activar geospark
+              SparkSession.builder().config("spark.serializer", classOf[KryoSerializer].getName).config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName).config("geospark.join.gridtype", "kdbtree").appName("GeoSpark Matcher").getOrCreate()
+              
               GeoSparkSQLRegistrator.registerAll(spark)
 
-            if (value_dictionary("polygon_input") == "1") {
               PolygonMatcher.match_Polygon(spark, value_dictionary)
 
                     // If we need to calculate the aggregations, we do so as well.
