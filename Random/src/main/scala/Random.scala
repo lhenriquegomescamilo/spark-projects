@@ -3566,7 +3566,7 @@ user_granularity.write
 
     val dataUDF = udf(get_data _, StringType)
     val query =
-      "event_type = 'tk' AND id_partner = '688' AND (array_contains(all_segments, '76522') OR array_contains(all_segments, '76536') OR array_contains(all_segments, '76543')) AND url LIKE '%r_mobile=%'"
+      "country = 'AR' AND event_type = 'tk' AND id_partner = '688' AND (array_contains(all_segments, '76522') OR array_contains(all_segments, '76536') OR array_contains(all_segments, '76543')) AND url LIKE '%r_mobile=%'"
 
     val mobile_count = getDataAudiences(spark, 14, 6)
       .filter(query)
