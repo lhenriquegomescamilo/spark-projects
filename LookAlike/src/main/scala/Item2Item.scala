@@ -231,6 +231,72 @@ object Item2Item {
     userPredictionMatrix
   }
 
+  def transposeEvaluation(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
+                         country: String,
+                         k: Int = 1000,
+                        minSegmentSupport: Int = 100){
+
+  var nUsers = data.count()
+  var nSegments = data.map(t=>t._3.size).take(1)(0)
+  val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
+
+  val selectedSegments = (0 until nSegments).filter(segmentIdx => segmentSupports.getOrElse(segmentIdx, 0).toString().toInt >= minSegmentSupport)
+
+  var predictTuples = predictData
+    .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, (tup._1, tup._2 contains segmentIdx, tup._3.apply(segmentIdx)))))
+    .filter(tup => tup._2._2 || (tup._2._3 >0)) // select scores > 0
+
+  // transpose -> group by segment_idx and select k devices id by score
+  var transposedData = predictTuples
+    .groupByKey()
+    .map(row => row._2.toList.sortWith(_._2 > _._2).take(k))
+  var transposedData = predictTuples
+    .groupByKey()
+    .map(row => (row._1, row._2.toList.sortWith(_._2 > _._2).take(k))) 
+    // <degment_idx>: [<devive_id,true/false,score> ...] len(k)
+
+  var tp = transposedData.map(tup => (tup._1, tup._2.map(t => if(t._2) 1 else 0).sum)).collect().toMap
+  
+  val meanPrecisionAtK = selectedSegments.map(segmentIdx =>
+    tp(segmentIdx) / k
+  ).sum.toDouble / selectedSegments.length
+
+  val meanRecallAtK = selectedSegments.map(segmentIdx =>
+    tp(segmentIdx) /  segmentSupports(segmentIdx) 
+  ).sum.toDouble / selectedSegments.length
+
+  var meanF1AtK = if (meanPrecisionAtK + meanRecallAtK > 0)  2* meanPrecisionAtK * meanRecallAtK / (meanPrecisionAtK + meanRecallAtK) else 0.0
+  var segmentCount = selectedSegments.length
+
+  println(s"precision@k: $meanPrecisionAtK")
+  println(s"recall@k: $meanRecallAtK")
+  println(s"f1@k: $meanF1AtK")
+  println(s"k: $k")
+  println(s"users: $nUsers")
+  println(s"segments: $nSegments")
+  println(s"segmentCount: $segmentCount")
+  println(s"minSegmentSupport: $segmentCount")
+
+  val metricsDF = Seq(
+    ("precision@k", meanPrecisionAtK),
+    ("recall@k", meanRecallAtK),
+    ("f1@k", meanF1AtK),
+    ("k", k.toDouble),
+    ("users", nUsers.toDouble),
+    ("segments", nSegments.toDouble),
+    ("selectedSegments", segmentCount.toDouble),
+    ("segmentMinSupport", minSegmentSupport.toDouble)
+  ).toDF("metric", "value")
+    .write
+    .format("csv")
+    .option("sep",",")
+    .option("header","true")
+    .mode(SaveMode.Overwrite)
+    .save(
+      "/datascience/data_lookalike/metrics/country=%s/".format(country)
+    )  
+  }
+
   /*
   * It calculates precision, recall and F1 metrics.
   */
