@@ -93,7 +93,7 @@ object Item2Item {
                               simMatrix,
                               predMatrixHits)
     // 6) Metrics
-    calculateRelevanceMetrics(spark, predictData, country, k, 100)
+    transposeEvaluation(spark, predictData, country, k, 100)
 
   }
 
