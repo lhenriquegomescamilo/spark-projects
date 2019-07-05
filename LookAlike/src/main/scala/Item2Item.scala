@@ -236,6 +236,8 @@ object Item2Item {
                          k: Int = 1000,
                         minSegmentSupport: Int = 100){
   import spark.implicits._ 
+  import scala.collection.mutable.ListBuffer
+
   var nUsers = data.count()
   var nSegments = data.map(t=>t._3.size).take(1)(0)
   val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
@@ -246,36 +248,41 @@ object Item2Item {
     .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, (tup._1, tup._2 contains segmentIdx, tup._3.apply(segmentIdx)))))
     .filter(tup => tup._2._2 || (tup._2._3 >0)) // select scores > 0
   // (<segment_idx>,(device_id,relevance,score)))
-
-  def mergesort(v1: List[(Any, Boolean, Double)], v2: List[(Any, Boolean, Double)], limit: Int): List[(Any, Boolean, Double)] = {
-      var res: Array[(Any, Boolean, Double)] = Array()
-      var i, j, k = 0
-      while (k < limit) {
+  
+  def mergesort(v1: ListBuffer[(Any, Boolean, Double)],
+            v2: ListBuffer[(Any, Boolean, Double)], limit: Int): ListBuffer[(Any, Boolean, Double)] = {
+      var res: ListBuffer[(Any, Boolean, Double)] = ListBuffer()
+      var i, j, it = 0
+      
+      var n_iter = Seq(v1.length ,v2.length, limit).min
+      
+      while (it < n_iter) {
           if (v1(i)._3 > v2(j)._3) {
               res = res :+ v1(i)
               i += 1
-              k += 1
           } else {
               res = res :+ v2(j)
               j += 1
-              k += 1
           }
-          if (i >= v1.length) {
-              res = res ++ v2.slice(j, j + (limit - k))
-              k = limit
-          } else if (j >= v2.length) {
-              res = res ++ v1.slice(i, i + (limit - k))
-              k = limit
-          }
+          it += 1
       }
-      res.toList
+      
+      if (it < limit){
+        if (i >= v1.length) 
+        res = res ++ v2.slice(j, j + (limit - it))
+        else if (j >= v2.length)
+          res = res ++ v1.slice(i, i + (limit - it))
+      }
+      res
   }
 
-  var transposedData = predictTuples
-    .mapValues(v => List(v))
-    .reduceByKey((a, b) => (a ++ b).sortWith(_._3 > _._3).take(k) ) ///mergesort(a, b, k)
+  //var transposedData = predictTuples
+  //  .mapValues(v => List(v))
+  //  .reduceByKey((a, b) => (a ++ b).sortWith(_._3 > _._3).take(k) ) ///mergesort(a, b, k)
 
-  // transpose -> group by segment_idx and select k devices id by score
+  transposedData = predictTuples
+    .mapValues(v => ListBuffer(v))
+    .reduceByKey((a, b) => merge(a, b, k))
 
   var tp = transposedData
     .map(tup => (tup._1, tup._2.map(t => if(t._2) 1 else 0).sum))
@@ -283,12 +290,12 @@ object Item2Item {
     .toMap
   
   val meanPrecisionAtK = selectedSegments.map(segmentIdx =>
-    tp(segmentIdx) / k
-  ).sum.toDouble / selectedSegments.length
+    tp(segmentIdx).toDouble / k
+  ).sum / selectedSegments.length
 
   val meanRecallAtK = selectedSegments.map(segmentIdx =>
-    tp(segmentIdx) /  segmentSupports(segmentIdx) 
-  ).sum.toDouble / selectedSegments.length
+    tp(segmentIdx).toDouble /  segmentSupports(segmentIdx) 
+  ).sum / selectedSegments.length
 
   var meanF1AtK = if (meanPrecisionAtK + meanRecallAtK > 0)  2* meanPrecisionAtK * meanRecallAtK / (meanPrecisionAtK + meanRecallAtK) else 0.0
   var segmentCount = selectedSegments.length
