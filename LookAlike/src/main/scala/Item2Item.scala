@@ -245,14 +245,41 @@ object Item2Item {
   var predictTuples = data
     .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, (tup._1, tup._2 contains segmentIdx, tup._3.apply(segmentIdx)))))
     .filter(tup => tup._2._2 || (tup._2._3 >0)) // select scores > 0
+  // (<segment_idx>,(device_id,relevance,score)))
 
-  // transpose -> group by segment_idx and select k devices id by score
+  def mergesort(v1: List[(Any, Boolean, Double)], v2: List[(Any, Boolean, Double)], limit: Int): List[(Any, Boolean, Double)] = {
+      var res: Array[(Any, Boolean, Double)] = Array()
+      var i, j, k = 0
+      while (k < limit) {
+          if (v1(i)._3 > v2(j)._3) {
+              res = res :+ v1(i)
+              i += 1
+              k += 1
+          } else {
+              res = res :+ v2(j)
+              j += 1
+              k += 1
+          }
+          if (i >= v1.length) {
+              res = res ++ v2.slice(j, j + (limit - k))
+              k = limit
+          } else if (j >= v2.length) {
+              res = res ++ v1.slice(i, i + (limit - k))
+              k = limit
+          }
+      }
+      res.toList
+  }
+
   var transposedData = predictTuples
-    .groupByKey()
-    .map(row => (row._1, row._2.toList.sortWith(_._2 > _._2).take(k))) 
-    // <degment_idx>: [<devive_id,true/false,score> ...] len(k)
+    .mapValues(v => List(v))
+    .reduceByKey((a, b) => mergesort(a, b, k))
+  // transpose -> group by segment_idx and select k devices id by score
 
-  var tp = transposedData.map(tup => (tup._1, tup._2.map(t => if(t._2) 1 else 0).sum)).collect().toMap
+  var tp = transposedData
+    .map(tup => (tup._1, tup._2.map(t => if(t._2) 1 else 0).sum))
+    .collect()
+    .toMap
   
   val meanPrecisionAtK = selectedSegments.map(segmentIdx =>
     tp(segmentIdx) / k
