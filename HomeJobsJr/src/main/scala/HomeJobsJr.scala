@@ -132,7 +132,8 @@ object HomeJobsJr {
       "since" -> since,
       "HourFrom" -> HourFrom,
       "HourTo" -> HourTo,
-      "UseType" -> UseType)
+      "UseType" -> UseType,
+      "minFreq" -> minFreq)
 
     println("LOGGER PARAMETERS:")
     println(s"""
@@ -144,7 +145,8 @@ object HomeJobsJr {
     "since" -> $since,
     "HourFrom" -> $HourFrom,
       "HourTo" -> $HourTo,
-      "UseType" -> $UseType)""")
+      "UseType" -> $UseType,
+      "minFreq" -> $minFreq)""")
     value_dictionary
   }
 
