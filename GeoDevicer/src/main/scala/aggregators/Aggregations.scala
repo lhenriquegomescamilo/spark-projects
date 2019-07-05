@@ -150,7 +150,7 @@ def userAggregateFromPolygon(
       .groupBy(value_dictionary("poi_column_name"), "device_id", "device_type")
       // We obtain the list of timestamps and distances, along with the minimum distance
       .agg(
-        collect_list(col("timestamp")).as("timestamp_list"))
+        collect_list(col("utc_timestamp")).as("timestamp_list"))
       // Now we obtain the frequency
       .withColumn("frequency", size(col("timestamp_list")))
       // Here we calculate if the user is valid based on the thresholds
