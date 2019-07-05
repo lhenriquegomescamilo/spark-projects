@@ -93,7 +93,7 @@ object Item2Item {
                               simMatrix,
                               predMatrixHits)
     // 6) Metrics
-    calculateRelevanceMetrics(spark, predictData, country, k, 100)
+    transposeEvaluation(spark, predictData, country, k, 100)
 
   }
 
@@ -229,6 +229,96 @@ object Item2Item {
     )// <device_id, array segments index, predictios segments>
 
     userPredictionMatrix
+  }
+
+  def transposeEvaluation(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
+                         country: String,
+                         k: Int = 1000,
+                        minSegmentSupport: Int = 100){
+  import spark.implicits._ 
+  var nUsers = data.count()
+  var nSegments = data.map(t=>t._3.size).take(1)(0)
+  val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
+
+  val selectedSegments = (0 until nSegments).filter(segmentIdx => segmentSupports.getOrElse(segmentIdx, 0).toString().toInt >= minSegmentSupport)
+
+  var predictTuples = data
+    .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, (tup._1, tup._2 contains segmentIdx, tup._3.apply(segmentIdx)))))
+    .filter(tup => tup._2._2 || (tup._2._3 >0)) // select scores > 0
+  // (<segment_idx>,(device_id,relevance,score)))
+
+  def mergesort(v1: List[(Any, Boolean, Double)], v2: List[(Any, Boolean, Double)], limit: Int): List[(Any, Boolean, Double)] = {
+      var res: Array[(Any, Boolean, Double)] = Array()
+      var i, j, k = 0
+      while (k < limit) {
+          if (v1(i)._3 > v2(j)._3) {
+              res = res :+ v1(i)
+              i += 1
+              k += 1
+          } else {
+              res = res :+ v2(j)
+              j += 1
+              k += 1
+          }
+          if (i >= v1.length) {
+              res = res ++ v2.slice(j, j + (limit - k))
+              k = limit
+          } else if (j >= v2.length) {
+              res = res ++ v1.slice(i, i + (limit - k))
+              k = limit
+          }
+      }
+      res.toList
+  }
+
+  var transposedData = predictTuples
+    .mapValues(v => List(v))
+    .reduceByKey((a, b) => mergesort(a, b, k))
+  // transpose -> group by segment_idx and select k devices id by score
+
+  var tp = transposedData
+    .map(tup => (tup._1, tup._2.map(t => if(t._2) 1 else 0).sum))
+    .collect()
+    .toMap
+  
+  val meanPrecisionAtK = selectedSegments.map(segmentIdx =>
+    tp(segmentIdx) / k
+  ).sum.toDouble / selectedSegments.length
+
+  val meanRecallAtK = selectedSegments.map(segmentIdx =>
+    tp(segmentIdx) /  segmentSupports(segmentIdx) 
+  ).sum.toDouble / selectedSegments.length
+
+  var meanF1AtK = if (meanPrecisionAtK + meanRecallAtK > 0)  2* meanPrecisionAtK * meanRecallAtK / (meanPrecisionAtK + meanRecallAtK) else 0.0
+  var segmentCount = selectedSegments.length
+
+  println(s"precision@k: $meanPrecisionAtK")
+  println(s"recall@k: $meanRecallAtK")
+  println(s"f1@k: $meanF1AtK")
+  println(s"k: $k")
+  println(s"users: $nUsers")
+  println(s"segments: $nSegments")
+  println(s"segmentCount: $segmentCount")
+  println(s"minSegmentSupport: $segmentCount")
+
+  val metricsDF = Seq(
+    ("precision@k", meanPrecisionAtK),
+    ("recall@k", meanRecallAtK),
+    ("f1@k", meanF1AtK),
+    ("k", k.toDouble),
+    ("users", nUsers.toDouble),
+    ("segments", nSegments.toDouble),
+    ("selectedSegments", segmentCount.toDouble),
+    ("segmentMinSupport", minSegmentSupport.toDouble)
+  ).toDF("metric", "value")
+    .write
+    .format("csv")
+    .option("sep",",")
+    .option("header","true")
+    .mode(SaveMode.Overwrite)
+    .save(
+      "/datascience/data_lookalike/metrics/country=%s/".format(country)
+    )  
   }
 
   /*

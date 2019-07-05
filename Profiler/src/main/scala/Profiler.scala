@@ -66,12 +66,15 @@ object Profiler {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .withColumn("category", lit(""))
-      .withColumn("title", lit(""))
+      .select("device_id","device_type","third_party","event_type","url","timestamp","app_installed")
 
       df
 
   }
+
+val spark = SparkSession.builder.appName("Test").getOrCreate()
+val daud = getDataAudiences(spark)
+
 
 /////////////////////////////
 def get_ua (
@@ -149,8 +152,22 @@ spark: SparkSession) = {
 
 val activity_min = 10
 
-val daud = getDataAudiences(spark)
-val activity = daud.select("device_id","timestamp").groupBy("device_id").agg(collect_set(col("timestamp")) as "detections").withColumn("activity",size(col("detections"))).filter(col("activity")>= activity_min )
+val activity = daud.groupBy("device_id")          
+              .agg(collect_list(col("timestamp")) as "timestamp",
+                    collect_list(col("event_type")) as "event_type",
+                    collect_list(col("url")) as "url",
+                    count("timestamp") as "activity")
+              .filter(col("activity")>activity_min)
+              .withColumn("url", concat_ws(",", col("url")))
+              .withColumn("timestamp", concat_ws(",", col("timestamp")))          
+              .withColumn("event_type", concat_ws(",", col("event_type")))
+
+/**
+//Proceso viejo:
+val activity = daud.select("device_id","timestamp").groupBy("device_id")
+          .agg(collect_set(col("timestamp")) as "detections")
+          .withColumn("activity",size(col("detections"))).filter(col("activity")>= activity_min )
+
 val high_activity = daud.join(activity,Seq("device_id"),"inner")
 //high_activity.select(col("device_id")).distinct().count
 //3534
@@ -169,6 +186,13 @@ user_activity.write.format("csv")
 .option("header",true)
 .option("sep", "\t").mode(SaveMode.Overwrite)
 .save("/datascience/geo/MiniMuestra/%s".format("activity"))
+**/
+activity.write.format("csv")
+.option("header",true)
+.option("sep", "\t").mode(SaveMode.Overwrite)
+.save("/datascience/geo/MiniMuestra/%s".format("activity"))
+
+
 
 }
 
@@ -177,7 +201,7 @@ def get_apps (
 spark: SparkSession) = {
 
 val app_min = 1
-val daud = getDataAudiences(spark)
+//val daud = getDataAudiences(spark)
 
 val apps = daud.select("device_id","app_installed")
 .withColumn("app_installed",explode(col("app_installed")))
@@ -203,11 +227,11 @@ spark: SparkSession) = {
 
 val third_party_min = 20
 
-val daud = getDataAudiences(spark)
+//val daud = getDataAudiences(spark)
 val segments = daud
-    .select("device_id","third_party")
+    .select("device_id","device_type","third_party")
     .withColumn("third_party",explode(col("third_party")))
-    .groupBy("device_id")
+    .groupBy("device_id","device_type")
     .agg(collect_set(col("third_party")) as "third_party")
     .withColumn("segment_total",size(col("third_party")))
     .filter(col("segment_total") > third_party_min)
@@ -238,7 +262,7 @@ val filtered = dev.join(my_users,Seq("ad_id"),"inner")
 
 //acá generamos los datos de loation de los usuarios con sus timestamps
 val with_array = filtered.withColumn("location",concat(lit("("),col("latitude"),lit(","),col("longitude"),lit(")")))
-.groupBy("ad_id","detections").
+.groupBy("ad_id","id_type","detections").
 agg(concat_ws(";",collect_list(col("utc_timestamp"))).as("times_array"), 
   concat_ws(";",collect_list("location")).as("location_array"))
 
@@ -253,17 +277,17 @@ with_array.write
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(args: Array[String]) = {
-    val spark = SparkSession.builder.appName("Test").getOrCreate()
+    //val spark = SparkSession.builder.appName("Test").getOrCreate()
 
-    val daud = getDataAudiences(spark)
-    daud.cache()
+    //val daud = getDataAudiences(spark)
+    //daud.cache()
 
     val useragent = get_ua(spark)
 
     
     //get_apps(spark)
     //get_3rd_party(spark)
-    geo_high(spark)
+    //geo_high(spark)
     get_activiy(spark)
   }
 }

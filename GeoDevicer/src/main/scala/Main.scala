@@ -155,8 +155,16 @@ object Main {
       if (query.contains("web_column") && Option(query("web_column"))
             .getOrElse("")
             .toString
-            .length > 0) query("web_days").toString
-      else poi_column_name
+            .length > 0) query("web_column").toString
+      else "0"
+
+ // Column to activate polygon matching
+    val polygon_input =
+      if (query.contains("polygon_input") && Option(query("polygon_input"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("polygon_input").toString
+      else "0"
 
 
 
@@ -176,7 +184,8 @@ object Main {
       "umbraldist" -> umbraldist,
       "poi_column_name" -> poi_column_name,
        "audience_column_name" -> audience_column_name,
-        "web_days" -> web_days
+        "web_days" -> web_days,
+        "polygon_input" -> polygon_input
     )
 
     println("LOGGER PARAMETERS:")
@@ -195,7 +204,8 @@ object Main {
     "umbraldist" -> $umbraldist,
     "poi_column_name" -> $poi_column_name,
     "audience_column_name" -> $audience_column_name,
-    "web_days" -> $web_days""")
+    "web_days" -> $web_days,
+    "polygon_input"->$polygon_input""")
     value_dictionary
   }
 
@@ -252,14 +262,33 @@ object Main {
     if (geospark) {
       GeoSparkMatcher.join(spark, value_dictionary)
     } else {
-      POICrossDevicerJson.match_POI(spark, value_dictionary)
-    }
 
-     // If we need to calculate the aggregations, we do so as well.
-    if (value_dictionary("analytics_df") == "1"){
-      Aggregations.userAggregate(spark, value_dictionary)
-    if (value_dictionary("map_df") == "1")
-        Aggregations.POIAggregate(spark, value_dictionary)
+            if (value_dictionary("polygon_input") == "1") {
+              PolygonMatcher.match_Polygon(spark, value_dictionary)
+
+                    // If we need to calculate the aggregations, we do so as well.
+                    if (value_dictionary("analytics_df") == "1"){
+                      Aggregations.userAggregateFromPolygon(spark, value_dictionary)}
+                    if (value_dictionary("map_df") == "1"){
+                        Aggregations.PolygonAggregate(spark, value_dictionary)
+                                                                }
+                                                              }
+                 
+                                                            
+            else {
+                
+              POICrossDevicerJson.match_POI(spark, value_dictionary)
+                        // If we need to calculate the aggregations, we do so as well.
+                        if (value_dictionary("analytics_df") == "1"){
+                          Aggregations.userAggregate(spark, value_dictionary)}
+                        if (value_dictionary("map_df") == "1"){
+                            Aggregations.POIAggregate(spark, value_dictionary)}
+
+                                                                    }
+                                                            }
+
+                          
+     
 
     // Finally, we perform the cross-device if requested.
     if (value_dictionary("crossdevice") != "false" && value_dictionary(
