@@ -231,7 +231,7 @@ object Main {
     val path_geo_json =
       if (options.contains('path_geo_json)) options('path_geo_json).toString
       else ""
-    val geospark = if (options.contains('geospark)) true else false
+    //val geospark = if (options.contains('geospark)) true else false
 
     // Start Spark Session based on the type of matcher that will be used.
     val spark = 
@@ -312,4 +312,4 @@ object Main {
    
     }
   }
-}
+
