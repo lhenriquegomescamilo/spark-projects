@@ -93,7 +93,7 @@ object Item2Item {
                               simMatrix,
                               predMatrixHits)
     // 6) Metrics
-    transposeEvaluation(spark, predictData, country, k, 100)
+    calculateRelevanceMetrics(spark, predictData, country, k, 100)
 
   }
 
@@ -331,7 +331,7 @@ object Item2Item {
                         k: Int = 1000,
                         minSegmentSupport: Int = 100) {
       import spark.implicits._              
-      data.cache()
+      data.persist(StorageLevel.MEMORY_AND_DISK)
 
       var nUsers = data.count()
       var nSegments = data.map(t=>t._3.size).take(1)(0)
@@ -351,15 +351,15 @@ object Item2Item {
         
         if (nRelevant > minSegmentSupport){
           // Number of users to select with highest score
-          var nSelected = if (nRelevant>k) k else nRelevant
+          //var nSelected = if (nRelevant>k) k else nRelevant
 
           var selected = data
             .map(tup=> (tup._2 contains segmentIdx, tup._3.apply(segmentIdx)))
             .filter(tup=> tup._2 > 0) // select scores > 0
-            .takeOrdered(nSelected)(Ordering[Double].on(tup=> -1 * tup._2))
+            .takeOrdered(k)(Ordering[Double].on(tup=> -1 * tup._2))
           var tp = selected.map(tup=> if (tup._1) 1.0 else 0.0).sum
           // precision & recall
-          var precision = tp / nSelected
+          var precision = tp / k
           var recall = tp / nRelevant
           var f1 = if (precision + recall > 0)  2* precision * recall / (precision + recall) else 0.0
           meanPrecisionAtK += precision
@@ -404,7 +404,10 @@ object Item2Item {
 
 
   def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("Item2item look alike")
+    val conf = new SparkConf()
+      .setAppName("Item2item look alike")
+      .set("spark.memory.fraction", "0.7") // default	0.6
+      .set("spark.memory.storageFraction", "0.7") // default	0.5
     val sc = new SparkContext(conf)
     val sqlContext = new org.apache.spark.sql.SQLContext(sc)
     val spark = sqlContext.sparkSession
