@@ -205,13 +205,14 @@ object PolygonMatcher {
       // .config("geospark.global.indextype", "rtree")
       .config("geospark.join.gridtype", "kdbtree")
       // .config("geospark.join.numpartition", 200)
-      .appName("match_POI_geospark")
+      .appName("match_Polygon_geospark")
       .getOrCreate()
 
     // Initialize the variables
-    GeoSparkSQLRegistrator.registerAll(spark)
     val value_dictionary = Main.get_variables(spark, path_geo_json)
-    Logger.getRootLogger.setLevel(Level.WARN)
+    GeoSparkSQLRegistrator.registerAll(spark)
+   
+    //Logger.getRootLogger.setLevel(Level.WARN)
 
     // Now we remove the file if it exists already
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
