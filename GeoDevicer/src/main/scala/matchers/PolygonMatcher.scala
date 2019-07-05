@@ -163,7 +163,7 @@ object PolygonMatcher {
       """SELECT  *  FROM users, poligono_amigo       WHERE ST_Contains(poligono_amigo.myshape, users.pointshape)""")
           .withColumnRenamed("ad_id", "device_id")
           .withColumnRenamed("id_type", "device_type")
-          .select(col("*"), col("properties.*")).drop(col("properties"))
+          .select(col("*"), col("properties.*")).drop("properties","myshape","pointshape")
                    
     intersection.write
       .format("csv")
