@@ -3553,7 +3553,7 @@ user_granularity.write
       if (url.contains("?")) {
         val params = url.split("\\?")(1).split("&")
         val paramsMap =
-          params.map(param => param.split("=", -1)).map(l => (l(0), l(1))).toMap
+          params.filter(param => param.contains("=")).map(param => param.split("=", -1)).map(l => (l(0), l(1))).toMap
 
         if (paramsMap.contains("r_mobile") && paramsMap("r_mobile").length > 0 && !paramsMap(
               "r_mobile"
