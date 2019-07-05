@@ -404,7 +404,10 @@ object Item2Item {
 
 
   def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("Item2item look alike")
+    val conf = new SparkConf()
+      .setAppName("Item2item look alike")
+      .set("spark.memory.fraction", "0.7") // default	0.6
+      .set("spark.memory.storageFraction", "0.7") // default	0.5
     val sc = new SparkContext(conf)
     val sqlContext = new org.apache.spark.sql.SQLContext(sc)
     val spark = sqlContext.sparkSession
