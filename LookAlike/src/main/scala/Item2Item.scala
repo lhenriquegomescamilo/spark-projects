@@ -242,7 +242,7 @@ object Item2Item {
 
   val selectedSegments = (0 until nSegments).filter(segmentIdx => segmentSupports.getOrElse(segmentIdx, 0).toString().toInt >= minSegmentSupport)
 
-  var predictTuples = predictData
+  var predictTuples = data
     .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, (tup._1, tup._2 contains segmentIdx, tup._3.apply(segmentIdx)))))
     .filter(tup => tup._2._2 || (tup._2._3 >0)) // select scores > 0
 
