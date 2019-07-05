@@ -235,7 +235,7 @@ object Item2Item {
                          country: String,
                          k: Int = 1000,
                         minSegmentSupport: Int = 100){
-
+  import spark.implicits._ 
   var nUsers = data.count()
   var nSegments = data.map(t=>t._3.size).take(1)(0)
   val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
@@ -247,9 +247,6 @@ object Item2Item {
     .filter(tup => tup._2._2 || (tup._2._3 >0)) // select scores > 0
 
   // transpose -> group by segment_idx and select k devices id by score
-  var transposedData = predictTuples
-    .groupByKey()
-    .map(row => row._2.toList.sortWith(_._2 > _._2).take(k))
   var transposedData = predictTuples
     .groupByKey()
     .map(row => (row._1, row._2.toList.sortWith(_._2 > _._2).take(k))) 
