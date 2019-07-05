@@ -262,10 +262,9 @@ object Main {
     if (geospark) {
       GeoSparkMatcher.join(spark, value_dictionary)
     } else {
-      
 
-
-      SparkSession
+              //acá cambiamos a ver si levantamos GeoSpark
+              SparkSession
           .builder()
           .config("spark.serializer", classOf[KryoSerializer].getName)
           .config(
@@ -278,12 +277,8 @@ object Main {
           // .config("geospark.join.numpartition", 200)
           .appName("GeoSpark Matcher")
           .getOrCreate()
-      else
-        SparkSession.builder
-          .appName("GeoCode Matcher")
-          .getOrCreate()
-
-      GeoSparkSQLRegistrator.registerAll(spark)
+          
+              GeoSparkSQLRegistrator.registerAll(spark)
 
             if (value_dictionary("polygon_input") == "1") {
               PolygonMatcher.match_Polygon(spark, value_dictionary)
