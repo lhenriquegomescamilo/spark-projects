@@ -3589,7 +3589,7 @@ user_granularity.write
 
     //user_segments(spark)
     //ua_segment_join(spark)
-    process_pipeline_partner(spark)
+    gcba_rmobile(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 
