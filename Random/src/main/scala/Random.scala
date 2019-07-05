@@ -3531,7 +3531,51 @@ user_granularity.write
           .partitionBy("hour", "id_partner")
           .save("/datascience/data_partner_streaming/")
     )
+  }
 
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *                      PEDIDO GCBA - RMOBILE
+    *
+    *
+    *
+    *
+    *
+    */
+  def gcba_rmobile(spark: SparkSession) = {
+    def get_data(url: String): String = {
+      var result = ""
+      if (url.contains("?")) {
+        val params = url.split("\\?")(1).split("&")
+        val paramsMap =
+          params.map(param => param.split("=", -1)).map(l => (l(0), l(1))).toMap
+
+        if (paramsMap.contains("r_mobile") && paramsMap("r_mobile").length > 0 && !paramsMap(
+              "r_mobile"
+            ).contains("]")) {
+          result = paramsMap("r_mobile")
+        }
+      }
+      result
+    }
+
+    val dataUDF = udf(get_data _, StringType)
+    val query =
+      "event_type = 'tk' AND id_partner = '688' AND (array_contains(all_segments, '76522') OR array_contains(all_segments, '76536') OR array_contains(all_segments, '76543')) AND url LIKE '%r_mobile=%'"
+
+    val mobile_count = getDataAudiences(spark, 14, 6)
+      .filter(query)
+      .withColumn("r_mobile", dataUDF(col("url")))
+      .select("r_mobile")
+      .distinct()
+      .count()
+
+    println("LOGGER: %s".format(mobile_count))
   }
 
   /*****************************************************/
