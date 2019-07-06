@@ -3515,8 +3515,8 @@ user_granularity.write
     *
     */
   def process_pipeline_partner(spark: SparkSession) = {
-    val nDays = 34
-    val since = 1
+    val nDays = 20
+    val since = 9
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
@@ -3589,7 +3589,7 @@ user_granularity.write
 
     //user_segments(spark)
     //ua_segment_join(spark)
-    gcba_rmobile(spark)
+    process_pipeline_partner(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 
