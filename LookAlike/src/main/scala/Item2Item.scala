@@ -236,19 +236,33 @@ object Item2Item {
                          k: Int = 1000,
                         minSegmentSupport: Int = 100){
   import spark.implicits._ 
-  import scala.collection.mutable.ListBuffer
+  //import scala.collection.mutable.ListBuffer
+  import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
+
 
   var nUsers = data.count()
+  println(s"users: $nUsers")
+  
   var nSegments = data.map(t=>t._3.size).take(1)(0)
   val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
 
   val selectedSegments = (0 until nSegments).filter(segmentIdx => segmentSupports.getOrElse(segmentIdx, 0).toString().toInt >= minSegmentSupport)
 
+  var scores = data
+    .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, tup._3.apply(segmentIdx))
+    .filter(tup => (tup._2 > 0)) // select scores > 0
+  // (<segment_idx>, score)
+
+  var minScores = scores.topByKey(k).map(t => (t._1, t._2.last)).collect().toMap
+  
+  minScores foreach (x => println ("seg_idx=" + x._1 + " min_score=" + x._2))
+  /*
   var predictTuples = data
     .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, (tup._1, tup._2 contains segmentIdx, tup._3.apply(segmentIdx)))))
     .filter(tup => tup._2._2 || (tup._2._3 >0)) // select scores > 0
   // (<segment_idx>,(device_id,relevance,score)))
   
+
   def mergesort(v1: ListBuffer[(Any, Boolean, Double)],
             v2: ListBuffer[(Any, Boolean, Double)], limit: Int): ListBuffer[(Any, Boolean, Double)] = {
       var res: ListBuffer[(Any, Boolean, Double)] = ListBuffer()
@@ -326,7 +340,8 @@ object Item2Item {
     .mode(SaveMode.Overwrite)
     .save(
       "/datascience/data_lookalike/metrics/country=%s/".format(country)
-    )  
+    )
+  */  
   }
 
   /*
