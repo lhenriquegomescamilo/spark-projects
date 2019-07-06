@@ -249,7 +249,7 @@ object Item2Item {
   val selectedSegments = (0 until nSegments).filter(segmentIdx => segmentSupports.getOrElse(segmentIdx, 0).toString().toInt >= minSegmentSupport)
 
   var scores = data
-    .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, tup._3.apply(segmentIdx))
+    .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, tup._3.apply(segmentIdx)) ))
     .filter(tup => (tup._2 > 0)) // select scores > 0
   // (<segment_idx>, score)
 
