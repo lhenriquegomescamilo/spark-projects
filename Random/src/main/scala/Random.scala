@@ -3529,7 +3529,7 @@ user_granularity.write
           .write
           .mode("append")
           .partitionBy("hour", "id_partner")
-          .save("/datascience/data_partner_streaming/")
+          .save("/datascience/data_partner_streaming2/")
     )
   }
 
