@@ -3516,7 +3516,7 @@ user_granularity.write
     */
   def process_pipeline_partner(spark: SparkSession) = {
     val nDays = 20
-    val since = 9
+    val since = 10
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
