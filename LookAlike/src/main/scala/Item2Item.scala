@@ -256,11 +256,11 @@ object Item2Item {
             (tup._1,
              selectedSegments
               .filter(segmentIdx => // select segments with scores > th and don't contain the segment
-                (tup._3.apply(segmentIdx) >= minScores(segmentIdx) && !(tup._2 contains segmentIdx) )
+                (tup._3.apply(segmentIdx) >= minScores(segmentIdx) && !(tup._2 contains segmentIdx)))
               .map(segmentIdx => segmentLabels(segmentIdx)) // segment label
             ))              
       )
-      .filter(tup => row._2.length > 0)
+      .filter(tup => tup._2.length > 0)
   }
 
   def test(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
@@ -275,7 +275,7 @@ object Item2Item {
   //println(s"users: $nUsers")
 
   //var nSegments = data.map(t=>t._3.size).take(1)(0)
-  var nSegments =  segmentsLabels.length
+  var nSegments =  segmentLabels.length
   val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
 
   val selectedSegments = (0 until nSegments).filter(segmentIdx => segmentSupports.getOrElse(segmentIdx, 0).toString().toInt >= minSegmentSupport)
