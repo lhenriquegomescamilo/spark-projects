@@ -236,13 +236,11 @@ object Item2Item {
                          k: Int = 1000,
                         minSegmentSupport: Int = 100){
   import spark.implicits._ 
-  //import scala.collection.mutable.ListBuffer
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
 
+  //var nUsers = data.count()
+  //println(s"users: $nUsers")
 
-  var nUsers = data.count()
-  println(s"users: $nUsers")
-  
   var nSegments = data.map(t=>t._3.size).take(1)(0)
   val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
 
@@ -255,7 +253,63 @@ object Item2Item {
 
   var minScores = scores.topByKey(k).map(t => (t._1, t._2.last)).collect().toMap
   
-  minScores foreach (x => println ("seg_idx=" + x._1 + " min_score=" + x._2))
+  // <segmentIdx> -> (nSelected, nTP)
+  var relevanCount = data
+    .flatMap(
+        tup => selectedSegments.map(
+          segmentIdx => (segmentIdx,
+                          (if(tup._3.apply(segmentIdx) >= minScores(segmentIdx)) 1 else 0,
+                          if((tup._2 contains segmentIdx) && (tup._3.apply(segmentIdx) >= minScores(segmentIdx))) 1 else 0))
+                          ) 
+    )
+    .reduceByKey(
+      (a, b) => ((a._1 + b._1), (a._2 + b._2))
+    )
+    .collect
+    .toMap
+
+   // (segment_id, count, selected, min_score, prec, recall)
+    var metrics = (
+        selectedSegments
+        .map(segmentIdx => (segmentIdx.toString,
+                            segmentSupports(segmentIdx).toDouble, 
+                            relevanCount(segmentIdx)._1.toDouble,  
+                            minScores(segmentIdx).toDouble,
+                            if(relevanCount(segmentIdx)._2 > 0) relevanCount(segmentIdx)._2.toDouble / relevanCount(segmentIdx)._1.toDouble else 0.0,
+                            if(segmentSupports(segmentIdx) > 0) relevanCount(segmentIdx)._2.toDouble / segmentSupports(segmentIdx).toDouble else 0.0)
+        )
+    )
+
+    var dfMetrics = metrics
+      .toDF("segmentIdx", "nRelevant", "nSelected", "scoreTh", "precision", "recall" )
+      .withColumn("f1", when($"precision" + $"recall" > 0.0, $"precision" * $"recall" / ( $"precision" + $"recall")).otherwise(0.0))
+      .sort(desc("precision"))
+    
+    var dfAvgMetrics = dfMetrics
+      .select(
+        lit("Avg").as("segmentIdx"),
+        avg($"nRelevant").as("nRelevant"),
+        avg($"nSelected").as("nSelected"),
+        avg($"scoreTh").as("scoreTh"),
+        avg($"precision").as("precision"),
+        avg($"recall").as("recall"),
+        avg($"f1").as("f1")
+      )
+  dfMetrics = dfMetrics.union(dfAvgMetrics)
+  
+  dfMetrics
+    .repartition(1) // single output file 
+    .write
+    .format("csv")
+    .option("sep", ",")
+    .option("header", "true")
+    .mode(SaveMode.Overwrite)
+    .save(
+      "/datascience/data_lookalike/metrics/country=%s/".format(country)
+    )
+  
+  dfMetrics.show(false)
+
   /*
   var predictTuples = data
     .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, (tup._1, tup._2 contains segmentIdx, tup._3.apply(segmentIdx)))))
