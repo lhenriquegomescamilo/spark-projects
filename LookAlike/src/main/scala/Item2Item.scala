@@ -316,7 +316,7 @@ object Item2Item {
 
     var dfMetrics = metrics
       .toDF("segment", "nRelevant", "nSelected", "scoreTh", "precision", "recall" )
-      .withColumn("f1", when($"precision" + $"recall" > 0.0, 2.0 * $"precision" * $"recall" / ( $"precision" + $"recall")).otherwise(0.0))
+      .withColumn("f1", when($"precision" + $"recall" > 0.0, ($"precision" * $"recall") / ( $"precision" + $"recall") * 2.0).otherwise(0.0))
       .sort(desc("precision"))
     
     var dfAvgMetrics = dfMetrics
