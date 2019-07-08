@@ -232,7 +232,7 @@ object Item2Item {
   }
 
   def expand(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
-                         selectedSegments: List,
+                         selectedSegments: List[Int],
                          segmentLabels: List[String],
                          k: Int = 1000){
   import spark.implicits._ 
