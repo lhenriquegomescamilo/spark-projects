@@ -93,7 +93,7 @@ object Item2Item {
                               simMatrix,
                               predMatrixHits)
     // 6) Metrics
-    transposeEvaluation(spark, predictData, country, k, 100)
+    test(spark, predictData, country, segments, k, 100)
 
   }
 
@@ -231,17 +231,51 @@ object Item2Item {
     userPredictionMatrix
   }
 
-  def transposeEvaluation(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
-                         country: String,
-                         k: Int = 1000,
-                        minSegmentSupport: Int = 100){
+  def expand(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
+                         selectedSegments: List,
+                         segmentLabels: List[String],
+                         k: Int = 1000){
+  import spark.implicits._ 
+  import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
+  
+  // It gets the score thresholds to get at least k elements per segment.
+  var minScores = data
+    .flatMap(tup => // Select segments - format <segment_idx, score, hasSegment >
+      selectedSegments.map(segmentIdx => (segmentIdx, tup._3.apply(segmentIdx), 
+                                          tup._2 contains segmentIdx))) 
+    .filter(tup => (tup._2 > 0 && !tup._3)) // it selects scores > 0 and devices without the segment
+    .map(tup => (tup._1, tup._2) // Format  <segment_idx, score>
+    .topByKey(k) // get topK scores values
+    .map(t => (t._1, t._2.last)) // get the kth value
+    .collect()
+    .toMap
+
+  var dataExpansion = data
+      .map(
+          tup => 
+            (tup._1,
+             selectedSegments
+              .filter(segmentIdx => // select segments with scores > th and don't contain the segment
+                (tup._3.apply(segmentIdx) >= minScores(segmentIdx) && !(tup._2 contains segmentIdx) )
+              .map(segmentIdx => segmentLabels(segmentIdx)) // segment label
+            ))              
+      )
+      .filter(tup => row._2.length > 0)
+  }
+
+  def test(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
+                          country: String,
+                          segmentLabels: List[String],
+                          k: Int = 1000,
+                          minSegmentSupport: Int = 100){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
 
   //var nUsers = data.count()
   //println(s"users: $nUsers")
 
-  var nSegments = data.map(t=>t._3.size).take(1)(0)
+  //var nSegments = data.map(t=>t._3.size).take(1)(0)
+  var nSegments =  segmentsLabels.length
   val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
 
   val selectedSegments = (0 until nSegments).filter(segmentIdx => segmentSupports.getOrElse(segmentIdx, 0).toString().toInt >= minSegmentSupport)
@@ -271,7 +305,7 @@ object Item2Item {
    // (segment_id, count, selected, min_score, prec, recall)
     var metrics = (
         selectedSegments
-        .map(segmentIdx => (segmentIdx.toString,
+        .map(segmentIdx => (segmentLabels(segmentIdx).toString,
                             segmentSupports(segmentIdx).toDouble, 
                             relevanCount(segmentIdx)._1.toDouble,  
                             minScores(segmentIdx).toDouble,
@@ -281,7 +315,7 @@ object Item2Item {
     )
 
     var dfMetrics = metrics
-      .toDF("segmentIdx", "nRelevant", "nSelected", "scoreTh", "precision", "recall" )
+      .toDF("segment", "nRelevant", "nSelected", "scoreTh", "precision", "recall" )
       .withColumn("f1", when($"precision" + $"recall" > 0.0, $"precision" * $"recall" / ( $"precision" + $"recall")).otherwise(0.0))
       .sort(desc("precision"))
     
@@ -295,107 +329,20 @@ object Item2Item {
         avg($"recall").as("recall"),
         avg($"f1").as("f1")
       )
-  dfMetrics = dfMetrics.union(dfAvgMetrics)
-  
-  dfMetrics
-    .repartition(1) // single output file 
-    .write
-    .format("csv")
-    .option("sep", ",")
-    .option("header", "true")
-    .mode(SaveMode.Overwrite)
-    .save(
+    var df = dfMetrics.union(dfAvgMetrics)
+    
+    df
+      .repartition(1) // single output file 
+      .write
+      .format("csv")
+      .option("sep", ",")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save(
       "/datascience/data_lookalike/metrics/country=%s/".format(country)
-    )
-  
-  dfMetrics.show(false)
-
-  /*
-  var predictTuples = data
-    .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, (tup._1, tup._2 contains segmentIdx, tup._3.apply(segmentIdx)))))
-    .filter(tup => tup._2._2 || (tup._2._3 >0)) // select scores > 0
-  // (<segment_idx>,(device_id,relevance,score)))
-  
-
-  def mergesort(v1: ListBuffer[(Any, Boolean, Double)],
-            v2: ListBuffer[(Any, Boolean, Double)], limit: Int): ListBuffer[(Any, Boolean, Double)] = {
-      var res: ListBuffer[(Any, Boolean, Double)] = ListBuffer()
-      var i, j, it = 0
-      
-      var n_iter = Seq(v1.length ,v2.length, limit).min
-      
-      while (it < n_iter) {
-          if (v1(i)._3 > v2(j)._3) {
-              res = res :+ v1(i)
-              i += 1
-          } else {
-              res = res :+ v2(j)
-              j += 1
-          }
-          it += 1
-      }
-      
-      if (it < limit){
-        if (i >= v1.length) 
-        res = res ++ v2.slice(j, j + (limit - it))
-        else if (j >= v2.length)
-          res = res ++ v1.slice(i, i + (limit - it))
-      }
-      res
-  }
-
-  //var transposedData = predictTuples
-  //  .mapValues(v => List(v))
-  //  .reduceByKey((a, b) => (a ++ b).sortWith(_._3 > _._3).take(k) ) ///mergesort(a, b, k)
-
-  transposedData = predictTuples
-    .mapValues(v => ListBuffer(v))
-    .reduceByKey((a, b) => merge(a, b, k))
-
-  var tp = transposedData
-    .map(tup => (tup._1, tup._2.map(t => if(t._2) 1 else 0).sum))
-    .collect()
-    .toMap
-  
-  val meanPrecisionAtK = selectedSegments.map(segmentIdx =>
-    tp(segmentIdx).toDouble / k
-  ).sum / selectedSegments.length
-
-  val meanRecallAtK = selectedSegments.map(segmentIdx =>
-    tp(segmentIdx).toDouble /  segmentSupports(segmentIdx) 
-  ).sum / selectedSegments.length
-
-  var meanF1AtK = if (meanPrecisionAtK + meanRecallAtK > 0)  2* meanPrecisionAtK * meanRecallAtK / (meanPrecisionAtK + meanRecallAtK) else 0.0
-  var segmentCount = selectedSegments.length
-
-  println(s"precision@k: $meanPrecisionAtK")
-  println(s"recall@k: $meanRecallAtK")
-  println(s"f1@k: $meanF1AtK")
-  println(s"k: $k")
-  println(s"users: $nUsers")
-  println(s"segments: $nSegments")
-  println(s"segmentCount: $segmentCount")
-  println(s"minSegmentSupport: $segmentCount")
-
-  val metricsDF = Seq(
-    ("precision@k", meanPrecisionAtK),
-    ("recall@k", meanRecallAtK),
-    ("f1@k", meanF1AtK),
-    ("k", k.toDouble),
-    ("users", nUsers.toDouble),
-    ("segments", nSegments.toDouble),
-    ("selectedSegments", segmentCount.toDouble),
-    ("segmentMinSupport", minSegmentSupport.toDouble)
-  ).toDF("metric", "value")
-    .write
-    .format("csv")
-    .option("sep",",")
-    .option("header","true")
-    .mode(SaveMode.Overwrite)
-    .save(
-      "/datascience/data_lookalike/metrics/country=%s/".format(country)
-    )
-  */  
+      )
+    
+    df.show(nSegments + 1, false)
   }
 
   /*
