@@ -258,7 +258,7 @@ object Item2Item {
               .filter(segmentIdx => // select segments with scores > th and don't contain the segment
                 (tup._3.apply(segmentIdx) >= minScores(segmentIdx) && !(tup._2 contains segmentIdx)))
               .map(segmentIdx => segmentLabels(segmentIdx)) // segment label
-            ))              
+            )              
       )
       .filter(tup => tup._2.length > 0)
   }
