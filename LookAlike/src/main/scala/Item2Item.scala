@@ -244,7 +244,7 @@ object Item2Item {
       selectedSegments.map(segmentIdx => (segmentIdx, tup._3.apply(segmentIdx), 
                                           tup._2 contains segmentIdx))) 
     .filter(tup => (tup._2 > 0 && !tup._3)) // it selects scores > 0 and devices without the segment
-    .map(tup => (tup._1, tup._2) // Format  <segment_idx, score>
+    .map(tup => (tup._1, tup._2))// Format  <segment_idx, score>
     .topByKey(k) // get topK scores values
     .map(t => (t._1, t._2.last)) // get the kth value
     .collect()
