@@ -234,6 +234,7 @@ object Item2Item {
   def expand(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
                          selectedSegments: List[Int],
                          segmentLabels: List[String],
+                         country: String,
                          k: Int = 1000){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
@@ -258,9 +259,22 @@ object Item2Item {
               .filter(segmentIdx => // select segments with scores > th and don't contain the segment
                 (tup._3.apply(segmentIdx) >= minScores(segmentIdx) && !(tup._2 contains segmentIdx)))
               .map(segmentIdx => segmentLabels(segmentIdx)) // segment label
+              .mkString(",") // toString
             )              
       )
-      .filter(tup => tup._2.length > 0)
+      .filter(tup => tup._2.length > 0) // exclude devices with empty segments
+
+    dataExpansion
+      .toDF("device_id", "segments" )
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "false")
+      .mode(SaveMode.Overwrite)
+      .save(
+      "/datascience/data_lookalike/expansion/country=%s/".format(country)
+      )
+  
   }
 
   def test(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
