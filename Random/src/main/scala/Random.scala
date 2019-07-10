@@ -2080,12 +2080,12 @@ val records_common = the_join.select(col("identifier"))
     //filtramos para que la url no sea nula
     val data_audience = spark.read
       .parquet(hdfs_files: _*)
-      .select("device_id", "all_segments", "url")
       .filter(
         "array_contains (all_segments,20107) OR array_contains (all_segments,20108) OR array_contains (all_segments,20109) OR array_contains (all_segments,20110)"
       )
       .filter(col("url").isNotNull)
-      .select("device_id", "url")
+      .select("device_id", "url","app_installed","device_type")
+      .withColumn("device_id",upper("device_id"))
       .distinct()
 
     //Cargamos la audiencia de voto
@@ -2093,10 +2093,11 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("delimiter", "\t")
       .load(
-        "/datascience/devicer/processed/AR_1111118_2019-05-22T19-50-01-452066"
+        "/datascience/devicer/processed/AR_112568000000_2019-07-10T15-05-23-694787_grouped"
       )
-      .select("_c1")
-      .toDF("device_id")
+      .toDF("device_type","device_id","crm_audience")
+      .select("device_id","crm_audience")
+      .withColumn("device_id",upper("device_id"))
       .distinct()
 
     //hacemos el join
@@ -2107,8 +2108,8 @@ val records_common = the_join.select(col("identifier"))
       .mode(SaveMode.Overwrite)
       .option("header", "true")
       .format("csv")
-      .option("sep", ",")
-      .save("/datascience/geo/audiences/voto_url_180_24-05")
+      .option("sep", "\t")
+      .save("/datascience/geo/audiences/voto_url_30d_10_07_19")
 
 //levantamos el resultado del join en random y contamos los usuarios
 
@@ -3589,7 +3590,8 @@ user_granularity.write
 
     //user_segments(spark)
     //ua_segment_join(spark)
-    process_pipeline_partner(spark)
+    //process_pipeline_partner(spark)
+    get_voto_users(spark,30)
     println("LOGGER: JOIN FINISHED!")
   }
 
