@@ -2085,7 +2085,7 @@ val records_common = the_join.select(col("identifier"))
       )
       .filter(col("url").isNotNull)
       .select("device_id", "url","app_installed","device_type")
-      .withColumn(col("device_id"),upper(col("device_id")))
+      .withColumn("device_id",upper(col("device_id")))
       .distinct()
 
     //Cargamos la audiencia de voto
@@ -2097,7 +2097,7 @@ val records_common = the_join.select(col("identifier"))
       )
       .toDF("device_type","device_id","crm_audience")
       .select("device_id","crm_audience")
-      .withColumn(col("device_id"),upper(col("device_id")))
+      .withColumn("device_id",upper(col("device_id")))
       .distinct()
 
     //hacemos el join
