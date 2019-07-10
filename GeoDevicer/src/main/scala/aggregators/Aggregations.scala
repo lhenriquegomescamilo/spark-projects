@@ -136,9 +136,9 @@ def userAggregateFromPolygon(
     val stayedThere = udf( (timestamps: Seq[String]) => 
             (timestamps.slice(1, timestamps.length) zip timestamps).map(
                     t =>
-                ( t._1.toInt-t._2.toInt < value_dictionary("umbralMax").toInt * 60) 
+                ( t._1.toInt-t._2.toInt < value_dictionary("umbralmax").toInt * 60) 
                                   & (
-                  t._1.toInt-t._2.toInt > value_dictionary("umbralMin").toInt * 60))
+                  t._1.toInt-t._2.toInt > value_dictionary("umbralmin").toInt * 60))
                     .exists(b=>b) )
     
     // Path where we will store the results.
