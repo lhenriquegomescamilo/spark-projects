@@ -2102,6 +2102,7 @@ val records_common = the_join.select(col("identifier"))
 
     //hacemos el join
     val voto_url = voto_audience.join(data_audience, Seq("device_id"))
+                    .withColumn("app_installed", concat_ws(",", col("app_installed")))
 
 //guardamos
     voto_url.write
