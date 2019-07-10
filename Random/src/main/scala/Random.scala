@@ -2085,10 +2085,7 @@ val records_common = the_join.select(col("identifier"))
       )
       .filter(col("url").isNotNull)
       .select("url", "device_id")
-      .withColumn("device_id",upper(col("device_id")))
-      .distinct()
-      .groupBy("device_id").agg(count(col("url")) as "url_count")
-      
+      .withColumn("device_id", upper(col("device_id")))
 
     //Cargamos la audiencia de voto
     val voto_audience = spark.read
@@ -2097,14 +2094,17 @@ val records_common = the_join.select(col("identifier"))
       .load(
         "/datascience/devicer/processed/AR_112568000000_2019-07-10T15-05-23-694787_grouped"
       )
-      .toDF("device_type","device_id","crm_audience")
-      .select("device_id","crm_audience")
-      .withColumn("device_id",upper(col("device_id")))
+      .toDF("device_type", "device_id", "crm_audience")
+      .select("device_id", "crm_audience")
+      .withColumn("device_id", upper(col("device_id")))
       .distinct()
 
     //hacemos el join
-    val voto_url = voto_audience.join(data_audience, Seq("device_id"))
-                    //.withColumn("app_installed", concat_ws(",", col("app_installed")))
+    val voto_url = voto_audience
+      .join(data_audience, Seq("device_id"))
+      .distinct()
+      .groupBy("device_id")
+      .agg(count(col("url")) as "url_count")
 
 //guardamos
     voto_url.write
@@ -3557,7 +3557,11 @@ user_granularity.write
       if (url.contains("?")) {
         val params = url.split("\\?")(1).split("&")
         val paramsMap =
-          params.filter(param => param.contains("=")).map(param => param.split("=", -1)).map(l => (l(0), l(1))).toMap
+          params
+            .filter(param => param.contains("="))
+            .map(param => param.split("=", -1))
+            .map(l => (l(0), l(1)))
+            .toMap
 
         if (paramsMap.contains("r_mobile") && paramsMap("r_mobile").length > 0 && !paramsMap(
               "r_mobile"
@@ -3594,7 +3598,7 @@ user_granularity.write
     //user_segments(spark)
     //ua_segment_join(spark)
     //process_pipeline_partner(spark)
-    get_voto_users(spark,30)
+    get_voto_users(spark, 30)
     println("LOGGER: JOIN FINISHED!")
   }
 
