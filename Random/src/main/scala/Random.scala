@@ -2081,13 +2081,13 @@ val records_common = the_join.select(col("identifier"))
     val data_audience = spark.read
       .parquet(hdfs_files: _*)
       .filter(
-        "array_contains (all_segments,20107) OR array_contains (all_segments,20108) OR array_contains (all_segments,20109) OR array_contains (all_segments,20110)"
+        "array_contains(all_segments,'20107') OR array_contains(all_segments,'20108') OR array_contains(all_segments,'20109') OR array_contains(all_segments,'20110')"
       )
       .filter(col("url").isNotNull)
-      .select("device_id", "url","device_type")
+      .select("url", "device_id")
       .withColumn("device_id",upper(col("device_id")))
       .distinct()
-      .groupBy("device_id","device_type").agg(count(col("url")) as "url_count")
+      .groupBy("device_id").agg(count(col("url")) as "url_count")
       
 
     //Cargamos la audiencia de voto
