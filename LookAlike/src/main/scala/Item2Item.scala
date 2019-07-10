@@ -45,8 +45,9 @@ object Item2Item {
                 predMatrixHits: String = "binary",
                 k: Int = 1000) {
     import spark.implicits._
-   // 1) Segments definition
-    val segments =
+
+    // 1) Segments to expand
+    val selectedSegments =
       """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
       247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
       386,389,395,396,397,398,399,401,402,403,404,405,409,410,411,412,413,418,420,421,422,429,430,432,433,434,440,441,446,447,450,451,453,454,456,457,458,
@@ -60,14 +61,28 @@ object Item2Item {
         .replace("\n", "")
         .split(",")
         .toList
-    val segmentsIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
 
-    // 2) Read the data
+    // 1) Read the data
     val data = spark.read
       .load(
         "/datascience/data_demo/triplets_segments/country=%s/".format(country)
       )
-    
+
+    // 2) Segments label encoder
+    var segments = data
+      .select(col("feature"))
+      .filter(col("feature").lt(4500))
+      .distinct
+      .rdd
+      .map(row => row(0).toString)
+      .collect()
+      .toSet
+      .union(selectedSegments.toSet) // add selected segments
+      .toList
+
+    val segmentToIndex = segments.zipWithIndex.toMap
+    val dfSegmentIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
+
     // 3) Data aggregation
     val dataTriples = data
       .groupBy("device_id", "feature")
@@ -77,7 +92,7 @@ object Item2Item {
 
     val usersSegmentsData = dataTriples
       .filter(col("feature").isin(segments: _*))     // segment filtering
-      .join(broadcast(segmentsIndex), Seq("feature")) // add segment column index
+      .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
       .select("device_id", "segment_idx", "count")
       .rdd
       .map(row => (row(0), (row(1), row(2))))
@@ -93,7 +108,8 @@ object Item2Item {
                               simMatrix,
                               predMatrixHits)
     // 6) Metrics
-    test(spark, predictData, country, segments, k, 100)
+    val selectedSegmentsIdx = selectedSegments.map(seg => segmentToIndex(seg)) 
+    test(spark, predictData, selectedSegmentsIdx, segments, country, k, 100)
 
   }
 
@@ -231,11 +247,12 @@ object Item2Item {
     userPredictionMatrix
   }
 
-  def expand(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
-                         selectedSegments: List[Int],
-                         segmentLabels: List[String],
-                         country: String,
-                         k: Int = 1000){
+  def expand(spark: SparkSession,
+             data: RDD[(Any, Array[(Int)], Vector)],
+             selectedSegments: List[Int],
+             segmentLabels: List[String],
+             country: String,
+             k: Int = 1000){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
   
@@ -276,23 +293,23 @@ object Item2Item {
       )
   
   }
-
-  def test(spark: SparkSession, data: RDD[(Any, Array[(Int)], Vector)],
-                          country: String,
-                          segmentLabels: List[String],
-                          k: Int = 1000,
-                          minSegmentSupport: Int = 100){
+  /*
+  * It calculates precision, recall and F1 metrics.
+  */
+  def test(spark: SparkSession,
+           data: RDD[(Any, Array[(Int)], Vector)],
+           selectedSegmentsIdx: List[Int],
+           segmentLabels: List[String],
+           country: String,          
+           k: Int = 1000,
+           minSegmentSupport: Int = 100){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
 
-  //var nUsers = data.count()
-  //println(s"users: $nUsers")
-
-  //var nSegments = data.map(t=>t._3.size).take(1)(0)
   var nSegments =  segmentLabels.length
   val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
 
-  val selectedSegments = (0 until nSegments).filter(segmentIdx => segmentSupports.getOrElse(segmentIdx, 0).toString().toInt >= minSegmentSupport)
+  val selectedSegments = selectedSegmentsIdx.filter(segmentIdx => segmentSupports.getOrElse(segmentIdx, 0).toString().toInt >= minSegmentSupport)
 
   var scores = data
     .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, tup._3.apply(segmentIdx)) ))
@@ -358,85 +375,6 @@ object Item2Item {
     df.show(nSegments + 1, false)
   }
 
-  /*
-  * It calculates precision, recall and F1 metrics.
-  */
-  def calculateRelevanceMetrics(spark: SparkSession,
-                        data: RDD[(Any, Array[(Int)], Vector)],
-                        country: String,
-                        k: Int = 1000,
-                        minSegmentSupport: Int = 100) {
-      import spark.implicits._              
-      data.persist(StorageLevel.MEMORY_AND_DISK)
-
-      var nUsers = data.count()
-      var nSegments = data.map(t=>t._3.size).take(1)(0)
-
-      //2) information retrieval metrics - recall@k - precision@k - f1@k
-      var meanPrecisionAtK = 0.0
-      var meanRecallAtK = 0.0
-      var meanF1AtK = 0.0
-      var segmentCount = 0
-      val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
-      
-      // for each segment
-      for (segmentIdx <- 0 until nSegments){
-        //  for (segmentIdx <- 0 until 35){
-        // number of users assigned to segment
-        var nRelevant = segmentSupports.getOrElse(segmentIdx, 0).toString().toInt
-        
-        if (nRelevant > minSegmentSupport){
-          // Number of users to select with highest score
-          //var nSelected = if (nRelevant>k) k else nRelevant
-
-          var selected = data
-            .map(tup=> (tup._2 contains segmentIdx, tup._3.apply(segmentIdx)))
-            .filter(tup=> tup._2 > 0) // select scores > 0
-            .takeOrdered(k)(Ordering[Double].on(tup=> -1 * tup._2))
-          var tp = selected.map(tup=> if (tup._1) 1.0 else 0.0).sum
-          // precision & recall
-          var precision = tp / k
-          var recall = tp / nRelevant
-          var f1 = if (precision + recall > 0)  2* precision * recall / (precision + recall) else 0.0
-          meanPrecisionAtK += precision
-          meanRecallAtK += recall
-          meanF1AtK += f1
-          segmentCount += 1
-        }
-
-      }
-      meanPrecisionAtK /= segmentCount
-      meanRecallAtK /= segmentCount
-      meanF1AtK /= segmentCount
-
-      println(s"precision@k: $meanPrecisionAtK")
-      println(s"recall@k: $meanRecallAtK")
-      println(s"f1@k: $meanF1AtK")
-      println(s"k: $k")
-      println(s"users: $nUsers")
-      println(s"segments: $nSegments")
-      println(s"segmentCount: $segmentCount")
-      println(s"minSegmentSupport: $segmentCount")
-
-      val metricsDF = Seq(
-        ("precision@k", meanPrecisionAtK),
-        ("recall@k", meanRecallAtK),
-        ("f1@k", meanF1AtK),
-        ("k", k.toDouble),
-        ("users", nUsers.toDouble),
-        ("segments", nSegments.toDouble),
-        ("selectedSegments", segmentCount.toDouble),
-        ("segmentMinSupport", minSegmentSupport.toDouble)
-      ).toDF("metric", "value")
-       .write
-       .format("csv")
-       .option("sep",",")
-       .option("header","true")
-       .mode(SaveMode.Overwrite)
-       .save(
-         "/datascience/data_lookalike/metrics/country=%s/".format(country)
-        )
-    }
 
 
   def main(args: Array[String]) {
