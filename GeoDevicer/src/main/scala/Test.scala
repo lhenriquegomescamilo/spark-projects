@@ -59,7 +59,7 @@ object Test {
         .add("country", "string")
 
     // Finally we read, filter by country, rename the columns and return the data
-    val dfs =  hdfs_files.map(
+    val dfs = hdfs_files.map(
       file =>
         spark.read
           .option("header", "true")
@@ -158,7 +158,29 @@ object Test {
     //   .save("/datascience/geo/testPolygons")
   }
 
+  type OptionMap = Map[Symbol, String]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--ndays" :: value :: tail =>
+        nextOption(map ++ Map('ndays -> value.toString), tail)
+      case "--from" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toString), tail)
+    }
+  }
+
   def main(args: Array[String]) {
+    // Parse the parameters
+    val options = nextOption(Map(), args.toList)
+    val from = if (options.contains('from)) options('from).toInt else 1
+    val nDays =
+      if (options.contains('ndays)) options('ndays) else 1
+
     // Start Spark Session
     val spark = SparkSession
       .builder()
@@ -176,6 +198,6 @@ object Test {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // Finally we perform the GeoJoin
-    get_safegraph_data(spark, 1, 1)
+    get_safegraph_data(spark, nDays, from)
   }
 }
