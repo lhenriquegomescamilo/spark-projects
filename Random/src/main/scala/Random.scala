@@ -2084,9 +2084,11 @@ val records_common = the_join.select(col("identifier"))
         "array_contains (all_segments,20107) OR array_contains (all_segments,20108) OR array_contains (all_segments,20109) OR array_contains (all_segments,20110)"
       )
       .filter(col("url").isNotNull)
-      .select("device_id", "url","app_installed","device_type")
+      .select("device_id", "url","device_type")
       .withColumn("device_id",upper(col("device_id")))
       .distinct()
+      .groupBy("device_id","device_type").agg(count(col("url")) as "url_count")
+      
 
     //Cargamos la audiencia de voto
     val voto_audience = spark.read
@@ -2102,7 +2104,7 @@ val records_common = the_join.select(col("identifier"))
 
     //hacemos el join
     val voto_url = voto_audience.join(data_audience, Seq("device_id"))
-                    .withColumn("app_installed", concat_ws(",", col("app_installed")))
+                    //.withColumn("app_installed", concat_ws(",", col("app_installed")))
 
 //guardamos
     voto_url.write
