@@ -179,7 +179,7 @@ object Test {
     val options = nextOption(Map(), args.toList)
     val from = if (options.contains('from)) options('from).toInt else 1
     val nDays =
-      if (options.contains('ndays)) options('ndays) else 1
+      if (options.contains('ndays)) options('ndays).toInt else 1
 
     // Start Spark Session
     val spark = SparkSession
