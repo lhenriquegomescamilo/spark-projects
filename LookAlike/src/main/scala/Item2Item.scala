@@ -332,7 +332,11 @@ object Item2Item {
       .rows
       .map(row => (row.index, row.vector))
       .join(indexedData.map(t => (t._1, (t._2, t._3)))) // (device_idx, (device_id, segments))
-      .map(tup => (tup._2._2._1, tup._2._2._2.map(t =>  newColIndex(t._1.toString.toInt)).toArray, tup._2._1))
+      .map(tup => (tup._2._2._1,
+                   tup._2._2._2
+                    .filter(t => newColIndex contains t._1.toString.toInt)
+                    .map(t =>  newColIndex(t._1.toString.toInt)).toArray,
+                   tup._2._1))
     )// <device_id, array segments index, predictios segments>
 
     userPredictionMatrix
