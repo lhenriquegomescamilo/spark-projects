@@ -2081,10 +2081,11 @@ val records_common = the_join.select(col("identifier"))
     val data_audience = spark.read
       .parquet(hdfs_files: _*)
       .filter(
-        "array_contains(all_segments,'20107') OR array_contains(all_segments,'20108') OR array_contains(all_segments,'20109') OR array_contains(all_segments,'20110')"
+        "array_contains(third_party,'20107') OR array_contains(third_party,'20108') OR array_contains(third_party,'20109') OR array_contains(third_party,'20110')"
       )
       .filter(col("url").isNotNull)
-      .select("url", "device_id")
+      .select("device_id")
+      .distinct()
       .withColumn("device_id", upper(col("device_id")))
 
     //Cargamos la audiencia de voto
@@ -2102,7 +2103,7 @@ val records_common = the_join.select(col("identifier"))
     //hacemos el join
     val voto_url = voto_audience
       .join(data_audience, Seq("device_id"))
-      .distinct()
+      // .distinct()
       .groupBy("device_id")
       .agg(count(col("url")) as "url_count")
 
@@ -3631,7 +3632,7 @@ user_granularity.write
     //user_segments(spark)
     //ua_segment_join(spark)
     //process_pipeline_partner(spark)
-    getDataVotaciones(spark)
+    get_voto_users(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 
