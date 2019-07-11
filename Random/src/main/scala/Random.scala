@@ -3600,7 +3600,7 @@ user_granularity.write
   def getDataVotaciones(spark: SparkSession) = {
     val data_audience =
       getDataAudiences(spark, nDays = 30, since = 1)
-        .filter("country is AR and event_type IN ('tk', 'batch', 'data', 'pv')")
+        .filter("country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')")
         .select("device_id", "url", "timestamp", "all_segments")
     val data_votaciones =
       spark.read
