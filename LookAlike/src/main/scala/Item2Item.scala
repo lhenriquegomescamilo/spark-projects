@@ -33,7 +33,6 @@ import org.apache.spark.mllib.linalg.distributed.MatrixEntry
 import org.apache.spark.mllib.linalg.distributed.IndexedRowMatrix
 import org.apache.spark.mllib.linalg.distributed.CoordinateMatrix
 
-type OptionMap = Map[Symbol, Int]
 
 object Item2Item {
 
@@ -514,7 +513,7 @@ object Item2Item {
     expandInputs
   }
 
-
+  type OptionMap = Map[Symbol, Int]
   /**
     * This method parses the parameters sent.
     */
