@@ -3586,6 +3586,39 @@ user_granularity.write
     println("LOGGER: %s".format(mobile_count))
   }
 
+  /**
+    *
+    *
+    *
+    *
+    *        DATA DE ENCUESTAS DE LAS VOTACIONES
+    *
+    *
+    *
+    *
+    */
+  def getDataVotaciones(spark: SparkSession) = {
+    val data_audience =
+      getDataAudiences(spark, nDays = 30, since = 1)
+        .filter("country is AR and event_type IN ('tk', 'batch', 'data', 'pv')")
+        .select("device_id", "url", "timestamp", "all_segments")
+    val data_votaciones =
+      spark.read
+        .format("csv")
+        .load("/datascience/custom/votacion.csv")
+        .withColumnRenamed("_c0", "device_id")
+        .withColumnRenamed("_c1", "cluster")
+
+    val joint = data_audience
+      .join(broadcast(data_votaciones), Seq("device_id"))
+      .withColumn("all_segments", concat_ws(",", col("all_segments")))
+
+    joint.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/votaciones_con_data")
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -3598,7 +3631,7 @@ user_granularity.write
     //user_segments(spark)
     //ua_segment_join(spark)
     //process_pipeline_partner(spark)
-    get_voto_users(spark, 30)
+    getDataVotaciones(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 
