@@ -402,16 +402,17 @@ object Item2Item {
            minSegmentSupport: Int = 100){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
-
   var nSegments = segmentLabels.length
 
   val colIndex = (0 until selectedSegmentsIdx.length)
-
+  var nUsers = data.count()
+  println(nUsers)
   var scores = data
     .flatMap(tup => colIndex.map(colIdx => (colIdx, tup._3.apply(colIdx)) ))
     .filter(tup => (tup._2 > 0)) // select scores > 0
   // (<segment_idx>, score)
 
+  
   var minScores = scores.topByKey(k).map(t => (t._1, t._2.last)).collect().toMap
   
   // <segmentIdx> -> (nP, nSelected, nTP)
