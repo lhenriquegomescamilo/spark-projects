@@ -72,7 +72,7 @@ object IndexGenerator {
       .load(last_file)
       .repartition(300)
       .withColumn("device", explode(split(col("_c2"), "\t")))
-      .withColumnRenamed("_c0", "tapad_id") // Here I will use the household id instead of the Individual id
+      .withColumnRenamed("_c1", "tapad_id") // Here I will use the household id instead of the Individual id
       .withColumn("device", split(col("device"), "="))
       .withColumn("device_type", col("device").getItem(0))
       .withColumn("device", col("device").getItem(1))
@@ -96,7 +96,7 @@ object IndexGenerator {
       .mode(SaveMode.Overwrite)
       .format("parquet")
       .partitionBy("index_type", "device_type")
-      .save("/datascience/crossdevice/double_index")
+      .save("/datascience/crossdevice/double_index_individual")
   }
 
   /**
