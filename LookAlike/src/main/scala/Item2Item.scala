@@ -424,7 +424,7 @@ object Item2Item {
                       if(tup._3.apply(colIdx) >= minScores(colIdx)) 1 else 0,
                       if((tup._2 contains colIdx) && (tup._3.apply(colIdx) >= minScores(colIdx))) 1 else 0
                      )
-                    ) 
+                    ))
     )
     .reduceByKey(
       (a, b) => ((a._1 + b._1), (a._2 + b._2), (a._3 + b._3))
