@@ -3632,7 +3632,7 @@ user_granularity.write
     //user_segments(spark)
     //ua_segment_join(spark)
     //process_pipeline_partner(spark)
-    get_voto_users(spark)
+    get_voto_users(spark, 30)
     println("LOGGER: JOIN FINISHED!")
   }
 
