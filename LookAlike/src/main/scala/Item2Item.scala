@@ -259,7 +259,7 @@ object Item2Item {
       .zipWithIndex() // <device_id, device_idx>
       .map(tup => (tup._2, tup._1._1, tup._1._2)) // <device_idx, device_id, segments>
 
-    var nSegments = similartyMatrix.numRows()
+    var nSegments = similartyMatrix.numRows().toInt
 
     //IndexedRow -> new (index: Long, vector: Vector) 
     val indexedRows: RDD[IndexedRow] = {
@@ -315,9 +315,9 @@ object Item2Item {
     val localSimMatrix =  
       new CoordinateMatrix(
         similartyMatrix.entries 
-                .filter(me => newColIndex contains me.j) // select only columns to predict
-                .map(me => MatrixEntry(me.i, newColIndex(me.j), me.value))
-        ,similartyMatrix.numRows(), newColIndex.length)
+                .filter(me => newColIndex contains me.j.toInt) // select only columns to predict
+                .map(me => MatrixEntry(me.i, newColIndex(me.j.toInt), me.value))
+        ,similartyMatrix.numRows(), newColIndex.size)
       .toBlockMatrix()
       .toLocalMatrix()
 
@@ -338,6 +338,7 @@ object Item2Item {
     userPredictionMatrix
   }
 
+/*
   def expand(spark: SparkSession,
              data: RDD[(Any, Array[(Int)], Vector)],
              expandInput: List[Map[String, Any]] ,
@@ -389,7 +390,7 @@ object Item2Item {
     )
   
   }
-
+*/
   /*
   * It calculates precision, recall and F1 metrics.
   */
@@ -424,7 +425,7 @@ object Item2Item {
                       if(tup._3.apply(colIdx) >= minScores(colIdx)) 1 else 0,
                       if((tup._2 contains colIdx) && (tup._3.apply(colIdx) >= minScores(colIdx))) 1 else 0
                      )
-                    ) 
+                    ))
     )
     .reduceByKey(
       (a, b) => ((a._1 + b._1), (a._2 + b._2), (a._3 + b._3))
@@ -497,7 +498,7 @@ object Item2Item {
     for (line <- data) {
       val segmentId = line("segmentId").toString
       val newSegmentId = line("newSegmentId").toString
-      val size = line("size").toInt
+      val size = line("size").toString.toInt
       val country = line("country")
 
       val actual_map: Map[String, Any] = Map(
@@ -512,7 +513,7 @@ object Item2Item {
     expandInputs
   }
 
-
+  type OptionMap = Map[Symbol, String]
   /**
     * This method parses the parameters sent.
     */
@@ -521,13 +522,13 @@ object Item2Item {
     list match {
       case Nil => map
       case "--simHits" :: value :: tail =>
-        nextOption(map ++ Map('simHits -> value.toString), tail)
+        nextOption(map ++ Map('simHits -> value), tail)
       case "--predHits" :: value :: tail =>
-        nextOption(map ++ Map('predHits -> value.toString), tail)
+        nextOption(map ++ Map('predHits -> value), tail)
       case "--country" :: value :: tail =>
-        nextOption(map ++ Map('country -> value.toString), tail)
+        nextOption(map ++ Map('country -> value), tail)
       case "--size" :: value :: tail =>
-        nextOption(map ++ Map('size -> value.toInt), tail)
+        nextOption(map ++ Map('size -> value), tail)
     }
   }
 
@@ -544,15 +545,15 @@ object Item2Item {
       "/datascience/data_lookalike/i2i_checkpoint"
     )
     Logger.getRootLogger.setLevel(Level.WARN)
-
+    val options = nextOption(Map(), args.toList)
     val country =
-      if (options.contains('country)) options('country).toString else "PE"
+      if (options.contains('country)) options('country) else "PE"
     val simHits =
-      if (options.contains('simHits)) options('simHits).toString else "binary"
+      if (options.contains('simHits)) options('simHits) else "binary"
     val predHits =
-      if (options.contains('predHits)) options('predHits).toString else "binary"
+      if (options.contains('predHits)) options('predHits) else "binary"
     val size =
-      if (options.contains('size)) options('size).toString.toInt else 1000
+      if (options.contains('size)) options('size).toInt else 1000
 
 
     runTest(spark, country, simHits, predHits, size)
