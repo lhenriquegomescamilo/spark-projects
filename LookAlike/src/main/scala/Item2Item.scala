@@ -316,7 +316,7 @@ object Item2Item {
       new CoordinateMatrix(
         similartyMatrix.entries 
                 .filter(me => newColIndex contains me.j.toInt) // select only columns to predict
-                .map(me => MatrixEntry(me.i, newColIndex(me.j), me.value))
+                .map(me => MatrixEntry(me.i, newColIndex(me.j.toInt), me.value))
         ,similartyMatrix.numRows(), newColIndex.size)
       .toBlockMatrix()
       .toLocalMatrix()
@@ -498,7 +498,7 @@ object Item2Item {
     for (line <- data) {
       val segmentId = line("segmentId").toString
       val newSegmentId = line("newSegmentId").toString
-      val size = line("size").toInt
+      val size = line("size").toString.toInt
       val country = line("country")
 
       val actual_map: Map[String, Any] = Map(
@@ -513,7 +513,7 @@ object Item2Item {
     expandInputs
   }
 
-  type OptionMap = Map[Symbol, Int]
+  type OptionMap = Map[Symbol, String]
   /**
     * This method parses the parameters sent.
     */
@@ -522,13 +522,13 @@ object Item2Item {
     list match {
       case Nil => map
       case "--simHits" :: value :: tail =>
-        nextOption(map ++ Map('simHits -> value.toString), tail)
+        nextOption(map ++ Map('simHits -> value), tail)
       case "--predHits" :: value :: tail =>
-        nextOption(map ++ Map('predHits -> value.toString), tail)
+        nextOption(map ++ Map('predHits -> value), tail)
       case "--country" :: value :: tail =>
-        nextOption(map ++ Map('country -> value.toString), tail)
+        nextOption(map ++ Map('country -> value), tail)
       case "--size" :: value :: tail =>
-        nextOption(map ++ Map('size -> value.toInt), tail)
+        nextOption(map ++ Map('size -> value), tail)
     }
   }
 
@@ -547,13 +547,13 @@ object Item2Item {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     val country =
-      if (options.contains('country)) options('country).toString else "PE"
+      if (options.contains('country)) options('country) else "PE"
     val simHits =
-      if (options.contains('simHits)) options('simHits).toString else "binary"
+      if (options.contains('simHits)) options('simHits) else "binary"
     val predHits =
-      if (options.contains('predHits)) options('predHits).toString else "binary"
+      if (options.contains('predHits)) options('predHits) else "binary"
     val size =
-      if (options.contains('size)) options('size).toString.toInt else 1000
+      if (options.contains('size)) options('size).toInt else 1000
 
 
     runTest(spark, country, simHits, predHits, size)
