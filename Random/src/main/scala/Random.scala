@@ -3632,7 +3632,14 @@ user_granularity.write
     //user_segments(spark)
     //ua_segment_join(spark)
     //process_pipeline_partner(spark)
-    get_voto_users(spark, 30)
+    //get_voto_users(spark, 30)
+    spark.read
+          .load("/datascience/sharethis/historic/day=201907*")
+          .groupBy("url")
+          .count
+          .orderBy(desc("count"))
+          .write.format("csv").mode(SaveMode.Overwrite)
+          .save("/datascience/custom/urls_us")
     println("LOGGER: JOIN FINISHED!")
   }
 

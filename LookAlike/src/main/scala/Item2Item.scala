@@ -39,7 +39,7 @@ object Item2Item {
   def runExpand(spark: SparkSession,
                 simMatrixHits: String = "binary",
                 predMatrixHits: String = "binary") {
-
+    /*
     // Read input from file
     val expandInput = getExpandInput(spark, actual_path)
 
@@ -99,16 +99,16 @@ object Item2Item {
              countryExpandInput,
              segmentToIndex,
              country)
-    }
+    }*/
   }
   /*
   *
   */
   def runTest(spark: SparkSession,
-                country: String,
-                simMatrixHits: String = "binary",
-                predMatrixHits: String = "binary",
-                k: Int = 1000) {
+              country: String,
+              simMatrixHits: String = "binary",
+              predMatrixHits: String = "binary",
+              k: Int = 1000) {
     import spark.implicits._
 
     // 1) Segments to expand
@@ -133,7 +133,7 @@ object Item2Item {
         "/datascience/data_demo/triplets_segments/country=%s/".format(country)
       )
 
-    // 2) Segments label encoder
+    // 2) Get all segments (segment_id < 4500)
     var segments = data
       .select(col("feature"))
       .filter(col("feature").lt(4500))
@@ -145,6 +145,7 @@ object Item2Item {
       .union(selectedSegments.toSet) // add selected segments
       .toList
 
+    // index segment_id
     val segmentToIndex = segments.zipWithIndex.toMap
     val dfSegmentIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
 
@@ -156,7 +157,7 @@ object Item2Item {
       .as("count"))
 
     val usersSegmentsData = dataTriples
-      .filter(col("feature").isin(segments: _*))     // segment filtering
+      .filter(col("feature").isin(segments: _*))  // segment filtering
       .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
       .select("device_id", "segment_idx", "count")
       .rdd
@@ -167,15 +168,17 @@ object Item2Item {
     val simMatrix = getSimilarities(spark, usersSegmentsData, segments.size, 0.05, simMatrixHits)
 
     // 5) Predictions
+    // Get segment indexes to predict
+    val selectedSegmentsIdx = selectedSegments.map(seg => segmentToIndex(seg)) 
+    // generate score for each segment to predict
     val predictData = predict(spark,
                               usersSegmentsData,
-                              segments.size,
+                              selectedSegmentsIdx,
                               simMatrix,
-                              predMatrixHits)
+                              predMatrixHits=predMatrixHits,
+                              minUserSegments = 2)
     // 6) Metrics
-    val selectedSegmentsIdx = selectedSegments.map(seg => segmentToIndex(seg)) 
     test(spark, predictData, selectedSegmentsIdx, segments, country, k, 100)
-
   }
 
   /**
@@ -246,14 +249,17 @@ object Item2Item {
   */
   def predict(spark: SparkSession,
               data: RDD[(Any, Iterable[(Any, Any)])],
-              nSegments: Int,
+              selectedSegmentsIdx: List[Int],
               similartyMatrix: CoordinateMatrix,
-              predMatrixHits: String = "binary") : RDD[(Any, Array[(Int)], Vector)]  =  {
+              predMatrixHits: String = "binary",
+              minUserSegments: Int = 1) : RDD[(Any, Array[(Int)], Vector)]  =  {
 
     var indexedData = data
-      .filter( row => row._2.size > 1) // filter users 
+      .filter( row => row._2.size >= minUserSegments) // filter users
       .zipWithIndex() // <device_id, device_idx>
       .map(tup => (tup._2, tup._1._1, tup._1._2)) // <device_idx, device_id, segments>
+
+    var nSegments = similartyMatrix.numRows().toInt
 
     //IndexedRow -> new (index: Long, vector: Vector) 
     val indexedRows: RDD[IndexedRow] = {
@@ -301,24 +307,38 @@ object Item2Item {
     }
     */
 
-    val userSegmentMatrix = new IndexedRowMatrix(indexedRows)
 
+    val userSegmentMatrix = new IndexedRowMatrix(indexedRows)
+    
+    // Collect the distributed matrix on the driver
+    val newColIndex = selectedSegmentsIdx.zipWithIndex.toMap
+    val localSimMatrix =  
+      new CoordinateMatrix(
+        similartyMatrix.entries 
+                .filter(me => newColIndex contains me.j.toInt) // select only columns to predict
+                .map(me => MatrixEntry(me.i, newColIndex(me.j), me.value))
+        ,similartyMatrix.numRows(), newColIndex.size)
+      .toBlockMatrix()
+      .toLocalMatrix()
+
+    
     // it calculates the prediction scores
     // it doesn't use the current segment to make prediction,
     // because the main diagonal of similarity matrix is 0 
-    var scoreMatrix = userSegmentMatrix.multiply(similartyMatrix.toBlockMatrix().toLocalMatrix())
+    var scoreMatrix = userSegmentMatrix.multiply(localSimMatrix)
     // this operation preserves partitioning
 
     var userPredictionMatrix = (scoreMatrix
       .rows
       .map(row => (row.index, row.vector))
       .join(indexedData.map(t => (t._1, (t._2, t._3)))) // (device_idx, (device_id, segments))
-      .map(tup => (tup._2._2._1, tup._2._2._2.map(t =>  t._1.toString.toInt).toArray, tup._2._1))
+      .map(tup => (tup._2._2._1, tup._2._2._2.map(t =>  newColIndex(t._1.toString.toInt)).toArray, tup._2._1))
     )// <device_id, array segments index, predictios segments>
 
     userPredictionMatrix
   }
 
+/*
   def expand(spark: SparkSession,
              data: RDD[(Any, Array[(Int)], Vector)],
              expandInput: List[Map[String, Any]] ,
@@ -370,7 +390,7 @@ object Item2Item {
     )
   
   }
-
+*/
   /*
   * It calculates precision, recall and F1 metrics.
   */
@@ -383,48 +403,51 @@ object Item2Item {
            minSegmentSupport: Int = 100){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
+  var nSegments = segmentLabels.length
 
-  var nSegments =  segmentLabels.length
-  val segmentSupports = (data.flatMap(tup => tup._2)).countByValue()
-
-  val selectedSegments = selectedSegmentsIdx.filter(segmentIdx => segmentSupports.getOrElse(segmentIdx, 0).toString().toInt >= minSegmentSupport)
-
+  val colIndex = (0 until selectedSegmentsIdx.length)
+  var nUsers = data.count()
+  println(nUsers)
   var scores = data
-    .flatMap(tup => selectedSegments.map(segmentIdx => (segmentIdx, tup._3.apply(segmentIdx)) ))
+    .flatMap(tup => colIndex.map(colIdx => (colIdx, tup._3.apply(colIdx)) ))
     .filter(tup => (tup._2 > 0)) // select scores > 0
   // (<segment_idx>, score)
 
+  
   var minScores = scores.topByKey(k).map(t => (t._1, t._2.last)).collect().toMap
   
-  // <segmentIdx> -> (nSelected, nTP)
+  // <segmentIdx> -> (nP, nSelected, nTP)
   var relevanCount = data
     .flatMap(
-        tup => selectedSegments.map(
-          segmentIdx => (segmentIdx,
-                          (if(tup._3.apply(segmentIdx) >= minScores(segmentIdx)) 1 else 0,
-                          if((tup._2 contains segmentIdx) && (tup._3.apply(segmentIdx) >= minScores(segmentIdx))) 1 else 0))
-                          ) 
+        tup => colIndex.map(
+          colIdx => (colIdx,
+                     (if(tup._2 contains colIdx) 1 else 0,
+                      if(tup._3.apply(colIdx) >= minScores(colIdx)) 1 else 0,
+                      if((tup._2 contains colIdx) && (tup._3.apply(colIdx) >= minScores(colIdx))) 1 else 0
+                     )
+                    ))
     )
     .reduceByKey(
-      (a, b) => ((a._1 + b._1), (a._2 + b._2))
+      (a, b) => ((a._1 + b._1), (a._2 + b._2), (a._3 + b._3))
     )
     .collect
     .toMap
 
    // (segment_id, count, selected, min_score, prec, recall)
     var metrics = (
-        selectedSegments
-        .map(segmentIdx => (segmentLabels(segmentIdx).toString,
-                            segmentSupports(segmentIdx).toDouble, 
-                            relevanCount(segmentIdx)._1.toDouble,  
-                            minScores(segmentIdx).toDouble,
-                            if(relevanCount(segmentIdx)._2 > 0) relevanCount(segmentIdx)._2.toDouble / relevanCount(segmentIdx)._1.toDouble else 0.0,
-                            if(segmentSupports(segmentIdx) > 0) relevanCount(segmentIdx)._2.toDouble / segmentSupports(segmentIdx).toDouble else 0.0)
+        colIndex
+        .map(colIdx => (segmentLabels(selectedSegmentsIdx(colIdx)).toString,
+                        relevanCount(colIdx)._1.toDouble, 
+                        relevanCount(colIdx)._2.toDouble,  
+                        minScores(colIdx).toDouble,
+                        if(relevanCount(colIdx)._2 > 0) relevanCount(colIdx)._3.toDouble / relevanCount(colIdx)._2.toDouble else 0.0,
+                        if(relevanCount(colIdx)._1 > 0) relevanCount(colIdx)._2.toDouble / relevanCount(colIdx)._1.toDouble else 0.0)
         )
     )
 
     var dfMetrics = metrics
       .toDF("segment", "nRelevant", "nSelected", "scoreTh", "precision", "recall" )
+      .filter($"nRelevant" >= minSegmentSupport)
       .withColumn("f1", when($"precision" + $"recall" > 0.0, ($"precision" * $"recall") / ( $"precision" + $"recall") * 2.0).otherwise(0.0))
       .sort(desc("precision"))
     
@@ -490,7 +513,7 @@ object Item2Item {
     expandInputs
   }
 
-
+  type OptionMap = Map[Symbol, Int]
   /**
     * This method parses the parameters sent.
     */
