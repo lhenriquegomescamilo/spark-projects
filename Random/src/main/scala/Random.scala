@@ -3633,14 +3633,12 @@ user_granularity.write
     //ua_segment_join(spark)
     //process_pipeline_partner(spark)
     //get_voto_users(spark, 30)
-    val mob = spark.read.load("/datascience/pii_matching/pii_table").filter("country = 'AR' and  pii_type = 'mob'").select("device_id","pii").withColumnRenamed("pii","mob")
-    val nid = spark.read.load("/datascience/pii_matching/pii_table").filter("country = 'AR' and  pii_type = 'nid'").select("device_id","pii").withColumnRenamed("pii","nid")
-    val ml = spark.read.load("/datascience/pii_matching/pii_table").filter("country = 'AR' and  pii_type = 'mail'").select("device_id","pii").withColumnRenamed("pii","mail")
-    
-
-    ml.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/mails_movistar")
-    nid.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/nid_movistar")
-    mob.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/mob_movistar")
+    spark.read
+          .load("/datascience/sharethis/historic/day=201907*")
+          .groupBy("url")
+          .count
+          .orderBy(desc("count"))
+          .write.format("csv").save("/datascience/custom/urls_us")
     println("LOGGER: JOIN FINISHED!")
   }
 
