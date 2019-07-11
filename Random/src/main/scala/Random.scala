@@ -3638,7 +3638,6 @@ user_granularity.write
           .groupBy("url")
           .count
           .orderBy(desc("count"))
-          .limit(10000)
           .write.format("csv").save("/datascience/custom/urls_us")
     println("LOGGER: JOIN FINISHED!")
   }
