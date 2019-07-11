@@ -3636,8 +3636,11 @@ user_granularity.write
     val mob = spark.read.load("/datascience/pii_matching/pii_table").filter("country = 'AR' and  pii_type = 'mob'").select("device_id","pii").withColumnRenamed("pii","mob")
     val nid = spark.read.load("/datascience/pii_matching/pii_table").filter("country = 'AR' and  pii_type = 'nid'").select("device_id","pii").withColumnRenamed("pii","nid")
     val ml = spark.read.load("/datascience/pii_matching/pii_table").filter("country = 'AR' and  pii_type = 'mail'").select("device_id","pii").withColumnRenamed("pii","mail")
-    val joint = nid.join(mob,Seq("device_id")).join(ml,Seq("device_id")).dropDuplicates()
-    joint.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/users_with_mob_nid_ml_final")
+    
+
+    ml.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/mails_movistar")
+    nid.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/nid_movistar")
+    mob.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/mob_movistar")
     println("LOGGER: JOIN FINISHED!")
   }
 
