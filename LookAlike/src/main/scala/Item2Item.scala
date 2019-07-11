@@ -545,7 +545,8 @@ object Item2Item {
       "/datascience/data_lookalike/i2i_checkpoint"
     )
     Logger.getRootLogger.setLevel(Level.WARN)
-
+    val options =
+      nextOption(Map(), args.toList.slice(0, args.toList.length - 1))
     val country =
       if (options.contains('country)) options('country) else "PE"
     val simHits =
