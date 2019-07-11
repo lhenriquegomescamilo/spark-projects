@@ -2104,8 +2104,8 @@ val records_common = the_join.select(col("identifier"))
     val voto_url = voto_audience
       .join(data_audience, Seq("device_id"))
       // .distinct()
-      .groupBy("device_id")
-      .agg(count(col("url")) as "url_count")
+      // .groupBy("device_id")
+      // .agg(count(col("url")) as "url_count")
 
 //guardamos
     voto_url.write
