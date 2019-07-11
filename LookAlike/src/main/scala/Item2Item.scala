@@ -33,6 +33,7 @@ import org.apache.spark.mllib.linalg.distributed.MatrixEntry
 import org.apache.spark.mllib.linalg.distributed.IndexedRowMatrix
 import org.apache.spark.mllib.linalg.distributed.CoordinateMatrix
 
+type OptionMap = Map[Symbol, Int]
 
 object Item2Item {
 
@@ -259,7 +260,7 @@ object Item2Item {
       .zipWithIndex() // <device_id, device_idx>
       .map(tup => (tup._2, tup._1._1, tup._1._2)) // <device_idx, device_id, segments>
 
-    var nSegments = similartyMatrix.numRows()
+    var nSegments = similartyMatrix.numRows().toInt
 
     //IndexedRow -> new (index: Long, vector: Vector) 
     val indexedRows: RDD[IndexedRow] = {
@@ -315,9 +316,9 @@ object Item2Item {
     val localSimMatrix =  
       new CoordinateMatrix(
         similartyMatrix.entries 
-                .filter(me => newColIndex contains me.j) // select only columns to predict
+                .filter(me => newColIndex contains me.j.toInt) // select only columns to predict
                 .map(me => MatrixEntry(me.i, newColIndex(me.j), me.value))
-        ,similartyMatrix.numRows(), newColIndex.length)
+        ,similartyMatrix.numRows(), newColIndex.size)
       .toBlockMatrix()
       .toLocalMatrix()
 
@@ -338,6 +339,7 @@ object Item2Item {
     userPredictionMatrix
   }
 
+/*
   def expand(spark: SparkSession,
              data: RDD[(Any, Array[(Int)], Vector)],
              expandInput: List[Map[String, Any]] ,
@@ -389,7 +391,7 @@ object Item2Item {
     )
   
   }
-
+*/
   /*
   * It calculates precision, recall and F1 metrics.
   */
