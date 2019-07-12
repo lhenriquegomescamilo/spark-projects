@@ -170,8 +170,7 @@ object Item2Item {
       .map(row => (row(0), (row(1), row(2))))
       .groupByKey()  // group by device_id
       .filter(row =>
-                row._2
-                .filter(t => baseSegmentsIdx contains t._1.toString.toInt).size > 0)
+                row._2.filter(t => baseSegmentsIdx contains t._1.toString.toInt).size > 0
               ) // select users with base segments
     
     // 4) Generate similarities matrix
