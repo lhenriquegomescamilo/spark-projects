@@ -3635,10 +3635,11 @@ user_granularity.write
     //get_voto_users(spark, 30)
     spark.read
           .load("/datascience/sharethis/historic/day=201907*")
+          .select("url")
           .groupBy("url")
           .count
           .orderBy(desc("count"))
-          .select("url")
+          .limit(10000)
           .write.format("csv").mode(SaveMode.Overwrite)
           .save("/datascience/custom/urls_us")
     println("LOGGER: JOIN FINISHED!")
