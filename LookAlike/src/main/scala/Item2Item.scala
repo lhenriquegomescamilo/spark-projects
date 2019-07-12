@@ -445,16 +445,19 @@ object Item2Item {
     .toMap
 
    // (segment_id, count, selected, min_score, prec, recall)
-    var metrics = (
-         minScores.keys
+    var metrics = minScores.keys
         .map(colIdx => (segmentLabels(selectedSegmentsIdx(colIdx)).toString,
                         relevanCount(colIdx)._1.toDouble, 
                         relevanCount(colIdx)._2.toDouble,  
                         minScores(colIdx).toDouble,
-                        if(relevanCount(colIdx)._2 > 0) relevanCount(colIdx)._3.toDouble / relevanCount(colIdx)._2.toDouble else 0.0,
-                        if(relevanCount(colIdx)._1 > 0) relevanCount(colIdx)._2.toDouble / relevanCount(colIdx)._1.toDouble else 0.0)
-        )
-    )
+                        if(relevanCount(colIdx)._2 > 0) 
+                          relevanCount(colIdx)._3.toDouble / relevanCount(colIdx)._2.toDouble
+                        else 0.0,
+                        if(relevanCount(colIdx)._1 > 0)
+                          relevanCount(colIdx)._2.toDouble / relevanCount(colIdx)._1.toDouble
+                        else 0.0
+                      )
+        ).toList
 
     var dfMetrics = metrics
       .toDF("segment", "nRelevant", "nSelected", "scoreTh", "precision", "recall" )
