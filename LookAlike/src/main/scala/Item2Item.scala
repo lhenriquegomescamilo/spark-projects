@@ -430,11 +430,11 @@ object Item2Item {
   // <segmentIdx> -> (nP, nSelected, nTP)
   var relevanCount = data
     .flatMap(
-        tup => colIndex.map(
+        tup => minScores.keys.map(
           colIdx => (colIdx,
                      (if(tup._2 contains colIdx) 1 else 0,
-                      if(tup._3.apply(colIdx) >= minScores.getOrElse(colIdx, 9999)) 1 else 0,
-                      if((tup._2 contains colIdx) && (tup._3.apply(colIdx) >= minScores.getOrElse(colIdx, 9999) )) 1 else 0
+                      if(tup._3.apply(colIdx) >= minScores(colIdx) 1 else 0,
+                      if((tup._2 contains colIdx) && (tup._3.apply(colIdx) >= minScores(colIdx) )) 1 else 0
                      )
                     ))
     )
@@ -446,7 +446,7 @@ object Item2Item {
 
    // (segment_id, count, selected, min_score, prec, recall)
     var metrics = (
-        colIndex
+         minScores.keys
         .map(colIdx => (segmentLabels(selectedSegmentsIdx(colIdx)).toString,
                         relevanCount(colIdx)._1.toDouble, 
                         relevanCount(colIdx)._2.toDouble,  
