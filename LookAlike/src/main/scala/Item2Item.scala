@@ -417,14 +417,11 @@ object Item2Item {
   var nSegments = segmentLabels.length
 
   val colIndex = (0 until selectedSegmentsIdx.length)
-  var nUsers = data.count()
-  println(nUsers)
   var scores = data
     .flatMap(tup => colIndex.map(colIdx => (colIdx, tup._3.apply(colIdx)) ))
     .filter(tup => (tup._2 > 0)) // select scores > 0
   // (<segment_idx>, score)
 
-  
   var minScores = scores.topByKey(k).map(t => (t._1, t._2.last)).collect().toMap
   
   // <segmentIdx> -> (nP, nSelected, nTP)
@@ -454,7 +451,7 @@ object Item2Item {
                           relevanCount(colIdx)._3.toDouble / relevanCount(colIdx)._2.toDouble
                         else 0.0,
                         if(relevanCount(colIdx)._1 > 0)
-                          relevanCount(colIdx)._2.toDouble / relevanCount(colIdx)._1.toDouble
+                          relevanCount(colIdx)._3.toDouble / relevanCount(colIdx)._1.toDouble
                         else 0.0
                       )
         ).toList
