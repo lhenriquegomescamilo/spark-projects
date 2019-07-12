@@ -433,7 +433,7 @@ object Item2Item {
         tup => minScores.keys.map(
           colIdx => (colIdx,
                      (if(tup._2 contains colIdx) 1 else 0,
-                      if(tup._3.apply(colIdx) >= minScores(colIdx) 1 else 0,
+                      if(tup._3.apply(colIdx) >= minScores(colIdx)) 1 else 0,
                       if((tup._2 contains colIdx) && (tup._3.apply(colIdx) >= minScores(colIdx) )) 1 else 0
                      )
                     ))
