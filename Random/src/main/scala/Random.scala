@@ -2103,9 +2103,9 @@ val records_common = the_join.select(col("identifier"))
     //hacemos el join
     val voto_url = voto_audience
       .join(data_audience, Seq("device_id"))
-      // .distinct()
-      // .groupBy("device_id")
-      // .agg(count(col("url")) as "url_count")
+    // .distinct()
+    // .groupBy("device_id")
+    // .agg(count(col("url")) as "url_count")
 
 //guardamos
     voto_url.write
@@ -3601,7 +3601,9 @@ user_granularity.write
   def getDataVotaciones(spark: SparkSession) = {
     val data_audience =
       getDataAudiences(spark, nDays = 30, since = 1)
-        .filter("country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')")
+        .filter(
+          "country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')"
+        )
         .select("device_id", "url", "timestamp", "all_segments")
     val data_votaciones =
       spark.read
@@ -3620,6 +3622,35 @@ user_granularity.write
       .save("/datascience/custom/votaciones_con_data")
   }
 
+  def scopesi_enrichment(spark: SparkSession) = {
+    val original = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/custom/scopesi_july_original.csv")
+    val xd = spark.read
+      .format("csv")
+      .load("/datascience/audiences/crossdeviced/scopesi_july_original.csv_xd")
+    val taxo = "224 165 302 3055 36 61 26 32 230 264".split(" ").toSeq
+    val triplets = spark.read
+      .load(
+        "/datascience/data_demo/triplets_segments/country=AR/"
+      )
+      .filter(col("feature").isin(taxo: _*))
+
+    val devices = xd
+      .select("_c1")
+      .unionAll(original)
+      .distinct()
+      .withColumnRenamed("_c1", "device_id")
+
+    val joint = triplets.join(devices, Seq("device_id"))
+
+    joint.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/scopesi_enrichment_july")
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -3629,19 +3660,7 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    //user_segments(spark)
-    //ua_segment_join(spark)
-    //process_pipeline_partner(spark)
-    //get_voto_users(spark, 30)
-    spark.read
-          .load("/datascience/sharethis/historic/day=201907*")
-          .select("url")
-          .groupBy("url")
-          .count
-          .orderBy(desc("count"))
-          .limit(10000)
-          .write.format("csv").mode(SaveMode.Overwrite)
-          .save("/datascience/custom/urls_us")
+    scopesi_enrichment(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 
