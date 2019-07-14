@@ -110,26 +110,25 @@ object keywordIngestion {
       .filter(
         day =>
           fs.exists(
-            new Path("/datascience/data_keyword_ingestion/%s.csv".format(day))
+            new Path("/datascience/selected_keywords/%s.csv".format(day))
           )
       )
-      .map(day => "/datascience/data_keyword_ingestion/%s.csv".format(day))
+      .map(day => "/datascience/selected_keywords/%s.csv".format(day))
 
     val df = spark.read
       .format("csv")
-      // .load(dfs: _*)
-      .load("/datascience/data_keyword_ingestion/2019-05-24_leo.csv")
+      .load(dfs: _*)
       .withColumnRenamed("_c0", "url")
-      .withColumnRenamed("_c1", "content_keys")
-      // .withColumn("content_keys", split(col("content_keys"), "\\|"))
+      .withColumnRenamed("_c1", "count")
+      .withColumnRenamed("_c2", "country_web")
+      .withColumnRenamed("_c3", "content_keys")
+      .withColumnRenamed("_c4", "scores")
       .withColumn("content_keys", split(col("content_keys"), " "))
-      // .withColumnRenamed("_c2", "count")
-      // .withColumnRenamed("_c3", "country_web")
       .withColumn(
-          "url",
-          regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-        )
-      .drop("count")
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+      .drop("count", "scores")
       .dropDuplicates("url")
 
     df
@@ -167,9 +166,9 @@ object keywordIngestion {
         udfGetSegments(col("segments"), col("all_segments"), col("event_type"))
       ) // En este punto juntamos todos los segmentos en una misma columna
       .withColumn(
-          "url",
-          regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-        )
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
       .select(
         "device_id",
         "device_type",
@@ -227,8 +226,7 @@ object keywordIngestion {
       .withColumn("day", lit(today)) // Agregamos el dia
 
     // Guardamos la data en formato parquet
-    joint
-      .write
+    joint.write
       .format("parquet")
       .mode("append")
       .partitionBy("day", "country")
@@ -262,4 +260,3 @@ object keywordIngestion {
     //get_data_for_elastic(spark,today)
   }
 }
-
