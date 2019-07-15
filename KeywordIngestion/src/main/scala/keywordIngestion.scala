@@ -216,13 +216,13 @@ object keywordIngestion {
       .fill("")
       .groupBy("device_id", "device_type", "country")
       .agg(
-        collect_list("segments").as("segments"),
+        // collect_list("segments").as("segments"),
         collect_list("content_keys").as("content_keys"),
-        collect_list("url").as("url")
+        // collect_list("url").as("url")
       )
       .withColumn("content_keys", flatten(col("content_keys")))
-      .withColumn("segments", flatten(col("segments")))
-      .withColumn("url", concat_ws("|", col("url")))
+      // .withColumn("segments", flatten(col("segments")))
+      // .withColumn("url", concat_ws("|", col("url")))
       .withColumn("day", lit(today)) // Agregamos el dia
 
     // Guardamos la data en formato parquet
