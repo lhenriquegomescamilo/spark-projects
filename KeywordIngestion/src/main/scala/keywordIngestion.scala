@@ -220,7 +220,7 @@ object keywordIngestion {
       .drop("composite_key")
       .na
       .fill("")
-      .withColumn("content_keys", explode("content_keys"))
+      .withColumn("content_keys", explode(col("content_keys")))
       .groupBy("device_id", "device_type", "country", "content_keys")
       // .agg(
       //   // collect_list("segments").as("segments"),
