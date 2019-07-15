@@ -217,8 +217,8 @@ object keywordIngestion {
       .groupBy("device_id", "device_type", "country")
       .agg(
         // collect_list("segments").as("segments"),
-        collect_list("content_keys").as("content_keys"),
-        // collect_list("url").as("url")
+        // collect_list("url").as("url"),
+        collect_list("content_keys").as("content_keys")
       )
       .withColumn("content_keys", flatten(col("content_keys")))
       // .withColumn("segments", flatten(col("segments")))
