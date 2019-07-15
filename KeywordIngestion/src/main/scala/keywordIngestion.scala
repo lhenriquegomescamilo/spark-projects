@@ -196,7 +196,7 @@ object keywordIngestion {
       .map(
         i =>
           getKeywordsByURL(spark, ndays, today, 1)
-            .withColumn("composite_key", concat("url", lit("@"), lit(i)))
+            .withColumn("composite_key", concat(col("url"), lit("@"), lit(i)))
       )
       .reduce((df1, df2) => df1.unionAll(df2))
 
@@ -204,12 +204,12 @@ object keywordIngestion {
     val df_audiences = getAudienceData(spark, today).withColumn(
       "composite_key",
       concat(
-        "url",
+        col("url"),
         lit("@"),
         // This last part is a random integer ranging from 0 to replicationFactor
         least(
-          floor(rand() * limit),
-          lit(limit - 1) // just to avoid unlikely edge case
+          floor(rand() * replicationFactor),
+          lit(replicationFactor - 1) // just to avoid unlikely edge case
         )
       )
     )
