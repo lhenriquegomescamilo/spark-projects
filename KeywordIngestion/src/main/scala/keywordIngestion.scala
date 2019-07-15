@@ -1,21 +1,9 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{
-  upper,
-  col,
-  abs,
-  udf,
-  regexp_replace,
-  collect_list,
-  split,
-  size,
-  lit,
-  concat_ws
-}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.joda.time.Days
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.broadcast
 import org.apache.hadoop.fs.Path
 
 object keywordIngestion {
@@ -197,32 +185,52 @@ object keywordIngestion {
       spark: SparkSession,
       ndays: Int,
       today: String,
-      since: Int
+      since: Int,
+      replicationFactor: Int
   ) {
     // This function takes a list of lists and returns only a list with all the values.
     val flatten = udf((xs: Seq[Seq[String]]) => xs.flatten)
 
     // Primero levantamos el dataframe que tiene toda la data de los usuarios con sus urls
-    val URLkeys = getKeywordsByURL(spark, ndays, today, 1).repartition(100)
+    val URLkeys = (0 until replicationFactor)
+      .map(
+        i =>
+          getKeywordsByURL(spark, ndays, today, 1)
+            .withColumn("composite_key", concat("url", lit("@"), lit(i)))
+      )
+      .reduce((df1, df2) => df1.unionAll(df2))
 
     // Ahora levantamos la data de las audiencias
-    val df_audiences = getAudienceData(spark, today)
+    val df_audiences = getAudienceData(spark, today).withColumn(
+      "composite_key",
+      concat(
+        "url",
+        lit("@"),
+        // This last part is a random integer ranging from 0 to replicationFactor
+        least(
+          floor(rand() * limit),
+          lit(limit - 1) // just to avoid unlikely edge case
+        )
+      )
+    )
 
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
-    //val df_b = spark.sparkContext.broadcast(df)
     val joint = df_audiences
-      .join(URLkeys, Seq("url"), "left_outer")
+      .join(URLkeys, Seq("composite_key"))
+      .drop("composite_key")
       .na
       .fill("")
-      .groupBy("device_id", "device_type", "country")
-      .agg(
-        // collect_list("segments").as("segments"),
-        // collect_list("url").as("url"),
-        collect_list("content_keys").as("content_keys")
-      )
-      .withColumn("content_keys", flatten(col("content_keys")))
+      .withColumn("content_keys", explode("content_keys"))
+      .groupBy("device_id", "device_type", "country", "content_keys")
+      // .agg(
+      //   // collect_list("segments").as("segments"),
+      //   // collect_list("url").as("url"),
+      //   collect_list("content_keys").as("content_keys")
+      // )
+      // .withColumn("content_keys", flatten(col("content_keys")))
       // .withColumn("segments", flatten(col("segments")))
       // .withColumn("url", concat_ws("|", col("url")))
+      .count()
       .withColumn("day", lit(today)) // Agregamos el dia
 
     // Guardamos la data en formato parquet
@@ -231,8 +239,6 @@ object keywordIngestion {
       .mode("append")
       .partitionBy("day", "country")
       .save("/datascience/data_keywords/")
-    // df_b.unpersist()
-    // df_b.destroy()
   }
 
   def main(args: Array[String]) {
