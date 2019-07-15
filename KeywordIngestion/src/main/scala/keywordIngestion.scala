@@ -250,7 +250,7 @@ object keywordIngestion {
 
     val today = DateTime.now().minusDays(actual_day).toString("yyyyMMdd")
 
-    get_data_for_queries(spark, ndays, today, since)
+    get_data_for_queries(spark, ndays, today, since, replicationFactor = 4)
 
     // val today = DateTime.now().minusDays(1)
     // val days = (0 until 20).map(
