@@ -199,6 +199,7 @@ object keywordIngestion {
             .withColumn("composite_key", concat(col("url"), lit("@"), lit(i)))
       )
       .reduce((df1, df2) => df1.unionAll(df2))
+      .drop("url")
 
     // Ahora levantamos la data de las audiencias
     val df_audiences = getAudienceData(spark, today).withColumn(
@@ -218,8 +219,6 @@ object keywordIngestion {
     val joint = df_audiences
       .join(URLkeys, Seq("composite_key"))
       .drop("composite_key")
-      .na
-      .fill("")
       .withColumn("content_keys", explode(col("content_keys")))
       .groupBy("device_id", "device_type", "country", "content_keys")
       // .agg(
