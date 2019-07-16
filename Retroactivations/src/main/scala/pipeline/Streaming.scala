@@ -123,7 +123,6 @@ object Streaming {
         .schema(finalSchema) // Defining the schema
         .format("csv")
         .load("/data/eventqueue/%s".format(day))
-        .repartition(600)
         .select(columns.head, columns.tail: _*) // Here we select the columns to work with
         // Now we change the type of the column time to timestamp
         .withColumn(
