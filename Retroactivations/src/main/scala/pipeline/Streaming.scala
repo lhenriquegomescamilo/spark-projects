@@ -131,6 +131,7 @@ object Streaming {
         )
         // Calculate the hour
         .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
+        .repartition(600)
     }
 
     println("STREAMING LOGGER:\n\tData: %s".format(data))
@@ -169,7 +170,7 @@ object Streaming {
             length(col("device_id")) > 0 && col("event_type")
               .isin(event_types: _*) && col("id_partner")
               .cast(IntegerType) < 5000
-          ).repartition(600)
+          )
 
     println("STREAMING LOGGER:\n\tFinal DF: %s".format(finalDF))
 
