@@ -107,7 +107,7 @@ object Streaming {
         // .option("maxFileAge", "0")
         .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
         .schema(finalSchema) // Defining the schema
-        .load("/datascience/streaming/") //"/data/eventqueue/%s".format(day))
+        .load("/data/eventqueue/%s".format(day)) //"/datascience/streaming/")
         .select(columns.head, columns.tail: _*) // Here we select the columns to work with
         // Now we change the type of the column time to timestamp
         .withColumn(
