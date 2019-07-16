@@ -94,7 +94,7 @@ object Streaming {
     // Current day
     val day = DateTime.now.minusDays(from).toString("yyyy/MM/dd/")
     println(
-      "STREAMING LOGGER:\n\tDay: %s\n\tProcessType: %s".format(day, processType)
+      "STREAMING LOGGER:\n\tDay: %s\n\tProcessType: %s\n\tPartition".format(day, processType, partition)
     )
 
     // Here we read the pipeline
@@ -123,6 +123,7 @@ object Streaming {
         .schema(finalSchema) // Defining the schema
         .format("csv")
         .load("/data/eventqueue/%s".format(day))
+        .repartition(600)
         .select(columns.head, columns.tail: _*) // Here we select the columns to work with
         // Now we change the type of the column time to timestamp
         .withColumn(
@@ -131,7 +132,6 @@ object Streaming {
         )
         // Calculate the hour
         .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
-        .repartition(600)
     }
 
     println("STREAMING LOGGER:\n\tData: %s".format(data))
