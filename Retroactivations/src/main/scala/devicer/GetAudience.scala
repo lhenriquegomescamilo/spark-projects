@@ -291,7 +291,7 @@ object GetAudience {
       .toList
 
     // Now we sort the list by the second component (timestamp)
-    scala.util.Sorting.stableSort(filesReady, 
+    val filesReadyOrdered = scala.util.Sorting.stableSort(filesReady, 
                                   (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
                                 )
 
@@ -304,7 +304,7 @@ object GetAudience {
 
     // Finally we return the ones that have not been processed yet
     //filesReady diff filesDone
-    filesReady.map(x => x._1).filterNot(filesDone.contains(_))
+    filesReadyOrdered.map(x => x._1).filterNot(filesDone.contains(_))
   }
 
   /***
