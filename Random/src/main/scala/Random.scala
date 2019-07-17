@@ -3660,7 +3660,7 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    scopesi_enrichment(spark)
+    getDataVotaciones(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 
