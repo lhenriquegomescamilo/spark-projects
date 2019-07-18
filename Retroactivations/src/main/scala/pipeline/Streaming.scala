@@ -26,7 +26,8 @@ object Streaming {
       spark: SparkSession,
       from: Integer,
       processType: String = "stream",
-      partition: String = "country"
+      partition: String = "country",
+      parallel: Int  = 0
   ) = {
     // This is the list of all the columns that each CSV file has.
     val all_columns =
@@ -175,11 +176,11 @@ object Streaming {
 
     // In the last step we write the batch that has been read into /datascience/data_audiences_streaming/ or /datascience/data_partner_streaming/
     val outputPath =
-      if (partition == "country") "/datascience/data_audiences_streaming/"
-      else "/datascience/data_partner_streaming/"
+      if (partition == "country") "/datascience/data_audiences_streaming"+(if (parallel>0) "_%s/".format(parallel) else "/")
+      else "/datascience/data_partner_streaming"+(if (parallel>0) "_%s".format(parallel) else "")
     val checkpointLocation =
-      if (partition == "country") "/datascience/checkpoint_audiences/"
-      else "/datascience/checkpoint_partner/"
+      if (partition == "country") "/datascience/checkpoint_audiences"+(if (parallel>0) "_%s".format(parallel) else "")
+      else "/datascience/checkpoint_partner"+(if (parallel>0) "_%s".format(parallel) else "")
     if (processType == "stream") {
       println("STREAMING LOGGER: Storing the streaming")
       finalDF.writeStream
@@ -297,6 +298,8 @@ object Streaming {
         nextOption(map ++ Map('from -> value.toString), tail)
       case "--type" :: value :: tail =>
         nextOption(map ++ Map('type -> value.toString), tail)
+      case "--parallel" :: value :: tail =>
+          nextOption(map ++ Map('parallel -> value.toString), tail)
     }
   }
 
@@ -307,6 +310,7 @@ object Streaming {
     val pipeline =
       if (options.contains('pipeline)) options('pipeline) else "audiences"
     val processType = if (options.contains('type)) options('type) else "stream"
+    val parallel = if (options.contains('parallel)) options('parallel).toString.toInt else 0
 
     val spark =
       SparkSession.builder
@@ -320,9 +324,9 @@ object Streaming {
     )
 
     if (pipeline == "audiences")
-      streamCSVs(spark, from, processType)
+      streamCSVs(spark, from, processType, "country", parallel)
     if (pipeline == "partner")
-      streamCSVs(spark, from, processType, "id_partner")
+      streamCSVs(spark, from, processType, "id_partner", parallel)
     if (pipeline == "kafka")
       streamKafka(spark)
   }
