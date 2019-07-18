@@ -200,7 +200,7 @@ object POICrossDevicerJsonOldPipeline {
       .appName("audience generator by keywords")
       .getOrCreate()
 
-    val value_dictionary = Main.get_variables(spark, path_geo_json)
+    val value_dictionary = Geodevicer.get_variables(spark, path_geo_json)
 
     match_POI(spark, value_dictionary)
   }
