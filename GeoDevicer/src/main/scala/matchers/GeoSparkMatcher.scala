@@ -243,7 +243,7 @@ object GeoSparkMatcher {
 
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
-    val value_dictionary = Main.get_variables(spark, path_geo_json)
+    val value_dictionary = Geodevicer.get_variables(spark, path_geo_json)
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // Now we remove the file if it exists already
