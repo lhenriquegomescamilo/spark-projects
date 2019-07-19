@@ -23,7 +23,7 @@ import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
    The method then proceeds to filter the users by a desired minimum distance returning a final dataset with user id and device type.
    The current method will provide the basis for future more customizable geolocation jobs.
   */
-object Main {
+object Geodevicer {
 
   /**
     * This method returns a Map with all the parameters obtained from the JSON file.
@@ -307,7 +307,7 @@ object Main {
   )
       // Finally, we perform the cross-device if requested.
     if (value_dictionary("web_days").toInt>0)
-      Aggregations.get_segments(spark, value_dictionary)
+      Aggregations.get_segments_from_triplets(spark, value_dictionary)
 
    
     }

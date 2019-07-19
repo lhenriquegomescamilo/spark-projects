@@ -1,6 +1,6 @@
 package main.scala.matchers
 
-import main.scala.Main
+import main.scala.Geodevicer
 
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -211,7 +211,7 @@ object PolygonMatcher {
       .getOrCreate()
 
     // Initialize the variables
-    val value_dictionary = Main.get_variables(spark, path_geo_json)
+    val value_dictionary = Geodevicer.get_variables(spark, path_geo_json)
     GeoSparkSQLRegistrator.registerAll(spark)
    
     //Logger.getRootLogger.setLevel(Level.WARN)
