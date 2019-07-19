@@ -362,7 +362,7 @@ object Item2Item {
   def expand(spark: SparkSession,
              data: RDD[(Any, Array[(Int)], Vector)],
              expandInput: List[Map[String, Any]] ,
-             segmentToIndex: Map[String, Int],
+             segmentToIndex: Map[Any, Int],
              country: String){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
