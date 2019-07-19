@@ -3714,10 +3714,10 @@ user_granularity.write
             .toList
             .distinct
         val missing_minutes = should.filter(!r.contains(_))
-        val pathToHour = "/data/eventqueue/2019/%s/%s/%02d"
+        val pathToHour = "/data/eventqueue/2019/%s/%s/%s%02d.tsv.gz"
         val date = hour.split("=")(1)
         missing_minutes.foreach(
-          m => println(pathToHour.format(date.slice(4, 6), date.slice(6, 8), m))
+          m => println(pathToHour.format(date.slice(4, 6), date.slice(6, 8), date.slice(8, 10), m))
         )
       } catch {
         case unknown => println("Exception at %s: %s".format(hour, unknown))
