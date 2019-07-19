@@ -367,9 +367,9 @@ object Item2Item {
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
   
   val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
-  val kMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt)
+  val kMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt - 1)
   val dstSegmentIdMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("dst_segment_id").toString)
-  val kMax = expandInput.map(m => m("size").toString.toInt).max
+  val kMax = expandInput.map(m => m("size").toString.toInt).max + 1
 
   // It gets the score thresholds to get at least k elements per segment.
   val minScoreMap = data
@@ -379,7 +379,7 @@ object Item2Item {
     .filter(tup => (tup._2 > 0 && !tup._3)) // it selects scores > 0 and devices without the segment
     .map(tup => (tup._1, tup._2))// Format  <segment_idx, score>
     .topByKey(kMax) // get topK scores values
-    .map(t => (t._1, t._2(kMap(t._1.toInt) - 1) )) // get the kth value #
+    .map(t => (t._1, t._2(kMap(t._1.toInt)) )) // get the kth value #
     .collect()
     .toMap
 
