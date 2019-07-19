@@ -46,7 +46,7 @@ object Item2Item {
     val featureSegments = getFeatureSegments()
 
     // Expansion for each country
-    for (country: String <- expandInput.map( v => v("country")).toSet){
+    for (country: String <- expandInput.map( v => v("country").toString).toSet){
       println("Training Model")
       println("Country")
       println(country)
@@ -369,7 +369,7 @@ object Item2Item {
   
   val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
   val kMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt)
-  val dstSegmentIdMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("dstSegmentId").toString)
+  val dstSegmentIdMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("dst_segment_id").toString)
   val kMax = expandInput.map(m => m("size").toString.toInt).max
 
   // It gets the score thresholds to get at least k elements per segment.
