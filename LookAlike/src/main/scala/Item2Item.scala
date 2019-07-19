@@ -40,7 +40,7 @@ object Item2Item {
                 filePath: String,
                 simMatrixHits: String = "binary",
                 predMatrixHits: String = "binary") {
-    import sqlContext.implicits._
+    import spark.implicits._
     // Read input from file
     val expandInput = getSegmentsToExpand(spark, filePath)
     val featureSegments = getFeatureSegments()
