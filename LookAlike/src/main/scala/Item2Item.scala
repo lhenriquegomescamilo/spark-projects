@@ -52,7 +52,7 @@ object Item2Item {
       println(country)
       println("Segments")
       println(expandInput.length)
-      val countryExpandInput = expandInput.filter(v => v("country") == country)
+      val countryExpandInput = expandInput.filter(v => v("country").toString == country)
       val nSegmentToExpand = expandInput.length
 
       // Read data
@@ -62,7 +62,7 @@ object Item2Item {
         )
 
       // Create segment index
-      var segments = countryExpandInput.map(row=> row("segment_id")) // First segments to expand
+      var segments = countryExpandInput.map(row=> row("segment_id").toString) // First segments to expand
       segments ++= featureSegments.toSet.diff(segments.toSet).toList // Then the feature segments
 
       val segmentToIndex = segments.zipWithIndex.toMap
@@ -362,14 +362,14 @@ object Item2Item {
   def expand(spark: SparkSession,
              data: RDD[(Any, Array[(Int)], Vector)],
              expandInput: List[Map[String, Any]] ,
-             segmentToIndex: Map[Any, Int],
+             segmentToIndex: Map[String, Int],
              country: String){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
   
-  val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id")))
-  val kMap = expandInput.map(m => segmentToIndex(m("segment_id")) -> m("size").toString.toInt)
-  val dstSegmentIdMap = expandInput.map(m => segmentToIndex(m("segment_id")) -> m("newSegmentId"))
+  val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
+  val kMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt)
+  val dstSegmentIdMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("dstSegmentId").toString)
   val kMax = expandInput.map(m => m("size").toString.toInt).max
 
   // It gets the score thresholds to get at least k elements per segment.
