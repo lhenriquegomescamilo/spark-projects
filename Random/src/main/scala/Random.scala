@@ -3622,6 +3622,19 @@ user_granularity.write
       .save("/datascience/custom/votaciones_con_data")
   }
 
+  /**
+    *
+    *
+    *
+    *
+    *
+    *              SCOPESI ENRICHMENT
+    *
+    *
+    *
+    *
+    *
+    */
   def scopesi_enrichment(spark: SparkSession) = {
     val original = spark.read
       .format("csv")
@@ -3651,6 +3664,67 @@ user_granularity.write
       .save("/datascience/custom/scopesi_enrichment_july")
   }
 
+  /**
+    *
+    *
+    *
+    *          STREAMING MINUTES TO PROCESS
+    *
+    *
+    *
+    *
+    */
+  def getMinutesToProcess(spark: SparkSession) = {
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    val format = "yyyyMMddHH"
+    val end = DateTime.now.minusHours(1)
+    val hours = (1 until 24 * 20)
+      .map(end.minusHours(_))
+      .map(_.toString(format))
+      .map("/datascience/data_partner_streaming/hour=%s".format(_))
+
+    val exist =
+      hours.map(path => (path, fs.exists(new org.apache.hadoop.fs.Path(path))))
+
+    val missing_files = exist.filter(t => t._2 == false).map(t => t._1)
+    val existing_hours = exist.filter(t => t._2).map(t => t._1)
+    val should = Seq(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
+    println("MISSING FILES")
+    missing_files.foreach(println)
+
+    println("")
+    println("MISSING MINUTES")
+    for (hour <- existing_hours) {
+      try {
+        val mins = spark.read
+          .load(hour)
+          .select("time")
+          .withColumn("file", split(col("time"), ":"))
+          .withColumn("file", col("file").getItem(1))
+          .select("file")
+          .distinct()
+          .collect()
+        val r =
+          mins
+            .map(_(0))
+            .map(_.toString.toInt)
+            .map(v => v / 5 * 5)
+            .toList
+            .distinct
+        val missing_minutes = should.filter(!r.contains(_))
+        val pathToHour = "/data/eventqueue/2019/%s/%s/%02d"
+        val date = hour.split("=")(1)
+        missing_minutes.foreach(
+          m => println(pathToHour.format(date.slice(4, 6), date.slice(6, 8), m))
+        )
+      } catch {
+        case unknown => println("Exception at %s: %s".format(hour, unknown))
+      }
+    }
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -3660,7 +3734,7 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataVotaciones(spark)
+    getMinutesToProcess(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 
