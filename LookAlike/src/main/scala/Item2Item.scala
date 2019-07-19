@@ -379,7 +379,7 @@ object Item2Item {
     .filter(tup => (tup._2 > 0 && !tup._3)) // it selects scores > 0 and devices without the segment
     .map(tup => (tup._1, tup._2))// Format  <segment_idx, score>
     .topByKey(kMax) // get topK scores values
-    .map(t => (t._1, t._2(1) )) // get the kth value #kMap(t._1.toInt) 
+    .map(t => (t._1, t._2(kMap(t._1.toInt) - 1) )) // get the kth value #
     .collect()
     .toMap
 
