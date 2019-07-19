@@ -367,7 +367,7 @@ object Item2Item {
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
   
   val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
-  val kMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt - 1)
+  val kMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> (m("size").toString.toInt - 1))
   val dstSegmentIdMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("dst_segment_id").toString)
   val kMax = expandInput.map(m => m("size").toString.toInt).max + 1
 
