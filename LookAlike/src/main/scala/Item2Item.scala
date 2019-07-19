@@ -379,9 +379,10 @@ object Item2Item {
     .filter(tup => (tup._2 > 0 && !tup._3)) // it selects scores > 0 and devices without the segment
     .map(tup => (tup._1, tup._2))// Format  <segment_idx, score>
     .topByKey(kMax) // get topK scores values
-    .map(t => (t._1, t._2(kMap(t._1) - 1) )) // get the kth value
+    .map(t => (t._1, t._2(1) )) // get the kth value #kMap(t._1.toInt) 
     .collect()
     .toMap
+
 
   val dataExpansion = data
       .map(
@@ -615,7 +616,7 @@ object Item2Item {
     val testSize =
       if (options.contains('testSize)) options('testSize).toInt else 1000
 
-    if(test)
+    if(isTest)
       runTest(spark, testCountry, simHits, predHits, testSize)
     else
       runExpand(spark, filePath, simHits, predHits)
