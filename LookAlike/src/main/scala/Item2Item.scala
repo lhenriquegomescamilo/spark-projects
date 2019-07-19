@@ -328,7 +328,6 @@ object Item2Item {
     val userSegmentMatrix = new IndexedRowMatrix(indexedRows)
     
     // Collect the distributed matrix on the driver
-    val newColIndex = selectedSegmentsIdx.zipWithIndex.toMap
     val localSimMatrix =  
       new CoordinateMatrix(
         similartyMatrix.entries 
