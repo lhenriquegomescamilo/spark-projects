@@ -561,7 +561,6 @@ object Item2Item {
         .replace("\n", "")
         .split(",")
         .toList
-    }
     segments
   }
 
