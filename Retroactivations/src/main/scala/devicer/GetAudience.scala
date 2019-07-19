@@ -96,7 +96,7 @@ object GetAudience {
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
       .map(day => path + "/day=%s".format(day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     df
   }
