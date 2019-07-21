@@ -1,6 +1,6 @@
 package main.scala.updaters
 
-import main.scala.Main
+import main.scala.GeoDevicer
 
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
