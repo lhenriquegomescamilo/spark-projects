@@ -279,6 +279,7 @@ object Random {
       .map(day => path + "/day=%s".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    fs.close()
 
     df
   }
@@ -381,6 +382,7 @@ object Random {
         x =>
           spark.read.parquet("/datascience/data_audiences_p/day=%s".format(x))
       )
+    fs.close()
     val df = dfs.reduce((df1, df2) => df1.union(df2))
 
     val joint = join_leo.join(df, Seq("device_id"))
@@ -603,6 +605,7 @@ object Random {
       .map(day => path + "%s/".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
       .map(day => day + "*.gz")
+    fs.close()
 
     val df_safegraph = spark.read
       .option("header", "true")
@@ -944,6 +947,7 @@ val records_common = the_join.select(col("identifier"))
     val hdfs_files = days
       .map(day => path + "/day=%s/country=AR".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
 
     val segments = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
@@ -1108,6 +1112,7 @@ val records_common = the_join.select(col("identifier"))
       .map(day => path + "%s/".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
       .map(day => day + "*.gz")
+    fs.close()
 
     val df_safegraph = spark.read
       .option("header", "true")
@@ -1810,6 +1815,7 @@ val records_common = the_join.select(col("identifier"))
     val hdfs_files = days
       .map(day => path + "/day=%s".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     df
   }
@@ -1938,6 +1944,7 @@ val records_common = the_join.select(col("identifier"))
     val hdfs_files = days
       .map(day => path + "day=%s/country=AR/".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
 
     //cargamos el df de audiences
     val df_audiences = spark.read.parquet(hdfs_files: _*)

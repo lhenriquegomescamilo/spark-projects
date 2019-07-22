@@ -62,6 +62,7 @@ object GetAudience {
     val hdfs_files = days
       .map(day => path + "/day=%s".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
     val df = spark.read.option("basePath", basePath).parquet(hdfs_files: _*)
 
     df
@@ -97,6 +98,7 @@ object GetAudience {
     val hdfs_files = days
       .map(day => path + "/day=%s".format(day))
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
+    fs.close()
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     df
   }
@@ -131,6 +133,7 @@ object GetAudience {
     val hdfs_files = days
       .map(day => path + "/day=%s".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     df
   }
@@ -165,6 +168,7 @@ object GetAudience {
     val hdfs_files = days
       .map(day => path + "/day=%s/".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
@@ -206,6 +210,7 @@ object GetAudience {
     val hdfs_files = days
       .map(day => path + "/day=%s/".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
     val dfs = hdfs_files.map(spark.read.option("basePath", path).parquet(_))
 
     println("DEVICER LOG: list of files to be loaded.")
@@ -269,6 +274,7 @@ object GetAudience {
           )
           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    fs.close()
 
     df
   }
@@ -318,7 +324,7 @@ object GetAudience {
       .listStatus(new Path(pathDone))
       .map(x => x.getPath.toString.split("/").last)
       .toList
-
+    fs.close()
     // Finally we return the ones that have not been processed yet
     //filesReady diff filesDone
     filesReadyOrdered.map(x => x._1).filterNot(filesDone.contains(_))
@@ -1029,6 +1035,7 @@ object GetAudience {
         generateMetaFile(file_name, queries, xd)
       }
     }
+    hdfs.close()
   }
 
   type OptionMap = Map[Symbol, Int]
