@@ -268,8 +268,12 @@ object GetAudience {
           .flatMap(
             partner =>
               days
-                .map(
-                  day => path + "day=" + day + "/id_partner=%s".format(partner)
+                .flatMap(
+                  day =>
+                    (0 until 24).map(
+                      hour =>
+                        path + "hour=%s%02d/id_partner=%s".format(day, hour, partner)
+                    )
                 )
           )
           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
