@@ -3998,7 +3998,7 @@ user_granularity.write
     )
 
     val processType = "batch"
-    val partition = "partner"
+    val partition = "id_partner"
     val parallel = 0
     val from = 1
     
