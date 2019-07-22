@@ -231,7 +231,8 @@ object GetAudience {
       spark: SparkSession,
       partnerIds: List[String],
       nDays: Int = 30,
-      since: Int = 1
+      since: Int = 1,
+      pipe: String = "batch"
   ): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -241,16 +242,32 @@ object GetAudience {
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_partner/"
+    val path =
+      if (pipe == "batch") "/datascience/data_partner/"
+      else "/datascience/data_partner_streaming/"
 
     // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = partnerIds
-      .flatMap(
-        partner =>
-          days
-            .map(day => path + "id_partner=" + partner + "/day=%s".format(day))
-      )
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val hdfs_files =
+      if (pipe == "batch")
+        partnerIds
+          .flatMap(
+            partner =>
+              days
+                .map(
+                  day => path + "id_partner=" + partner + "/day=%s".format(day)
+                )
+          )
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      else
+        partnerIds
+          .flatMap(
+            partner =>
+              days
+                .map(
+                  day => path + "day=" + day + "/id_partner=%s".format(partner)
+                )
+          )
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
     df
@@ -270,7 +287,7 @@ object GetAudience {
     *
     * @return a list of strings, where every element is the complete path to the files to be processed.
   **/
-  def getQueryFiles(spark: SparkSession,pathToProcess:String) = {
+  def getQueryFiles(spark: SparkSession, pathToProcess: String) = {
     // First we get the list of files to be processed
     //val pathToProcess = "/datascience/devicer/to_process/"
     val conf = spark.sparkContext.hadoopConfiguration
@@ -283,17 +300,17 @@ object GetAudience {
     // Now we order the files according to their date (filename, timestamp).
     val filesReady = fs
       .listStatus(new Path(pathToProcess))
-      .map(f => 
-            ( f.getPath.toString.split("/").last.toString, 
-              f.getModificationTime
-            )
-          )
+      .map(
+        f =>
+          (f.getPath.toString.split("/").last.toString, f.getModificationTime)
+      )
       .toList
 
     // Now we sort the list by the second component (timestamp)
-    val filesReadyOrdered = scala.util.Sorting.stableSort(filesReady, 
-                                  (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
-                                )
+    val filesReadyOrdered = scala.util.Sorting.stableSort(
+      filesReady,
+      (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
+    )
 
     // Now we get the list of files that have been processed already
     val pathDone = "/datascience/devicer/done/"
@@ -518,31 +535,34 @@ object GetAudience {
 
     // For every query we apply the filter and get only the distinct ids along with the
     // device type and segment id.
-    
+
     val results = queries.map(
-      query => 
+      query =>
         query("revenue") match {
-            case 0 =>
-                  filtered
-                  .filter(query("filter").toString)
-                  .select("device_type", "device_id")
-                  .withColumn("segmentIds", lit(query("segment_id").toString))
-            case 1 =>
-                filtered
-                .filter(query("filter").toString)
-                .select("device_type", "device_id","id_partner")
-                .withColumn("segmentIds", lit(query("segment_id").toString))
+          case 0 =>
+            filtered
+              .filter(query("filter").toString)
+              .select("device_type", "device_id")
+              .withColumn("segmentIds", lit(query("segment_id").toString))
+          case 1 =>
+            filtered
+              .filter(query("filter").toString)
+              .select("device_type", "device_id", "id_partner")
+              .withColumn("segmentIds", lit(query("segment_id").toString))
         }
     )
 
     // Here we select distinct users if needed
-    val results_distinct = if(unique > 0) results.map(
-      df => df.distinct()) else results
+    val results_distinct =
+      if (unique > 0) results.map(df => df.distinct()) else results
 
     // If there is a limit on the number of rows, we also apply it
-    val results_limited = if (limit>0) results_distinct.map(
-      singleDf => singleDf.limit(limit)
-    ) else results_distinct
+    val results_limited =
+      if (limit > 0)
+        results_distinct.map(
+          singleDf => singleDf.limit(limit)
+        )
+      else results_distinct
     // Now we store every single audience separately
     results_limited.foreach(
       dataframe =>
@@ -837,14 +857,14 @@ object GetAudience {
     val hdfs = FileSystem.get(hadoopConf)
 
     //var actual_path = "/datascience/devicer/to_process/%s".format(file)
-    var actual_path = path+file
+    var actual_path = path + file
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
     var queries: List[Map[String, Any]] = List()
     var errorMessage = ""
 
     println(
-        "DEVICER LOG: actual path is: %s".format(actual_path)
+      "DEVICER LOG: actual path is: %s".format(actual_path)
     )
 
     // Here we define a function that might be used when asking for an IN in a multivalue column
@@ -910,10 +930,8 @@ object GetAudience {
       // Here we select the pipeline where we will gather the data
       val data = pipeline match {
         case 0 =>
-          if (
-              (partner_ids.toString.length > 0 && country == "")  || 
-              (partner_ids.toString.length > 0 && !(ids.contains("1")))
-              )
+          if ((partner_ids.toString.length > 0 && country == "") ||
+              (partner_ids.toString.length > 0 && !(ids.contains("1"))))
             getDataIdPartners(
               spark,
               ids,
@@ -935,13 +953,23 @@ object GetAudience {
           getDataKeywords(spark, nDays.toString.toInt, since.toString.toInt)
         case 4 =>
           getDataUS(spark, nDays.toString.toInt, since.toString.toInt)
+        case 5 =>
+          getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
+        case 6 =>
+          getDataIdPartners(
+            spark,
+            ids,
+            nDays.toString.toInt,
+            since.toString.toInt,
+            "streaming"
+          )
       }
-    
+
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
       // Flag to indicate if execution failed
       var failed = false
-      
+
       if (queries.length > 10000) {
         // getMultipleAudience(spark, data, queries, file_name, commonFilter)
         val dataDays = getDataAudiencesDays(
@@ -956,15 +984,23 @@ object GetAudience {
           file_name,
           commonFilter
         )
-      } else {   
-          // try {
-            getAudience(spark, data, queries, file_name, commonFilter, limit, unique)
-          // }
-          // catch {
-          //   case e: Exception => {failed = true}
-          // }
-        }
-      
+      } else {
+        // try {
+        getAudience(
+          spark,
+          data,
+          queries,
+          file_name,
+          commonFilter,
+          limit,
+          unique
+        )
+        // }
+        // catch {
+        //   case e: Exception => {failed = true}
+        // }
+      }
+
       // We cross device the audience if the parameter is set.
       if (!failed && Set("1", "true", "True").contains(xd)) {
         println(
@@ -979,13 +1015,13 @@ object GetAudience {
           "_c1"
         )
       }
-      
-
 
       // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
       srcPath = new Path(actual_path)
-      val destFolder = if (failed) "/datascience/devicer/errors/" else "/datascience/devicer/done/" 
-      destPath = new Path(destFolder) 
+      val destFolder =
+        if (failed) "/datascience/devicer/errors/"
+        else "/datascience/devicer/done/"
+      destPath = new Path(destFolder)
       hdfs.rename(srcPath, destPath)
 
       // If push parameter is true, we generate a file with the metadata.
@@ -995,7 +1031,7 @@ object GetAudience {
     }
   }
 
-    type OptionMap = Map[Symbol, Int]
+  type OptionMap = Map[Symbol, Int]
 
   /**
     * This method parses the parameters sent.
@@ -1010,10 +1046,10 @@ object GetAudience {
   }
 
   def main(args: Array[String]) {
-    
+
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
-    
+
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("Spark devicer").getOrCreate()
 
@@ -1022,15 +1058,15 @@ object GetAudience {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     val path = p match {
-        case 0 => "/datascience/devicer/to_process/"
-          
-        case 1 => "/datascience/devicer/priority/"
+      case 0 => "/datascience/devicer/to_process/"
 
-      }
+      case 1 => "/datascience/devicer/priority/"
 
-     println("LOGGER: Path: %s".format(path))
+    }
 
-    val files = getQueryFiles(spark,path)
+    println("LOGGER: Path: %s".format(path))
+
+    val files = getQueryFiles(spark, path)
 
     files.foreach(file => processFile(spark, file, path))
   }
