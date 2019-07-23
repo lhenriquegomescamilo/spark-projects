@@ -279,6 +279,7 @@ object Random {
       .map(day => path + "/day=%s".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    fs.close()
 
     df
   }
@@ -381,6 +382,7 @@ object Random {
         x =>
           spark.read.parquet("/datascience/data_audiences_p/day=%s".format(x))
       )
+    fs.close()
     val df = dfs.reduce((df1, df2) => df1.union(df2))
 
     val joint = join_leo.join(df, Seq("device_id"))
@@ -603,6 +605,7 @@ object Random {
       .map(day => path + "%s/".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
       .map(day => day + "*.gz")
+    fs.close()
 
     val df_safegraph = spark.read
       .option("header", "true")
@@ -944,6 +947,7 @@ val records_common = the_join.select(col("identifier"))
     val hdfs_files = days
       .map(day => path + "/day=%s/country=AR".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
 
     val segments = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
@@ -1108,6 +1112,7 @@ val records_common = the_join.select(col("identifier"))
       .map(day => path + "%s/".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
       .map(day => day + "*.gz")
+    fs.close()
 
     val df_safegraph = spark.read
       .option("header", "true")
@@ -1810,6 +1815,7 @@ val records_common = the_join.select(col("identifier"))
     val hdfs_files = days
       .map(day => path + "/day=%s".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     df
   }
@@ -1938,6 +1944,7 @@ val records_common = the_join.select(col("identifier"))
     val hdfs_files = days
       .map(day => path + "day=%s/country=AR/".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
 
     //cargamos el df de audiences
     val df_audiences = spark.read.parquet(hdfs_files: _*)
@@ -3717,11 +3724,466 @@ user_granularity.write
         val pathToHour = "/data/eventqueue/2019/%s/%s/%s%02d.tsv.gz"
         val date = hour.split("=")(1)
         missing_minutes.foreach(
-          m => println(pathToHour.format(date.slice(4, 6), date.slice(6, 8), date.slice(8, 10), m))
+          m =>
+            println(
+              pathToHour.format(
+                date.slice(4, 6),
+                date.slice(6, 8),
+                date.slice(8, 10),
+                m
+              )
+            )
         )
       } catch {
         case unknown => println("Exception at %s: %s".format(hour, unknown))
       }
+    }
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *                      PROCESSING MISSING MINUTES
+    *
+    *
+    *
+    *
+    *
+    *
+    */
+  def processMissingMinutes(spark: SparkSession) = {
+    val missingFiles = List(
+      "/data/eventqueue/2019/07/06/1725.tsv.gz",
+      "/data/eventqueue/2019/07/06/1940.tsv.gz",
+      "/data/eventqueue/2019/07/06/2005.tsv.gz",
+      "/data/eventqueue/2019/07/06/2010.tsv.gz",
+      "/data/eventqueue/2019/07/06/2015.tsv.gz",
+      "/data/eventqueue/2019/07/06/2020.tsv.gz",
+      "/data/eventqueue/2019/07/06/2025.tsv.gz",
+      "/data/eventqueue/2019/07/06/2030.tsv.gz",
+      "/data/eventqueue/2019/07/06/2035.tsv.gz",
+      "/data/eventqueue/2019/07/06/2040.tsv.gz",
+      "/data/eventqueue/2019/07/06/2045.tsv.gz",
+      "/data/eventqueue/2019/07/06/2050.tsv.gz",
+      "/data/eventqueue/2019/07/06/2055.tsv.gz",
+      "/data/eventqueue/2019/07/06/2100.tsv.gz",
+      "/data/eventqueue/2019/07/06/2105.tsv.gz",
+      "/data/eventqueue/2019/07/06/2110.tsv.gz",
+      "/data/eventqueue/2019/07/06/2115.tsv.gz",
+      "/data/eventqueue/2019/07/06/2120.tsv.gz",
+      "/data/eventqueue/2019/07/06/2125.tsv.gz",
+      "/data/eventqueue/2019/07/06/2130.tsv.gz",
+      "/data/eventqueue/2019/07/06/2135.tsv.gz",
+      "/data/eventqueue/2019/07/06/2140.tsv.gz",
+      "/data/eventqueue/2019/07/06/2145.tsv.gz",
+      "/data/eventqueue/2019/07/06/2150.tsv.gz",
+      "/data/eventqueue/2019/07/06/2155.tsv.gz",
+      "/data/eventqueue/2019/07/06/2200.tsv.gz",
+      "/data/eventqueue/2019/07/06/2205.tsv.gz",
+      "/data/eventqueue/2019/07/06/2210.tsv.gz",
+      "/data/eventqueue/2019/07/06/2215.tsv.gz",
+      "/data/eventqueue/2019/07/06/2220.tsv.gz",
+      "/data/eventqueue/2019/07/06/2225.tsv.gz",
+      "/data/eventqueue/2019/07/06/2230.tsv.gz",
+      "/data/eventqueue/2019/07/06/2235.tsv.gz",
+      "/data/eventqueue/2019/07/06/2240.tsv.gz",
+      "/data/eventqueue/2019/07/06/2245.tsv.gz",
+      "/data/eventqueue/2019/07/06/2250.tsv.gz",
+      "/data/eventqueue/2019/07/06/2255.tsv.gz",
+      "/data/eventqueue/2019/07/06/2300.tsv.gz",
+      "/data/eventqueue/2019/07/06/2305.tsv.gz",
+      "/data/eventqueue/2019/07/06/2310.tsv.gz",
+      "/data/eventqueue/2019/07/06/2315.tsv.gz",
+      "/data/eventqueue/2019/07/06/2320.tsv.gz",
+      "/data/eventqueue/2019/07/06/2325.tsv.gz",
+      "/data/eventqueue/2019/07/06/2330.tsv.gz",
+      "/data/eventqueue/2019/07/06/2335.tsv.gz",
+      "/data/eventqueue/2019/07/06/2340.tsv.gz",
+      "/data/eventqueue/2019/07/06/2345.tsv.gz",
+      "/data/eventqueue/2019/07/06/2350.tsv.gz",
+      "/data/eventqueue/2019/07/06/2355.tsv.gz",
+      "/data/eventqueue/2019/07/07/2230.tsv.gz",
+      "/data/eventqueue/2019/07/07/2235.tsv.gz",
+      "/data/eventqueue/2019/07/07/2240.tsv.gz",
+      "/data/eventqueue/2019/07/07/2245.tsv.gz",
+      "/data/eventqueue/2019/07/07/2250.tsv.gz",
+      "/data/eventqueue/2019/07/07/2255.tsv.gz",
+      "/data/eventqueue/2019/07/07/2300.tsv.gz",
+      "/data/eventqueue/2019/07/07/2305.tsv.gz",
+      "/data/eventqueue/2019/07/07/2310.tsv.gz",
+      "/data/eventqueue/2019/07/07/2315.tsv.gz",
+      "/data/eventqueue/2019/07/07/2320.tsv.gz",
+      "/data/eventqueue/2019/07/07/2325.tsv.gz",
+      "/data/eventqueue/2019/07/07/2330.tsv.gz",
+      "/data/eventqueue/2019/07/07/2335.tsv.gz",
+      "/data/eventqueue/2019/07/07/2340.tsv.gz",
+      "/data/eventqueue/2019/07/07/2345.tsv.gz",
+      "/data/eventqueue/2019/07/07/2350.tsv.gz",
+      "/data/eventqueue/2019/07/07/2355.tsv.gz",
+      "/data/eventqueue/2019/07/08/2215.tsv.gz",
+      "/data/eventqueue/2019/07/08/2220.tsv.gz",
+      "/data/eventqueue/2019/07/08/2225.tsv.gz",
+      "/data/eventqueue/2019/07/08/2230.tsv.gz",
+      "/data/eventqueue/2019/07/08/2235.tsv.gz",
+      "/data/eventqueue/2019/07/08/2240.tsv.gz",
+      "/data/eventqueue/2019/07/08/2245.tsv.gz",
+      "/data/eventqueue/2019/07/08/2250.tsv.gz",
+      "/data/eventqueue/2019/07/08/2255.tsv.gz",
+      "/data/eventqueue/2019/07/08/2300.tsv.gz",
+      "/data/eventqueue/2019/07/08/2305.tsv.gz",
+      "/data/eventqueue/2019/07/08/2310.tsv.gz",
+      "/data/eventqueue/2019/07/08/2315.tsv.gz",
+      "/data/eventqueue/2019/07/08/2320.tsv.gz",
+      "/data/eventqueue/2019/07/08/2325.tsv.gz",
+      "/data/eventqueue/2019/07/08/2330.tsv.gz",
+      "/data/eventqueue/2019/07/08/2335.tsv.gz",
+      "/data/eventqueue/2019/07/08/2340.tsv.gz",
+      "/data/eventqueue/2019/07/08/2345.tsv.gz",
+      "/data/eventqueue/2019/07/08/2350.tsv.gz",
+      "/data/eventqueue/2019/07/08/2355.tsv.gz",
+      "/data/eventqueue/2019/07/09/2215.tsv.gz",
+      "/data/eventqueue/2019/07/09/2220.tsv.gz",
+      "/data/eventqueue/2019/07/09/2225.tsv.gz",
+      "/data/eventqueue/2019/07/09/2230.tsv.gz",
+      "/data/eventqueue/2019/07/09/2235.tsv.gz",
+      "/data/eventqueue/2019/07/09/2240.tsv.gz",
+      "/data/eventqueue/2019/07/09/2245.tsv.gz",
+      "/data/eventqueue/2019/07/09/2250.tsv.gz",
+      "/data/eventqueue/2019/07/09/2255.tsv.gz",
+      "/data/eventqueue/2019/07/09/2300.tsv.gz",
+      "/data/eventqueue/2019/07/09/2305.tsv.gz",
+      "/data/eventqueue/2019/07/09/2310.tsv.gz",
+      "/data/eventqueue/2019/07/09/2315.tsv.gz",
+      "/data/eventqueue/2019/07/09/2320.tsv.gz",
+      "/data/eventqueue/2019/07/09/2325.tsv.gz",
+      "/data/eventqueue/2019/07/09/2330.tsv.gz",
+      "/data/eventqueue/2019/07/09/2335.tsv.gz",
+      "/data/eventqueue/2019/07/09/2340.tsv.gz",
+      "/data/eventqueue/2019/07/09/2345.tsv.gz",
+      "/data/eventqueue/2019/07/09/2350.tsv.gz",
+      "/data/eventqueue/2019/07/09/2355.tsv.gz",
+      "/data/eventqueue/2019/07/10/1445.tsv.gz",
+      "/data/eventqueue/2019/07/10/1450.tsv.gz",
+      "/data/eventqueue/2019/07/10/1455.tsv.gz",
+      "/data/eventqueue/2019/07/10/1625.tsv.gz",
+      "/data/eventqueue/2019/07/10/1630.tsv.gz",
+      "/data/eventqueue/2019/07/10/1655.tsv.gz",
+      "/data/eventqueue/2019/07/10/1700.tsv.gz",
+      "/data/eventqueue/2019/07/10/1705.tsv.gz",
+      "/data/eventqueue/2019/07/10/1710.tsv.gz",
+      "/data/eventqueue/2019/07/10/1715.tsv.gz",
+      "/data/eventqueue/2019/07/10/1720.tsv.gz",
+      "/data/eventqueue/2019/07/10/1750.tsv.gz",
+      "/data/eventqueue/2019/07/10/1755.tsv.gz",
+      "/data/eventqueue/2019/07/10/1800.tsv.gz",
+      "/data/eventqueue/2019/07/10/1805.tsv.gz",
+      "/data/eventqueue/2019/07/10/1810.tsv.gz",
+      "/data/eventqueue/2019/07/10/1815.tsv.gz",
+      "/data/eventqueue/2019/07/10/1820.tsv.gz",
+      "/data/eventqueue/2019/07/10/1825.tsv.gz",
+      "/data/eventqueue/2019/07/10/1830.tsv.gz",
+      "/data/eventqueue/2019/07/10/1835.tsv.gz",
+      "/data/eventqueue/2019/07/10/1840.tsv.gz",
+      "/data/eventqueue/2019/07/10/1845.tsv.gz",
+      "/data/eventqueue/2019/07/10/1850.tsv.gz",
+      "/data/eventqueue/2019/07/10/1855.tsv.gz",
+      "/data/eventqueue/2019/07/10/1900.tsv.gz",
+      "/data/eventqueue/2019/07/10/1905.tsv.gz",
+      "/data/eventqueue/2019/07/10/1910.tsv.gz",
+      "/data/eventqueue/2019/07/10/1915.tsv.gz",
+      "/data/eventqueue/2019/07/10/1920.tsv.gz",
+      "/data/eventqueue/2019/07/10/1925.tsv.gz",
+      "/data/eventqueue/2019/07/10/1930.tsv.gz",
+      "/data/eventqueue/2019/07/10/1935.tsv.gz",
+      "/data/eventqueue/2019/07/10/1940.tsv.gz",
+      "/data/eventqueue/2019/07/10/1945.tsv.gz",
+      "/data/eventqueue/2019/07/10/1950.tsv.gz",
+      "/data/eventqueue/2019/07/10/1955.tsv.gz",
+      "/data/eventqueue/2019/07/10/2000.tsv.gz",
+      "/data/eventqueue/2019/07/10/2005.tsv.gz",
+      "/data/eventqueue/2019/07/10/2010.tsv.gz",
+      "/data/eventqueue/2019/07/10/2015.tsv.gz",
+      "/data/eventqueue/2019/07/10/2020.tsv.gz",
+      "/data/eventqueue/2019/07/10/2025.tsv.gz",
+      "/data/eventqueue/2019/07/10/2030.tsv.gz",
+      "/data/eventqueue/2019/07/10/2035.tsv.gz",
+      "/data/eventqueue/2019/07/10/2040.tsv.gz",
+      "/data/eventqueue/2019/07/10/2045.tsv.gz",
+      "/data/eventqueue/2019/07/10/2050.tsv.gz",
+      "/data/eventqueue/2019/07/10/2055.tsv.gz",
+      "/data/eventqueue/2019/07/10/2100.tsv.gz",
+      "/data/eventqueue/2019/07/10/2105.tsv.gz",
+      "/data/eventqueue/2019/07/10/2110.tsv.gz",
+      "/data/eventqueue/2019/07/10/2115.tsv.gz",
+      "/data/eventqueue/2019/07/10/2120.tsv.gz",
+      "/data/eventqueue/2019/07/10/2125.tsv.gz",
+      "/data/eventqueue/2019/07/10/2130.tsv.gz",
+      "/data/eventqueue/2019/07/10/2135.tsv.gz",
+      "/data/eventqueue/2019/07/10/2140.tsv.gz",
+      "/data/eventqueue/2019/07/10/2145.tsv.gz",
+      "/data/eventqueue/2019/07/10/2150.tsv.gz",
+      "/data/eventqueue/2019/07/10/2155.tsv.gz",
+      "/data/eventqueue/2019/07/10/2200.tsv.gz",
+      "/data/eventqueue/2019/07/10/2205.tsv.gz",
+      "/data/eventqueue/2019/07/10/2210.tsv.gz",
+      "/data/eventqueue/2019/07/10/2215.tsv.gz",
+      "/data/eventqueue/2019/07/10/2220.tsv.gz",
+      "/data/eventqueue/2019/07/10/2225.tsv.gz",
+      "/data/eventqueue/2019/07/10/2230.tsv.gz",
+      "/data/eventqueue/2019/07/10/2235.tsv.gz",
+      "/data/eventqueue/2019/07/10/2240.tsv.gz",
+      "/data/eventqueue/2019/07/10/2245.tsv.gz",
+      "/data/eventqueue/2019/07/10/2250.tsv.gz",
+      "/data/eventqueue/2019/07/10/2255.tsv.gz",
+      "/data/eventqueue/2019/07/10/2300.tsv.gz",
+      "/data/eventqueue/2019/07/10/2305.tsv.gz",
+      "/data/eventqueue/2019/07/10/2310.tsv.gz",
+      "/data/eventqueue/2019/07/10/2315.tsv.gz",
+      "/data/eventqueue/2019/07/10/2320.tsv.gz",
+      "/data/eventqueue/2019/07/10/2325.tsv.gz",
+      "/data/eventqueue/2019/07/10/2330.tsv.gz",
+      "/data/eventqueue/2019/07/10/2335.tsv.gz",
+      "/data/eventqueue/2019/07/10/2340.tsv.gz",
+      "/data/eventqueue/2019/07/10/2345.tsv.gz",
+      "/data/eventqueue/2019/07/10/2350.tsv.gz",
+      "/data/eventqueue/2019/07/10/2355.tsv.gz",
+      "/data/eventqueue/2019/07/13/2220.tsv.gz",
+      "/data/eventqueue/2019/07/13/2225.tsv.gz",
+      "/data/eventqueue/2019/07/13/2230.tsv.gz",
+      "/data/eventqueue/2019/07/13/2235.tsv.gz",
+      "/data/eventqueue/2019/07/13/2240.tsv.gz",
+      "/data/eventqueue/2019/07/13/2245.tsv.gz",
+      "/data/eventqueue/2019/07/13/2250.tsv.gz",
+      "/data/eventqueue/2019/07/13/2255.tsv.gz",
+      "/data/eventqueue/2019/07/13/2300.tsv.gz",
+      "/data/eventqueue/2019/07/13/2305.tsv.gz",
+      "/data/eventqueue/2019/07/13/2310.tsv.gz",
+      "/data/eventqueue/2019/07/13/2315.tsv.gz",
+      "/data/eventqueue/2019/07/13/2320.tsv.gz",
+      "/data/eventqueue/2019/07/13/2325.tsv.gz",
+      "/data/eventqueue/2019/07/13/2330.tsv.gz",
+      "/data/eventqueue/2019/07/13/2335.tsv.gz",
+      "/data/eventqueue/2019/07/13/2340.tsv.gz",
+      "/data/eventqueue/2019/07/13/2345.tsv.gz",
+      "/data/eventqueue/2019/07/13/2350.tsv.gz",
+      "/data/eventqueue/2019/07/13/2355.tsv.gz",
+      "/data/eventqueue/2019/07/14/2215.tsv.gz",
+      "/data/eventqueue/2019/07/14/2220.tsv.gz",
+      "/data/eventqueue/2019/07/14/2225.tsv.gz",
+      "/data/eventqueue/2019/07/14/2230.tsv.gz",
+      "/data/eventqueue/2019/07/14/2235.tsv.gz",
+      "/data/eventqueue/2019/07/14/2240.tsv.gz",
+      "/data/eventqueue/2019/07/14/2245.tsv.gz",
+      "/data/eventqueue/2019/07/14/2250.tsv.gz",
+      "/data/eventqueue/2019/07/14/2255.tsv.gz",
+      "/data/eventqueue/2019/07/14/2300.tsv.gz",
+      "/data/eventqueue/2019/07/14/2305.tsv.gz",
+      "/data/eventqueue/2019/07/14/2310.tsv.gz",
+      "/data/eventqueue/2019/07/14/2315.tsv.gz",
+      "/data/eventqueue/2019/07/14/2320.tsv.gz",
+      "/data/eventqueue/2019/07/14/2325.tsv.gz",
+      "/data/eventqueue/2019/07/14/2330.tsv.gz",
+      "/data/eventqueue/2019/07/14/2335.tsv.gz",
+      "/data/eventqueue/2019/07/14/2340.tsv.gz",
+      "/data/eventqueue/2019/07/14/2345.tsv.gz",
+      "/data/eventqueue/2019/07/14/2350.tsv.gz",
+      "/data/eventqueue/2019/07/14/2355.tsv.gz",
+      "/data/eventqueue/2019/07/19/0440.tsv.gz",
+      "/data/eventqueue/2019/07/19/0445.tsv.gz",
+      "/data/eventqueue/2019/07/19/0450.tsv.gz",
+      "/data/eventqueue/2019/07/19/0455.tsv.gz"
+    )
+
+    val processType = "batch"
+    val partition = "id_partner"
+    val parallel = 0
+    val from = 1
+    
+    // This is the list of all the columns that each CSV file has.
+    val all_columns =
+      """timestamp,time,user,device_id,device_type,web_id,android_id,ios_id,event_type,data_type,nav_type,
+                        version,country,user_country,ip,created,id_partner,id_partner_user,id_segment_source,share_data,
+                        segments,clusters,first_party,second_party,third_party,all_clusters,all_segments,all_segments_xd,gt,
+                        user_agent,browser,url,secondary_url,referer,sec,tagged,tags,title,category,sub_category,search_keyword,
+                        vertical,mb_sh2,mb_sh5,ml_sh2,ml_sh5,nid_sh2,nid_sh5,track_code,track_type,advertiser_id,advertiser_name,
+                        campaign_id,campaign_name,placement_id,site_id,click_count,conversion_count,impression_count,app_data,
+                        app_installed,app_name,wifi_name,latitude,longitude,accuracy,altitude,altaccuracy,p223,p240,d2,d9,d10,
+                        d11,d13,d14,d17,d18,d19,d20,d21,d22,url_subdomain,url_domain,url_path,referer_subdomain,referer_domain,
+                        referer_path,d23,removed_segments,activable,platforms,job_id"""
+        .replace("\n", "")
+        .replace(" ", "")
+        .split(",")
+        .toList
+
+    // This is the list of selected columns.
+    val columns =
+      """device_id, id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
+                    search_keyword, tags, track_code, campaign_name, campaign_id, site_id, time,
+                    placement_id, advertiser_name, advertiser_id, app_name, app_installed, 
+                    version, country, activable"""
+        .replace("\n", "")
+        .replace(" ", "")
+        .split(",")
+        .toList
+
+    // This is the list of countries that will be considered.
+    val countries =
+      List("AR", "MX", "CL", "CO", "PE", "US", "BR", "UY", "EC", "BO")
+
+    // This is the list of event types that will be considered.
+    val event_types = List(
+      "tk",
+      "pv",
+      "data",
+      "batch",
+      "sync",
+      "xp",
+      "retroactive",
+      "xd",
+      "xd_xp"
+    )
+
+    // This is the schema that will be used for the set of all columns
+    var finalSchema = all_columns.foldLeft(new StructType())(
+      (schema, col) => schema.add(col, "string")
+    )
+
+    // This is the list of columns that are integers
+    val ints =
+      "id_partner activable"
+        .split(" ")
+        .toSeq
+
+    // List of columns that are arrays of strings
+    val array_strings = "tags app_installed".split(" ").toSeq
+
+    // List of columns that are arrays of integers
+    val array_ints =
+      "segments first_party all_segments"
+        .split(" ")
+
+    // Current day
+    val day = DateTime.now.minusDays(from).toString("yyyy/MM/dd/")
+    println(
+      "STREAMING LOGGER:\n\tDay: %s\n\tProcessType: %s\n\tPartition"
+        .format(day, processType, partition)
+    )
+
+    // Here we read the pipeline
+
+    val data = if (processType == "stream") {
+      spark.readStream
+        .format("csv")
+        .option("sep", "\t")
+        .option("header", "true")
+        // .option("maxFileAge", "0")
+        .option("maxFilesPerTrigger", 4) // Maximum number of files to work on per batch
+        .schema(finalSchema) // Defining the schema
+        .load("/data/eventqueue/%s*.tsv.gz".format(day)) //"/datascience/streaming/")
+        .select(columns.head, columns.tail: _*) // Here we select the columns to work with
+        // Now we change the type of the column time to timestamp
+        .withColumn(
+          "datetime",
+          to_utc_timestamp(regexp_replace(col("time"), "T", " "), "utc")
+        )
+        // Calculate the hour
+        .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
+    } else {
+      spark.read
+        .option("sep", "\t")
+        .option("header", "true")
+        .schema(finalSchema) // Defining the schema
+        .format("csv")
+        .load(missingFiles: _*)
+        .select(columns.head, columns.tail: _*) // Here we select the columns to work with
+        // Now we change the type of the column time to timestamp
+        .withColumn(
+          "datetime",
+          to_utc_timestamp(regexp_replace(col("time"), "T", " "), "utc")
+        )
+        // Calculate the hour
+        .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
+    }
+
+    println("STREAMING LOGGER:\n\tData: %s".format(data))
+
+    // Now we transform the columns that are array of strings
+    val withArrayStrings = array_strings.foldLeft(data)(
+      (df, c) => df.withColumn(c, split(col(c), "\u0001"))
+    )
+
+    // We do the same with the columns that are integers
+    val withInts = ints.foldLeft(withArrayStrings)(
+      (df, c) => df.withColumn(c, col(c).cast("int"))
+    )
+
+    // Finally, we repeat the process with the columns that are array of integers
+    val finalDF = array_ints
+      .foldLeft(withInts)(
+        (df, c) =>
+          df.withColumn(c, split(col(c), "\u0001"))
+            .withColumn(c, col(c).cast("array<int>"))
+      )
+
+    // Here we do the filtering, where we keep the event types previously specified
+    val filtered =
+      if (partition == "country")
+        finalDF
+          .filter(
+            length(col("device_id")) > 0 && col("event_type")
+              .isin(event_types: _*) && col("id_partner")
+              .cast(IntegerType) < 5000 && col("country")
+              .isin(countries: _*)
+          )
+      else
+        finalDF
+          .filter(
+            length(col("device_id")) > 0 && col("event_type")
+              .isin(event_types: _*) && col("id_partner")
+              .cast(IntegerType) < 5000
+          )
+
+    println("STREAMING LOGGER:\n\tFinal DF: %s".format(finalDF))
+
+    // In the last step we write the batch that has been read into /datascience/data_audiences_streaming/ or /datascience/data_partner_streaming/
+    val outputPath =
+      if (partition == "country")
+        "/datascience/data_audiences_streaming" + (if (parallel > 0)
+                                                      "_%s/".format(parallel)
+                                                    else "/")
+      else
+        "/datascience/data_partner_streaming" + (if (parallel > 0)
+                                                    "_%s".format(parallel)
+                                                  else "")
+    val checkpointLocation =
+      if (partition == "country")
+        "/datascience/checkpoint_audiences" + (if (parallel > 0)
+                                                  "_%s".format(parallel)
+                                                else "")
+      else
+        "/datascience/checkpoint_partner" + (if (parallel > 0)
+                                                "_%s".format(parallel)
+                                              else "")
+    if (processType == "stream") {
+      println("STREAMING LOGGER: Storing the streaming")
+      finalDF.writeStream
+        .outputMode("append")
+        .format("parquet")
+        .option("checkpointLocation", checkpointLocation)
+        .partitionBy("hour", partition)
+        .option("path", outputPath)
+        // .trigger(ProcessingTime("1260 seconds"))
+        .start()
+        .awaitTermination()
+    } else {
+      finalDF.write
+        .mode("append")
+        .format("parquet")
+        .partitionBy("hour", partition)
+        .save(outputPath)
     }
   }
 
@@ -3734,7 +4196,7 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getMinutesToProcess(spark)
+    processMissingMinutes(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 

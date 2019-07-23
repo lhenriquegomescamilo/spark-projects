@@ -6,8 +6,7 @@ import org.apache.spark.sql.SaveMode
 
 object dataGCBA {
     def process_day(spark:SparkSession, day:String){
-        val df = spark.read.format("csv").option("sep","\t").option("header",true)
-                        .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+        val df = spark.read.load("/datascience/data_audiences/day=%s/".format(day))
                         .select("id_partner","event_type","url","timestamp","device_id")
                         .filter("event_type = 'tk' and id_partner = 349")
                         .select("url","timestamp","device_id")
@@ -21,7 +20,7 @@ object dataGCBA {
         val since = if (args.length > 0) args(0).toInt else 0
         val ndays = if (args.length > 1) args(1).toInt else 1
 
-        val format = "YYYY/MM/dd"
+        val format = "YYYYMMdd"
         val start = DateTime.now.minusDays(since+ndays)
         val end   = DateTime.now.minusDays(since)
 
