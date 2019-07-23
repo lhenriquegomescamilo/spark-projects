@@ -166,6 +166,14 @@ object Geodevicer {
             .length > 0) query("polygon_input").toString
       else "0"
 
+  // Column to select old pipeline if desired
+    val polygon_input =
+      if (query.contains("old_pipeline") && Option(query("old_pipeline"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("old_pipeline").toString
+      else "0"
+
 
 
     // Finally we construct the Map that is going to be returned
@@ -185,7 +193,8 @@ object Geodevicer {
       "poi_column_name" -> poi_column_name,
        "audience_column_name" -> audience_column_name,
         "web_days" -> web_days,
-        "polygon_input" -> polygon_input
+        "polygon_input" -> polygon_input,
+        "old_pipeline" -> old_pipeline
     )
 
     println("LOGGER PARAMETERS:")
@@ -205,7 +214,8 @@ object Geodevicer {
     "poi_column_name" -> $poi_column_name,
     "audience_column_name" -> $audience_column_name,
     "web_days" -> $web_days,
-    "polygon_input"->$polygon_input""")
+    "polygon_input"->$polygon_input,
+    "old_pipeline"-> $old_pipeline""")
     value_dictionary
   }
 
