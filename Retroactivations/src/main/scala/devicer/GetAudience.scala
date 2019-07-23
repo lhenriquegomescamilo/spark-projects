@@ -100,6 +100,7 @@ object GetAudience {
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
     //fs.close()
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    df.show()
     df
   }
 
@@ -272,7 +273,8 @@ object GetAudience {
                   day =>
                     (0 until 24).map(
                       hour =>
-                        path + "hour=%s%02d/id_partner=%s".format(day, hour, partner)
+                        path + "hour=%s%02d/id_partner=%s"
+                          .format(day, hour, partner)
                     )
                 )
           )
@@ -581,6 +583,7 @@ object GetAudience {
           .mode("append")
           .save("/datascience/devicer/processed/" + fileName)
     )
+    results_limited.foreach(df => df.show())
 
     // If we previously persisted the data, now we unpersist it back.
     if (queries.length > 5000) {
