@@ -102,7 +102,7 @@ object GetAudience {
     hdfs_files.foreach(println)
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     df.show()
-    df
+    df.coalesce(200)
   }
 
   /**
