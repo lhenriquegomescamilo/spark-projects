@@ -576,7 +576,6 @@ object GetAudience {
         )
       else results_distinct
     // Now we store every single audience separately
-    results_limited.foreach(df => df.show())
     results_limited.foreach(
       dataframe =>
         dataframe.write
