@@ -40,6 +40,43 @@ object POICrossDevicerJson {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
+   if (value_dictionary("old_pipeline") == "1") {
+    
+     // Get the days to be loaded
+    val format = "yyyy/MM/dd"
+    val end = DateTime.now.minusDays(value_dictionary("since").toInt)
+    val days = (0 until value_dictionary("nDays").toInt)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+      .filter(x => !(x contains "2019/05/27"))
+
+    // Now we obtain the list of hdfs files to be read
+    val path = "/data/geo/safegraph/"
+    val hdfs_files = days
+      .map(day => path+"%s/".format(day))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
+      .map(day => day+"*.gz")
+    
+    // Finally we read, filter by country, rename the columns and return the data
+    val df_safegraph = spark.read
+        .option("header", "true")
+        .csv(hdfs_files:_*)
+        .dropDuplicates("ad_id","latitude","longitude")
+        .filter("country = '%s'".format(value_dictionary("country")))
+        .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
+        .withColumnRenamed("latitude", "latitude_user")
+        .withColumnRenamed("longitude", "longitude_user")
+        .withColumn("geocode",
+         ((abs(col("latitude_user").cast("float"))*10)
+          .cast("int")*10000)+(abs(
+          col("longitude_user").cast("float")*100
+        ).cast("int"))
+        )
+                         df_safegraph                         }
+
+  else {
     // Get the days to be loaded
     val format = "yyMMdd"
     val end = DateTime.now.minusDays(value_dictionary("since").toInt)
@@ -57,6 +94,7 @@ object POICrossDevicerJson {
       )
       .map(day => day + "*.snappy.parquet")
 
+
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read
       .option("header", "true")
@@ -72,8 +110,9 @@ object POICrossDevicerJson {
           col("longitude_user").cast("float") * 100
         ).cast("int"))
       )
+          df_safegraph } 
 
-    df_safegraph
+    
   }
 
   /**
