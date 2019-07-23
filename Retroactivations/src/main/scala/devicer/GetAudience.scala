@@ -102,7 +102,7 @@ object GetAudience {
     hdfs_files.foreach(println)
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     df.show()
-    df
+    df.coalesce(200)
   }
 
   /**
@@ -576,7 +576,6 @@ object GetAudience {
         )
       else results_distinct
     // Now we store every single audience separately
-    results_limited.foreach(df => df.show())
     results_limited.foreach(
       dataframe =>
         dataframe.write
