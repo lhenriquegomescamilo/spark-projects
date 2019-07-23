@@ -99,6 +99,7 @@ object GetAudience {
       .map(day => path + "/day=%s".format(day))
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
     //fs.close()
+    hdfs_files.foreach(println)
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     df.show()
     df
