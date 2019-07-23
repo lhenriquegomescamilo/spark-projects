@@ -575,6 +575,7 @@ object GetAudience {
         )
       else results_distinct
     // Now we store every single audience separately
+    results_limited.foreach(df => df.show())
     results_limited.foreach(
       dataframe =>
         dataframe.write
@@ -583,7 +584,6 @@ object GetAudience {
           .mode("append")
           .save("/datascience/devicer/processed/" + fileName)
     )
-    results_limited.foreach(df => df.show())
 
     // If we previously persisted the data, now we unpersist it back.
     if (queries.length > 5000) {
