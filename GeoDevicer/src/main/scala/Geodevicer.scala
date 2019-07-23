@@ -167,7 +167,7 @@ object Geodevicer {
       else "0"
 
   // Column to select old pipeline if desired
-    val polygon_input =
+    val old_pipeline =
       if (query.contains("old_pipeline") && Option(query("old_pipeline"))
             .getOrElse("")
             .toString
