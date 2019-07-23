@@ -74,7 +74,7 @@ object POICrossDevicerJson {
           col("longitude_user").cast("float")*100
         ).cast("int"))
         )
-                                                  }
+                         df_safegraph                         }
 
   else {
     // Get the days to be loaded
@@ -110,9 +110,9 @@ object POICrossDevicerJson {
           col("longitude_user").cast("float") * 100
         ).cast("int"))
       )
-           } 
+          df_safegraph } 
 
-    df_safegraph
+    
   }
 
   /**
