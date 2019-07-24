@@ -863,7 +863,8 @@ object GetAudience {
     val os = fs.create(
       new Path("/datascience/ingester/ready/%s.meta".format(file_name))
     )
-    os.write(json_content.getBytes).close()
+    os.write(json_content.getBytes)
+    os.close()
     // fs.close()
   }
 
