@@ -292,7 +292,7 @@ object GetAudience {
       else
         spark.createDataFrame(
           spark.sparkContext.emptyRDD[Row],
-          Array(StructType(StructField("empty", StringType, true)))
+          StructType(Array(StructField("empty", StringType, true)))
         )
     //fs.close()
 
