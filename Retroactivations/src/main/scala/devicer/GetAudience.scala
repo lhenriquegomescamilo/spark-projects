@@ -279,7 +279,14 @@ object GetAudience {
                 )
           )
           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    val df =
+      if (hdfs_files.length > 0)
+        spark.read.option("basePath", path).parquet(hdfs_files: _*)
+      else
+        spark.createDataFrame(
+          sc.emptyRDD[Row],
+          StructType(StructField("empty", StringType, true))
+        )
     //fs.close()
 
     df
