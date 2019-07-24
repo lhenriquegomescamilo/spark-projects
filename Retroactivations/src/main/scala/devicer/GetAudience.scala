@@ -101,7 +101,6 @@ object GetAudience {
     //fs.close()
     hdfs_files.foreach(println)
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
-    df.show()
     df.coalesce(200)
   }
 
@@ -997,20 +996,19 @@ object GetAudience {
           commonFilter
         )
       } else {
-        // try {
-        getAudience(
-          spark,
-          data,
-          queries,
-          file_name,
-          commonFilter,
-          limit,
-          unique
-        )
-        // }
-        // catch {
-        //   case e: Exception => {failed = true}
-        // }
+        try {
+          getAudience(
+            spark,
+            data,
+            queries,
+            file_name,
+            commonFilter,
+            limit,
+            unique
+          )
+        } catch {
+          case e: Exception => { failed = true }
+        }
       }
 
       // We cross device the audience if the parameter is set.
