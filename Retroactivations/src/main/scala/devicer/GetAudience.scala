@@ -287,7 +287,7 @@ object GetAudience {
         spark.read.option("basePath", path).parquet(hdfs_files: _*)
       else
         spark.createDataFrame(
-          sc.emptyRDD[Row],
+          spark.sparkContext.emptyRDD[Row],
           StructType(StructField("empty", StringType, true))
         )
     //fs.close()
