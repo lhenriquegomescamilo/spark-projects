@@ -3052,6 +3052,45 @@ user_granularity.write
 
   }
 
+
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *                    TELECENTRO
+    *
+    *
+    *
+    *
+    *
+    */
+  def segments_for_telecentro(
+      spark: SparkSession
+  ) = {
+
+    val telecentro = spark.read.format("csv")
+                      .option("delimiter","\t")
+                      .load("/datascience/devicer/processed/AR_119211921192_2019-07-23T17-41-38-644053").toDF("device_type","device_id","segment")
+                      .drop("segment")
+    
+    val segments = spark.read.format("parquet")
+    .option("delimiter","\t")
+    .load("/datascience/data_demo/triplets_segments/country=AR/")
+    
+    val segments_for_telecentro = telecentro.join(segments,Seq("device_id"))
+
+segments_for_telecentro
+.write.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.mode(SaveMode.Overwrite)
+.save("/datascience/audiences/crossdeviced/Telecentro_w_segments")  
+  }
+
   /**
     *
     *
@@ -4196,7 +4235,7 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    processMissingMinutes(spark)
+    segments_for_telecentro(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 
