@@ -4280,8 +4280,27 @@ telecentro_relevant
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    PII_device_votantes(spark)
-    println("LOGGER: JOIN FINISHED!")
+    //PII_device_votantes(spark)
+    //println("LOGGER: JOIN FINISHED!")
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day))
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
+
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    val taxo = spark.read.format("csv").option("header","true").load("/datascience/custom/content_keys_taxo_new.csv")
+    val joint = data_kw.join(broadcast(taxo),Seq("content_keys"))
+    joint.write.format("csv").options("header","true").save("/datascience/custom/vol_taxo_nueva")
+
   }
 
 }
