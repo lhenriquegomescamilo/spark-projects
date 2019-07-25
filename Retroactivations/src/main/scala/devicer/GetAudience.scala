@@ -171,7 +171,9 @@ object GetAudience {
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_audiences"
+    val path =
+      if (pipe == "batch") "/datascience/data_audiences/"
+      else "/datascience/data_audiences_streaming/"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files =
@@ -185,7 +187,7 @@ object GetAudience {
             day =>
               (0 until 24).map(
                 hour =>
-                  path + "hour=%s%02d"
+                  path + "/hour=%s%02d/"
                     .format(day, hour)
               )
           )
