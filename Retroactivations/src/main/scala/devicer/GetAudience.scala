@@ -17,6 +17,13 @@ import org.apache.spark.sql.DataFrame
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.storage.StorageLevel
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.types.{
+  StructType,
+  StructField,
+  StringType,
+  IntegerType
+}
+import org.apache.spark.sql.Row
 
 /*
  * This object receives an audience and cross-device it using a cross-deviced index.
@@ -101,7 +108,6 @@ object GetAudience {
     //fs.close()
     hdfs_files.foreach(println)
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
-    df.show()
     df.coalesce(200)
   }
 
@@ -280,7 +286,14 @@ object GetAudience {
                 )
           )
           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    val df =
+      if (hdfs_files.length > 0)
+        spark.read.option("basePath", path).parquet(hdfs_files: _*)
+      else
+        spark.createDataFrame(
+          spark.sparkContext.emptyRDD[Row],
+          StructType(Array(StructField("empty", StringType, true)))
+        )
     //fs.close()
 
     df
@@ -851,7 +864,8 @@ object GetAudience {
       new Path("/datascience/ingester/ready/%s.meta".format(file_name))
     )
     os.write(json_content.getBytes)
-    //fs.close()
+    os.close()
+    // fs.close()
   }
 
   /**
@@ -997,20 +1011,19 @@ object GetAudience {
           commonFilter
         )
       } else {
-        // try {
-        getAudience(
-          spark,
-          data,
-          queries,
-          file_name,
-          commonFilter,
-          limit,
-          unique
-        )
-        // }
-        // catch {
-        //   case e: Exception => {failed = true}
-        // }
+        try {
+          getAudience(
+            spark,
+            data,
+            queries,
+            file_name,
+            commonFilter,
+            limit,
+            unique
+          )
+        } catch {
+          case e: Exception => { failed = true }
+        }
       }
 
       // We cross device the audience if the parameter is set.
