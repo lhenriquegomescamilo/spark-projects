@@ -3087,7 +3087,7 @@ user_granularity.write
                 .option("header",true)
                 .load("hdfs://rely-hdfs//datascience/geo/audiences/taxonomy_druid.csv").withColumnRenamed("id","feature")
     
-    val telecentro_relevant = telecentro_seg.join(druid,Seq("feature"))
+    val telecentro_relevant = segments_for_telecentro.join(druid,Seq("feature"))
 
 
 telecentro_relevant
