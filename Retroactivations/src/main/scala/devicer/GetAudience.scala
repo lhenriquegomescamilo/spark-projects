@@ -1043,7 +1043,10 @@ object GetAudience {
             unique
           )
         } catch {
-          case e: Exception => { failed = true }
+          case e: Exception => {
+            e.printStackTrace()
+            failed = true
+          }
         }
       }
 
