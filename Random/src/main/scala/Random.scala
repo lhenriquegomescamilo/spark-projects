@@ -4298,7 +4298,7 @@ telecentro_relevant
 
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     val taxo = spark.read.format("csv").option("header","true").load("/datascience/custom/content_keys_taxo_new.csv")
-    val joint = data_kw.join(broadcast(taxo),Seq("content_keys"))
+    val joint = df.join(broadcast(taxo),Seq("content_keys"))
     joint.write.format("csv").options("header","true").save("/datascience/custom/vol_taxo_nueva")
 
   }
