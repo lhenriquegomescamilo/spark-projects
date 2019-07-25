@@ -160,7 +160,8 @@ object GetAudience {
   def getDataAudiences(
       spark: SparkSession,
       nDays: Int = 30,
-      since: Int = 1
+      since: Int = 1,
+      pipe: String = "batch"
   ): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -173,9 +174,22 @@ object GetAudience {
     val path = "/datascience/data_audiences"
 
     // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days
-      .map(day => path + "/day=%s/".format(day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val hdfs_files =
+      if (pipe == "batch")
+        days
+          .map(day => path + "/day=%s/".format(day))
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      else
+        days
+          .flatMap(
+            day =>
+              (0 until 24).map(
+                hour =>
+                  path + "hour=%s%02d"
+                    .format(day, hour)
+              )
+          )
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     //fs.close()
     val df = spark.read
       .option("basePath", path)
@@ -980,7 +994,12 @@ object GetAudience {
         case 4 =>
           getDataUS(spark, nDays.toString.toInt, since.toString.toInt)
         case 5 =>
-          getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
+          getDataAudiences(
+            spark,
+            nDays.toString.toInt,
+            since.toString.toInt,
+            "streaming"
+          )
         case 6 =>
           getDataIdPartners(
             spark,
