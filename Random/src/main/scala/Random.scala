@@ -3083,12 +3083,19 @@ user_granularity.write
     
     val segments_for_telecentro = telecentro.join(segments,Seq("device_id"))
 
-segments_for_telecentro
+    val druid = spark.read.format("csv")
+                .option("header",true)
+                .load("hdfs://rely-hdfs//datascience/geo/audiences/taxonomy_druid.csv").withColumnRenamed("id","feature")
+    
+    val telecentro_relevant = telecentro_seg.join(druid,Seq("feature"))
+
+
+telecentro_relevant
 .write.format("csv")
 .option("delimiter","\t")
 .option("header",true)
 .mode(SaveMode.Overwrite)
-.save("/datascience/audiences/crossdeviced/Telecentro_w_segments")  
+.save("/datascience/audiences/crossdeviced/Telecentro_w_relevance")  
   }
 
   /**
