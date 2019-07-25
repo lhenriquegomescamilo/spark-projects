@@ -3083,13 +3083,58 @@ user_granularity.write
     
     val segments_for_telecentro = telecentro.join(segments,Seq("device_id"))
 
-segments_for_telecentro
+    val druid = spark.read.format("csv")
+                .option("header",true)
+                .load("hdfs://rely-hdfs//datascience/geo/audiences/taxonomy_druid.csv").withColumnRenamed("id","feature")
+    
+    val telecentro_relevant = segments_for_telecentro.join(druid,Seq("feature"))
+
+
+telecentro_relevant
 .write.format("csv")
 .option("delimiter","\t")
 .option("header",true)
 .mode(SaveMode.Overwrite)
-.save("/datascience/audiences/crossdeviced/Telecentro_w_segments")  
+.save("/datascience/audiences/crossdeviced/Telecentro_w_relevance")  
   }
+/**
+    *
+    *
+    *
+    *
+    *
+    *
+    *                   Votantes_PII
+    *
+    *
+    *
+    *
+    *
+    */
+  def PII_device_votantes(
+      spark: SparkSession
+  ) = {
+
+    val pii = spark.read.format("parquet")
+    .load("/datascience/pii_matching/pii_table/")
+    .filter("country == 'AR'")
+    
+    val dir_gcba = spark.read.format("csv")
+                    .option("delimiter",";")
+                    .option("header",true)
+                    .load("hdfs://rely-hdfs//datascience/geo/audiences/ids_dir.csv")
+                    .withColumnRenamed("documento","pii")
+
+      dir_gcba.join(pii,Seq("pii"))
+      .write.format("csv")
+      .option("header",true)
+      .option("delimiter","\t")
+      .mode(SaveMode.Overwrite).save("/datascience/geo/audiences/ids_dir_pii")
+      
+  }
+
+  
+  
 
   /**
     *
@@ -4235,7 +4280,7 @@ segments_for_telecentro
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    segments_for_telecentro(spark)
+    PII_device_votantes(spark)
     println("LOGGER: JOIN FINISHED!")
   }
 
