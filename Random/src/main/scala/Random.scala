@@ -3152,6 +3152,50 @@ user_granularity.write
     *
     *
     *
+    *                    JOIN CON DATA DE KEYWORDS
+    *
+    *
+    *
+    *
+    *
+    */
+  def join_data_kw(spark: SparkSession) = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+​
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format)) //lista con formato de format
+    val path = "/datascience/data_keywords"
+​
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=UY".format(day))  //para cada dia de la lista day devuelve el path del día
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
+​
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)  //lee todo de una
+    val taxo = spark.read.format("csv").option("header","true").load("/datascience/custom/content_keys_UY.csv")
+    val joint = df.join(broadcast(taxo),Seq("content_keys"))
+    joint.write.format("csv").option("header","true").mode(SaveMode.Overwrite).save("/datascience/custom/UY_keys_vol")
+
+
+
+
+
+
+
+
+
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
     *                    PEDIDO TELEFONICA
     *
     *
