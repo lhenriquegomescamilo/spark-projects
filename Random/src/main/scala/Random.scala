@@ -4355,7 +4355,7 @@ user_granularity.write
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/new_taxo_grouped"
+      .save("/datascience/custom/new_taxo_grouped")
   }
 
 
