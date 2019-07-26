@@ -4289,7 +4289,7 @@ user_granularity.write
     *
     */
   def getCrossForFace(spark: SparkSession) = {
-    val segments_nacho = """131,103973,477,6115,103971,103968,103970,103972,103969,230,92,104615,446,99638,451,250,105331,5295,447,105332,105334,99639,3565,457,105338,456,105333,3572,3597,105337,450,453,3051,454,3578,1160,1159,3571,105336,48465,459,458""".split("\n").toSet
+    val segments_nacho = """131,103973,477,6115,103971,103968,103970,103972,103969,230,92,104615,446,99638,451,250,105331,5295,447,105332,105334,99639,3565,457,105338,456,105333,3572,3597,105337,450,453,3051,454,3578,1160,1159,3571,105336,48465,459,458""".split(",").toSet
     val arrIntersect = udf(
       (segments: Seq[String]) =>
         segments.exists(s => segments_nacho.contains(s))
@@ -4318,7 +4318,7 @@ user_granularity.write
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    
+
     getCrossForFace(spark)
   }
 
