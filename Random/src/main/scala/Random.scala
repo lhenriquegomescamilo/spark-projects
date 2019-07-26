@@ -3052,8 +3052,6 @@ user_granularity.write
 
   }
 
-
-
   /**
     *
     *
@@ -3072,32 +3070,40 @@ user_granularity.write
       spark: SparkSession
   ) = {
 
-    val telecentro = spark.read.format("csv")
-                      .option("delimiter","\t")
-                      .load("/datascience/devicer/processed/AR_119211921192_2019-07-23T17-41-38-644053").toDF("device_type","device_id","segment")
-                      .drop("segment")
-    
-    val segments = spark.read.format("parquet")
-    .option("delimiter","\t")
-    .load("/datascience/data_demo/triplets_segments/country=AR/")
-    
-    val segments_for_telecentro = telecentro.join(segments,Seq("device_id"))
+    val telecentro = spark.read
+      .format("csv")
+      .option("delimiter", "\t")
+      .load(
+        "/datascience/devicer/processed/AR_119211921192_2019-07-23T17-41-38-644053"
+      )
+      .toDF("device_type", "device_id", "segment")
+      .drop("segment")
 
-    val druid = spark.read.format("csv")
-                .option("header",true)
-                .load("hdfs://rely-hdfs//datascience/geo/audiences/taxonomy_druid.csv").withColumnRenamed("id","feature")
-    
-    val telecentro_relevant = segments_for_telecentro.join(druid,Seq("feature"))
+    val segments = spark.read
+      .format("parquet")
+      .option("delimiter", "\t")
+      .load("/datascience/data_demo/triplets_segments/country=AR/")
 
+    val segments_for_telecentro = telecentro.join(segments, Seq("device_id"))
 
-telecentro_relevant
-.write.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.mode(SaveMode.Overwrite)
-.save("/datascience/audiences/crossdeviced/Telecentro_w_relevance")  
+    val druid = spark.read
+      .format("csv")
+      .option("header", true)
+      .load("hdfs://rely-hdfs//datascience/geo/audiences/taxonomy_druid.csv")
+      .withColumnRenamed("id", "feature")
+
+    val telecentro_relevant =
+      segments_for_telecentro.join(druid, Seq("feature"))
+
+    telecentro_relevant.write
+      .format("csv")
+      .option("delimiter", "\t")
+      .option("header", true)
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/audiences/crossdeviced/Telecentro_w_relevance")
   }
-/**
+
+  /**
     *
     *
     *
@@ -3115,26 +3121,28 @@ telecentro_relevant
       spark: SparkSession
   ) = {
 
-    val pii = spark.read.format("parquet")
-    .load("/datascience/pii_matching/pii_table/")
-    .filter("country == 'AR'")
-    
-    val dir_gcba = spark.read.format("csv")
-                    .option("delimiter",";")
-                    .option("header",true)
-                    .load("hdfs://rely-hdfs//datascience/geo/audiences/ids_dir.csv")
-                    .withColumnRenamed("documento","pii")
+    val pii = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_table/")
+      .filter("country == 'AR'")
 
-      dir_gcba.join(pii,Seq("pii"))
-      .write.format("csv")
-      .option("header",true)
-      .option("delimiter","\t")
-      .mode(SaveMode.Overwrite).save("/datascience/geo/audiences/ids_dir_pii")
-      
+    val dir_gcba = spark.read
+      .format("csv")
+      .option("delimiter", ";")
+      .option("header", true)
+      .load("hdfs://rely-hdfs//datascience/geo/audiences/ids_dir.csv")
+      .withColumnRenamed("documento", "pii")
+
+    dir_gcba
+      .join(pii, Seq("pii"))
+      .write
+      .format("csv")
+      .option("header", true)
+      .option("delimiter", "\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/audiences/ids_dir_pii")
+
   }
-
-  
-  
 
   /**
     *
@@ -4085,7 +4093,7 @@ telecentro_relevant
     val partition = "id_partner"
     val parallel = 0
     val from = 1
-    
+
     // This is the list of all the columns that each CSV file has.
     val all_columns =
       """timestamp,time,user,device_id,device_type,web_id,android_id,ios_id,event_type,data_type,nav_type,
@@ -4236,21 +4244,21 @@ telecentro_relevant
     val outputPath =
       if (partition == "country")
         "/datascience/data_audiences_streaming" + (if (parallel > 0)
-                                                      "_%s/".format(parallel)
-                                                    else "/")
+                                                     "_%s/".format(parallel)
+                                                   else "/")
       else
         "/datascience/data_partner_streaming" + (if (parallel > 0)
-                                                    "_%s".format(parallel)
-                                                  else "")
+                                                   "_%s".format(parallel)
+                                                 else "")
     val checkpointLocation =
       if (partition == "country")
         "/datascience/checkpoint_audiences" + (if (parallel > 0)
-                                                  "_%s".format(parallel)
-                                                else "")
+                                                 "_%s".format(parallel)
+                                               else "")
       else
         "/datascience/checkpoint_partner" + (if (parallel > 0)
-                                                "_%s".format(parallel)
-                                              else "")
+                                               "_%s".format(parallel)
+                                             else "")
     if (processType == "stream") {
       println("STREAMING LOGGER: Storing the streaming")
       finalDF.writeStream
@@ -4271,6 +4279,37 @@ telecentro_relevant
     }
   }
 
+  /**
+    *
+    *
+    *
+    *                CROSS DEVICE DE AUDIENCIAS DE LA TAXO GENERAL
+    *
+    *
+    *
+    */
+  def getCrossForFace(spark: SparkSession) = {
+    val segments_nacho = """131,103973,477,6115,103971,103968,103970,103972,103969,230,92,104615,446,99638,451,250,105331,5295,447,105332,105334,99639,3565,457,105338,456,105333,3572,3597,105337,450,453,3051,454,3578,1160,1159,3571,105336,48465,459,458""".split("\n").toSet
+    val arrIntersect = udf(
+      (segments: Seq[String]) =>
+        segments.exists(s => segments_nacho.contains(s))
+    )
+    spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load(
+        "/datascience/audiences/crossdeviced/taxo_gral_joint/"
+      )
+      .withColumn("_c2", split(col("_c2"), ","))
+      .filter(arrIntersect(col("_c2")))
+      .filter("_c0 != 'web'")
+      .withColumn("_c2", concat_ws(",", col("_c2")))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/pedidoNachoFace")
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -4280,27 +4319,7 @@ telecentro_relevant
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    //PII_device_votantes(spark)
-    //println("LOGGER: JOIN FINISHED!")
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-    // Get the days to be loaded
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(0)
-    val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_keywords"
-
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days
-      .map(day => path + "/day=%s".format(day))
-      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
-
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
-    val taxo = spark.read.format("csv").option("header","true").load("/datascience/custom/content_keys_taxo_new.csv")
-    val joint = df.join(broadcast(taxo),Seq("content_keys"))
-    joint.write.format("csv").option("header","true").save("/datascience/custom/vol_taxo_nueva")
-
+    getCrossForFace(spark)
   }
 
 }
