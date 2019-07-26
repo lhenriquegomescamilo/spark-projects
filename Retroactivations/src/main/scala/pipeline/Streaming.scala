@@ -66,7 +66,6 @@ object Streaming {
       "pv",
       "data",
       "batch",
-      "sync",
       "xp",
       "retroactive",
       "xd",
