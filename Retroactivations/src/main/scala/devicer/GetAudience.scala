@@ -978,8 +978,8 @@ object GetAudience {
               spark,
               ids,
               nDays.toString.toInt,
-              since.toString.toInt,
-              "streaming"
+              since.toString.toInt//,
+              //"streaming"
             )
           else
             getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
@@ -988,8 +988,8 @@ object GetAudience {
             spark,
             ids,
             nDays.toString.toInt,
-            since.toString.toInt,
-            "streaming"
+            since.toString.toInt//,
+            //"streaming"
           )
         case 2 =>
           getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
