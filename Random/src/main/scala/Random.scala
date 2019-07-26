@@ -4318,7 +4318,7 @@ user_granularity.write
       SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-
+    
     getCrossForFace(spark)
   }
 
