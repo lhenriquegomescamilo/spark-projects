@@ -4356,6 +4356,54 @@ user_granularity.write
       .save("/datascience/custom/pedidoNachoFace")
   }
 
+   /**
+    *
+    *
+    *
+    *                CROSS DEVICE DE AUDIENCIAS DE LA TAXO GENERAL - Guardado de usuarios
+    *
+    *
+    *
+    */
+  def saveCrossForFace(spark: SparkSession) = {
+    
+    val df = spark.read.format("csv").option("delimiter","\t")
+    .load("/datascience/custom/pedidoNachoFace")
+    
+    df.cache()
+    
+   val ids = List(131,103973,477,6115,103971,103968,103970,103972,103969,230,92,104615,446,99638,451,250,105331,5295,447,105332,105334,99639,3565,457,105338,456,105333,3572,3597,105337,450,453,3051,454,3578,1160,1159,3571,105336,48465,459,458)
+
+    for (id <- ids) 
+      (df.withColumn("_c2", split(col("_c2"), ","))
+          .filter("array_contains(_c2, '%s')".format(id))
+          .select(col("_c1"))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/pedidoNachoFace_%s".format(id)))
+  }
+
+  def get_volumes_new_taxo(spark: SparkSession) = {
+
+    val df = spark.read.format("csv").option("header","true")
+                  .load("/datascience/custom/vol_taxo_nueva/")
+                  .drop("country_t")
+                  .drop("_c0")
+                  .drop("count").
+                  dropDuplicates()
+
+    df.groupBy("device_id")
+      .agg(collect_list("content_keys").as("kws"))
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/new_taxo_grouped")
+  }
+
+
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -4365,7 +4413,8 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getCrossForFace(spark)
+    //saveCrossForFace(spark)
+    get_volumes_new_taxo(spark)
   }
 
 }
