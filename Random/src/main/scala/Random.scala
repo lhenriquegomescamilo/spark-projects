@@ -4297,7 +4297,7 @@ telecentro_relevant
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
 
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
-    val taxo = spark.read.format("csv").option("header","true").load("/datascience/custom/content_keys_taxo_new.csv")
+    val taxo = spark.read.format("csv").option("header","true").load("/datascience/custom/content_keys_taxo_new.csv").withColumnRenamed("country","country_t")
     val joint = df.join(broadcast(taxo),Seq("content_keys"))
     joint.write.format("csv").option("header","true").save("/datascience/custom/vol_taxo_nueva")
 
