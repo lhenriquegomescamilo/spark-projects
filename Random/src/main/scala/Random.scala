@@ -4341,6 +4341,25 @@ user_granularity.write
       .save("/datascience/custom/pedidoNachoFace_%s".format(id)))
   }
 
+  def get_volumes_new_taxo(spark: SparkSession) = {
+
+    val df = spark.read.format("csv").option("header","true")
+                  .load("/datascience/custom/vol_taxo_nueva/")
+                  .drop("country_t")
+                  .drop("_c0")
+                  .drop("count").
+                  dropDuplicates()
+
+    df.groupBy("device_id")
+      .agg(collect_list("content_keys").as("kws"))
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/new_taxo_grouped"
+  }
+
+
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -4350,7 +4369,8 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    saveCrossForFace(spark)
+    //saveCrossForFace(spark)
+    get_volumes_new_taxo(spark)
   }
 
 }
