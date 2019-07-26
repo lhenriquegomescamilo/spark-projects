@@ -4353,7 +4353,7 @@ user_granularity.write
     df.groupBy("device_id")
       .agg(collect_list("content_keys").as("kws"))
       .write
-      .format("csv")
+      .format("parquet")
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/new_taxo_grouped")
   }
