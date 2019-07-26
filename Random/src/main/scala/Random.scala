@@ -35,6 +35,7 @@ import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import org.apache.commons.codec.binary.Base64
 import java.time.DateTimeException
+import java.sql.Savepoint
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -4307,6 +4308,7 @@ user_granularity.write
       .write
       .format("csv")
       .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
       .save("/datascience/custom/pedidoNachoFace")
   }
 
