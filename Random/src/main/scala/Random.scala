@@ -3172,22 +3172,21 @@ user_granularity.write
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/country=UY".format(day))  //para cada dia de la lista day devuelve el path del día
+      .map(day => path + "/day=%s/country=UY".format(day)) //para cada dia de la lista day devuelve el path del día
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
 
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)  //lee todo de una
-    val taxo = spark.read.format("csv").option("header","true").load("/datascience/custom/content_keys_UY.csv")
-    val joint = df.join(broadcast(taxo),Seq("content_keys"))
-    joint.write.format("csv").option("header","true").mode(SaveMode.Overwrite).save("/datascience/custom/UY_keys_vol")
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
+    val taxo = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/content_keys_UY.csv")
+    val joint = df.join(broadcast(taxo), Seq("content_keys"))
+    joint.write
+      .format("csv")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/UY_keys_vol")
   }
-
-
-
-
-
-
-
-
 
   /**
     *
@@ -4334,7 +4333,10 @@ user_granularity.write
     *
     */
   def getCrossForFace(spark: SparkSession) = {
-    val segments_nacho = """131,103973,477,6115,103971,103968,103970,103972,103969,230,92,104615,446,99638,451,250,105331,5295,447,105332,105334,99639,3565,457,105338,456,105333,3572,3597,105337,450,453,3051,454,3578,1160,1159,3571,105336,48465,459,458""".split(",").toSet
+    val segments_nacho =
+      """131,103973,477,6115,103971,103968,103970,103972,103969,230,92,104615,446,99638,451,250,105331,5295,447,105332,105334,99639,3565,457,105338,456,105333,3572,3597,105337,450,453,3051,454,3578,1160,1159,3571,105336,48465,459,458"""
+        .split(",")
+        .toSet
     val arrIntersect = udf(
       (segments: Seq[String]) =>
         segments.exists(s => segments_nacho.contains(s))
@@ -4356,7 +4358,7 @@ user_granularity.write
       .save("/datascience/custom/pedidoNachoFace")
   }
 
-   /**
+  /**
     *
     *
     *
@@ -4366,18 +4368,23 @@ user_granularity.write
     *
     */
   def saveCrossForFace(spark: SparkSession) = {
-    
-    val df = spark.read.format("csv").option("delimiter","\t")
-    .load("/datascience/custom/pedidoNachoFace")
-    
-    df.cache()
-    
-   val ids = List(131,103973,477,6115,103971,103968,103970,103972,103969,230,92,104615,446,99638,451,250,105331,5295,447,105332,105334,99639,3565,457,105338,456,105333,3572,3597,105337,450,453,3051,454,3578,1160,1159,3571,105336,48465,459,458)
 
-    for (id <- ids) 
-      (df.withColumn("_c2", split(col("_c2"), ","))
-          .filter("array_contains(_c2, '%s')".format(id))
-          .select(col("_c1"))
+    val df = spark.read
+      .format("csv")
+      .option("delimiter", "\t")
+      .load("/datascience/custom/pedidoNachoFace")
+
+    df.cache()
+
+    val ids = List(131, 103973, 477, 6115, 103971, 103968, 103970, 103972,
+      103969, 230, 92, 104615, 446, 99638, 451, 250, 105331, 5295, 447, 105332,
+      105334, 99639, 3565, 457, 105338, 456, 105333, 3572, 3597, 105337, 450,
+      453, 3051, 454, 3578, 1160, 1159, 3571, 105336, 48465, 459, 458)
+
+    for (id <- ids)(df
+      .withColumn("_c2", split(col("_c2"), ","))
+      .filter("array_contains(_c2, '%s')".format(id))
+      .select(col("_c1"))
       .write
       .format("csv")
       .option("sep", "\t")
@@ -4387,12 +4394,14 @@ user_granularity.write
 
   def get_volumes_new_taxo(spark: SparkSession) = {
 
-    val df = spark.read.format("csv").option("header","true")
-                  .load("/datascience/custom/vol_taxo_nueva/")
-                  .drop("country_t")
-                  .drop("_c0")
-                  .drop("count").
-                  dropDuplicates()
+    val df = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/vol_taxo_nueva/")
+      .drop("country_t")
+      .drop("_c0")
+      .drop("count")
+      .dropDuplicates()
 
     df.groupBy("device_id")
       .agg(collect_list("content_keys").as("kws"))
@@ -4402,7 +4411,29 @@ user_granularity.write
       .save("/datascience/custom/new_taxo_grouped")
   }
 
-
+  def populateTaxoNueva(spark: SparkSession) = {
+    val data = spark.read
+      .load("/datascience/custom/new_taxo_grouped")
+      .withColumn("device_type", lit("web"))
+    data.cache()
+    val queries = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/scala_taxo_new.csv")
+      .select("seg_id", "queries")
+      .collect()
+      .map(r => (r(0).toString, r(1).toString))
+    for (t <- queries) {
+      data
+        .filter(t._2)
+        .withColumn("seg_id", lit(t._1))
+        .select("device_type", "device_id", "seg_id")
+        .write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/devicer/processed/taxoNueva_%s".format(t._1))
+    }
+  }
 
   /*****************************************************/
   /******************     MAIN     *********************/
@@ -4414,7 +4445,7 @@ user_granularity.write
     Logger.getRootLogger.setLevel(Level.WARN)
 
     //saveCrossForFace(spark)
-    get_volumes_new_taxo(spark)
+    populateTaxoNueva(spark)
   }
 
 }
