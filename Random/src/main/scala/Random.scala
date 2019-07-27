@@ -4435,6 +4435,7 @@ user_granularity.write
         .select("device_type", "device_id", "seg_id")
         .write
         .format("csv")
+        .option("sep", "\t")
         .mode(SaveMode.Overwrite)
         .save("/datascience/devicer/processed/taxoNueva_%s".format(t._1))
       val os = fs.create(
