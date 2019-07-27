@@ -4412,6 +4412,11 @@ user_granularity.write
   }
 
   def populateTaxoNueva(spark: SparkSession) = {
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+
+    val fs = FileSystem.get(conf)
+
     val data = spark.read
       .load("/datascience/custom/new_taxo_grouped")
       .withColumn("device_type", lit("web"))
@@ -4432,6 +4437,15 @@ user_granularity.write
         .format("csv")
         .mode(SaveMode.Overwrite)
         .save("/datascience/devicer/processed/taxoNueva_%s".format(t._1))
+      val os = fs.create(
+        new Path("/datascience/ingester/ready/taxoNueva_%s".format(t._1))
+      )
+      val content =
+        """{"filePath":"/datascience/devicer/processed/taxoNueva_%s", "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"taxo nueva"}"""
+          .format(t._1)
+      println(content)
+      os.write(content.getBytes)
+      os.close()
     }
   }
 
