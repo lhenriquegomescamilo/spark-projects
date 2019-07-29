@@ -1832,7 +1832,7 @@ val records_common = the_join.select(col("identifier"))
     //cargamos el df de audiences
     val df_audiences = spark.read.parquet(hdfs_files: _*)
 
-    val daud = daud.select("device_id","segments","timestamp","device_type")
+    val daud = df_audiences.select("device_id","segments","timestamp","device_type")
     .withColumn("ISP", when(array_contains(col("segments"),1192), "Telecentro")
       .otherwise(when(array_contains(col("segments"),1191), "Fibertel")
         .otherwise(when(array_contains(col("segments"),1190), "Arnet")
