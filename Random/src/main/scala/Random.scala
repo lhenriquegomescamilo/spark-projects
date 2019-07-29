@@ -3172,20 +3172,20 @@ user_granularity.write
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/country=UY".format(day)) //para cada dia de la lista day devuelve el path del día
+      .map(day => path + "/day=%s/country=PE".format(day)) //para cada dia de la lista day devuelve el path del día
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
 
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
-    val content_keys_UY = spark.read
+    val content_keys_PE = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/content_keys_UY.csv")
-    val joint = df.join(broadcast(content_keys_UY), Seq("content_keys"))
+      .load("/datascience/custom/content_keys_PE_all.csv")
+    val joint = df.join(broadcast(content_keys_PE), Seq("content_keys"))
     joint.write
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/UY_keys_vol")
+      .save("/datascience/custom/PE_keys_vol")
   }
 
   /**
@@ -4537,7 +4537,7 @@ user_granularity.write
 
     //saveCrossForFace(spark)
     //populateTaxoNueva(spark)
-    ingest_via_kw(spark)
+    join_data_kw(spark)
   }
 
 }
