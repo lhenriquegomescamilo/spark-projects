@@ -3176,11 +3176,11 @@ user_granularity.write
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
 
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
-    val taxo = spark.read
+    val content_keys_UY = spark.read
       .format("csv")
       .option("header", "true")
       .load("/datascience/custom/content_keys_UY.csv")
-    val joint = df.join(broadcast(taxo), Seq("content_keys"))
+    val joint = df.join(broadcast(content_keys_UY), Seq("content_keys"))
     joint.write
       .format("csv")
       .option("header", "true")
@@ -4460,7 +4460,8 @@ user_granularity.write
     Logger.getRootLogger.setLevel(Level.WARN)
 
     //saveCrossForFace(spark)
-    populateTaxoNueva(spark)
+    //populateTaxoNueva(spark)
+    join_data_kw(spark)
   }
 
 }
