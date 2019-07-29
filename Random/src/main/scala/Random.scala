@@ -1862,7 +1862,7 @@ val records_common = the_join.select(col("identifier"))
     .option("delimiter","\t")
     .mode(SaveMode.Overwrite)
     .save("/datascience/audiences/crossdeviced/Telecentro_Test_ISP") 
-
+}
 
 
 
