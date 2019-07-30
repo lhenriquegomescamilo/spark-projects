@@ -4642,7 +4642,7 @@ user_granularity.write
 
     //saveCrossForFace(spark)
     //populateTaxoNueva(spark)
-    getDataVotaciones(spark, 30, 1)
+    getDataVotaciones(spark)
   }
 
 }
