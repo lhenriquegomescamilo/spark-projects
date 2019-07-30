@@ -992,7 +992,12 @@ object GetAudience {
             "streaming"
           )
         case 2 =>
-          getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
+          getDataAudiences(
+            spark,
+            nDays.toString.toInt,
+            since.toString.toInt,
+            "streaming"
+          )
         case 3 =>
           getDataKeywords(spark, nDays.toString.toInt, since.toString.toInt)
         case 4 =>
