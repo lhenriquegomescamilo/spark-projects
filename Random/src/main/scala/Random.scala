@@ -1527,19 +1527,7 @@ val records_common = the_join.select(col("identifier"))
         .save("/datascience/audiences/crossdeviced/trenes_GBA_365d_argentina_30-7-2019-10h_mobile")
     
     }
-    // spark.read.format("csv")
-    //      .load("/datascience/sharethis/loading/*")
-    //      .select("_c0", "_c1", "_c10", "_c11", "_c3", "_c5")
-    //      .withColumnRenamed("_c0", "estid")
-    //      .withColumnRenamed("_c1", "utc_timestamp")
-    //      .withColumnRenamed("_c3", "ip")
-    //      .withColumnRenamed("_c10", "latitude")
-    //      .withColumnRenamed("_c11", "longitude")
-    //      .withColumnRenamed("_c5", "device_type")
-    //      .write
-    //      .format("csv")
-    //      .save("/datascience/custom/geo_st")
-  }
+
 
   def get_pii_AR(spark: SparkSession) {
 
