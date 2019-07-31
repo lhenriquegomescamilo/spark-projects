@@ -29,6 +29,9 @@ import org.apache.spark.ml.classification.{
   GBTClassificationModel,
   GBTClassifier
 }
+
+import org.apache.spark.mllib.feature.Stemmer
+
 import java.security.MessageDigest
 import java.util
 import javax.crypto.Cipher
@@ -3336,6 +3339,104 @@ user_granularity.write
 
   }
 
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *                    TEST STEMMING
+    *
+    *
+    *
+    *
+    *
+    */
+  def test_no_stemming(spark: SparkSession) = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format)) //lista con formato de format
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=UY".format(day)) //para cada dia de la lista day devuelve el path del día
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
+
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
+    val content_keys_UY = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/content_keys_UY.csv")
+    val joint = df.join(broadcast(content_keys_UY), Seq("content_keys"))
+    joint.write
+      .format("csv")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/test_joint_keys_no_stemming")
+  }
+
+
+  def test_stemming(spark: SparkSession) = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    val toArray = udf[Array[String], String]( _.split(" "))
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format)) //lista con formato de format
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=UY".format(day)) //para cada dia de la lista day devuelve el path del día
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
+
+    var df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
+
+    df = df.withColumn("content_keys", toArray(df("content_keys")))  
+
+    df = new Stemmer()
+      .setInputCol("content_keys")
+      .setOutputCol("stemmed")
+      .setLanguage("Spanish")
+      .transform(df)
+      .withColumn("stemmed" ,concat_ws(" ", col("stemmed")))
+      .withColumn("content_keys" ,concat_ws(" ", col("content_keys")))
+
+    var content_keys_UY = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/content_keys_UY.csv")
+    
+    content_keys_UY = content_keys_UY.withColumn("content_keys", toArray(content_keys_UY("content_keys")))  
+
+    content_keys_UY = new Stemmer()  
+      .setInputCol("content_keys")
+      .setOutputCol("stemmed")
+      .setLanguage("Spanish")
+      .transform(content_keys_UY)
+      .withColumn("stemmed" ,concat_ws(" ", col("stemmed")))
+      .withColumn("content_keys" ,concat_ws(" ", col("content_keys")))
+
+    val joint = df.join(broadcast(content_keys_UY), Seq("stemmed"))
+    joint.write
+      .format("csv")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/test_joint_keys_stemmed")
+  }
+
   /**
     *
     *
@@ -4636,12 +4737,12 @@ user_granularity.write
       .format("csv")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/devicer/processed/UY_104419_users")
+      .save("/datascience/devicer/processed/PE_104419_users")
     val os = fs.create(
-      new Path("/datascience/ingester/ready/UY_104419_users")
+      new Path("/datascience/ingester/ready/PE_104419_users")
     )
     val content =
-      """{"filePath":"/datascience/devicer/processed/UY_104419_users", "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"taxo nueva"}"""
+      """{"filePath":"/datascience/devicer/processed/PE_104419_users", "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"taxo nueva"}"""
 
     println(content)
     os.write(content.getBytes)
@@ -4759,7 +4860,8 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataVotacionesExplotada(spark)
+    test_no_stemming(spark)
+    test_stemming(spark)
   }
 
 }
