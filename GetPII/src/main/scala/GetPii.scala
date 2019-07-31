@@ -117,13 +117,35 @@ object FromEventqueuePII {
       .save("/datascience/pii_matching/pii_table")
   }
 
+
+  type OptionMap = Map[Symbol, String]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--from" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toString), tail)
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toString), tail)
+    }
+  }
+
   def main(args: Array[String]) {
+    // Parse the parameters
+    val options = nextOption(Map(), args.toList)
+    val from = if (options.contains('from)) options('from).toInt else 1
+    val nDays = if (options.contains('nDays)) options('nDays).toInt else 1
+
     val spark =
       SparkSession.builder.appName("Get Pii from Eventqueue").getOrCreate()
 
     // Here we obtain the list of days to be downloaded
-    val nDays = 1
-    val from = 1
+    // val nDays = 1
+    // val from = 1
     val format = "yyyy/MM/dd"
     val end = DateTime.now.minusDays(from)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
