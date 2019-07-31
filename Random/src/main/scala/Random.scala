@@ -4717,22 +4717,37 @@ user_granularity.write
   }
 
   def getDataVotacionesExplotada(spark: SparkSession) = {
+    // val data_votaciones = spark.read
+    //   .format("csv")
+    //   .load(
+    //     "/datascience/custom/votaciones_con_data_all/"
+    //   )
+    //   .select("_c3", "_c0")
+    //   .withColumnRenamed("_c3", "segments")
+    //   .withColumn("segments", explode(split(col("segments"), ",")))
+    //   .withColumn("segments", col("segments").cast("int"))
+    //   .filter("segments<1500 and (segments<580 or segments>820)")
+    //   .distinct()
+
+    // data_votaciones.write
+    //   .format("csv")
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/custom/votacion_con_data_segments")
+    val getDomain = udf((url: String) => (url + ".").split("\\.", -1)(1))
+
     val data_votaciones = spark.read
       .format("csv")
       .load(
         "/datascience/custom/votaciones_con_data_all/"
       )
-      .select("_c3", "_c0")
-      .withColumnRenamed("_c3", "segments")
-      .withColumn("segments", explode(split(col("segments"), ",")))
-      .withColumn("segments", col("segments").cast("int"))
-      .filter("segments<1500 and (segments<580 or segments>820)")
+      .withColumn("domain", getDomain(col("_c1")))
+    data_votaciones
+      .select("_c0", "domain")
       .distinct()
-
-    data_votaciones.write
+      .write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/votacion_con_data_segments")
+      .save("/datascience/custom/votacion_con_data_domains")
   }
 
   /*****************************************************/
