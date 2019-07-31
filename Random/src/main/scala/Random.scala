@@ -1459,7 +1459,7 @@ val records_common = the_join.select(col("identifier"))
     //      .save("/datascience/custom/geo_st")
   }
 
-/**
+  /**
     *
     *
     *
@@ -1470,64 +1470,79 @@ val records_common = the_join.select(col("identifier"))
     */
   def get_moving_users(spark: SparkSession) = {
     //Levantamos los usuarios generados por el proceso
-  val trenes = spark.read.format("csv")
-                .option("header",true).option("delimiter","\t")
-                .load("/datascience/geo/trenes_GBA_365d_argentina_30-7-2019-10h/")
+    val trenes = spark.read
+      .format("csv")
+      .option("header", true)
+      .option("delimiter", "\t")
+      .load("/datascience/geo/trenes_GBA_365d_argentina_30-7-2019-10h/")
 
-  //elegimos las columnas que queremos para el final
-  val final_columns = Seq("device_id","device_type","user")
+    //elegimos las columnas que queremos para el final
+    val final_columns = Seq("device_id", "device_type", "user")
 
-  //spliteamos columnas de nombre para poder agrupar por la línea (hay distintos ramales, pero bueno, perdemos un poco de falsa presición)
-  val trenes_s = trenes.withColumn("temp",split(upper(col("name")),";"))
-                .select(col("*") +: (0 until 3).map(i => col("temp").getItem(i).as(s"name$i")): _*
-  )
+    //spliteamos columnas de nombre para poder agrupar por la línea (hay distintos ramales, pero bueno, perdemos un poco de falsa presición)
+    val trenes_s = trenes
+      .withColumn("temp", split(upper(col("name")), ";"))
+      .select(
+        col("*") +: (0 until 3)
+          .map(i => col("temp").getItem(i).as(s"name$i")): _*
+      )
 
-  //acá le creamos las columnas de array de tiempos y de estaciones detectadas. filtramos para que sean más de una, si no, no podemos identificarlos
-  val tren_line = trenes_s.groupBy("device_id","device_type","name0").agg(
-                    collect_list(col("timestamp")).as("times_array"), 
-                    collect_list("name2").as("location_array"))
-                .withColumn("line_detect", size(col("times_array")))
-                .withColumn("location_detect", size(col("location_array")))
-                .filter("(line_detect >1) AND (location_detect >1)")
+    //acá le creamos las columnas de array de tiempos y de estaciones detectadas. filtramos para que sean más de una, si no, no podemos identificarlos
+    val tren_line = trenes_s
+      .groupBy("device_id", "device_type", "name0")
+      .agg(
+        collect_list(col("timestamp")).as("times_array"),
+        collect_list("name2").as("location_array")
+      )
+      .withColumn("line_detect", size(col("times_array")))
+      .withColumn("location_detect", size(col("location_array")))
+      .filter("(line_detect >1) AND (location_detect >1)")
 
-  //nos quedamos con los usuarios que estuvieron muy cerca de la estacion para tener mayor volumen
-  val tren_low_proba = trenes_s.filter("distance<25")
-                        .withColumn("user",lit(false))
-                        .select(final_columns.map(c => col(c)): _*)
+    //nos quedamos con los usuarios que estuvieron muy cerca de la estacion para tener mayor volumen
+    val tren_low_proba = trenes_s
+      .filter("distance<25")
+      .withColumn("user", lit(false))
+      .select(final_columns.map(c => col(c)): _*)
 
-  //esta es la función para filtrar usuarios que: estuvieron en dos estaciones distintas con menos de 60 minutos de diferencia
-   val hasUsedLine = udf( 
-                    (timestamps: Seq[String],stopids: Seq[String], threshold: Integer) => (
-                        (timestamps.slice(1, timestamps.length) zip timestamps)
-                              .map(t => t._1.toInt-t._2.toInt<threshold) zip (
-                                stopids.slice(1,stopids.length) zip stopids)
-                                  .map(s => s._1!=s._2) )
-                              .exists(b => b._1 & b._2) 
-                        )
-   
+    //esta es la función para filtrar usuarios que: estuvieron en dos estaciones distintas con menos de 60 minutos de diferencia
+    val hasUsedLine = udf(
+      (timestamps: Seq[String], stopids: Seq[String], threshold: Integer) =>
+        ((timestamps.slice(1, timestamps.length) zip timestamps)
+          .map(t => t._1.toInt - t._2.toInt < threshold) zip (stopids
+          .slice(1, stopids.length) zip stopids)
+          .map(s => s._1 != s._2))
+          .exists(b => b._1 & b._2)
+    )
+
     //aplicamos la función
-   val tren_user = tren_line
-                    .withColumn("user",hasUsedLine(tren_line("times_array"),tren_line("location_array"),lit(60)))
-                    .filter("user== true")
-                    .filter((col("name0") =!= "") && ((col("name0").isNotNull)))
-                    .select(final_columns.map(c => col(c)): _*)
-   
-    
-  // juntamos los dos sets de usuarios
-  val the_users_of_the_trains = List(tren_user,tren_low_proba)
-                                    .reduce(_.unionByName (_))
-                                    .distinct()
+    val tren_user = tren_line
+      .withColumn(
+        "user",
+        hasUsedLine(
+          tren_line("times_array"),
+          tren_line("location_array"),
+          lit(60)
+        )
+      )
+      .filter("user== true")
+      .filter((col("name0") =!= "") && ((col("name0").isNotNull)))
+      .select(final_columns.map(c => col(c)): _*)
 
+    // juntamos los dos sets de usuarios
+    val the_users_of_the_trains = List(tren_user, tren_low_proba)
+      .reduce(_.unionByName(_))
+      .distinct()
 
-  the_users_of_the_trains
-        .write.format("csv")
-        .option("header",true)
-        .option("delimiter","\t")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/audiences/crossdeviced/trenes_GBA_365d_argentina_30-7-2019-10h_mobile")
-    
-    }
+    the_users_of_the_trains.write
+      .format("csv")
+      .option("header", true)
+      .option("delimiter", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/audiences/crossdeviced/trenes_GBA_365d_argentina_30-7-2019-10h_mobile"
+      )
 
+  }
 
   def get_pii_AR(spark: SparkSession) {
 
@@ -4701,6 +4716,25 @@ user_granularity.write
     }
   }
 
+  def getDataVotacionesExplotada(spark: SparkSession) = {
+    val data_votaciones = spark.read
+      .format("csv")
+      .load(
+        "/datascience/custom/votaciones_con_data_all/"
+      )
+      .select("_c3", "_c0")
+      .withColumnRenamed("_c3", "segments")
+      .withColumn("segments", explode(split(col("segments"), ",")))
+      .withColumn("segments", col("segments").cast("int"))
+      .filter("segments<1500 and (segments<580 or segments>820)")
+      .distinct()
+
+    data_votaciones.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/votacion_con_data_segments")
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -4710,10 +4744,7 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    //saveCrossForFace(spark)
-    //populateTaxoNueva(spark)
-    //etDataVotaciones(spark)
-    get_moving_users(spark)
+    getDataVotacionesExplotada(spark)
   }
 
 }
