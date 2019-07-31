@@ -972,8 +972,7 @@ object GetAudience {
       // Here we select the pipeline where we will gather the data
       val data = pipeline match {
         case 0 =>
-          if ((partner_ids.toString.length > 0 && country == "") ||
-              (partner_ids.toString.length > 0 && !(ids.contains("1"))))
+          if (partner_ids.toString.length == 1)
             getDataIdPartners(
               spark,
               ids,
@@ -982,7 +981,12 @@ object GetAudience {
               "streaming"
             )
           else
-            getDataAudiences(spark, nDays.toString.toInt, since.toString.toInt)
+            getDataAudiences(
+              spark,
+              nDays.toString.toInt,
+              since.toString.toInt,
+              "streaming"
+            )
         case 1 =>
           getDataIdPartners(
             spark,
