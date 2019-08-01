@@ -6,7 +6,7 @@ import org.apache.spark.sql.SaveMode
 
 object dataGCBA {
     def process_day(spark:SparkSession, day:String){
-        val df = spark.read.load("/datascience/data_audiences/day=%s/".format(day))
+        val df = spark.read.load("/datascience/data_audiences_streaming/day=%s/".format(day))
                         .select("id_partner","event_type","url","timestamp","device_id")
                         .filter("event_type = 'tk' and id_partner = 349")
                         .select("url","timestamp","device_id")
