@@ -30,7 +30,7 @@ import org.apache.spark.ml.classification.{
   GBTClassifier
 }
 
-import org.apache.spark.mllib.feature.Stemmer
+//import org.apache.spark.mllib.feature.Stemmer
 
 import java.security.MessageDigest
 import java.util
@@ -1873,6 +1873,133 @@ val records_common = the_join.select(col("identifier"))
     days.map(processDay(_))
   }
 
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    *                ISP Directv - Equifax AR
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    */
+
+
+  def get_device_IDS(spark: SparkSession) = {
+    //PII TABLE
+    val piis = spark.read.parquet("/datascience/pii_matching/pii_table/").withColumnRenamed("pii","valor_atributo_hash")
+
+    // AUDIENCIA FB
+    //flat_tc == 0  sin tarjeta de credito
+    val df_aud = spark.read.format("csv").option("header","true").load("/datascience/custom/aud_directv_isp_fb.csv").filter("flag_tc == 0")
+
+    val joint = piis.join((df_aud),Seq("valor_atributo_hash"))
+    joint.write
+      .format("csv")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/devices_ISP_directtv")
+  }
+  /**
+
+  def get_ISP_directtv(
+      spark: SparkSession,
+      nDays: Integer = 30,
+      since: Integer = 0
+  ) = {
+
+    import spark.implicits._
+    import org.apache.hadoop.fs.{FileSystem, Path}
+    import org.joda.time.DateTime
+    import org.apache.spark.sql.functions.{
+      round,
+      broadcast,
+      col,
+      abs,
+      to_date,
+      to_timestamp,
+      hour,
+      date_format,
+      from_unixtime,
+      count,
+      avg
+    }
+    import org.apache.spark.sql.SaveMode
+
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Now we obtain the list of hdfs folders to be read
+    val path = "/datascience/data_audiences/"
+    val hdfs_files = days
+      .map(day => path + "day=%s/country=AR/".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    fs.close()
+
+    //cargamos el df de audiences
+    val df_audiences = spark.read.parquet(hdfs_files: _*)
+
+    val daud = df_audiences
+      .select("device_id", "segments", "timestamp", "device_type")
+      .withColumn(
+        "ISP",
+        when(array_contains(col("segments"), 1192), "Telecentro")
+          .otherwise(
+            when(array_contains(col("segments"), 1191), "Fibertel")
+              .otherwise(
+                when(array_contains(col("segments"), 1190), "Arnet")
+                  .otherwise(
+                    when(array_contains(col("segments"), 1069), "Speedy")
+                      .otherwise(0)
+                  )
+              )
+          )
+      )
+      .filter("ISP != '0'")
+
+    val country = "argentina"
+
+    //dictionary for timezones
+    val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
+
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+
+    val daud_time = daud
+      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "HH"))
+      .filter(
+        (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(
+          col("Time"),
+          "EEEE"
+        ).isin(List("Saturday", "Sunday"): _*))
+      )
+
+    val audience_final = daud_time
+      .groupBy("device_type", "device_id", "ISP")
+      .agg(count("timestamp") as "home_detections")
+
+    audience_final.write
+      .format("csv")
+      .option("header", true)
+      .option("delimiter", "\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/audiences/crossdeviced/Telecentro_Test_ISP")
+  }
+*/
+
   /**
     *
     *
@@ -3354,6 +3481,8 @@ user_granularity.write
     *
     *
     */
+
+  /**
   def test_no_stemming(spark: SparkSession) = {
 
     val conf = spark.sparkContext.hadoopConfiguration
@@ -3436,7 +3565,7 @@ user_granularity.write
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/test_joint_keys_stemmed")
   }
-
+  */
   /**
     *
     *
@@ -4778,6 +4907,33 @@ user_granularity.write
       .save("/datascience/custom/new_taxo_grouped")
   }
 
+
+  def get_sample_mx_mediabrands(spark: SparkSession) = {
+
+
+val day_user = spark.read.format("parquet")
+.load("/datascience/data_audiences/day=20190731/country=MX/")
+.select("device_id","all_segments")
+
+val taxo = spark.read.format("csv").option("header",true)
+    .load("/datascience/geo/RetargetlyTAXOMediaBrands.csv")
+
+val taxo_list = taxo.select("Segment ID").rdd.map(r => r(0)).collect()
+
+val array_equifax_filter = taxo_list.map(segment => "array_contains(all_segments, '%s')"
+                              .format(segment)).mkString(" OR ")
+
+val selected_users = day_user.filter(array_equifax_filter).select("device_id")
+
+selected_users.write
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/MX_Mediabrands_Sample_01_08_19")
+
+
+  }
+
   def populateTaxoNueva(spark: SparkSession) = {
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
@@ -4860,8 +5016,10 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    test_no_stemming(spark)
-    test_stemming(spark)
+    //test_no_stemming(spark)
+    //test_stemming(spark)
+    //get_sample_mx_mediabrands(spark)
+    get_device_IDS(spark)
   }
 
 }
