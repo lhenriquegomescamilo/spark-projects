@@ -73,14 +73,14 @@ object generateOrganic {
         day =>
           fs.exists(
             new org.apache.hadoop.fs.Path(
-              "/datascience/data_audiences/day=%s".format(day)
+              "/datascience/data_audiences_streaming/day=%s".format(day)
             )
           )
       )
       .map(
         x =>
           spark.read
-            .parquet("/datascience/data_audiences/day=%s".format(x))
+            .parquet("/datascience/data_audiences_streaming/day=%s".format(x))
             .filter("country = 'MX'")
             .withColumn("day", lit(x))
             .withColumn(
@@ -108,7 +108,7 @@ object generateOrganic {
     /// This function filter out all the segments that don't belong to the general taxonomy.
     val udfGralSegments = udf(
       (segments: Seq[String]) =>
-        segments.filter(segment => taxo_general_b.value.contains(segment))
+        segments.filter(segment => taxo_general_b.value.contains(segment.replace("m_", "")))
     )
     /// Given a list of segments and a day, this function generates a list of tuples of the form (segment, day)
     val udfAddDay = udf(
