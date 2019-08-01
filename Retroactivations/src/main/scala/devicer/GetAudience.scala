@@ -1112,7 +1112,10 @@ object GetAudience {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // First we obtain the Spark session
-    val spark = SparkSession.builder.appName("Spark devicer").getOrCreate()
+    val spark = SparkSession.builder
+      .appName("Spark devicer")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .getOrCreate()
 
     val p = if (args.length > 0) args(0).toInt else 0
 
