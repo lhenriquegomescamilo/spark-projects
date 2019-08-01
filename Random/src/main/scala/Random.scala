@@ -3481,6 +3481,8 @@ user_granularity.write
     *
     *
     */
+
+  /**
   def test_no_stemming(spark: SparkSession) = {
 
     val conf = spark.sparkContext.hadoopConfiguration
@@ -3563,7 +3565,7 @@ user_granularity.write
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/test_joint_keys_stemmed")
   }
-
+  */
   /**
     *
     *
