@@ -4778,6 +4778,33 @@ user_granularity.write
       .save("/datascience/custom/new_taxo_grouped")
   }
 
+
+  def get_sample_mx_mediabrands(spark: SparkSession) = {
+
+
+val day_user = spark.read.format("parquet")
+.load("/datascience/data_audiences/day=20190731/country=MX/")
+.select("device_id","all_segments")
+
+val taxo = spark.read.format("csv").option("header",true)
+    .load("/datascience/geo/RetargetlyTAXOMediaBrands.csv")
+
+val taxo_list = taxo.select("Segment ID").rdd.map(r => r(0)).collect()
+
+val array_equifax_filter = taxo_list.map(segment => "array_contains(all_segments, '%s')"
+                              .format(segment)).mkString(" OR ")
+
+val selected_users = day_user.filter(array_equifax_filter).select("device_id")
+
+selected_users.write
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/MX_Mediabrands_Sample_01_08_19")
+
+
+  }
+
   def populateTaxoNueva(spark: SparkSession) = {
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
@@ -4860,8 +4887,9 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    test_no_stemming(spark)
-    test_stemming(spark)
+    //test_no_stemming(spark)
+    //test_stemming(spark)
+    get_sample_mx_mediabrands(spark)
   }
 
 }
