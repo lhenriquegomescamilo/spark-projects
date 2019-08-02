@@ -28,10 +28,10 @@ object GetDataPartnerID {
       val by_columns = data.select(columns.head, columns.tail: _*).na.fill("")
       
       // Here we filter by event_type 
-      val filtered = by_columns.filter(length(col("device_ievent_typesd"))>0 && col("id_partner").isin(ids_partners:_*) )//.repartition(500)
+      val filtered = by_columns.filter(length(col("device_id"))>0 && col("id_partner").isin(ids_partners:_*) )//.repartition(500)
       
       // transform the multi-value columns into lists
-      val ready = filtered.withColumn("day", lit(day.replacevent_typese("/", "")))
+      val ready = filtered.withColumn("day", lit(day.replace("/", "")))
                           .withColumn("third_party", split(col("third_party"), "\u0001"))
                           .withColumn("first_party", split(col("first_party"), "\u0001"))
       
