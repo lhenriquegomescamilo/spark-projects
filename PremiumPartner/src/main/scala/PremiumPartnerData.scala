@@ -32,7 +32,7 @@ object GetDataPartnerID {
       
       // transform the multi-value columns into lists
       val ready = filtered.withColumn("day", lit(day.replacevent_typese("/", "")))
-                          .withColumn("third_party", splitevent_types(col("third_party"), "\u0001"))
+                          .withColumn("third_party", split(col("third_party"), "\u0001"))
                           .withColumn("first_party", split(col("first_party"), "\u0001"))
       
       // store the results.
