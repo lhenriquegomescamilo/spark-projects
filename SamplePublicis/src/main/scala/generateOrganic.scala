@@ -69,18 +69,19 @@ object generateOrganic {
 
     /// Once we have the list of days, we can load it into memory
     val dfs = days.reverse
-      .filter(
-        day =>
-          fs.exists(
-            new org.apache.hadoop.fs.Path(
-              "/datascience/data_audiences_streaming/day=%s".format(day)
-            )
-          )
-      )
+      // .filter(
+      //   day =>
+      //     fs.exists(
+      //       new org.apache.hadoop.fs.Path(
+      //         "/datascience/data_audiences_streaming/day=%s".format(day)
+      //       )
+      //     )
+      // )
       .map(
         x =>
           spark.read
-            .parquet("/datascience/data_audiences_streaming/day=%s".format(x))
+            .option("basePath", "/datascience/data_audiences_streaming/")
+            .parquet("/datascience/data_audiences_streaming/hour=%s*".format(x))
             .filter("country = 'MX'")
             .withColumn("day", lit(x))
             .withColumn(
