@@ -16,7 +16,8 @@ object GetCreatedSegments {
   def getCreatedSegments(spark: SparkSession) {
     val lastDay = DateTime.now.minusDays(1).toString("yyyyMMdd")
     spark.read
-      .load("/datascience/data_audiences/day=%s/".format(lastDay))
+      .option("basePath", "/datascience/data_audiences_streaming/")
+      .load("/datascience/data_audiences_streaming/hour=%s*/".format(lastDay))
       .filter("event_type IN ('campaign', 'retroactive')")
       .select("segments")
       .withColumn("segments", explode(col("segments")))
