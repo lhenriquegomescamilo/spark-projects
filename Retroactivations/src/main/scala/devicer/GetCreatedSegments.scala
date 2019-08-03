@@ -24,7 +24,7 @@ object GetCreatedSegments {
       .distinct()
       .coalesce(1)
       .write
-      .mode(SaveMode.OverWrite)
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .save("/datascience/devicer/createdSegments/day=%s".format(lastDay))
   }
