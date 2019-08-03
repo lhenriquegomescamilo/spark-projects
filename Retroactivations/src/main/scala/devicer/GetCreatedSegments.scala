@@ -22,7 +22,9 @@ object GetCreatedSegments {
       .select("segments")
       .withColumn("segments", explode(col("segments")))
       .distinct()
+      .coalesce(1)
       .write
+      .mode(SaveMode.OverWrite)
       .format("csv")
       .save("/datascience/devicer/createdSegments/day=%s".format(lastDay))
   }
