@@ -163,6 +163,7 @@ object GetAudience {
       since: Int = 1,
       pipe: String = "batch"
   ): DataFrame = {
+    println("DEVICER LOG: PIPELINE DATA AUDIENCES")
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -263,6 +264,7 @@ object GetAudience {
       since: Int = 1,
       pipe: String = "batch"
   ): DataFrame = {
+    println("DEVICER LOG: PIPELINE ID PARTNERS")
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
