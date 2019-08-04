@@ -974,7 +974,7 @@ object GetAudience {
       // Here we select the pipeline where we will gather the data
       val data = pipeline match {
         case 0 =>
-          if (ids.length > 0)
+          if (ids.length > 0 && partner_ids.length>0)
             getDataIdPartners(
               spark,
               ids,
