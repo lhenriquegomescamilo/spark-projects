@@ -969,7 +969,7 @@ object GetAudience {
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
       // Now we finally get the data that will be used
-      val ids = partner_ids.toString.split(",", -1).toList
+      val ids = partner_ids.toString.split(",").toList
 
       // Here we select the pipeline where we will gather the data
       val data = pipeline match {
