@@ -2000,7 +2000,7 @@ val records_common = the_join.select(col("identifier"))
       .option("header", true)
       .option("delimiter", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/directtv_ISP"
+      .save("/datascience/custom/directtv_ISP")
 
     val audience_final = joint
       .groupBy("device_type", "device_id", "ISP")
