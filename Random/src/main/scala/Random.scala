@@ -1911,28 +1911,9 @@ val records_common = the_join.select(col("identifier"))
 
   def get_ISP_directtv(
       spark: SparkSession,
-      nDays: Integer = 30,
+      nDays: Integer = 1,
       since: Integer = 0
   ) = {
-
-    import spark.implicits._
-    import org.apache.hadoop.fs.{FileSystem, Path}
-    import org.joda.time.DateTime
-    import org.apache.spark.sql.functions.{
-      round,
-      broadcast,
-      col,
-      abs,
-      to_date,
-      to_timestamp,
-      hour,
-      date_format,
-      from_unixtime,
-      count,
-      avg
-    }
-    import org.apache.spark.sql.SaveMode
-
 
     // Segments to consider from cluster 61
 
@@ -1951,25 +1932,16 @@ val records_common = the_join.select(col("identifier"))
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
     // Now we obtain the list of hdfs folders to be read
     val path = "/datascience/data_audiences_streaming/"
     val hdfs_files = days      
       .map(day => path + "hour=%s*/country=AR/".format(day))                   //.map(day => path + "hour=2019073107/country=AR/".format(day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    fs.close()
-
+    
     //cargamos el df de audiences_streaming y lo filtramos por segmentos
     val df_audiences = spark.read.parquet(hdfs_files: _*)
       .withColumn("ISP", split(col("segments"), ","))
       .filter(arrIntersect(col("segments")))                    
       .withColumn("ISP", concat_ws(",", col("ISP")))
-      .write
-       .format("csv")
-       .option("sep", "\t")
-       .save("/datascience/custom/streaming_isp_directtv")
 
     val country = "argentina"
 
@@ -1995,13 +1967,6 @@ val records_common = the_join.select(col("identifier"))
         
     val joint = df_audiences_time.join(broadcast(audience_fb),Seq("device_id"))
 
-    joint.write
-      .format("csv")
-      .option("header", true)
-      .option("delimiter", "\t")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/directtv_ISP")
-
     val audience_final = joint
       .groupBy("device_type", "device_id", "ISP")
       .agg(count("datetime") as "home_detections")
@@ -2011,7 +1976,7 @@ val records_common = the_join.select(col("identifier"))
       .option("header", true)
       .option("delimiter", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/directtv_ISP_grouped")
+      .save("/datascience/custom/directtv_ISP_test")
   }
 
 
