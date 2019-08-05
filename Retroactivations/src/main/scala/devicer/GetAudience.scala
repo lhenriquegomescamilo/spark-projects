@@ -1029,7 +1029,7 @@ object GetAudience {
       var file_name = file.replace(".json", "")
       // Flag to indicate if execution failed
       var failed = false
-      val partitionedData = if (data.rdd.getNumPartitions<5000) data else data.repartition(1000)
+      val partitionedData = if (data.rdd.getNumPartitions<5000000) data else data.repartition(1000)
 
       if (queries.length > 10000) {
         // getMultipleAudience(spark, data, queries, file_name, commonFilter)
