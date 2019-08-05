@@ -4772,7 +4772,8 @@ selected_users.write
     //test_no_stemming(spark)
     //test_stemming(spark)
     //get_sample_mx_mediabrands(spark)
-    get_ISP_directtv(spark)
+    //get_ISP_directtv(spark)
+    processMissingMinutes(spark)
   }
 
 }
