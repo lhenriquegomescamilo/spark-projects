@@ -1908,7 +1908,6 @@ val records_common = the_join.select(col("identifier"))
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/devices_ISP_directtv")
   }
-  /**
 
   def get_ISP_directtv(
       spark: SparkSession,
@@ -1934,7 +1933,21 @@ val records_common = the_join.select(col("identifier"))
     }
     import org.apache.spark.sql.SaveMode
 
-    val format = "yyyyMMdd"
+
+    // Segments to consider from cluster 61
+
+    val segments_cluster_61 =
+      """1069,1190,1191,1192,1193,1194,1195,1323,1324,1325,1326,1327,1328,1335,1336,1338,1339,1340,1341,1342,1344,1345,1346,1347,1348,1349,1350,1351,1352,1354,1357,3226,3227,3228,3229,3230,4641,4642,4643,4644,4645,4646,4648,4649,4650"""
+        .split(",")
+        .toSet
+    val arrIntersect = udf(
+      (segments: Seq[String]) =>
+        segments.exists(s => segments_cluster_61.contains(s))
+    )
+
+    // Reading data_audiences_streaming and array intersecting.
+    val format = "yyyyMMddHH"
+
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
@@ -1942,32 +1955,21 @@ val records_common = the_join.select(col("identifier"))
     val fs = FileSystem.get(conf)
 
     // Now we obtain the list of hdfs folders to be read
-    val path = "/datascience/data_audiences/"
-    val hdfs_files = days
-      .map(day => path + "day=%s/country=AR/".format(day))
+    val path = "/datascience/data_audiences_streaming/"
+    val hdfs_files = days      
+      .map(day => path + "hour=%s*/country=AR/".format(day))                   //.map(day => path + "hour=2019073107/country=AR/".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     fs.close()
 
-    //cargamos el df de audiences
+    //cargamos el df de audiences_streaming y lo filtramos por segmentos
     val df_audiences = spark.read.parquet(hdfs_files: _*)
-
-    val daud = df_audiences
-      .select("device_id", "segments", "timestamp", "device_type")
-      .withColumn(
-        "ISP",
-        when(array_contains(col("segments"), 1192), "Telecentro")
-          .otherwise(
-            when(array_contains(col("segments"), 1191), "Fibertel")
-              .otherwise(
-                when(array_contains(col("segments"), 1190), "Arnet")
-                  .otherwise(
-                    when(array_contains(col("segments"), 1069), "Speedy")
-                      .otherwise(0)
-                  )
-              )
-          )
-      )
-      .filter("ISP != '0'")
+      .withColumn("ISP", split(col("segments"), ","))
+      .filter(arrIntersect(col("segments")))                    
+      .withColumn("ISP", concat_ws(",", col("ISP")))
+      .write
+       .format("csv")
+       .option("sep", "\t")
+       .save("/datascience/custom/streaming_isp_directtv")
 
     val country = "argentina"
 
@@ -1977,17 +1979,30 @@ val records_common = the_join.select(col("identifier"))
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
-    val daud_time = daud
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-      .withColumn("Hour", date_format(col("Time"), "HH"))
+    //filtering by "horario hogareño" de 19 a 8hs, lunes a sabado (brai) y domingo todo el dia??
+    val df_audiences_time = df_audiences
+      .withColumn("timestamp", to_timestamp(col("datetime")))         //.withColumn("time", to_timestamp(from_unixtime(col("timestamp"))))
+      .withColumn("Hour", date_format(col("timestamp"), "HH"))
       .filter(
-        (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(
-          col("Time"),
-          "EEEE"
-        ).isin(List("Saturday", "Sunday"): _*))
+        (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(col("timestamp"),"EEEE").isin(List("Sunday"): _*))
       )
 
-    val audience_final = daud_time
+    // we load the joint file from fb_audience and PII table
+    val audience_fb = spark.read.format("csv").option("header", "true").load("/datascience/custom/devices_ISP_directtv")
+
+    //.filter("event_type = 'sync' AND id_partner = '31'")
+    //.select("device_id", "id_partner_user", "country")
+        
+    val joint = df_audiences_time.join(broadcast(audience_fb),Seq("device_id"))
+
+    joint.write
+      .format("csv")
+      .option("header", true)
+      .option("delimiter", "\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/directtv_ISP"
+
+    val audience_final = joint
       .groupBy("device_type", "device_id", "ISP")
       .agg(count("timestamp") as "home_detections")
 
@@ -1996,9 +2011,10 @@ val records_common = the_join.select(col("identifier"))
       .option("header", true)
       .option("delimiter", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/audiences/crossdeviced/Telecentro_Test_ISP")
+      .save("/datascience/custom/directtv_ISP_grouped")
   }
-*/
+
+
 
   /**
     *
@@ -5019,7 +5035,7 @@ selected_users.write
     //test_no_stemming(spark)
     //test_stemming(spark)
     //get_sample_mx_mediabrands(spark)
-    get_device_IDS(spark)
+    get_ISP_directtv(spark)
   }
 
 }
