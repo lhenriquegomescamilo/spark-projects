@@ -3,7 +3,7 @@
 source /home/rely/.bashrc
 
 /home/rely/spark/bin/spark-submit\
-  --class "main.scala.Prueba1"\
+  --class "main.scala.GetDataPartnerID"\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\

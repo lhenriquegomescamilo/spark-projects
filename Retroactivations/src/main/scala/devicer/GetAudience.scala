@@ -163,6 +163,7 @@ object GetAudience {
       since: Int = 1,
       pipe: String = "batch"
   ): DataFrame = {
+    println("DEVICER LOG: PIPELINE DATA AUDIENCES")
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -263,6 +264,7 @@ object GetAudience {
       since: Int = 1,
       pipe: String = "batch"
   ): DataFrame = {
+    println("DEVICER LOG: PIPELINE ID PARTNERS")
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -967,12 +969,12 @@ object GetAudience {
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
       // Now we finally get the data that will be used
-      val ids = partner_ids.toString.split(",", -1).toList
+      val ids = partner_ids.toString.split(",").toList
 
       // Here we select the pipeline where we will gather the data
       val data = pipeline match {
         case 0 =>
-          if (ids.length == 1)
+          if (ids.length > 0 && partner_ids.toString.length>0)
             getDataIdPartners(
               spark,
               ids,
@@ -1027,6 +1029,7 @@ object GetAudience {
       var file_name = file.replace(".json", "")
       // Flag to indicate if execution failed
       var failed = false
+      val partitionedData = if (data.rdd.getNumPartitions<5000000) data else data.repartition(1000)
 
       if (queries.length > 10000) {
         // getMultipleAudience(spark, data, queries, file_name, commonFilter)
@@ -1046,7 +1049,7 @@ object GetAudience {
         try {
           getAudience(
             spark,
-            data,
+            partitionedData,
             queries,
             file_name,
             commonFilter,

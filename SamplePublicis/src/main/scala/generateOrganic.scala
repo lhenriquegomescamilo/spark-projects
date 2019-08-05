@@ -84,6 +84,8 @@ object generateOrganic {
             .parquet("/datascience/data_audiences_streaming/hour=%s*".format(x))
             .filter("country = 'MX'")
             .withColumn("day", lit(x))
+            .select("device_id", "day", "segments", "event_type")
+            .na.drop()
             .withColumn(
               "segments",
               udfGetSegments(col("segments"), col("event_type"))
