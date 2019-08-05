@@ -1982,10 +1982,9 @@ val records_common = the_join.select(col("identifier"))
     //filtering by "horario hogareño" de 19 a 8hs, lunes a sabado (brai) y domingo todo el dia??
 
     val df_audiences_time = df_audiences
-      .withColumn("Time", to_timestamp(col("datetime")))  
-      .withColumn("Hour", date_format(col("Time"), "HH"))
+      .withColumn("Hour", date_format(col("datetime"), "HH"))
       .filter(
-        (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(col("Time"),"EEEE").isin(List("Sunday"): _*))
+        (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(col("datetime"),"EEEE").isin(List("Sunday"): _*))
       )
 
     // we load the joint file from fb_audience and PII table
