@@ -1980,11 +1980,12 @@ val records_common = the_join.select(col("identifier"))
     spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
     //filtering by "horario hogareño" de 19 a 8hs, lunes a sabado (brai) y domingo todo el dia??
+
     val df_audiences_time = df_audiences
-      .withColumn("timestamp", to_timestamp(col("datetime")))         //.withColumn("time", to_timestamp(from_unixtime(col("timestamp"))))
-      .withColumn("Hour", date_format(col("timestamp"), "HH"))
+      .withColumn("Time", to_timestamp(col("datetime")))  
+      .withColumn("Hour", date_format(col("Time"), "HH"))
       .filter(
-        (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(col("timestamp"),"EEEE").isin(List("Sunday"): _*))
+        (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(col("Time"),"EEEE").isin(List("Sunday"): _*))
       )
 
     // we load the joint file from fb_audience and PII table
@@ -2004,7 +2005,7 @@ val records_common = the_join.select(col("identifier"))
 
     val audience_final = joint
       .groupBy("device_type", "device_id", "ISP")
-      .agg(count("timestamp") as "home_detections")
+      .agg(count("datetime") as "home_detections")
 
     audience_final.write
       .format("csv")
