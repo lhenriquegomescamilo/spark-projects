@@ -1912,7 +1912,7 @@ val records_common = the_join.select(col("identifier"))
   def get_ISP_directtv(
       spark: SparkSession,
       nDays: Integer = 1,
-      since: Integer = 0
+      since: Integer = 1
   ) = {
 
     // Segments to consider from cluster 61
