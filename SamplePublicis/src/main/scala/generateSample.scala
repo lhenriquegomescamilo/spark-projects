@@ -49,7 +49,10 @@ object generateSample {
   }
   def main(args: Array[String]) {
     /// Configuracion spark
-    val spark = SparkSession.builder.appName("Generate Sample").getOrCreate()
+    val spark = SparkSession.builder
+      .appName("Generate Sample")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .getOrCreate()
     /// Parseo de parametros
     val ndays = if (args.length > 0) args(0).toInt else 30
     val runType = if (args.length > 1) args(1).toString else "full"
@@ -58,7 +61,7 @@ object generateSample {
       "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
         .format(runType, DateTime.now.toString("yyyyMMdd"))
 
-    println("\n\nPUBLICIS LOG: "+pathToJson+"\n\n")
+    println("\n\nPUBLICIS LOG: " + pathToJson + "\n\n")
     generateOrganic.generate_organic(spark, ndays, runType)
     generateCrossDevice.generate_organic_xd(spark, pathToJson, runType)
   }
