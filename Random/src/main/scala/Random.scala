@@ -1917,6 +1917,9 @@ val records_common = the_join.select(col("identifier"))
       nDays: Integer = 1,
       since: Integer = 1
   ) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
 
     // Segments to consider from cluster 61 (ISPs)
     val segments_cluster_61 =
