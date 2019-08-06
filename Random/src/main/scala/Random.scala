@@ -3414,17 +3414,29 @@ user_granularity.write
     .filter("country='AR'")
     .select("device_id","nid_sh2")
     .filter(col("nid_sh2").isNotNull)
+    .dropDuplicates()
     
     piis_ar.write.format("csv").mode(SaveMode.Overwrite)
-    .save("/datascience/misc/axiom_pii_AR_20190806")
+    .save("/datascience/misc/_axiom_pii_AR_20190806")
+
 
 
     val piis_br = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
     .filter("country='BR'")
     .select("device_id","nid_sh2")
     .filter(col("nid_sh2").isNotNull)
+    .dropDuplicates()
+
     
-    piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/misc/axiom_pii_BR_20190806")
+    piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/misc/_axiom_pii_BR_20190806")
+    
+    //tiramos metricas
+    println("Argentina")
+    println (piis_ar.count())
+    println
+    println("Brasil")
+    println (piis_br.count())
+
 
   }
 
