@@ -1917,12 +1917,9 @@ val records_common = the_join.select(col("identifier"))
 
     // Segments to consider from cluster 61
 
-    val segments_cluster_61 =
-      """1069,1190,1191,1192,1193,1194,1195,1323,1324,1325,1326,1327,1328,1335,1336,1338,1339,1340,1341,1342,1344,1345,1346,1347,1348,1349,1350,1351,1352,1354,1357,3226,3227,3228,3229,3230,4641,4642,4643,4644,4645,4646,4648,4649,4650"""
-        .split(",")
-        .toSet
+    val segments_cluster_61 = Set(1069,1190,1191,1192,1193,1194,1195,1323,1324,1325,1326,1327,1328,1335,1336,1338,1339,1340,1341,1342,1344,1345,1346,1347,1348,1349,1350,1351,1352,1354,1357,3226,3227,3228,3229,3230,4641,4642,4643,4644,4645,4646,4648,4649,4650)
     val arrIntersect = udf(
-      (segments: Seq[String]) =>
+      (segments: Seq[Int]) =>
         segments.exists(s => segments_cluster_61.contains(s))
     )
 
@@ -1939,9 +1936,8 @@ val records_common = the_join.select(col("identifier"))
     
     //cargamos el df de audiences_streaming y lo filtramos por segmentos
     val df_audiences = spark.read.parquet(hdfs_files: _*)
-      .withColumn("ISP", split(col("segments"), ","))
-      .filter(arrIntersect(col("segments")))                    
-      .withColumn("ISP", concat_ws(",", col("ISP")))
+      .select("segments","device_type","device_id","datetime").na.drop()
+      .filter(arrIntersect(col("segments"))) 
 
     val country = "argentina"
 
