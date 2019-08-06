@@ -1937,7 +1937,15 @@ val records_common = the_join.select(col("identifier"))
     // Now we obtain the list of hdfs folders to be read
     val path = "/datascience/data_audiences_streaming/"
     val hdfs_files = days
-      .map(day => path + "hour=%s*/country=AR/".format(day))
+      .flatMap(
+        day =>
+          (0 until 24).map(
+            hour =>
+              path + "/hour=%s%02d/country=AR/"
+                .format(day, hour)
+          )
+      )
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
     //cargamos el df de audiences_streaming y lo filtramos por segmentos
     val df_audiences = spark.read
