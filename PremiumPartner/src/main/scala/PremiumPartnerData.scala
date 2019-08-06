@@ -62,7 +62,7 @@ object GetDataPartnerID {
       "872","878","914","918","919","921","927","928","929","930","931","937","957","978","989","997","998","999","1000","1001","1010","1011","1012","1013","1014",
       "1026","1028","1030","1033","1034","1052","1053","1054","1056","1064","1069","1084","1085","1088","1102","1111","1119","1120","1133","1138","1144")
 
-    val columns = """timestamp,url_domain, url , referer_domain, referer, first_party, third_party, device_id, device_type, browser, ip
+    val columns = """timestamp, id_partner, url_domain, url , referer_domain, referer, first_party, third_party, device_id, device_type, browser, ip
                       """.replace("\n", "").replace(" ", "").split(",").toList
     
     // Now we get the list of days to be downloaded
