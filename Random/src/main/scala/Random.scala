@@ -3438,18 +3438,17 @@ user_granularity.write
 
   }
 
-  def get_pii_AR_seba(spark: SparkSession) {
 
-    val ar_pii = spark.read
-      .format("parquet")
-      .load("/datascience/pii_matching/pii_tuples/")
-      .select("device_id", "nid_sh2", "mb_sh2", "nid_sh2")
-      .filter(
-        (col("nid_sh2").isNotNull) or (col("mb_sh2").isNotNull) or (col(
-          "nid_sh2"
-        ).isNotNull)
-      )
-      .dropDuplicates()
+ def get_pii_AR_seba(spark: SparkSession) {
+    
+    val piis_br = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/day=20190731/")
+    .select("device_id","ml_sh2","mb_sh2","nid_sh2")
+    .filter((col("ml_sh2").isNotNull) or (col("mb_sh2").isNotNull) or (col("nid_sh2")
+    .isNotNull))
+    .dropDuplicates()
+    
+    ar_pii.write.format("csv").mode(SaveMode.Overwrite)
+    .save("/datascience/misc/ar_pii_seba")
 
     ar_pii.write
       .format("csv")
