@@ -3451,12 +3451,12 @@ user_granularity.write
     piis_ar.write.format("csv").mode(SaveMode.Overwrite)
         .save("/datascience/misc/ar_pii_seba")
 
-    ar_pii.write
+    piis_ar.write
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/ar_pii_seba")
 
-    ar_pii.describe().filter(col("summary") === "count").show()
+    piis_ar.describe().filter(col("summary") === "count").show()
 
   }
 
