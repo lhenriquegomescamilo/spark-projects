@@ -28,7 +28,10 @@ object PipesOnDemand {
       val by_columns = data.select(columns.head, columns.tail: _*).na.fill("")
       
       // Here we filter by event_type 
-      val filtered = by_columns.filter(col("event_type") == "sync" && col("id_partner") == "31" && col("country").isin(countries:_*) )
+      val filtered = by_columns
+                        .filter("event_type == 'sync'")
+                        .filter("id_partner == '31'")
+                        .filter("country IN ('PE', 'CO', 'CL', 'BR')")
 
       val droped = filtered.drop("id_partner").drop("event_type")
       
