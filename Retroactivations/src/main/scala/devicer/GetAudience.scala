@@ -1129,7 +1129,7 @@ object GetAudience {
 
       case 1 => "/datascience/devicer/priority/"
 
-      case 2 => "/datascience/devicer/queue-03"
+      case 2 => "/datascience/devicer/queue-03/"
 
     }
 
