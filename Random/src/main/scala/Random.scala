@@ -3440,6 +3440,22 @@ user_granularity.write
 
   }
 
+
+ def get_pii_AR_seba(spark: SparkSession) {
+    
+    val ar_pii = spark.read.format("parquet")
+    .load("/datascience/pii_matching/pii_tuples/")
+    .select("device_id","nid_sh2","mb_sh2","nid_sh2")
+    .filter((col("nid_sh2").isNotNull) or (col("mb_sh2").isNotNull) or (col("nid_sh2").isNotNull))
+    .dropDuplicates()
+    
+    ar_pii.write.format("csv").mode(SaveMode.Overwrite)
+    .save("/datascience/misc/ar_pii_seba")
+
+  ar_pii.describe().filter(col("summary") === "count").show()
+
+  } 
+
   /**
     *
     *
@@ -4807,7 +4823,7 @@ selected_users.write
     //test_stemming(spark)
     //get_sample_mx_mediabrands(spark)
     //get_ISP_directtv(spark)
-    get_pii_AXIOM(spark)
+    get_pii_AR_seba(spark)
     
     //processMissingMinutes(spark)
   }
