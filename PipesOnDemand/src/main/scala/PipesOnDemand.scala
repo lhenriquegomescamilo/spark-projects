@@ -39,7 +39,7 @@ object PipesOnDemand {
       val ready = droped.withColumn("day", lit(day.replace("/", "")))
       
       // store the results.
-      ready.write.mode("append")
+      ready.write.mode("overwrite")
            .partitionBy("day")
            .parquet("/datascience/custom/netquest_matching/".format(day))
 
