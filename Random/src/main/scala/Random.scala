@@ -3410,17 +3410,21 @@ user_granularity.write
 
   def get_pii_AXIOM(spark: SparkSession) {
     
-    val piis_ar = spark.read.load("/datascience/pii_matching/pii_table/")
+    piis_ar = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
     .filter("country='AR'")
-    .select("device_id","pii")
-
+    .select("device_id","nid_sh2")
+    .filter(col("nid_sh2").isNotNull)
+    
     piis_ar.write.format("csv").mode(SaveMode.Overwrite)
-    .save("/datascience/custom/axiom_pii_AR_20190806")
+    .save("/datascience/misc/axiom_pii_AR_20190806")
 
 
-    val piis_br = spark.read.load("/datascience/pii_matching/pii_table/")
-    .filter("country='BR'").select("device_id","pii")
-    piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/axiom_pii_BR_20190806")
+    piis_br = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
+    .filter("country='BR'")
+    .select("device_id","nid_sh2")
+    .filter(col("nid_sh2").isNotNull)
+    
+    piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/misc/axiom_pii_BR_20190806")
 
   }
 
