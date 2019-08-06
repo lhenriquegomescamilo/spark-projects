@@ -3402,6 +3402,40 @@ user_granularity.write
       .save("/datascience/audiences/crossdeviced/Telecentro_w_relevance")
   }
 
+
+
+  def get_pii_AXIOM(spark: SparkSession) {
+    
+    val piis_ar = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
+    .filter("country='AR'")
+    .select("device_id","nid_sh2")
+    .filter(col("nid_sh2").isNotNull)
+    .dropDuplicates()
+    
+    piis_ar.write.format("csv").mode(SaveMode.Overwrite)
+    .save("/datascience/misc/_axiom_pii_AR_20190806")
+
+
+
+    val piis_br = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
+    .filter("country='BR'")
+    .select("device_id","nid_sh2")
+    .filter(col("nid_sh2").isNotNull)
+    .dropDuplicates()
+
+    
+    piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/misc/_axiom_pii_BR_20190806")
+    
+    //tiramos metricas
+    println("Argentina")
+    println (piis_ar.count())
+    println
+    println("Brasil")
+    println (piis_br.count())
+
+
+  }
+
   /**
     *
     *
@@ -4768,7 +4802,8 @@ selected_users.write
     //test_no_stemming(spark)
     //test_stemming(spark)
     //get_sample_mx_mediabrands(spark)
-    get_ISP_directtv(spark)
+    //get_ISP_directtv(spark)
+    get_pii_AXIOM(spark)
     
     //processMissingMinutes(spark)
   }
