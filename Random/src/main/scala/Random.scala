@@ -3410,7 +3410,7 @@ user_granularity.write
 
   def get_pii_AXIOM(spark: SparkSession) {
     
-    piis_ar = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
+    val piis_ar = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
     .filter("country='AR'")
     .select("device_id","nid_sh2")
     .filter(col("nid_sh2").isNotNull)
@@ -3419,7 +3419,7 @@ user_granularity.write
     .save("/datascience/misc/axiom_pii_AR_20190806")
 
 
-    piis_br = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
+    val piis_br = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
     .filter("country='BR'")
     .select("device_id","nid_sh2")
     .filter(col("nid_sh2").isNotNull)
