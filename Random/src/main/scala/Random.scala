@@ -1873,7 +1873,6 @@ val records_common = the_join.select(col("identifier"))
     days.map(processDay(_))
   }
 
-
   /**
     *
     *
@@ -1891,17 +1890,21 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     */
-
-
   def get_device_IDS(spark: SparkSession) = {
     //PII TABLE
-    val piis = spark.read.parquet("/datascience/pii_matching/pii_table/").withColumnRenamed("pii","valor_atributo_hash")
+    val piis = spark.read
+      .parquet("/datascience/pii_matching/pii_table/")
+      .withColumnRenamed("pii", "valor_atributo_hash")
 
     // AUDIENCIA FB
     //flat_tc == 0  sin tarjeta de credito
-    val df_aud = spark.read.format("csv").option("header","true").load("/datascience/custom/aud_directv_isp_fb.csv").filter("flag_tc == 0")
+    val df_aud = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/aud_directv_isp_fb.csv")
+      .filter("flag_tc == 0")
 
-    val joint = piis.join((df_aud),Seq("valor_atributo_hash"))
+    val joint = piis.join((df_aud), Seq("valor_atributo_hash"))
     joint.write
       .format("csv")
       .option("header", "true")
@@ -1915,71 +1918,63 @@ val records_common = the_join.select(col("identifier"))
       since: Integer = 1
   ) = {
 
-    // Segments to consider from cluster 61
-
+    // Segments to consider from cluster 61 (ISPs)
     val segments_cluster_61 =
       """1069,1190,1191,1192,1193,1194,1195,1323,1324,1325,1326,1327,1328,1335,1336,1338,1339,1340,1341,1342,1344,1345,1346,1347,1348,1349,1350,1351,1352,1354,1357,3226,3227,3228,3229,3230,4641,4642,4643,4644,4645,4646,4648,4649,4650"""
         .split(",")
+        .map(_.toInt)
         .toSet
     val arrIntersect = udf(
-      (segments: Seq[String]) =>
-        segments.exists(s => segments_cluster_61.contains(s))
+      (segments: Seq[Int]) =>
+        (segments ++ Seq(-1)).filter(s => segments_cluster_61.contains(s))(0)
     )
 
     // Reading data_audiences_streaming and array intersecting.
     val format = "yyyyMMddHH"
-
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we obtain the list of hdfs folders to be read
     val path = "/datascience/data_audiences_streaming/"
-    val hdfs_files = days      
-      .map(day => path + "hour=%s*/country=AR/".format(day))                   //.map(day => path + "hour=2019073107/country=AR/".format(day))
-    
+    val hdfs_files = days
+      .map(day => path + "hour=%s*/country=AR/".format(day))
+
     //cargamos el df de audiences_streaming y lo filtramos por segmentos
-    val df_audiences = spark.read.parquet(hdfs_files: _*)
-      .withColumn("ISP", split(col("segments"), ","))
-      .filter(arrIntersect(col("segments")))                    
-      .withColumn("ISP", concat_ws(",", col("ISP")))
-
-    val country = "argentina"
-
-    //dictionary for timezones
-    val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
-
-    //setting timezone depending on country
-    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+    val df_audiences = spark.read
+      .parquet(hdfs_files: _*)
+      .select("device_id", "segments", "datetime")
+      .na
+      .drop()
+      .withColumn("ISP", arrIntersect(col("segments")))
 
     //filtering by "horario hogareño" de 19 a 8hs, lunes a sabado (brai) y domingo todo el dia??
-
     val df_audiences_time = df_audiences
-      .withColumn("Hour", date_format(col("datetime"), "HH"))
+      .withColumn("Hour", date_format(to_timestamp(col("datetime")), "HH"))
       .filter(
-        (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(col("datetime"),"EEEE").isin(List("Sunday"): _*))
+        col("Hour") >= 16 || col("Hour") <= 5 || date_format(
+          col("datetime"),
+          "EEEE"
+        ).isin(List("Sunday"): _*)
       )
+      .select("device_id", "ISP")
+      .distinct()
 
     // we load the joint file from fb_audience and PII table
-    val audience_fb = spark.read.format("csv").option("header", "true").load("/datascience/custom/devices_ISP_directtv")
+    val audience_fb = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/devices_ISP_directtv")
+      .select("device_id", "valor_atributo_hash")
 
-    //.filter("event_type = 'sync' AND id_partner = '31'")
-    //.select("device_id", "id_partner_user", "country")
-        
-    val joint = df_audiences_time.join(broadcast(audience_fb),Seq("device_id"))
+    val joint = df_audiences_time.join(broadcast(audience_fb), Seq("device_id"))
 
-    val audience_final = joint
-      .groupBy("device_type", "device_id", "ISP")
-      .agg(count("datetime") as "home_detections")
-
-    audience_final.write
+    joint.write
       .format("csv")
       .option("header", true)
       .option("delimiter", "\t")
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/directtv_ISP_test")
   }
-
-
 
   /**
     *
@@ -3406,55 +3401,64 @@ user_granularity.write
       .save("/datascience/audiences/crossdeviced/Telecentro_w_relevance")
   }
 
-
-
   def get_pii_AXIOM(spark: SparkSession) {
-    
-    val piis_ar = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
-    .filter("country='AR'")
-    .select("device_id","nid_sh2")
-    .filter(col("nid_sh2").isNotNull)
-    .dropDuplicates()
-    
-    piis_ar.write.format("csv").mode(SaveMode.Overwrite)
-    .save("/datascience/misc/_axiom_pii_AR_20190806")
 
+    val piis_ar = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country='AR'")
+      .select("device_id", "nid_sh2")
+      .filter(col("nid_sh2").isNotNull)
+      .dropDuplicates()
 
+    piis_ar.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/_axiom_pii_AR_20190806")
 
-    val piis_br = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/")
-    .filter("country='BR'")
-    .select("device_id","nid_sh2")
-    .filter(col("nid_sh2").isNotNull)
-    .dropDuplicates()
+    val piis_br = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country='BR'")
+      .select("device_id", "nid_sh2")
+      .filter(col("nid_sh2").isNotNull)
+      .dropDuplicates()
 
-    
-    piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/misc/_axiom_pii_BR_20190806")
-    
+    piis_br.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/_axiom_pii_BR_20190806")
+
     //tiramos metricas
     println("Argentina")
-    println (piis_ar.count())
+    println(piis_ar.count())
     println
     println("Brasil")
-    println (piis_br.count())
-
+    println(piis_br.count())
 
   }
 
+  def get_pii_AR_seba(spark: SparkSession) {
 
- def get_pii_AR_seba(spark: SparkSession) {
-    
-    val ar_pii = spark.read.format("parquet")
-    .load("/datascience/pii_matching/pii_tuples/")
-    .select("device_id","nid_sh2","mb_sh2","nid_sh2")
-    .filter((col("nid_sh2").isNotNull) or (col("mb_sh2").isNotNull) or (col("nid_sh2").isNotNull))
-    .dropDuplicates()
-    
-    ar_pii.write.format("csv").mode(SaveMode.Overwrite)
-    .save("/datascience/misc/ar_pii_seba")
+    val ar_pii = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .select("device_id", "nid_sh2", "mb_sh2", "nid_sh2")
+      .filter(
+        (col("nid_sh2").isNotNull) or (col("mb_sh2").isNotNull) or (col(
+          "nid_sh2"
+        ).isNotNull)
+      )
+      .dropDuplicates()
 
-  ar_pii.describe().filter(col("summary") === "count").show()
+    ar_pii.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/ar_pii_seba")
 
-  } 
+    ar_pii.describe().filter(col("summary") === "count").show()
+
+  }
 
   /**
     *
@@ -3497,7 +3501,6 @@ user_granularity.write
 
   }
 
-
   /**
     *
     *
@@ -3512,7 +3515,6 @@ user_granularity.write
     *
     *
     */
-
   /**
   def test_no_stemming(spark: SparkSession) = {
 
@@ -3564,7 +3566,7 @@ user_granularity.write
 
     var df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
 
-    df = df.withColumn("content_keys", toArray(df("content_keys")))  
+    df = df.withColumn("content_keys", toArray(df("content_keys")))
 
     df = new Stemmer()
       .setInputCol("content_keys")
@@ -3578,10 +3580,10 @@ user_granularity.write
       .format("csv")
       .option("header", "true")
       .load("/datascience/custom/content_keys_UY.csv")
-    
-    content_keys_UY = content_keys_UY.withColumn("content_keys", toArray(content_keys_UY("content_keys")))  
 
-    content_keys_UY = new Stemmer()  
+    content_keys_UY = content_keys_UY.withColumn("content_keys", toArray(content_keys_UY("content_keys")))
+
+    content_keys_UY = new Stemmer()
       .setInputCol("content_keys")
       .setOutputCol("stemmed")
       .setLanguage("Spanish")
@@ -3596,7 +3598,7 @@ user_granularity.write
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/test_joint_keys_stemmed")
   }
-  */
+    */
   /**
     *
     *
@@ -4710,30 +4712,39 @@ user_granularity.write
       .save("/datascience/custom/new_taxo_grouped")
   }
 
-
   def get_sample_mx_mediabrands(spark: SparkSession) = {
 
+    val day_user = spark.read
+      .format("parquet")
+      .load("/datascience/data_audiences/day=20190731/country=MX/")
+      .select("device_id", "all_segments")
 
-val day_user = spark.read.format("parquet")
-.load("/datascience/data_audiences/day=20190731/country=MX/")
-.select("device_id","all_segments")
+    val taxo = spark.read
+      .format("csv")
+      .option("header", true)
+      .load("/datascience/geo/RetargetlyTAXOMediaBrands.csv")
 
-val taxo = spark.read.format("csv").option("header",true)
-    .load("/datascience/geo/RetargetlyTAXOMediaBrands.csv")
+    val taxo_list = taxo.select("Segment ID").rdd.map(r => r(0)).collect()
 
-val taxo_list = taxo.select("Segment ID").rdd.map(r => r(0)).collect()
+    val array_equifax_filter = taxo_list
+      .map(
+        segment =>
+          "array_contains(all_segments, '%s')"
+            .format(segment)
+      )
+      .mkString(" OR ")
 
-val array_equifax_filter = taxo_list.map(segment => "array_contains(all_segments, '%s')"
-                              .format(segment)).mkString(" OR ")
+    val selected_users =
+      day_user.filter(array_equifax_filter).select("device_id")
 
-val selected_users = day_user.filter(array_equifax_filter).select("device_id")
-
-selected_users.write
-.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/MX_Mediabrands_Sample_01_08_19")
-
+    selected_users.write
+      .format("csv")
+      .option("header", true)
+      .option("delimiter", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/audiences/crossdeviced/MX_Mediabrands_Sample_01_08_19"
+      )
 
   }
 
@@ -4824,7 +4835,7 @@ selected_users.write
     //get_sample_mx_mediabrands(spark)
     //get_ISP_directtv(spark)
     get_pii_AR_seba(spark)
-    
+
     //processMissingMinutes(spark)
   }
 
