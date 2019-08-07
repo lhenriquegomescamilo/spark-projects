@@ -1877,6 +1877,198 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     *
+    *                PITCH DANONE
+    *
+    *
+    *
+    */
+
+  def kw_pitch_danone(
+      spark: SparkSession,
+      nDays: Integer = 1,
+      since: Integer = 0
+  ) = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=AR".format(day)) //para cada dia de la lista day devuelve el path del día
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
+
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
+
+    val df_keys = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/content_keys_danone.csv")
+    
+    val data = df.join(broadcast(df_keys), Seq("content_keys"))
+    data
+      .drop("country_t")
+      .drop("_c0")
+      .drop("count")
+      .dropDuplicates()
+      .groupBy("device_id")
+      .agg(collect_list("content_keys").as("kws"))
+      .withColumn("device_type", lit("web"))
+      .select("device_type", "device_id", "seg_id")
+    data.cache()
+
+    val job_name = "pitch_danone"
+
+    val queries = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/queries_danone.csv")
+      .select("seg_id", "query")
+      .collect()
+      .map(r => (r(0).toString, r(1).toString))
+    for (t <- queries) {
+      data
+        .filter(t._2)
+        .withColumn("seg_id", lit(t._1))
+        .select("device_type", "device_id", "seg_id")
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
+      val os = fs.create(
+        new Path("/datascience/ingester/ready/%s_%s".format(job_name,t._1))
+      )
+      val content =
+        """{"filePath":"/datascience/devicer/processed/%s_%s", "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"%s"}"""
+          .format(job_name,t._1,job_name)
+      println(content)
+      os.write(content.getBytes)
+      os.close()
+    }
+  }
+
+  /**
+    *
+    *
+    *
+    *                PITCH DATA_KEYWORDS
+    *
+    *
+    *
+    */
+
+  def read_data_kw_days(
+      nDays: Integer,
+      since: Integer) : DataFrame = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=AR".format(day)) //para cada dia de la lista day devuelve el path del día
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
+
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
+
+    df
+  }
+
+
+  def get_joint_keys(
+      df_keys: DataFrame,
+      df_data_keywords: DataFrame) : DataFrame = {
+
+    val joint = df.join(broadcast(df_keys), Seq("content_keys"))
+    joint
+      .select("content_keys","device_id")
+      .dropDuplicates()
+      .groupBy("device_id")
+      .agg(collect_list("content_keys").as("kws"))
+      //.withColumn("device_type", lit("web")) para empujar
+      //.select("device_type", "device_id", "seg_id")
+    joint
+  }
+    
+  def save_query_results(
+      df_queries: DataFrame,
+      df_joint: DataFrame,
+      job_name: String) = {
+  
+    df_joint.cache()
+
+    df_queries.select("seg_id", "query")
+      .collect()
+      .map(r => (r(0).toString, r(1).toString))
+    for (t <- queries) {
+      df_joint
+        .filter(t._2)
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
+
+
+  //main method:
+
+
+  def get_pitch(
+      nDays: Integer,
+      since: Integer,
+      //kw_list: List[String],
+      //tuple_list: List[String],
+      job_name: String) = {
+
+
+    val df_data_keywords = read_data_kw_days(nDays = nDays,
+                                             since = since)
+    
+    // a get_joint_keys pasarle un df con la columna content_keys,
+    // creado a partir de una lista de keywords (levanto la lista de un json)
+    //la siguiente linea es temp:  
+
+    val df_keys = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/content_keys_danone.csv")
+    
+    val df_joint = get_joint_keys(df_keys = df_keys,
+                                  df_data_keywords = df_data_keywords)
+
+    //pasarle una lista de tuplas del tipo (query,ID)
+    //la siguiente linea es temp:
+    
+    val queries = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/queries_danone.csv")
+
+
+    save_query_results(queries = queries,
+                      df_joint = df_joint,
+                      job_name = job_name)
+
+  }
+
+  
+
+  /**
+    *
+    *
+    *
     *
     *
     *
@@ -4853,6 +5045,11 @@ user_granularity.write
     //get_pii_AR_seba(spark)
 
     //processMissingMinutes(spark)
+
+    //get_pitch(nDays = 1,
+                since  = 0,
+                job_name = "test")
+
   }
 
 }
