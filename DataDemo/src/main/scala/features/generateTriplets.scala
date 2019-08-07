@@ -62,7 +62,8 @@ object GenerateTriplets {
       .map(
         x =>
           spark.read
-            .parquet("/datascience/data_audiences/day=%s".format(x))
+            .option("basePath", "/datascience/data_audiences_streaming/")
+            .parquet("/datascience/data_audiences_streaming/hour=%s*".format(x))
             .filter("event_type IN ('batch', 'data', 'tk', 'pv')")
             .select("device_id", "segments", "country")
             .withColumn("segments", explode(col("segments")))
