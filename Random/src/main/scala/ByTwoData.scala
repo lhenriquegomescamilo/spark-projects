@@ -83,11 +83,11 @@ object ByTwoData {
       // Modifying the types
       .withColumn("ip", col("ip").cast("int"))
       // Dropping unnecessary columns
-      .drop()
+      .drop("de_geo_pulseplus_conn_type", "de_geo_isp_name", "de_geo_pulseplus_city_code")
       .coalesce(100)
       .write
       .mode(SaveMode.Overwrite)
-      .format("parquet")
+      .format("csv")
       .option("sep", "\t")
       .save("/datascience/sharethis/bytwo/day=%s".format(day))
     println("LOGGER: day %s processed successfully!".format(day))
@@ -116,7 +116,8 @@ object ByTwoData {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    processDay(spark, "20190803")
+    val days = List("20190803", "20190802", "20190801", "20190731", "20190730", "20190729", "20190728", "20190727", "20190726", "20190725")
+    days.foreach(day => processDay(spark, day))
   }
 
 }
