@@ -1950,7 +1950,7 @@ val records_common = the_join.select(col("identifier"))
     //filtering by "horario hogareño" de 19 a 8hs, lunes a sabado (brai) y domingo todo el dia??
 
     val df_audiences_time = df_audiences
-      .withColumn("Hour", date_format(col("datetime"), "HH"))
+      .withColumn("Hour", date_format(to_timestamp(col("datetime")), "HH"))
       .filter(
         (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(col("datetime"),"EEEE").isin(List("Sunday"): _*))
       )
@@ -4802,8 +4802,8 @@ selected_users.write
     //test_no_stemming(spark)
     //test_stemming(spark)
     //get_sample_mx_mediabrands(spark)
-    //get_ISP_directtv(spark)
-    get_pii_AXIOM(spark)
+    get_ISP_directtv(spark)
+    //get_pii_AXIOM(spark)
     
     //processMissingMinutes(spark)
   }
