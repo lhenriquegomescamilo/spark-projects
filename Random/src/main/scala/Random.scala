@@ -1959,8 +1959,10 @@ val records_common = the_join.select(col("identifier"))
       .withColumn("ISP", arrIntersect(col("segments")))
 
     //filtering by "horario hogareño" de 19 a 8hs, lunes a sabado (brai) y domingo todo el dia??
+    // restarle 3 horas a todos porque es horario UTC 0
     val df_audiences_time = df_audiences
-      .withColumn("Hour", date_format(to_timestamp(col("datetime")), "HH"))
+      .withColumn("datetime", to_timestamp(col("datetime")))
+      .withColumn("Hour", date_format(col("datetime"), "HH"))
       .filter(
         col("Hour") >= 16 || col("Hour") <= 5 || date_format(
           col("datetime"),
