@@ -30,7 +30,7 @@ object keywordIngestion {
     val udfCountry = udf((country: String) => "c_" + country)
     val udfXp = udf(
       (segments: Seq[String], et: String) =>/home/rely/spark-projects/KeywordIngestion/run-spark.sh
-        if (et == "xp") segments :+ "xp"
+        if (et == "xp") segments :+ "xp")
         else segments
     )
     val udfJoin = udf(
