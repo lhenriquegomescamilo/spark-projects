@@ -6,6 +6,7 @@ import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.hadoop.fs.Path
 
+
 object keywordIngestion {
 
   /**
