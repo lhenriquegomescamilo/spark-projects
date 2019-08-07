@@ -36,7 +36,7 @@ import org.apache.spark.ml.classification.{
   */
 object Random {
 
-  def processDay(spark: SparkSession): DataFrame = {
+  def processDay(spark: SparkSession, day: String): DataFrame = {
     println("LOGGER: processing day %s".format(day))
 
     // List of columns present in the json files
@@ -87,7 +87,7 @@ object Random {
       .coalesce(100)
       .write
       .mode(SaveMode.Overwrite)
-      .format("csv")
+      .format("parquet")
       .option("sep", "\t")
       .save("/datascience/sharethis/bytwo/day=%s".format(day))
     println("LOGGER: day %s processed successfully!".format(day))
@@ -116,6 +116,7 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    processDay(spark, "20190803")
   }
 
 }
