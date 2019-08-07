@@ -1921,14 +1921,6 @@ val records_common = the_join.select(col("identifier"))
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
-<<<<<<< HEAD
-    // Segments to consider from cluster 61
-
-    val segments_cluster_61 = Set(1069,1190,1191,1192,1193,1194,1195,1323,1324,1325,1326,1327,1328,1335,1336,1338,1339,1340,1341,1342,1344,1345,1346,1347,1348,1349,1350,1351,1352,1354,1357,3226,3227,3228,3229,3230,4641,4642,4643,4644,4645,4646,4648,4649,4650)
-    val arrIntersect = udf(
-      (segments: Seq[Int]) =>
-        segments.exists(s => segments_cluster_61.contains(s))
-=======
     // Segments to consider from cluster 61 (ISPs)
     val segments_cluster_61 =
       """1069,1190,1191,1192,1193,1194,1195,1323,1324,1325,1326,1327,1328,1335,1336,1338,1339,1340,1341,1342,1344,1345,1346,1347,1348,1349,1350,1351,1352,1354,1357,3226,3227,3228,3229,3230,4641,4642,4643,4644,4645,4646,4648,4649,4650"""
@@ -1938,7 +1930,6 @@ val records_common = the_join.select(col("identifier"))
     val arrIntersect = udf(
       (segments: Seq[Int]) =>
         (segments ++ Seq(-1)).filter(s => segments_cluster_61.contains(s))(0)
->>>>>>> d5d3fdee1be18eec7150af9b51bff2543f062a7d
     )
 
     // Reading data_audiences_streaming and array intersecting.
@@ -1948,20 +1939,6 @@ val records_common = the_join.select(col("identifier"))
 
     // Now we obtain the list of hdfs folders to be read
     val path = "/datascience/data_audiences_streaming/"
-<<<<<<< HEAD
-    val hdfs_files = days      
-      .map(day => path + "hour=%s*/country=AR/".format(day))                   //.map(day => path + "hour=2019073107/country=AR/".format(day))
-    
-    //cargamos el df de audiences_streaming y lo filtramos por segmentos
-    val df_audiences = spark.read.parquet(hdfs_files: _*)
-      .select("segments","device_type","device_id","datetime").na.drop()
-      .filter(arrIntersect(col("segments"))) 
-
-    val country = "argentina"
-
-    //dictionary for timezones
-    val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
-=======
     val hdfs_files = days
       .flatMap(
         day =>
@@ -1972,7 +1949,6 @@ val records_common = the_join.select(col("identifier"))
           )
       )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
->>>>>>> d5d3fdee1be18eec7150af9b51bff2543f062a7d
 
     //cargamos el df de audiences_streaming y lo filtramos por segmentos
     val df_audiences = spark.read
@@ -4871,15 +4847,9 @@ user_granularity.write
     //test_no_stemming(spark)
     //test_stemming(spark)
     //get_sample_mx_mediabrands(spark)
-<<<<<<< HEAD
-    get_ISP_directtv(spark)
-    //get_pii_AXIOM(spark)
-    
-=======
     // get_ISP_directtv(spark, 1, 7)
     get_pii_AR_seba(spark)
 
->>>>>>> d5d3fdee1be18eec7150af9b51bff2543f062a7d
     //processMissingMinutes(spark)
   }
 
