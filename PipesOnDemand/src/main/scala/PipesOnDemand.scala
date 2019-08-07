@@ -4,7 +4,7 @@ import org.apache.spark.sql.types.IntegerType
 import org.apache.spark.sql.SparkSession
 import org.joda.time.{DateTime, Days}
 
-object GetDataPartnerID {
+object PipesOnDemand {
   /**
    * Given a day as a string, this method downloads the data from the eventqueue, keeps only the 
    * given set of columns, and filters it to keep only the seleceted event_types.
@@ -21,24 +21,27 @@ object GetDataPartnerID {
    * directory where the data is stored is /datascience/data_partner/.
    */
   def process_day_parquet(spark: SparkSession, day:String, columns: Seq[String], 
-                            ids_partners: Seq[String]) = {
+                            countries: Seq[String]) = {
       // Here we read the data into DataFrames and select the proper columns
       val data = spark.read.format("csv").option("sep", "\t").option("header", "true")
                                          .load("/data/eventqueue/%s/*.tsv.gz".format(day))
       val by_columns = data.select(columns.head, columns.tail: _*).na.fill("")
       
       // Here we filter by event_type 
-      val filtered = by_columns.filter(length(col("device_id"))>0 && col("id_partner").isin(ids_partners:_*) )//.repartition(500)
+      val filtered = by_columns
+                        .filter("event_type == 'sync'")
+                        .filter("id_partner == '31'")
+                        .filter("country IN ('PE', 'CO', 'CL', 'BR')")
+
+      val droped = filtered.drop("id_partner").drop("event_type")
       
       // transform the multi-value columns into lists
-      val ready = filtered.withColumn("day", lit(day.replace("/", "")))
-                          .withColumn("third_party", split(col("third_party"), "\u0001"))
-                          .withColumn("first_party", split(col("first_party"), "\u0001"))
+      val ready = droped.withColumn("day", lit(day.replace("/", "")))
       
       // store the results.
       ready.write.mode("append")
-           .partitionBy("id_partner", "day")
-           .parquet("/datascience/data_premium_partner/".format(day))
+           .partitionBy("day")
+           .parquet("/datascience/custom/netquest_matching/".format(day))
 
   }
   
@@ -57,12 +60,9 @@ object GetDataPartnerID {
     // Here we set the list of values that will be considered
     //val event_types = List("tk", "pv", "data", "batch", "sync", "xp", "retroactive", "xd", "xd_xp")
 
-    val ids_partners = List("167","261","280","289","317","384","385","388","443","464","465","471","475","486","511","517","622","631","632","635","639","641",
-      "643","648","651","652","653","656","657","661","662","663","668","693","694","712","713","714","743","748","749","754","775","796","839","841","849","868",
-      "872","878","914","918","919","921","927","928","929","930","931","937","957","978","989","997","998","999","1000","1001","1010","1011","1012","1013","1014",
-      "1026","1028","1030","1033","1034","1052","1053","1054","1056","1064","1069","1084","1085","1088","1102","1111","1119","1120","1133","1138","1144")
+    val countries = List("PE", "CO", "CL", "BR")
 
-    val columns = """timestamp, id_partner, url_domain, url , referer_domain, referer, first_party, third_party, device_id, device_type, browser, ip
+    val columns = """device_id, id_partner_user, country, event_type, id_partner
                       """.replace("\n", "").replace(" ", "").split(",").toList
     
     // Now we get the list of days to be downloaded
@@ -71,7 +71,7 @@ object GetDataPartnerID {
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we download the data
-    days.foreach(day => process_day_parquet(spark, day, columns, ids_partners))
+    days.foreach(day => process_day_parquet(spark, day, columns, countries))
   }
   
   type OptionMap = Map[Symbol, Int]
@@ -105,7 +105,7 @@ object GetDataPartnerID {
     val from = if (options.contains('from)) options('from) else 1
     
     // First we obtain the Spark session
-    val spark = SparkSession.builder.appName("Get data for some Partners ID").getOrCreate()
+    val spark = SparkSession.builder.appName("Get data onDemand").getOrCreate()
     
     // Finally, we download the data
     download_data(spark, nDays, from)
