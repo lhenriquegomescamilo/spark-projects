@@ -614,7 +614,7 @@ object Item2Item {
     val isTest =
       if (options.contains('test)) true else false
     val testCountry =
-      if (options.contains('testCountry)) options('country) else "PE"
+      if (options.contains('testCountry)) options('testCountry) else "PE"
     val testSize =
       if (options.contains('testSize)) options('testSize).toInt else 1000
 
