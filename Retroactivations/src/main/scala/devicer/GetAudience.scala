@@ -1127,9 +1127,11 @@ object GetAudience {
     val path = p match {
       case 0 => "/datascience/devicer/to_process/"
 
-      case 1 => "/datascience/devicer/priority/"
+      case 1 => "/datascience/devicer/queue-02/"
 
       case 2 => "/datascience/devicer/queue-03/"
+
+      case 3 => "/datascience/devicer/priority"
 
     }
 
