@@ -97,7 +97,7 @@ object Random {
       spark: SparkSession,
       nDays: Int = 30,
       since: Int = 1
-  ): DataFrame = {
+  ) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
