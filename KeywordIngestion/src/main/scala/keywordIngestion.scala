@@ -6,6 +6,7 @@ import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.hadoop.fs.Path
 
+
 object keywordIngestion {
 
   /**
@@ -28,7 +29,7 @@ object keywordIngestion {
     )
     val udfCountry = udf((country: String) => "c_" + country)
     val udfXp = udf(
-      (segments: Seq[String], et: String) =>
+      (segments: Seq[String], et: String) =>/home/rely/spark-projects/KeywordIngestion/run-spark.sh
         if (et == "xp") segments :+ "xp"
         else segments
     )
