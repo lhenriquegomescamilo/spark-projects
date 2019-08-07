@@ -34,7 +34,7 @@ import org.apache.spark.ml.classification.{
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object Random {
+object ByTwoData {
 
   def processDay(spark: SparkSession, day: String) = {
     println("LOGGER: processing day %s".format(day))
