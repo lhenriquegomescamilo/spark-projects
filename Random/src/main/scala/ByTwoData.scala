@@ -36,7 +36,7 @@ import org.apache.spark.ml.classification.{
   */
 object Random {
 
-  def processDay(spark: SparkSession, day: String): DataFrame = {
+  def processDay(spark: SparkSession, day: String) = {
     println("LOGGER: processing day %s".format(day))
 
     // List of columns present in the json files
