@@ -2184,6 +2184,7 @@ val records_common = the_join.select(col("identifier"))
       .na
       .drop()
       .withColumn("ISP", arrIntersect(col("segments")))
+      .filter("ISP > 0")
 
     //filtering by "horario hogareño" de 19 a 8hs, lunes a sabado (brai) y domingo todo el dia??
     // restarle 3 horas a todos porque es horario UTC 0
@@ -5097,25 +5098,11 @@ user_granularity.write
   /*****************************************************/
   def main(args: Array[String]) {
     val spark =
-      SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    //test_no_stemming(spark)
-    //test_stemming(spark)
-    //get_sample_mx_mediabrands(spark)
-    get_ISP_directtv(spark, 1, 7)
-    //get_pii_AR_seba(spark)
-
-    //processMissingMinutes(spark)
-
-    //get_pitch(spark = spark,
-    //          nDays = 3,
-    //          since  = 1,
-    //          job_name = "test")
-
-    //user_agents_1day(spark)
-
+    get_ISP_directtv(spark, 30, 1)
   }
 
 }
