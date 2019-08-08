@@ -37,11 +37,12 @@ object GetDataPartnerID {
       
       // store the results.
       ready.coalesce(1).write
-          .csv("/datascience/data_premium_partner/%s.tsv.gz".format(day))
+          .format("com.databricks.spark.csv")
           .mode("append")
           .otion("header", "true")
           .option("delimiter","\t")
           .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
+          .csv("/datascience/data_premium_partner/%s.tsv.gz".format(day))
           //.partitionBy("id_partner", "day")
           
 
