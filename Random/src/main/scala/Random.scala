@@ -2002,9 +2002,10 @@ val records_common = the_join.select(col("identifier"))
       .agg(collect_list("content_keys").as("kws"))
       //.withColumn("device_type", lit("web")) para empujar
       //.select("device_type", "device_id", "seg_id")
+      .select("device_id","kws")
     df_joint
   }
-    /**
+    
   def save_query_results(
       df_queries: DataFrame,
       df_joint: DataFrame,
@@ -2014,7 +2015,7 @@ val records_common = the_join.select(col("identifier"))
 
     df_queries.select("seg_id", "query")
       .collect()
-      .map(r => (r(0).toString, r(1).toString))
+      .rdd.map(r => (r(0).toString, r(1).toString))
     for (t <- df_queries) {
       df_joint
         .filter(t._2)
@@ -2026,9 +2027,9 @@ val records_common = the_join.select(col("identifier"))
         .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
     }
   }
-  */
-
   
+
+
   /**
   //create df from list of tuples
 
@@ -4094,11 +4095,11 @@ user_granularity.write
         .withColumn("day", lit(day.replace("""/""", "")))
         .dropDuplicates("device_id")
         .write
-        .format("parquet")
+        .format("csv")
         .partitionBy("day", "country")
         .mode("append")
         .save(
-          "/datascience/misc/data_useragents/".format(day)
+          "/datascience/misc/data_useragents/20190808AR"//.format(day)
         )
       println("Day %s processed!".format(day))
     }
@@ -5103,12 +5104,12 @@ user_granularity.write
 
     //processMissingMinutes(spark)
 
-    //get_pitch(spark = spark,
-    //          nDays = 1,
-    //          since  = 0,
-    //          job_name = "test")
+    get_pitch(spark = spark,
+              nDays = 1,
+              since  = 0,
+              job_name = "test")
 
-    user_agents_1day(spark)
+    //user_agents_1day(spark)
 
   }
 
