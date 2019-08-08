@@ -2054,7 +2054,7 @@ val records_common = the_join.select(col("identifier"))
   
   //kw_list: List[String],     pasarle estos params a la funcion para pedidos futuros
   //tuple_list: List[String],
-
+/**
   def get_pitch(
       spark: SparkSession,
       nDays: Integer,
@@ -2092,7 +2092,7 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
-  
+   */
 
   /**
     *
@@ -4081,7 +4081,7 @@ user_granularity.write
 
     def user_agents_1day(spark: SparkSession) {
 
-    val day = "2019/08/08"
+    
     def parse_day(day: String) {
       spark.read
         .format("csv")
@@ -4091,7 +4091,7 @@ user_granularity.write
         .select("device_id", "user_agent", "country")
         .filter("country IN ('AR')")
         .select("device_id", "user_agent", "country")
-        .withColumn("day", day.replace("""/""", ""))
+        .withColumn("day", lit(day.replace("""/""", "")))
         .dropDuplicates("device_id")
         .write
         .format("parquet")
