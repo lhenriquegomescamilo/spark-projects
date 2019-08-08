@@ -2004,7 +2004,7 @@ val records_common = the_join.select(col("identifier"))
       //.select("device_type", "device_id", "seg_id")
     df_joint
   }
-  
+    /**
   def save_query_results(
       df_queries: DataFrame,
       df_joint: DataFrame,
@@ -2018,6 +2018,7 @@ val records_common = the_join.select(col("identifier"))
     for (t <- df_queries) {
       df_joint
         .filter(t._2)
+        .withColumn("seg_id", lit(t._1))
         .write
         .format("csv")
         .option("sep", "\t")
@@ -2025,7 +2026,9 @@ val records_common = the_join.select(col("identifier"))
         .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
     }
   }
+  */
 
+  
   /**
   //create df from list of tuples
 
