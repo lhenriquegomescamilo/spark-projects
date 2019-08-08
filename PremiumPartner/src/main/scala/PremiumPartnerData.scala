@@ -41,7 +41,7 @@ object GetDataPartnerID {
           .option("header", "true")
           .option("delimiter","\t")
           .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
-          .csv("/datascience/data_premium_partner/%s.tsv.gz".format(day.replace("/", "")))
+          .save("/datascience/data_premium_partner/%s".format(day.replace("/", "")))
           //.partitionBy("id_partner", "day")
           
 
@@ -110,7 +110,10 @@ object GetDataPartnerID {
     val from = if (options.contains('from)) options('from) else 1
     
     // First we obtain the Spark session
-    val spark = SparkSession.builder.appName("Get data for some Partners ID").getOrCreate()
+    val spark = SparkSession.builder
+          .appName("Get data for some Partners ID")
+          .config("spark.sql.files.ignoreCorruptFiles", "true")
+          .getOrCreate()
     
     // Finally, we download the data
     download_data(spark, nDays, from)
