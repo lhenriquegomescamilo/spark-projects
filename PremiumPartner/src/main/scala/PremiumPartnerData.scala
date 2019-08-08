@@ -37,8 +37,12 @@ object GetDataPartnerID {
       
       // store the results.
       ready.write.mode("append")
-           .partitionBy("id_partner", "day")
-           .parquet("/datascience/data_premium_partner/".format(day))
+          .coalesce(1)
+          .otion("header", "true")
+          .option("delimiter","\t")
+          .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
+          //.partitionBy("id_partner", "day")
+          .csv("/datascience/data_premium_partner/%s.tsv.gz".format(day))
 
   }
   
