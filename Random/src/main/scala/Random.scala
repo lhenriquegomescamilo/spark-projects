@@ -1881,7 +1881,7 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     *
-    */
+
 
   def kw_pitch_danone(
       spark: SparkSession,
@@ -1952,7 +1952,8 @@ val records_common = the_join.select(col("identifier"))
       os.close()
     }
   }
-
+  */
+  
   /**
     *
     *
@@ -1963,7 +1964,9 @@ val records_common = the_join.select(col("identifier"))
     *
     */
 
+  // es _days porque podría ser por hora (hacer un if para seleccionar esto sino)
   def read_data_kw_days(
+      spark: SparkSession,
       nDays: Integer,
       since: Integer) : DataFrame = {
 
@@ -1991,15 +1994,16 @@ val records_common = the_join.select(col("identifier"))
       df_keys: DataFrame,
       df_data_keywords: DataFrame) : DataFrame = {
 
-    val joint = df.join(broadcast(df_keys), Seq("content_keys"))
-    joint
+    val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("content_keys"))
+    df_joint
       .select("content_keys","device_id")
       .dropDuplicates()
       .groupBy("device_id")
       .agg(collect_list("content_keys").as("kws"))
       //.withColumn("device_type", lit("web")) para empujar
       //.select("device_type", "device_id", "seg_id")
-    joint
+      .select("device_id","kws")
+    df_joint
   }
     
   def save_query_results(
@@ -2011,29 +2015,55 @@ val records_common = the_join.select(col("identifier"))
 
     df_queries.select("seg_id", "query")
       .collect()
-      .map(r => (r(0).toString, r(1).toString))
-    for (t <- queries) {
+      .rdd.map(r => (r(0).toString, r(1).toString))
+    for (t <- df_queries) {
       df_joint
         .filter(t._2)
+        .withColumn("seg_id", lit(t._1))
         .write
         .format("csv")
         .option("sep", "\t")
         .mode(SaveMode.Overwrite)
         .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
+    }
+  }
+  
+
+
+  /**
+  //create df from list of tuples
+
+  // Create `Row` from `Seq`
+  val row = Row.fromSeq(values)
+
+  // Create `RDD` from `Row`
+  val rdd = spark.sparkContext.makeRDD(List(row))
+
+  // Create schema fields
+  val fields = List(
+    StructField("query", StringType, nullable = false),
+    StructField("seg_id", Integerype, nullable = false)
+  )
+
+  // Create `DataFrame`
+  val dataFrame = spark.createDataFrame(rdd, StructType(fields))
+
+   */
 
 
   //main method:
-
+  
+  //kw_list: List[String],     pasarle estos params a la funcion para pedidos futuros
+  //tuple_list: List[String],
 
   def get_pitch(
+      spark: SparkSession,
       nDays: Integer,
       since: Integer,
-      //kw_list: List[String],
-      //tuple_list: List[String],
       job_name: String) = {
-
-
-    val df_data_keywords = read_data_kw_days(nDays = nDays,
+    
+    val df_data_keywords = read_data_kw_days(spark = spark,
+                                             nDays = nDays,
                                              since = since)
     
     // a get_joint_keys pasarle un df con la columna content_keys,
@@ -2051,19 +2081,19 @@ val records_common = the_join.select(col("identifier"))
     //pasarle una lista de tuplas del tipo (query,ID)
     //la siguiente linea es temp:
     
-    val queries = spark.read
+    val df_queries = spark.read
       .format("csv")
       .option("header", "true")
       .load("/datascience/custom/queries_danone.csv")
 
 
-    save_query_results(queries = queries,
-                      df_joint = df_joint,
-                      job_name = job_name)
+    save_query_results(df_queries = df_queries,
+                       df_joint = df_joint,
+                       job_name = job_name)
 
   }
 
-  
+   
 
   /**
     *
@@ -4049,6 +4079,34 @@ user_granularity.write
     parse_day("AR", day)
   }
     */
+
+    def user_agents_1day(spark: SparkSession) {
+
+    
+    def parse_day(day: String) {
+      spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .load("/data/eventqueue/%s/".format(day))
+        .select("device_id", "user_agent", "country")
+        .filter("country IN ('AR')")
+        .select("device_id", "user_agent", "country")
+        .withColumn("day", lit(day.replace("""/""", "")))
+        .dropDuplicates("device_id")
+        .write
+        .format("csv")
+        .partitionBy("day", "country")
+        .mode("append")
+        .save(
+          "/datascience/misc/data_useragents/20190808AR"//.format(day)
+        )
+      println("Day %s processed!".format(day))
+    }
+     val day = "2019/08/08"
+    //val day = DateTime.now.minusDays(1).toString("yyyy/MM/dd")
+    parse_day(day)
+  }
   /**
     *
     *
@@ -5046,9 +5104,12 @@ user_granularity.write
 
     //processMissingMinutes(spark)
 
-    //get_pitch(nDays = 1,
-                since  = 0,
-                job_name = "test")
+    get_pitch(spark = spark,
+              nDays = 1,
+              since  = 0,
+              job_name = "test")
+
+    //user_agents_1day(spark)
 
   }
 
