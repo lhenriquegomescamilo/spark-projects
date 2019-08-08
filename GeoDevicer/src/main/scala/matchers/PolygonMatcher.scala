@@ -58,11 +58,11 @@ object PolygonMatcher {
     // Now we obtain the list of hdfs files to be read
     val path = "/data/geo/safegraph/"
     val hdfs_files = days
-      .map(day => path + "%s/".format(day))
+      .map(day => path+"%s/".format(day))
       .filter(
-        path => fs.exists(new org.apache.hadoop.fs.Path(path + "%s/".format(day))
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
       )
-      .map(day => day + "*.gz"))
+      .map(day => day+"*.gz")
 
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read
