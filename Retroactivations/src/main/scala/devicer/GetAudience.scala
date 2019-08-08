@@ -1029,6 +1029,7 @@ object GetAudience {
       var file_name = file.replace(".json", "")
       // Flag to indicate if execution failed
       var failed = false
+      val partitionedData = if (data.rdd.getNumPartitions<5000000) data else data.repartition(1000)
 
       if (queries.length > 10000) {
         // getMultipleAudience(spark, data, queries, file_name, commonFilter)
@@ -1048,7 +1049,7 @@ object GetAudience {
         try {
           getAudience(
             spark,
-            data,
+            partitionedData,
             queries,
             file_name,
             commonFilter,
@@ -1124,9 +1125,13 @@ object GetAudience {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     val path = p match {
-      case 0 => "/datascience/devicer/to_process/"
+      case 0 => "/datascience/devicer/priority/"
 
-      case 1 => "/datascience/devicer/priority/"
+      case 1 => "/datascience/devicer/queue-02/"
+
+      case 2 => "/datascience/devicer/queue-03/"
+
+      case 3 => "/datascience/devicer/queue-04/"
 
     }
 

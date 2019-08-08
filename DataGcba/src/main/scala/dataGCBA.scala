@@ -9,9 +9,9 @@ object dataGCBA {
     val df = spark.read
       .option("basePath", "/datascience/data_audiences_streaming")
       .load("/datascience/data_audiences_streaming/hour=%s*/".format(day))
-      .select("id_partner", "event_type", "url", "timestamp", "device_id")
+      .select("id_partner", "event_type", "url", "time", "device_id")
       .filter("event_type = 'tk' and id_partner = 349")
-      .select("url", "timestamp", "device_id")
+      .select("url", "time", "device_id")
     df.write
       .format("csv")
       .mode(SaveMode.Overwrite)

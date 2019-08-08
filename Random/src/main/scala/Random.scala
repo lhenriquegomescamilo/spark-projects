@@ -1873,6 +1873,226 @@ val records_common = the_join.select(col("identifier"))
     days.map(processDay(_))
   }
 
+  /**
+    *
+    *
+    *
+    *                PITCH DANONE
+    *
+    *
+    *
+
+
+  def kw_pitch_danone(
+      spark: SparkSession,
+      nDays: Integer = 1,
+      since: Integer = 0
+  ) = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=AR".format(day)) //para cada dia de la lista day devuelve el path del día
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
+
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
+
+    val df_keys = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/content_keys_danone.csv")
+    
+    val data = df.join(broadcast(df_keys), Seq("content_keys"))
+    data
+      .drop("country_t")
+      .drop("_c0")
+      .drop("count")
+      .dropDuplicates()
+      .groupBy("device_id")
+      .agg(collect_list("content_keys").as("kws"))
+      .withColumn("device_type", lit("web"))
+      .select("device_type", "device_id", "seg_id")
+    data.cache()
+
+    val job_name = "pitch_danone"
+
+    val queries = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/queries_danone.csv")
+      .select("seg_id", "query")
+      .collect()
+      .map(r => (r(0).toString, r(1).toString))
+    for (t <- queries) {
+      data
+        .filter(t._2)
+        .withColumn("seg_id", lit(t._1))
+        .select("device_type", "device_id", "seg_id")
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
+      val os = fs.create(
+        new Path("/datascience/ingester/ready/%s_%s".format(job_name,t._1))
+      )
+      val content =
+        """{"filePath":"/datascience/devicer/processed/%s_%s", "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"%s"}"""
+          .format(job_name,t._1,job_name)
+      println(content)
+      os.write(content.getBytes)
+      os.close()
+    }
+  }
+  */
+  
+  /**
+    *
+    *
+    *
+    *                PITCH DATA_KEYWORDS
+    *
+    *
+    *
+    */
+
+  // es _days porque podría ser por hora (hacer un if para seleccionar esto sino)
+  def read_data_kw_days(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer) : DataFrame = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=AR".format(day)) //para cada dia de la lista day devuelve el path del día
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
+
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
+
+    df
+  }
+
+
+  def get_joint_keys(
+      df_keys: DataFrame,
+      df_data_keywords: DataFrame) : DataFrame = {
+
+    val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("content_keys"))
+    df_joint
+      .select("content_keys","device_id")
+      .dropDuplicates()
+      .groupBy("device_id")
+      .agg(collect_list("content_keys").as("kws"))
+      //.withColumn("device_type", lit("web")) para empujar
+      //.select("device_type", "device_id", "seg_id")
+    df_joint
+  }
+    /**
+  def save_query_results(
+      df_queries: DataFrame,
+      df_joint: DataFrame,
+      job_name: String) = {
+  
+    df_joint.cache()
+
+    df_queries.select("seg_id", "query")
+      .collect()
+      .map(r => (r(0).toString, r(1).toString))
+    for (t <- df_queries) {
+      df_joint
+        .filter(t._2)
+        .withColumn("seg_id", lit(t._1))
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
+    }
+  }
+  */
+
+  
+  /**
+  //create df from list of tuples
+
+  // Create `Row` from `Seq`
+  val row = Row.fromSeq(values)
+
+  // Create `RDD` from `Row`
+  val rdd = spark.sparkContext.makeRDD(List(row))
+
+  // Create schema fields
+  val fields = List(
+    StructField("query", StringType, nullable = false),
+    StructField("seg_id", Integerype, nullable = false)
+  )
+
+  // Create `DataFrame`
+  val dataFrame = spark.createDataFrame(rdd, StructType(fields))
+
+   */
+
+
+  //main method:
+  
+  //kw_list: List[String],     pasarle estos params a la funcion para pedidos futuros
+  //tuple_list: List[String],
+/**
+  def get_pitch(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer,
+      job_name: String) = {
+    
+    val df_data_keywords = read_data_kw_days(spark = spark,
+                                             nDays = nDays,
+                                             since = since)
+    
+    // a get_joint_keys pasarle un df con la columna content_keys,
+    // creado a partir de una lista de keywords (levanto la lista de un json)
+    //la siguiente linea es temp:  
+
+    val df_keys = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/content_keys_danone.csv")
+    
+    val df_joint = get_joint_keys(df_keys = df_keys,
+                                  df_data_keywords = df_data_keywords)
+
+    //pasarle una lista de tuplas del tipo (query,ID)
+    //la siguiente linea es temp:
+    
+    val df_queries = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/queries_danone.csv")
+
+
+    save_query_results(df_queries = df_queries,
+                       df_joint = df_joint,
+                       job_name = job_name)
+
+  }
+
+   */
 
   /**
     *
@@ -1891,114 +2111,104 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     */
-
-
   def get_device_IDS(spark: SparkSession) = {
     //PII TABLE
-    val piis = spark.read.parquet("/datascience/pii_matching/pii_table/").withColumnRenamed("pii","valor_atributo_hash")
+    val piis = spark.read
+      .parquet("/datascience/pii_matching/pii_table/")
+      .withColumnRenamed("pii", "valor_atributo_hash")
 
     // AUDIENCIA FB
     //flat_tc == 0  sin tarjeta de credito
-    val df_aud = spark.read.format("csv").option("header","true").load("/datascience/custom/aud_directv_isp_fb.csv").filter("flag_tc == 0")
+    val df_aud = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/aud_directv_isp_fb.csv")
+      .filter("flag_tc == 0")
 
-    val joint = piis.join((df_aud),Seq("valor_atributo_hash"))
+    val joint = piis.join((df_aud), Seq("valor_atributo_hash"))
     joint.write
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/devices_ISP_directtv")
   }
-  /**
 
   def get_ISP_directtv(
       spark: SparkSession,
-      nDays: Integer = 30,
-      since: Integer = 0
+      nDays: Integer = 1,
+      since: Integer = 1
   ) = {
-
-    import spark.implicits._
-    import org.apache.hadoop.fs.{FileSystem, Path}
-    import org.joda.time.DateTime
-    import org.apache.spark.sql.functions.{
-      round,
-      broadcast,
-      col,
-      abs,
-      to_date,
-      to_timestamp,
-      hour,
-      date_format,
-      from_unixtime,
-      count,
-      avg
-    }
-    import org.apache.spark.sql.SaveMode
-
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-
+    // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
+    // Segments to consider from cluster 61 (ISPs)
+    val segments_cluster_61 =
+      """1069,1190,1191,1192,1193,1194,1195,1323,1324,1325,1326,1327,1328,1335,1336,1338,1339,1340,1341,1342,1344,1345,1346,1347,1348,1349,1350,1351,1352,1354,1357,3226,3227,3228,3229,3230,4641,4642,4643,4644,4645,4646,4648,4649,4650"""
+        .split(",")
+        .map(_.toInt)
+        .toSet
+    val arrIntersect = udf(
+      (segments: Seq[Int]) =>
+        (segments ++ Seq(-1)).filter(s => segments_cluster_61.contains(s))(0)
+    )
+
+    // Reading data_audiences_streaming and array intersecting.
+    val format = "yyyyMMddHH"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
     // Now we obtain the list of hdfs folders to be read
-    val path = "/datascience/data_audiences/"
+    val path = "/datascience/data_audiences_streaming/"
     val hdfs_files = days
-      .map(day => path + "day=%s/country=AR/".format(day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    fs.close()
-
-    //cargamos el df de audiences
-    val df_audiences = spark.read.parquet(hdfs_files: _*)
-
-    val daud = df_audiences
-      .select("device_id", "segments", "timestamp", "device_type")
-      .withColumn(
-        "ISP",
-        when(array_contains(col("segments"), 1192), "Telecentro")
-          .otherwise(
-            when(array_contains(col("segments"), 1191), "Fibertel")
-              .otherwise(
-                when(array_contains(col("segments"), 1190), "Arnet")
-                  .otherwise(
-                    when(array_contains(col("segments"), 1069), "Speedy")
-                      .otherwise(0)
-                  )
-              )
+      .flatMap(
+        day =>
+          (0 until 24).map(
+            hour =>
+              path + "/hour=%s%02d/country=AR/"
+                .format(day, hour)
           )
       )
-      .filter("ISP != '0'")
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    val country = "argentina"
+    //cargamos el df de audiences_streaming y lo filtramos por segmentos
+    val df_audiences = spark.read
+      .parquet(hdfs_files: _*)
+      .select("device_id", "segments", "datetime")
+      .na
+      .drop()
+      .withColumn("ISP", arrIntersect(col("segments")))
 
-    //dictionary for timezones
-    val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
-
-    //setting timezone depending on country
-    spark.conf.set("spark.sql.session.timeZone", timezone(country))
-
-    val daud_time = daud
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-      .withColumn("Hour", date_format(col("Time"), "HH"))
+    //filtering by "horario hogareño" de 19 a 8hs, lunes a sabado (brai) y domingo todo el dia??
+    // restarle 3 horas a todos porque es horario UTC 0
+    val df_audiences_time = df_audiences
+      .withColumn("datetime", to_timestamp(col("datetime")))
+      .withColumn("Hour", date_format(col("datetime"), "HH"))
       .filter(
-        (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(
-          col("Time"),
+        col("Hour") >= 16 || col("Hour") <= 5 || date_format(
+          col("datetime"),
           "EEEE"
-        ).isin(List("Saturday", "Sunday"): _*))
+        ).isin(List("Sunday"): _*)
       )
+      .select("device_id", "ISP")
+      .distinct()
 
-    val audience_final = daud_time
-      .groupBy("device_type", "device_id", "ISP")
-      .agg(count("timestamp") as "home_detections")
+    // we load the joint file from fb_audience and PII table
+    val audience_fb = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/custom/devices_ISP_directtv")
+      .select("device_id", "valor_atributo_hash")
 
-    audience_final.write
+    val joint = df_audiences_time.join(broadcast(audience_fb), Seq("device_id"))
+
+    joint.write
       .format("csv")
       .option("header", true)
       .option("delimiter", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/audiences/crossdeviced/Telecentro_Test_ISP")
+      .save("/datascience/custom/directtv_ISP_test")
   }
-*/
 
   /**
     *
@@ -3425,6 +3635,68 @@ user_granularity.write
       .save("/datascience/audiences/crossdeviced/Telecentro_w_relevance")
   }
 
+  def get_pii_AXIOM(spark: SparkSession) {
+
+    val piis_ar = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country='AR'")
+      .select("device_id", "nid_sh2")
+      .filter(col("nid_sh2").isNotNull)
+      .dropDuplicates()
+
+    piis_ar.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/_axiom_pii_AR_20190806")
+
+    val piis_br = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country='BR'")
+      .select("device_id", "nid_sh2")
+      .filter(col("nid_sh2").isNotNull)
+      .dropDuplicates()
+
+    piis_br.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/_axiom_pii_BR_20190806")
+
+    //tiramos metricas
+    println("Argentina")
+    println(piis_ar.count())
+    println
+    println("Brasil")
+    println(piis_br.count())
+
+  }
+
+  def get_pii_AR_seba(spark: SparkSession) {
+
+    val piis_ar = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/day=20190731/")
+      .filter("country == 'AR'")
+      .select("device_id", "ml_sh2", "mb_sh2", "nid_sh2")
+      .filter(
+        (col("ml_sh2").isNotNull) or (col("mb_sh2").isNotNull) or (col(
+          "nid_sh2"
+        ).isNotNull)
+      )
+      .dropDuplicates()
+
+    piis_ar.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/ar_pii_seba")
+    piis_ar.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/ar_pii_seba")
+    piis_ar.describe().filter(col("summary") === "count").show()
+  }
+
   /**
     *
     *
@@ -3466,7 +3738,6 @@ user_granularity.write
 
   }
 
-
   /**
     *
     *
@@ -3481,7 +3752,6 @@ user_granularity.write
     *
     *
     */
-
   /**
   def test_no_stemming(spark: SparkSession) = {
 
@@ -3533,7 +3803,7 @@ user_granularity.write
 
     var df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
 
-    df = df.withColumn("content_keys", toArray(df("content_keys")))  
+    df = df.withColumn("content_keys", toArray(df("content_keys")))
 
     df = new Stemmer()
       .setInputCol("content_keys")
@@ -3547,10 +3817,10 @@ user_granularity.write
       .format("csv")
       .option("header", "true")
       .load("/datascience/custom/content_keys_UY.csv")
-    
-    content_keys_UY = content_keys_UY.withColumn("content_keys", toArray(content_keys_UY("content_keys")))  
 
-    content_keys_UY = new Stemmer()  
+    content_keys_UY = content_keys_UY.withColumn("content_keys", toArray(content_keys_UY("content_keys")))
+
+    content_keys_UY = new Stemmer()
       .setInputCol("content_keys")
       .setOutputCol("stemmed")
       .setLanguage("Spanish")
@@ -3565,7 +3835,7 @@ user_granularity.write
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/test_joint_keys_stemmed")
   }
-  */
+    */
   /**
     *
     *
@@ -3808,6 +4078,34 @@ user_granularity.write
     parse_day("AR", day)
   }
     */
+
+    def user_agents_1day(spark: SparkSession) {
+
+    
+    def parse_day(day: String) {
+      spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .load("/data/eventqueue/%s/".format(day))
+        .select("device_id", "user_agent", "country")
+        .filter("country IN ('AR')")
+        .select("device_id", "user_agent", "country")
+        .withColumn("day", lit(day.replace("""/""", "")))
+        .dropDuplicates("device_id")
+        .write
+        .format("parquet")
+        .partitionBy("day", "country")
+        .mode("append")
+        .save(
+          "/datascience/misc/data_useragents/".format(day)
+        )
+      println("Day %s processed!".format(day))
+    }
+     val day = "2019/08/08"
+    //val day = DateTime.now.minusDays(1).toString("yyyy/MM/dd")
+    parse_day(day)
+  }
   /**
     *
     *
@@ -4315,245 +4613,17 @@ user_granularity.write
     */
   def processMissingMinutes(spark: SparkSession) = {
     val missingFiles = List(
-      "/data/eventqueue/2019/07/06/1725.tsv.gz",
-      "/data/eventqueue/2019/07/06/1940.tsv.gz",
-      "/data/eventqueue/2019/07/06/2005.tsv.gz",
-      "/data/eventqueue/2019/07/06/2010.tsv.gz",
-      "/data/eventqueue/2019/07/06/2015.tsv.gz",
-      "/data/eventqueue/2019/07/06/2020.tsv.gz",
-      "/data/eventqueue/2019/07/06/2025.tsv.gz",
-      "/data/eventqueue/2019/07/06/2030.tsv.gz",
-      "/data/eventqueue/2019/07/06/2035.tsv.gz",
-      "/data/eventqueue/2019/07/06/2040.tsv.gz",
-      "/data/eventqueue/2019/07/06/2045.tsv.gz",
-      "/data/eventqueue/2019/07/06/2050.tsv.gz",
-      "/data/eventqueue/2019/07/06/2055.tsv.gz",
-      "/data/eventqueue/2019/07/06/2100.tsv.gz",
-      "/data/eventqueue/2019/07/06/2105.tsv.gz",
-      "/data/eventqueue/2019/07/06/2110.tsv.gz",
-      "/data/eventqueue/2019/07/06/2115.tsv.gz",
-      "/data/eventqueue/2019/07/06/2120.tsv.gz",
-      "/data/eventqueue/2019/07/06/2125.tsv.gz",
-      "/data/eventqueue/2019/07/06/2130.tsv.gz",
-      "/data/eventqueue/2019/07/06/2135.tsv.gz",
-      "/data/eventqueue/2019/07/06/2140.tsv.gz",
-      "/data/eventqueue/2019/07/06/2145.tsv.gz",
-      "/data/eventqueue/2019/07/06/2150.tsv.gz",
-      "/data/eventqueue/2019/07/06/2155.tsv.gz",
-      "/data/eventqueue/2019/07/06/2200.tsv.gz",
-      "/data/eventqueue/2019/07/06/2205.tsv.gz",
-      "/data/eventqueue/2019/07/06/2210.tsv.gz",
-      "/data/eventqueue/2019/07/06/2215.tsv.gz",
-      "/data/eventqueue/2019/07/06/2220.tsv.gz",
-      "/data/eventqueue/2019/07/06/2225.tsv.gz",
-      "/data/eventqueue/2019/07/06/2230.tsv.gz",
-      "/data/eventqueue/2019/07/06/2235.tsv.gz",
-      "/data/eventqueue/2019/07/06/2240.tsv.gz",
-      "/data/eventqueue/2019/07/06/2245.tsv.gz",
-      "/data/eventqueue/2019/07/06/2250.tsv.gz",
-      "/data/eventqueue/2019/07/06/2255.tsv.gz",
-      "/data/eventqueue/2019/07/06/2300.tsv.gz",
-      "/data/eventqueue/2019/07/06/2305.tsv.gz",
-      "/data/eventqueue/2019/07/06/2310.tsv.gz",
-      "/data/eventqueue/2019/07/06/2315.tsv.gz",
-      "/data/eventqueue/2019/07/06/2320.tsv.gz",
-      "/data/eventqueue/2019/07/06/2325.tsv.gz",
-      "/data/eventqueue/2019/07/06/2330.tsv.gz",
-      "/data/eventqueue/2019/07/06/2335.tsv.gz",
-      "/data/eventqueue/2019/07/06/2340.tsv.gz",
-      "/data/eventqueue/2019/07/06/2345.tsv.gz",
-      "/data/eventqueue/2019/07/06/2350.tsv.gz",
-      "/data/eventqueue/2019/07/06/2355.tsv.gz",
-      "/data/eventqueue/2019/07/07/2230.tsv.gz",
-      "/data/eventqueue/2019/07/07/2235.tsv.gz",
-      "/data/eventqueue/2019/07/07/2240.tsv.gz",
-      "/data/eventqueue/2019/07/07/2245.tsv.gz",
-      "/data/eventqueue/2019/07/07/2250.tsv.gz",
-      "/data/eventqueue/2019/07/07/2255.tsv.gz",
-      "/data/eventqueue/2019/07/07/2300.tsv.gz",
-      "/data/eventqueue/2019/07/07/2305.tsv.gz",
-      "/data/eventqueue/2019/07/07/2310.tsv.gz",
-      "/data/eventqueue/2019/07/07/2315.tsv.gz",
-      "/data/eventqueue/2019/07/07/2320.tsv.gz",
-      "/data/eventqueue/2019/07/07/2325.tsv.gz",
-      "/data/eventqueue/2019/07/07/2330.tsv.gz",
-      "/data/eventqueue/2019/07/07/2335.tsv.gz",
-      "/data/eventqueue/2019/07/07/2340.tsv.gz",
-      "/data/eventqueue/2019/07/07/2345.tsv.gz",
-      "/data/eventqueue/2019/07/07/2350.tsv.gz",
-      "/data/eventqueue/2019/07/07/2355.tsv.gz",
-      "/data/eventqueue/2019/07/08/2215.tsv.gz",
-      "/data/eventqueue/2019/07/08/2220.tsv.gz",
-      "/data/eventqueue/2019/07/08/2225.tsv.gz",
-      "/data/eventqueue/2019/07/08/2230.tsv.gz",
-      "/data/eventqueue/2019/07/08/2235.tsv.gz",
-      "/data/eventqueue/2019/07/08/2240.tsv.gz",
-      "/data/eventqueue/2019/07/08/2245.tsv.gz",
-      "/data/eventqueue/2019/07/08/2250.tsv.gz",
-      "/data/eventqueue/2019/07/08/2255.tsv.gz",
-      "/data/eventqueue/2019/07/08/2300.tsv.gz",
-      "/data/eventqueue/2019/07/08/2305.tsv.gz",
-      "/data/eventqueue/2019/07/08/2310.tsv.gz",
-      "/data/eventqueue/2019/07/08/2315.tsv.gz",
-      "/data/eventqueue/2019/07/08/2320.tsv.gz",
-      "/data/eventqueue/2019/07/08/2325.tsv.gz",
-      "/data/eventqueue/2019/07/08/2330.tsv.gz",
-      "/data/eventqueue/2019/07/08/2335.tsv.gz",
-      "/data/eventqueue/2019/07/08/2340.tsv.gz",
-      "/data/eventqueue/2019/07/08/2345.tsv.gz",
-      "/data/eventqueue/2019/07/08/2350.tsv.gz",
-      "/data/eventqueue/2019/07/08/2355.tsv.gz",
-      "/data/eventqueue/2019/07/09/2215.tsv.gz",
-      "/data/eventqueue/2019/07/09/2220.tsv.gz",
-      "/data/eventqueue/2019/07/09/2225.tsv.gz",
-      "/data/eventqueue/2019/07/09/2230.tsv.gz",
-      "/data/eventqueue/2019/07/09/2235.tsv.gz",
-      "/data/eventqueue/2019/07/09/2240.tsv.gz",
-      "/data/eventqueue/2019/07/09/2245.tsv.gz",
-      "/data/eventqueue/2019/07/09/2250.tsv.gz",
-      "/data/eventqueue/2019/07/09/2255.tsv.gz",
-      "/data/eventqueue/2019/07/09/2300.tsv.gz",
-      "/data/eventqueue/2019/07/09/2305.tsv.gz",
-      "/data/eventqueue/2019/07/09/2310.tsv.gz",
-      "/data/eventqueue/2019/07/09/2315.tsv.gz",
-      "/data/eventqueue/2019/07/09/2320.tsv.gz",
-      "/data/eventqueue/2019/07/09/2325.tsv.gz",
-      "/data/eventqueue/2019/07/09/2330.tsv.gz",
-      "/data/eventqueue/2019/07/09/2335.tsv.gz",
-      "/data/eventqueue/2019/07/09/2340.tsv.gz",
-      "/data/eventqueue/2019/07/09/2345.tsv.gz",
-      "/data/eventqueue/2019/07/09/2350.tsv.gz",
-      "/data/eventqueue/2019/07/09/2355.tsv.gz",
-      "/data/eventqueue/2019/07/10/1445.tsv.gz",
-      "/data/eventqueue/2019/07/10/1450.tsv.gz",
-      "/data/eventqueue/2019/07/10/1455.tsv.gz",
-      "/data/eventqueue/2019/07/10/1625.tsv.gz",
-      "/data/eventqueue/2019/07/10/1630.tsv.gz",
-      "/data/eventqueue/2019/07/10/1655.tsv.gz",
-      "/data/eventqueue/2019/07/10/1700.tsv.gz",
-      "/data/eventqueue/2019/07/10/1705.tsv.gz",
-      "/data/eventqueue/2019/07/10/1710.tsv.gz",
-      "/data/eventqueue/2019/07/10/1715.tsv.gz",
-      "/data/eventqueue/2019/07/10/1720.tsv.gz",
-      "/data/eventqueue/2019/07/10/1750.tsv.gz",
-      "/data/eventqueue/2019/07/10/1755.tsv.gz",
-      "/data/eventqueue/2019/07/10/1800.tsv.gz",
-      "/data/eventqueue/2019/07/10/1805.tsv.gz",
-      "/data/eventqueue/2019/07/10/1810.tsv.gz",
-      "/data/eventqueue/2019/07/10/1815.tsv.gz",
-      "/data/eventqueue/2019/07/10/1820.tsv.gz",
-      "/data/eventqueue/2019/07/10/1825.tsv.gz",
-      "/data/eventqueue/2019/07/10/1830.tsv.gz",
-      "/data/eventqueue/2019/07/10/1835.tsv.gz",
-      "/data/eventqueue/2019/07/10/1840.tsv.gz",
-      "/data/eventqueue/2019/07/10/1845.tsv.gz",
-      "/data/eventqueue/2019/07/10/1850.tsv.gz",
-      "/data/eventqueue/2019/07/10/1855.tsv.gz",
-      "/data/eventqueue/2019/07/10/1900.tsv.gz",
-      "/data/eventqueue/2019/07/10/1905.tsv.gz",
-      "/data/eventqueue/2019/07/10/1910.tsv.gz",
-      "/data/eventqueue/2019/07/10/1915.tsv.gz",
-      "/data/eventqueue/2019/07/10/1920.tsv.gz",
-      "/data/eventqueue/2019/07/10/1925.tsv.gz",
-      "/data/eventqueue/2019/07/10/1930.tsv.gz",
-      "/data/eventqueue/2019/07/10/1935.tsv.gz",
-      "/data/eventqueue/2019/07/10/1940.tsv.gz",
-      "/data/eventqueue/2019/07/10/1945.tsv.gz",
-      "/data/eventqueue/2019/07/10/1950.tsv.gz",
-      "/data/eventqueue/2019/07/10/1955.tsv.gz",
-      "/data/eventqueue/2019/07/10/2000.tsv.gz",
-      "/data/eventqueue/2019/07/10/2005.tsv.gz",
-      "/data/eventqueue/2019/07/10/2010.tsv.gz",
-      "/data/eventqueue/2019/07/10/2015.tsv.gz",
-      "/data/eventqueue/2019/07/10/2020.tsv.gz",
-      "/data/eventqueue/2019/07/10/2025.tsv.gz",
-      "/data/eventqueue/2019/07/10/2030.tsv.gz",
-      "/data/eventqueue/2019/07/10/2035.tsv.gz",
-      "/data/eventqueue/2019/07/10/2040.tsv.gz",
-      "/data/eventqueue/2019/07/10/2045.tsv.gz",
-      "/data/eventqueue/2019/07/10/2050.tsv.gz",
-      "/data/eventqueue/2019/07/10/2055.tsv.gz",
-      "/data/eventqueue/2019/07/10/2100.tsv.gz",
-      "/data/eventqueue/2019/07/10/2105.tsv.gz",
-      "/data/eventqueue/2019/07/10/2110.tsv.gz",
-      "/data/eventqueue/2019/07/10/2115.tsv.gz",
-      "/data/eventqueue/2019/07/10/2120.tsv.gz",
-      "/data/eventqueue/2019/07/10/2125.tsv.gz",
-      "/data/eventqueue/2019/07/10/2130.tsv.gz",
-      "/data/eventqueue/2019/07/10/2135.tsv.gz",
-      "/data/eventqueue/2019/07/10/2140.tsv.gz",
-      "/data/eventqueue/2019/07/10/2145.tsv.gz",
-      "/data/eventqueue/2019/07/10/2150.tsv.gz",
-      "/data/eventqueue/2019/07/10/2155.tsv.gz",
-      "/data/eventqueue/2019/07/10/2200.tsv.gz",
-      "/data/eventqueue/2019/07/10/2205.tsv.gz",
-      "/data/eventqueue/2019/07/10/2210.tsv.gz",
-      "/data/eventqueue/2019/07/10/2215.tsv.gz",
-      "/data/eventqueue/2019/07/10/2220.tsv.gz",
-      "/data/eventqueue/2019/07/10/2225.tsv.gz",
-      "/data/eventqueue/2019/07/10/2230.tsv.gz",
-      "/data/eventqueue/2019/07/10/2235.tsv.gz",
-      "/data/eventqueue/2019/07/10/2240.tsv.gz",
-      "/data/eventqueue/2019/07/10/2245.tsv.gz",
-      "/data/eventqueue/2019/07/10/2250.tsv.gz",
-      "/data/eventqueue/2019/07/10/2255.tsv.gz",
-      "/data/eventqueue/2019/07/10/2300.tsv.gz",
-      "/data/eventqueue/2019/07/10/2305.tsv.gz",
-      "/data/eventqueue/2019/07/10/2310.tsv.gz",
-      "/data/eventqueue/2019/07/10/2315.tsv.gz",
-      "/data/eventqueue/2019/07/10/2320.tsv.gz",
-      "/data/eventqueue/2019/07/10/2325.tsv.gz",
-      "/data/eventqueue/2019/07/10/2330.tsv.gz",
-      "/data/eventqueue/2019/07/10/2335.tsv.gz",
-      "/data/eventqueue/2019/07/10/2340.tsv.gz",
-      "/data/eventqueue/2019/07/10/2345.tsv.gz",
-      "/data/eventqueue/2019/07/10/2350.tsv.gz",
-      "/data/eventqueue/2019/07/10/2355.tsv.gz",
-      "/data/eventqueue/2019/07/13/2220.tsv.gz",
-      "/data/eventqueue/2019/07/13/2225.tsv.gz",
-      "/data/eventqueue/2019/07/13/2230.tsv.gz",
-      "/data/eventqueue/2019/07/13/2235.tsv.gz",
-      "/data/eventqueue/2019/07/13/2240.tsv.gz",
-      "/data/eventqueue/2019/07/13/2245.tsv.gz",
-      "/data/eventqueue/2019/07/13/2250.tsv.gz",
-      "/data/eventqueue/2019/07/13/2255.tsv.gz",
-      "/data/eventqueue/2019/07/13/2300.tsv.gz",
-      "/data/eventqueue/2019/07/13/2305.tsv.gz",
-      "/data/eventqueue/2019/07/13/2310.tsv.gz",
-      "/data/eventqueue/2019/07/13/2315.tsv.gz",
-      "/data/eventqueue/2019/07/13/2320.tsv.gz",
-      "/data/eventqueue/2019/07/13/2325.tsv.gz",
-      "/data/eventqueue/2019/07/13/2330.tsv.gz",
-      "/data/eventqueue/2019/07/13/2335.tsv.gz",
-      "/data/eventqueue/2019/07/13/2340.tsv.gz",
-      "/data/eventqueue/2019/07/13/2345.tsv.gz",
-      "/data/eventqueue/2019/07/13/2350.tsv.gz",
-      "/data/eventqueue/2019/07/13/2355.tsv.gz",
-      "/data/eventqueue/2019/07/14/2215.tsv.gz",
-      "/data/eventqueue/2019/07/14/2220.tsv.gz",
-      "/data/eventqueue/2019/07/14/2225.tsv.gz",
-      "/data/eventqueue/2019/07/14/2230.tsv.gz",
-      "/data/eventqueue/2019/07/14/2235.tsv.gz",
-      "/data/eventqueue/2019/07/14/2240.tsv.gz",
-      "/data/eventqueue/2019/07/14/2245.tsv.gz",
-      "/data/eventqueue/2019/07/14/2250.tsv.gz",
-      "/data/eventqueue/2019/07/14/2255.tsv.gz",
-      "/data/eventqueue/2019/07/14/2300.tsv.gz",
-      "/data/eventqueue/2019/07/14/2305.tsv.gz",
-      "/data/eventqueue/2019/07/14/2310.tsv.gz",
-      "/data/eventqueue/2019/07/14/2315.tsv.gz",
-      "/data/eventqueue/2019/07/14/2320.tsv.gz",
-      "/data/eventqueue/2019/07/14/2325.tsv.gz",
-      "/data/eventqueue/2019/07/14/2330.tsv.gz",
-      "/data/eventqueue/2019/07/14/2335.tsv.gz",
-      "/data/eventqueue/2019/07/14/2340.tsv.gz",
-      "/data/eventqueue/2019/07/14/2345.tsv.gz",
-      "/data/eventqueue/2019/07/14/2350.tsv.gz",
-      "/data/eventqueue/2019/07/14/2355.tsv.gz",
-      "/data/eventqueue/2019/07/19/0440.tsv.gz",
-      "/data/eventqueue/2019/07/19/0445.tsv.gz",
-      "/data/eventqueue/2019/07/19/0450.tsv.gz",
-      "/data/eventqueue/2019/07/19/0455.tsv.gz"
+      "/data/eventqueue/2019/08/04/2050.tsv.gz",
+      "/data/eventqueue/2019/08/04/2055.tsv.gz",
+      "/data/eventqueue/2019/08/04/2100.tsv.gz",
+      "/data/eventqueue/2019/08/04/2105.tsv.gz",
+      "/data/eventqueue/2019/08/04/2110.tsv.gz",
+      "/data/eventqueue/2019/08/04/2115.tsv.gz",
+      "/data/eventqueue/2019/08/04/2120.tsv.gz",
+      "/data/eventqueue/2019/08/04/2125.tsv.gz",
+      "/data/eventqueue/2019/08/04/2130.tsv.gz",
+      "/data/eventqueue/2019/08/04/2135.tsv.gz",
+      "/data/eventqueue/2019/08/04/2140.tsv.gz"
     )
 
     val processType = "batch"
@@ -4907,30 +4977,39 @@ user_granularity.write
       .save("/datascience/custom/new_taxo_grouped")
   }
 
-
   def get_sample_mx_mediabrands(spark: SparkSession) = {
 
+    val day_user = spark.read
+      .format("parquet")
+      .load("/datascience/data_audiences/day=20190731/country=MX/")
+      .select("device_id", "all_segments")
 
-val day_user = spark.read.format("parquet")
-.load("/datascience/data_audiences/day=20190731/country=MX/")
-.select("device_id","all_segments")
+    val taxo = spark.read
+      .format("csv")
+      .option("header", true)
+      .load("/datascience/geo/RetargetlyTAXOMediaBrands.csv")
 
-val taxo = spark.read.format("csv").option("header",true)
-    .load("/datascience/geo/RetargetlyTAXOMediaBrands.csv")
+    val taxo_list = taxo.select("Segment ID").rdd.map(r => r(0)).collect()
 
-val taxo_list = taxo.select("Segment ID").rdd.map(r => r(0)).collect()
+    val array_equifax_filter = taxo_list
+      .map(
+        segment =>
+          "array_contains(all_segments, '%s')"
+            .format(segment)
+      )
+      .mkString(" OR ")
 
-val array_equifax_filter = taxo_list.map(segment => "array_contains(all_segments, '%s')"
-                              .format(segment)).mkString(" OR ")
+    val selected_users =
+      day_user.filter(array_equifax_filter).select("device_id")
 
-val selected_users = day_user.filter(array_equifax_filter).select("device_id")
-
-selected_users.write
-.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/MX_Mediabrands_Sample_01_08_19")
-
+    selected_users.write
+      .format("csv")
+      .option("header", true)
+      .option("delimiter", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/audiences/crossdeviced/MX_Mediabrands_Sample_01_08_19"
+      )
 
   }
 
@@ -5019,7 +5098,18 @@ selected_users.write
     //test_no_stemming(spark)
     //test_stemming(spark)
     //get_sample_mx_mediabrands(spark)
-    get_device_IDS(spark)
+    //get_ISP_directtv(spark, 1, 7)
+    //get_pii_AR_seba(spark)
+
+    //processMissingMinutes(spark)
+
+    //get_pitch(spark = spark,
+    //          nDays = 1,
+    //          since  = 0,
+    //          job_name = "test")
+
+    user_agents_1day(spark)
+
   }
 
 }
