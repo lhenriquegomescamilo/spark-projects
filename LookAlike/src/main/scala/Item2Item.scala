@@ -43,7 +43,8 @@ object Item2Item {
     import spark.implicits._
     // Read input from file
     val expandInput = getSegmentsToExpand(spark, filePath)
-    val featureSegments = getFeatureSegments()
+    val baseFeatureSegments = getBaseFeatureSegments()
+    val extraFeatureSegments = getExtraFeatureSegments()
 
     // Expansion for each country
     for (country: String <- expandInput.map( v => v("country").toString).toSet){
@@ -62,15 +63,14 @@ object Item2Item {
         )
 
       // Create segment index
-      var segments = countryExpandInput.map(row=> row("segment_id").toString) // First segments to expand
-      segments ++= featureSegments.toSet.diff(segments.toSet).toList // Then the feature segments
+      var segments = countryExpandInput.map(row=> row("segment_id").toString) // First: segments to expand
+      segments ++= baseFeatureSegments.toSet.diff(segments.toSet).toList // Then: segments used as features
+      segments ++= extraFeatureSegments.toSet.diff(segments.toSet).toList 
 
       val segmentToIndex = segments.zipWithIndex.toMap
       val dfSegmentIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
 
-      // filter user by segments
-      // TODO: add configuration
-      val usersFilter = segments
+      val baseSegmentsIdx = baseFeatureSegments.map(seg => segmentToIndex(seg))
 
       // Data aggregation
       val dataTriples = data
@@ -78,12 +78,13 @@ object Item2Item {
         .agg(sum("count").cast("int").as("count"))
 
       val usersSegmentsData = dataTriples
-        .filter(col("feature").isin(usersFilter: _*))   // segment filtering
+        .filter(col("feature").isin(segments: _*))   // segment filtering
         .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
         .select("device_id", "segment_idx", "count")
         .rdd
         .map(row => (row(0), (row(1), row(2))))
         .groupByKey()  // group by device_id
+        .filter( row => row._2.exists(baseSegmentsIdx.contains)) // Filter users who contain any base segments
 
       // Generate similarities matrix
       val simMatrix = getSimilarities(spark,
@@ -133,7 +134,8 @@ object Item2Item {
         .split(",")
         .toList
     val nSegmentToExpand = expandSegment.length
-    val featureSegments = getFeatureSegments()
+    val baseFeatureSegments = getBaseFeatureSegments()
+    val extraFeatureSegments = getExtraFeatureSegments()
 
     // 1) Read the data
     val data = spark.read
@@ -142,15 +144,14 @@ object Item2Item {
       )
 
     // Create segment index
-    var segments = expandSegment // First segments to expand
-    segments ++= featureSegments.toSet.diff(segments.toSet).toList // Then the feature segments
+    var segments = expandSegment // First: segments to expand
+    segments ++= baseFeatureSegments.toSet.diff(segments.toSet).toList // Then: segments used as features
+    segments ++= extraFeatureSegments.toSet.diff(segments.toSet).toList 
 
     val segmentToIndex = segments.zipWithIndex.toMap
     val dfSegmentIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
 
-    // filter user by segments
-    // TODO: add configuration
-    val usersFilter = segments
+    val baseSegmentsIdx = baseFeatureSegments.map(seg => segmentToIndex(seg))
 
     // Data aggregation
     val dataTriples = data
@@ -158,13 +159,14 @@ object Item2Item {
       .agg(sum("count").cast("int").as("count"))
 
     val usersSegmentsData = dataTriples
-      .filter(col("feature").isin(usersFilter: _*))   // segment filtering
+      .filter(col("feature").isin(segments: _*))   // segment filtering
       .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
       .select("device_id", "segment_idx", "count")
       .rdd
       .map(row => (row(0), (row(1), row(2))))
       .groupByKey()  // group by device_id
-
+      .filter( row => row._2.exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
+ 
       // Generate similarities matrix
       val simMatrix = getSimilarities(spark,
                                       usersSegmentsData,
@@ -183,20 +185,7 @@ object Item2Item {
     // 6) Metrics
     val selectedSegmentsIdx = expandSegment.map(seg => segmentToIndex(seg))
     test(spark, predictData, selectedSegmentsIdx, segments, country, k, 100)
-
-    /*val usersSegmentsData = dataTriples
-      .filter(col("feature").isin(segments: _*))  // segment filtering
-      .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
-      .select("device_id", "segment_idx", "count")
-      .rdd
-      .map(row => (row(0), (row(1), row(2))))
-      .groupByKey()  // group by device_id
-      .filter(row =>
-                row._2.filter(t => baseSegmentsIdx contains t._1.toString.toInt).size > 0
-              ) // select users with base segments
-    */
     
-
   }
 
   /**
@@ -544,9 +533,20 @@ object Item2Item {
 
   /*
   * It reads the segments used to make predictions.
-  * TODO: Now, the segments are encoded. But, they should be read from a configuration file.
+  * TODO: Now, the segments are hard-coded. But, they should be read from a configuration file.
   */
-  def getFeatureSegments(
+  def getExtraFeatureSegments(
+  ): List[String] = {
+    // 1) Segments to expand
+    val segments =
+      """"""
+        .replace("\n", "")
+        .split(",")
+        .toList
+    segments
+  }
+
+  def getBaseFeatureSegments(
   ): List[String] = {
     // 1) Segments to expand
     val segments =
@@ -565,7 +565,6 @@ object Item2Item {
         .toList
     segments
   }
-
 
   type OptionMap = Map[Symbol, String]
   /**
