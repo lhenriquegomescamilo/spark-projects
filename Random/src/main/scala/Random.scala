@@ -2077,15 +2077,15 @@ val records_common = the_join.select(col("identifier"))
     //pasarle una lista de tuplas del tipo (query,ID)
     //la siguiente linea es temp:
     
-    val queries = spark.read
+    val df_queries = spark.read
       .format("csv")
       .option("header", "true")
       .load("/datascience/custom/queries_danone.csv")
 
 
-    save_query_results(queries = queries,
-                      df_joint = df_joint,
-                      job_name = job_name)
+    save_query_results(df_queries = df_queries,
+                       df_joint = df_joint,
+                       job_name = job_name)
 
   }
 
