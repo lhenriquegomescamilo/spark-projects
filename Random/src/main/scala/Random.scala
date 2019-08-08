@@ -2018,12 +2018,12 @@ val records_common = the_join.select(col("identifier"))
       .map(r => (r(0).toString, r(1).toString))
     for (t <- df_queries) {
       df_joint
-        .filter(t(1))
+        .filter(t(1).toString)
         .write
         .format("csv")
         .option("sep", "\t")
         .mode(SaveMode.Overwrite)
-        .save("/datascience/devicer/processed/%s_%s".format(job_name,t(0)))
+        .save("/datascience/devicer/processed/%s_%s".format(job_name,t(0).toString))
     }
   }
   
