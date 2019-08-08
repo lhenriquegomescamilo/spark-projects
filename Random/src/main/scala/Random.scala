@@ -2022,6 +2022,8 @@ val records_common = the_join.select(col("identifier"))
         .mode(SaveMode.Overwrite)
         .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
 
+  }
+
   /**
   //create df from list of tuples
 
