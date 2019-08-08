@@ -2027,7 +2027,7 @@ val records_common = the_join.select(col("identifier"))
         .format("csv")
         .option("sep", "\t")
         .mode(SaveMode.Overwrite)
-        .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1)
+        .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
     }
   }
   
