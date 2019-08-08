@@ -244,7 +244,10 @@ object keywordIngestion {
 
   def main(args: Array[String]) {
     /// Configuracion spark
-    val spark = SparkSession.builder.appName("keyword ingestion").getOrCreate()
+    val spark = SparkSession.builder
+          .appName("keyword ingestion")
+          .config("spark.sql.files.ignoreCorruptFiles", "true")
+          .getOrCreate()
     val ndays = if (args.length > 0) args(0).toInt else 10
     val since = if (args.length > 1) args(1).toInt else 1
     val actual_day = if (args.length > 2) args(2).toInt else 1

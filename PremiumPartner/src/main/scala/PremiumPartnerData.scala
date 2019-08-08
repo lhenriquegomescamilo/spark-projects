@@ -41,7 +41,7 @@ object GetDataPartnerID {
           .option("header", "true")
           .option("delimiter","\t")
           .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
-          .csv("/datascience/data_premium_partner/%s.tsv.gz".format(day))
+          .csv("/datascience/data_premium_partner/%s.tsv.gz".format(day.replace("/", "")))
           //.partitionBy("id_partner", "day")
           
 
