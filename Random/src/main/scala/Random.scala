@@ -2001,7 +2001,7 @@ val records_common = the_join.select(col("identifier"))
       //.select("device_type", "device_id", "seg_id")
     joint
   }
-    
+  
   def save_query_results(
       df_queries: DataFrame,
       df_joint: DataFrame,
@@ -2022,14 +2022,35 @@ val records_common = the_join.select(col("identifier"))
         .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
 
 
-  //main method:
+  /**
+  //create df from list of tuples
 
+  // Create `Row` from `Seq`
+  val row = Row.fromSeq(values)
+
+  // Create `RDD` from `Row`
+  val rdd = spark.sparkContext.makeRDD(List(row))
+
+  // Create schema fields
+  val fields = List(
+    StructField("query", StringType, nullable = false),
+    StructField("seg_id", Integerype, nullable = false)
+  )
+
+  // Create `DataFrame`
+  val dataFrame = spark.createDataFrame(rdd, StructType(fields))
+
+   */
+
+
+  //main method:
+  
+  //kw_list: List[String],     pasarle estos params a la funcion para pedidos futuros
+  //tuple_list: List[String],
 
   def get_pitch(
       nDays: Integer,
       since: Integer,
-      //kw_list: List[String],
-      //tuple_list: List[String],
       job_name: String) = {
 
 
