@@ -2006,7 +2006,6 @@ val records_common = the_join.select(col("identifier"))
       //.withColumn("device_type", lit("web")) para empujar
       //.select("device_type", "device_id", "seg_id")
       .select("device_id","kws")
-    df_joint
   }
     
   def save_query_results(
