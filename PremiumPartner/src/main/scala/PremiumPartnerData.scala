@@ -36,8 +36,8 @@ object GetDataPartnerID {
                           .withColumn("first_party", split(col("first_party"), "\u0001"))
       
       // store the results.
-      ready.write.mode("append")
-          .coalesce(1)
+      ready.coalesce(1).write
+          .mode("append")
           .otion("header", "true")
           .option("delimiter","\t")
           .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
