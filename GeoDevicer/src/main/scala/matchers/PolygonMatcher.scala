@@ -60,7 +60,7 @@ object PolygonMatcher {
     val hdfs_files = days
       .map(day => path + "%s/".format(day))
       .filter(
-        path => fs.exists(new org.apache.hadoop.fs.Path("/data/geo/safegraph/"))
+        path => fs.exists(new org.apache.hadoop.fs.Path(path + "%s/".format(day))
       )
       .map(day => day + "*.gz")
 
