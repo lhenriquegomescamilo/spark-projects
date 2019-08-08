@@ -4094,11 +4094,11 @@ user_granularity.write
         .withColumn("day", lit(day.replace("""/""", "")))
         .dropDuplicates("device_id")
         .write
-        .format("parquet")
+        .format("csv")
         .partitionBy("day", "country")
         .mode("append")
         .save(
-          "/datascience/misc/data_useragents/".format(day)
+          "/datascience/misc/data_useragents/20190808AR"//.format(day)
         )
       println("Day %s processed!".format(day))
     }
