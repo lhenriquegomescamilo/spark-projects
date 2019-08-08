@@ -4102,8 +4102,9 @@ user_granularity.write
         )
       println("Day %s processed!".format(day))
     }
-    val day = DateTime.now.minusDays(1).toString("yyyy/MM/dd")
-    parse_day("AR", day)
+     val day = "2019/08/08"
+    //val day = DateTime.now.minusDays(1).toString("yyyy/MM/dd")
+    parse_day(day)
   }
   /**
     *
