@@ -2160,7 +2160,7 @@ val records_common = the_join.select(col("identifier"))
     )
 
     // Reading data_audiences_streaming and array intersecting.
-    val format = "yyyyMMddHH"
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
@@ -5104,15 +5104,15 @@ user_granularity.write
     //test_no_stemming(spark)
     //test_stemming(spark)
     //get_sample_mx_mediabrands(spark)
-    //get_ISP_directtv(spark, 1, 7)
+    get_ISP_directtv(spark, 1, 7)
     //get_pii_AR_seba(spark)
 
     //processMissingMinutes(spark)
 
-    get_pitch(spark = spark,
-              nDays = 3,
-              since  = 1,
-              job_name = "test")
+    //get_pitch(spark = spark,
+    //          nDays = 3,
+    //          since  = 1,
+    //          job_name = "test")
 
     //user_agents_1day(spark)
 
