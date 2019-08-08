@@ -84,7 +84,7 @@ object Item2Item {
         .rdd
         .map(row => (row(0), (row(1), row(2))))
         .groupByKey()  // group by device_id
-        .filter( row => row._2.exists(baseSegmentsIdx.contains)) // Filter users who contain any base segments
+        .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
 
       // Generate similarities matrix
       val simMatrix = getSimilarities(spark,
@@ -537,7 +537,7 @@ object Item2Item {
   */
   def getExtraFeatureSegments(
   ): List[String] = {
-    /*val segments =
+    val segments =
       """2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,
       210,213,218,224,225,226,230,245,247,250,264,265,270,275,302,305,311,313,314,315,316,317,318,322,323,325,326,2623,2635,2636,2660,2719,2721,2722,
       2723,2724,2725,2726,2727,2733,2734,2735,2736,2737,3010,3011,3012,3013,3014,3015,3016,3017,3018,3019,3020,3021,3022,3055,3076,3077,3085,3086,
@@ -548,12 +548,6 @@ object Item2Item {
       3421,3422,3423,3470,3472,3473,3564,3565,3566,3567,3568,3569,3570,3571,3572,3573,3574,3575,3576,3577,3578,3579,3580,3581,3582,3583,3584,3585,
       3586,3587,3588,3589,3590,3591,3592,3593,3594,3595,3596,3597,3598,3599,3600,3779,3782,3914,3915,560,561,562,563,564,565,566,567,568,569,570,571,
       572,573,574"""
-        .replace("\n", "")
-        .split(",")
-        .toList
-        */
-    val segments =
-      """26,32"""
         .replace("\n", "")
         .split(",")
         .toList
