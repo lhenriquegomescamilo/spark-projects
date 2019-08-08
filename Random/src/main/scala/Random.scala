@@ -1984,7 +1984,10 @@ val records_common = the_join.select(col("identifier"))
       .map(day => path + "/day=%s/country=AR".format(day)) //para cada dia de la lista day devuelve el path del día
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
 
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*).na.drop() //lee todo de una
+    val df = spark.read
+      .option("basePath", path).parquet(hdfs_files: _*)
+      .select("content_keys","device_id")
+      .na.drop() //lee todo de una
 
     df
   }
@@ -2019,6 +2022,7 @@ val records_common = the_join.select(col("identifier"))
     for (t <- df_queries) {
       df_joint
         .filter(t(1).toString)
+        .select("kws").na.drop()
         .write
         .format("csv")
         .option("sep", "\t")
