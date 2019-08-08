@@ -5107,7 +5107,7 @@ user_granularity.write
 
     get_pitch(spark = spark,
               nDays = 1,
-              since  = 0,
+              since  = 2,
               job_name = "test")
 
     //user_agents_1day(spark)
