@@ -2055,7 +2055,7 @@ val records_common = the_join.select(col("identifier"))
   
   //kw_list: List[String],     pasarle estos params a la funcion para pedidos futuros
   //tuple_list: List[String],
-/**
+
   def get_pitch(
       spark: SparkSession,
       nDays: Integer,
@@ -2093,7 +2093,7 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
-   */
+   
 
   /**
     *
