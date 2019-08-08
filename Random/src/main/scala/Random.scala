@@ -1881,7 +1881,7 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     *
-    */
+
 
   def kw_pitch_danone(
       spark: SparkSession,
@@ -1952,7 +1952,8 @@ val records_common = the_join.select(col("identifier"))
       os.close()
     }
   }
-
+  */
+  
   /**
     *
     *
@@ -1991,15 +1992,15 @@ val records_common = the_join.select(col("identifier"))
       df_keys: DataFrame,
       df_data_keywords: DataFrame) : DataFrame = {
 
-    val joint = df.join(broadcast(df_keys), Seq("content_keys"))
-    joint
+    val df_joint = df.join(broadcast(df_keys), Seq("content_keys"))
+    df_joint
       .select("content_keys","device_id")
       .dropDuplicates()
       .groupBy("device_id")
       .agg(collect_list("content_keys").as("kws"))
       //.withColumn("device_type", lit("web")) para empujar
       //.select("device_type", "device_id", "seg_id")
-    joint
+    df_joint
   }
   
   def save_query_results(
@@ -2020,7 +2021,6 @@ val records_common = the_join.select(col("identifier"))
         .option("sep", "\t")
         .mode(SaveMode.Overwrite)
         .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
-
 
   /**
   //create df from list of tuples
@@ -2052,8 +2052,7 @@ val records_common = the_join.select(col("identifier"))
       nDays: Integer,
       since: Integer,
       job_name: String) = {
-
-
+    
     val df_data_keywords = read_data_kw_days(nDays = nDays,
                                              since = since)
     
@@ -5067,9 +5066,9 @@ user_granularity.write
 
     //processMissingMinutes(spark)
 
-    //get_pitch(nDays = 1,
-                since  = 0,
-                job_name = "test")
+    get_pitch(nDays = 1,
+              since  = 0,
+              job_name = "test")
 
   }
 
