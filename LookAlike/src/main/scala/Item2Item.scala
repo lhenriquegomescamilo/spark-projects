@@ -400,7 +400,7 @@ object Item2Item {
       .filter(tup => tup._2.length > 0) // exclude devices with empty segments
 
   // save
-  dataExpansion
+  spark.createDataFrame(dataExpansion)
     .toDF("device_id", "segments" )
     .write
     .format("csv")
