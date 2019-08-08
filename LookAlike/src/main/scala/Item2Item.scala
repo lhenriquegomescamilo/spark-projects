@@ -537,18 +537,20 @@ object Item2Item {
   */
   def getExtraFeatureSegments(
   ): List[String] = {
-    // 1) Segments to expand
     val segments =
-      """"""
+      """26,32"""
         .replace("\n", "")
         .split(",")
         .toList
     segments
   }
 
+  /*
+  * It reads the segments used to make predictions.
+  * TODO: Now, the segments are hard-coded. But, they should be read from a configuration file.
+  */
   def getBaseFeatureSegments(
   ): List[String] = {
-    // 1) Segments to expand
     val segments =
       """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
       247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
