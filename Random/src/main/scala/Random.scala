@@ -1992,7 +1992,7 @@ val records_common = the_join.select(col("identifier"))
       df_keys: DataFrame,
       df_data_keywords: DataFrame) : DataFrame = {
 
-    val df_joint = df.join(broadcast(df_keys), Seq("content_keys"))
+    val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("content_keys"))
     df_joint
       .select("content_keys","device_id")
       .dropDuplicates()
@@ -2013,7 +2013,7 @@ val records_common = the_join.select(col("identifier"))
     df_queries.select("seg_id", "query")
       .collect()
       .map(r => (r(0).toString, r(1).toString))
-    for (t <- queries) {
+    for (t <- df_queries) {
       df_joint
         .filter(t._2)
         .write
