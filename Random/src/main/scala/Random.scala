@@ -4075,6 +4075,33 @@ user_granularity.write
     parse_day("AR", day)
   }
     */
+
+    def user_agents_1day(spark: SparkSession) {
+
+    val day = "2019/08/08"
+    def parse_day(day: String) {
+      spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .load("/data/eventqueue/%s/".format(day))
+        .select("device_id", "user_agent", "country")
+        .filter("country IN ('AR')")
+        .select("device_id", "user_agent", "country")
+        .withColumn("day", day.replace("""/""", ""))
+        .dropDuplicates("device_id")
+        .write
+        .format("parquet")
+        .partitionBy("day", "country")
+        .mode("append")
+        .save(
+          "/datascience/misc/data_useragents/".format(day)
+        )
+      println("Day %s processed!".format(day))
+    }
+    val day = DateTime.now.minusDays(1).toString("yyyy/MM/dd")
+    parse_day("AR", day)
+  }
   /**
     *
     *
@@ -5072,10 +5099,12 @@ user_granularity.write
 
     //processMissingMinutes(spark)
 
-    get_pitch(spark = spark,
-              nDays = 1,
-              since  = 0,
-              job_name = "test")
+    //get_pitch(spark = spark,
+    //          nDays = 1,
+    //          since  = 0,
+    //          job_name = "test")
+
+    user_agents_1day(spark)
 
   }
 
