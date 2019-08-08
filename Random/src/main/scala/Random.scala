@@ -2022,7 +2022,7 @@ val records_common = the_join.select(col("identifier"))
     for (t <- df_queries) {
       df_joint
         .filter(t(1).toString)
-        .select("kws").na.drop()
+        .select("device_id")
         .write
         .format("csv")
         .option("sep", "\t")
