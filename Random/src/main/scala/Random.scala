@@ -2015,16 +2015,15 @@ val records_common = the_join.select(col("identifier"))
 
     df_queries.select("seg_id", "query")
       .collect()
-      .rdd.map(r => (r(0).toString, r(1).toString))
+      .map(r => (r(0).toString, r(1).toString))
     for (t <- df_queries) {
       df_joint
-        .filter(t._2)
-        .withColumn("seg_id", lit(t._1))
+        .filter(t(1))
         .write
         .format("csv")
         .option("sep", "\t")
         .mode(SaveMode.Overwrite)
-        .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
+        .save("/datascience/devicer/processed/%s_%s".format(job_name,t(0)))
     }
   }
   
@@ -2032,6 +2031,8 @@ val records_common = the_join.select(col("identifier"))
 
   /**
   //create df from list of tuples
+
+  // leer values de algun lado
 
   // Create `Row` from `Seq`
   val row = Row.fromSeq(values)
