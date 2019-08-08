@@ -1984,7 +1984,7 @@ val records_common = the_join.select(col("identifier"))
       .map(day => path + "/day=%s/country=AR".format(day)) //para cada dia de la lista day devuelve el path del día
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
 
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*).na.drop() //lee todo de una
 
     df
   }
