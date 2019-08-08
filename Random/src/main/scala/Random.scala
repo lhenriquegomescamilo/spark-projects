@@ -1965,6 +1965,7 @@ val records_common = the_join.select(col("identifier"))
     */
 
   def read_data_kw_days(
+      spark: SparkSession,
       nDays: Integer,
       since: Integer) : DataFrame = {
 
@@ -2051,6 +2052,7 @@ val records_common = the_join.select(col("identifier"))
   //tuple_list: List[String],
 
   def get_pitch(
+      spark: SparkSession,
       nDays: Integer,
       since: Integer,
       job_name: String) = {
