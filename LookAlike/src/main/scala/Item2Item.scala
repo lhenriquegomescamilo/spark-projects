@@ -389,7 +389,7 @@ object Item2Item {
   val dataExpansion = data
       .map(
           tup => 
-            (tup._1,
+            (tup._1.toString,
              selSegmentsIdx
               .filter(segmentIdx => // select segments with scores > th and don't contain the segment
                 (tup._3.apply(segmentIdx) >= minScoreMap(segmentIdx) && !(tup._2 contains segmentIdx)))
@@ -399,9 +399,8 @@ object Item2Item {
       )
       .filter(tup => tup._2.length > 0) // exclude devices with empty segments
 
-  dataExpansion.take(100)
   // save
-  /*spark.createDataFrame(dataExpansion)
+  spark.createDataFrame(dataExpansion)
     .toDF("device_id", "segments" )
     .write
     .format("csv")
@@ -410,7 +409,7 @@ object Item2Item {
     .mode(SaveMode.Overwrite)
     .save(
     "/datascience/data_lookalike/expansion/country=%s/".format(country)
-    )*/
+    )
   
   }
 
