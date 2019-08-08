@@ -5106,8 +5106,8 @@ user_granularity.write
     //processMissingMinutes(spark)
 
     get_pitch(spark = spark,
-              nDays = 1,
-              since  = 2,
+              nDays = 3,
+              since  = 1,
               job_name = "test")
 
     //user_agents_1day(spark)
