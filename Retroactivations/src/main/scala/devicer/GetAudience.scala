@@ -401,10 +401,10 @@ object GetAudience {
               .length > 0) query("partnerId")
         else ""
       val since =
-        if (query.contains("since") && Option(query("since"))
+        if (query.contains("from") && Option(query("from"))
               .getOrElse("")
               .toString
-              .length > 0) query("since")
+              .length > 0) query("from")
         else 1
       val nDays =
         if (query.contains("ndays") && Option(query("ndays"))
