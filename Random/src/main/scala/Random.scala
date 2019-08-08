@@ -2016,18 +2016,18 @@ val records_common = the_join.select(col("identifier"))
   
     df_joint.cache()
 
-    df_queries.select("seg_id", "query")
+    val tuples = df_queries.select("seg_id", "query")
       .collect()
       .map(r => (r(0).toString, r(1).toString))
-    for (t <- df_queries) {
+    for (t <- tuples) {
       df_joint
-        .filter(t(1).toString)
+        .filter(t._2)
         .select("device_id")
         .write
         .format("csv")
         .option("sep", "\t")
         .mode(SaveMode.Overwrite)
-        .save("/datascience/devicer/processed/%s_%s".format(job_name,t(0).toString))
+        .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1)
     }
   }
   
@@ -5101,8 +5101,9 @@ user_granularity.write
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-
-    get_ISP_directtv(spark, 30, 1)
+    
+    get_pitch(spark = spark, 3 , 1, "pitch_danone") 
+     
   }
 
 }
