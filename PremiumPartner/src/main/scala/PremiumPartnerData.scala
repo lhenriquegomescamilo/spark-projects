@@ -36,7 +36,7 @@ object GetDataPartnerID {
                           //.withColumn("first_party", split(col("first_party"), "\u0001"))
       
       // store the results.
-      ready.write.mode("append")
+      ready.repartition(5).write.mode("append")
           .format("com.databricks.spark.csv")
           .option("header", "true")
           .option("delimiter","\t")
