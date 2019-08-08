@@ -104,7 +104,11 @@ object PolygonMatcher {
 
 
     // Acá leemos el polígono que entrega python, en formato json. Va a tener unas columnas incorrectas, así que las tiramos
-    val df_polygons_raw = spark.read.json(value_dictionary("path_to_pois")).drop("_corrupt_record").na.drop()
+    //val df_polygons_raw = spark.read.json(value_dictionary("path_to_pois")).drop("_corrupt_record").na.drop()
+    val df_polygons_broken = spark.read.json(value_dictionary("path_to_pois")).cache()
+
+    val df_polygons_raw = df_polygons_broken.drop("_corrupt_record").na.drop()  
+
 
     val geojson_path_formated =      "/datascience/geo/polygons/AR/audiencias/geospark_format/%s"
                       .format(value_dictionary("path_to_pois").split("/").last)
