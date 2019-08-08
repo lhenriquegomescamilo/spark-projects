@@ -1964,6 +1964,7 @@ val records_common = the_join.select(col("identifier"))
     *
     */
 
+  // es _days porque podría ser por hora (hacer un if para seleccionar esto sino)
   def read_data_kw_days(
       spark: SparkSession,
       nDays: Integer,
@@ -2057,7 +2058,8 @@ val records_common = the_join.select(col("identifier"))
       since: Integer,
       job_name: String) = {
     
-    val df_data_keywords = read_data_kw_days(nDays = nDays,
+    val df_data_keywords = read_data_kw_days(spark = spark,
+                                             nDays = nDays,
                                              since = since)
     
     // a get_joint_keys pasarle un df con la columna content_keys,
@@ -5070,7 +5072,8 @@ user_granularity.write
 
     //processMissingMinutes(spark)
 
-    get_pitch(nDays = 1,
+    get_pitch(spark = spark,
+              nDays = 1,
               since  = 0,
               job_name = "test")
 
