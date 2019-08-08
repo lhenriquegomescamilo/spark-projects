@@ -32,13 +32,18 @@ object GetDataPartnerID {
       
       // transform the multi-value columns into lists
       val ready = filtered.withColumn("day", lit(day.replace("/", "")))
-                          .withColumn("third_party", split(col("third_party"), "\u0001"))
-                          .withColumn("first_party", split(col("first_party"), "\u0001"))
+                          //.withColumn("third_party", split(col("third_party"), "\u0001"))
+                          //.withColumn("first_party", split(col("first_party"), "\u0001"))
       
       // store the results.
-      ready.write.mode("append")
-           .partitionBy("id_partner", "day")
-           .parquet("/datascience/data_premium_partner/".format(day))
+      ready.coalesce(1).write.mode("append")
+          .format("com.databricks.spark.csv")
+          .option("header", "true")
+          .option("delimiter","\t")
+          .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
+          .csv("/datascience/data_premium_partner/%s.tsv.gz".format(day))
+          //.partitionBy("id_partner", "day")
+          
 
   }
   

@@ -401,10 +401,10 @@ object GetAudience {
               .length > 0) query("partnerId")
         else ""
       val since =
-        if (query.contains("since") && Option(query("since"))
+        if (query.contains("from") && Option(query("from"))
               .getOrElse("")
               .toString
-              .length > 0) query("since")
+              .length > 0) query("from")
         else 1
       val nDays =
         if (query.contains("ndays") && Option(query("ndays"))
@@ -941,8 +941,8 @@ object GetAudience {
 
       // Here we obtain three parameters that are supposed to be equal for every query in the file
       val partner_ids = queries(0)("partner_id")
-      val since = queries(0)("since")
-      val nDays = queries(0)("ndays")
+      val since = queries(0)("since").toString.toInt
+      val nDays = queries(0)("ndays").toString.toInt
       val pipeline = queries(0)("pipeline").toString.toInt
       val commonFilter = queries(0)("common").toString
       val push = queries(0)("push").toString
