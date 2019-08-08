@@ -62,7 +62,7 @@ object PolygonMatcher {
       .filter(
         path => fs.exists(new org.apache.hadoop.fs.Path(path + "%s/".format(day))
       )
-      .map(day => day + "*.gz")
+      .map(day => day + "*.gz"))
 
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read
