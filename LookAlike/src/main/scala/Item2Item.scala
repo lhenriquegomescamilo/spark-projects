@@ -399,8 +399,9 @@ object Item2Item {
       )
       .filter(tup => tup._2.length > 0) // exclude devices with empty segments
 
+  dataExpansion.take(100)
   // save
-  spark.createDataFrame(dataExpansion)
+  /*spark.createDataFrame(dataExpansion)
     .toDF("device_id", "segments" )
     .write
     .format("csv")
@@ -409,7 +410,7 @@ object Item2Item {
     .mode(SaveMode.Overwrite)
     .save(
     "/datascience/data_lookalike/expansion/country=%s/".format(country)
-    )
+    )*/
   
   }
 
