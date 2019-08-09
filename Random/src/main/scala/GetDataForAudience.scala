@@ -86,7 +86,7 @@ object GetDataForAudience {
     */
   def getDataVotaciones(spark: SparkSession) = {
     val data_audience =
-      getDataAudiences(spark, nDays = 30, since = 1)
+      getDataAudiences(spark, nDays = 10, since = 1)
         .filter(
           "country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')"
         )
@@ -97,10 +97,11 @@ object GetDataForAudience {
         .option("sep", "\t")
         .load("/datascience/custom/approvable_pgp_employed.csv")
         .withColumnRenamed("_c0", "device_id")
+        .repartition(20)
     // .withColumnRenamed("_c1", "cluster")
 
     val joint = data_audience
-      .join(broadcast(data_votaciones), Seq("device_id"))
+      .join(data_votaciones, Seq("device_id"))
       .withColumn("all_segments", concat_ws(",", col("all_segments")))
 
     joint.write
