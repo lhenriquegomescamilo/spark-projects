@@ -95,7 +95,6 @@ object GetDataForAudience {
       spark.read
         .format("csv")
         .option("sep", "\t")
-        .option("header", "true")
         .load("/datascience/custom/approvable_pgp_employed.csv")
         .withColumnRenamed("_c0", "device_id")
     // .withColumnRenamed("_c1", "cluster")
