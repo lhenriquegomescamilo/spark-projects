@@ -381,15 +381,15 @@ object Item2Item {
             (tup._1.toString,
              selSegmentsIdx
               .filter(segmentIdx => // select segments with scores > th and don't contain the segment
-                (tup._3.apply(segmentIdx) >= minScoreMap(segmentIdx) && !(tup._2 contains segmentIdx) && minScoreMap(segmentIdx) > 0  ))
+                ((minScoreMap contains segmentIdx) && tup._3.apply(segmentIdx) >= minScoreMap(segmentIdx) && !(tup._2 contains segmentIdx) ))
               .map(segmentIdx => dstSegmentIdMap(segmentIdx)) // segment label
               .mkString(",") // toString
             )              
       )
       .filter(tup => tup._2.length > 0) // exclude devices with empty segments
-  dataExpansion.take(10)
+
   // save
-  /*spark.createDataFrame(dataExpansion)
+  spark.createDataFrame(dataExpansion)
     .toDF("device_id", "segments" )
     .write
     .format("csv")
@@ -398,7 +398,7 @@ object Item2Item {
     .mode(SaveMode.Overwrite)
     .save(
     "/datascience/data_lookalike/expansion/country=%s/".format(country)
-    )*/
+    )
   
   }
 
