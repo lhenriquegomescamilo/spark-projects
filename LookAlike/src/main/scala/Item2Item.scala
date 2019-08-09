@@ -370,7 +370,7 @@ object Item2Item {
     .filter(tup => (tup._2 > 0 && !tup._3)) // it selects scores > 0 and devices without the segment
     .map(tup => (tup._1, tup._2))// Format  <segment_idx, score>
     .topByKey(kMax) // get topK scores values
-    .map(t => (t._1, t._2( kMap(t._1.toInt) - 1 ) )) // get the kth value #
+    .map(t => (t._1, if (t._2.length >= kMap(t._1.toInt)) t._2( kMap(t._1.toInt) - 1 ) else t._2.last )) // get the kth value #
     .collect()
     .toMap
 
@@ -381,7 +381,7 @@ object Item2Item {
             (tup._1.toString,
              selSegmentsIdx
               .filter(segmentIdx => // select segments with scores > th and don't contain the segment
-                (tup._3.apply(segmentIdx) >= minScoreMap(segmentIdx) && !(tup._2 contains segmentIdx)))
+                (tup._3.apply(segmentIdx) >= minScoreMap(segmentIdx) && !(tup._2 contains segmentIdx) && minScoreMap(segmentIdx) > 0  ))
               .map(segmentIdx => dstSegmentIdMap(segmentIdx)) // segment label
               .mkString(",") // toString
             )              
