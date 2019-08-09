@@ -276,12 +276,12 @@ object Random {
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_audiences"
+    val path = "/datascience/data_audiences_streaming/"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s".format(day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(day => path + "/hour=%s*".format(day))
+      // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     fs.close()
 
@@ -2118,9 +2118,35 @@ val records_common = the_join.select(col("identifier"))
     */
   def get_device_IDS(spark: SparkSession) = {
     //PII TABLE
-    val piis = spark.read
-      .parquet("/datascience/pii_matching/pii_table/")
-      .withColumnRenamed("pii", "valor_atributo_hash")
+
+    var data = spark.read.load("/datascience/pii_matching/pii_tuples/")
+
+    var mails = data
+      .filter("ml_sh2 is not null")
+      .select(
+        "device_id",
+        "device_type",
+        "country",
+        "id_partner",
+        "ml_sh2",
+        "day"
+      )
+      .withColumnRenamed("ml_sh2", "pii")
+      .withColumn("pii_type", lit("mail"))
+    var dnis = data
+      .filter("nid_sh2 is not null")
+      .select(
+        "device_id",
+        "device_type",
+        "country",
+        "id_partner",
+        "nid_sh2",
+        "day"
+      )
+      .withColumnRenamed("nid_sh2", "pii")
+      .withColumn("pii_type", lit("nid")) 
+
+    val pii_table = mails.unionAll(dnis).withColumnRenamed("pii", "valor_atributo_hash")
 
     // AUDIENCIA FB
     //flat_tc == 0  sin tarjeta de credito
@@ -2130,12 +2156,12 @@ val records_common = the_join.select(col("identifier"))
       .load("/datascience/custom/aud_directv_isp_fb.csv")
       .filter("flag_tc == 0")
 
-    val joint = piis.join((df_aud), Seq("valor_atributo_hash"))
+    val joint = pii_table.join((df_aud), Seq("valor_atributo_hash"))
     joint.write
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/devices_ISP_directtv")
+      .save("/datascience/custom/devices_ISP_directtv_9aug")
   }
 
   def get_ISP_directtv(
@@ -2149,13 +2175,13 @@ val records_common = the_join.select(col("identifier"))
 
     // Segments to consider from cluster 61 (ISPs)
     val segments_cluster_61 =
-      """-1,1069,1190,1191,1192,1193,1194,1195,1323,1324,1325,1326,1327,1328,1335,1336,1338,1339,1340,1341,1342,1344,1345,1346,1347,1348,1349,1350,1351,1352,1354,1357,3226,3227,3228,3229,3230,4641,4642,4643,4644,4645,4646,4648,4649,4650"""
+      """-1,1190,1191,1192,1193,1194,1195,1325,1326,1335,1339,1346,1350,1351,3226,3228"""
         .split(",")
         .map(_.toInt)
         .toSet
     val arrIntersect = udf(
-      (segments: Seq[Int]) =>
-        (segments ++ Seq(-1)).filter(s => segments_cluster_61.contains(s))(0)
+      (all_segments: Seq[Int]) =>
+        (all_segments ++ Seq(-1)).filter(s => segments_cluster_61.contains(s))(0)
     )
 
     // Reading data_audiences_streaming and array intersecting.
@@ -2179,10 +2205,10 @@ val records_common = the_join.select(col("identifier"))
     //cargamos el df de audiences_streaming y lo filtramos por segmentos
     val df_audiences = spark.read
       .parquet(hdfs_files: _*)
-      .select("device_id", "segments", "datetime")
+      .select("device_id", "all_segments", "datetime")
       .na
       .drop()
-      .withColumn("ISP", arrIntersect(col("segments")))
+      .withColumn("ISP", arrIntersect(col("all_segments")))
       .filter("ISP > 0")
 
     //filtering by "horario hogareño" de 19 a 8hs, lunes a sabado (brai) y domingo todo el dia??
@@ -2203,17 +2229,17 @@ val records_common = the_join.select(col("identifier"))
     val audience_fb = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/devices_ISP_directtv")
+      .load("/datascience/custom/devices_ISP_directtv_9aug")
       .select("device_id", "valor_atributo_hash")
 
     val joint = df_audiences_time.join(broadcast(audience_fb), Seq("device_id"))
 
     joint.write
       .format("csv")
-      .option("header", true)
+      .option("header", "true")
       .option("delimiter", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/directtv_ISP_test")
+      .save("/datascience/custom/directtv_ISP_9aug_final")
   }
 
   /**
@@ -4472,14 +4498,14 @@ user_granularity.write
         .filter(
           "country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')"
         )
-        .select("device_id", "url", "timestamp", "all_segments")
+        .select("device_id", "url", "time", "all_segments")
     val data_votaciones =
       spark.read
         .format("csv")
         .option("sep", "\t")
         .option("header", "true")
-        .load("/datascience/audiences/SurveyVotantes19")
-    // .withColumnRenamed("_c0", "device_id")
+        .load("/datascience/custom/approvable_pgp_employed.csv")
+        .withColumnRenamed("_c0", "device_id")
     // .withColumnRenamed("_c1", "cluster")
 
     val joint = data_audience
@@ -4489,7 +4515,7 @@ user_granularity.write
     joint.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/votaciones_con_data_all")
+      .save("/datascience/custom/amex_con_data_all")
   }
 
   /**
@@ -5101,7 +5127,8 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    get_pitch(spark = spark, 31 , 1, "pitch_danone_full") 
+    get_ISP_directtv(spark = spark, nDays = 30, since = 1)
+  )
      
   }
 
