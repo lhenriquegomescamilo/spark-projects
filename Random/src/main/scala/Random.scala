@@ -4498,7 +4498,7 @@ user_granularity.write
         .filter(
           "country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')"
         )
-        .select("device_id", "url", "timestamp", "all_segments")
+        .select("device_id", "url", "time", "all_segments")
     val data_votaciones =
       spark.read
         .format("csv")
