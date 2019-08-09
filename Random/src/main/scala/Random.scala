@@ -2118,9 +2118,35 @@ val records_common = the_join.select(col("identifier"))
     */
   def get_device_IDS(spark: SparkSession) = {
     //PII TABLE
-    val piis = spark.read
-      .parquet("/datascience/pii_matching/pii_table/")
-      .withColumnRenamed("pii", "valor_atributo_hash")
+
+    var data = spark.read.load("/datascience/pii_matching/pii_tuples/")
+
+    var mails = data
+      .filter("ml_sh2 is not null")
+      .select(
+        "device_id",
+        "device_type",
+        "country",
+        "id_partner",
+        "ml_sh2",
+        "day"
+      )
+      .withColumnRenamed("ml_sh2", "pii")
+      .withColumn("pii_type", lit("mail"))
+    var dnis = data
+      .filter("nid_sh2 is not null")
+      .select(
+        "device_id",
+        "device_type",
+        "country",
+        "id_partner",
+        "nid_sh2",
+        "day"
+      )
+      .withColumnRenamed("nid_sh2", "pii")
+      .withColumn("pii_type", lit("nid")) 
+
+    var pii_table = mails.unionAll(dnis).withColumnRenamed("pii", "valor_atributo_hash")
 
     // AUDIENCIA FB
     //flat_tc == 0  sin tarjeta de credito
@@ -2179,10 +2205,10 @@ val records_common = the_join.select(col("identifier"))
     //cargamos el df de audiences_streaming y lo filtramos por segmentos
     val df_audiences = spark.read
       .parquet(hdfs_files: _*)
-      .select("device_id", "segments", "datetime")
+      .select("device_id", "all_segments", "datetime")
       .na
       .drop()
-      .withColumn("ISP", arrIntersect(col("segments")))
+      .withColumn("ISP", arrIntersect(col("all_segments")))
       .filter("ISP > 0")
 
     //filtering by "horario hogareño" de 19 a 8hs, lunes a sabado (brai) y domingo todo el dia??
