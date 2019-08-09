@@ -2146,7 +2146,7 @@ val records_common = the_join.select(col("identifier"))
       .withColumnRenamed("nid_sh2", "pii")
       .withColumn("pii_type", lit("nid")) 
 
-    var pii_table = mails.unionAll(dnis).withColumnRenamed("pii", "valor_atributo_hash")
+    val pii_table = mails.unionAll(dnis).withColumnRenamed("pii", "valor_atributo_hash")
 
     // AUDIENCIA FB
     //flat_tc == 0  sin tarjeta de credito
@@ -2156,7 +2156,7 @@ val records_common = the_join.select(col("identifier"))
       .load("/datascience/custom/aud_directv_isp_fb.csv")
       .filter("flag_tc == 0")
 
-    val joint = piis.join((df_aud), Seq("valor_atributo_hash"))
+    val joint = pii_table.join((df_aud), Seq("valor_atributo_hash"))
     joint.write
       .format("csv")
       .option("header", "true")
