@@ -86,6 +86,9 @@ object Item2Item {
         .groupByKey()  // group by device_id
         .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
 
+      println("Data - Users")
+      println(usersSegmentsData.count())
+
       // Generate similarities matrix
       val simMatrix = getSimilarities(spark,
                                       usersSegmentsData,
@@ -99,7 +102,7 @@ object Item2Item {
                                 simMatrix,
                                 predMatrixHits=predMatrixHits,
                                 minUserSegments = 1)
-      println("Output")
+      println("Save output")
       // 6) Expansion
       expand(spark,
              predictData,
