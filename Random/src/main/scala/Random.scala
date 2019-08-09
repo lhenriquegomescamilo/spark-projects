@@ -2135,7 +2135,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/devices_ISP_directtv")
+      .save("/datascience/custom/devices_ISP_directtv_9aug")
   }
 
   def get_ISP_directtv(
@@ -5101,7 +5101,7 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    getDataVotaciones(spark = spark)//, 31 , 1, "pitch_danone_full") 
+    get_device_IDS(spark = spark)
      
   }
 
