@@ -2175,13 +2175,13 @@ val records_common = the_join.select(col("identifier"))
 
     // Segments to consider from cluster 61 (ISPs)
     val segments_cluster_61 =
-      """-1,1069,1190,1191,1192,1193,1194,1195,1323,1324,1325,1326,1327,1328,1335,1336,1338,1339,1340,1341,1342,1344,1345,1346,1347,1348,1349,1350,1351,1352,1354,1357,3226,3227,3228,3229,3230,4641,4642,4643,4644,4645,4646,4648,4649,4650"""
+      """-1,1190,1191,1192,1193,1194,1195,1325,1326,1335,1339,1346,1350,1351,3226,3228"""
         .split(",")
         .map(_.toInt)
         .toSet
     val arrIntersect = udf(
-      (segments: Seq[Int]) =>
-        (segments ++ Seq(-1)).filter(s => segments_cluster_61.contains(s))(0)
+      (all_segments: Seq[Int]) =>
+        (all_segments ++ Seq(-1)).filter(s => segments_cluster_61.contains(s))(0)
     )
 
     // Reading data_audiences_streaming and array intersecting.
@@ -2229,17 +2229,17 @@ val records_common = the_join.select(col("identifier"))
     val audience_fb = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/devices_ISP_directtv")
+      .load("/datascience/custom/devices_ISP_directtv_9aug")
       .select("device_id", "valor_atributo_hash")
 
     val joint = df_audiences_time.join(broadcast(audience_fb), Seq("device_id"))
 
     joint.write
       .format("csv")
-      .option("header", true)
+      .option("header", "true")
       .option("delimiter", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/directtv_ISP_test")
+      .save("/datascience/custom/directtv_ISP_9aug_final")
   }
 
   /**
@@ -5127,7 +5127,8 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    get_device_IDS(spark = spark)
+    get_ISP_directtv(spark = spark, nDays = 30, since = 1)
+  )
      
   }
 
