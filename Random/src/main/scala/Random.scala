@@ -5101,7 +5101,7 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    get_pitch(spark = spark, 3 , 1, "pitch_danone") 
+    get_pitch(spark = spark, 31 , 1, "pitch_danone_full") 
      
   }
 
