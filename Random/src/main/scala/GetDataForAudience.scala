@@ -34,7 +34,7 @@ import org.apache.spark.ml.classification.{
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object ByTwoData {
+object GetDataForAudience {
 
   /**
     *
