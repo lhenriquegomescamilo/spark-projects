@@ -276,12 +276,12 @@ object Random {
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_audiences"
+    val path = "/datascience/data_audiences_streaming/"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s".format(day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(day => path + "/hour=%s*".format(day))
+      // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     fs.close()
 
@@ -4478,8 +4478,8 @@ user_granularity.write
         .format("csv")
         .option("sep", "\t")
         .option("header", "true")
-        .load("/datascience/audiences/SurveyVotantes19")
-    // .withColumnRenamed("_c0", "device_id")
+        .load("/datascience/custom/approvable_pgp_employed.csv")
+        .withColumnRenamed("_c0", "device_id")
     // .withColumnRenamed("_c1", "cluster")
 
     val joint = data_audience
@@ -4489,7 +4489,7 @@ user_granularity.write
     joint.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/votaciones_con_data_all")
+      .save("/datascience/custom/amex_con_data_all")
   }
 
   /**
@@ -5101,7 +5101,7 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    get_pitch(spark = spark, 31 , 1, "pitch_danone_full") 
+    getDataVotaciones(spark = spark)//, 31 , 1, "pitch_danone_full") 
      
   }
 
