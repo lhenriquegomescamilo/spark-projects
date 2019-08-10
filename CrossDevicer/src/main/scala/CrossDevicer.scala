@@ -482,6 +482,7 @@ object CrossDevicer {
     // First we obtain the Spark session
     val conf = new SparkConf()
       .setAppName("Cross Device")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
       .setJars(
         Seq(
           "/home/rely/spark-projects/CrossDevicer/target/scala-2.11/cross-devicer_2.11-1.0.jar"
