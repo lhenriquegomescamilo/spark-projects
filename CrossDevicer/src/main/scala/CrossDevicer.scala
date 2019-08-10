@@ -57,13 +57,16 @@ object CrossDevicer {
     // Now we obtain the list of files to be loaded
     val paths = days
       .map(
-        day => "/datascience/data_audiences/day=%s".format(day.replace("-", ""))
+        day =>
+          "/datascience/data_audiences_streaming/hour=%s*".format(
+            day.replace("-", "")
+          )
       )
-      .filter(path => fs.exists(new Path(path)))
+    // .filter(path => fs.exists(new Path(path)))
 
     // Finally, we load all the data
     val events_data = spark.read
-      .option("basePath", "/datascience/data_audiences/")
+      .option("basePath", "/datascience/data_audiences_streaming/")
       .parquet(paths: _*)
       .select("device_id", "country", column)
 
@@ -186,8 +189,9 @@ object CrossDevicer {
     // getItems function takes a list of segments, checks whether those segments are in the cross-device mapping, if not it filters them out,
     // and also checks that the segments are not exclusive. Finally, it maps the original segments into the cross-device segments.
     val getItems = udf(
-      (segments: Seq[String]) =>
+      (segments: Seq[Int]) =>
         segments
+          .map(_.toString)
           .filter(
             segment =>
               mapping_segments.contains(segment) && !exclusion_segments
@@ -214,16 +218,19 @@ object CrossDevicer {
     )
 
     // Now we can get event data
-    val events_data = get_event_data(spark, nDays, from)
+    val column = "all_segments"
+    val events_data = get_event_data(spark, nDays, from, column)
 
     // Here we do the mapping from original segments to the cross-deviced segments
     val new_segments = events_data
-      .withColumn("new_segment", getItems(col("third_party")))
+      .withColumn("new_segment", getItems(col(column)))
       .filter(size(col("new_segment")) > 0)
 
     // Now we load the cross-device index
     val index =
-      spark.read.format("parquet").load("/datascience/crossdevice/double_index_individual")
+      spark.read
+        .format("parquet")
+        .load("/datascience/crossdevice/double_index_individual")
 
     // Finally, we perform the cross-device and keep only the new devices with their types and the
     // new segments.
@@ -338,9 +345,10 @@ object CrossDevicer {
     // getItems function takes a list of segments, checks whether those segments are in the cross-device mapping, if not it filters them out,
     // and also checks that the segments are not exclusive. Finally, it maps the original segments into the cross-device segments.
     val getItems = udf(
-      (segments: Seq[String]) =>
-        if (segments.exists(s => exclusion_segments.contains(s))) {
+      (segments: Seq[Int]) =>
+        if (segments.exists(s => exclusion_segments.contains(s.toString))) {
           segments
+            .map(_.toString)
             .filter(
               segment =>
                 exclusion_segments.contains(segment) || country_codes
@@ -372,7 +380,9 @@ object CrossDevicer {
 
     // Now we load the cross-device index
     val index =
-      spark.read.format("parquet").load("/datascience/crossdevice/double_index_individual")
+      spark.read
+        .format("parquet")
+        .load("/datascience/crossdevice/double_index_individual")
 
     // Finally, we perform the cross-device and keep only the new devices with their types and the
     // new segments.
