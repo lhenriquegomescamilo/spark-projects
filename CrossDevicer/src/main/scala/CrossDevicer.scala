@@ -223,7 +223,6 @@ object CrossDevicer {
 
     // Here we do the mapping from original segments to the cross-deviced segments
     val new_segments = events_data
-      .select(column, "device_id", "device_type")
       .na
       .drop()
       .withColumn("new_segment", getItems(col(column)))
