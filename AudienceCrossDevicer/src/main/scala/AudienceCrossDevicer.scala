@@ -65,7 +65,7 @@ object AudienceCrossDevicer {
       case "--column" :: value :: tail =>
         nextOption(map ++ Map('column -> value), tail)
       case "--individual" :: tail =>
-        nextOption(map ++ Map('individual -> true), tail)
+        nextOption(map ++ Map('individual -> "true"), tail)
     }
   }
   
