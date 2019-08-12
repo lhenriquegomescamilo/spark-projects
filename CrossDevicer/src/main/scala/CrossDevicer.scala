@@ -13,6 +13,8 @@ import org.apache.spark.sql.functions.{
 }
 import org.apache.spark.sql.Column
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.functions.{row_number, max, broadcast}
 
 object CrossDevicer {
 
@@ -68,7 +70,8 @@ object CrossDevicer {
     val events_data = spark.read
       .option("basePath", "/datascience/data_audiences_streaming/")
       .parquet(paths: _*)
-      .select("device_id", "country", column)
+      .select("device_id", "country", "datetime", column)
+      .filter("event_type NOT IN ('xp', 'xd')")
 
     events_data
   }
@@ -222,9 +225,13 @@ object CrossDevicer {
     val events_data = get_event_data(spark, nDays, from, column)
 
     // Here we do the mapping from original segments to the cross-deviced segments
+    val windowing = Window.partitionBy(col("device_id")).orderBy(col("datetime").desc)
     val new_segments = events_data
       .na
       .drop()
+      .withColumn("row_number", row_number.over(windowing))
+      .where("row_number = 1")
+      .drop("row_number", "datetime")
       .withColumn("new_segment", getItems(col(column)))
       .filter(size(col("new_segment")) > 0)
 
@@ -238,8 +245,8 @@ object CrossDevicer {
     // new segments.
     val joint = index
       .join(new_segments, index.col("index") === new_segments.col("device_id"))
-      .groupBy("device", "device_type")
-      .agg(flatten(collect_list("new_segment")).alias("new_segment"))
+      // .groupBy("device", "device_type")
+      // .agg(flatten(collect_list("new_segment")).alias("new_segment"))
       .withColumn("new_segment", getCountry(col("new_segment")))
       .withColumn("new_segment", concat_ws(",", col("new_segment")))
       .select("device", "device_type", "new_segment")
