@@ -95,7 +95,7 @@ object GetDataForAudience {
       spark.read
         .format("csv")
         .option("sep", "\t")
-        .header("true")
+        .option("header", "true")
         .load("/datascience/custom/base_votantes_pba.csv")
 
     val joint = data_audience
