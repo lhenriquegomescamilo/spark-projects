@@ -109,7 +109,14 @@ object GetDataForAudience {
   }
 
 
-  def getDataAmex(spark: SparkSession) = {
+  /**
+   * 
+   * 
+   *            AMEX TIMESTAMPS AND URLS
+   * 
+   * 
+  */
+  def getDataAmexURL(spark: SparkSession) = {
     val data_audience =
       getDataAudiences(spark, nDays = 10, since = 1)
         .filter(
@@ -135,6 +142,34 @@ object GetDataForAudience {
       .save("/datascience/custom/amex_con_data_all")
   }
 
+  /**
+   * 
+   * 
+   *            AMEX SEGMENTS
+   * 
+   * 
+  */
+  def getDataAmexSegments(spark: SparkSession) = {
+    val data_segments = spark.read.load("/datascience/data_demo/triplets_segments")
+    val data_amex =
+      spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .load("/datascience/custom/approvable_pgp_employed.csv")
+        .withColumnRenamed("_c0", "device_id")
+        .repartition(20)
+    // .withColumnRenamed("_c1", "cluster")
+
+    val joint = data_audience
+      .join(data_amex, Seq("device_id"))
+      // .withColumn("all_segments", concat_ws(",", col("all_segments")))
+
+    joint.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/amex_con_data_segments")
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -147,7 +182,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataAmex(spark = spark) //, 31 , 1, "pitch_danone_full")
+    getDataAmexSegments(spark = spark)
 
   }
 }
