@@ -166,7 +166,7 @@ object generateOrganic {
     // Last step is to store the data in the format required (.tsv.bz)
     val pathToJson =
       "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
-        .format(runType, DateTime.now.toString("yyyyMMdd"))
+        .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
     userSegments.write
       .format("json")
       .option("compression", "bzip2")
@@ -192,7 +192,7 @@ object generateOrganic {
               pathToJson + "/retargetly_MX_memb_%s_%s_%s.json.bz2".format(
                 runType,
                 e.toString.split("/").last.split("-")(1),
-                DateTime.now.toString("yyyyMMdd")
+                DateTime.now.minusDays(from).toString("yyyyMMdd")
               )
             )
           )
