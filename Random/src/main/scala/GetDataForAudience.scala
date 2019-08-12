@@ -83,7 +83,7 @@ object GetDataForAudience {
     *
     *
     *
-    */
+ 
   def getDataVotaciones(spark: SparkSession) = {
     val data_audience =
       getDataAudiences(spark, nDays = 10, since = 1)
@@ -108,7 +108,7 @@ object GetDataForAudience {
       .save("/datascience/custom/base_votantes_pba_url_time")
   }
 
-
+   */
   /**
    * 
    * 
