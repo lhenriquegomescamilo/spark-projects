@@ -102,7 +102,7 @@ object ContentKws {
       .dropDuplicates()
       .groupBy("device_id")
       .agg(collect_list("content_keys").as("kws"))
-      .withColumn("device_type", lit("web")) para empujar
+      .withColumn("device_type", lit("web"))            
       .select("device_type", "device_id", "kws")
   }
     
@@ -170,6 +170,7 @@ object ContentKws {
       job_name: String) = {
     
     val df_data_keywords = read_data_kws(spark = spark,
+                                         country = country,
                                          nDays = nDays,
                                          since = since)
     
