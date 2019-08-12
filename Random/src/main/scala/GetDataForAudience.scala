@@ -105,7 +105,7 @@ object GetDataForAudience {
     joint.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/amex_con_data_all")
+      .save("/datascience/custom/base_votantes_pba_url_time")
   }
 
 
