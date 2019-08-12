@@ -3794,7 +3794,7 @@ def get_untagged(spark: SparkSession,
       .option("sep", "\t")
       .option("header", "true")
       .option("basePath", path)
-      .load(hdfs_files: _*) 
+      .csv(hdfs_files: _*) 
       .filter("category != 'null' and tagged != '1' and event_type = 'batch'")
       .select("category")
       .dropDuplicates()
