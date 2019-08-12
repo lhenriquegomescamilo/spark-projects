@@ -133,7 +133,7 @@ object ContentKws {
         .mode(SaveMode.Overwrite)
         .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
 
-      if populate == 1
+      if(populate == 1)
         val conf = spark.sparkContext.hadoopConfiguration
         val fs = FileSystem.get(conf)
         val os = fs.create(new Path("/datascience/ingester/ready/%s_%s".format(job_name,t._1)))
