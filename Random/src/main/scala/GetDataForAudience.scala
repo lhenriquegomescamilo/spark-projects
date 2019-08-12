@@ -83,7 +83,7 @@ object GetDataForAudience {
     *
     *
     *
- 
+    */
   def getDataVotaciones(spark: SparkSession) = {
     val data_audience =
       getDataAudiences(spark, nDays = 10, since = 1)
@@ -108,7 +108,7 @@ object GetDataForAudience {
       .save("/datascience/custom/base_votantes_pba_url_time")
   }
 
-   */
+
   /**
    * 
    * 
@@ -148,7 +148,7 @@ object GetDataForAudience {
    *            AMEX SEGMENTS
    * 
    * 
-  */
+  
   def getDataAmexSegments(spark: SparkSession) = {
     val data_segments = spark.read.load("/datascience/data_demo/triplets_segments")
     val data_amex =
@@ -169,7 +169,7 @@ object GetDataForAudience {
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/amex_con_data_segments")
   }
-
+  */
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
