@@ -43,7 +43,8 @@ object generateOrganic {
   def generate_organic(
       spark: SparkSession,
       ndays: Int,
-      runType: String = "full"
+      runType: String = "full",
+      from: Int = 1
   ) {
     // Setting all the meta-classes that will be used to work with the data and file systems
     val sc = spark.sparkContext
@@ -53,7 +54,7 @@ object generateOrganic {
     /// This is the list of days that will be used to get the data from
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(ndays)
-    val end = DateTime.now.minusDays(0)
+    val end = DateTime.now.minusDays(from)
 
     val daysCount = Days.daysBetween(start, end).getDays()
     val days =
