@@ -26,7 +26,7 @@ object AudienceCrossDevicer {
    * using the same name as the one sent by parameter.
    */
   def cross_device(spark: SparkSession, path_audience: String, index_filter: String, 
-                   sep: String = " ", column_name: String = "_c0"){
+                   sep: String = " ", column_name: String = "_c0", index_path: String = "double_index"){
     // First we get the audience. Also, we transform the device id to be upper case.
     //val path_audience = "/datascience/audiences/output/%s".format(audience_name)
     val audience_name = path_audience.split("/").last
@@ -35,7 +35,7 @@ object AudienceCrossDevicer {
                                                               .withColumn("device_id", upper(col("device_id")))
     
     // Get DrawBridge Index. Here we transform the device id to upper case too.
-    val db_data = spark.read.format("parquet").load("/datascience/crossdevice/double_index")
+    val db_data = spark.read.format("parquet").load("/datascience/crossdevice/%s".format(index_path))
                                               .filter(index_filter)
                                               .withColumn("index", upper(col("index")))
                                               .select("index", "device", "device_type")
@@ -64,6 +64,8 @@ object AudienceCrossDevicer {
         nextOption(map ++ Map('sep -> value), tail)
       case "--column" :: value :: tail =>
         nextOption(map ++ Map('column -> value), tail)
+      case "--individual" :: value :: tail =>
+        nextOption(map ++ Map('individual -> value), tail)
     }
   }
   
@@ -74,13 +76,14 @@ object AudienceCrossDevicer {
     val index_filter = if (options.contains('filter)) options('filter) else ""
     val sep = if (options.contains('sep)) options('sep) else " "
     val column = if (options.contains('column)) options('column) else "_c0"
+    val index_path = if (options.contains('individual)) "double_index_individual" else "double_index"
     println("\n\nLOGGER - PARAMETERS: \ncolumn: %s\nsep: '%s'\nindex filter: %s\npath: %s\n\n".format(column, sep, index_filter, audience_name))
 
     // First we obtain the Spark session
     val spark = SparkSession.builder.appName("audience generator by keywords").getOrCreate()
     
     // Finally, we perform the cross-device
-    cross_device(spark, audience_name, index_filter, sep, column)
+    cross_device(spark, audience_name, index_filter, sep, column, index_path)
   }
   
 }
