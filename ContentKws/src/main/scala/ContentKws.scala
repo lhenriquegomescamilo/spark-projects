@@ -311,7 +311,7 @@ object ContentKws {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    test_no_stemming(spark = spark, nDays = 3 , since = 1)
+    //get_pitch(spark = spark, nDays = 3 , since = 1)
      
   }
 
