@@ -41,10 +41,9 @@ import java.time.DateTimeException
 import java.sql.Savepoint
 
 /**
-  * The idea of this script is to run random stuff. Most of the times, the idea is
-  * to run quick fixes, or tests.
+  * The idea of this script is to run processes using content keywords from urls.
   */
-object Random {
+object KeywordTools {
  
   /**
     *
@@ -56,7 +55,7 @@ object Random {
     *
     */
 
-  // es _days porque podría ser por hora (hacer un if para seleccionar esto sino)
+  // 
   def read_data_kw_days(
       spark: SparkSession,
       nDays: Integer,
@@ -170,6 +169,7 @@ object Random {
       .format("csv")
       .option("header", "true")
       .load("/datascience/custom/content_keys_danone.csv")
+
     
     val df_joint = get_joint_keys(df_keys = df_keys,
                                   df_data_keywords = df_data_keywords)
@@ -249,6 +249,7 @@ object Random {
 
     val toArray = udf[Array[String], String]( _.split(" "))
 
+    //reading data_keywords
     // Get the days to be loaded
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
@@ -266,29 +267,32 @@ object Random {
       .option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
       .withColumn("content_keys", toArray(df("content_keys")))
 
-    df = new Stemmer()
+    //stemming df
+    val df_stemmed = new Stemmer()
       .setInputCol("content_keys")
       .setOutputCol("stemmed")
       .setLanguage("Spanish")
       .transform(df)
       .withColumn("stemmed" ,concat_ws(" ", col("stemmed")))
       .withColumn("content_keys" ,concat_ws(" ", col("content_keys")))
+      .select("device_id","stemmed","content_keys")
 
+    //reading query
     val content_kws = spark.read
       .format("csv")
       .option("header", "true")
       .load("/datascience/custom/content_keys_danone.csv")
       .withColumn("content_keys", toArray(content_kws("content_keys")))
 
-    content_keys_UY = new Stemmer()
+    val content_kws_st = new Stemmer()
       .setInputCol("content_keys")
       .setOutputCol("stemmed")
       .setLanguage("Spanish")
-      .transform(content_keys_UY)
+      .transform(content_kws)
       .withColumn("stemmed" ,concat_ws(" ", col("stemmed")))
       .dropDuplicates("stemmed").select("seg_id","stemmed")
 
-    val joint = df.join(broadcast(content_keys_UY), Seq("stemmed"))
+    val joint = df_stemmed.join(broadcast(content_kws_st), Seq("stemmed"))
     joint.write
       .format("csv")
       .option("header", "true")
@@ -306,8 +310,8 @@ object Random {
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    
-    get_pitch(spark = spark, 3 , 1, "pitch_danone") 
+
+    test_no_stemming(spark = spark, nDays = 3 , since = 1)
      
   }
 
