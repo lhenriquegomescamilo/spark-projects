@@ -90,7 +90,7 @@ object GetDataForAudience {
         .filter(
           "country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')"
         )
-        .select("device_id", "url", "time")//, "all_segments")
+        .select("device_id", "url", "time") //, "all_segments")
     val data_votaciones =
       spark.read
         .format("csv")
@@ -100,7 +100,7 @@ object GetDataForAudience {
 
     val joint = data_audience
       .join(data_votaciones, Seq("device_id"))
-      // .withColumn("all_segments", concat_ws(",", col("all_segments")))
+    // .withColumn("all_segments", concat_ws(",", col("all_segments")))
 
     joint.write
       .format("csv")
@@ -108,21 +108,20 @@ object GetDataForAudience {
       .save("/datascience/custom/base_votantes_pba_url_time")
   }
 
-
   /**
-   * 
-   * 
-   *            AMEX TIMESTAMPS AND URLS
-   * 
-   * 
-  */
+    *
+    *
+    *            AMEX TIMESTAMPS AND URLS
+    *
+    *
+    */
   def getDataAmexURL(spark: SparkSession) = {
     val data_audience =
       getDataAudiences(spark, nDays = 10, since = 1)
         .filter(
           "country = 'MX' and event_type IN ('tk', 'batch', 'data', 'pv')"
         )
-        .select("device_id", "url", "time")//, "all_segments")
+        .select("device_id", "url", "time") //, "all_segments")
     val data_amex =
       spark.read
         .format("csv")
@@ -134,7 +133,7 @@ object GetDataForAudience {
 
     val joint = data_audience
       .join(data_amex, Seq("device_id"))
-      // .withColumn("all_segments", concat_ws(",", col("all_segments")))
+    // .withColumn("all_segments", concat_ws(",", col("all_segments")))
 
     joint.write
       .format("csv")
@@ -143,14 +142,15 @@ object GetDataForAudience {
   }
 
   /**
-   * 
-   * 
-   *            AMEX SEGMENTS
-   * 
-   * 
-  
+    *
+    *
+    *            AMEX SEGMENTS
+    *
+    *
+    */
   def getDataAmexSegments(spark: SparkSession) = {
-    val data_segments = spark.read.load("/datascience/data_demo/triplets_segments")
+    val data_segments =
+      spark.read.load("/datascience/data_demo/triplets_segments")
     val data_amex =
       spark.read
         .format("csv")
@@ -160,16 +160,16 @@ object GetDataForAudience {
         .repartition(20)
     // .withColumnRenamed("_c1", "cluster")
 
-    val joint = data_audience
+    val joint = data_segments
       .join(data_amex, Seq("device_id"))
-      // .withColumn("all_segments", concat_ws(",", col("all_segments")))
+    // .withColumn("all_segments", concat_ws(",", col("all_segments")))
 
     joint.write
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/amex_con_data_segments")
   }
-  */
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -182,7 +182,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    //getDataAmexSegments(spark = spark)
+    getDataAmexSegments(spark = spark)
 
   }
 }
