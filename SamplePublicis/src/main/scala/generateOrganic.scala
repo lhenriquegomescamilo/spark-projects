@@ -56,7 +56,7 @@ object generateOrganic {
     val start = DateTime.now.minusDays(from)
 
     val days =
-      (0 until nDays).map(start.plusDays(_)).map(_.toString(format))
+      (0 until ndays).map(start.plusDays(_)).map(_.toString(format))
 
     // This function takes all the segments and append the "m_" if the event_type is xp.
     val udfGetSegments = udf(
