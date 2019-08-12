@@ -55,6 +55,8 @@ object generateOrganic {
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(from)
 
+    println("PUBLICIS LOGGER:\n  - From: %s\n  - ndays: %s\n  - Start date: %s".format(from, ndays, start))
+
     val days =
       (0 until ndays).map(start.plusDays(_)).map(_.toString(format))
 

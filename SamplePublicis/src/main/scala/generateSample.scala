@@ -60,7 +60,7 @@ object generateSample {
 
     val pathToJson =
       "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
-        .format(runType, DateTime.now.toString("yyyyMMdd"))
+        .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
 
     println("\n\nPUBLICIS LOG: " + pathToJson + "\n\n")
     generateOrganic.generate_organic(spark, ndays, runType, from)
