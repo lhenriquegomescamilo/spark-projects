@@ -90,8 +90,33 @@ object GetDataForAudience {
         .filter(
           "country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')"
         )
-        .select("device_id", "url", "time", "all_segments")
+        .select("device_id", "url", "time")//, "all_segments")
     val data_votaciones =
+      spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .header("true")
+        .load("/datascience/custom/base_votantes_pba.csv")
+
+    val joint = data_audience
+      .join(data_votaciones, Seq("device_id"))
+      // .withColumn("all_segments", concat_ws(",", col("all_segments")))
+
+    joint.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/amex_con_data_all")
+  }
+
+
+  def getDataAmex(spark: SparkSession) = {
+    val data_audience =
+      getDataAudiences(spark, nDays = 10, since = 1)
+        .filter(
+          "country = 'MX' and event_type IN ('tk', 'batch', 'data', 'pv')"
+        )
+        .select("device_id", "url", "time")//, "all_segments")
+    val data_amex =
       spark.read
         .format("csv")
         .option("sep", "\t")
@@ -101,8 +126,8 @@ object GetDataForAudience {
     // .withColumnRenamed("_c1", "cluster")
 
     val joint = data_audience
-      .join(data_votaciones, Seq("device_id"))
-      .withColumn("all_segments", concat_ws(",", col("all_segments")))
+      .join(data_amex, Seq("device_id"))
+      // .withColumn("all_segments", concat_ws(",", col("all_segments")))
 
     joint.write
       .format("csv")
