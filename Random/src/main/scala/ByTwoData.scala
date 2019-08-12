@@ -81,7 +81,7 @@ object ByTwoData {
       .withColumnRenamed("_c14", "ios_idfa")
       .withColumnRenamed("_c15", "connected_tv")
       // Modifying the types
-      .withColumn("ip", col("ip").cast("int"))
+      // .withColumn("ip", col("ip").cast("int"))
       // Dropping unnecessary columns
       .drop("de_geo_pulseplus_conn_type", "de_geo_isp_name", "de_geo_pulseplus_city_code")
       .coalesce(100)
