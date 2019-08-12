@@ -55,9 +55,13 @@ object ContentKws {
     *
     */
 
-  // 
-  def read_data_kw_days(
+  // This function reads from data_keywords
+  //Input = country, nDays and since.
+  //Output = DataFrame with "content_keys"| "device_id"
+
+  def read_data_kws(
       spark: SparkSession,
+      country: String,
       nDays: Integer,
       since: Integer) : DataFrame = {
 
@@ -72,17 +76,21 @@ object ContentKws {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/country=AR".format(day)) //para cada dia de la lista day devuelve el path del día
+      .map(day => path + "/day=%s/country=%s".format(day,country)) //para cada dia de la lista day devuelve el path del día
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
 
     val df = spark.read
       .option("basePath", path).parquet(hdfs_files: _*)
       .select("content_keys","device_id")
-      .na.drop() //lee todo de una
+      .na.drop() 
 
     df
   }
 
+
+  // This function joins data from data_keywords with all keywords from queries
+  //Input = df from read_data_kws() and df from desired keys.
+  //Output = DataFrame with "device_type"|"device_id"|"kws", grouped by kws list for each user
 
   def get_joint_keys(
       df_keys: DataFrame,
@@ -94,14 +102,20 @@ object ContentKws {
       .dropDuplicates()
       .groupBy("device_id")
       .agg(collect_list("content_keys").as("kws"))
-      //.withColumn("device_type", lit("web")) para empujar
-      //.select("device_type", "device_id", "seg_id")
-      .select("device_id","kws")
+      .withColumn("device_type", lit("web")) para empujar
+      .select("device_type", "device_id", "kws")
   }
     
+  // This function saves a file per query (for each segment), containing users that matched the query  
+  //Input = df with queries |"seg_id"|"query"| and joint df from get_joint_keys().
+  //Output = DataFrame with "device_type"|"device_id"|"seg_id"
+  // if populate True (1), it creates a file for ingester.
+  
   def save_query_results(
+      spark: SparkSession,
       df_queries: DataFrame,
       df_joint: DataFrame,
+      populate: Int,
       job_name: String) = {
   
     df_joint.cache()
@@ -112,16 +126,83 @@ object ContentKws {
     for (t <- tuples) {
       df_joint
         .filter(t._2)
-        .select("device_id")
+        .withColumn("seg_id", lit(t._1))
+        .select("device_type", "device_id", "seg_id")
         .write
         .format("csv")
         .option("sep", "\t")
         .mode(SaveMode.Overwrite)
         .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
+
+      if(populate == 1) {
+        val conf = spark.sparkContext.hadoopConfiguration
+        val fs = FileSystem.get(conf)
+        val os = fs.create(new Path("/datascience/ingester/ready/%s_%s".format(job_name,t._1)))
+        val content =
+          """{"filePath":"/datascience/devicer/processed/%s_%s", "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"%s"}"""
+            .format(job_name,t._1,job_name)
+        println(content)
+        os.write(content.getBytes)
+        os.close()
+      }
     }
   }
   
 
+
+  //main method:
+
+  // This function saves a file per query (for each segment), containing users that matched the query
+  // and sends file to ingester if populate == 1.  
+  //Input = country,nDays,since,keys_path,queries,path,populate,job_name
+  //Output = DataFrame with "device_type"|"device_id"|"seg_id"
+  // if populate True (1), it creates a file for ingester.
+
+
+  def get_pitch(
+      spark: SparkSession,
+      country: String,
+      nDays: Integer,
+      since: Integer,
+      keys_path: String,
+      queries_path: String,
+      populate: Int,
+      job_name: String) = {
+    
+    val df_data_keywords = read_data_kws(spark = spark,
+                                         nDays = nDays,
+                                         since = since)
+    
+    // a get_joint_keys pasarle un df con la columna content_keys,
+    // creado a partir de una lista de keywords (levanto la lista de un json)
+    //la siguiente linea es temp:  
+
+    val df_keys = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load(keys_path)
+
+    
+    val df_joint = get_joint_keys(df_keys = df_keys,
+                                  df_data_keywords = df_data_keywords)
+
+    //pasarle una lista de tuplas del tipo (query,ID)
+    //la siguiente linea es temp:
+    
+    val df_queries = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load(queries_path)
+
+
+    save_query_results(spark = spark,
+                       df_queries = df_queries,
+                       df_joint = df_joint,
+                       populate = populate,
+                       job_name = job_name)
+
+  }
+  
 
   /**
   //create df from list of tuples
@@ -150,46 +231,6 @@ object ContentKws {
   
   //kw_list: List[String],     pasarle estos params a la funcion para pedidos futuros
   //tuple_list: List[String],
-
-  def get_pitch(
-      spark: SparkSession,
-      nDays: Integer,
-      since: Integer,
-      job_name: String) = {
-    
-    val df_data_keywords = read_data_kw_days(spark = spark,
-                                             nDays = nDays,
-                                             since = since)
-    
-    // a get_joint_keys pasarle un df con la columna content_keys,
-    // creado a partir de una lista de keywords (levanto la lista de un json)
-    //la siguiente linea es temp:  
-
-    val df_keys = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load("/datascience/custom/content_keys_danone.csv")
-
-    
-    val df_joint = get_joint_keys(df_keys = df_keys,
-                                  df_data_keywords = df_data_keywords)
-
-    //pasarle una lista de tuplas del tipo (query,ID)
-    //la siguiente linea es temp:
-    
-    val df_queries = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load("/datascience/custom/queries_danone.csv")
-
-
-    save_query_results(df_queries = df_queries,
-                       df_joint = df_joint,
-                       job_name = job_name)
-
-  }
-  
-
   
   /**
     *
@@ -311,7 +352,14 @@ object ContentKws {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    //get_pitch(spark = spark, nDays = 3 , since = 1)
+    get_pitch(spark = spark,
+      country = "AR",
+      nDays = 1,
+      since = 1,
+      keys_path = "/datascience/custom/taxo_new_keys.csv",
+      queries_path = "/datascience/custom/scala_taxo_new.csv",
+      populate = 0,
+      job_name = "new_taxo") 
      
   }
 
