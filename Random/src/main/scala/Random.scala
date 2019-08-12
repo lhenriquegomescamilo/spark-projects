@@ -3771,11 +3771,41 @@ user_granularity.write
   }
 
   
+def get_untagged(spark: SparkSession,
+                 nDays: Integer,
+                 since: Integer) = {
 
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
 
+    // Get the days to be loaded
+    val format = "yyyy/MM/dd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format)) //lista con formato de format
+    val path = "/data/eventqueue"
 
-  
-  
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/%s/".format(day)) //para cada dia de la lista day devuelve el path del día
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
+
+    val df = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .option("basePath", path)
+      .load(hdfs_files: _*) 
+      .filter("category != 'null' and tagged != '1' and event_type = 'batch'")
+      .select("category")
+      .dropDuplicates()
+
+    df.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/untagged_categories")
+
+    }
+
   /**
     *
     *
@@ -5035,7 +5065,7 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    get_ISP_directtv(spark = spark, nDays = 30, since = 1)
+    get_untagged(spark = spark, nDays = 2, since = 1)
      
   }
 
