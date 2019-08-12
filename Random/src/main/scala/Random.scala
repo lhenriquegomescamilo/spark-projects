@@ -5128,7 +5128,6 @@ user_granularity.write
     Logger.getRootLogger.setLevel(Level.WARN)
     
     get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-  )
      
   }
 
