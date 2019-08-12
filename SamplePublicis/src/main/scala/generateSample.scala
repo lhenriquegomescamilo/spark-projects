@@ -56,13 +56,14 @@ object generateSample {
     /// Parseo de parametros
     val ndays = if (args.length > 0) args(0).toInt else 30
     val runType = if (args.length > 1) args(1).toString else "full"
+    val from = if (args.length > 2) args(2).toInt else 1
 
     val pathToJson =
       "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
         .format(runType, DateTime.now.toString("yyyyMMdd"))
 
     println("\n\nPUBLICIS LOG: " + pathToJson + "\n\n")
-    generateOrganic.generate_organic(spark, ndays, runType)
+    generateOrganic.generate_organic(spark, ndays, runType, from)
     generateCrossDevice.generate_organic_xd(spark, pathToJson, runType)
   }
 }
