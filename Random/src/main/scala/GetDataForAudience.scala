@@ -94,7 +94,7 @@ object GetDataForAudience {
     val data_votaciones =
       spark.read
         .format("csv")
-        .option("sep", "\t")
+        .option("sep", ",")
         .option("header", "true")
         .load("/datascience/custom/base_votantes_pba.csv")
 
