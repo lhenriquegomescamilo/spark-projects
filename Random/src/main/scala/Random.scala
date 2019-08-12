@@ -4429,8 +4429,7 @@ def get_untagged(spark: SparkSession,
     *
     *
     *
-    */
-  /**
+
   def getDataVotaciones(spark: SparkSession) = {
     val data_audience =
       getDataAudiences(spark, nDays = 30, since = 1)
@@ -4456,6 +4455,8 @@ def get_untagged(spark: SparkSession,
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/amex_con_data_all")
   }
+
+  
   */
   
   /**
