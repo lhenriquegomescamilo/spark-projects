@@ -112,6 +112,7 @@ object ContentKws {
   // if populate True (1), it creates a file for ingester.
   
   def save_query_results(
+      spark: SparkSession,
       df_queries: DataFrame,
       df_joint: DataFrame,
       populate: Int,
@@ -196,7 +197,8 @@ object ContentKws {
       .load(queries_path)
 
 
-    save_query_results(df_queries = df_queries,
+    save_query_results(spark = spark,
+                       df_queries = df_queries,
                        df_joint = df_joint,
                        populate = populate,
                        job_name = job_name)
