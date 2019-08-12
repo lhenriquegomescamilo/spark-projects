@@ -182,7 +182,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataAmexSegments(spark = spark)
+    //getDataAmexSegments(spark = spark)
 
   }
 }
