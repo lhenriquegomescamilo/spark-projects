@@ -147,7 +147,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataVotaciones(spark = spark) //, 31 , 1, "pitch_danone_full")
+    getDataAmex(spark = spark) //, 31 , 1, "pitch_danone_full")
 
   }
 }
