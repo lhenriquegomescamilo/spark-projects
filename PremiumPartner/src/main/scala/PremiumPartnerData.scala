@@ -115,7 +115,7 @@ object GetDataPartnerID {
     val spark = SparkSession.builder
           .appName("Get data for some Partners ID")
           .config("spark.sql.files.ignoreCorruptFiles", "true")
-          .conf.set("spark.sql.sources.partitionOverwriteMode","dynamic")
+          .config("spark.sql.sources.partitionOverwriteMode","dynamic")
           .getOrCreate()
     
     // Finally, we download the data
