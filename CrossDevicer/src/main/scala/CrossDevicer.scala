@@ -225,9 +225,9 @@ object CrossDevicer {
     val events_data = get_event_data(spark, nDays, from, column)
 
     // Here we do the mapping from original segments to the cross-deviced segments
-    val windowing = Window.partitionBy(col("device_id")).orderBy(col("datetime").desc)
-    val new_segments = events_data
-      .na
+    val windowing =
+      Window.partitionBy(col("device_id")).orderBy(col("datetime").desc)
+    val new_segments = events_data.na
       .drop()
       .withColumn("row_number", row_number.over(windowing))
       .where("row_number = 1")
@@ -380,11 +380,13 @@ object CrossDevicer {
     )
 
     // Now we can get event data
+    val column = "segments"
     val events_data = get_event_data(spark, nDays, from, "segments")
 
     // Here we do the mapping from original segments to the cross-deviced segments
-    val new_segments = events_data
-      .withColumn("new_segment", getItems(col("segments")))
+    val new_segments = events_data.na
+      .drop()
+      .withColumn("new_segment", getItems(col(column)))
       .filter(size(col("new_segment")) > 0)
 
     // Now we load the cross-device index
