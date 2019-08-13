@@ -2098,7 +2098,7 @@ val records_common = the_join.select(col("identifier"))
     val audience_fb = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/devices_ISP_directtv_9aug")
+      .load("/datascience/custom/devices_ISP_directtv_13aug_last")
       .select("device_id", "valor_atributo_hash")
 
     val joint = df_audiences_time.join(broadcast(audience_fb), Seq("device_id"))
@@ -2108,7 +2108,7 @@ val records_common = the_join.select(col("identifier"))
       .option("header", "true")
       .option("delimiter", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/directtv_ISP_9aug_final")
+      .save("/datascience/custom/directtv_ISP_13_aug_last")
   }
 
   /**
@@ -4937,7 +4937,7 @@ def get_untagged(spark: SparkSession,
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    get_device_IDS(spark = spark)
+    get_ISP_directtv(spark = spark, nDays = 30, since = 1)
      
   }
 
