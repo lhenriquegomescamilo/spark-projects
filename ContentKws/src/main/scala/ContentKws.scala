@@ -360,7 +360,7 @@ object ContentKws {
       keys_path = "/datascience/custom/taxo_new_keys.csv",
       queries_path = "/datascience/custom/scala_taxo_new.csv",
       populate = 1,
-      job_name = "new_taxo") 
+      job_name = "new_taxo_AR") 
      
   }
 
