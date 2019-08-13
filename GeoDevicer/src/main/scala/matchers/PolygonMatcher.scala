@@ -40,7 +40,7 @@ object PolygonMatcher {
     * @return df_safegraph: dataframe created with the safegraph data, filtered by the desired country, extracting the columns user id, device id, latitude and
     * longitude removing duplicate users that have repeated locations and with added geocode.
     */
-  def get_safegraph_data(
+ def get_safegraph_data(
       spark: SparkSession,
       value_dictionary: Map[String, String]
   ) = {
@@ -48,12 +48,15 @@ object PolygonMatcher {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
-    // Get the days to be loaded
+   if (value_dictionary("old_pipeline") == "1") {
+    
+     // Get the days to be loaded
     val format = "yyyy/MM/dd"
     val end = DateTime.now.minusDays(value_dictionary("since").toInt)
     val days = (0 until value_dictionary("nDays").toInt)
       .map(end.minusDays(_))
       .map(_.toString(format))
+      .filter(x => !(x contains "2019/05/27"))
 
     // Now we obtain the list of hdfs files to be read
     val path = "/data/geo/safegraph/"
@@ -63,13 +66,15 @@ object PolygonMatcher {
         path => fs.exists(new org.apache.hadoop.fs.Path(path))
       )
       .map(day => day+"*.gz")
-
+    
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read
-      .option("header", "true")
-      .csv(hdfs_files: _*)
-      .filter("country = '%s'".format(value_dictionary("country")))
-      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+        .option("header", "true")
+        .csv(hdfs_files:_*)
+        .dropDuplicates("ad_id","latitude","longitude")
+        .filter("country = '%s'".format(value_dictionary("country")))
+        .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
+                 
 
     df_safegraph.createOrReplaceTempView("data")
     var safegraphDf = spark
@@ -84,7 +89,52 @@ object PolygonMatcher {
               FROM data
       """)
 
-    safegraphDf
+
+                         safegraphDf                         }
+
+  else {
+    // Get the days to be loaded
+    val format = "yyMMdd"
+    val end = DateTime.now.minusDays(value_dictionary("since").toInt)
+    val days = (0 until value_dictionary("nDays").toInt)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+      .filter(x => !(x contains "0190527"))
+
+    // Now we obtain the list of hdfs files to be read
+    val path = "/datascience/geo/safegraph_pipeline/"
+    val hdfs_files = days
+      .map(day => path +  "day=0%s/country=%s/".format(day,value_dictionary("country")))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
+      .map(day => day + "*.snappy.parquet")
+
+
+    // Finally we read, filter by country, rename the columns and return the data
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .parquet(hdfs_files: _*)
+      .dropDuplicates("ad_id", "latitude", "longitude")
+      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      
+       df_safegraph.createOrReplaceTempView("data")
+    var safegraphDf = spark
+      .sql("""
+          SELECT ad_id,
+                  id_type,
+                  latitude,longitude,
+                  utc_timestamp,
+                  ST_Point(CAST(data.longitude AS Decimal(24,20)), 
+                                            CAST(data.latitude AS Decimal(24,20)), 
+                                            data.ad_id) AS pointshape
+              FROM data
+      """)
+
+
+                         safegraphDf                       } 
+
+    
   }
 
   /**

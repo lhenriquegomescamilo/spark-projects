@@ -120,6 +120,9 @@ object ContentKws {
   
     df_joint.cache()
 
+    val fileName = "/datascience/devicer/processed/" + job_name
+    val fileNameFinal = fileName + "_grouped"
+
     val tuples = df_queries.select("seg_id", "query")
       .collect()
       .map(r => (r(0).toString, r(1).toString))
@@ -131,21 +134,37 @@ object ContentKws {
         .write
         .format("csv")
         .option("sep", "\t")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
-
-      if(populate == 1) {
-        val conf = spark.sparkContext.hadoopConfiguration
-        val fs = FileSystem.get(conf)
-        val os = fs.create(new Path("/datascience/ingester/ready/%s_%s".format(job_name,t._1)))
-        val content =
-          """{"filePath":"/datascience/devicer/processed/%s_%s", "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"%s"}"""
-            .format(job_name,t._1,job_name)
-        println(content)
-        os.write(content.getBytes)
-        os.close()
-      }
+        .mode("append")
+        .save(fileName)
     }
+  
+    val done = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load(fileName)
+      .distinct()
+    done
+      .groupBy("_c0", "_c1")
+      .agg(collect_list("_c2") as "segments")
+      .withColumn("segments", concat_ws(",", col("segments")))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(fileNameFinal)
+  
+    if(populate == 1) {
+      val conf = spark.sparkContext.hadoopConfiguration
+      val fs = FileSystem.get(conf)
+      val os = fs.create(new Path("/datascience/ingester/ready/%s".format(job_name)))
+      val content =
+        """{"filePath":"%s", "priority": 20, "partnerId": 0, "queue":"datascience", "jobid": 0, "description":"%s"}"""
+          .format(fileNameFinal,job_name)
+      println(content)
+      os.write(content.getBytes)
+      os.close()
+    }
+    
   }
   
 
@@ -159,7 +178,7 @@ object ContentKws {
   // if populate True (1), it creates a file for ingester.
 
 
-  def get_pitch(
+  def get_users_pipeline_3(
       spark: SparkSession,
       country: String,
       nDays: Integer,
@@ -194,6 +213,7 @@ object ContentKws {
       .format("csv")
       .option("header", "true")
       .load(queries_path)
+      .limit(30)
 
 
     save_query_results(spark = spark,
@@ -353,14 +373,14 @@ object ContentKws {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_pitch(spark = spark,
-      country = "AR",
-      nDays = 1,
-      since = 1,
-      keys_path = "/datascience/custom/taxo_new_keys.csv",
-      queries_path = "/datascience/custom/scala_taxo_new.csv",
-      populate = 0,
-      job_name = "new_taxo") 
+    get_users_pipeline_3(spark = spark,
+                        country = "AR",
+                        nDays = 30,
+                        since = 1,
+                        keys_path = "/datascience/custom/taxo_new_keys.csv",
+                        queries_path = "/datascience/custom/scala_taxo_new.csv",
+                        populate = 0,
+                        job_name = "new_taxo_AR_test_2") 
      
   }
 
