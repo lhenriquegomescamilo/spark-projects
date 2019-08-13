@@ -90,7 +90,7 @@ object PolygonMatcher {
       """)
 
 
-                         df_safegraph                         }
+                         safegraphDf                         }
 
   else {
     // Get the days to be loaded
@@ -118,7 +118,7 @@ object PolygonMatcher {
       .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
       
-      df_safegraph.createOrReplaceTempView("data")
+       df_safegraph.createOrReplaceTempView("data")
     var safegraphDf = spark
       .sql("""
           SELECT ad_id,
@@ -132,7 +132,7 @@ object PolygonMatcher {
       """)
 
 
-                         df_safegraph                       } 
+                         safegraphDf                       } 
 
     
   }
