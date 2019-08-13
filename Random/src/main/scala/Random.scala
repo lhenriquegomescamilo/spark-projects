@@ -2010,7 +2010,8 @@ val records_common = the_join.select(col("identifier"))
         "device_type",
         "country",
         "id_partner",
-        "mb_sh2")
+        "mb_sh2",
+        "day")
       .withColumnRenamed("mb_sh2", "pii")
       .withColumn("pii_type", lit("mob"))
 
