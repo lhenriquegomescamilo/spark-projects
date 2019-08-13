@@ -36,7 +36,7 @@ object GetDataPartnerID {
                           //.withColumn("first_party", split(col("first_party"), "\u0001"))
       
       // store the results.
-      ready.repartition(24)
+      ready.repartition(10)
           .write.mode("overwrite")
           .format("com.databricks.spark.csv")
           .partitionBy("day")
@@ -46,7 +46,6 @@ object GetDataPartnerID {
           .save("/datascience/data_premium_partner/")
           //.partitionBy("id_partner", "day")
           
-
   }
   
   /**
