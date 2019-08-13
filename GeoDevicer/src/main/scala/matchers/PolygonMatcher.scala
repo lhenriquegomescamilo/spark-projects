@@ -74,15 +74,7 @@ object PolygonMatcher {
         .dropDuplicates("ad_id","latitude","longitude")
         .filter("country = '%s'".format(value_dictionary("country")))
         .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
-        .withColumnRenamed("latitude", "latitude_user")
-        .withColumnRenamed("longitude", "longitude_user")
-        .withColumn("geocode",
-         ((abs(col("latitude_user").cast("float"))*10)
-          .cast("int")*10000)+(abs(
-          col("longitude_user").cast("float")*100
-        ).cast("int"))
-        )
-         
+                 
 
     df_safegraph.createOrReplaceTempView("data")
     var safegraphDf = spark
@@ -125,16 +117,8 @@ object PolygonMatcher {
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
-      .withColumnRenamed("latitude", "latitude_user")
-      .withColumnRenamed("longitude", "longitude_user")
-      .withColumn(
-        "geocode",
-        ((abs(col("latitude_user").cast("float")) * 10)
-          .cast("int") * 10000) + (abs(
-          col("longitude_user").cast("float") * 100
-        ).cast("int"))
-      )
-         df_safegraph.createOrReplaceTempView("data")
+      
+      df_safegraph.createOrReplaceTempView("data")
     var safegraphDf = spark
       .sql("""
           SELECT ad_id,
