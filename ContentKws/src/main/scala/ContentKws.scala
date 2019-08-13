@@ -137,24 +137,22 @@ object ContentKws {
         .mode("append")
         .save(fileName)
     }
-
-    if (tuples.length > 1) {
-      val done = spark.read
-        .format("csv")
-        .option("sep", "\t")
-        .load(fileName)
-        .distinct()
-      done
-        .groupBy("_c0", "_c1")
-        .agg(collect_list("_c2") as "segments")
-        .withColumn("segments", concat_ws(",", col("segments")))
-        .write
-        .format("csv")
-        .option("sep", "\t")
-        .mode("append")
-        .save(fileNameFinal)
-    }    
-
+  
+    val done = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load(fileName)
+      .distinct()
+    done
+      .groupBy("_c0", "_c1")
+      .agg(collect_list("_c2") as "segments")
+      .withColumn("segments", concat_ws(",", col("segments")))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(fileNameFinal)
+  
     if(populate == 1) {
       val conf = spark.sparkContext.hadoopConfiguration
       val fs = FileSystem.get(conf)
