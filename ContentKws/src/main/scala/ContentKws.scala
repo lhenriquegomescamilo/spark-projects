@@ -178,7 +178,7 @@ object ContentKws {
   // if populate True (1), it creates a file for ingester.
 
 
-  def get_pitch(
+  def get_users_pipeline_3(
       spark: SparkSession,
       country: String,
       nDays: Integer,
@@ -373,14 +373,14 @@ object ContentKws {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_pitch(spark = spark,
-      country = "AR",
-      nDays = 30,
-      since = 1,
-      keys_path = "/datascience/custom/taxo_new_keys.csv",
-      queries_path = "/datascience/custom/scala_taxo_new.csv",
-      populate = 0,
-      job_name = "new_taxo_AR_test") 
+    get_users_pipeline_3(spark = spark,
+                        country = "AR",
+                        nDays = 30,
+                        since = 1,
+                        keys_path = "/datascience/custom/taxo_new_keys.csv",
+                        queries_path = "/datascience/custom/scala_taxo_new.csv",
+                        populate = 0,
+                        job_name = "new_taxo_AR_test_2") 
      
   }
 
