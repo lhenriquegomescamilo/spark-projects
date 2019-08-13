@@ -1989,6 +1989,7 @@ val records_common = the_join.select(col("identifier"))
       )
       .withColumnRenamed("ml_sh2", "pii")
       .withColumn("pii_type", lit("mail"))
+
     var dnis = data
       .filter("nid_sh2 is not null")
       .select(
@@ -2002,22 +2003,33 @@ val records_common = the_join.select(col("identifier"))
       .withColumnRenamed("nid_sh2", "pii")
       .withColumn("pii_type", lit("nid")) 
 
-    val pii_table = mails.unionAll(dnis).withColumnRenamed("pii", "valor_atributo_hash")
+    var mobs = data
+      .filter("mb_sh2 is not null")
+      .select(
+        "device_id",
+        "device_type",
+        "country",
+        "id_partner",
+        "mb_sh2")
+      .withColumnRenamed("mb_sh2", "pii")
+      .withColumn("pii_type", lit("mob"))
+
+    val pii_table = mails.unionAll(dnis).unionAll(mobs).withColumnRenamed("pii", "valor_atributo_hash")
 
     // AUDIENCIA FB
     //flat_tc == 0  sin tarjeta de credito
     val df_aud = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/aud_directv_doc.csv")
-      .filter("flag_tc == 0")
+      .load("/datascience/custom/aud_directv_last.csv")
+      //.filter("flag_tc == 0")
 
     val joint = pii_table.join((df_aud), Seq("valor_atributo_hash"))
     joint.write
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/devices_ISP_directtv_13aug")
+      .save("/datascience/custom/devices_ISP_directtv_13aug_last")
   }
 
   def get_ISP_directtv(
