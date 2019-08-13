@@ -82,6 +82,22 @@ object PolygonMatcher {
           col("longitude_user").cast("float")*100
         ).cast("int"))
         )
+         
+
+    df_safegraph.createOrReplaceTempView("data")
+    var safegraphDf = spark
+      .sql("""
+          SELECT ad_id,
+                  id_type,
+                  latitude,longitude,
+                  utc_timestamp,
+                  ST_Point(CAST(data.longitude AS Decimal(24,20)), 
+                                            CAST(data.latitude AS Decimal(24,20)), 
+                                            data.ad_id) AS pointshape
+              FROM data
+      """)
+
+
                          df_safegraph                         }
 
   else {
@@ -118,7 +134,21 @@ object PolygonMatcher {
           col("longitude_user").cast("float") * 100
         ).cast("int"))
       )
-          df_safegraph } 
+         df_safegraph.createOrReplaceTempView("data")
+    var safegraphDf = spark
+      .sql("""
+          SELECT ad_id,
+                  id_type,
+                  latitude,longitude,
+                  utc_timestamp,
+                  ST_Point(CAST(data.longitude AS Decimal(24,20)), 
+                                            CAST(data.latitude AS Decimal(24,20)), 
+                                            data.ad_id) AS pointshape
+              FROM data
+      """)
+
+
+                         df_safegraph                       } 
 
     
   }
