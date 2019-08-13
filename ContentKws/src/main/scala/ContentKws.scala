@@ -355,11 +355,11 @@ object ContentKws {
 
     get_pitch(spark = spark,
       country = "AR",
-      nDays = 1,
+      nDays = 30,
       since = 1,
       keys_path = "/datascience/custom/taxo_new_keys.csv",
       queries_path = "/datascience/custom/scala_taxo_new.csv",
-      populate = 0,
+      populate = 1,
       job_name = "new_taxo") 
      
   }
