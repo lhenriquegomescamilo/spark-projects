@@ -194,6 +194,7 @@ object ContentKws {
       .format("csv")
       .option("header", "true")
       .load(queries_path)
+      .limit(30)
 
 
     save_query_results(spark = spark,
@@ -359,8 +360,8 @@ object ContentKws {
       since = 1,
       keys_path = "/datascience/custom/taxo_new_keys.csv",
       queries_path = "/datascience/custom/scala_taxo_new.csv",
-      populate = 1,
-      job_name = "new_taxo_AR") 
+      populate = 0,
+      job_name = "new_taxo_AR_test") 
      
   }
 
