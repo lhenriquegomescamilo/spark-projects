@@ -20,7 +20,7 @@ object GetDataPartnerID {
    * DataFrame before storing it, so that every folder has only 5 files. The 
    * directory where the data is stored is /datascience/data_partner/.
    */
-  def process_day_parquet(spark: SparkSession, day:String, columns: Seq[String], 
+  def process_day_gzip(spark: SparkSession, day:String, columns: Seq[String], 
                             ids_partners: Seq[String]) = {
       // Here we read the data into DataFrames and select the proper columns
       val data = spark.read.format("csv").option("sep", "\t").option("header", "true")
@@ -36,12 +36,14 @@ object GetDataPartnerID {
                           //.withColumn("first_party", split(col("first_party"), "\u0001"))
       
       // store the results.
-      ready.repartition(5).write.mode("append")
+      ready.repartition(24)
+          .write.mode("overwrite")
           .format("com.databricks.spark.csv")
+          .partitionBy("day")
           .option("header", "true")
           .option("delimiter","\t")
           .option("codec", "org.apache.hadoop.io.compress.GzipCodec")
-          .save("/datascience/data_premium_partner/%s".format(day.replace("/", "")))
+          .save("/datascience/data_premium_partner/".format(day.replace("/", "")))
           //.partitionBy("id_partner", "day")
           
 
@@ -67,7 +69,7 @@ object GetDataPartnerID {
       "872","878","914","918","919","921","927","928","929","930","931","937","957","978","989","997","998","999","1000","1001","1010","1011","1012","1013","1014",
       "1026","1028","1030","1033","1034","1052","1053","1054","1056","1064","1069","1084","1085","1088","1102","1111","1119","1120","1133","1138","1144")
 
-    val columns = """timestamp, id_partner, url_domain, url , referer_domain, referer, first_party, third_party, device_id, device_type, browser, ip
+    val columns = """timestamp, id_partner, url_domain, url , referer_domain, referer, first_party, third_party, device_id, device_type, browser, ip, country, event_type
                       """.replace("\n", "").replace(" ", "").split(",").toList
     
     // Now we get the list of days to be downloaded
@@ -76,7 +78,7 @@ object GetDataPartnerID {
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     
     // Now we download the data
-    days.foreach(day => process_day_parquet(spark, day, columns, ids_partners))
+    days.foreach(day => process_day_gzip(spark, day, columns, ids_partners))
   }
   
   type OptionMap = Map[Symbol, Int]
@@ -113,6 +115,7 @@ object GetDataPartnerID {
     val spark = SparkSession.builder
           .appName("Get data for some Partners ID")
           .config("spark.sql.files.ignoreCorruptFiles", "true")
+          .config("spark.sql.sources.partitionOverwriteMode","dynamic")
           .getOrCreate()
     
     // Finally, we download the data
