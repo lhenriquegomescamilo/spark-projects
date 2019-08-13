@@ -2153,7 +2153,7 @@ val records_common = the_join.select(col("identifier"))
     val df_aud = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/aud_directv_isp_fb.csv")
+      .load("/datascience/custom/aud_directv_doc.csv")
       .filter("flag_tc == 0")
 
     val joint = pii_table.join((df_aud), Seq("valor_atributo_hash"))
@@ -2161,7 +2161,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/devices_ISP_directtv_9aug")
+      .save("/datascience/custom/devices_ISP_directtv_13aug")
   }
 
   def get_ISP_directtv(
@@ -5068,7 +5068,7 @@ def get_untagged(spark: SparkSession,
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    get_untagged(spark = spark, nDays = 2, since = 1)
+    get_device_IDS(spark = spark)
      
   }
 
