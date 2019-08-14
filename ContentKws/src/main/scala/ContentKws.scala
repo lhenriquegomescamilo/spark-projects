@@ -30,7 +30,7 @@ import org.apache.spark.ml.classification.{
   GBTClassifier
 }
 
-import org.apache.spark.mllib.feature.Stemmer
+//import org.apache.spark.mllib.feature.Stemmer
 
 import java.security.MessageDigest
 import java.util
