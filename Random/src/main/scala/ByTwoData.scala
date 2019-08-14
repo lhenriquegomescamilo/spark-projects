@@ -78,7 +78,7 @@ object ByTwoData {
     val data = spark.read
           .format("com.databricks.spark.csv")
           .schema(schema)
-          .load("/datascience/sharethis/loading/%s*.json".format(day))
+          .load("/data/providers/sharethis/raw/%s*.json".format(day))
         
     val withMultivalues = multivalue.foldLeft(data)(
           (df, c) => df.withColumn(c, split(col(c), "|"))
@@ -192,7 +192,7 @@ object ByTwoData {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     //val days = List("20190803", "20190802", "20190801", "20190731", "20190730", "20190729", "20190728", "20190727", "20190726", "20190725")
-    val days = List("20190710", "20190711", "20190712", "20190713", "20190714", "20190715", "20190716", "20190717")
+    val days = List("20190710", "20190711", "20190712", "20190713")
 
     days.foreach(day => processDayNew(spark, day))
   }
