@@ -78,7 +78,7 @@ object ByTwoData {
     val data = spark.read
           .format("com.databricks.spark.csv")
           .schema(schema)
-          .load("/datascience/sharethis/loading/%s*.json".format(day))
+          .load("/data/providers/sharethis/raw/%s*.json".format(day))
         
     val withMultivalues = multivalue.foldLeft(data)(
           (df, c) => df.withColumn(c, split(col(c), "|"))
