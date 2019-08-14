@@ -4987,7 +4987,7 @@ def getDataIdPartners(
 }
 
 
-def getDataAcxiom(){
+def getDataAcxiom(spark: SparkSession){
   val dataBase = getDataIdPartners(spark, List("1008", "1131"), 12, 20, "streaming")
                           .select("device_id", "device_type")
                           .filter("device_type = 'android' or devicer_type = 'ios'")
@@ -5007,7 +5007,7 @@ def getDataAcxiom(){
     Logger.getRootLogger.setLevel(Level.WARN)
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    getDataAcxiom()
+    getDataAcxiom(spark)
      
   }
 
