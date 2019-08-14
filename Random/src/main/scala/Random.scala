@@ -4988,7 +4988,7 @@ def getDataIdPartners(
 
 
 def getDataAcxiom(spark: SparkSession){
-  val dataBase = getDataIdPartners(spark, List("1008", "1131"), 12, 20, "streaming")
+  val dataBase = getDataIdPartners(spark, List("1008", "1131"), 20, 12, "streaming")
                           .select("device_id", "device_type")
                           .filter("device_type = 'android' or device_type = 'ios'")
                           .distinct()
