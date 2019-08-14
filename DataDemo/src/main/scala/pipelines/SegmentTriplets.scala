@@ -78,7 +78,7 @@ object SegmentTriplets {
     val df = dfs.reduce((df1, df2) => df1.union(df2))
 
     val grouped_data = df
-      .groupBy("device_id", "feature", "country")
+      .groupBy("device_id", "feature", "country", "day")
       .agg(sum("count").as("count"))
 
     grouped_data.write

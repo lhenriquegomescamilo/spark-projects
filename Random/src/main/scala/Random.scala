@@ -4990,9 +4990,14 @@ def getDataIdPartners(
 def getDataAcxiom(spark: SparkSession){
   val dataBase = getDataIdPartners(spark, List("1008", "1131"), 20, 12, "streaming")
                           .select("device_id", "device_type")
+                          .withColumn("device_id",upper(col("device_id")))
                           .filter("device_type = 'android' or device_type = 'ios'")
                           .distinct()
-  val dataAcxiom = spark.read.format("csv").load("/data/providers/acxiom/acxiom_BR_MAID_ONLY_XREF_Extract_20190806.txt.gz").select("_c0").withColumnRenamed("_c0", "device_id")
+  val dataAcxiom = spark.read.format("csv").load("/data/providers/acxiom/acxiom_BR_MAID_ONLY_XREF_Extract_20190806.txt.gz")
+                        .select("_c0")
+                        .withColumnRenamed("_c0", "device_id")
+                        .withColumn("device_id",upper(col("device_id")))
+                        
   dataBase.join(dataAcxiom, Seq("device_id")).write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/join_Acxiom_BR")
   
 }
