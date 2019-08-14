@@ -37,7 +37,7 @@ import org.apache.spark.ml.classification.{
   */
 object ByTwoData {
 
-  def processDayNew((spark: SparkSession, day: String) = {
+  def processDayNew(spark: SparkSession, day: String) = {
     println("LOGGER: processing day %s".format(day))
 
     val columns = List("standardTimestamp",
