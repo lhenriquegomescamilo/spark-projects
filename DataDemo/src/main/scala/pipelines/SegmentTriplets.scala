@@ -70,7 +70,7 @@ object SegmentTriplets {
             .filter("event_type IN ('batch', 'data', 'tk', 'pv')")
             .select("device_id", "segments", "country")
             .withColumn("segments", explode(col("segments")))
-            .withColumn("day", x.split("/").last.slice(0, 8))
+            .withColumn("day", lit(x.split("/").last.slice(0, 8)))
             .withColumnRenamed("segments", "feature")
             .withColumn("count", lit(1))
       )
