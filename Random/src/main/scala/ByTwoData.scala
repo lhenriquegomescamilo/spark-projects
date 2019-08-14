@@ -99,6 +99,7 @@ object ByTwoData {
       .write
       .mode(SaveMode.Overwrite)
       .format("csv")
+      .option("header", "false")
       .option("sep", "\t")
       .save("/datascience/sharethis/bytwo/day=%s".format(day))
     
