@@ -49,21 +49,31 @@ object GenerateTriplets {
     val daysCount = Days.daysBetween(start, end).getDays()
     val days =
       (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
+val path = "/datascience/data_audiences_streaming"
     val dfs = days
-      // .filter(
-      //   day =>
-      //     fs.exists(
-      //       new org.apache.hadoop.fs.Path(
-      //         "/datascience/data_audiences/day=%s".format(day)
-      //       )
-      //     )
-      // )
+      .flatMap(
+        day =>
+          (0 until 24).map(
+            hour =>
+              path + "/hour=%s%02d/"
+                .format(day, hour)
+          )
+      )
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    // .filter(
+    //   day =>
+    //     fs.exists(
+    //       new org.apache.hadoop.fs.Path(
+    //         "/datascience/data_audiences/day=%s".format(day)
+    //       )
+    //     )
+    // )
       .map(
         x =>
           spark.read
             .option("basePath", "/datascience/data_audiences_streaming/")
-            .parquet("/datascience/data_audiences_streaming/hour=%s*".format(x))
+            .parquet(x)
+            // .parquet("/datascience/data_audiences_streaming/hour=%s".format(x))
             .filter("event_type IN ('batch', 'data', 'tk', 'pv')")
             .select("device_id", "segments", "country")
             .withColumn("segments", explode(col("segments")))
@@ -71,7 +81,6 @@ object GenerateTriplets {
             .withColumn("count", lit(1))
       )
 
-    
     val df = dfs.reduce((df1, df2) => df1.union(df2))
 
     val grouped_data = df
