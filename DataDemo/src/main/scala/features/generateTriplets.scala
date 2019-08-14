@@ -51,14 +51,14 @@ object GenerateTriplets {
       (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
     val dfs = days
-      .filter(
-        day =>
-          fs.exists(
-            new org.apache.hadoop.fs.Path(
-              "/datascience/data_audiences/day=%s".format(day)
-            )
-          )
-      )
+      // .filter(
+      //   day =>
+      //     fs.exists(
+      //       new org.apache.hadoop.fs.Path(
+      //         "/datascience/data_audiences/day=%s".format(day)
+      //       )
+      //     )
+      // )
       .map(
         x =>
           spark.read
