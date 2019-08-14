@@ -15,6 +15,9 @@ import org.apache.spark.serializer.KryoRegistrator
 import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
+import org.apache.log4j.{Level, Logger}
+
+
 
 /**
   Job Summary:
@@ -25,6 +28,7 @@ import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
   */
 object Geodevicer {
 
+  Logger.getRootLogger.setLevel(Level.WARN)
   /**
     * This method returns a Map with all the parameters obtained from the JSON file.
     *
