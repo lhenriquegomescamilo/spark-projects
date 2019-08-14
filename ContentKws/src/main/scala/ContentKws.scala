@@ -213,7 +213,7 @@ object ContentKws {
       .format("csv")
       .option("header", "true")
       .load(queries_path)
-      .limit(30)
+      //.limit(30)
 
 
     save_query_results(spark = spark,
@@ -266,7 +266,7 @@ object ContentKws {
     *
     *
     *
-  */
+  
   //country se deberá leer del json
   def test_no_stemming(spark: SparkSession,
                        nDays: Integer,
@@ -363,7 +363,7 @@ object ContentKws {
   }
     
   
-
+  */
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -379,8 +379,8 @@ object ContentKws {
                         since = 1,
                         keys_path = "/datascience/custom/taxo_new_keys.csv",
                         queries_path = "/datascience/custom/scala_taxo_new.csv",
-                        populate = 0,
-                        job_name = "new_taxo_AR_test_2") 
+                        populate = 1,
+                        job_name = "new_taxo_AR") 
      
   }
 
