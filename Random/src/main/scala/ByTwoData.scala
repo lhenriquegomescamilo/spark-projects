@@ -43,7 +43,7 @@ object ByTwoData {
     val columns = List("standardTimestamp",
         "url",
         "ip",
-        "url",
+        "url_domain",
         "mappedEvent",
         "userAgent",
         "deviceType",
@@ -85,6 +85,7 @@ object ByTwoData {
         )
 
     val df = withMultivalues
+            .withColumn("url_domain", col("url"))
             .withColumn("adnxs_id", col("external_id").getItem(0))
             .withColumn("ttd_id", col("external_id").getItem(1))
             .withColumn("mediamath_id", col("external_id").getItem(2))
