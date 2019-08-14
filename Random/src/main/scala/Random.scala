@@ -4928,6 +4928,75 @@ def get_untagged(spark: SparkSession,
       .save("/datascience/custom/votacion_con_data_domains")
   }
 
+
+def getDataIdPartners(
+      spark: SparkSession,
+      partnerIds: List[String],
+      nDays: Int = 30,
+      since: Int = 1,
+      pipe: String = "batch"
+  ): DataFrame = {
+    println("DEVICER LOG: PIPELINE ID PARTNERS")
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path =
+      if (pipe == "batch") "/datascience/data_partner/"
+      else "/datascience/data_partner_streaming/"
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files =
+      if (pipe == "batch")
+        partnerIds
+          .flatMap(
+            partner =>
+              days
+                .map(
+                  day => path + "id_partner=" + partner + "/day=%s".format(day)
+                )
+          )
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      else
+        partnerIds
+          .flatMap(
+            partner =>
+              days
+                .flatMap(
+                  day =>
+                    (0 until 24).map(
+                      hour =>
+                        path + "hour=%s%02d/id_partner=%s"
+                          .format(day, hour, partner)
+                    )
+                )
+          )
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df =
+      if (hdfs_files.length > 0)
+        spark.read.option("basePath", path).parquet(hdfs_files: _*)
+      else
+        spark.createDataFrame(
+          spark.sparkContext.emptyRDD[Row],
+          StructType(Array(StructField("empty", StringType, true)))
+        )
+    //fs.close()
+    df
+}
+
+
+def getDataAcxiom(spark: SparkSession){
+  val dataBase = getDataIdPartners(spark, List("1008", "1131"), 12, 20, "streaming")
+                          .select("device_id", "device_type")
+                          .filter("device_type = 'android' or devicer_type = 'ios'")
+                          .distinct()
+  val dataAcxiom = spark.read.format("csv").load("/data/providers/acxiom/acxiom_BR_MAID_ONLY_XREF_Extract_20190806.txt.gz").select("_c0").withColumnRenamed("_c0", "device_id")
+  dataBase.join(dataAcxiom, Seq("device_id")).write.format("csv").save("/datascience/custom/join_Acxiom_BR")
+  
+}
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -4937,7 +5006,8 @@ def get_untagged(spark: SparkSession,
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    get_ISP_directtv(spark = spark, nDays = 30, since = 1)
+    //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
+    getDataAcxiom(spark)
      
   }
 
