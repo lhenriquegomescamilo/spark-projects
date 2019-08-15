@@ -8,6 +8,7 @@ import org.apache.spark.mllib.recommendation.{
 }
 
 import java.io._
+import org.joda.time.DateTime
 import scala.collection.mutable.WrappedArray
 import com.esotericsoftware.kryo.Kryo
 
@@ -38,6 +39,7 @@ object Item2Item {
 
   def runExpand(spark: SparkSession,
                 filePath: String,
+                nDays: Int = -1,
                 simMatrixHits: String = "binary",
                 predMatrixHits: String = "binary") {
     import spark.implicits._
@@ -57,10 +59,7 @@ object Item2Item {
       val nSegmentToExpand = expandInput.length
 
       // Read data
-      val data = spark.read
-        .load(
-          "/datascience/data_demo/triplets_segments/country=%s/".format(country)
-        )
+      val data = getDataTriplets(spark, country, nDays)
 
       // Create segment index
       var segments = countryExpandInput.map(row=> row("segment_id").toString) // First: segments to expand
@@ -113,6 +112,7 @@ object Item2Item {
   */
   def runTest(spark: SparkSession,
               country: String,
+              nDays: Int = -1,
               simMatrixHits: String = "binary",
               predMatrixHits: String = "binary",
               k: Int = 1000) {
@@ -138,10 +138,7 @@ object Item2Item {
     val extraFeatureSegments = getExtraFeatureSegments()
 
     // 1) Read the data
-    val data = spark.read
-      .load(
-        "/datascience/data_demo/triplets_segments/country=%s/".format(country)
-      )
+    val data = getDataTriplets(spark, country, nDays)
 
     // Create segment index
     var segments = expandSegment // First: segments to expand
@@ -252,6 +249,37 @@ object Item2Item {
 
     simSymmetric
   }
+
+  /*
+  * It reads data triplets for a given counrty.
+  */
+  def getDataTriplets(
+      spark: SparkSession,
+      counrty: String,
+      nDays: Int = -1,
+      path: String = "/datascience/data_triplets/segments/") = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    val df = if(nDays > 0){
+      // read files from dates
+      val format = "yyyyMMdd"
+      val endDate = DateTime.now.minusDays(1)
+      val days = (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+      // Now we obtain the list of hdfs folders to be read
+      val hdfs_files = days
+        .map(day => path + "/day=%s/country=%s".format(day, counrty))
+        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    }
+    else{
+      // read all date files
+      spark.read.load(path + "/day=*/country=%s/".format(country))
+    }
+    df
+  }
+
 
   /**
   * For each segment, it calculates a score value for all users.
@@ -600,6 +628,8 @@ object Item2Item {
         nextOption(map ++ Map('testCountry -> value), tail)
       case "--testSize" :: value :: tail =>
         nextOption(map ++ Map('testSize -> value), tail)
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value), tail)
     }
   }
 
@@ -630,10 +660,11 @@ object Item2Item {
       if (options.contains('testCountry)) options('testCountry) else "PE"
     val testSize =
       if (options.contains('testSize)) options('testSize).toInt else 1000
-
+    val nDays =
+      if (options.contains('nDays)) options('nDays).toInt else -1
     if(isTest)
-      runTest(spark, testCountry, simHits, predHits, testSize)
+      runTest(spark, testCountry, nDays, simHits, predHits, testSize)
     else
-      runExpand(spark, filePath, simHits, predHits)
+      runExpand(spark, filePath, nDays, simHits, predHits)
   }
 }
