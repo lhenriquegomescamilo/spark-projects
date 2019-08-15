@@ -19,6 +19,41 @@ import java.sql.Savepoint
   * to run quick fixes, or tests.
   */
 object IpgMaids {
+  private val SALT: String =
+    "jMhKlOuJnM34G6NHkqo9V010GhLAqOpF0BePojHgh1HgNg8^72k"
+
+  private val KEY: String = "a51hgaoqpgh5bcmhyt1zptys=="
+
+  def keyToSpec(): SecretKeySpec = {
+    var keyBytes: Array[Byte] =
+      ("jMhKlOuJnM34G6NHkqo9V010GhLAqOpF0BePojHgh1HgNg8^72k" + "a51hgaoqpgh5bcmhyt1zptys")
+        .getBytes("UTF-8")
+    val sha: MessageDigest = MessageDigest.getInstance("SHA-1")
+    keyBytes = sha.digest(keyBytes)
+    keyBytes = util.Arrays.copyOf(keyBytes, 16)
+    new SecretKeySpec(keyBytes, "AES")
+  }
+
+  def encrypt(value: String): String = {
+    val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
+    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec())
+    Base64.encodeBase64String(cipher.doFinal(value.getBytes("UTF-8")))
+  }
+
+  def decrypt(encryptedValue: String): String = {
+    val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING")
+    cipher.init(Cipher.DECRYPT_MODE, keyToSpec())
+    new String(cipher.doFinal(Base64.decodeBase64(encryptedValue)))
+  }
+
+  val encriptador = udf { (device_id: String) =>
+    encrypt(device_id)
+  }
+  
+  val desencriptador = udf { (device_id: String) =>
+    decrypt(device_id)
+  }
+
   def getDataIdPartners(
       spark: SparkSession,
       partnerIds: List[String],
@@ -72,32 +107,30 @@ object IpgMaids {
           spark.sparkContext.emptyRDD[Row],
           StructType(Array(StructField("empty", StringType, true)))
         )
-    //fs.close()
     df
   }
 
   def getDataAcxiom(spark: SparkSession) {
     val dataBase =
-      getDataIdPartners(spark, List("1008", "349"), 20, 1, "streaming")
-        .select("device_id", "device_type")
+      getDataIdPartners(
+        spark,
+        List("1008", "640", "119", "412", "979", "1131"),
+        40,
+        1,
+        "streaming"
+      ).select("device_id", "device_type")
         .withColumn("device_id", upper(col("device_id")))
         .filter("device_type = 'android' or device_type = 'ios'")
+        .drop("device_type")
         .distinct()
-    val dataAcxiom = spark.read
-      .format("csv")
-      .load(
-        "/data/providers/acxiom/acxiom_AR_MAID_ONLY_XREF_Extract_20190806.txt.gz"
-      )
-      .select("_c0")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumn("device_id", upper(col("device_id")))
 
     dataBase
-      .join(dataAcxiom, Seq("device_id"))
+      .withColumn("salt", encriptador(col("device_id")))
+      .repartition(300)
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/join_Acxiom_AR")
+      .save("/datascience/custom/IPG_maids")
 
   }
 
