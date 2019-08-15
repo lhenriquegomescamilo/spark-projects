@@ -3637,13 +3637,13 @@ user_granularity.write
     
 
     //Brasil
-    val piis_BR = spBRk.read
+    val piis_BR = spark.read
       .format("pBRquet")
       .load("/datascience/pii_matching/pii_tuples/")
       .filter("country='BR'")
       .select("device_id", "nid_sh2")
 
-    val axiom_pii_BR_count  = spBRk.read.format("csv")
+    val axiom_pii_BR_count  = spark.read.format("csv")
             .load("/datascience/misc/_axiom_pii_BR_20190815")
             .toDF("nid_sh2","count").filter("count < 11")
     
