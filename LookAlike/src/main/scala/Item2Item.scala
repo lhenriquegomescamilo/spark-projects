@@ -11,6 +11,7 @@ import java.io._
 import org.joda.time.DateTime
 import scala.collection.mutable.WrappedArray
 import com.esotericsoftware.kryo.Kryo
+import org.apache.hadoop.fs.{FileSystem, Path}
 
 import org.apache.spark.rdd.RDD
 import org.apache.log4j.{Level, Logger}
@@ -251,11 +252,11 @@ object Item2Item {
   }
 
   /*
-  * It reads data triplets for a given counrty.
+  * It reads data triplets for a given country.
   */
   def getDataTriplets(
       spark: SparkSession,
-      counrty: String,
+      country: String,
       nDays: Int = -1,
       path: String = "/datascience/data_triplets/segments/") = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
@@ -269,7 +270,7 @@ object Item2Item {
       val days = (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
       // Now we obtain the list of hdfs folders to be read
       val hdfs_files = days
-        .map(day => path + "/day=%s/country=%s".format(day, counrty))
+        .map(day => path + "/day=%s/country=%s".format(day, country))
         .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
       spark.read.option("basePath", path).parquet(hdfs_files: _*)
     }
