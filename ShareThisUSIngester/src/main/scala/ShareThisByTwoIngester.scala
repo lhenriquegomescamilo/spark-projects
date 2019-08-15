@@ -66,14 +66,14 @@ object ShareThisByTwoIngester {
             .withColumn("lotame_id", col("external_id").getItem(3))
             .withColumn("nlsn_id", col("external_id").getItem(4))
             .withColumn("eyeota_id", col("external_id").getItem(5))
-            //.withColumn("day", regexp_replace(split(col("standardTimestamp"), "T").getItem(0), "-", ""))
+            .withColumn("day", regexp_replace(split(col("standardTimestamp"), "T").getItem(0), "-", ""))
 
     //val by_columns = df.select(columns.head, columns.tail: _*).na.fill("")
     
     df.coalesce(100).write
       .mode(SaveMode.Overwrite)
       .format("parquet")
-      .partitionBy(day)
+      .partitionBy("day")
       .save("/data/providers/sharethis/new/")
   }
 
