@@ -3561,7 +3561,7 @@ user_granularity.write
       .save("/datascience/audiences/crossdeviced/Telecentro_w_relevance")
   }
 
-  def get_pii_AXIOM(spark: SparkSession) {
+  def get_pii_ACXIOM(spark: SparkSession) {
 
     val piis_ar = spark.read
       .format("parquet")
@@ -3570,11 +3570,16 @@ user_granularity.write
       .select("device_id", "nid_sh2")
       .filter(col("nid_sh2").isNotNull)
       .dropDuplicates()
+      .groupBy("nid_sh2").agg(collect_set("device_id") as "device_list")
+        .withColumn("len",size(col("device_list")))
+        .filter(col("len")<11)
+        .withColumn("device_list",concat_ws(",",col("device_list")))
+        .drop("len")
 
     piis_ar.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/_axiom_pii_AR_20190806")
+      .save("/datascience/misc/_axiom_pii_AR_20190815")
 
     val piis_br = spark.read
       .format("parquet")
@@ -3583,11 +3588,16 @@ user_granularity.write
       .select("device_id", "nid_sh2")
       .filter(col("nid_sh2").isNotNull)
       .dropDuplicates()
+      .groupBy("nid_sh2").agg(collect_set("device_id") as "device_list")
+        .withColumn("len",size(col("device_list")))
+        .filter(col("len")<11)
+        .withColumn("device_list",concat_ws(",",col("device_list")))
+        .drop("len")
 
     piis_br.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/_axiom_pii_BR_20190806")
+      .save("/datascience/misc/_axiom_pii_BR_20190815")
 
     //tiramos metricas
     println("Argentina")
@@ -5037,7 +5047,7 @@ def getDataAcxiom(spark: SparkSession){
     Logger.getRootLogger.setLevel(Level.WARN)
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    get_pii_acxiom_AR_BR(spark)
+    get_pii_ACXIOM(spark)
      
   }
 
