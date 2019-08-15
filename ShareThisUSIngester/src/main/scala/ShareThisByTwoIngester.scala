@@ -77,7 +77,7 @@ object ShareThisByTwoIngester {
       .save("/data/providers/sharethis/new/")
   }
 
-  def getDataAudiences(
+  /*def getDataAudiences(
       spark: SparkSession,
       nDays: Int = 30,
       since: Int = 1
@@ -92,7 +92,7 @@ object ShareThisByTwoIngester {
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     val path = "/datascience/sharethis/loading"
 
-  }
+  }*/
 
   def download_data(spark: SparkSession, nDays: Int, from: Int): Unit = {
     // Now we get the list of days to be downloaded
