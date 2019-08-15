@@ -332,9 +332,16 @@ def userAggregateFromPolygon(
       value_dictionary: Map[String, String]
   ) = {
 
-        val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/",value_dictionary)
-                        .drop(col("count"))
-                        .dropDuplicates()
+        val country_iso =
+        if (value_dictionary("country") == "argentina")
+           "AR"
+        else "MX"
+
+        val segments = spark.read   
+                      .option("delimiter","\t")      
+                      .parquet("/datascience/data_demo/triplets_segments/country=%s/".format(country_iso))
+                      .withColumnRenamed("feature","all_segments")
+                      .drop(col("count"))
 
         val data = spark.read
         .format("csv")
@@ -361,8 +368,10 @@ def userAggregateFromPolygon(
                     .option("header", "true")
                     .mode(SaveMode.Overwrite)
                     .save(output_path_segments)
-                
-                     
+             
+         
+
+                      
   }
 
 }
