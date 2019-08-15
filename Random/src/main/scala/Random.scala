@@ -3638,7 +3638,7 @@ user_granularity.write
 
     //Brasil
     val piis_BR = spark.read
-      .format("pBRquet")
+      .format("parquet")
       .load("/datascience/pii_matching/pii_tuples/")
       .filter("country='BR'")
       .select("device_id", "nid_sh2")
