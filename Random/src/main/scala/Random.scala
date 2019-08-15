@@ -3610,6 +3610,56 @@ user_granularity.write
 
   }
 
+
+  def get_pii_ACXIOM_part_2(spark: SparkSession) {
+
+//Argentina
+    val piis_ar = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country='AR'")
+      .select("device_id", "nid_sh2")
+
+    val axiom_pii_AR_count  = spark.read.format("csv")
+            .load("/datascience/misc/_axiom_pii_AR_20190815")
+            .toDF("nid_sh2","count").filter("count < 11")
+    
+    val axiom_pii_AR_output = axiom_pii_AR_count.join(piis_ar,Seq("nid_sh2"))
+                        .groupBy("nid_sh2").agg(collect_set("device_id") as "device_list")
+                        .withColumn("device_list",concat_ws(",",col("device_list")))
+
+
+    
+      axiom_pii_AR_output.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/axiom_pii_AR_20190815___")
+    
+
+    //Brasil
+    val piis_BR = spBRk.read
+      .format("pBRquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country='BR'")
+      .select("device_id", "nid_sh2")
+
+    val axiom_pii_BR_count  = spBRk.read.format("csv")
+            .load("/datascience/misc/_axiom_pii_BR_20190815")
+            .toDF("nid_sh2","count").filter("count < 11")
+    
+    val axiom_pii_BR_output = axiom_pii_BR_count.join(piis_BR,Seq("nid_sh2"))
+                        .groupBy("nid_sh2").agg(collect_set("device_id") as "device_list")
+                        .withColumn("device_list",concat_ws(",",col("device_list")))
+
+
+      
+    axiom_pii_BR_output.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/axiom_pii_BR_20190815___")
+
+  }
+
   def get_pii_AR_seba(spark: SparkSession) {
 
     val piis_ar = spark.read
