@@ -1562,6 +1562,31 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
+
+    def get_pii_acxiom_AR_BR(spark: SparkSession) {
+
+    val piis_ar =  spark.read.load("/datascience/pii_matching/pii_tuples/")
+          .filter("country='AR'").select("device_id","nid_sh2")
+          .groupBy("nid_sh2")
+              .agg(collect_set("device_id") as "device_list")
+              .withColumn("len",size(col("device_list"))).filter(col("len")<11)
+              .withColumn("device_list",concat_ws(",",col("device_list")))
+              .drop("len")
+
+      piis_ar.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/axiom_pii_AR_20190815")
+
+
+    val piis_br =  spark.read.load("/datascience/pii_matching/pii_tuples/")
+          .filter("country='BR'").select("device_id","nid_sh2")
+          .groupBy("nid_sh2")
+          .agg(collect_set("device_id") as "device_list")
+          .withColumn("len",size(col("device_list")))
+          .filter(col("len")<11).withColumn("device_list",concat_ws(",",col("device_list")))
+          .drop("len")
+
+     piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/axiom_pii_BR_20190815")
+  }
+
   def get_urls_sharethis(spark: SparkSession, ndays: Int) {
 
     /**
@@ -5012,7 +5037,7 @@ def getDataAcxiom(spark: SparkSession){
     Logger.getRootLogger.setLevel(Level.WARN)
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    getDataAcxiom(spark)
+    get_pii_acxiom_AR_BR(spark)
      
   }
 
