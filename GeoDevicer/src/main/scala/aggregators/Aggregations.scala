@@ -334,7 +334,7 @@ def userAggregateFromPolygon(
 
         val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/",value_dictionary)
                         .drop(col("count"))
-                        .dropDuplicates()
+                        
 
         val data = spark.read
         .format("csv")
@@ -350,9 +350,8 @@ def userAggregateFromPolygon(
                               .join(segments, Seq("device_id"))
                               .withColumn(value_dictionary("poi_column_name"), explode(split(col(value_dictionary("poi_column_name")),",")))
                               .groupBy(value_dictionary("poi_column_name"), "feature")
-                              .agg(count(col("device_id")) as "unique_count")
-                              //.agg(countDistinct(col("device_id")) as "unique_count" )
-        
+                              .agg(countDistinct(col("device_id")) as "unique_count" )
+                              //.agg(count(col("device_id")) as "unique_count")  
 
       val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
                                                             .format(value_dictionary("poi_output_file"))
