@@ -233,7 +233,7 @@ def userAggregateFromPolygon(
       else "MX"
 
     val nDays = value_dictionary("web_days")
-    val since = value_dictionary("since")
+    val since = 1
 
     // Get the days to be loaded
     val format = "yyyyMMdd"
@@ -322,8 +322,12 @@ def userAggregateFromPolygon(
 
 
        
-//add segments
-    def get_segments_from_triplets (
+
+                      
+  }
+
+  //add segments
+    def get_segments_from_triplets(
       spark: SparkSession,
       value_dictionary: Map[String, String]
   ) = {
@@ -345,7 +349,7 @@ def userAggregateFromPolygon(
         val joint = data.select("device_id",value_dictionary("audience_column_name"))
                               .join(segments, Seq("device_id"))
                               .withColumn(value_dictionary("poi_column_name"), explode(split(col(value_dictionary("poi_column_name")),",")))
-                              .groupBy(value_dictionary("poi_column_name"), "all_segments")
+                              .groupBy(value_dictionary("poi_column_name"), "feature")
                               .agg(count(col("device_id")) as "unique_count")
                               //.agg(countDistinct(col("device_id")) as "unique_count" )
         
@@ -357,60 +361,8 @@ def userAggregateFromPolygon(
                     .option("header", "true")
                     .mode(SaveMode.Overwrite)
                     .save(output_path_segments)
-             
-         
-
-                      
-  }
-                      
-  }
-
-  //add segments
-    def get_segments_from_triplets_old  (
-      spark: SparkSession,
-      value_dictionary: Map[String, String]
-  ) = {
-
-        val country_iso =
-        if (value_dictionary("country") == "argentina")
-           "AR"
-        else "MX"
-
-        val segments = spark.read   
-                      .option("delimiter","\t")      
-                      .parquet("/datascience/data_demo/triplets_segments/country=%s/".format(country_iso))
-                      .withColumnRenamed("feature","all_segments")
-                      .drop(col("count"))
-
-        val data = spark.read
-        .format("csv")
-        .option("header", "true")
-        .option("sep", "\t")
-        .load(
-        "/datascience/audiences/crossdeviced/%s_xd"
-          .format(value_dictionary("poi_output_file"))
-        ).filter("device_type == 'web'")
-
-
-        val joint = data.select("device_id",value_dictionary("audience_column_name"))
-                              .join(segments, Seq("device_id"))
-                              .withColumn(value_dictionary("poi_column_name"), explode(split(col(value_dictionary("poi_column_name")),",")))
-                              .groupBy(value_dictionary("poi_column_name"), "all_segments")
-                              .agg(count(col("device_id")) as "unique_count")
-                              //.agg(countDistinct(col("device_id")) as "unique_count" )
-        
-
-      val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
-                                                            .format(value_dictionary("poi_output_file"))
-
-       joint.write.format("csv")
-                    .option("header", "true")
-                    .mode(SaveMode.Overwrite)
-                    .save(output_path_segments)
-             
-         
-
-                      
+                
+                     
   }
 
 }
