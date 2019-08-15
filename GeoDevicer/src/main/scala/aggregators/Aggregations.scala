@@ -233,7 +233,7 @@ def userAggregateFromPolygon(
       else "MX"
 
     val nDays = value_dictionary("web_days")
-    val since = 1
+    val since = value_dictionary("since")
 
     // Get the days to be loaded
     val format = "yyyyMMdd"
@@ -322,12 +322,51 @@ def userAggregateFromPolygon(
 
 
        
+//add segments
+    def get_segments_from_triplets (
+      spark: SparkSession,
+      value_dictionary: Map[String, String]
+  ) = {
 
+        val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/",value_dictionary)
+                        .drop(col("count"))
+                        .dropDuplicates()
+
+        val data = spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .load(
+        "/datascience/audiences/crossdeviced/%s_xd"
+          .format(value_dictionary("poi_output_file"))
+        ).filter("device_type == 'web'")
+
+
+        val joint = data.select("device_id",value_dictionary("audience_column_name"))
+                              .join(segments, Seq("device_id"))
+                              .withColumn(value_dictionary("poi_column_name"), explode(split(col(value_dictionary("poi_column_name")),",")))
+                              .groupBy(value_dictionary("poi_column_name"), "all_segments")
+                              .agg(count(col("device_id")) as "unique_count")
+                              //.agg(countDistinct(col("device_id")) as "unique_count" )
+        
+
+      val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
+                                                            .format(value_dictionary("poi_output_file"))
+
+       joint.write.format("csv")
+                    .option("header", "true")
+                    .mode(SaveMode.Overwrite)
+                    .save(output_path_segments)
+             
+         
+
+                      
+  }
                       
   }
 
   //add segments
-    def get_segments_from_triplets  (
+    def get_segments_from_triplets_old  (
       spark: SparkSession,
       value_dictionary: Map[String, String]
   ) = {
