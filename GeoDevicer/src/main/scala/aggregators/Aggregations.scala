@@ -323,7 +323,7 @@ def userAggregateFromPolygon(
 
        
 //add segments
-    def get_segments_from_triplets (
+    def get_segments_from_triplets(
       spark: SparkSession,
       value_dictionary: Map[String, String]
   ) = {
@@ -357,8 +357,7 @@ def userAggregateFromPolygon(
                     .option("header", "true")
                     .mode(SaveMode.Overwrite)
                     .save(output_path_segments)
-             
-         
+                
 
                       
   }
