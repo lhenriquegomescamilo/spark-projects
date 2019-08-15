@@ -1573,7 +1573,7 @@ val records_common = the_join.select(col("identifier"))
               .withColumn("device_list",concat_ws(",",col("device_list")))
               .drop("len")
 
-      piis_ar.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/axiom_pii_AR_20190815")
+      piis_ar.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/_axiom_pii_AR_20190815")
 
 
     val piis_br =  spark.read.load("/datascience/pii_matching/pii_tuples/")
@@ -1584,7 +1584,7 @@ val records_common = the_join.select(col("identifier"))
           .filter(col("len")<11).withColumn("device_list",concat_ws(",",col("device_list")))
           .drop("len")
 
-     piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/axiom_pii_BR_20190815")
+     piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/_axiom_pii_BR_20190815")
   }
 
   def get_urls_sharethis(spark: SparkSession, ndays: Int) {
