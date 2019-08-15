@@ -5099,7 +5099,7 @@ def getDataAcxiom(spark: SparkSession){
     Logger.getRootLogger.setLevel(Level.WARN)
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    get_pii_ACXIOM(spark)
+    get_pii_ACXIOM_part_2(spark)
      
   }
 
