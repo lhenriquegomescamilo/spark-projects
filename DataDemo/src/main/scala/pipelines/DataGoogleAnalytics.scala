@@ -69,6 +69,7 @@ object DataGoogleAnalytics {
             .option("basePath", "/datascience/data_audiences_streaming/")
             .parquet(x)
             .withColumn("day", lit(x.split("/").last.slice(5, 13)))
+            .withColumn("timestamp", lit(x.split("/").last))
             .select("device_id", "url", "day", "country", "timestamp")
       )
 
