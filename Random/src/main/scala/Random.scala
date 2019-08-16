@@ -5098,8 +5098,8 @@ def getDataAcxiom(spark: SparkSession){
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    get_device_IDS(spark)
+    get_ISP_directtv(spark = spark, nDays = 30, since = 1)
+    
      
   }
 
