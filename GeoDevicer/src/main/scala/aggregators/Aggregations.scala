@@ -117,6 +117,46 @@ object Aggregations {
       )
 }
 
+// this function gets the map and the result of the xd and counts the devices by aggregated feature
+def POIAggregate_w_xd(
+      spark: SparkSession,
+      value_dictionary: Map[String, String]
+  ) = {
+
+  val map_data = spark.read
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .load(
+        "/datascience/geo/geo_processed/%s_map"
+          .format(value_dictionary("poi_output_file"))
+      )
+    
+  val xd_result = spark.read      
+                  .format("csv") 
+                  .option("header",true)
+                  .option("sep", "\t")
+                  .load(
+        "/datascience/audiences/crossdeviced/%s_xd"
+          .format(value_dictionary("poi_output_file")))
+
+  val audienceByCode = xd_result.withColumn(value_dictionary("poi_column_name"),explode(split(col("name"),",")))
+
+  val countByCode = audienceByCode
+                        .groupBy(value_dictionary("poi_column_name"))
+                        .agg(countDistinct("device_id") as "unique_device")
+
+
+  map_data.join(countByCode,Seq(value_dictionary("poi_column_name")))
+    .write.format("csv")
+    .option("header",true)
+    .mode(SaveMode.Overwrite)
+    .save( "/datascience/geo/geo_processed/%s_map"
+          .format(value_dictionary("poi_output_file"))
+      )            
+
+}
+
 
 //This function is used to create aggregations from polygons
 def userAggregateFromPolygon(
