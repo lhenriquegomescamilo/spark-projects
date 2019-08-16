@@ -318,8 +318,13 @@ object Geodevicer {
         value_dictionary,
         column_name = "device_id",
         header = "true"
-  )
-      // Finally, we perform the cross-device if requested.
+                                )
+
+      if (value_dictionary("crossdevice") != "false" && value_dictionary(
+          "crossdevice") != "0" && value_dictionary("map_df") == "1")
+      Aggregations.POIAggregate_w_xd(spark, value_dictionary)
+
+      // Here we join with web behaviour
     if (value_dictionary("web_days").toInt>0)
       Aggregations.get_segments_from_triplets(spark, value_dictionary)
 

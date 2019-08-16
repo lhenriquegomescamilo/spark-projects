@@ -84,7 +84,7 @@ object CrossDevicer {
       val cross_deviced_agg = cross_deviced.groupBy("device_id","device_type","validUser","frequency")
       .agg(collect_list(value_dictionary("poi_column_name")) as value_dictionary("poi_column_name"))
       .withColumn(value_dictionary("poi_column_name"), concat_ws(",", col(value_dictionary("poi_column_name"))))
-      .select("device_type","device_id",value_dictionary("poi_column_name"),"validUser","frequency")
+      .select("device_type","device_id",value_dictionary("poi_column_name")) //,"validUser","frequency" antes se seleccionaban estas para filtar luego, pero si se dejan el archivo no se empuja
 
     // We want information about the process
     cross_deviced_agg.explain(extended = true)
