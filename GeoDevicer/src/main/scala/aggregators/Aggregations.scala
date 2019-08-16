@@ -128,7 +128,7 @@ def POIAggregate_w_xd(
       .option("header", "true")
       .option("sep", "\t")
       .load(
-        "/datascience/geo/geo_processed/%s_map"
+        "/datascience/geo/map_data/%s_map"
           .format(value_dictionary("poi_output_file"))
       )
     
@@ -150,8 +150,9 @@ def POIAggregate_w_xd(
   map_data.join(countByCode,Seq(value_dictionary("poi_column_name")))
     .write.format("csv")
     .option("header",true)
+    .option("sep", "\t")
     .mode(SaveMode.Overwrite)
-    .save( "/datascience/geo/geo_processed/%s_map"
+    .save( "/datascience/geo/map_data/%s_map"
           .format(value_dictionary("poi_output_file"))
       )            
 
