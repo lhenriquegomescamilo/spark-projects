@@ -2047,7 +2047,7 @@ val records_common = the_join.select(col("identifier"))
     val df_aud = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/dtv16.csv.csv")
+      .load("/datascience/custom/dtv16.csv")
       //.filter("flag_tc == 0")
 
     val joint = pii_table.join((df_aud), Seq("valor_atributo_hash"))
