@@ -305,7 +305,7 @@ object ContentKws {
       df_joint
         .filter(t._2)
         .withColumn("seg_id", lit(t._1))
-        .select("device_type", "device_id", "seg_id")
+        .select("url", "seg_id")
         .write
         .format("csv")
         .option("sep", "\t")
@@ -353,25 +353,23 @@ object ContentKws {
   // if populate True (1), it creates a file for ingester.
 
 
-  def get_users_pipeline_3(
+  def get_urls_pipeline_3(
       spark: SparkSession,
       country: String,
       nDays: Integer,
       since: Integer,
-      keys_path: String,
-      queries_path: String,
+      json_path: String,
+      data_path: String,
       populate: Int,
       job_name: String) = {
     
-    // reads from "data_keywords"
-    val df_data_keywords = read_data_kws(spark = spark,
-                                         country = country,
-                                         nDays = nDays,
-                                         since = since)
+    // reads from "content_data"
+     val df_kws = read_data(spark = spark,
+                            data_path = data_path,
+                            country = country,
+                            nDays = nDays,
+                            since = since)
     
-    // a get_joint_keys pasarle un df con la columna content_keys,
-    // creado a partir de una lista de keywords (levanto la lista de un json)
-    //la siguiente linea es temp:  
 
     //reads "content_keys" (every keyword that appears in the queries) to match with data_keywords
     val df_keys = spark.read
