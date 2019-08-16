@@ -108,6 +108,71 @@ object Item2Item {
              country)
     }
   }
+
+  def runAdHocExpand(spark: SparkSession,
+                    nDays: Int = -1,
+                    simMatrixHits: String = "binary",
+                    predMatrixHits: String = "binary") {
+
+    // Todo: Modify input And output folder
+    // Input
+    /*
+    {
+      country: "PE",
+      expand: [{}]
+      features?
+    }
+
+    */
+
+    val pathToProcess = "/datascience/data_lookalike/to_process/"
+    val pathInProcess = "/datascience/data_lookalike/in_process/"
+    val pathDone = "/datascience/data_lookalike/done/"
+    val pathFailed = "/datascience/data_lookalike/errors/"
+    
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+    
+    // 1 reads to process
+    // Now we order the files according to their date (filename, timestamp).
+    var filesToProcess = fs
+      .listStatus(new Path(pathToProcess))
+      .map(
+        f =>
+          (f.getPath.toString.split("/").last.toString, f.getModificationTime)
+      )
+      .toList
+    // Now we sort the list by the second component (timestamp)
+    filesToProcess = scala.util.Sorting.stableSort(
+      filesReady,
+      (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
+    )
+
+    for (file <- filesToProcess):
+      var fileToProcess = pathToProcess + file
+      var fileInProcess = pathInProcess + file
+      var fileFailed = pathFailed + file
+      var fileDone = pathDone + file
+      var processError = false
+
+      fs.rename(new Path(fileToProcess), new Path(fileInProcess))
+
+      try {
+        println("LOOKALIKE LOG: Processing File: " + file)
+        runExpand(spark, fileInProcess, nDays, simMatrixHits, predMatrixHits)
+      } catch {
+        case e: Throwable => {
+          errorMessage = e.toString()
+          println("LOOKALIKE LOG: The lookalike process failed on " + file + "\nThe error was: " + errorMessage)
+          processError = true
+      }
+    }
+    if (!processError)
+      fs.rename(new Path(fileInProcess), new Path(fileDone))
+    else
+      fs.rename(new Path(fileInProcess), new Path(fileFailed))
+  }
+
   /*
   *
   */
