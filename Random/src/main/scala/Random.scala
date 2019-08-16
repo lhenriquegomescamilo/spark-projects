@@ -2125,8 +2125,9 @@ val records_common = the_join.select(col("identifier"))
       .option("header", "true")
       .load("/datascience/custom/devices_dtv16")
       .select("device_id", "valor_atributo_hash")
+      .dropDuplicates()
 
-    val joint = df_audiences_time.join(broadcast(audience_fb), Seq("device_id"))
+    val joint = df_audiences_time.join(audience_fb, Seq("device_id")).dropDuplicates()
 
     joint.write
       .format("csv")
