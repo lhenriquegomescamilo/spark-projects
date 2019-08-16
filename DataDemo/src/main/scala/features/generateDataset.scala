@@ -267,12 +267,11 @@ object GenerateDataset {
 
     // Here we filter the users from 30 days if we are calculating the expansion set
     if (joinType == "left_anti"){
-      /// Obtenemos la data de los ultimos ndays
       val format = "yyyyMMdd"
       val start = DateTime.now.minusDays(1)
 
       val days =
-        (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+        (0 until 30).map(start.minusDays(_)).map(_.toString(format))
       val path = "/datascience/data_audiences_streaming"
       val dfs = days
         .flatMap(
@@ -438,7 +437,7 @@ object GenerateDataset {
       country: String,
       joinType: String,
       name: String,
-      ndays:Int 
+      ndays:Int = 30
   ) = {
     
     // List of segments that will be considered. The rest of the records are going to be filtered out.
@@ -470,6 +469,10 @@ object GenerateDataset {
     */
     
       // Now we load the triplets, for a particular country. Here we do the group by.
+      val sc = spark.sparkContext
+      val conf = sc.hadoopConfiguration
+      val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
       val format = "yyyyMMdd"
       val start = DateTime.now.minusDays(ndays)
       val end = DateTime.now.minusDays(0)
