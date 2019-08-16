@@ -128,7 +128,7 @@ def POIAggregate_w_xd(
       .option("header", "true")
       .option("sep", "\t")
       .load(
-        "/datascience/geo/geo_processed/%s_map"
+        "/datascience/geo/map_data/%s_map"
           .format(value_dictionary("poi_output_file"))
       )
     
