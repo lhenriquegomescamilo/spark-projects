@@ -35,21 +35,43 @@ object GenerateDataset {
       nDays: Int = 30,
       since: Int = 1
   ): DataFrame = {
-    // First we obtain the configuration to be allowed to watch if a file exists or not
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
 
-    // Get the days to be loaded
+    /// Configuraciones de spark
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    /// Obtenemos la data de los ultimos ndays
     val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_audiences"
+    val start = DateTime.now.minusDays(since)
 
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days
-      .map(day => path + "/day=%s".format(day))
+    val days =
+      (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences_streaming"
+    val dfs = days
+      .flatMap(
+        day =>
+          (0 until 24).map(
+            hour =>
+              path + "/hour=%s%02d/"
+                .format(day, hour)
+          )
+      )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+      .map(
+        x =>
+          spark.read
+            .option("basePath", "/datascience/data_audiences_streaming/")
+            .parquet(x)
+            .filter("event_type IN ('batch', 'data', 'tk', 'pv')")
+            .select("device_id", "segments", "country")
+            .withColumn("segments", explode(col("segments")))
+            .withColumn("day", lit(x.split("/").last.slice(5, 13)))
+            .withColumnRenamed("segments", "feature")
+            .withColumn("count", lit(1))
+      )
+
+    val df = dfs.reduce((df1, df2) => df1.union(df2))
 
     df
   }
