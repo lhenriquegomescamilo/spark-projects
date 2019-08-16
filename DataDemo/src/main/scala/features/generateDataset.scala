@@ -438,7 +438,7 @@ object GenerateDataset {
       country: String,
       joinType: String,
       name: String,
-      ndays:30
+      ndays:Int 
   ) = {
     
     // List of segments that will be considered. The rest of the records are going to be filtered out.
