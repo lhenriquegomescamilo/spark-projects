@@ -2055,7 +2055,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/devices_dtv16.csv")
+      .save("/datascience/custom/devices_dtv16")
   }
 
   def get_ISP_directtv(
@@ -2123,7 +2123,7 @@ val records_common = the_join.select(col("identifier"))
     val audience_fb = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/devices_ISP_directtv_13aug_last")
+      .load("/datascience/custom/devices_dtv16")
       .select("device_id", "valor_atributo_hash")
 
     val joint = df_audiences_time.join(broadcast(audience_fb), Seq("device_id"))
@@ -2133,7 +2133,7 @@ val records_common = the_join.select(col("identifier"))
       .option("header", "true")
       .option("delimiter", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/directtv_ISP_13_aug_last")
+      .save("/datascience/custom/ISPS_dtv16")
   }
 
   /**
