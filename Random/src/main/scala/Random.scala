@@ -2047,7 +2047,7 @@ val records_common = the_join.select(col("identifier"))
     val df_aud = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/aud_directv_last.csv")
+      .load("/datascience/custom/dtv16.csv.csv")
       //.filter("flag_tc == 0")
 
     val joint = pii_table.join((df_aud), Seq("valor_atributo_hash"))
@@ -2055,7 +2055,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/devices_ISP_directtv_13aug_last")
+      .save("/datascience/custom/devices_dtv16.csv")
   }
 
   def get_ISP_directtv(
@@ -5099,7 +5099,7 @@ def getDataAcxiom(spark: SparkSession){
     Logger.getRootLogger.setLevel(Level.WARN)
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    get_pii_ACXIOM_part_2(spark)
+    get_device_IDS(spark)
      
   }
 
