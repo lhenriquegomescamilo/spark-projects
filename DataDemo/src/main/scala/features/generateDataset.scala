@@ -267,6 +267,11 @@ object GenerateDataset {
 
     // Here we filter the users from 30 days if we are calculating the expansion set
     if (joinType == "left_anti"){
+
+      val sc = spark.sparkContext
+      val conf = sc.hadoopConfiguration
+      val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
       val format = "yyyyMMdd"
       val start = DateTime.now.minusDays(1)
 
