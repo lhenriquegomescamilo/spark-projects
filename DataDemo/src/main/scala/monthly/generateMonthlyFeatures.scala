@@ -16,6 +16,7 @@ object GenerateMonthlyFeatures{
   def main(args: Array[String]) {
     val spark = SparkSession.builder
       .appName("Monthly Features Download")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
 
     // Parameters
