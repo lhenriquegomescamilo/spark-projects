@@ -49,7 +49,7 @@ object ByTwoData {
         "deviceType",
         "os",
         "browserFamily",
-        "geo_iso",
+        //"geo_iso",
         "de_geo_pulseplus_city",
         "de_geo_pulseplus_postal_code",
         "de_geo_pulseplus_postal_ext",
