@@ -49,7 +49,7 @@ object ContentKws {
     *
     *
     *
-    *                PITCH DATA_KEYWORDS
+    *                Get Users pipeline 3 (with csvs)
     *
     *
     *
@@ -88,7 +88,7 @@ object ContentKws {
   }
 
 
-  // This function joins data from data_keywords with all keywords from queries
+  // This function joins data from "data_keywords" with all keywords from queries ("content_keys")
   //Input = df from read_data_kws() and df from desired keys.
   //Output = DataFrame with "device_type"|"device_id"|"kws", grouped by kws list for each user
 
@@ -106,7 +106,8 @@ object ContentKws {
       .select("device_type", "device_id", "kws")
   }
     
-  // This function saves a file per query (for each segment), containing users that matched the query  
+  // This function appends a file per query (for each segment), containing users that matched the query
+  // then it groups segments by device_id, obtaining a list of segments for each device.   
   //Input = df with queries |"seg_id"|"query"| and joint df from get_joint_keys().
   //Output = DataFrame with "device_type"|"device_id"|"seg_id"
   // if populate True (1), it creates a file for ingester.
@@ -188,6 +189,7 @@ object ContentKws {
       populate: Int,
       job_name: String) = {
     
+    // reads from "data_keywords"
     val df_data_keywords = read_data_kws(spark = spark,
                                          country = country,
                                          nDays = nDays,
@@ -197,12 +199,13 @@ object ContentKws {
     // creado a partir de una lista de keywords (levanto la lista de un json)
     //la siguiente linea es temp:  
 
+    //reads "content_keys" (every keyword that appears in the queries) to match with data_keywords
     val df_keys = spark.read
       .format("csv")
       .option("header", "true")
       .load(keys_path)
 
-    
+    // matches content_keys with data_keywords
     val df_joint = get_joint_keys(df_keys = df_keys,
                                   df_data_keywords = df_data_keywords)
 
@@ -224,34 +227,179 @@ object ContentKws {
 
   }
   
+/**
+    *
+    *
+    *
+    *                Get Users pipeline 3 (with jsons)
+    *
+    *
+    *
+    */
 
-  /**
-  //create df from list of tuples
+  // This function reads from a file with selected keywords from
+  //Input = country, nDays and since.
+  //Output = DataFrame with "content_keys"| "url"
 
-  // leer values de algun lado
+// PROVISORIA (PARA TESTEAR. HAY QUE LEER DE DATA KEYWORDS).
 
-  // Create `Row` from `Seq`
-  val row = Row.fromSeq(values)
+  def read_data(
+      spark: SparkSession,
+      data_path: String,
+      country: String,
+      nDays: Integer,
+      since: Integer) : DataFrame = {
 
-  // Create `RDD` from `Row`
-  val rdd = spark.sparkContext.makeRDD(List(row))
+    val data_kws = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load(path)
+      .select("kw","url_raw")
+      .withColumn("kw", split(col("kw"), " "))
+      .withColumn("kw", explode(col("kw")))
+      .withColumnRenamed("kw", "content_keys")
 
-  // Create schema fields
-  val fields = List(
-    StructField("query", StringType, nullable = false),
-    StructField("seg_id", Integerype, nullable = false)
-  )
+    data_kws
+  }
 
-  // Create `DataFrame`
-  val dataFrame = spark.createDataFrame(rdd, StructType(fields))
 
-   */
+  // This function joins data from "data_keywords" with all keywords from queries ("content_keys")
+  //Input = df from read_data() and df from desired keys.
+  //Output = DataFrame with "url"|"kws", grouped by kws list for each url
+
+  def join_keys(
+      df_keys: DataFrame,
+      data_kws: DataFrame) : DataFrame = {
+
+    val df_joint = data_kws.join(broadcast(df_keys), Seq("content_keys"))
+    df_joint
+      .select("content_keys","url")
+      .dropDuplicates()
+      .groupBy("url")
+      .agg(collect_list("content_keys").as("kws"))          
+      .select("url", "kws")
+  }
+    
+  // This function appends a file per query (for each segment), containing users that matched the query
+  // then it groups segments by device_id, obtaining a list of segments for each device.   
+  //Input = df with queries |"seg_id"|"query"| and joint df from get_joint_keys().
+  //Output = DataFrame with "device_type"|"device_id"|"seg_id"
+  // if populate True (1), it creates a file for ingester.
+  
+  def query_save(
+      spark: SparkSession,
+      df_queries: DataFrame,
+      df_joint: DataFrame,
+      populate: Int,
+      job_name: String) = {
+  
+    df_joint.cache()
+
+    val fileName = "/datascience/devicer/processed/" + job_name
+    val fileNameFinal = fileName + "_grouped"
+
+    val tuples = df_queries.select("seg_id", "query")
+      .collect()
+      .map(r => (r(0).toString, r(1).toString))
+    for (t <- tuples) {
+      df_joint
+        .filter(t._2)
+        .withColumn("seg_id", lit(t._1))
+        .select("url", "seg_id")
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode("append")
+        .save(fileName)
+    }
+  
+    val done = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load(fileName)
+      .distinct()
+    done
+      .groupBy("_c0", "_c1")
+      .agg(collect_list("_c2") as "segments")
+      .withColumn("segments", concat_ws(",", col("segments")))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(fileNameFinal)
+  
+    if(populate == 1) {
+      val conf = spark.sparkContext.hadoopConfiguration
+      val fs = FileSystem.get(conf)
+      val os = fs.create(new Path("/datascience/ingester/ready/%s".format(job_name)))
+      val content =
+        """{"filePath":"%s", "priority": 20, "partnerId": 0, "queue":"datascience", "jobid": 0, "description":"%s"}"""
+          .format(fileNameFinal,job_name)
+      println(content)
+      os.write(content.getBytes)
+      os.close()
+    }
+    
+  }
+  
 
 
   //main method:
-  
-  //kw_list: List[String],     pasarle estos params a la funcion para pedidos futuros
-  //tuple_list: List[String],
+
+  // This function saves a file per query (for each segment), containing users that matched the query
+  // and sends file to ingester if populate == 1.  
+  //Input = country,nDays,since,keys_path,queries,path,populate,job_name
+  //Output = DataFrame with "device_type"|"device_id"|"seg_id"
+  // if populate True (1), it creates a file for ingester.
+
+
+  def get_urls_pipeline_3(
+      spark: SparkSession,
+      country: String,
+      nDays: Integer,
+      since: Integer,
+      json_path: String,
+      data_path: String,
+      populate: Int,
+      job_name: String) = {
+    
+    // reads from "content_data"
+     val df_kws = read_data(spark = spark,
+                            data_path = data_path,
+                            country = country,
+                            nDays = nDays,
+                            since = since)
+    
+
+    //reads "content_keys" (every keyword that appears in the queries) to match with data_keywords
+    val df_keys = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load(keys_path)
+
+    // matches content_keys with data_keywords
+    val df_joint = get_joint_keys(df_keys = df_keys,
+                                  df_data_keywords = df_data_keywords)
+
+    //pasarle una lista de tuplas del tipo (query,ID)
+    //la siguiente linea es temp:
+    
+    val df_queries = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load(queries_path)
+      //.limit(30)
+
+
+    save_query_results(spark = spark,
+                       df_queries = df_queries,
+                       df_joint = df_joint,
+                       populate = populate,
+                       job_name = job_name)
+
+  }
+ 
+ 
   
   /**
     *

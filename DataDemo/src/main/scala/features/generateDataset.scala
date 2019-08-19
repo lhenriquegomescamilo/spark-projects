@@ -35,21 +35,43 @@ object GenerateDataset {
       nDays: Int = 30,
       since: Int = 1
   ): DataFrame = {
-    // First we obtain the configuration to be allowed to watch if a file exists or not
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
 
-    // Get the days to be loaded
+    /// Configuraciones de spark
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    /// Obtenemos la data de los ultimos ndays
     val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_audiences"
+    val start = DateTime.now.minusDays(since)
 
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days
-      .map(day => path + "/day=%s".format(day))
+    val days =
+      (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences_streaming"
+    val dfs = days
+      .flatMap(
+        day =>
+          (0 until 24).map(
+            hour =>
+              path + "/hour=%s%02d/"
+                .format(day, hour)
+          )
+      )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+      .map(
+        x =>
+          spark.read
+            .option("basePath", "/datascience/data_audiences_streaming/")
+            .parquet(x)
+            .filter("event_type IN ('batch', 'data', 'tk', 'pv')")
+            .select("device_id", "segments", "country")
+            .withColumn("segments", explode(col("segments")))
+            .withColumn("day", lit(x.split("/").last.slice(5, 13)))
+            .withColumnRenamed("segments", "feature")
+            .withColumn("count", lit(1))
+      )
+
+    val df = dfs.reduce((df1, df2) => df1.union(df2))
 
     df
   }
@@ -245,21 +267,37 @@ object GenerateDataset {
 
     // Here we filter the users from 30 days if we are calculating the expansion set
     if (joinType == "left_anti"){
-      // Get the days to be loaded
-      val conf = spark.sparkContext.hadoopConfiguration
-      val fs = FileSystem.get(conf)
+
+      val sc = spark.sparkContext
+      val conf = sc.hadoopConfiguration
+      val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
       val format = "yyyyMMdd"
-      val end = DateTime.now.minusDays(1)
-      val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format))
-      val path = "/datascience/data_audiences"
+      val start = DateTime.now.minusDays(1)
 
-      // Now we obtain the list of hdfs folders to be read
-      val hdfs_files = days.map(day => path + "/day=%s".format(day)).filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+      val days =
+        (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+      val path = "/datascience/data_audiences_streaming"
+      val dfs = days
+        .flatMap(
+          day =>
+            (0 until 24).map(
+              hour =>
+                path + "/hour=%s%02d/"
+                  .format(day, hour)
+            )
+        )
+        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+        .map(
+          x =>
+            spark.read
+              .option("basePath", "/datascience/data_audiences_streaming/")
+              .parquet(x)
+              .select("device_id")
+        )
 
-      val devices = df.select("device_id").distinct()
-
+      val devices = dfs.reduce((df1, df2) => df1.union(df2)).select("device_id").distinct()
+      
       ga = ga.join(devices,Seq("device_id"))
     }
 
@@ -403,7 +441,8 @@ object GenerateDataset {
       gtDF: DataFrame,
       country: String,
       joinType: String,
-      name: String
+      name: String,
+      ndays:Int = 30
   ) = {
     
     // List of segments that will be considered. The rest of the records are going to be filtered out.
@@ -420,6 +459,7 @@ object GenerateDataset {
         5025,5310,5311,35360,35361,35362,35363""".replace("\n", "").split(",").toList.toSeq
     
     // Now we load the triplets, for a particular country. Here we do the group by.
+    /*
     val triplets =
       spark.read
         .load(
@@ -431,6 +471,43 @@ object GenerateDataset {
         .groupBy("device_id")
         .agg(collect_list(col("feature")).as("feature"))
         .withColumn("feature", concat_ws(";", col("feature")))
+    */
+    
+      // Now we load the triplets, for a particular country. Here we do the group by.
+      val sc = spark.sparkContext
+      val conf = sc.hadoopConfiguration
+      val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+      val format = "yyyyMMdd"
+      val start = DateTime.now.minusDays(ndays)
+      val end = DateTime.now.minusDays(0)
+
+      val daysCount = Days.daysBetween(start, end).getDays()
+      val days =
+        (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+      val dfs = days
+        .filter(
+          day =>
+            fs.exists(
+              new org.apache.hadoop.fs.Path(
+                "/datascience/data_triplets/segments/day=%s/country=%s/".format(day,country)
+              )
+            )
+        )
+        .map(
+          x =>
+            spark.read
+              .parquet("/datascience/data_triplets/segments/day=%s/country=%s/".format(x,country))
+        )
+
+      val triplets = dfs.reduce((df1, df2) => df1.union(df2))
+                        .filter(col("feature").isin(segments: _*))
+                        .select("device_id", "feature")
+                        .distinct()
+                        .groupBy("device_id")
+                        .agg(collect_list(col("feature")).as("feature"))
+                        .withColumn("feature", concat_ws(";", col("feature")))
 
     // Finally we perform the join between the users with no ground truth (left_anti join).
     gtDF.join(triplets, Seq("device_id"), joinType)
@@ -544,14 +621,7 @@ object GenerateDataset {
 
   def main(args: Array[String]) {
     val spark = SparkSession.builder
-      .appName("Get triplets: keywords and segments")
+      .appName("Generate datasets: training and test")
       .getOrCreate()
-
-    //val path =
-    //  "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
-    //getDataForExpansion(spark, path, "AR")
-    val path = "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
-    //getTrainingSet(spark, path)
-    getTrainingData(spark,path,"MX","training_MX")
   }
 }

@@ -13,7 +13,6 @@ import org.joda.time.{DateTime, Days}
 object ShareThisByTwoIngester {
 
   def processDayNew(spark: SparkSession, day: String) = {
-    println("LOGGER: processing day %s".format(day))
 
     val columns = List("standardTimestamp",
         "url",
@@ -69,20 +68,16 @@ object ShareThisByTwoIngester {
             .withColumn("eyeota_id", col("external_id").getItem(5))
             .withColumn("day", regexp_replace(split(col("standardTimestamp"), "T").getItem(0), "-", ""))
 
-    val by_columns = df.select(columns.head, columns.tail: _*).na.fill("")
+    //val by_columns = df.select(columns.head, columns.tail: _*).na.fill("")
     
-    by_columns.coalesce(100)
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("csv")
-      .option("header", "false")
-      .option("sep", "\t")
-      .save("/datascience/sharethis/bytwo/day=%s".format(day))
-    
-    println("LOGGER: day %s processed successfully!".format(day))
+    df.coalesce(100).write
+      .mode("append")
+      .format("parquet")
+      .partitionBy("day")
+      .save("/data/providers/sharethis/new/")
   }
 
-  def getDataAudiences(
+  /*def getDataAudiences(
       spark: SparkSession,
       nDays: Int = 30,
       since: Int = 1
@@ -97,20 +92,46 @@ object ShareThisByTwoIngester {
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     val path = "/datascience/sharethis/loading"
 
+  }*/
+
+  def download_data(spark: SparkSession, nDays: Int, from: Int): Unit = {
+    // Now we get the list of days to be downloaded
+    val format = "yyyyMMdd"
+    val end   = DateTime.now.minusDays(from)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    days.foreach(day => processDayNew(spark, day))
+  }
+
+  type OptionMap = Map[Symbol, Int]
+
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--from" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toInt), tail)
+    }
   }
 
   def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder
+    // Parse the parameters
+    val options = nextOption(Map(), args.toList)
+    val nDays = if (options.contains('nDays)) options('nDays) else 1
+    val from = if (options.contains('from)) options('from) else 1
+
+    val spark = SparkSession.builder
         .appName("ShareThisByTwoIngester")
         //.config("spark.sql.files.ignoreCorruptFiles", "true")
-        //.config("spark.sql.sources.partitionOverwriteMode","dynamic")
+        .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
 
     //val days = List("20190803", "20190802", "20190801", "20190731", "20190730", "20190729", "20190728", "20190727", "20190726", "20190725")
-    val days = List("20190710", "20190711", "20190712", "20190713")
-
-    days.foreach(day => processDayNew(spark, day))
+    //val days = List("20190710", "20190711", "20190712", "20190713")
+    download_data(spark, nDays, from)
+    //days.foreach(day => processDayNew(spark, day))
   }
 
 }

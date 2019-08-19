@@ -117,6 +117,47 @@ object Aggregations {
       )
 }
 
+// this function gets the map and the result of the xd and counts the devices by aggregated feature
+def POIAggregate_w_xd(
+      spark: SparkSession,
+      value_dictionary: Map[String, String]
+  ) = {
+
+  val map_data = spark.read
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .load(
+        "/datascience/geo/map_data/%s_map"
+          .format(value_dictionary("poi_output_file"))
+      )
+    
+  val xd_result = spark.read      
+                  .format("csv") 
+                  .option("header",true)
+                  .option("sep", "\t")
+                  .load(
+        "/datascience/audiences/crossdeviced/%s_xd"
+          .format(value_dictionary("poi_output_file")))
+
+  val audienceByCode = xd_result.withColumn(value_dictionary("poi_column_name"),explode(split(col("name"),",")))
+
+  val countByCode = audienceByCode
+                        .groupBy(value_dictionary("poi_column_name"))
+                        .agg(countDistinct("device_id") as "unique_device")
+
+
+  map_data.join(countByCode,Seq(value_dictionary("poi_column_name")))
+    .write.format("csv")
+    .option("header",true)
+    .option("sep", "\t")
+    .mode(SaveMode.Overwrite)
+    .save( "/datascience/geo/map_data/%s_map"
+          .format(value_dictionary("poi_output_file"))
+      )            
+
+}
+
 
 //This function is used to create aggregations from polygons
 def userAggregateFromPolygon(
@@ -334,7 +375,7 @@ def userAggregateFromPolygon(
 
         val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/",value_dictionary)
                         .drop(col("count"))
-                        .dropDuplicates()
+                        
 
         val data = spark.read
         .format("csv")
@@ -350,9 +391,8 @@ def userAggregateFromPolygon(
                               .join(segments, Seq("device_id"))
                               .withColumn(value_dictionary("poi_column_name"), explode(split(col(value_dictionary("poi_column_name")),",")))
                               .groupBy(value_dictionary("poi_column_name"), "feature")
-                              .agg(count(col("device_id")) as "unique_count")
-                              //.agg(countDistinct(col("device_id")) as "unique_count" )
-        
+                              .agg(countDistinct(col("device_id")) as "unique_count" )
+                              //.agg(count(col("device_id")) as "unique_count")  
 
       val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
                                                             .format(value_dictionary("poi_output_file"))

@@ -1573,7 +1573,7 @@ val records_common = the_join.select(col("identifier"))
               .withColumn("device_list",concat_ws(",",col("device_list")))
               .drop("len")
 
-      piis_ar.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/axiom_pii_AR_20190815")
+      piis_ar.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/_axiom_pii_AR_20190815")
 
 
     val piis_br =  spark.read.load("/datascience/pii_matching/pii_tuples/")
@@ -1584,7 +1584,7 @@ val records_common = the_join.select(col("identifier"))
           .filter(col("len")<11).withColumn("device_list",concat_ws(",",col("device_list")))
           .drop("len")
 
-     piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/axiom_pii_BR_20190815")
+     piis_br.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/_axiom_pii_BR_20190815")
   }
 
   def get_urls_sharethis(spark: SparkSession, ndays: Int) {
@@ -2047,7 +2047,7 @@ val records_common = the_join.select(col("identifier"))
     val df_aud = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/aud_directv_last.csv")
+      .load("/datascience/custom/dtv16.csv")
       //.filter("flag_tc == 0")
 
     val joint = pii_table.join((df_aud), Seq("valor_atributo_hash"))
@@ -2055,7 +2055,7 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/devices_ISP_directtv_13aug_last")
+      .save("/datascience/custom/devices_dtv16")
   }
 
   def get_ISP_directtv(
@@ -2123,17 +2123,18 @@ val records_common = the_join.select(col("identifier"))
     val audience_fb = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/devices_ISP_directtv_13aug_last")
+      .load("/datascience/custom/devices_dtv16")
       .select("device_id", "valor_atributo_hash")
+      .dropDuplicates()
 
-    val joint = df_audiences_time.join(broadcast(audience_fb), Seq("device_id"))
+    val joint = df_audiences_time.join(audience_fb, Seq("device_id")).dropDuplicates()
 
     joint.write
       .format("csv")
       .option("header", "true")
       .option("delimiter", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/directtv_ISP_13_aug_last")
+      .save("/datascience/custom/ISPS_dtv16")
   }
 
   /**
@@ -3561,7 +3562,7 @@ user_granularity.write
       .save("/datascience/audiences/crossdeviced/Telecentro_w_relevance")
   }
 
-  def get_pii_AXIOM(spark: SparkSession) {
+  def get_pii_ACXIOM(spark: SparkSession) {
 
     val piis_ar = spark.read
       .format("parquet")
@@ -3570,11 +3571,17 @@ user_granularity.write
       .select("device_id", "nid_sh2")
       .filter(col("nid_sh2").isNotNull)
       .dropDuplicates()
+      .groupBy("nid_sh2").agg(count("device_id") as "device_count")
+      //.groupBy("nid_sh2").agg(collect_set("device_id") as "device_list")
+      //  .withColumn("len",size(col("device_list")))
+      //  .filter(col("len")<11)
+       // .withColumn("device_list",concat_ws(",",col("device_list")))
+       // .drop("len")
 
     piis_ar.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/_axiom_pii_AR_20190806")
+      .save("/datascience/misc/_axiom_pii_AR_20190815")
 
     val piis_br = spark.read
       .format("parquet")
@@ -3583,11 +3590,17 @@ user_granularity.write
       .select("device_id", "nid_sh2")
       .filter(col("nid_sh2").isNotNull)
       .dropDuplicates()
+      .groupBy("nid_sh2").agg(count("device_id") as "device_count")
+     // .groupBy("nid_sh2").agg(collect_set("device_id") as "device_list")
+       // .withColumn("len",size(col("device_list")))
+       // .filter(col("len")<11)
+       // .withColumn("device_list",concat_ws(",",col("device_list")))
+       // .drop("len")
 
     piis_br.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/_axiom_pii_BR_20190806")
+      .save("/datascience/misc/_axiom_pii_BR_20190815")
 
     //tiramos metricas
     println("Argentina")
@@ -3595,6 +3608,56 @@ user_granularity.write
     println
     println("Brasil")
     println(piis_br.count())
+
+  }
+
+
+  def get_pii_ACXIOM_part_2(spark: SparkSession) {
+
+//Argentina
+    val piis_ar = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country='AR'")
+      .select("device_id", "nid_sh2")
+
+    val axiom_pii_AR_count  = spark.read.format("csv")
+            .load("/datascience/misc/_axiom_pii_AR_20190815")
+            .toDF("nid_sh2","count").filter("count < 11")
+    
+    val axiom_pii_AR_output = axiom_pii_AR_count.join(piis_ar,Seq("nid_sh2"))
+                        .groupBy("nid_sh2").agg(collect_set("device_id") as "device_list")
+                        .withColumn("device_list",concat_ws(",",col("device_list")))
+
+
+    
+      axiom_pii_AR_output.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/axiom_pii_AR_20190815___")
+    
+
+    //Brasil
+    val piis_BR = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country='BR'")
+      .select("device_id", "nid_sh2")
+
+    val axiom_pii_BR_count  = spark.read.format("csv")
+            .load("/datascience/misc/_axiom_pii_BR_20190815")
+            .toDF("nid_sh2","count").filter("count < 11")
+    
+    val axiom_pii_BR_output = axiom_pii_BR_count.join(piis_BR,Seq("nid_sh2"))
+                        .groupBy("nid_sh2").agg(collect_set("device_id") as "device_list")
+                        .withColumn("device_list",concat_ws(",",col("device_list")))
+
+
+      
+    axiom_pii_BR_output.write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/axiom_pii_BR_20190815___")
 
   }
 
@@ -5036,8 +5099,8 @@ def getDataAcxiom(spark: SparkSession){
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    get_pii_acxiom_AR_BR(spark)
+    get_ISP_directtv(spark = spark, nDays = 30, since = 1)
+    
      
   }
 
