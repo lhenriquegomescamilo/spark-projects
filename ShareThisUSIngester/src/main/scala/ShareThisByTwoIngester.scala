@@ -59,7 +59,6 @@ object ShareThisByTwoIngester {
         )
 
     val df = withMultivalues
-            //.withColumn("url_domain", col("url"))
             .withColumn("adnxs_id", col("external_id").getItem(0))
             .withColumn("ttd_id", col("external_id").getItem(1))
             .withColumn("mediamath_id", col("external_id").getItem(2))
@@ -67,6 +66,7 @@ object ShareThisByTwoIngester {
             .withColumn("nlsn_id", col("external_id").getItem(4))
             .withColumn("eyeota_id", col("external_id").getItem(5))
             .withColumn("day", regexp_replace(split(col("standardTimestamp"), "T").getItem(0), "-", ""))
+            .drop("external_id")
 
     //val by_columns = df.select(columns.head, columns.tail: _*).na.fill("")
     
@@ -82,7 +82,7 @@ object ShareThisByTwoIngester {
       nDays: Int = 30,
       since: Int = 1
   ) = {
-    // First we obtain the configuration to be allowed to watch if a file exists or not
+    // First we obtain the configuration to be allowed to wa`tch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
