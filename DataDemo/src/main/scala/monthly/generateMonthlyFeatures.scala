@@ -31,7 +31,7 @@ object GenerateMonthlyFeatures{
     //val triplets_keywords = GenerateTriplets.generate_triplets_keywords(spark, ndays)
     //println("LOGGER: Triplets segments generated")
 
-    for( day <- 1 to 30){
+    for( day <- 1 to ndays){
          val ga_domain = DataGoogleAnalytics.generate_google_analytics_domain(spark, 1, day, filename_domain);
     }
     //val ga_domain = DataGoogleAnalytics.generate_google_analytics_domain(spark, ndays, from, filename_domain)

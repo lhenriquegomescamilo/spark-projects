@@ -209,8 +209,12 @@ object PolygonMatcher {
     val polygonGDf = getPolygons(spark,value_dictionary)
     val safegraphDf = get_safegraph_data(spark,value_dictionary)
 
+    broadcast(polygonGDf)
+
     polygonGDf.createOrReplaceTempView("poligono_amigo")
     safegraphDf.createOrReplaceTempView("users")
+
+
 
     //hacemos el join propiamente dicho
     val intersection = spark.sql(
