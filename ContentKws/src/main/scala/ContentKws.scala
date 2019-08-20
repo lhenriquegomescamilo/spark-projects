@@ -184,8 +184,7 @@ object ContentKws {
       nDays: Integer,
       since: Integer,
       json_path: String,
-      populate: Int,
-      job_name: String) = {
+      populate: Int) = {
 
 
     //reads json with queries, kws and seg_ids
@@ -510,9 +509,8 @@ object ContentKws {
     get_users_pipeline_3(spark = spark,
                         nDays = 30,
                         since = 1,
-                        json_path = "/datascience/custom/keys_taxo_nueva.json",
-                        populate = 0,
-                        job_name = "new_taxo_MX") 
+                        json_path = "/datascience/custom/PE_taxo_nueva.json",
+                        populate = 1) 
 
      
   }
