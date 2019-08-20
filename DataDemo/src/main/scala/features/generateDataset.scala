@@ -261,7 +261,8 @@ object GenerateDataset {
       )
       .dropDuplicates("url", "device_id")
 
-    // Here we filter the users from 30 days if we are calculating the expansion set
+    // Here we filter the users from 30 days if we are calculating the expansion set. We only get the
+    // users from GA data
     if (joinType == "left_anti"){
 
       val sc = spark.sparkContext
@@ -271,23 +272,14 @@ object GenerateDataset {
       val format = "yyyyMMdd"
       val start = DateTime.now.minusDays(1)
 
-      val days =
-        (0 until 30).map(start.minusDays(_)).map(_.toString(format))
-      val path = "/datascience/data_audiences_streaming"
-      val dfs = days
-        .flatMap(
-          day =>
-            (0 until 24).map(
-              hour =>
-                path + "/hour=%s%02d/"
-                  .format(day, hour)
-            )
-        )
+      val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+      val path = "/datascience/data_demo/google_analytics_domain/"
+      val dfs = days.map(day => path + "day=%s".format(day))
         .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
         .map(
           x =>
             spark.read
-              .option("basePath", "/datascience/data_audiences_streaming/")
+              .option("basePath", "/datascience/data_demo/google_analytics_domain/")
               .parquet(x)
               .select("device_id")
         )
