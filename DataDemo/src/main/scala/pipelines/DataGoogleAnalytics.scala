@@ -70,7 +70,7 @@ object DataGoogleAnalytics {
             .parquet(x)
             .filter("country = 'AR' or country = 'MX'") // We only get AR and MX users because we only have GA data for those countries
             .withColumn("day", lit(x.split("/").last.slice(5, 13)))
-            .withColumn("timestamp", lit(x.split("/").last))
+            .withColumn("timestamp", lit(x.split("/").last.split("=").last))
             .select("device_id", "url", "day", "country", "timestamp")
       )
 
