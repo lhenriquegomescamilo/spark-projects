@@ -214,10 +214,15 @@ object PolygonMatcher {
 
     //hacemos el join propiamente dicho
     val intersection = spark.sql(
-      """SELECT  *  FROM users, poligono_amigo       WHERE ST_Contains(poligono_amigo.myshape, users.pointshape)""")
+      """SELECT  *  FROM users 
+            INNER JOIN poligono_amigo
+            ON ST_Contains(poligono_amigo.myshape, users.pointshape)""")
           .withColumnRenamed("ad_id", "device_id")
           .withColumnRenamed("id_type", "device_type")
           .select(col("*"), col("properties.*")).drop("properties","myshape","pointshape")
+
+          //esto era el viejo join
+           //"""SELECT  *  FROM users, poligono_amigo       WHERE ST_Contains(poligono_amigo.myshape, users.pointshape)""") //
                    
     intersection.write
       .format("csv")

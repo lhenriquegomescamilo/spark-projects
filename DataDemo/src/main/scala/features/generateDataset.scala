@@ -63,12 +63,7 @@ object GenerateDataset {
           spark.read
             .option("basePath", "/datascience/data_audiences_streaming/")
             .parquet(x)
-            .filter("event_type IN ('batch', 'data', 'tk', 'pv')")
-            .select("device_id", "segments", "country")
-            .withColumn("segments", explode(col("segments")))
             .withColumn("day", lit(x.split("/").last.slice(5, 13)))
-            .withColumnRenamed("segments", "feature")
-            .withColumn("count", lit(1))
       )
 
     val df = dfs.reduce((df1, df2) => df1.union(df2))
@@ -238,7 +233,8 @@ object GenerateDataset {
           URL domains separated by ';'.
           2. ga_dataset_probabilities: this dataset contains a device id along with a probability associated for every 
           age category and gender category. These are the columns generated: device_id, MALE_PROB, FEMALE_PROB, AGE18_PROB, 
-          AGE25_PROB, AGE35_PROB, AGE45_PROB, AGE55_PROB, AGE65_PROB.
+          AGE25_PROB, AGE35_PROB, AGE45_PROB, AGE55_PROB, AGE65_PROB.            .select("device_id", "segments", "country",)
+
           3. ga_timestamp: It contains the data related to the timestamps. It contains 48 columns where each column has the
           following format: [hour][0 or 1]. The hour is the hour of the day extracted from the timestamp, and 0 if it is a
           weekday and 1 if it is a weekend.
@@ -568,35 +564,48 @@ object GenerateDataset {
 
   /** PIPELINES **/
   def getExpansionData(spark: SparkSession, path: String, country: String, name:String) = {
+    // Loading the GT dataframe
     val gt = getGTDataFrame(spark,path)
-    
+
+    // Generating the GA data by joining de data from GA and the GT dataframe (left_anti)
     getGARelatedData(spark, gt, country, "left_anti", name)
+    
+    // Loading the GA dataset previously generated
     val ga = spark.read
                   .format("csv")
                   .option("sep", "\t")
                   .load("/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities".format(name, country))
                   .withColumnRenamed("_c0","device_id")
     
+    // Generating the triplets dataset by joining the triplets with the GA dataset previously generated to mantain the same users
     generateSegmentTriplets(spark, ga, country, "left", name)
+    
+    // Loading the triplets dataset previously generated
     val segments = spark.read
                   .format("csv")
                   .option("sep", "\t")
                   .load("/datascience/data_demo/name=%s/country=%s/segment_triplets".format(name, country))
                   .withColumnRenamed("_c0","device_id")
 
+    // Finally we get the Url dataset (device_id, [url1;url2]) from the users that passed the join with the previous dataset
     getDatasetFromURLs(spark, segments, country, "left", name)
   }
 
   def getTrainingData(spark: SparkSession, path: String, country: String, name:String) = {
+    // Loading the GT dataframe
     val gt = getGTDataFrame(spark,path)
     
+    // Generating the GA data by joining de data from GA and the GT dataframe (inner)
     getGARelatedData(spark, gt, country, "inner", name)
+
+    // Loading the GA dataset previously generated
     val ga = spark.read
                   .format("csv")
                   .option("sep", "\t")
                   .load("/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities".format(name, country))
                   .withColumnRenamed("_c0","device_id")
     
+    // Generating the GT dataframe (device_id, label) from the users that passed the inner join
     gt.join(ga,Seq("device_id"),"inner")
                 .select("device_id", "label")
                 .distinct()
@@ -608,14 +617,17 @@ object GenerateDataset {
                 .save(
                   "/datascience/data_demo/name=%s/country=%s/gt".format(name, country)
                 )
-    
+    // Generating the triplets dataset by joining the triplets with the GA dataset previously generated to mantain the same users
     generateSegmentTriplets(spark, ga, country, "left", name)
+
+    // Loading the triplets dataset previously generated
     val segments = spark.read
                   .format("csv")
                   .option("sep", "\t")
                   .load("/datascience/data_demo/name=%s/country=%s/segment_triplets".format(name, country))
                   .withColumnRenamed("_c0","device_id")
 
+    // Finally we get the Url dataset (device_id, [url1;url2]) from the users that passed the join with the previous dataset
     getDatasetFromURLs(spark, segments, country, "left", name)
   }
 
