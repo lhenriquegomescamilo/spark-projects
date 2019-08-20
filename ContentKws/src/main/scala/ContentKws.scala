@@ -504,13 +504,12 @@ object ContentKws {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     get_users_pipeline_3(spark = spark,
-                        country = "AR",
+                        country = "MX",
                         nDays = 30,
                         since = 1,
-                        json_path = "/datascience/custom/keys_bumeran_AR.json",
-                        data_path = "/datascience/custom/2019-08-14.csv",
+                        json_path = "/datascience/custom/keys_taxo_nueva.json",
                         populate = 0,
-                        job_name = "bumeran_AR_test") 
+                        job_name = "new_taxo_MX") 
 
      
   }
