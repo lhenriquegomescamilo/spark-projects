@@ -212,6 +212,8 @@ object ContentKws {
     val df_joint = get_joint_keys(df_keys = df_keys,
                                   df_data_keywords = df_data_keywords)
 
+    val job_name = df_queries.select("job_name").first.getString(0)
+
     save_query_results(spark = spark,
                        df_queries = df_queries,
                        df_joint = df_joint,
