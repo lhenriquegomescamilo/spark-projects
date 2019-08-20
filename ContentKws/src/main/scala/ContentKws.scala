@@ -361,7 +361,7 @@ object ContentKws {
       job_name: String) = {
     
     // reads from "content_data"
-     val df_kws = read_data(spark = spark,
+    val df_kws = read_data(spark = spark,
                             data_path = data_path)
     
     //reads json with queries, kws and seg_ids
@@ -380,11 +380,11 @@ object ContentKws {
     val df_joint = join_keys(df_keys = df_keys,
                              df_kws = df_kws)
 
-    save_query_results(spark = spark,
-                       df_queries = df_queries,
-                       df_joint = df_joint,
-                       populate = populate,
-                       job_name = job_name)
+    query_save(spark = spark,
+               df_queries = df_queries,
+               df_joint = df_joint,
+               populate = populate,
+               job_name = job_name)
 
   }
  
@@ -509,16 +509,6 @@ object ContentKws {
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-
- def get_urls_pipeline_3(
-      spark: SparkSession,
-      country: String,
-      nDays: Integer,
-      since: Integer,
-      json_path: String,
-      data_path: String,
-      populate: Int,
-      job_name: String)
 
     get_urls_pipeline_3(spark = spark,
                         country = "AR",
