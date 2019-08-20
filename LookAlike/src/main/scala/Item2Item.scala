@@ -555,7 +555,7 @@ object Item2Item {
 
   def getMinScoreMap(spark: SparkSession,
                       data: RDD[(Any, Array[(Int)], Vector)],
-                      expandInput: List[Map[String, Any]]): Map[Int, Double]{
+                      expandInput: List[Map[String, Any]]) = {
     import spark.implicits._ 
     import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
     
