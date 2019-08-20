@@ -211,7 +211,7 @@ object PolygonMatcher {
 
 
 
-    polygonGDf.createOrReplaceTempView("poligono_amigo")
+    broadcast(polygonGDf.createOrReplaceTempView("poligono_amigo"))
     safegraphDf.createOrReplaceTempView("users")
 
 
@@ -219,7 +219,7 @@ object PolygonMatcher {
     //hacemos el join propiamente dicho
     val intersection = spark.sql(
       """SELECT  *  FROM users 
-            INNER JOIN Broadcast(poligono_amigo)
+            INNER JOIN poligono_amigo
             ON ST_Contains(poligono_amigo.myshape, users.pointshape)""")
           .withColumnRenamed("ad_id", "device_id")
           .withColumnRenamed("id_type", "device_type")
