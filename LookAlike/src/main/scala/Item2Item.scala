@@ -65,7 +65,7 @@ object Item2Item {
       .toList
     // Now we sort the list by the second component (timestamp)
     filesToProcess = scala.util.Sorting.stableSort(
-      filesReady,
+      filesToProcess,
       (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
     )
 
@@ -84,7 +84,7 @@ object Item2Item {
         runExpand(spark, fileInProcess, nDays, simMatrixHits, predMatrixHits)
       } catch {
         case e: Throwable => {
-          errorMessage = e.toString()
+          var errorMessage = e.toString()
           println("LOOKALIKE LOG: The lookalike process failed on " + file + "\nThe error was: " + errorMessage)
           processError = true
       }
@@ -107,7 +107,7 @@ object Item2Item {
                 predMatrixHits: String = "binary") {
     import spark.implicits._
 
-    println("LOOKALIKE LOG: Processing File: " + file)
+    println("LOOKALIKE LOG: Input File: " + filePath)
     // Read input from file
     val expandInput = readSegmentsToExpand(spark, filePath)
     val metaInput = readMetaParameters(spark, filePath)
@@ -555,7 +555,7 @@ object Item2Item {
 
   def getMinScoreMap(spark: SparkSession,
                       data: RDD[(Any, Array[(Int)], Vector)],
-                      expandInput: List[Map[String, Any]]){
+                      expandInput: List[Map[String, Any]]): Map[Int, Double]{
     import spark.implicits._ 
     import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
     
