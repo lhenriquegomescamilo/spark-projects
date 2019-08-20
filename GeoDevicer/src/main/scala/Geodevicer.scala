@@ -289,7 +289,7 @@ object Geodevicer {
         )
         .config("geospark.join.gridtype", "kdbtree")
         // This is because the polygons (left side of join) are usually smaller in size than the Safegraph dataframes.
-        .config("geospark.join.indexbuildside", "right") 
+        //.config("geospark.join.indexbuildside", "right") 
         .appName("GeoSpark Matcher")
         .getOrCreate()
 

@@ -11,6 +11,7 @@ import java.io._
 import org.joda.time.DateTime
 import scala.collection.mutable.WrappedArray
 import com.esotericsoftware.kryo.Kryo
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 
 import org.apache.spark.rdd.RDD
@@ -65,9 +66,9 @@ object Item2Item {
       .toList
     // Now we sort the list by the second component (timestamp)
     filesToProcess = scala.util.Sorting.stableSort(
-      filesReady,
+      filesToProcess,
       (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
-    )
+    ).toList
 
     println("LOOKALIKE LOG: Jobs to process = " + filesToProcess.length.toString)
 
@@ -84,7 +85,7 @@ object Item2Item {
         runExpand(spark, fileInProcess, nDays, simMatrixHits, predMatrixHits)
       } catch {
         case e: Throwable => {
-          errorMessage = e.toString()
+          var errorMessage = e.toString()
           println("LOOKALIKE LOG: The lookalike process failed on " + file + "\nThe error was: " + errorMessage)
           processError = true
       }
@@ -107,7 +108,7 @@ object Item2Item {
                 predMatrixHits: String = "binary") {
     import spark.implicits._
 
-    println("LOOKALIKE LOG: Processing File: " + file)
+    println("LOOKALIKE LOG: Input File: " + filePath)
     // Read input from file
     val expandInput = readSegmentsToExpand(spark, filePath)
     val metaInput = readMetaParameters(spark, filePath)
@@ -171,18 +172,12 @@ object Item2Item {
   
     println("LOOKALIKE LOG: Expansion")
     // 6) Expansion
-    if (isOnDemand)
-      expandOnDemand(spark,
-                      predictData,
-                      expandInput,
-                      segmentToIndex,
-                      metaInput)
-    else
-      expandCountry(spark,
-                    predictData,
-                    expandInput,
-                    segmentToIndex,
-                    country)
+
+    expand(spark,
+           predictData,
+           expandInput,
+           segmentToIndex,
+           metaInput)
   }
 
 
@@ -457,24 +452,43 @@ object Item2Item {
   }
 
   /**
-  * Assign segments to expand each user and write the output using tsv format
+  * Assign segments to each user and generate output files
   */
-  def expandCountry(spark: SparkSession,
+  def expand(spark: SparkSession,
              data: RDD[(Any, Array[(Int)], Vector)],
              expandInput: List[Map[String, Any]] ,
              segmentToIndex: Map[String, Int],
-             country: String){
+             metaParameters: Map[String, String]){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
   
+
+  val isOnDemand = metaParameters("jobId").length > 0
+  val country = metaParameters("country")
+
   val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
   val dstSegmentIdMap = expandInput.map(m => 
                 segmentToIndex(m("segment_id").toString) -> m("dst_segment_id").toString).toMap
+              
+  // It gets the score thresholds to get at least k elements per segment.
+  val kMap = expandInput.map(m => 
+                segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
+  val kMax = expandInput.map(m => m("size").toString.toInt).max
 
   // It gets the score thresholds to get at least k elements per segment.
-  val minScoreMap = getMinScoreMap(spark, data, expandInput)
+  val minScoreMap = data
+    .flatMap(tup => // Select segments - format <segment_idx, score, hasSegment >
+      selSegmentsIdx.map(segmentIdx => (segmentIdx, tup._3.apply(segmentIdx), 
+                                        tup._2 contains segmentIdx))) 
+    .filter(tup => (tup._2 > 0 && !tup._3)) // it selects scores > 0 and devices without the segment
+    .map(tup => (tup._1, tup._2))// Format  <segment_idx, score>
+    .topByKey(kMax) // get topK scores values
+    .map(t => (t._1, if (t._2.length >= kMap(t._1.toInt)) t._2( kMap(t._1.toInt) - 1 ) else t._2.last )) // get the kth value #
+    .collect()
+    .toMap
 
-  val dataExpansion = data
+  if (!isOnDemand){ // monthly expansion
+    val dataExpansion = data
       .map(
           tup => 
             (tup._1.toString,
@@ -487,95 +501,47 @@ object Item2Item {
       )
       .filter(tup => tup._2.length > 0) // exclude devices with empty segments
 
-  // save
-  spark.createDataFrame(dataExpansion)
-    .toDF("device_id", "segments" )
-    .write
-    .format("csv")
-    .option("sep", "\t")
-    .option("header", "false")
-    .mode(SaveMode.Overwrite)
-    .save(
-    "/datascience/data_lookalike/expansion/country=%s/".format(country)
-    )
-  
-  }
-
-
-  /**
-  * Generate 2 output files.
-  *  data - format tsv <dev_type, device_id, segment>
-  *  meta - format json
-  */
-  def expandOnDemand(spark: SparkSession,
-                data: RDD[(Any, Array[(Int)], Vector)],
-                expandInput: List[Map[String, Any]] ,
-                segmentToIndex: Map[String, Int],
-                metaParameters: Map[String, String]){
-  import spark.implicits._ 
-  import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
-
-  val jobId = metaParameters("jobId")
-  val partnerId = metaParameters("partnerId")
-  
-  val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
-  val dstSegmentIdMap = expandInput.map(m => 
-                segmentToIndex(m("segment_id").toString) -> m("dst_segment_id").toString).toMap
-
-  // It gets the score thresholds to get at least k elements per segment.
-  val minScoreMap = getMinScoreMap(spark, data, expandInput)
-
-  val dataExpansion = data
-      .flatMap(
-          tup => 
-            (selSegmentsIdx
-              .filter(segmentIdx => // select segments with scores > th and don't contain the segment
-                ((minScoreMap contains segmentIdx) && tup._3.apply(segmentIdx) >= minScoreMap(segmentIdx) && !(tup._2 contains segmentIdx) ))
-              .map(segmentIdx => ("web", tup._1.toString, dstSegmentIdMap(segmentIdx))) // <device_type, device_id, segment>
-            )              
+    // save
+    spark.createDataFrame(dataExpansion)
+      .toDF("device_id", "segments" )
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "false")
+      .mode(SaveMode.Overwrite)
+      .save(
+      "/datascience/data_lookalike/expansion/country=%s/".format(country)
       )
-      .filter(tup => tup._2.length > 0) // exclude devices with empty segments
+  }
+  else{ // on demand expansion
+    val jobId = metaParameters("jobId")
+    val partnerId = metaParameters("partnerId")
+
+    val dataExpansion = data
+    .flatMap(
+        tup => 
+          (selSegmentsIdx
+            .filter(segmentIdx => // select segments with scores > th and don't contain the segment
+              ((minScoreMap contains segmentIdx) && tup._3.apply(segmentIdx) >= minScoreMap(segmentIdx) && !(tup._2 contains segmentIdx) ))
+            .map(segmentIdx => ("web", tup._1.toString, dstSegmentIdMap(segmentIdx))) // <device_type, device_id, segment>
+          )              
+    )
+    .filter(tup => tup._2.length > 0) // exclude devices with empty segments
 
 
-  var filePath = "/datascience/data_lookalike/expansion/jobId=%s/".format(jobId)
-  // save
-  spark.createDataFrame(dataExpansion)
-    .toDF("device_type", "device_id", "segment")
-    .write
-    .format("csv")
-    .option("sep", "\t")
-    .option("header", "false")
-    .mode(SaveMode.Overwrite)
-    .save(filePath)
-
-
-  generateOutputMetaFile(filePath, jobId, partnerId)
-  
+    var filePath = "/datascience/data_lookalike/expansion/jobId=%s/".format(jobId)
+    // save
+    spark.createDataFrame(dataExpansion)
+      .toDF("device_type", "device_id", "segment")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "false")
+      .mode(SaveMode.Overwrite)
+      .save(filePath)
+    generateOutputMetaFile(filePath, jobId, partnerId)
   }
 
-  def getMinScoreMap(spark: SparkSession,
-                      data: RDD[(Any, Array[(Int)], Vector)],
-                      expandInput: List[Map[String, Any]]){
-    import spark.implicits._ 
-    import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
-    
-    val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
-    val kMap = expandInput.map(m => 
-                  segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
-    val kMax = expandInput.map(m => m("size").toString.toInt).max
-
-    // It gets the score thresholds to get at least k elements per segment.
-    val minScoreMap = data
-      .flatMap(tup => // Select segments - format <segment_idx, score, hasSegment >
-        selSegmentsIdx.map(segmentIdx => (segmentIdx, tup._3.apply(segmentIdx), 
-                                          tup._2 contains segmentIdx))) 
-      .filter(tup => (tup._2 > 0 && !tup._3)) // it selects scores > 0 and devices without the segment
-      .map(tup => (tup._1, tup._2))// Format  <segment_idx, score>
-      .topByKey(kMax) // get topK scores values
-      .map(t => (t._1, if (t._2.length >= kMap(t._1.toInt)) t._2( kMap(t._1.toInt) - 1 ) else t._2.last )) // get the kth value #
-      .collect()
-      .toMap
-    minScoreMap
   }
 
     /**
@@ -601,7 +567,7 @@ object Item2Item {
         priority,
         partnerId,
         queue,
-        jobid,
+        jobId,
         description
       )
       .replace("\n", "")
@@ -788,7 +754,7 @@ object Item2Item {
           else country
           
     }
-    val map: Map[String, Any] = Map(
+    val map: Map[String, String] = Map(
         "job_id" -> jobId,
         "partner_id" -> partnerId,
         "country" -> country
