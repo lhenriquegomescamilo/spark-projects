@@ -71,7 +71,7 @@ object Item2Item {
 
     println("LOOKALIKE LOG: Jobs to process = " + filesToProcess.length.toString)
 
-    for (file <- filesToProcess):
+    for (file <- filesToProcess){
       var fileToProcess = pathToProcess + file
       var fileInProcess = pathInProcess + file
       var fileFailed = pathFailed + file
@@ -93,6 +93,7 @@ object Item2Item {
       fs.rename(new Path(fileInProcess), new Path(fileDone))
     else
       fs.rename(new Path(fileInProcess), new Path(fileFailed))
+    }
   }
 
   /**
