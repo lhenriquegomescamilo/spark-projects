@@ -17,8 +17,6 @@ import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 import org.apache.log4j.{Level, Logger}
 
-
-
 /**
   Job Summary:
   * The goal of this job is to create an audiencie based on Points Of Interests (POIs). The method takes as input a time frame (be default, december 2018) and a dataset containing the POIs. This dataset should be already formatted in three columns segment|latitude|longitude (without the index) and with the latitude and longitude with point (".") as delimiter.
@@ -29,6 +27,7 @@ import org.apache.log4j.{Level, Logger}
 object Geodevicer {
 
   Logger.getRootLogger.setLevel(Level.WARN)
+
   /**
     * This method returns a Map with all the parameters obtained from the JSON file.
     *
@@ -140,8 +139,9 @@ object Geodevicer {
 
     // Column that identifies the audience, if present.
     val audience_column_name =
-      if (query.contains("audience_column_name") && Option(query("audience_column_name"))
-            .getOrElse("")
+      if (query.contains("audience_column_name") && Option(
+            query("audience_column_name")
+          ).getOrElse("")
             .toString
             .length > 0) query("audience_column_name").toString
       else "no_push"
@@ -162,7 +162,7 @@ object Geodevicer {
             .length > 0) query("web_column").toString
       else "0"
 
- // Column to activate polygon matching
+    // Column to activate polygon matching
     val polygon_input =
       if (query.contains("polygon_input") && Option(query("polygon_input"))
             .getOrElse("")
@@ -170,15 +170,13 @@ object Geodevicer {
             .length > 0) query("polygon_input").toString
       else "0"
 
-  // Column to select old pipeline if desired
+    // Column to select old pipeline if desired
     val old_pipeline =
       if (query.contains("old_pipeline") && Option(query("old_pipeline"))
             .getOrElse("")
             .toString
             .length > 0) query("old_pipeline").toString
       else "0"
-
-
 
     // Finally we construct the Map that is going to be returned
     val value_dictionary: Map[String, String] = Map(
@@ -195,10 +193,10 @@ object Geodevicer {
       "umbralmax" -> umbralmax,
       "umbraldist" -> umbraldist,
       "poi_column_name" -> poi_column_name,
-       "audience_column_name" -> audience_column_name,
-        "web_days" -> web_days,
-        "polygon_input" -> polygon_input,
-        "old_pipeline" -> old_pipeline
+      "audience_column_name" -> audience_column_name,
+      "web_days" -> web_days,
+      "polygon_input" -> polygon_input,
+      "old_pipeline" -> old_pipeline
     )
 
     println("LOGGER PARAMETERS:")
@@ -248,7 +246,7 @@ object Geodevicer {
     //val geospark = if (options.contains('geospark)) true else false
 
     // Start Spark Session based on the type of matcher that will be used.
-    val spark = 
+    var spark =
       /*
       if (geospark)
         SparkSession
@@ -265,49 +263,57 @@ object Geodevicer {
           .appName("GeoSpark Matcher")
           .getOrCreate()
       else
-      */
-        SparkSession.builder
-          .appName("GeoCode Matcher")
-          .getOrCreate()
+       */
+      SparkSession.builder
+        .appName("GeoCode Matcher")
+        .getOrCreate()
 
     // Parsing parameters from json file.
     //if (geospark) GeoSparkSQLRegistrator.registerAll(spark)
     val value_dictionary = get_variables(spark, path_geo_json)
 
     // Here we perform the join
-   // if (geospark) {
+    // if (geospark) {
     //  GeoSparkMatcher.join(spark, value_dictionary)
     //} else {
 
-            if (value_dictionary("polygon_input") == "1") {
+    if (value_dictionary("polygon_input") == "1") {
 
-              //acá deberíamos activar geospark
-              SparkSession.builder().config("spark.serializer", classOf[KryoSerializer].getName).config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName).config("geospark.join.gridtype", "kdbtree").appName("GeoSpark Matcher").getOrCreate()
-              
-              GeoSparkSQLRegistrator.registerAll(spark)
+      //acá deberíamos activar geospark
+      spark = SparkSession
+        .builder()
+        .config("spark.serializer", classOf[KryoSerializer].getName)
+        .config(
+          "spark.kryo.registrator",
+          classOf[GeoSparkKryoRegistrator].getName
+        )
+        .config("geospark.join.gridtype", "kdbtree")
+        // This is because the polygons (left side of join) are usually smaller in size than the Safegraph dataframes.
+        .config("geospark.join.indexbuildside", "right") 
+        .appName("GeoSpark Matcher")
+        .getOrCreate()
 
-              PolygonMatcher.match_Polygon(spark, value_dictionary)
+      GeoSparkSQLRegistrator.registerAll(spark)
 
-                    // If we need to calculate the aggregations, we do so as well.
-                    if (value_dictionary("analytics_df") == "1") Aggregations.userAggregateFromPolygon(spark, value_dictionary)
+      PolygonMatcher.match_Polygon(spark, value_dictionary)
 
-                    if (value_dictionary("map_df") == "1")  Aggregations.PolygonAggregate(spark, value_dictionary)
-                                                                
-                                                              }
-                 
-                                                            
-            else {
-                
-              POICrossDevicerJson.match_POI(spark, value_dictionary)
-                        // If we need to calculate the aggregations, we do so as well.
-                        if (value_dictionary("analytics_df") == "1") Aggregations.userAggregate(spark, value_dictionary)
-                        if (value_dictionary("map_df") == "1")  Aggregations.POIAggregate(spark, value_dictionary)
+      // If we need to calculate the aggregations, we do so as well.
+      if (value_dictionary("analytics_df") == "1")
+        Aggregations.userAggregateFromPolygon(spark, value_dictionary)
 
-                                                                    }
-                                                           
+      if (value_dictionary("map_df") == "1")
+        Aggregations.PolygonAggregate(spark, value_dictionary)
 
-                          
-     
+    } else {
+
+      POICrossDevicerJson.match_POI(spark, value_dictionary)
+      // If we need to calculate the aggregations, we do so as well.
+      if (value_dictionary("analytics_df") == "1")
+        Aggregations.userAggregate(spark, value_dictionary)
+      if (value_dictionary("map_df") == "1")
+        Aggregations.POIAggregate(spark, value_dictionary)
+
+    }
 
     // Finally, we perform the cross-device if requested.
     if (value_dictionary("crossdevice") != "false" && value_dictionary(
@@ -318,17 +324,16 @@ object Geodevicer {
         value_dictionary,
         column_name = "device_id",
         header = "true"
-                                )
+      )
 
-      if (value_dictionary("crossdevice") != "false" && value_dictionary(
-          "crossdevice") != "0" && value_dictionary("map_df") == "1")
+    if (value_dictionary("crossdevice") != "false" && value_dictionary(
+          "crossdevice"
+        ) != "0" && value_dictionary("map_df") == "1")
       Aggregations.POIAggregate_w_xd(spark, value_dictionary)
 
-      // Here we join with web behaviour
-    if (value_dictionary("web_days").toInt>0)
+    // Here we join with web behaviour
+    if (value_dictionary("web_days").toInt > 0)
       Aggregations.get_segments_from_triplets(spark, value_dictionary)
 
-   
-    }
   }
-
+}
