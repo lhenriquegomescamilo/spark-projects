@@ -245,15 +245,12 @@ object ContentKws {
 
   def read_data(
       spark: SparkSession,
-      data_path: String,
-      country: String,
-      nDays: Integer,
-      since: Integer) : DataFrame = {
+      data_path: String) : DataFrame = {
 
     val data_kws = spark.read
       .format("csv")
       .option("header", "true")
-      .load(path)
+      .load(data_path)
       .select("kw","url_raw")
       .withColumn("kw", split(col("kw"), " "))
       .withColumn("kw", explode(col("kw")))
@@ -269,9 +266,9 @@ object ContentKws {
 
   def join_keys(
       df_keys: DataFrame,
-      data_kws: DataFrame) : DataFrame = {
+      df_kws: DataFrame) : DataFrame = {
 
-    val df_joint = data_kws.join(broadcast(df_keys), Seq("content_keys"))
+    val df_joint = df_kws.join(broadcast(df_keys), Seq("content_keys"))
     df_joint
       .select("content_keys","url")
       .dropDuplicates()
@@ -319,8 +316,8 @@ object ContentKws {
       .load(fileName)
       .distinct()
     done
-      .groupBy("_c0", "_c1")
-      .agg(collect_list("_c2") as "segments")
+      .groupBy("_c0")
+      .agg(collect_list("_c1") as "segments")
       .withColumn("segments", concat_ws(",", col("segments")))
       .write
       .format("csv")
@@ -365,31 +362,23 @@ object ContentKws {
     
     // reads from "content_data"
      val df_kws = read_data(spark = spark,
-                            data_path = data_path,
-                            country = country,
-                            nDays = nDays,
-                            since = since)
+                            data_path = data_path)
     
-
-    //reads "content_keys" (every keyword that appears in the queries) to match with data_keywords
-    val df_keys = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load(keys_path)
+    //reads json with queries, kws and seg_ids
+    val df_queries = spark.read
+      .format("json")
+      .load(json_path)
+    
+    //selects "content_keys" (every keyword that appears in the queries) to match with df_kws
+    val df_keys = df_queries.select("kws")
+      .withColumn("kws", split(col("kws"), ","))
+      .withColumn("kws", explode(col("kws")))
+      .dropDuplicates("kws")
+      .withColumnRenamed("kws", "content_keys")
 
     // matches content_keys with data_keywords
-    val df_joint = get_joint_keys(df_keys = df_keys,
-                                  df_data_keywords = df_data_keywords)
-
-    //pasarle una lista de tuplas del tipo (query,ID)
-    //la siguiente linea es temp:
-    
-    val df_queries = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load(queries_path)
-      //.limit(30)
-
+    val df_joint = join_keys(df_keys = df_keys,
+                             df_kws = df_kws)
 
     save_query_results(spark = spark,
                        df_queries = df_queries,
@@ -521,14 +510,24 @@ object ContentKws {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_users_pipeline_3(spark = spark,
+ def get_urls_pipeline_3(
+      spark: SparkSession,
+      country: String,
+      nDays: Integer,
+      since: Integer,
+      json_path: String,
+      data_path: String,
+      populate: Int,
+      job_name: String)
+
+    get_urls_pipeline_3(spark = spark,
                         country = "AR",
                         nDays = 30,
                         since = 1,
-                        keys_path = "/datascience/custom/taxo_new_keys.csv",
-                        queries_path = "/datascience/custom/scala_taxo_new.csv",
-                        populate = 1,
-                        job_name = "new_taxo_AR") 
+                        json_path = "/datascience/custom/keys_bumeran_AR.json",
+                        data_path = "/datascience/custom/2019-08-14.csv",
+                        populate = 0,
+                        job_name = "bumeran_AR_test") 
      
   }
 
