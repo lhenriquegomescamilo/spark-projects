@@ -101,7 +101,7 @@ object DataGoogleAnalytics {
 
     joint.write
       .format("parquet")
-      .partitionBy("country")
+      .partitionBy("day","country")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/google_analytics_domain")
 
