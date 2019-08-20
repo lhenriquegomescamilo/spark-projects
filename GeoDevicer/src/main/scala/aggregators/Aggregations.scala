@@ -152,7 +152,7 @@ def POIAggregate_w_xd(
     .option("header",true)
     .option("sep", "\t")
     .mode(SaveMode.Overwrite)
-    .save( "/datascience/geo/map_data/%s_map"
+    .save( "/datascience/geo/map_data/%s_map_w_xd"
           .format(value_dictionary("poi_output_file"))
       )            
 
