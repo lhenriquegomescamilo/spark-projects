@@ -68,7 +68,7 @@ object Item2Item {
     filesToProcess = scala.util.Sorting.stableSort(
       filesToProcess,
       (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
-    )
+    ).toList
 
     println("LOOKALIKE LOG: Jobs to process = " + filesToProcess.length.toString)
 
@@ -485,6 +485,7 @@ object Item2Item {
     .topByKey(kMax) // get topK scores values
     .map(t => (t._1, if (t._2.length >= kMap(t._1.toInt)) t._2( kMap(t._1.toInt) - 1 ) else t._2.last )) // get the kth value #
     .collect()
+    .toMap
 
   if (!isOnDemand){ // monthly expansion
     val dataExpansion = data
@@ -566,7 +567,7 @@ object Item2Item {
         priority,
         partnerId,
         queue,
-        jobid,
+        jobId,
         description
       )
       .replace("\n", "")
@@ -753,7 +754,7 @@ object Item2Item {
           else country
           
     }
-    val map: Map[String, Any] = Map(
+    val map: Map[String, String] = Map(
         "job_id" -> jobId,
         "partner_id" -> partnerId,
         "country" -> country
