@@ -49,7 +49,7 @@ object ContentKws {
     *
     *
     *
-    *                Get Users pipeline 3 (with csvs)
+    *                Get Users pipeline 3 
     *
     *
     *
@@ -184,8 +184,7 @@ object ContentKws {
       country: String,
       nDays: Integer,
       since: Integer,
-      keys_path: String,
-      queries_path: String,
+      json_path: String,
       populate: Int,
       job_name: String) = {
     
@@ -194,30 +193,22 @@ object ContentKws {
                                          country = country,
                                          nDays = nDays,
                                          since = since)
+        
+    //reads json with queries, kws and seg_ids
+    val df_queries = spark.read
+      .format("json")
+      .load(json_path)
     
-    // a get_joint_keys pasarle un df con la columna content_keys,
-    // creado a partir de una lista de keywords (levanto la lista de un json)
-    //la siguiente linea es temp:  
-
-    //reads "content_keys" (every keyword that appears in the queries) to match with data_keywords
-    val df_keys = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load(keys_path)
+    //selects "content_keys" (every keyword that appears in the queries) to match with df_kws
+    val df_keys = df_queries.select("kws")
+      .withColumn("kws", split(col("kws"), ","))
+      .withColumn("kws", explode(col("kws")))
+      .dropDuplicates("kws")
+      .withColumnRenamed("kws", "content_keys")
 
     // matches content_keys with data_keywords
     val df_joint = get_joint_keys(df_keys = df_keys,
                                   df_data_keywords = df_data_keywords)
-
-    //pasarle una lista de tuplas del tipo (query,ID)
-    //la siguiente linea es temp:
-    
-    val df_queries = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load(queries_path)
-      //.limit(30)
-
 
     save_query_results(spark = spark,
                        df_queries = df_queries,
@@ -231,11 +222,11 @@ object ContentKws {
     *
     *
     *
-    *                Get Users pipeline 3 (with jsons)
+    *                Get URLS pipeline 3 
     *
     *
     *
-    */
+
 
   // This function reads from a file with selected keywords from
   //Input = country, nDays and since.
@@ -331,7 +322,7 @@ object ContentKws {
       val fs = FileSystem.get(conf)
       val os = fs.create(new Path("/datascience/ingester/ready/%s".format(job_name)))
       val content =
-        """{"filePath":"%s", "priority": 20, "partnerId": 0, "queue":"datascience", "jobid": 0, "description":"%s"}"""
+        """{"filePath":"%s", "pipeline: 3", "priority": 20, "partnerId": 0, "queue":"datascience", "jobid": 0, "description":"%s"}"""
           .format(fileNameFinal,job_name)
       println(content)
       os.write(content.getBytes)
@@ -390,6 +381,7 @@ object ContentKws {
   }
  
  
+  */
   
   /**
     *
@@ -511,7 +503,7 @@ object ContentKws {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_urls_pipeline_3(spark = spark,
+    get_users_pipeline_3(spark = spark,
                         country = "AR",
                         nDays = 30,
                         since = 1,
@@ -519,6 +511,7 @@ object ContentKws {
                         data_path = "/datascience/custom/2019-08-14.csv",
                         populate = 0,
                         job_name = "bumeran_AR_test") 
+
      
   }
 
