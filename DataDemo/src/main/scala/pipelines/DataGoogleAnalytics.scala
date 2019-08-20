@@ -70,7 +70,7 @@ object DataGoogleAnalytics {
             .parquet(x)
             .filter("country = 'AR' or country = 'MX'") // We only get AR and MX users because we only have GA data for those countries
             .withColumn("day", lit(x.split("/").last.slice(5, 13)))
-            .withColumn("timestamp", lit(x.split("/").last.split("=").last))
+            .withColumnRenamed("time", "timestamp")
             .select("device_id", "url", "day", "country", "timestamp")
       )
 
@@ -102,7 +102,7 @@ object DataGoogleAnalytics {
     joint.write
       .format("parquet")
       .partitionBy("day","country")
-      .mode(SaveMode.Overwrite)
+      .mode("append")
       .save("/datascience/data_demo/google_analytics_domain")
 
   }
