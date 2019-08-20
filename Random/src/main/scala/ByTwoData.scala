@@ -81,7 +81,7 @@ object ByTwoData {
           .load("/data/providers/sharethis/raw/%s*.json".format(day))
         
     val withMultivalues = multivalue.foldLeft(data)(
-          (df, c) => df.withColumn(c, split(col(c), "|"))
+          (df, c) => df.withColumn(c, split(col(c), "\\|"))
         )
 
     val df = withMultivalues
