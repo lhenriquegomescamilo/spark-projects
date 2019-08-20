@@ -471,7 +471,7 @@ object Item2Item {
                 segmentToIndex(m("segment_id").toString) -> m("dst_segment_id").toString).toMap
 
   // It gets the score thresholds to get at least k elements per segment.
-  val val minScoreMap = getMinScoreMap(spark, data, expandInput)
+  val minScoreMap = getMinScoreMap(spark, data, expandInput)
 
   val dataExpansion = data
       .map(
