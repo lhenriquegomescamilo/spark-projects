@@ -11,6 +11,7 @@ import java.io._
 import org.joda.time.DateTime
 import scala.collection.mutable.WrappedArray
 import com.esotericsoftware.kryo.Kryo
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 
 import org.apache.spark.rdd.RDD
@@ -38,92 +39,13 @@ import org.apache.spark.mllib.linalg.distributed.CoordinateMatrix
 
 object Item2Item {
 
-  def runExpand(spark: SparkSession,
-                filePath: String,
-                nDays: Int = -1,
-                simMatrixHits: String = "binary",
-                predMatrixHits: String = "binary") {
-    import spark.implicits._
-    // Read input from file
-    val expandInput = getSegmentsToExpand(spark, filePath)
-    val baseFeatureSegments = getBaseFeatureSegments()
-    val extraFeatureSegments = getExtraFeatureSegments()
-
-    // Expansion for each country
-    for (country: String <- expandInput.map( v => v("country").toString).toSet){
-      println("Training Model")
-      println("Country")
-      println(country)
-      println("Segments")
-      println(expandInput.length)
-      val countryExpandInput = expandInput.filter(v => v("country").toString == country)
-      val nSegmentToExpand = expandInput.length
-
-      // Read data
-      val data = getDataTriplets(spark, country, nDays)
-
-      // Create segment index
-      var segments = countryExpandInput.map(row=> row("segment_id").toString) // First: segments to expand
-      segments ++= baseFeatureSegments.toSet.diff(segments.toSet).toList // Then: segments used as features
-      segments ++= extraFeatureSegments.toSet.diff(segments.toSet).toList 
-
-      val segmentToIndex = segments.zipWithIndex.toMap
-      val dfSegmentIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
-
-      val baseSegmentsIdx = baseFeatureSegments.map(seg => segmentToIndex(seg))
-
-      // Data aggregation
-      val dataTriples = data
-        .groupBy("device_id", "feature")
-        .agg(sum("count").cast("int").as("count"))
-
-      val usersSegmentsData = dataTriples
-        .filter(col("feature").isin(segments: _*))   // segment filtering
-        .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
-        .select("device_id", "segment_idx", "count")
-        .rdd
-        .map(row => (row(0), (row(1), row(2))))
-        .groupByKey()  // group by device_id
-        .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
-
-      // Generate similarities matrix
-      val simMatrix = getSimilarities(spark,
-                                      usersSegmentsData,
-                                      segments.size,
-                                      0.05,
-                                      simMatrixHits)
-      println("Predictions")
-      val predictData = predict(spark,
-                                usersSegmentsData,
-                                nSegmentToExpand,
-                                simMatrix,
-                                predMatrixHits=predMatrixHits,
-                                minUserSegments = 1)
-      println("Save output")
-      // 6) Expansion
-      expand(spark,
-             predictData,
-             countryExpandInput,
-             segmentToIndex,
-             country)
-    }
-  }
-
-  def runAdHocExpand(spark: SparkSession,
-                    nDays: Int = -1,
-                    simMatrixHits: String = "binary",
-                    predMatrixHits: String = "binary") {
-
-    // Todo: Modify input And output folder
-    // Input
-    /*
-    {
-      country: "PE",
-      expand: [{}]
-      features?
-    }
-
-    */
+  /**
+  It processes all input files from /datascience/data_lookalike/to_process/
+  */
+  def processPendingJobs(spark: SparkSession,
+                         nDays: Int = -1,
+                         simMatrixHits: String = "binary",
+                         predMatrixHits: String = "binary") {
 
     val pathToProcess = "/datascience/data_lookalike/to_process/"
     val pathInProcess = "/datascience/data_lookalike/in_process/"
@@ -144,11 +66,13 @@ object Item2Item {
       .toList
     // Now we sort the list by the second component (timestamp)
     filesToProcess = scala.util.Sorting.stableSort(
-      filesReady,
+      filesToProcess,
       (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
-    )
+    ).toList
 
-    for (file <- filesToProcess):
+    println("LOOKALIKE LOG: Jobs to process = " + filesToProcess.length.toString)
+
+    for (file <- filesToProcess){
       var fileToProcess = pathToProcess + file
       var fileInProcess = pathInProcess + file
       var fileFailed = pathFailed + file
@@ -158,11 +82,10 @@ object Item2Item {
       fs.rename(new Path(fileToProcess), new Path(fileInProcess))
 
       try {
-        println("LOOKALIKE LOG: Processing File: " + file)
         runExpand(spark, fileInProcess, nDays, simMatrixHits, predMatrixHits)
       } catch {
         case e: Throwable => {
-          errorMessage = e.toString()
+          var errorMessage = e.toString()
           println("LOOKALIKE LOG: The lookalike process failed on " + file + "\nThe error was: " + errorMessage)
           processError = true
       }
@@ -171,10 +94,95 @@ object Item2Item {
       fs.rename(new Path(fileInProcess), new Path(fileDone))
     else
       fs.rename(new Path(fileInProcess), new Path(fileFailed))
+    }
   }
 
+  /**
+  It runs a expansion using the input file specifications.
+  The input file must have the country, and all segments to expand.
+  */
+  def runExpand(spark: SparkSession,
+                filePath: String,
+                nDays: Int = -1,
+                simMatrixHits: String = "binary",
+                predMatrixHits: String = "binary") {
+    import spark.implicits._
+
+    println("LOOKALIKE LOG: Input File: " + filePath)
+    // Read input from file
+    val expandInput = readSegmentsToExpand(spark, filePath)
+    val metaInput = readMetaParameters(spark, filePath)
+
+    val isOnDemand = metaInput("jobId").length > 0
+    val country = metaInput("country")
+
+    val baseFeatureSegments = getBaseFeatureSegments()
+    val extraFeatureSegments = getExtraFeatureSegments()
+
+    val nSegmentToExpand = expandInput.length
+
+    if (isOnDemand)
+      println("LOOKALIKE LOG: JobId: " + metaInput("jobId") + " - Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
+    else
+      println("LOOKALIKE LOG: Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
+    
+
+    // Read data
+    println("LOOKALIKE LOG: Model training")
+
+    val data = getDataTriplets(spark, country, nDays)
+
+    // Create segment index
+    var segments = expandInput.map(row=> row("segment_id").toString) // First: segments to expand
+    segments ++= baseFeatureSegments.toSet.diff(segments.toSet).toList // Then: segments used as features
+    segments ++= extraFeatureSegments.toSet.diff(segments.toSet).toList 
+
+    val segmentToIndex = segments.zipWithIndex.toMap
+    val dfSegmentIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
+
+    val baseSegmentsIdx = baseFeatureSegments.map(seg => segmentToIndex(seg))
+
+    // Data aggregation
+    val dataTriples = data
+      .groupBy("device_id", "feature")
+      .agg(sum("count").cast("int").as("count"))
+
+    val usersSegmentsData = dataTriples
+      .filter(col("feature").isin(segments: _*))   // segment filtering
+      .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
+      .select("device_id", "segment_idx", "count")
+      .rdd
+      .map(row => (row(0), (row(1), row(2))))
+      .groupByKey()  // group by device_id
+      .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
+
+    // Generate similarities matrix
+    val simMatrix = getSimilarities(spark,
+                                    usersSegmentsData,
+                                    segments.size,
+                                    0.05,
+                                    simMatrixHits)
+    println("LOOKALIKE LOG: Predictions processing")
+    val predictData = predict(spark,
+                              usersSegmentsData,
+                              nSegmentToExpand,
+                              simMatrix,
+                              predMatrixHits=predMatrixHits,
+                              minUserSegments = 1)
+  
+    println("LOOKALIKE LOG: Expansion")
+    // 6) Expansion
+
+    expand(spark,
+           predictData,
+           expandInput,
+           segmentToIndex,
+           metaInput)
+  }
+
+
   /*
-  *
+  * Run a test to get precision and recall metrics for the first kth expansions in a country of all standard segments.
   */
   def runTest(spark: SparkSession,
               country: String,
@@ -443,20 +451,28 @@ object Item2Item {
     userPredictionMatrix
   }
 
-
+  /**
+  * Assign segments to each user and generate output files
+  */
   def expand(spark: SparkSession,
              data: RDD[(Any, Array[(Int)], Vector)],
              expandInput: List[Map[String, Any]] ,
              segmentToIndex: Map[String, Int],
-             country: String){
+             metaParameters: Map[String, String]){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
   
+
+  val isOnDemand = metaParameters("jobId").length > 0
+  val country = metaParameters("country")
+
   val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
-  val kMap = expandInput.map(m => 
-                segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
   val dstSegmentIdMap = expandInput.map(m => 
                 segmentToIndex(m("segment_id").toString) -> m("dst_segment_id").toString).toMap
+              
+  // It gets the score thresholds to get at least k elements per segment.
+  val kMap = expandInput.map(m => 
+                segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
   val kMax = expandInput.map(m => m("size").toString.toInt).max
 
   // It gets the score thresholds to get at least k elements per segment.
@@ -471,8 +487,8 @@ object Item2Item {
     .collect()
     .toMap
 
-
-  val dataExpansion = data
+  if (!isOnDemand){ // monthly expansion
+    val dataExpansion = data
       .map(
           tup => 
             (tup._1.toString,
@@ -485,19 +501,90 @@ object Item2Item {
       )
       .filter(tup => tup._2.length > 0) // exclude devices with empty segments
 
-  // save
-  spark.createDataFrame(dataExpansion)
-    .toDF("device_id", "segments" )
-    .write
-    .format("csv")
-    .option("sep", "\t")
-    .option("header", "false")
-    .mode(SaveMode.Overwrite)
-    .save(
-    "/datascience/data_lookalike/expansion/country=%s/".format(country)
-    )
-  
+    // save
+    spark.createDataFrame(dataExpansion)
+      .toDF("device_id", "segments" )
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "false")
+      .mode(SaveMode.Overwrite)
+      .save(
+      "/datascience/data_lookalike/expansion/country=%s/".format(country)
+      )
   }
+  else{ // on demand expansion
+    val jobId = metaParameters("jobId")
+    val partnerId = metaParameters("partnerId")
+
+    val dataExpansion = data
+    .flatMap(
+        tup => 
+          (selSegmentsIdx
+            .filter(segmentIdx => // select segments with scores > th and don't contain the segment
+              ((minScoreMap contains segmentIdx) && tup._3.apply(segmentIdx) >= minScoreMap(segmentIdx) && !(tup._2 contains segmentIdx) ))
+            .map(segmentIdx => ("web", tup._1.toString, dstSegmentIdMap(segmentIdx))) // <device_type, device_id, segment>
+          )              
+    )
+    .filter(tup => tup._2.length > 0) // exclude devices with empty segments
+
+
+    var filePath = "/datascience/data_lookalike/expansion/jobId=%s/".format(jobId)
+    // save
+    spark.createDataFrame(dataExpansion)
+      .toDF("device_type", "device_id", "segment")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "false")
+      .mode(SaveMode.Overwrite)
+      .save(filePath)
+    generateOutputMetaFile(filePath, jobId, partnerId)
+  }
+
+  }
+
+    /**
+    * This method generates a new json file that will be used by the Ingester to push the recently
+    * downloaded audiences into the corresponding DSPs.
+    */
+  def generateOutputMetaFile(
+      file_path: String,
+      jobId: String,
+      partnerId: String,
+      priority: String = "10",
+      queue: String = "datascience"
+  ) {
+    println("Lookalike LOG:\n\tPushing the audience to the ingester")
+
+    var description = "Lookalike on demand - jobId = %s".format(jobId)
+
+    // Then we generate the content for the json file.
+    val json_content = """{"filePath":"%s", "priority":%s, "D":%s,
+                          "queue":"%s", "jobId":%s, "description":"%s"}"""
+      .format(
+        file_path,
+        priority,
+        partnerId,
+        queue,
+        jobId,
+        description
+      )
+      .replace("\n", "")
+    println("Lookalike LOG:\n\t%s".format(json_content))
+
+    // Finally we store the json.
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    val fs = FileSystem.get(conf)
+    val os = fs.create(
+      new Path("/datascience/ingester/ready/lal_%s.meta".format(jobId))
+    )
+    os.write(json_content.getBytes)
+    os.close()
+  }
+
+               
 
   /*
   * It calculates precision, recall and F1 metrics.
@@ -585,10 +672,9 @@ object Item2Item {
   }
 
   /***
-  Read settings to expand.
-
+  Read segments from input file.
   ***/
-  def getSegmentsToExpand(
+  def readSegmentsToExpand(
       spark: SparkSession,
       filePath: String
   ): List[Map[String, Any]] = {
@@ -614,18 +700,66 @@ object Item2Item {
           else segmentId
       
       val size = line("size").toString.toInt
-      val country = line("country")
 
       val actual_map: Map[String, Any] = Map(
         "segment_id" -> segmentId,
         "dst_segment_id" -> dstSegmentId,
-        "country" -> country,
         "size" -> size
       )
 
       expandInputs = expandInputs ::: List(actual_map)
     }
     expandInputs
+  }
+
+
+  /***
+  Read input meta parameters
+  ***/
+  def readMetaParameters(
+      spark: SparkSession,
+      filePath: String
+  ): Map[String, String] = {
+    // First of all we obtain all the data from the file
+    val df = spark.sqlContext.read.json(filePath)
+    val columns = df.columns
+    val data = df
+      .collect()
+      .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
+    // Now we extract the different values from each row.
+    var jobId = ""
+    var partnerId = ""
+    var country = ""
+
+    for (line <- data) {
+      jobId =
+          if (line.contains("jobId") && Option(line("jobId"))
+            .getOrElse("")
+            .toString
+            .length > 0) line("jobId").toString
+          else jobId
+
+      partnerId =
+          if (line.contains("partnerId") && Option(line("partnerId"))
+            .getOrElse("")
+            .toString
+            .length > 0) line("partnerId").toString
+          else partnerId
+
+      country =
+          if (line.contains("country") && Option(line("country"))
+            .getOrElse("")
+            .toString
+            .length > 0) line("country").toString.toUpperCase
+          else country
+          
+    }
+    val map: Map[String, String] = Map(
+        "job_id" -> jobId,
+        "partner_id" -> partnerId,
+        "country" -> country
+    )
+    map
   }
 
   /*
@@ -730,7 +864,9 @@ object Item2Item {
       if (options.contains('nDays)) options('nDays).toInt else -1
     if(isTest)
       runTest(spark, testCountry, nDays, simHits, predHits, testSize)
-    else
+    else if(filePath.length > 0)
       runExpand(spark, filePath, nDays, simHits, predHits)
+    else
+      processPendingJobs(spark, nDays, simHits, predHits)
   }
 }
