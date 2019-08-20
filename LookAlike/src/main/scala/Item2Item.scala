@@ -849,7 +849,7 @@ object Item2Item {
     val options = nextOption(Map(), args.toList)
 
     val filePath =
-      if (options.contains('filePath)) options('filePath) else "/datascience/data_lookalike/input/input.json"
+      if (options.contains('filePath)) options('filePath) else ""
     val simHits =
       if (options.contains('simHits)) options('simHits) else "binary"
     val predHits =
