@@ -255,6 +255,7 @@ object ContentKws {
       .withColumn("kw", split(col("kw"), " "))
       .withColumn("kw", explode(col("kw")))
       .withColumnRenamed("kw", "content_keys")
+      .withColumnRenamed("url_raw", "url")
 
     data_kws
   }
