@@ -68,15 +68,16 @@ object Item2Item {
     filesToProcess = scala.util.Sorting.stableSort(
       filesToProcess,
       (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
-    ).map(x => x._1).toList
+    ).toList
 
     println("LOOKALIKE LOG: Jobs to process = " + filesToProcess.length.toString)
 
     for (file <- filesToProcess){
-      var fileToProcess = pathToProcess + file
-      var fileInProcess = pathInProcess + file
-      var fileFailed = pathFailed + file
-      var fileDone = pathDone + file
+      var filename = file._1
+      var fileToProcess = pathToProcess + filename
+      var fileInProcess = pathInProcess + filename
+      var fileFailed = pathFailed + filename
+      var fileDone = pathDone + filename
       var processError = false
 
       fs.rename(new Path(fileToProcess), new Path(fileInProcess))
@@ -86,7 +87,7 @@ object Item2Item {
       } catch {
         case e: Throwable => {
           var errorMessage = e.toString()
-          println("LOOKALIKE LOG: The lookalike process failed on " + file + "\nThe error was: " + errorMessage)
+          println("LOOKALIKE LOG: The lookalike process failed on " + filename + "\nThe error was: " + errorMessage)
           processError = true
       }
     }
