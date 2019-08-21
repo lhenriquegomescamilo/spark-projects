@@ -270,7 +270,7 @@ object GenerateDataset {
           spark.read
             .option("basePath", "/datascience/data_demo/google_analytics_domain/")
             .parquet(x)
-            .withColumn("day",x.split("/")(4).split("=").last)
+            .withColumn("day",lit(x.split("/")(4).split("=").last))
       )
 
     var ga = dfs.reduce((df1, df2) => df1.union(df2)).dropDuplicates("url", "device_id")
