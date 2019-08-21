@@ -405,4 +405,73 @@ def userAggregateFromPolygon(
                      
   }
 
+
+   //This function takes as input a number. this number is substracted from the current date
+    def create_audiences_from_attribution_date(
+      spark: SparkSession,
+      value_dictionary: Map[String, String]
+  ) = {
+
+      //we get the current date and substract the desired number of days
+    val atribution_date = DateTime.now.minusDays(value_dictionary("atribution_date")).minusDays(value_dictionary("since")).getMillis()/1000
+    val atribute_day_name = DateTime.now.minusDays(value_dictionary("atribution_date")).minusDays(value_dictionary("since")).toString("YYYYMMDD")
+
+    //we load the user aggregated data
+    val data = spark.read
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .load(
+        "/datascience/geo/geo_processed/%s_aggregated"
+          .format(value_dictionary("poi_output_file"))
+            )
+
+    
+    //we create this functions to detect if a user was before/after the desired date
+    val wasbefore = udf( (timestamps: Seq[String]) => timestamps.map(t => (t.toInt<atribute_day)).exists(b => b) )
+    val wasafter = udf( (timestamps: Seq[String]) => timestamps.map(t => (t.toInt>atribute_day)).exists(b => b) )
+ 
+    val user_attributions = data.withColumn("timestamp_list",split(col("timestamp_list"),",")) //since the data is joined, we split it
+                .withColumn("before",wasbefore(col("timestamp_list"))) 
+                .withColumn("after",wasafter(col("timestamp_list")))
+                .withColumn("new_user", when(col("before") ===false && col("after") === true,1).otherwise(0))
+                .withColumn("churn_user", when(col("before") ===true && col("after") === false,1).otherwise(0) )
+                .withColumn("fidelity_user", when(col("before") ===true && col("after") === true,1).otherwise(0))
+
+
+
+    val new_user = user_attributions.filter("new_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
+    val churn_user = user_attributions.filter("churn_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
+    val fidelity_user = user_attributions.filter("fidelity_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
+
+      new_user.write
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/geo/audience/%s_new_users_att_date%s"
+          .format(value_dictionary("poi_output_file"),atribute_day_name)
+
+          churn_user.write
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/geo/audience/%s_churn_user_att_date%s"
+          .format(value_dictionary("poi_output_file"),atribute_day_name)
+
+          fidelity_user.write
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/geo/audience/%s_churn_user_att_date%s"
+          .format(value_dictionary("poi_output_file"),atribute_day_name)
+      
+                     
+  }
+
 }
