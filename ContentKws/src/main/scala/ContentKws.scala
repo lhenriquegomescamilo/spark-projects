@@ -96,10 +96,9 @@ object ContentKws {
       df_keys: DataFrame,
       df_data_keywords: DataFrame) : DataFrame = {
 
-    val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("content_keys"))
+    val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("content_keys")).select("content_keys","device_id").dropDuplicates()
+    println("count del join con duplicados: %s".format(df_joint.select("device_id").distinct().count()) 
     df_joint
-      .select("content_keys","device_id")
-      .dropDuplicates()
       .groupBy("device_id")
       .agg(collect_list("content_keys").as("kws"))
       .withColumn("device_type", lit("web"))            
@@ -206,10 +205,14 @@ object ContentKws {
                                          country = country,
                                          nDays = nDays,
                                          since = since)
+
+    println("count de data_keywords para %sD: %s".format(nDays,df_data_keywords.select("device_id").distinct().count()) 
         
     // matches content_keys with data_keywords
     val df_joint = get_joint_keys(df_keys = df_keys,
                                   df_data_keywords = df_data_keywords)
+
+    println("count del join after groupby: %s".format(df_joint.select("device_id").distinct().count()) 
 
     val job_name = df_queries.select("job_name").first.getString(0)
 
@@ -506,10 +509,12 @@ object ContentKws {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+
+    // prueba volumen ( se agregaron prints)
     get_users_pipeline_3(spark = spark,
-                        nDays = 30,
+                        nDays = 3,
                         since = 1,
-                        json_path = "/datascience/custom/BR_taxo_nueva.json",
+                        json_path = "/datascience/custom/AR_taxo_nueva.json",
                         populate = 1) 
 
      
