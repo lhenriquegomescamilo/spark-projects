@@ -181,20 +181,44 @@ object ByTwoData {
 
   }
 
+  def download_data(spark: SparkSession, nDays: Int, from: Int): Unit = {
+    // Now we get the list of days to be downloaded
+    val format = "yyyyMMdd"
+    val end   = DateTime.now.minusDays(from)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    days.foreach(day => processDayNew(spark, day))
+  }
+
+  type OptionMap = Map[Symbol, Int]
+
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--from" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toInt), tail)
+    }
+  }
+
   def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder
+    // Parse the parameters
+    val options = nextOption(Map(), args.toList)
+    val nDays = if (options.contains('nDays)) options('nDays) else 1
+    val from = if (options.contains('from)) options('from) else 1
+
+    val spark = SparkSession.builder
         .appName("Run matching estid-device_id")
         //.config("spark.sql.files.ignoreCorruptFiles", "true")
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
 
-    Logger.getRootLogger.setLevel(Level.WARN)
-
     //val days = List("20190803", "20190802", "20190801", "20190731", "20190730", "20190729", "20190728", "20190727", "20190726", "20190725")
-    val days = List("20190811", "20190812", "20190813", "20190814", "20190815", "20190816", "20190817", "20190818")
+    //val days = List("20190811", "20190812", "20190813", "20190814", "20190815", "20190816", "20190817", "20190818")
 
-    days.foreach(day => processDayNew(spark, day))
+    download_data(spark, nDays, from)
   }
 
 }

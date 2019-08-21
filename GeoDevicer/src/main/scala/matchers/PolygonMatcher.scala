@@ -205,13 +205,13 @@ object PolygonMatcher {
     * @param return df_pois_final: dataframe created from the one provided by the user containing the POIS: contains the geocode and renamed columns.
     */
   def match_Polygon(spark: SparkSession, value_dictionary: Map[String, String]) = {
-    
+    println("LOG: MATCHING BY POLYGONS.")
     val polygonGDf = getPolygons(spark,value_dictionary)
     val safegraphDf = get_safegraph_data(spark,value_dictionary)
 
-    broadcast(polygonGDf)
+    // broadcast(polygonGDf)
 
-    polygonGDf.createOrReplaceTempView("poligono_amigo")
+    broadcast(polygonGDf.repartition(10)).createOrReplaceTempView("poligono_amigo")
     safegraphDf.createOrReplaceTempView("users")
 
 
