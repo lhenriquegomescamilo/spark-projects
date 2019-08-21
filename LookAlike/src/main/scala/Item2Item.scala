@@ -114,7 +114,7 @@ object Item2Item {
     val expandInput = readSegmentsToExpand(spark, filePath)
     val metaInput = readMetaParameters(spark, filePath)
 
-    val isOnDemand = metaInput("jobId").length > 0
+    val isOnDemand = metaInput("job_id").length > 0
     val country = metaInput("country")
 
     val baseFeatureSegments = getBaseFeatureSegments()
@@ -123,7 +123,7 @@ object Item2Item {
     val nSegmentToExpand = expandInput.length
 
     if (isOnDemand)
-      println("LOOKALIKE LOG: JobId: " + metaInput("jobId") + " - Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
+      println("LOOKALIKE LOG: JobId: " + metaInput("job_id") + " - Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
     else
       println("LOOKALIKE LOG: Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
     
@@ -464,7 +464,7 @@ object Item2Item {
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
   
 
-  val isOnDemand = metaParameters("jobId").length > 0
+  val isOnDemand = metaParameters("job_id").length > 0
   val country = metaParameters("country")
 
   val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
@@ -515,8 +515,8 @@ object Item2Item {
       )
   }
   else{ // on demand expansion
-    val jobId = metaParameters("jobId")
-    val partnerId = metaParameters("partnerId")
+    val jobId = metaParameters("job_id")
+    val partnerId = metaParameters("partner_id")
 
     val dataExpansion = data
     .flatMap(
@@ -681,7 +681,6 @@ object Item2Item {
   ): List[Map[String, Any]] = {
     // First of all we obtain all the data from the file
     val df = spark.sqlContext.read.json(filePath)
-    val columns = df.columns
     val data = df
       .collect()
       .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
@@ -723,7 +722,6 @@ object Item2Item {
   ): Map[String, String] = {
     // First of all we obtain all the data from the file
     val df = spark.sqlContext.read.json(filePath)
-    val columns = df.columns
     val data = df
       .collect()
       .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
