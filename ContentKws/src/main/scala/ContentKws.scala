@@ -97,12 +97,13 @@ object ContentKws {
       df_data_keywords: DataFrame) : DataFrame = {
 
     val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("content_keys")).select("content_keys","device_id").dropDuplicates()
-    println("count del join con duplicados: %s".format(df_joint.select("device_id").distinct().count()) 
-    df_joint
+    println("count del join con duplicados: %s".format(df_joint.select("device_id").distinct().count())) 
+    val df_grouped = df_joint
       .groupBy("device_id")
       .agg(collect_list("content_keys").as("kws"))
       .withColumn("device_type", lit("web"))            
       .select("device_type", "device_id", "kws")
+    df_grouped
   }
     
   // This function appends a file per query (for each segment), containing users that matched the query
@@ -206,13 +207,13 @@ object ContentKws {
                                          nDays = nDays,
                                          since = since)
 
-    println("count de data_keywords para %sD: %s".format(nDays,df_data_keywords.select("device_id").distinct().count()) 
+    println("count de data_keywords para %sD: %s".format(nDays,df_data_keywords.select("device_id").distinct().count())) 
         
     // matches content_keys with data_keywords
     val df_joint = get_joint_keys(df_keys = df_keys,
                                   df_data_keywords = df_data_keywords)
 
-    println("count del join after groupby: %s".format(df_joint.select("device_id").distinct().count()) 
+    println("count del join after groupby: %s".format(df_joint.select("device_id").distinct().count())) 
 
     val job_name = df_queries.select("job_name").first.getString(0)
 
