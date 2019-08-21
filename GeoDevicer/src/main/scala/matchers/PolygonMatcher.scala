@@ -211,7 +211,7 @@ object PolygonMatcher {
 
     // broadcast(polygonGDf)
 
-    broadcast(polygonGDf).createOrReplaceTempView("poligono_amigo")
+    broadcast(polygonGDf.repartition(10)).createOrReplaceTempView("poligono_amigo")
     safegraphDf.createOrReplaceTempView("users")
 
 
