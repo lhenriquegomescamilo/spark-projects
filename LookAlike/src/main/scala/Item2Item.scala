@@ -47,7 +47,7 @@ object Item2Item {
                          simMatrixHits: String = "binary",
                          predMatrixHits: String = "binary") {
 
-    val pathToProcess = "/datascience/data_lookalike/to_process/"
+    val pathToProcess = "/datascience/data_lookalike/to_process2/"
     val pathInProcess = "/datascience/data_lookalike/in_process/"
     val pathDone = "/datascience/data_lookalike/done/"
     val pathFailed = "/datascience/data_lookalike/errors/"
