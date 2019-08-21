@@ -47,7 +47,7 @@ object Item2Item {
                          simMatrixHits: String = "binary",
                          predMatrixHits: String = "binary") {
 
-    val pathToProcess = "/datascience/data_lookalike/to_process/"
+    val pathToProcess = "/datascience/data_lookalike/to_process2/"
     val pathInProcess = "/datascience/data_lookalike/in_process/"
     val pathDone = "/datascience/data_lookalike/done/"
     val pathFailed = "/datascience/data_lookalike/errors/"
@@ -73,10 +73,11 @@ object Item2Item {
     println("LOOKALIKE LOG: Jobs to process = " + filesToProcess.length.toString)
 
     for (file <- filesToProcess){
-      var fileToProcess = pathToProcess + file
-      var fileInProcess = pathInProcess + file
-      var fileFailed = pathFailed + file
-      var fileDone = pathDone + file
+      var filename = file._1
+      var fileToProcess = pathToProcess + filename
+      var fileInProcess = pathInProcess + filename
+      var fileFailed = pathFailed + filename
+      var fileDone = pathDone + filename
       var processError = false
 
       fs.rename(new Path(fileToProcess), new Path(fileInProcess))
@@ -86,7 +87,7 @@ object Item2Item {
       } catch {
         case e: Throwable => {
           var errorMessage = e.toString()
-          println("LOOKALIKE LOG: The lookalike process failed on " + file + "\nThe error was: " + errorMessage)
+          println("LOOKALIKE LOG: The lookalike process failed on " + filename + "\nThe error was: " + errorMessage)
           processError = true
       }
     }
@@ -113,7 +114,7 @@ object Item2Item {
     val expandInput = readSegmentsToExpand(spark, filePath)
     val metaInput = readMetaParameters(spark, filePath)
 
-    val isOnDemand = metaInput("jobId").length > 0
+    val isOnDemand = metaInput("job_id").length > 0
     val country = metaInput("country")
 
     val baseFeatureSegments = getBaseFeatureSegments()
@@ -122,7 +123,7 @@ object Item2Item {
     val nSegmentToExpand = expandInput.length
 
     if (isOnDemand)
-      println("LOOKALIKE LOG: JobId: " + metaInput("jobId") + " - Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
+      println("LOOKALIKE LOG: JobId: " + metaInput("job_id") + " - Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
     else
       println("LOOKALIKE LOG: Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
     
@@ -463,7 +464,7 @@ object Item2Item {
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
   
 
-  val isOnDemand = metaParameters("jobId").length > 0
+  val isOnDemand = metaParameters("job_id").length > 0
   val country = metaParameters("country")
 
   val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
@@ -514,8 +515,8 @@ object Item2Item {
       )
   }
   else{ // on demand expansion
-    val jobId = metaParameters("jobId")
-    val partnerId = metaParameters("partnerId")
+    val jobId = metaParameters("job_id")
+    val partnerId = metaParameters("partner_id")
 
     val dataExpansion = data
     .flatMap(
@@ -680,7 +681,6 @@ object Item2Item {
   ): List[Map[String, Any]] = {
     // First of all we obtain all the data from the file
     val df = spark.sqlContext.read.json(filePath)
-    val columns = df.columns
     val data = df
       .collect()
       .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
@@ -722,7 +722,6 @@ object Item2Item {
   ): Map[String, String] = {
     // First of all we obtain all the data from the file
     val df = spark.sqlContext.read.json(filePath)
-    val columns = df.columns
     val data = df
       .collect()
       .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
@@ -849,7 +848,7 @@ object Item2Item {
     val options = nextOption(Map(), args.toList)
 
     val filePath =
-      if (options.contains('filePath)) options('filePath) else "/datascience/data_lookalike/input/input.json"
+      if (options.contains('filePath)) options('filePath) else ""
     val simHits =
       if (options.contains('simHits)) options('simHits) else "binary"
     val predHits =

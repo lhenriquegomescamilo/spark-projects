@@ -159,7 +159,7 @@ object ContentKws {
       val fs = FileSystem.get(conf)
       val os = fs.create(new Path("/datascience/ingester/ready/%s".format(job_name)))
       val content =
-        """{"filePath":"%s", "priority": 20, "partnerId": 0, "queue":"datascience", "jobid": 0, "description":"%s"}"""
+        """{"filePath":"%s", "pipeline": 3, "priority": 20, "partnerId": 0, "queue":"datascience", "jobid": 0, "description":"%s"}"""
           .format(fileNameFinal,job_name)
       println(content)
       os.write(content.getBytes)
@@ -181,19 +181,12 @@ object ContentKws {
 
   def get_users_pipeline_3(
       spark: SparkSession,
-      country: String,
       nDays: Integer,
       since: Integer,
       json_path: String,
-      populate: Int,
-      job_name: String) = {
-    
-    // reads from "data_keywords"
-    val df_data_keywords = read_data_kws(spark = spark,
-                                         country = country,
-                                         nDays = nDays,
-                                         since = since)
-        
+      populate: Int) = {
+
+
     //reads json with queries, kws and seg_ids
     val df_queries = spark.read
       .format("json")
@@ -205,10 +198,20 @@ object ContentKws {
       .withColumn("kws", explode(col("kws")))
       .dropDuplicates("kws")
       .withColumnRenamed("kws", "content_keys")
+    
+    val country = df_queries.select("country").first.getString(0)
 
+    // reads from "data_keywords"
+    val df_data_keywords = read_data_kws(spark = spark,
+                                         country = country,
+                                         nDays = nDays,
+                                         since = since)
+        
     // matches content_keys with data_keywords
     val df_joint = get_joint_keys(df_keys = df_keys,
                                   df_data_keywords = df_data_keywords)
+
+    val job_name = df_queries.select("job_name").first.getString(0)
 
     save_query_results(spark = spark,
                        df_queries = df_queries,
@@ -504,12 +507,10 @@ object ContentKws {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     get_users_pipeline_3(spark = spark,
-                        country = "MX",
                         nDays = 30,
                         since = 1,
-                        json_path = "/datascience/custom/keys_taxo_nueva.json",
-                        populate = 0,
-                        job_name = "new_taxo_MX") 
+                        json_path = "/datascience/custom/BR_taxo_nueva.json",
+                        populate = 1) 
 
      
   }
