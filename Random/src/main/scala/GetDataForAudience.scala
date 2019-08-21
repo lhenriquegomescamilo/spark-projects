@@ -150,7 +150,7 @@ object GetDataForAudience {
     */
   def getDataAmexSegments(spark: SparkSession) = {
     val data_segments =
-      spark.read.load("/datascience/data_demo/triplets_segments")
+      spark.read.load("/datascience/data_triplets/segments")
     val data_amex =
       spark.read
         .format("csv")
