@@ -451,7 +451,7 @@ def userAggregateFromPolygon(
       .mode(SaveMode.Overwrite)
       .save(
         "/datascience/geo/audience/%s_new_users_att_date%s"
-          .format(value_dictionary("poi_output_file"),atribute_day_name)
+          .format(value_dictionary("poi_output_file"),atribute_day_name))
 
           churn_user.write
       .format("csv")
@@ -460,7 +460,7 @@ def userAggregateFromPolygon(
       .mode(SaveMode.Overwrite)
       .save(
         "/datascience/geo/audience/%s_churn_user_att_date%s"
-          .format(value_dictionary("poi_output_file"),atribute_day_name)
+          .format(value_dictionary("poi_output_file"),atribute_day_name))
 
           fidelity_user.write
       .format("csv")
@@ -469,7 +469,7 @@ def userAggregateFromPolygon(
       .mode(SaveMode.Overwrite)
       .save(
         "/datascience/geo/audience/%s_churn_user_att_date%s"
-          .format(value_dictionary("poi_output_file"),atribute_day_name)
+          .format(value_dictionary("poi_output_file"),atribute_day_name))
       
                      
   }
