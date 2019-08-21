@@ -68,7 +68,7 @@ object Item2Item {
     filesToProcess = scala.util.Sorting.stableSort(
       filesToProcess,
       (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
-    ).toList
+    ).map(x => x._1).toList
 
     println("LOOKALIKE LOG: Jobs to process = " + filesToProcess.length.toString)
 
