@@ -253,40 +253,34 @@ object GenerateDataset {
       joinType: String,
       name: String
   ) {
-    // First we load the GA data
-    var ga = spark.read
-      .load(
-        "/datascience/data_demo/google_analytics_domain/country=%s/"
-          .format(country)
-      )
-      .dropDuplicates("url", "device_id")
+    // First we load the GA data from the last 60 days
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-    // Here we filter the users from 30 days if we are calculating the expansion set. We only get the
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(1)
+
+    val days = (0 until 60).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_demo/google_analytics_domain/"
+    val dfs = days.map(day => path + "day=%s/".format(day) + "country=%s".format(country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(
+        x =>
+          spark.read
+            .option("basePath", "/datascience/data_demo/google_analytics_domain/")
+            .parquet(x)
+            .withColumn("day",lit(day))
+      )
+
+    var ga = dfs.reduce((df1, df2) => df1.union(df2)).dropDuplicates("url", "device_id")
+
+    // Here we filter the users from the last 30 days if we are calculating the expansion set. We get the
     // users from GA data
     if (joinType == "left_anti"){
+      val init_day = DateTime.now.minusDays(30).toString("yyyyMMdd")
 
-      val sc = spark.sparkContext
-      val conf = sc.hadoopConfiguration
-      val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-
-      val format = "yyyyMMdd"
-      val start = DateTime.now.minusDays(1)
-
-      val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
-      val path = "/datascience/data_demo/google_analytics_domain/"
-      val dfs = days.map(day => path + "day=%s".format(day))
-        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-        .map(
-          x =>
-            spark.read
-              .option("basePath", "/datascience/data_demo/google_analytics_domain/")
-              .parquet(x)
-              .select("device_id")
-        )
-
-      val devices = dfs.reduce((df1, df2) => df1.union(df2)).select("device_id").distinct()
-      
-      ga = ga.join(devices,Seq("device_id"))
+      ga = ga.filter("day > %s".format(init_day))
     }
 
     // Here I calculate the data of GA just for the users that do not have ground truth data.
