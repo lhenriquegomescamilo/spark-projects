@@ -413,8 +413,8 @@ def userAggregateFromPolygon(
   ) = {
 
       //we get the current date and substract the desired number of days
-    val atribution_date = DateTime.now.minusDays(value_dictionary("atribution_date")).minusDays(value_dictionary("since")).getMillis()/1000
-    val atribute_day_name = DateTime.now.minusDays(value_dictionary("atribution_date")).minusDays(value_dictionary("since")).toString("YYYYMMDD")
+    val atribution_date = DateTime.now.minusDays(value_dictionary("atribution_date").toInt).minusDays(value_dictionary("since").toInt).getMillis()/1000
+    val atribute_day_name = DateTime.now.minusDays(value_dictionary("atribution_date").toInt).minusDays(value_dictionary("since").toInt).toString("YYYYMMDD")
 
     //we load the user aggregated data
     val data = spark.read
@@ -428,8 +428,8 @@ def userAggregateFromPolygon(
 
     
     //we create this functions to detect if a user was before/after the desired date
-    val wasbefore = udf( (timestamps: Seq[String]) => timestamps.map(t => (t.toInt<atribute_day)).exists(b => b) )
-    val wasafter = udf( (timestamps: Seq[String]) => timestamps.map(t => (t.toInt>atribute_day)).exists(b => b) )
+    val wasbefore = udf( (timestamps: Seq[String]) => timestamps.map(t => (t.toInt<atribution_date)).exists(b => b) )
+    val wasafter = udf( (timestamps: Seq[String]) => timestamps.map(t => (t.toInt>atribution_date)).exists(b => b) )
  
     val user_attributions = data.withColumn("timestamp_list",split(col("timestamp_list"),",")) //since the data is joined, we split it
                 .withColumn("before",wasbefore(col("timestamp_list"))) 
