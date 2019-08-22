@@ -451,7 +451,7 @@ object ContentKws {
   val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("content_keys"))
   df_joint
     .select("content_keys","device_id","count")
-
+  }
   
   def save_query_results_gba(
       spark: SparkSession,
@@ -481,7 +481,7 @@ object ContentKws {
     }
 
   }
-  
+
   def get_users_pipeline_3_gba(
       spark: SparkSession,
       nDays: Integer,
