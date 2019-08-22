@@ -171,7 +171,7 @@ object Item2Item {
            expandInput,
            segmentToIndex,
            metaInput,
-           simMatrix
+           simMatrix,
            predMatrixHits)
   
   
@@ -238,7 +238,7 @@ object Item2Item {
             expandInput,
             segmentToIndex,
             metaInput,
-            simMatrix
+            simMatrix,
             predMatrixHits,
             true)
     
@@ -300,7 +300,7 @@ object Item2Item {
       simMatrix
       .entries
       .union(simMatrix.entries.map(me => MatrixEntry(me.j, me.i,me.value))) // it makes the matrix symmetric
-      .union(sc.parallelize((0 until nSegmentToExpand).map(v => MatrixEntry(v, v, diagonalValue))))
+      .union(spark.sparkContext.parallelize((0 until nSegmentToExpand).map(v => MatrixEntry(v, v, diagonalValue))))
       .filter(me => me.j.toInt < nSegmentToExpand) // select only columns to predict
       ,simMatrix.numRows(), nSegmentToExpand)
                     
@@ -362,7 +362,7 @@ object Item2Item {
       .map(tup => (tup._2, tup._1._1, tup._1._2)) // <device_idx, device_id, segments>
       // persist?
 
-    var nSegments = similartyMatrix.numRows().toInt
+    var nSegments = similartyMatrix.numRows.toInt
 
     //IndexedRow -> new (index: Long, vector: Vector) 
     val indexedRows: RDD[IndexedRow] = {
@@ -445,7 +445,7 @@ object Item2Item {
       writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters)
     }
     else{ 
-      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._3 contains segmentIdx)).toArray))
+      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._2 contains segmentIdx)).toArray))
       val userPredictions = maskedScores.join(maskedRelevant).map(tup => (tup._2._2, tup._2._1))
       writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
     }
@@ -580,7 +580,7 @@ object Item2Item {
 
   // <segmentIdx> -> (nP, nSelected, nTP)
   var relevanCount = data
-    .flatMap(tup => selSegmentsIdx.map(colIdx => (tup._1.apply(colIdx), tup._2.apply(colIdx), tup._1.apply(colIdx) && tup._2.apply(colIdx))) )
+    .flatMap(tup => selSegmentsIdx.map(colIdx => (colIdx, (tup._1.apply(colIdx), tup._2.apply(colIdx), tup._1.apply(colIdx) && tup._2.apply(colIdx))) ))
     .reduceByKey(
       (a, b) => ((a._1 + b._1), (a._2 + b._2), (a._3 + b._3))
     )
@@ -588,7 +588,7 @@ object Item2Item {
     .toMap
 
    // (segment_id, count, selected, prec, recall)
-    var metrics = minScores.keys
+    var metrics = selSegmentsIdx
         .map(colIdx => (dstSegmentIdMap(colIdx).toString,
                         relevanCount(colIdx)._1.toDouble, 
                         relevanCount(colIdx)._2.toDouble,  
@@ -724,7 +724,6 @@ object Item2Item {
   Get segments to use to expand in runTest.
   ***/
   def getSegmentsToTest(
-      spark: SparkSession,
       size: Int
   ): List[Map[String, Any]] = {
 
