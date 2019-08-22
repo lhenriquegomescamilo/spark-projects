@@ -47,7 +47,7 @@ object Item2Item {
                          simMatrixHits: String = "binary",
                          predMatrixHits: String = "binary") {
 
-    val pathToProcess = "/datascience/data_lookalike/to_process2/"
+    val pathToProcess = "/datascience/data_lookalike/to_process/"
     val pathInProcess = "/datascience/data_lookalike/in_process/"
     val pathDone = "/datascience/data_lookalike/done/"
     val pathFailed = "/datascience/data_lookalike/errors/"
@@ -445,7 +445,7 @@ object Item2Item {
       writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters)
     }
     else{ 
-      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._2 contains segmentIdx)).toArray))
+      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (row._3.map(t => t._1.toString.toInt) contains segmentIdx)).toArray))
       val userPredictions = maskedScores.join(maskedRelevant).map(tup => (tup._2._2, tup._2._1))
       writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
     }
