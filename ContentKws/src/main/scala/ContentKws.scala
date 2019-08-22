@@ -439,6 +439,7 @@ object ContentKws {
     val df = spark.read
       .option("basePath", path).parquet(hdfs_files: _*)
       .select("content_keys","device_id","count")
+      .withColumnRenamed("content_keys", "kws")
       .na.drop() 
 
     df
@@ -448,9 +449,10 @@ object ContentKws {
       df_keys: DataFrame,
       df_data_keywords: DataFrame) : DataFrame = {
 
-  val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("content_keys"))
+  val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("kws"))
   df_joint
-    .select("content_keys","device_id","count")
+    .select("kws","device_id","count")
+
   }
   
   def save_query_results_gba(
@@ -499,7 +501,6 @@ object ContentKws {
       .withColumn("kws", split(col("kws"), ","))
       .withColumn("kws", explode(col("kws")))
       .dropDuplicates("kws")
-      .withColumnRenamed("kws", "content_keys")
     
     val country = df_queries.select("country").first.getString(0)
 
