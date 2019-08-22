@@ -647,7 +647,7 @@ object ContentKws {
     get_users_pipeline_3_gba(spark = spark,
                          nDays = 30,
                          since = 1,
-                         json_path = "/datascience/custom//datascience/custom/gba_freq.json",
+                         json_path = "/datascience/custom/gba_freq.json",
                          populate = 0) 
   
      
