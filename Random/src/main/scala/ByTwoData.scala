@@ -82,11 +82,9 @@ object ByTwoData {
           .schema(schema)
           .load("/data/providers/sharethis/raw/%s*.json".format(day))
         
-    val withMultivalues = multivalue.foldLeft(data)(
-          (df, c) => df.withColumn(c, split(col(c), "\\|"))
-        )
+    val withMultivalues = data..withColumn("external_id", split(col("external_id"), "\\|"))
 
-    val df = data
+    val df = withMultivalues
             //.withColumn("url_domain", col("url"))
             .withColumn("adnxs_id", col("external_id").getItem(0))
             .withColumn("ttd_id", col("external_id").getItem(1))
