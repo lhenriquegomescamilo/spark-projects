@@ -54,9 +54,11 @@ object ShareThisByTwoIngester {
           .schema(schema)
           .load("/data/providers/sharethis/raw/%s*.json".format(day))
         
-    val withMultivalues = multivalue.foldLeft(data)(
-          (df, c) => df.withColumn(c, split(col(c), "|"))
-        )
+    val withMultivalues = data
+          .withColumn("external_id", split(col("external_id"), "|") )
+          .withColumn("android_id", split(col("android_id", "|")) )
+          .withColumn("ios_idfa", split(col("ios_idfa", "|")) )
+          .withColumn("connected_tv", split(col("connected_tv", "|")) )
 
     val df = withMultivalues
             .withColumn("adnxs_id", col("external_id").getItem(0))
