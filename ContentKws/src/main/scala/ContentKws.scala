@@ -440,7 +440,7 @@ object ContentKws {
 
     val df = spark.read
       .option("basePath", path).parquet(hdfs_files: _*)
-      .select("content_keys","device_id","count")
+      .select("content_keys","device_id")
       .withColumnRenamed("content_keys", "kws")
       .na.drop() 
 
@@ -453,10 +453,10 @@ object ContentKws {
 
   val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("kws"))
   df_joint
-    .select("kws","device_id","count")
+    .select("kws","device_id")
     .groupBy("device_id")
     .agg(collect_list("kws").as("kws"))        
-    .select("count", "device_id", "kws")
+    .select("device_id", "kws")
 
 
   }
@@ -471,8 +471,7 @@ object ContentKws {
     df_joint.cache()
 
     val fileName = "/datascience/devicer/processed/" + job_name
-    //val fileNameFinal = fileName + "_grouped"
-
+    
     val tuples = df_queries.select("seg_id", "query")
       .collect()
       .map(r => (r(0).toString, r(1).toString))
@@ -480,7 +479,7 @@ object ContentKws {
       df_joint
         .filter(t._2)
         .withColumn("seg_id", lit(t._1))
-        .select("count", "device_id", "seg_id")
+        .select("device_id", "seg_id")
         .write
         .format("csv")
         .option("sep", "\t")
