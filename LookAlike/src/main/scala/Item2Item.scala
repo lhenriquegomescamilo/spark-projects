@@ -189,7 +189,7 @@ object Item2Item {
               k: Int = 1000) {
     import spark.implicits._
     val expandInput = getSegmentsToTest(k)
-    val metaInput = Map[String, String] = Map("country" -> country)
+    val metaInput: Map[String, String] = Map("country" -> country)
 
     val nSegmentToExpand = expandInput.length
     val baseFeatureSegments = getBaseFeatureSegments()
@@ -232,6 +232,7 @@ object Item2Item {
                                       nSegmentToExpand,
                                       0.05,
                                       simMatrixHits,
+                                      true)
       expand(spark,
             usersSegmentsData,
             expandInput,
@@ -566,7 +567,7 @@ object Item2Item {
            data: RDD[(Array[(Boolean)], Array[(Boolean)])],
            expandInput: List[Map[String, Any]] ,
            segmentToIndex: Map[String, Int],
-           metaParameters: Map[String, String]),         
+           metaParameters: Map[String, String],         
            minSegmentSupport: Int = 100){
   import spark.implicits._ 
   import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
