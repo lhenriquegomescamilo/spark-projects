@@ -86,7 +86,7 @@ object ByTwoData {
           (df, c) => df.withColumn(c, split(col(c), "\\|"))
         )
 
-    val df = withMultivalues
+    val df = data
             //.withColumn("url_domain", col("url"))
             .withColumn("adnxs_id", col("external_id").getItem(0))
             .withColumn("ttd_id", col("external_id").getItem(1))
