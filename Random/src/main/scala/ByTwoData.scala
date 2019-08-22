@@ -65,6 +65,8 @@ object ByTwoData {
         "de_geo_asn",
         "de_geo_asn_name",
         "channel",
+        "android_id:",
+        "ios_idfa:",
         "day")
 
     val meta = spark.read.format("csv").load("/data/providers/sharethis/schema.meta").collect().map(_(0).toString)
