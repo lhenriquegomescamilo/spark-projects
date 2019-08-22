@@ -536,10 +536,7 @@ def user_aggregate_for_moving_transport(
       .withColumn(value_dictionary("poi_column_name"),col("stop_id")) 
                 //this creates a column with the lines as names, so that the process can continue using this column
       
-      
-
-
-         // Path where we will store the results.
+               // Path where we will store the results.
     val output_path_anlytics = "/datascience/geo/geo_processed/%s_aggregated"
       .format(value_dictionary("poi_output_file"))
 
@@ -551,10 +548,9 @@ def user_aggregate_for_moving_transport(
       .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save(output_path_anlytics)
-  }
+    }
    
                      
-  }
   /***
 ****/
 }
