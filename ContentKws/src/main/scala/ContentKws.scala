@@ -315,6 +315,8 @@ object ContentKws {
         .save(fileName)
     }
   
+    //var done, if (parametro) --> distinct()
+
     val done = spark.read
       .format("csv")
       .option("sep", "\t")
@@ -452,6 +454,11 @@ object ContentKws {
   val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("kws"))
   df_joint
     .select("kws","device_id","count")
+    .groupBy("device_id")
+    .agg(collect_list("content_keys").as("kws"))
+    .withColumn("device_type", lit("web"))            
+    .select("device_type", "device_id", "kws")
+
 
   }
   
