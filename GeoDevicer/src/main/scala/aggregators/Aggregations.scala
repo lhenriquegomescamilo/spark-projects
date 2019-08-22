@@ -515,7 +515,7 @@ def user_aggregate_for_moving_transport(
         (timestamps.slice(1, timestamps.length) zip timestamps).map( 
           t => t._1.toInt-t._2.toInt<value_dictionary(umbralmax)) , //1) this checks if the time between stops is less than the threshold
         (stopid.slice(1,stopid.length) zip stopid).map(s => s._1!=s._2) , //2)this checks if the stations are different stations
-        Seq((distance.filter(d=> d.toFloat<min_ocurrence_distance)).size>min_ocurrence) //3)this checks if the distance to the point is less than a threshold
+        Seq((distance.filter(d=> d.toFloat<value_dictionary("transport_min_distance"))).size>value_dictionary("transport_min_ocurrence")) //3)this checks if the distance to the point is less than a threshold
                                   ).zipped.toList.exists(b => (b._1 & b._2)|b._3) ) 
                                                                     //this checks if 1) AND 2) are true, OR 3) happened
  
