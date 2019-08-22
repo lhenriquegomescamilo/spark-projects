@@ -445,7 +445,7 @@ object Item2Item {
       writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters)
     }
     else{ 
-      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (row._3.map(t => t._1.toString.toInt) contains segmentIdx)).toArray))
+      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._3.map(v => v._1.toString.toInt).toArray contains segmentIdx)).toArray))
       val userPredictions = maskedScores.join(maskedRelevant).map(tup => (tup._2._2, tup._2._1))
       writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
     }
@@ -570,7 +570,6 @@ object Item2Item {
            metaParameters: Map[String, String],         
            minSegmentSupport: Int = 100){
   import spark.implicits._ 
-  import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
 
   val country = metaParameters("country")
 
@@ -580,7 +579,13 @@ object Item2Item {
 
   // <segmentIdx> -> (nP, nSelected, nTP)
   var relevanCount = data
-    .flatMap(tup => selSegmentsIdx.map(colIdx => (colIdx, (tup._1.apply(colIdx), tup._2.apply(colIdx), tup._1.apply(colIdx) && tup._2.apply(colIdx))) ))
+    .flatMap(tup => selSegmentsIdx.map(
+        colIdx => (colIdx, (if(tup._1.apply(colIdx)) 1 else 0, 
+                            if(tup._2.apply(colIdx)) 1 else 0, 
+                            if(tup._1.apply(colIdx) && tup._2.apply(colIdx)) 1 else 0)
+                  ) 
+        )
+    )
     .reduceByKey(
       (a, b) => ((a._1 + b._1), (a._2 + b._2), (a._3 + b._3))
     )
@@ -627,7 +632,7 @@ object Item2Item {
       "/datascience/data_lookalike/metrics/country=%s/".format(country)
       )
     
-    df.show(nSegments + 1, false)
+    df.show(expandInput.length + 1, false)
   }
 
   /***
