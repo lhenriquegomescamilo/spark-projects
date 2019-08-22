@@ -570,7 +570,6 @@ object Item2Item {
            metaParameters: Map[String, String],         
            minSegmentSupport: Int = 100){
   import spark.implicits._ 
-  import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
 
   val country = metaParameters("country")
 
@@ -580,7 +579,13 @@ object Item2Item {
 
   // <segmentIdx> -> (nP, nSelected, nTP)
   var relevanCount = data
-    .flatMap(tup => selSegmentsIdx.map(colIdx => (colIdx, (tup._1.apply(colIdx), tup._2.apply(colIdx), tup._1.apply(colIdx) && tup._2.apply(colIdx))) ))
+    .flatMap(tup => selSegmentsIdx.map(
+        colIdx => (colIdx, (if(tup._1.apply(colIdx)) 1 else 0, 
+                            if(tup._2.apply(colIdx)) 1 else 0, 
+                            if(tup._1.apply(colIdx) && tup._2.apply(colIdx)) 1 else 0)
+                  ) 
+        )
+    )
     .reduceByKey(
       (a, b) => ((a._1 + b._1), (a._2 + b._2), (a._3 + b._3))
     )
