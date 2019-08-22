@@ -65,6 +65,8 @@ object ByTwoData {
         "de_geo_asn",
         "de_geo_asn_name",
         "channel",
+        "android_id",
+        "ios_idfa",
         "day")
 
     val meta = spark.read.format("csv").load("/data/providers/sharethis/schema.meta").collect().map(_(0).toString)
@@ -80,9 +82,7 @@ object ByTwoData {
           .schema(schema)
           .load("/data/providers/sharethis/raw/%s*.json".format(day))
         
-    val withMultivalues = multivalue.foldLeft(data)(
-          (df, c) => df.withColumn(c, split(col(c), "\\|"))
-        )
+    val withMultivalues = data.withColumn("external_id", split(col("external_id"), "\\|"))
 
     val df = withMultivalues
             //.withColumn("url_domain", col("url"))

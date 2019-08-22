@@ -54,9 +54,11 @@ object ShareThisByTwoIngester {
           .schema(schema)
           .load("/data/providers/sharethis/raw/%s*.json".format(day))
         
-    val withMultivalues = multivalue.foldLeft(data)(
-          (df, c) => df.withColumn(c, split(col(c), "|"))
-        )
+    val withMultivalues = data
+          .withColumn("external_id", split(col("external_id"), "|") )
+          .withColumn("android_id", split(col("android_id", "|")) )
+          .withColumn("ios_idfa", split(col("ios_idfa", "|")) )
+          .withColumn("connected_tv", split(col("connected_tv", "|")) )
 
     val df = withMultivalues
             .withColumn("adnxs_id", col("external_id").getItem(0))
@@ -65,7 +67,7 @@ object ShareThisByTwoIngester {
             .withColumn("lotame_id", col("external_id").getItem(3))
             .withColumn("nlsn_id", col("external_id").getItem(4))
             .withColumn("eyeota_id", col("external_id").getItem(5))
-            .withColumn("day", regexp_replace(split(col("standardTimestamp"), "T").getItem(0), "-", ""))
+            .withColumn("day", lit(day))
             .drop("external_id")
 
     //val by_columns = df.select(columns.head, columns.tail: _*).na.fill("")
@@ -128,10 +130,7 @@ object ShareThisByTwoIngester {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
 
-    //val days = List("20190803", "20190802", "20190801", "20190731", "20190730", "20190729", "20190728", "20190727", "20190726", "20190725")
-    //val days = List("20190710", "20190711", "20190712", "20190713")
     download_data(spark, nDays, from)
-    //days.foreach(day => processDayNew(spark, day))
   }
 
 }

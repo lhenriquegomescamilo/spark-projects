@@ -406,7 +406,7 @@ def userAggregateFromPolygon(
   }
 
 
-   //This function takes as input a number. this number is substracted from the current date
+  //This function takes as input a number. this number is substracted from the current date
     def create_audiences_from_attribution_date(
       spark: SparkSession,
       value_dictionary: Map[String, String]
@@ -474,4 +474,87 @@ def userAggregateFromPolygon(
                      
   }
 
+//this function create audiences from multiple stops of public transport
+//the variables for the input are:
+//
+def user_aggregate_for_moving_transport(
+      spark: SparkSession,
+      value_dictionary: Map[String, String]
+  ) = {
+
+
+    //we load the raw NON-aggregated data
+        val data = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
+
+    
+    val filter_by_distance = data.filter("distance < %s".format(value_dictionary("umbraldist")))
+    val exploded_by_stop_id =  filter_by_distance
+                    .withColumn("stop_id", explode(split(col(value_dictionary("column_w_stop_list_id")), ",")))
+ 
+ 
+      //hacemos un collect de timestamps y stop id para cada usuario en cada linea. 
+      val poi_line = exploded_by_stop_id.groupBy("stop_id","device_id")
+            .agg(
+              collect_list(col("timestamp")).as("times_array"), 
+              collect_list(value_dictionary("poi_column_name")).as("location_array"), 
+              collect_list("distance").as("distance_array"))
+            .withColumn("line_detect", size(col("times_array")))
+           .filter("(location_detect >1)")
+ 
+
+      // this function checks if the user is a user of the specific transport
+      // it checks if the the time between stops is below a TRESHOLD
+      //it checks if the stations corresponding to the that time difference are different (i.e. the user moved)
+        //it checks if the user was very close to any station multiple times
+      val hasUsedTransport = udf( (timestamps: Seq[String],stopid: Seq[String], distance: Seq[String]) => 
+                                (
+        (timestamps.slice(1, timestamps.length) zip timestamps).map( 
+          t => t._1.toInt-t._2.toInt<value_dictionary(umbralmax)) , //1) this checks if the time between stops is less than the threshold
+        (stopid.slice(1,stopid.length) zip stopid).map(s => s._1!=s._2) , //2)this checks if the stations are different stations
+        Seq((distance.filter(d=> d.toFloat<min_ocurrence_distance)).size>min_ocurrence) //3)this checks if the distance to the point is less than a threshold
+                                  ).zipped.toList.exists(b => (b._1 & b._2)|b._3) ) 
+                                                                    //this checks if 1) AND 2) are true, OR 3) happened
+ 
+ 
+      //creamos una columna si nos dice si es un usuario o no usando la función. filtramos para que no esté vacía en línea y que no sea nula
+        val users_aggregated_by_stop_id = poi_line
+        .withColumn("user",hasUsedTransport(
+                poi_line("times_array"),
+                poi_line("location_array"),
+                poi_line("distance_array")))
+        .filter("user == true")
+        .filter((col("stop_id") =!= "") && ((col("stop_id").isNotNull)))
+        // Here we transform the lists into strings
+      .withColumn("times_array", concat_ws(",", col("times_array")))
+      .withColumn("location_array", concat_ws(",", col("location_array")))
+      .withColumn("distance_array", concat_ws(",", col("distance_array")))
+      .withColumn("distance_array", concat_ws(",", col("distance_array")))
+      .withColumn(value_dictionary("poi_column_name"),col("stop_id")) 
+                //this creates a column with the lines as names, so that the process can continue using this column
+      
+      
+
+
+         // Path where we will store the results.
+    val output_path_anlytics = "/datascience/geo/geo_processed/%s_aggregated"
+      .format(value_dictionary("poi_output_file"))
+
+    users_aggregated_by_stop_id     
+      // Finally we write the results
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save(output_path_anlytics)
+  }
+   
+                     
+  }
+  /***
+****/
 }
