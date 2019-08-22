@@ -5090,6 +5090,29 @@ def getDataAcxiom(spark: SparkSession){
   
 }
 
+def get_volumes_santi_us(spark:SparkSession){
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format)) //lista con formato de format
+    val path = "/data/providers/sharethis/new/"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/".format(day)) //para cada dia de la lista day devuelve el path del día
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
+
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+    df.groupBy("os").agg(count("deviceType"))
+                    .write
+                    .format("csv")
+                    .option("header","true")
+                    .save("/datascience/custom/volumes_us_santi")
+}
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -5099,8 +5122,8 @@ def getDataAcxiom(spark: SparkSession){
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    
+    //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
+    get_volumes_santi_us(spark)
      
   }
 
