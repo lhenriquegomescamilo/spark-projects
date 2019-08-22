@@ -455,7 +455,7 @@ object ContentKws {
   df_joint
     .select("kws","device_id","count")
     .groupBy("device_id")
-    .agg(collect_list("content_keys").as("kws"))        
+    .agg(collect_list("kws").as("kws"))        
     .select("count", "device_id", "kws")
 
 
