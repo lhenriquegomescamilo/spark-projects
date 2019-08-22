@@ -471,7 +471,7 @@ object ContentKws {
     df_joint.cache()
 
     val fileName = "/datascience/devicer/processed/" + job_name
-    
+
     val tuples = df_queries.select("seg_id", "query")
       .collect()
       .map(r => (r(0).toString, r(1).toString))
@@ -650,10 +650,10 @@ object ContentKws {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     
-    get_users_pipeline_3_gba(spark = spark,
+    get_users_pipeline_3(spark = spark,
                          nDays = 30,
                          since = 1,
-                         json_path = "/datascience/custom/gba_freq.json",
+                         json_path = "/datascience/custom/MX_taxo_nueva.json",
                          populate = 0) 
   
      
