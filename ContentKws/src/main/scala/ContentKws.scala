@@ -480,6 +480,8 @@ object ContentKws {
         .save(fileName)
     }
 
+  }
+  
   def get_users_pipeline_3_gba(
       spark: SparkSession,
       nDays: Integer,
