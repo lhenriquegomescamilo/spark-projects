@@ -315,6 +315,8 @@ object ContentKws {
         .save(fileName)
     }
   
+    //var done, if (parametro) --> distinct()
+
     val done = spark.read
       .format("csv")
       .option("sep", "\t")
@@ -438,7 +440,8 @@ object ContentKws {
 
     val df = spark.read
       .option("basePath", path).parquet(hdfs_files: _*)
-      .select("content_keys","device_id","count")
+      .select("content_keys","device_id")
+      .withColumnRenamed("content_keys", "kws")
       .na.drop() 
 
     df
@@ -448,9 +451,14 @@ object ContentKws {
       df_keys: DataFrame,
       df_data_keywords: DataFrame) : DataFrame = {
 
-  val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("content_keys"))
+  val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("kws"))
   df_joint
-    .select("content_keys","device_id","count")
+    .select("kws","device_id")
+    .groupBy("device_id")
+    .agg(collect_list("kws").as("kws"))        
+    .select("device_id", "kws")
+
+
   }
   
   def save_query_results_gba(
@@ -463,7 +471,6 @@ object ContentKws {
     df_joint.cache()
 
     val fileName = "/datascience/devicer/processed/" + job_name
-    //val fileNameFinal = fileName + "_grouped"
 
     val tuples = df_queries.select("seg_id", "query")
       .collect()
@@ -472,7 +479,7 @@ object ContentKws {
       df_joint
         .filter(t._2)
         .withColumn("seg_id", lit(t._1))
-        .select("count", "device_id", "seg_id")
+        .select("device_id", "seg_id")
         .write
         .format("csv")
         .option("sep", "\t")
@@ -499,7 +506,6 @@ object ContentKws {
       .withColumn("kws", split(col("kws"), ","))
       .withColumn("kws", explode(col("kws")))
       .dropDuplicates("kws")
-      .withColumnRenamed("kws", "content_keys")
     
     val country = df_queries.select("country").first.getString(0)
 
@@ -644,10 +650,10 @@ object ContentKws {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     
-    get_users_pipeline_3_gba(spark = spark,
+    get_users_pipeline_3(spark = spark,
                          nDays = 30,
                          since = 1,
-                         json_path = "/datascience/custom//datascience/custom/gba_freq.json",
+                         json_path = "/datascience/custom/MX_taxo_nueva.json",
                          populate = 0) 
   
      
