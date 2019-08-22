@@ -458,7 +458,6 @@ object ContentKws {
     .agg(collect_list("kws").as("kws"))        
     .select("device_id", "kws")
 
-
   }
   
   def save_query_results_gba(
