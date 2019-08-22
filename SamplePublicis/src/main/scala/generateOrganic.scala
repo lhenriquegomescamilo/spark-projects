@@ -62,7 +62,7 @@ object generateOrganic {
 
     // This function takes all the segments and append the "m_" if the event_type is xp.
     val udfGetSegments = udf(
-      (segments: Seq[String], event_type: String) =>
+      (segments: Seq[Int], event_type: String) =>
         segments
           .map(s => "%s%s".format((if (event_type == "xp") "m_" else ""), s))
           .toSeq
@@ -70,14 +70,6 @@ object generateOrganic {
 
     /// Once we have the list of days, we can load it into memory
     val dfs = days.reverse
-      // .filter(
-      //   day =>
-      //     fs.exists(
-      //       new org.apache.hadoop.fs.Path(
-      //         "/datascience/data_audiences_streaming/day=%s".format(day)
-      //       )
-      //     )
-      // )
       .map(
         x =>
           spark.read
