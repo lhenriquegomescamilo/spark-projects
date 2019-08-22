@@ -632,7 +632,7 @@ object Item2Item {
       "/datascience/data_lookalike/metrics/country=%s/".format(country)
       )
     
-    df.show(nSegments + 1, false)
+    df.show(expandInput.length + 1, false)
   }
 
   /***
