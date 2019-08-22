@@ -182,7 +182,7 @@ object Streaming {
       else "/datascience/checkpoint_partner"+(if (parallel>0) "_%s".format(parallel) else "")
     if (processType == "stream") {
       println("STREAMING LOGGER: Storing the streaming")
-      finalDF.writeStream
+      filtered.writeStream
         .outputMode("append")
         .format("parquet")
         .option("checkpointLocation", checkpointLocation)
@@ -192,7 +192,7 @@ object Streaming {
         .start()
         .awaitTermination()
     } else {
-      finalDF.write
+      filtered.write
         .mode("append")
         .format("parquet")
         .partitionBy("hour", partition)
