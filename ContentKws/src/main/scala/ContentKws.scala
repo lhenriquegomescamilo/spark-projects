@@ -401,6 +401,126 @@ object ContentKws {
 
   }
 
+   /**
+    *
+    *
+    *
+    *
+    *
+    *
+    *                    Pedido GBA
+    *
+    *
+    *
+    *
+    *
+   */
+
+  def read_data_kws_gba(
+      spark: SparkSession,
+      country: String,
+      nDays: Integer,
+      since: Integer) : DataFrame = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day,country)) //para cada dia de la lista day devuelve el path del día
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
+
+    val df = spark.read
+      .option("basePath", path).parquet(hdfs_files: _*)
+      .select("content_keys","device_id","count")
+      .na.drop() 
+
+    df
+  }   
+
+  def get_joint_keys_gba(
+      df_keys: DataFrame,
+      df_data_keywords: DataFrame) : DataFrame = {
+
+  val df_joint = df_data_keywords.join(broadcast(df_keys), Seq("content_keys"))
+  df_joint
+    .select("content_keys","device_id","count")
+
+  
+  def save_query_results_gba(
+      spark: SparkSession,
+      df_queries: DataFrame,
+      df_joint: DataFrame,
+      populate: Int,
+      job_name: String) = {
+  
+    df_joint.cache()
+
+    val fileName = "/datascience/devicer/processed/" + job_name
+    //val fileNameFinal = fileName + "_grouped"
+
+    val tuples = df_queries.select("seg_id", "query")
+      .collect()
+      .map(r => (r(0).toString, r(1).toString))
+    for (t <- tuples) {
+      df_joint
+        .filter(t._2)
+        .withColumn("seg_id", lit(t._1))
+        .select("count", "device_id", "seg_id")
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode("append")
+        .save(fileName)
+    }
+
+  def get_users_pipeline_3_gba(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer,
+      json_path: String,
+      populate: Int) = {
+
+    //reads json with queries, kws and seg_ids
+    val df_queries = spark.read
+      .format("json")
+      .load(json_path)
+    
+    //selects "content_keys" (every keyword that appears in the queries) to match with df_kws
+    val df_keys = df_queries.select("kws")
+      .withColumn("kws", split(col("kws"), ","))
+      .withColumn("kws", explode(col("kws")))
+      .dropDuplicates("kws")
+      .withColumnRenamed("kws", "content_keys")
+    
+    val country = df_queries.select("country").first.getString(0)
+
+    // reads from "data_keywords"
+    val df_data_keywords = read_data_kws_gba(spark = spark,
+                                         country = country,
+                                         nDays = nDays,
+                                         since = since)
+        
+    // matches content_keys with data_keywords
+    val df_joint = get_joint_keys_gba(df_keys = df_keys,
+                                  df_data_keywords = df_data_keywords)
+
+    val job_name = df_queries.select("job_name").first.getString(0)
+
+    save_query_results_gba(spark = spark,
+                       df_queries = df_queries,
+                       df_joint = df_joint,
+                       populate = populate,
+                       job_name = job_name)
+
+  }
+        
   /**
     *
     *
@@ -521,20 +641,13 @@ object ContentKws {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    /**
-    get_users_pipeline_3(spark = spark,
+    
+    get_users_pipeline_3_gba(spark = spark,
                          nDays = 30,
                          since = 1,
-                         json_path = "/datascience/custom/MX_taxo_nueva.json",
+                         json_path = "/datascience/custom//datascience/custom/gba_freq.json",
                          populate = 0) 
-    */
-
-    // prueba volumen ( se agregaron prints)
-    get_users_pipeline_3(spark = spark,
-                        nDays = 30,
-                        since = 1,
-                        json_path = "/datascience/custom/MX_taxo_nueva.json",
-                        populate = 0) 
+  
      
   }
 
