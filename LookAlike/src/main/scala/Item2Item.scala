@@ -351,16 +351,24 @@ object Item2Item {
               similartyMatrix: Matrix,
               predMatrixHits: String = "binary",
               isTest: Boolean = false) =  {
-    
+    import spark.implicits._
     import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
 
     val minUserSegments = if(isTest) 2 else 1
 
-    var indexedData = data
+    // index data and write in temporal file
+    val tmpPath = "/datascience/data_lookalike/tmp/indexed_devices/" 
+    data
       .filter(row => row._2.size >= minUserSegments) // filter users
       .zipWithIndex() // <device_id, device_idx>
       .map(tup => (tup._2, tup._1._1, tup._1._2)) // <device_idx, device_id, segments>
-      .persist(StorageLevel.MEMORY_AND_DISK)
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("parquet")
+      .save(tmpPath)
+
+    // reload indexed data
+    var indexedData = spark.read.load(tmpPath)
 
     var nSegments = similartyMatrix.numRows.toInt
 
