@@ -74,7 +74,7 @@ object ShareThisByTwoIngester {
       .mode("overwrite")
       .format("parquet")
       .partitionBy("day")
-      .save("/data/providers/sharethis/new/")
+      .save("/data/providers/sharethis/processed/")
   }
 
   /*def getDataAudiences(
