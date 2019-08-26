@@ -54,11 +54,9 @@ object ShareThisByTwoIngester {
           .schema(schema)
           .load("/data/providers/sharethis/raw/%s*.json".format(day))
         
-    val withMultivalues = data
-          .withColumn("external_id", split(col("external_id"), "|") )
-          .withColumn("android_id", split(col("android_id", "|")) )
-          .withColumn("ios_idfa", split(col("ios_idfa", "|")) )
-          .withColumn("connected_tv", split(col("connected_tv", "|")) )
+    val withMultivalues = multivalue.foldLeft(data)(
+          (df, c) => df.withColumn(c, split(col(c), "\\|"))
+        )
 
     val df = withMultivalues
             .withColumn("adnxs_id", col("external_id").getItem(0))
@@ -73,7 +71,7 @@ object ShareThisByTwoIngester {
     //val by_columns = df.select(columns.head, columns.tail: _*).na.fill("")
     
     df.coalesce(100).write
-      .mode("append")
+      .mode("overwrite")
       .format("parquet")
       .partitionBy("day")
       .save("/data/providers/sharethis/new/")

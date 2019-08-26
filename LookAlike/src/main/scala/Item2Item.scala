@@ -360,7 +360,7 @@ object Item2Item {
       .filter(row => row._2.size >= minUserSegments) // filter users
       .zipWithIndex() // <device_id, device_idx>
       .map(tup => (tup._2, tup._1._1, tup._1._2)) // <device_idx, device_id, segments>
-      // persist?
+      .persist(StorageLevel.MEMORY_AND_DISK)
 
     var nSegments = similartyMatrix.numRows.toInt
 
