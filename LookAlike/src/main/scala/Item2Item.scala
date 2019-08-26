@@ -449,7 +449,7 @@ object Item2Item {
   * Generate output files
   */
   def writeOutput(spark: SparkSession,
-                  data: RDD[(Any, Array[(Boolean)])],
+                  data: RDD[(String, Array[(Boolean)])],
                   expandInput: List[Map[String, Any]],
                   segmentToIndex: Map[String, Int],
                   metaParameters: Map[String, String]){
@@ -466,7 +466,7 @@ object Item2Item {
       val dataExpansion = data
         .map(
             tup => 
-              (tup._1.toString, // device_id
+              (tup._1, // device_id
               selSegmentsIdx
                 .filter(segmentIdx => tup._2.apply(segmentIdx)) // select segments to expand
                 .map(segmentIdx => dstSegmentIdMap(segmentIdx)) // get segment label
