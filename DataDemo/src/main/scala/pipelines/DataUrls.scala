@@ -38,7 +38,7 @@ object DataUrls{
   def generate_data_urls(
       spark: SparkSession,
       ndays: Int,
-      from: Int = 1,
+      from: Int = 1
   ) {
     /// Configuraciones de spark
     val sc = spark.sparkContext
