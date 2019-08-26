@@ -69,7 +69,7 @@ object DataUrls{
             .parquet(x)
             .filter("url is not null AND event_type IN ('pv', 'batch')")
             .withColumn("day", lit(x.split("/").last.slice(5, 13)))
-            .select("device_id", "url", "referer", "event_type","country")
+            .select("device_id", "url", "referer", "event_type","country","day")
       )
 
     /// Concatenamos los dataframes
