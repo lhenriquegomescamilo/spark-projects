@@ -67,8 +67,9 @@ object DataUrls{
           spark.read
             .option("basePath", "/datascience/data_audiences_streaming/")
             .parquet(x)
-            .filter("url is not null AND event_type IN ('pv', 'batch')".format(country))
-            .select("device_id", "url", "referer", "event_type")
+            .filter("url is not null AND event_type IN ('pv', 'batch')")
+            .withColumn("day", lit(x.split("/").last.slice(5, 13)))
+            .select("device_id", "url", "referer", "event_type","country")
       )
 
     /// Concatenamos los dataframes
