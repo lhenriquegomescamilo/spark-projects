@@ -71,7 +71,7 @@ object ShareThisByTwoIngester {
     //val by_columns = df.select(columns.head, columns.tail: _*).na.fill("")
     
     df.coalesce(100).write
-      .mode("append")
+      .mode("overwrite")
       .format("parquet")
       .partitionBy("day")
       .save("/data/providers/sharethis/new/")
