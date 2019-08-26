@@ -382,7 +382,7 @@ object GenerateDataset {
         else "%s0".format(hour)
     )
     val res = joint
-                .withColumn("Time", to_timestamp(from_unixtime(col("timestamp") - (if (country=="AR") 3 else 5) * 3600))) // AR time transformation
+                .withColumnRenamed("timestamp", "Time")
                 .withColumn("Hour", date_format(col("Time"), "HH"))
                 .withColumn("Weekday", date_format(col("Time"), "EEEE"))
                 .withColumn("wd", myUDF(col("Weekday"), col("Hour")))

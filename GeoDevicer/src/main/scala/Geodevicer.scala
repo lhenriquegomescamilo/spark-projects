@@ -178,6 +178,61 @@ object Geodevicer {
             .length > 0) query("old_pipeline").toString
       else "0"
 
+    //To process an atribution data
+    val atribution_date =
+      if (query.contains("atribution_date") && Option(query("atribution_date"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("atribution_date").toString
+      else "0"
+
+    //To process transports 
+      val column_w_stop_list_id =
+      if (query.contains("column_w_stop_list_id") && Option(query("column_w_stop_list_id"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("column_w_stop_list_id").toString
+      else "0"
+
+    val transport_min_ocurrence =
+      if (query.contains("transport_min_ocurrence") && Option(query("transport_min_ocurrence"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("transport_min_ocurrence").toString
+      else "0"
+
+    val transport_min_distance =
+      if (query.contains("transport_min_distance") && Option(query("transport_min_distance"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("transport_min_distance").toString
+      else "0"
+    
+//this will filter the final dataset to be generated as an audience
+  val min_frequency_of_detection =
+      if (query.contains("min_frequency_of_detection") && Option(query("min_frequency_of_detection"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("min_frequency_of_detection").toString
+      else "0"
+
+    //this will filter the final dataset to be generated as an audience
+  val filter_true_user =
+      if (query.contains("filter_true_user") && Option(query("filter_true_user"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("filter_true_user").toString
+      else "0"
+
+     //this selects the repartitions to be used when broadcasting a file
+  val repartition =
+      if (query.contains("repartition") && Option(query("repartition"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("repartition").toString
+      else "1"
+    
+
     // Finally we construct the Map that is going to be returned
     val value_dictionary: Map[String, String] = Map(
       "max_radius" -> max_radius,
@@ -196,8 +251,14 @@ object Geodevicer {
       "audience_column_name" -> audience_column_name,
       "web_days" -> web_days,
       "polygon_input" -> polygon_input,
-      "old_pipeline" -> old_pipeline
-    )
+      "old_pipeline" -> old_pipeline,
+      "atribution_date" -> atribution_date,
+    "column_w_stop_list_id" -> column_w_stop_list_id,
+      "transport_min_ocurrence" -> transport_min_ocurrence,
+      "transport_min_distance" -> transport_min_distance,
+      "min_frequency_of_detection" -> min_frequency_of_detection,
+    "filter_true_user" -> filter_true_user,
+    "repartition" -> repartition)
 
     println("LOGGER PARAMETERS:")
     println(s"""
@@ -217,7 +278,14 @@ object Geodevicer {
     "audience_column_name" -> $audience_column_name,
     "web_days" -> $web_days,
     "polygon_input"->$polygon_input,
-    "old_pipeline"-> $old_pipeline""")
+    "old_pipeline"-> $old_pipeline,
+     "atribution_date" -> $atribution_date,
+    "column_w_stop_list_id" -> $column_w_stop_list_id,
+      "transport_min_ocurrence" -> $transport_min_ocurrence,
+      "transport_min_distance" -> $transport_min_distance,
+      "min_frequency_of_detection" -> $min_frequency_of_detection,
+    "filter_true_user" -> $filter_true_user,
+    "repartition" -> $repartition""")
     value_dictionary
   }
 

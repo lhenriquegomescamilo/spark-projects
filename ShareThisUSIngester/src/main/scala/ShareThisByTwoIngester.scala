@@ -55,7 +55,7 @@ object ShareThisByTwoIngester {
           .load("/data/providers/sharethis/raw/%s*.json".format(day))
         
     val withMultivalues = multivalue.foldLeft(data)(
-          (df, c) => df.withColumn(c, split(col(c), "|"))
+          (df, c) => df.withColumn(c, split(col(c), "\\|"))
         )
 
     val df = withMultivalues
@@ -71,7 +71,7 @@ object ShareThisByTwoIngester {
     //val by_columns = df.select(columns.head, columns.tail: _*).na.fill("")
     
     df.coalesce(100).write
-      .mode("append")
+      .mode("overwrite")
       .format("parquet")
       .partitionBy("day")
       .save("/data/providers/sharethis/new/")
