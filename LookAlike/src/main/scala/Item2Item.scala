@@ -361,14 +361,19 @@ object Item2Item {
     data
       .filter(row => row._2.size >= minUserSegments) // filter users
       .zipWithIndex() // <device_id, device_idx>
-      .map(tup => (tup._2, tup._1._1, tup._1._2)) // <device_idx, device_id, segments>
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("parquet")
-      .save(tmpPath)
+      .map(tup => (tup._2.toLong, 
+                  tup._1._1.toString,
+                  tup._1._2.map(t => t._1.toString.toInt).toArray,
+                  tup._1._2.map(t => t._2.toString.toInt).toArray )
+       ) // <device_idx, device_id, array segments, array counts>
+      .toDF("device_idx", "device_id", "segments", "counts")
+          .write
+          .mode(SaveMode.Overwrite)
+          .format("parquet")
+          .save(tmpPath)
 
     // reload indexed data
-    var indexedData = spark.read.load(tmpPath)
+    var indexedData = spark.read.load(tmpPath).as[(Long, String, Array[Int], Array[Double])].rdd
 
     var nSegments = similartyMatrix.numRows.toInt
 
@@ -377,37 +382,18 @@ object Item2Item {
       if (predMatrixHits == "count"){
         println(s"User matrix: counts")
         indexedData
-        .map(row => new IndexedRow 
-          (row._1, 
-          Vectors.sparse(
-            nSegments,
-            row._3.map(t => t._1.toString.toInt).toArray,
-            row._3.map(t => t._2.toString.toDouble).toArray)
-          .toDense.asInstanceOf[Vector]))
+        .map(row => new IndexedRow(row._1, Vectors.sparse(nSegments, row._3, row._4).toDense.asInstanceOf[Vector]))
       }
       else if (predMatrixHits == "normalized"){
         println(s"User matrix: normalized count")
         indexedData
-          .map(row => (row._1, row._3, row._3.map(t => t._2.toString.toDouble).toArray.sum)) // sum counts by device id
-          .map(row => new IndexedRow 
-            (row._1, 
-            Vectors.sparse(
-                        nSegments,
-                        row._2.map(t => t._1.toString.toInt).toArray,
-                        row._2.map(t => t._2.toString.toDouble/row._3).toArray)
-                      .toDense.asInstanceOf[Vector]))
+          .map(row => (row._1, row._3, row._4, row._4.sum)) // sum counts by device id
+          .map(row => new IndexedRow(row._1,Vectors.sparse(nSegments, row._2, row._3.map(t => t/row._4)).toDense.asInstanceOf[Vector]))
       }
       else{
         println(s"User matrix: binary")
         indexedData
-        .map(row => new IndexedRow 
-          (row._1, 
-          Vectors.sparse(
-            nSegments,
-            row._3.map(t => t._1.toString.toInt).toArray, 
-            Array.fill(row._3.size)(1.0))
-          .toDense.asInstanceOf[Vector]
-          ))
+        .map(row => new IndexedRow(row._1,Vectors.sparse(nSegments, row._3, Array.fill(row._3.size)(1.0)).toDense.asInstanceOf[Vector]))
       }
     }
     /*
@@ -447,13 +433,13 @@ object Item2Item {
       // <device_idx, array(boolean))>
 
     if(!isTest){
-      val devicesId = indexedData.map(t => (t._1, t._2))
+      val devicesId = indexedData.map(t => (t._1, t._2)) // <device_idx, device_id>
       val userPredictions = maskedScores.join(devicesId).map(tup => (tup._2._2, tup._2._1))
       // <device_id, array(boolean)>
       writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters)
     }
     else{ 
-      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._3.map(v => v._1.toString.toInt).toArray contains segmentIdx)).toArray))
+      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._3 contains segmentIdx)).toArray))
       val userPredictions = maskedScores.join(maskedRelevant).map(tup => (tup._2._2, tup._2._1))
       writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
     }
