@@ -45,12 +45,12 @@ object DataPublicis {
     df
   }
 
-  def getDataPublicis(spark: SparkSession) {
+  def getDataPublicis(spark: SparkSession, from: Int = 1) {
     val dataBase =
       getDataAudiences(
         spark,
-        30,
-        1
+        1,
+        from
       ).filter(
           """country = 'MX' AND
              event_type = 'pv' AND 
@@ -81,12 +81,13 @@ object DataPublicis {
           regexp_replace(col("referer_domain"), "/.*", "")
         )
 
+    val day = DateTime.now.minusDays(from).toString("yyyy/MM/dd/")
+    println("Processing day %s".format(day))
     dataBase
-      .repartition(20)
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/publicis_sample")
+      .save("/datascience/custom/publicis_sample/day=%s".format(day))
 
   }
 
@@ -99,7 +100,7 @@ object DataPublicis {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataPublicis(spark)
+    (1 to 30).map(from => getDataPublicis(spark, from))
 
   }
 }
