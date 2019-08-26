@@ -88,7 +88,7 @@ object DataUrls{
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
 
-    for( day <- 1 to 30){
+    for(day <- 1 to 30){
       generate_data_urls(spark, 1, day)
     }
   }
