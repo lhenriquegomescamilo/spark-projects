@@ -60,11 +60,11 @@ object DataPublicis {
              url NOT LIKE '%aeromexico.com%' AND
              url NOT LIKE '%mopar.com.mx%' AND
              url NOT LIKE '%tresemme.com.mx%' AND
-             AND (array_contains(all_segments, 165) OR 
-                  array_contains(all_segments, 413) OR 
-                  array_contains(all_segments, 3013) OR 
-                  array_contains(all_segments, 465) OR 
-                  array_contains(all_segments, 395))"""
+             (array_contains(all_segments, 165) OR 
+              array_contains(all_segments, 413) OR 
+              array_contains(all_segments, 3013) OR 
+              array_contains(all_segments, 465) OR 
+              array_contains(all_segments, 395))"""
         )
         .select("device_id", "datetime", "referer", "url")
         .withColumn(
