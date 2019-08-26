@@ -53,7 +53,7 @@ object ContentKws {
     *
     *
     *
-   
+   */
 
   // This function reads from data_keywords
   //Input = country, nDays and since.
@@ -219,13 +219,13 @@ object ContentKws {
                        job_name = job_name)
 
   }
-  */
+  
 
    /**
     *
     *
     *
-    *                Get Users pipeline 3 
+    *                Get Users pipeline 3 _ test
     *
     *
     *
@@ -234,7 +234,7 @@ object ContentKws {
   // This function reads from data_keywords
   //Input = country, nDays and since.
   //Output = DataFrame with "content_keys"| "device_id"
-
+  /**
   def read_data_kws(
       spark: SparkSession,
       country: String,
@@ -402,7 +402,8 @@ object ContentKws {
                        job_name = job_name)
 
   }
-
+  */
+  
    /**
     *
     *
@@ -457,7 +458,6 @@ object ContentKws {
     .groupBy("device_id")
     .agg(collect_list("kws").as("kws"))        
     .select("device_id", "kws")
-
 
   }
   
