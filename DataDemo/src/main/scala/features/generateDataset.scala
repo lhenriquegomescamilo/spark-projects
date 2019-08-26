@@ -32,9 +32,9 @@ object GenerateDataset {
   **/
   def getDataAudiences(
       spark: SparkSession,
+      country: String,
       nDays: Int = 30,
-      since: Int = 1,
-      country: String
+      since: Int = 1
   ): DataFrame = {
 
     /// Configuraciones de spark
