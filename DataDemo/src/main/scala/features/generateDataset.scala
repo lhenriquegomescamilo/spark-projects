@@ -33,7 +33,8 @@ object GenerateDataset {
   def getDataAudiences(
       spark: SparkSession,
       nDays: Int = 30,
-      since: Int = 1
+      since: Int = 1,
+      country: String
   ): DataFrame = {
 
     /// Configuraciones de spark
@@ -47,24 +48,14 @@ object GenerateDataset {
 
     val days =
       (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_audiences_streaming"
-    val dfs = days
-      .flatMap(
-        day =>
-          (0 until 24).map(
-            hour =>
-              path + "/hour=%s%02d/"
-                .format(day, hour)
-          )
-      )
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      .map(
-        x =>
-          spark.read
-            .option("basePath", "/datascience/data_audiences_streaming/")
-            .parquet(x)
-            .withColumn("day", lit(x.split("/").last.slice(5, 13)))
-      )
+    val path = "/datascience/data_demo/data_urls/"
+    val dfs = days.map(day => path + "/day=%s/country=%s".format(day,country))
+                  .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+                  .map(x => spark.read
+                                .option("basePath", path)
+                                .parquet(x)
+                                .withColumn("day", lit(x.split("/").last.slice(4, 13)))
+    )
 
     val df = dfs.reduce((df1, df2) => df1.union(df2))
 
@@ -525,9 +516,9 @@ object GenerateDataset {
       joinType: String,
       name: String  
   ) = {
-    // Data from data audiences
-    val df = getDataAudiences(spark)
-      .filter("country = '%s' AND event_type IN ('pv', 'batch')".format(country))
+    // Data from data urls
+    val df = getDataAudiences(spark,country)
+      .filter("event_type IN ('pv', 'batch')")
       .select("device_id", "url")
       .distinct()
 
