@@ -418,7 +418,6 @@ object Item2Item {
       .rows
       .flatMap(row =>  selSegmentsIdx.map(segmentIdx => (segmentIdx, row.vector.apply(segmentIdx)))) 
       .filter(tup => (tup._2 > 0)) // it selects scores > 0 (score is negative If the user already contains the segment)
-      .map(tup => (tup._1, tup._2))// Format  <segment_idx, score>
       .topByKey(sizeMax)
       .map(t => (t._1, if (t._2.length >= sizeMap(t._1.toInt)) t._2( sizeMap(t._1.toInt) - 1 ) else t._2.last )) // get the kth value #
       .collect()
