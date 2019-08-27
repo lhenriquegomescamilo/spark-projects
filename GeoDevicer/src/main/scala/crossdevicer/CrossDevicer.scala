@@ -26,7 +26,7 @@ object CrossDevicer {
       path: String =  "/datascience/geo/geo_processed/%s_aggregated",
       sep: String = "\t",
       column_name: String = "_c1",
-      columns_to_save: Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"validUser","frequency"), 
+      columns_to_save: Seq[String] = Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"validUser","frequency"), 
       header: String = "false"
   ) {
     // First we get the audience. Also, we transform the device id to be upper case.

@@ -418,7 +418,7 @@ val atribute_day_name = DateTime.now.minusDays(value_dictionary("atribution_date
         value_dictionary,
         path = "/datascience/geo/geo_processed/%s_att_date-%s".format(value_dictionary("poi_output_file"),atribute_day_name),
         column_name = "device_id",
-        columns_to_save: Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"new_user","churn_user","fidelity_user"),
+        columns_to_save = Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"new_user","churn_user","fidelity_user"),
         header = "true"
       )
 
