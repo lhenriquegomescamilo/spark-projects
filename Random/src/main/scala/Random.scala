@@ -5120,44 +5120,29 @@ def get_segments_pmi(spark:SparkSession, files:List[String]){
   val conf = sc.hadoopConfiguration
   val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-  /// Obtenemos la data de los ultimos ndays
   val format = "yyyyMMdd"
   val start = DateTime.now.minusDays(1)
 
-  val days =
-    (0 until 30).map(start.minusDays(_)).map(_.toString(format))
-  val path = "/datascience/data_audiences_streaming"
-  val dfs = days
-    .flatMap(
-      day =>
-        (0 until 24).map(
-          hour =>
-            path + "/hour=%s%02d/"
-              .format(day, hour)
-        )
-    )
+  val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+  val path = "/datascience/data_triplets/segments/"
+  val dfs = days.map(day => path + "day=%s/".format(day) + "country=AR")
     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     .map(
       x =>
         spark.read
-          .option("basePath", "/datascience/data_audiences_streaming/")
+          .option("basePath", "/datascience/data_triplets/segments/")
           .parquet(x)
-          .filter("country = 'AR'")
-          .select("device_id", "segments")
     )
 
-  /// Concatenamos los dataframes
-  val data = dfs.reduce((df1, df2) => df1.union(df2))
+  var data = dfs.reduce((df1, df2) => df1.union(df2))
 
   for (filename <- files){
     var cookies = spark.read.format("csv").load(filename)
                                         .withColumnRenamed("_c0","device_id")
 
     data.join(broadcast(cookies),Seq("device_id"))
-        .select("device_id","segments")
+        .select("device_id","segments","count")
         .dropDuplicates()
-        .withColumn("segments",explode(col("segments")))
-        .withColumn("count",lit(1))
         .write.format("csv")
         .save("/datascience/custom/segments_%s".format(filename.split("/").last.split("_").last))
   
