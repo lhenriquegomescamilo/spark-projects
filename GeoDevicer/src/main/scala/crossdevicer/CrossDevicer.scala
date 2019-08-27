@@ -26,7 +26,7 @@ object CrossDevicer {
       path: String =  "/datascience/geo/geo_processed/%s_aggregated",
       sep: String = "\t",
       column_name: String = "_c1",
-      columns_to_save: Seq[String] = Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"validUser","frequency"), 
+      columns_to_save: Seq[String], 
       header: String = "false"
   ) {
     // First we get the audience. Also, we transform the device id to be upper case.
@@ -60,8 +60,7 @@ object CrossDevicer {
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     // BIG ASSUMPTION: we only want the cookies out of the cross-device.
 
-    val columns = Seq[String]("device_id","name")
-    val colNames = columns.map(name => col(name))
+    val colNames = columns_to_save.map(name => col(name))
 
     val db_data = spark.read
       .format("parquet")

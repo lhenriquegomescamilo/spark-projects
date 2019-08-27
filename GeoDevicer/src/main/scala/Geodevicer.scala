@@ -391,7 +391,8 @@ object Geodevicer {
         spark,
         value_dictionary,
         column_name = "device_id",
-        header = "true"
+        header = "true",
+        columns_to_save = Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"validUser","frequency")
       )
 
     if (value_dictionary("crossdevice") != "false" && value_dictionary(
