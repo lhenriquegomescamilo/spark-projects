@@ -357,7 +357,7 @@ object Item2Item {
     val minUserSegments = if(isTest) 2 else 1
 
     // index data and write in temporal file
-    val tmpPath = "/datascience/data_lookalike/tmp/indexed_devices/" 
+    val indexTmpPath = "/datascience/data_lookalike/tmp/indexed_devices/" 
     data
       .filter(row => row._2.size >= minUserSegments) // filter users
       .zipWithIndex() // <device_id, device_idx>
@@ -370,10 +370,10 @@ object Item2Item {
           .write
           .mode(SaveMode.Overwrite)
           .format("parquet")
-          .save(tmpPath)
+          .save(tmindexTmpPathpPath)
 
     // reload indexed data
-    var indexedData = spark.read.load(tmpPath).as[(Long, String, Array[Int], Array[Double])].rdd
+    var indexedData = spark.read.load(indexTmpPath).as[(Long, String, Array[Int], Array[Double])].rdd
 
     var nSegments = similartyMatrix.numRows.toInt
 
@@ -407,7 +407,20 @@ object Item2Item {
     val userSegmentMatrix = new IndexedRowMatrix(indexedRows)
 
     // it calculates the prediction scores
-    var scoreMatrix = userSegmentMatrix.multiply(similartyMatrix)
+    val scoreMatrix = userSegmentMatrix.multiply(similartyMatrix)
+
+    // write scores in temporal file
+    val scoresTmpPath = "/datascience/data_lookalike/tmp/scores/" 
+    scoreMatrix
+      .rows
+      .map(row =>  (row.index, row.vector)) 
+      .toDF("device_idx", "scores")  
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("parquet")
+      .save(scoresTmpPath)
+
+/*
 
     // It gets the score thresholds to get at least k elements per segment.
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
@@ -509,6 +522,7 @@ object Item2Item {
         .save(filePath)
       writeOutputMetaFile(filePath, jobId, partnerId)
     }
+    */
   }
 
   /**
