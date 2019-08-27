@@ -5123,7 +5123,7 @@ def get_segments_pmi(spark:SparkSession, files:List[String]){
   val format = "yyyyMMdd"
   val start = DateTime.now.minusDays(1)
 
-  val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+  val days = (0 until 60).map(start.minusDays(_)).map(_.toString(format))
   val path = "/datascience/data_triplets/segments/"
   val dfs = days.map(day => path + "day=%s/".format(day) + "country=AR")
     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
@@ -5160,9 +5160,10 @@ def get_segments_pmi(spark:SparkSession, files:List[String]){
     Logger.getRootLogger.setLevel(Level.WARN)
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    val files = List("/datascience/misc/cookies_chesterfield.csv",
-                    "/datascience/misc/cookies_marlboro.csv",
-                    "/datascience/misc/cookies_phillip_morris.csv")
+    val files = List("/datascience/misc/cookies_chesterfield.csv")
+                    //"/datascience/misc/cookies_marlboro.csv",
+                    //"/datascience/misc/cookies_phillip_morris.csv",
+                    //"/datascience/misc/cookies_parliament.csv"
     get_segments_pmi(spark,files)
      
   }
