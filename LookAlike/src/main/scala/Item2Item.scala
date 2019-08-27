@@ -439,7 +439,6 @@ object Item2Item {
 
     // It generates masked vectors per indexed user, to indicate segments to expand (scores > threshold)
     var maskedScores = scoreMatrix
-      .rows
       .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => (minScoreMap contains segmentIdx) && (tup._2.apply(segmentIdx) >= minScoreMap(segmentIdx))).toArray) )
       .filter(tup=> tup._2.reduce(_||_))
       // <device_idx, array(boolean))>
