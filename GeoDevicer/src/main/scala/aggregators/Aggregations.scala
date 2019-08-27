@@ -444,6 +444,17 @@ def userAggregateFromPolygon(
     val churn_user = user_attributions.filter("churn_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
     val fidelity_user = user_attributions.filter("fidelity_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
 
+
+      date.select("device_type","device_id","name","new_user","churn_user","fidelity_user")
+      .write
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/geo/audience/%s_att_date-%s"
+          .format(value_dictionary("poi_output_file"),atribute_day_name))
+/*
       new_user.write
       .format("csv")
       .option("header", "true")
@@ -471,7 +482,7 @@ def userAggregateFromPolygon(
         "/datascience/geo/audience/%s_churn_user_att_date%s"
           .format(value_dictionary("poi_output_file"),atribute_day_name))
       
-                     
+  */                   
   }
 
 //this function create audiences from multiple stops of public transport
