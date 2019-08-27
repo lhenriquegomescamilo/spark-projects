@@ -412,7 +412,7 @@ object Geodevicer {
       CrossDevicer.cross_device(
         spark,
         value_dictionary,
-        path = "/datascience/geo/audience/%s_att_date-%s".format(value_dictionary("poi_output_file"),atribute_day_name)),
+        path = "/datascience/geo/audience/%s_att_date-%s".format(value_dictionary("poi_output_file"),atribute_day_name),
         column_name = "device_id",
         header = "true"
       )
