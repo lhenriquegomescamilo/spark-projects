@@ -26,6 +26,7 @@ object CrossDevicer {
       path: String =  "/datascience/geo/geo_processed/%s_aggregated",
       sep: String = "\t",
       column_name: String = "_c1",
+      columns_to_save: Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"validUser","frequency"), 
       header: String = "false"
   ) {
     // First we get the audience. Also, we transform the device id to be upper case.
@@ -58,6 +59,10 @@ object CrossDevicer {
 
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     // BIG ASSUMPTION: we only want the cookies out of the cross-device.
+
+    val columns = Seq[String]("device_id","name")
+    val colNames = columns.map(name => col(name))
+
     val db_data = spark.read
       .format("parquet")
       .load("/datascience/crossdevice/double_index")
@@ -72,8 +77,7 @@ object CrossDevicer {
       val cross_deviced = db_data      
       .join(        
         audience    
-        .select("device_id","device_type",
-                  value_dictionary("poi_column_name"))      //,     value_dictionary("audience_column_name"),"validUser","frequency",    
+        .select(colNames:_*)      //,     value_dictionary("audience_column_name"),"validUser","frequency",     "device_id","device_type",           value_dictionary("poi_column_name"),
         .distinct(),        
         Seq("device_id"),
             "right_outer")      
@@ -83,10 +87,10 @@ object CrossDevicer {
       .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))
 
-      val cross_deviced_agg = cross_deviced.groupBy("device_id","device_type") // ,"validUser","frequency"
+      val cross_deviced_agg = cross_deviced.groupBy(colNames.filter(y => y.toString !=  value_dictionary("poi_column_name").toString):_*)) // ,"validUser","frequency"
       .agg(collect_list(value_dictionary("poi_column_name")) as value_dictionary("poi_column_name"))
       .withColumn(value_dictionary("poi_column_name"), concat_ws(",", col(value_dictionary("poi_column_name"))))
-      .select("device_type","device_id",value_dictionary("poi_column_name")) //,"validUser","frequency" antes se seleccionaban estas para filtar luego, pero si se dejan el archivo no se empuja
+      .select(colNames:_*)//.select("device_type","device_id",value_dictionary("poi_column_name")) //,"validUser","frequency" antes se seleccionaban estas para filtar luego, pero si se dejan el archivo no se empuja
 
     // We want information about the process
     cross_deviced_agg.explain(extended = true)

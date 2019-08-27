@@ -446,7 +446,7 @@ def userAggregateFromPolygon(
     //val fidelity_user = user_attributions.filter("fidelity_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
 
 
-      user_attributions.select("device_type","device_id","name","new_user","churn_user","fidelity_user")
+      user_attributions.select("device_type","device_id",value_dictionary("poi_column_name"),"new_user","churn_user","fidelity_user")
       .write
       .format("csv")
       .option("header", "true")
