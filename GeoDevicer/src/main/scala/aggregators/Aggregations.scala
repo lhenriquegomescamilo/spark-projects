@@ -1,5 +1,6 @@
 package main.scala.aggregators
 
+import main.scala.Geodevicer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.Window
@@ -451,8 +452,7 @@ def userAggregateFromPolygon(
       .option("header", "true")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
-      .save(
-        "/datascience/geo/audience/%s_att_date-%s"
+      .save("/datascience/geo/geo_processed/%s_att_date-%s"
           .format(value_dictionary("poi_output_file"),atribute_day_name))
 /*
       new_user.write
