@@ -406,12 +406,10 @@ object Item2Item {
 
     val userSegmentMatrix = new IndexedRowMatrix(indexedRows)
 
-    // it calculates the prediction scores
-    val scoreMatrix = userSegmentMatrix.multiply(similartyMatrix)
-
-    // write scores in temporal file
+   // write scores in temporal file
     val scoresTmpPath = "/datascience/data_lookalike/tmp/scores/" 
-    scoreMatrix
+    userSegmentMatrix
+      .multiply(similartyMatrix)
       .rows
       .map(row =>  (row.index, row.vector)) 
       .toDF("device_idx", "scores")  
@@ -420,7 +418,8 @@ object Item2Item {
       .format("parquet")
       .save(scoresTmpPath)
 
-/*
+    // reload scores
+    val scoreMatrix = spark.read.load(scoresTmpPath).as[(Long, Vector)].rdd
 
     // It gets the score thresholds to get at least k elements per segment.
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
@@ -428,9 +427,10 @@ object Item2Item {
     val sizeMax = expandInput.map(m => m("size").toString.toInt).max
 
     val minScoreMap = scoreMatrix
-      .rows
-      .flatMap(row =>  selSegmentsIdx.map(segmentIdx => (segmentIdx, row.vector.apply(segmentIdx)))) 
-      .filter(tup => (tup._2 > 0)) // it selects scores > 0 (score is negative If the user already contains the segment)
+      .flatMap(tup =>  selSegmentsIdx
+                        .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx)))
+                        .filter(tup => tup._2 >0) // remove scores <= 0
+      ) //<segment_idx, score>
       .topByKey(sizeMax)
       .map(t => (t._1, if (t._2.length >= sizeMap(t._1.toInt)) t._2( sizeMap(t._1.toInt) - 1 ) else t._2.last )) // get the kth value #
       .collect()
@@ -440,7 +440,7 @@ object Item2Item {
     // It generates masked vectors per indexed user, to indicate segments to expand (scores > threshold)
     var maskedScores = scoreMatrix
       .rows
-      .map(row => (row.index, selSegmentsIdx.map(segmentIdx => (minScoreMap contains segmentIdx) && (row.vector.apply(segmentIdx) >= minScoreMap(segmentIdx))).toArray) )
+      .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => (minScoreMap contains segmentIdx) && (tup._2.apply(segmentIdx) >= minScoreMap(segmentIdx))).toArray) )
       .filter(tup=> tup._2.reduce(_||_))
       // <device_idx, array(boolean))>
 
@@ -522,7 +522,7 @@ object Item2Item {
         .save(filePath)
       writeOutputMetaFile(filePath, jobId, partnerId)
     }
-    */
+    
   }
 
   /**
