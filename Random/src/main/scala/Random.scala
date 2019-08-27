@@ -5142,6 +5142,7 @@ def get_segments_pmi(spark:SparkSession, files:List[String]){
         spark.read
           .option("basePath", "/datascience/data_audiences_streaming/")
           .parquet(x)
+          .filter("country = 'AR'")
           .select("device_id", "segments")
     )
 
