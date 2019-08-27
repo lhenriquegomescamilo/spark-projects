@@ -279,11 +279,11 @@ object Geodevicer {
     "web_days" -> $web_days,
     "polygon_input"->$polygon_input,
     "old_pipeline"-> $old_pipeline,
-     "atribution_date" -> $atribution_date,
+    "atribution_date" -> $atribution_date,
     "column_w_stop_list_id" -> $column_w_stop_list_id,
-      "transport_min_ocurrence" -> $transport_min_ocurrence,
-      "transport_min_distance" -> $transport_min_distance,
-      "min_frequency_of_detection" -> $min_frequency_of_detection,
+    "transport_min_ocurrence" -> $transport_min_ocurrence,
+    "transport_min_distance" -> $transport_min_distance,
+    "min_frequency_of_detection" -> $min_frequency_of_detection,
     "filter_true_user" -> $filter_true_user,
     "repartition" -> $repartition""")
     value_dictionary

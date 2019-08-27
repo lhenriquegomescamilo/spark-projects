@@ -440,12 +440,12 @@ def userAggregateFromPolygon(
 
 
 
-    val new_user = user_attributions.filter("new_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
-    val churn_user = user_attributions.filter("churn_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
-    val fidelity_user = user_attributions.filter("fidelity_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
+    //val new_user = user_attributions.filter("new_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
+    //val churn_user = user_attributions.filter("churn_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
+    //val fidelity_user = user_attributions.filter("fidelity_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
 
 
-      date.select("device_type","device_id","name","new_user","churn_user","fidelity_user")
+      user_attributions.select("device_type","device_id","name","new_user","churn_user","fidelity_user")
       .write
       .format("csv")
       .option("header", "true")

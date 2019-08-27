@@ -1,5 +1,6 @@
 package main.scala.crossdevicer
 
+import main.scala.Geodevicer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{upper, col, coalesce, udf}
 import org.apache.spark.sql.SaveMode
