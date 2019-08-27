@@ -5141,7 +5141,7 @@ def get_segments_pmi(spark:SparkSession, files:List[String]){
                                         .withColumnRenamed("_c0","device_id")
 
     data.join(broadcast(cookies),Seq("device_id"))
-        .select("device_id","segments","count")
+        .select("device_id","feature","count")
         .dropDuplicates()
         .write.format("csv")
         .save("/datascience/custom/segments_%s".format(filename.split("/").last.split("_").last))
