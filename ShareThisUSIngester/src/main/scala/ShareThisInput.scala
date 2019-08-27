@@ -87,6 +87,7 @@ object ShareThisInput {
           "de_geo_pulseplus_postal_code",
           "de_geo_pulseplus_postal_ext",
           "de_geo_pulseplus_conn_type",
+          "de_geo_pulseplus_conn_speed",
           "de_geo_isp_name",
           "de_geo_asn",
           "de_geo_asn_name",
@@ -94,8 +95,6 @@ object ShareThisInput {
           "android_id",
           "ios_idfa",
           "connected_tv",
-          "de_geo_pulseplus_conn_speed",
-          "de_geo_pulseplus_conn_type",
           "searchQuery",
           "refDomain")
 
