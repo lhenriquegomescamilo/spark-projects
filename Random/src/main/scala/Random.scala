@@ -5113,6 +5113,56 @@ def get_volumes_santi_us(spark:SparkSession){
                     .option("header","true")
                     .save("/datascience/custom/volumes_us_santi")
 }
+
+def get_segments_pmi(spark:SparkSession, files:List[String]){
+  /// Configuraciones de spark
+  val sc = spark.sparkContext
+  val conf = sc.hadoopConfiguration
+  val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+  /// Obtenemos la data de los ultimos ndays
+  val format = "yyyyMMdd"
+  val start = DateTime.now.minusDays(1)
+
+  val days =
+    (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+  val path = "/datascience/data_audiences_streaming"
+  val dfs = days
+    .flatMap(
+      day =>
+        (0 until 24).map(
+          hour =>
+            path + "/hour=%s%02d/"
+              .format(day, hour)
+        )
+    )
+    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    .map(
+      x =>
+        spark.read
+          .option("basePath", "/datascience/data_audiences_streaming/")
+          .parquet(x)
+          .select("device_id", "segments")
+    )
+
+  /// Concatenamos los dataframes
+  val data = dfs.reduce((df1, df2) => df1.union(df2))
+
+  for (filename <- files){
+    var cookies = spark.read.format("csv").load(filename)
+                                        .withColumnRenamed("_c0","device_id")
+
+    data.join(broadcast(cookies),Seq("device_id"))
+        .select("device_id","segments")
+        .dropDuplicates()
+        .withColumn("segments",explode(col("segments")))
+        .withColumn("count",lit(1))
+        .write.format("csv")
+        .save("/datascience/custom/segments_%s".format(filename.split("/").last.split("_").last))
+  
+  }
+}
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -5123,7 +5173,10 @@ def get_volumes_santi_us(spark:SparkSession){
     Logger.getRootLogger.setLevel(Level.WARN)
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    get_volumes_santi_us(spark)
+    val files = List("/datascience/misc/cookies_chesterfield.csv",
+                    "/datascience/misc/cookies_marlboro.csv",
+                    "/datascience/misc/cookies_phillip_morris.csv")
+    get_segments_pmi(spark,files)
      
   }
 
