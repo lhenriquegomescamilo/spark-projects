@@ -400,6 +400,11 @@ object Geodevicer {
       Aggregations.POIAggregate_w_xd(spark, value_dictionary)
 
 // Here we perform the attribution by date
+
+val atribute_day_name = DateTime.now.minusDays(value_dictionary("atribution_date").toInt)
+.minusDays(value_dictionary("since").toInt)
+.toString("YYYYMMDD")
+
   if (value_dictionary("atribution_date") != "0")
       Aggregations.create_audiences_from_attribution_date(
         spark,
