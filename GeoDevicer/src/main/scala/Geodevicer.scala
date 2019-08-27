@@ -399,6 +399,25 @@ object Geodevicer {
         ) != "0" && value_dictionary("map_df") == "1")
       Aggregations.POIAggregate_w_xd(spark, value_dictionary)
 
+// Here we perform the attribution by date
+  if (value_dictionary(atribution_date) != "0")
+      Aggregations.create_audiences_from_attribution_date(
+        spark,
+        value_dictionary)
+  
+  if (value_dictionary("crossdevice") != "false" && 
+    value_dictionary("crossdevice") != "0" && 
+  value_dictionary(atribution_date) != "0") 
+
+      CrossDevicer.cross_device(
+        spark,
+        value_dictionary,
+        path = "/datascience/geo/audience/%s_att_date-%s".format(value_dictionary("poi_output_file"),atribute_day_name)),
+        column_name = "device_id",
+        header = "true"
+      )
+
+    
     // Here we join with web behaviour
     if (value_dictionary("web_days").toInt > 0)
       Aggregations.get_segments_from_triplets(spark, value_dictionary)

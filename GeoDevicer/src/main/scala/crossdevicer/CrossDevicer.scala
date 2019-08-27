@@ -22,6 +22,7 @@ object CrossDevicer {
   def cross_device(
       spark: SparkSession,
       value_dictionary: Map[String, String],
+      path: String =  "/datascience/geo/geo_processed/%s_aggregated",
       sep: String = "\t",
       column_name: String = "_c1",
       header: String = "false"
@@ -31,7 +32,7 @@ object CrossDevicer {
       .format("csv")
       .option("sep", sep)
       .option("header", header)
-      .load("/datascience/geo/geo_processed/%s_aggregated".format(value_dictionary("poi_output_file")))
+      .load(path.format(value_dictionary("poi_output_file")))
       .withColumn("device_id", upper(col("device_id")))
     
     /*
