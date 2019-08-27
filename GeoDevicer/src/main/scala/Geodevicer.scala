@@ -400,14 +400,14 @@ object Geodevicer {
       Aggregations.POIAggregate_w_xd(spark, value_dictionary)
 
 // Here we perform the attribution by date
-  if (value_dictionary(atribution_date) != "0")
+  if (value_dictionary("atribution_date") != "0")
       Aggregations.create_audiences_from_attribution_date(
         spark,
         value_dictionary)
   
   if (value_dictionary("crossdevice") != "false" && 
     value_dictionary("crossdevice") != "0" && 
-  value_dictionary(atribution_date) != "0") 
+  value_dictionary("atribution_date") != "0") 
 
       CrossDevicer.cross_device(
         spark,
