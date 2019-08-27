@@ -83,7 +83,7 @@ object CrossDevicer {
       .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))
 
-      val cross_deviced_agg = cross_deviced.groupBy("device_id","device_type","validUser","frequency")
+      val cross_deviced_agg = cross_deviced.groupBy("device_id","device_type") // ,"validUser","frequency"
       .agg(collect_list(value_dictionary("poi_column_name")) as value_dictionary("poi_column_name"))
       .withColumn(value_dictionary("poi_column_name"), concat_ws(",", col(value_dictionary("poi_column_name"))))
       .select("device_type","device_id",value_dictionary("poi_column_name")) //,"validUser","frequency" antes se seleccionaban estas para filtar luego, pero si se dejan el archivo no se empuja
