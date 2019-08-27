@@ -72,8 +72,8 @@ object CrossDevicer {
       val cross_deviced = db_data      
       .join(        
         audience    
-        .select("device_id","device_type","validUser","frequency",
-                  value_dictionary("poi_column_name"))      //,     value_dictionary("audience_column_name")    
+        .select("device_id","device_type",
+                  value_dictionary("poi_column_name"))      //,     value_dictionary("audience_column_name"),"validUser","frequency",    
         .distinct(),        
         Seq("device_id"),
             "right_outer")      
