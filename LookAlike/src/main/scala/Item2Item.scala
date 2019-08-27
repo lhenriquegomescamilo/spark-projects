@@ -370,7 +370,7 @@ object Item2Item {
           .write
           .mode(SaveMode.Overwrite)
           .format("parquet")
-          .save(tmindexTmpPathpPath)
+          .save(indexTmpPath)
 
     // reload indexed data
     var indexedData = spark.read.load(indexTmpPath).as[(Long, String, Array[Int], Array[Double])].rdd
