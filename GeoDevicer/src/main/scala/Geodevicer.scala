@@ -403,7 +403,7 @@ object Geodevicer {
 
     if (value_dictionary("crossdevice") != "false" && value_dictionary(
           "crossdevice"
-        ) != "0" && value_dictionary("map_df") == "1")
+        ) != "0" && value_dictionary("map_df") == "1" && value_dictionary("column_w_stop_list_id") == "0")
       Aggregations.POIAggregate_w_xd(spark, value_dictionary)
 
 // Here we perform the attribution by date
