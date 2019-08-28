@@ -380,6 +380,12 @@ object Geodevicer {
         Aggregations.userAggregate(spark, value_dictionary)
       if (value_dictionary("map_df") == "1" && value_dictionary("column_w_stop_list_id") == "0")
         Aggregations.POIAggregate(spark, value_dictionary)
+      
+      // Here we perform the analysis of transport pois
+      if (value_dictionary("column_w_stop_list_id") != "0")
+        Aggregations.user_aggregate_for_moving_transport(
+        spark,
+        value_dictionary)
 
     }
 
@@ -424,13 +430,9 @@ val atribute_day_name = DateTime.now.minusDays(value_dictionary("atribution_date
       )
 
 
-// Here we perform the analysis of transport pois
-if (value_dictionary("column_w_stop_list_id") != "0")
-      Aggregations.user_aggregate_for_moving_transport(
-        spark,
-        value_dictionary)
 
 
+/*
 if (value_dictionary("crossdevice") != "false" &&
   value_dictionary("crossdevice") != "0" && 
   value_dictionary("column_w_stop_list_id") != "0" )
@@ -441,7 +443,7 @@ if (value_dictionary("crossdevice") != "false" &&
         header = "true",
         columns_to_save = Seq[String]("device_type","device_id", "transport_id","validUser","n_detections")
       )
-/*
+
 if (value_dictionary("column_w_stop_list_id") != "0" && 
   (value_dictionary("transport_min_ocurrence") | value_dictionary("transport_min_distance") &&
 value_dictionary("crossdevice") != "false" &&  value_dictionary("crossdevice") != "0"))
