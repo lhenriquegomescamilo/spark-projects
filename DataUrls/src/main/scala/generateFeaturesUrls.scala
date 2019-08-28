@@ -296,6 +296,129 @@ object GenerateFeaturesUrls {
 
     }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    def getKeywordsByURL(
+      spark: SparkSession,
+      ndays: Int,
+      since: Int
+  ): DataFrame = {
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    /// Leemos la data de keywords de ndays hacia atras
+    val format = "yyyy-MM-dd"
+    val start = DateTime.now.minusDays(since + ndays)
+    val end = DateTime.now.minusDays(since)
+
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days =
+      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+    val dfs = (0 until daysCount)
+      .map(start.plusDays(_))
+      .map(_.toString(format))
+      .filter(
+        day =>
+          fs.exists(
+            new Path("/datascience/selected_keywords/%s.csv".format(day))
+          )
+      )
+      .map(day => "/datascience/selected_keywords/%s.csv".format(day))
+
+    val df = spark.read
+      .format("csv")
+      .load(dfs: _*)
+      .withColumnRenamed("_c0", "url")
+      .withColumnRenamed("_c1", "count")
+      .withColumnRenamed("_c2", "country_web")
+      .withColumnRenamed("_c3", "content_keys")
+      .withColumnRenamed("_c4", "scores")
+      .withColumn("content_keys", split(col("content_keys"), " "))
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+      .drop("count", "scores")
+      .dropDuplicates("url")
+
+    df
+  }
+
+    def get_data_urls(spark:SparkSession, ndays:Int, since:Int, country:String):DataFrame{
+        /// Configuraciones de spark
+        val sc = spark.sparkContext
+        val conf = sc.hadoopConfiguration
+        val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+        /// Obtenemos la data de los ultimos ndays
+        val format = "yyyyMMdd"
+        val start = DateTime.now.minusDays(since)
+
+        val days =
+        (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+        val path = "/datascience/data_demo/data_urls/"
+        val dfs = days.map(day => path + "/day=%s/country=%s".format(day,country))
+                    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+                    .map(x => spark.read
+                                    .option("basePath", path)
+                                    .parquet(x)
+                                    .withColumn("day", lit(x.split("/").last.slice(4, 13)))
+        )
+
+        val urls = dfs.reduce((df1, df2) => df1.union(df2))
+                        .withColumn("url",regexp_replace(col("url"),
+                                             "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+
+        urls
+    }
+
+    def get_url_content(spark:SparkSession, ndays:Int, since:Int, country:String){
+        
+
+        val urls = get_data_urls(spark,ndays,since,country) .withColumn(
+            "composite_key",
+            concat(
+                col("url"),
+                lit("@"),
+                // This last part is a random integer ranging from 0 to replicationFactor
+                least(
+                floor(rand() * replicationFactor),
+                lit(replicationFactor - 1) // just to avoid unlikely edge case
+                )
+            )
+            )
+
+    val URLkeys = (0 until replicationFactor)
+      .map(
+        i =>
+          getKeywordsByURL(spark, 10, since)
+            .withColumn("composite_key", concat(col("url"), lit("@"), lit(i)))
+      )
+      .reduce((df1, df2) => df1.unionAll(df2))
+      .drop("url")
+
+
+    // Hacemos el join entre nuestra data y la data de las urls con keywords.
+    val joint = urls
+      .join(URLkeys, Seq("composite_key"))
+      .drop("composite_key")
+      .withColumn("content_keys", explode(col("content_keys")))
+      .groupBy("device_id", "device_type", "country", "content_keys")
+      // .agg(
+      //   // collect_list("segments").as("segments"),
+      //   // collect_list("url").as("url"),
+      //   collect_list("content_keys").as("content_keys")
+      // )
+      // .withColumn("content_keys", flatten(col("content_keys")))
+      // .withColumn("segments", flatten(col("segments")))
+      // .withColumn("url", concat_ws("|", col("url")))
+      .count()
+      .withColumn("day", lit(today)) // Agregamos el dia
+
+        
+
+    }
 
     def main(args: Array[String]) {
         /// Configuracion spark
