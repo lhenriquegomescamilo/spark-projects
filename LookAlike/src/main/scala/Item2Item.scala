@@ -515,7 +515,7 @@ object Item2Item {
   *   - scores: Contains prediction scores per devices 
   */
   def existsTmpFiles(spark: SparkSession,
-                     metaParameters: Map[String, String]): Map[String, Boolean]{
+                     metaParameters: Map[String, String]): Map[String, Boolean] = {
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     val pathTmpFiles = getTmpPathNames(metaParameters)
     val existsTmpFiles: Map[String, String] = Map(
