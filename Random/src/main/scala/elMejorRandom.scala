@@ -21,16 +21,18 @@ val index = spark.read.format("csv").option("delimiter","\t").load("/data/crossd
 val home_index = index.withColumn("tmp",split(col("_c2"),"=")).select(col("_c0"),col("tmp").getItem(1).as("_c2")).drop("tmp").filter(col("_c2").isNotNull).toDF("house_cluster","device_id").withColumn("device_id",upper(col("device_id")))
 
 
-poly.join(home_index,Seq("device_id"),"left")
+poly.join(home_index,Seq("device_id"))
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
+.mode(SaveMode.Overwrite)
 .save("/datascience/geo/AR/tapad_w_polygon")
 
-code.join(home_index,Seq("device_id"),"left")
+code.join(home_index,Seq("device_id"))
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
+.mode(SaveMode.Overwrite)
 .save("/datascience/geo/AR/tapad_w_geocode")
 
   }
