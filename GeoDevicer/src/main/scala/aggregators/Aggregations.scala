@@ -141,7 +141,7 @@ def POIAggregate_w_xd(
         "/datascience/audiences/crossdeviced/%s_xd"
           .format(value_dictionary("poi_output_file")))
 
-  val audienceByCode = xd_result.withColumn(value_dictionary("poi_column_name"),explode(split(col("name"),",")))
+  val audienceByCode = xd_result.withColumn(value_dictionary("poi_column_name"),explode(split(col(value_dictionary("poi_column_name")),",")))
 
   val countByCode = audienceByCode
                         .groupBy(value_dictionary("poi_column_name"))
