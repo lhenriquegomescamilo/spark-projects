@@ -34,7 +34,7 @@ object ByTwoOutput {
         .mode("overwrite")
         .option("header", "false")
         .option("sep", "\t")
-        .option("compression", "bzip2")
+        .option("compression", "gzip")
         .save("/datascience/sharethis/bytwo/day=%s".format(day))
     
   }
