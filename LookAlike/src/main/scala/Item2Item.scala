@@ -447,7 +447,7 @@ object Item2Item {
 
     // It gets the score thresholds to get at least k elements per segment.
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
-    val sizeMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt + 1).toMap
+    val sizeMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
     val sizeMax = expandInput.map(m => m("size").toString.toInt).max + 1
     val sizeMin = expandInput.map(m => m("size").toString.toInt).min + 1
 
@@ -475,7 +475,7 @@ object Item2Item {
 
     val minScoreMap = selSegmentsIdx
       .map(segmentIdx => (segmentIdx,
-                          rankedScorDF.filter($"rank" === kMap(segmentIdx) && $"segment_idx" ===  segmentIdx)
+                          rankedScoreDF.filter($"rank" === (kMap(segmentIdx) + 1) && $"segment_idx" ===  segmentIdx)
                           .take(1)
                           .map(row => row(1).toString.toDouble)
                          )
@@ -510,8 +510,8 @@ object Item2Item {
     }
 
     // delete temp files
-    fs.delete(indexTmpPath, true)
-    fs.delete(scoresTmpPath, true)
+    fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
+    fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
   }
 
   /**
