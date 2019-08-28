@@ -353,24 +353,41 @@ object Item2Item {
               isTest: Boolean = false) =  {
     import spark.implicits._
     import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
+    import org.apache.spark.sql.expressions.Window
+    import org.apache.spark.sql.functions.row_number
 
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+
+    val country = metaParameters("country")
+    val jobId = metaParameters("job_id")
+    val isOnDemand = jobId.length > 0
+    
     val minUserSegments = if(isTest) 2 else 1
 
     // index data and write in temporal file
-    val indexTmpPath = "/datascience/data_lookalike/tmp/indexed_devices/" 
-    data
-      .filter(row => row._2.size >= minUserSegments) // filter users
-      .zipWithIndex() // <device_id, device_idx>
-      .map(tup => (tup._2.toLong, 
-                  tup._1._1.toString,
-                  tup._1._2.map(t => t._1.toString.toInt).toArray,
-                  tup._1._2.map(t => t._2.toString.toInt).toArray )
-       ) // <device_idx, device_id, array segments, array counts>
-      .toDF("device_idx", "device_id", "segments", "counts")
-          .write
-          .mode(SaveMode.Overwrite)
-          .format("parquet")
-          .save(indexTmpPath)
+    val indexTmpPath = {
+      if(isOnDemand)
+        "/datascience/data_lookalike/tmp/indexed_devices/jobId=%s/".format(jobId)
+      else
+       "/datascience/data_lookalike/tmp/indexed_devices/country=%s/".format(country)
+    }
+
+    if (!fs.exists(new org.apache.hadoop.fs.Path(indexTmpPath))){
+      // generte data to store
+      data
+        .filter(row => row._2.size >= minUserSegments) // filter users
+        .zipWithIndex() // <device_id, device_idx>
+        .map(tup => (tup._2.toLong, 
+                    tup._1._1.toString,
+                    tup._1._2.map(t => t._1.toString.toInt).toArray,
+                    tup._1._2.map(t => t._2.toString.toInt).toArray )
+        ) // <device_idx, device_id, array segments, array counts>
+        .toDF("device_idx", "device_id", "segments", "counts")
+            .write
+            .mode(SaveMode.Overwrite)
+            .format("parquet")
+            .save(indexTmpPath)
+    } 
 
     // reload indexed data
     var indexedData = spark.read.load(indexTmpPath).as[(Long, String, Array[Int], Array[Double])].rdd
@@ -406,26 +423,35 @@ object Item2Item {
 
     val userSegmentMatrix = new IndexedRowMatrix(indexedRows)
 
-   // write scores in temporal file
-    val scoresTmpPath = "/datascience/data_lookalike/tmp/scores/" 
-    userSegmentMatrix
-      .multiply(similartyMatrix)
-      .rows
-      .map(row =>  (row.index, row.vector)) 
-      .toDF("device_idx", "scores")  
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("parquet")
-      .save(scoresTmpPath)
+    // write scores in temporal file
+    val scoresTmpPath = { 
+      if(isOnDemand)
+        "/datascience/data_lookalike/tmp/scores/jobId=%s/".format(jobId)
+      else
+       "/datascience/data_lookalike/tmp/scores/country=%s/".format(country)
+    }
+    if (!fs.exists(new org.apache.hadoop.fs.Path(scoresTmpPath))){
+      userSegmentMatrix
+        .multiply(similartyMatrix)
+        .rows
+        .map(row =>  (row.index, row.vector)) 
+        .toDF("device_idx", "scores")  
+        .write
+        .mode(SaveMode.Overwrite)
+        .format("parquet")
+        .save(scoresTmpPath)
+    }
 
     // reload scores
     val scoreMatrix = spark.read.load(scoresTmpPath).as[(Long, Vector)].rdd
 
     // It gets the score thresholds to get at least k elements per segment.
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
-    val sizeMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
-    val sizeMax = expandInput.map(m => m("size").toString.toInt).max
+    val sizeMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt + 1).toMap
+    val sizeMax = expandInput.map(m => m("size").toString.toInt).max + 1
+    val sizeMin = expandInput.map(m => m("size").toString.toInt).min + 1
 
+    /*
     val minScoreMap = scoreMatrix
       .flatMap(tup =>  selSegmentsIdx
                         .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx)))
@@ -435,11 +461,39 @@ object Item2Item {
       .map(t => (t._1, if (t._2.length >= sizeMap(t._1.toInt)) t._2( sizeMap(t._1.toInt) - 1 ) else t._2.last )) // get the kth value #
       .collect()
       .toMap
+    */
+
+    var rankedScoreDF = scoreMatrix
+      .flatMap(tup =>  selSegmentsIdx
+                          .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))) .filter(tup => tup._2 >0) // remove scores <= 0
+              ) //<segment_idx, score>
+      .toDF("segment_idx", "score")
+      .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
+      .filter($"rank" <= sizeMax)
+      .filter($"rank" >= sizeMin)
+      .cache()
+
+    val minScoreMap = selSegmentsIdx
+      .map(segmentIdx => (segmentIdx,
+                          rankedScorDF.filter($"rank" === kMap(segmentIdx) && $"segment_idx" ===  segmentIdx)
+                          .take(1)
+                          .map(row => row(1).toString.toDouble)
+                         )
+      )
+      .map(tup => (tup._1, if(!tup._2.isEmpty) tup._2 else 0.0))
+      .toMap
+
+    rankedScoreDF.unpersist()
 
 
     // It generates masked vectors per indexed user, to indicate segments to expand (scores > threshold)
-    var maskedScores = scoreMatrix
+    /*var maskedScores = scoreMatrix
       .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => (minScoreMap contains segmentIdx) && (tup._2.apply(segmentIdx) >= minScoreMap(segmentIdx))).toArray) )
+      .filter(tup=> tup._2.reduce(_||_))
+      // <device_idx, array(boolean))>
+    */
+    var maskedScores = scoreMatrix
+      .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => tup._2.apply(segmentIdx) > minScoreMap(segmentIdx)).toArray) )
       .filter(tup=> tup._2.reduce(_||_))
       // <device_idx, array(boolean))>
 
@@ -454,6 +508,10 @@ object Item2Item {
       val userPredictions = maskedScores.join(maskedRelevant).map(tup => (tup._2._2, tup._2._1))
       writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
     }
+
+    // delete temp files
+    fs.delete(indexTmpPath, true)
+    fs.delete(scoresTmpPath, true)
   }
 
   /**
