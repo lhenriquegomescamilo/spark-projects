@@ -475,7 +475,7 @@ object Item2Item {
 
     val minScoreMap = selSegmentsIdx
       .map(segmentIdx => (segmentIdx,
-                          rankedScoreDF.filter($"rank" === (kMap(segmentIdx) + 1) && $"segment_idx" ===  segmentIdx)
+                          rankedScoreDF.filter($"rank" === (sizeMap(segmentIdx) + 1) && $"segment_idx" ===  segmentIdx)
                           .take(1)
                           .map(row => row(1).toString.toDouble)
                          )
