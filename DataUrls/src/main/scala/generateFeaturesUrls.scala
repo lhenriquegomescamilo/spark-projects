@@ -1,21 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{
-  upper,
-  col,
-  abs,
-  udf,
-  regexp_replace,
-  split,
-  lit,
-  explode,
-  length,
-  to_timestamp,
-  from_unixtime,
-  date_format,
-  sum,
-  count
-}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
@@ -495,7 +480,7 @@ object GenerateFeaturesUrls {
 
   }
 
-  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String) {
+  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String): DataFrame = {
     val data_urls = get_data_urls(spark, ndays, since, country)
 
     val filtered = data_urls
