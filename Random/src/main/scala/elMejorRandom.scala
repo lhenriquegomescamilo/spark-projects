@@ -45,9 +45,7 @@ code.join(home_index,Seq("device_id"),"left")
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    Logger.getRootLogger.setLevel(Level.WARN)
-    
-    
+       
     get_tapad_home_cluster(spark)
      
   }
