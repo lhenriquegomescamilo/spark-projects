@@ -476,11 +476,10 @@ object Item2Item {
     val minScoreMap = selSegmentsIdx
       .map(segmentIdx => (segmentIdx,
                           rankedScoreDF.filter($"rank" === (sizeMap(segmentIdx) + 1) && $"segment_idx" ===  segmentIdx)
-                          .take(1)
-                          .map(row => row(1).toString.toDouble)
+                          .take(1).map(row => row(1))
                          )
       )
-      .map(tup => (tup._1, if(!tup._2.isEmpty) tup._2 else 0.0))
+      .map(tup => (tup._1, if(!tup._2.isEmpty) tup._2.toString.toDouble else 0.0))
       .toMap
 
     rankedScoreDF.unpersist()
