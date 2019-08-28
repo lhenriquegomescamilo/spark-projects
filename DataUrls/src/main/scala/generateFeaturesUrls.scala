@@ -455,10 +455,11 @@ object GenerateFeaturesUrls {
       spark: SparkSession,
       ndays: Int,
       since: Int,
-      country: String
+      country: String,
+      replicationFactor: Int = 4
   ) {
 
-    val urls = get_data_urls(spark, ndays, since, country).withColumn(
+    val urls = get_url_gt(spark, ndays, since, country).withColumn(
       "composite_key",
       concat(
         col("url"),
@@ -487,13 +488,29 @@ object GenerateFeaturesUrls {
       .withColumn("content_keys", explode(col("content_keys")))
       .groupBy("url", "content_keys")
       .count()
-      
-    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_url_classifier/dataset_keywords")
+
+    joint.write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_url_classifier/dataset_keywords")
 
   }
 
-  def get_url_gt(spark:SparkSession, ndays:Int, since:Int, country:String){
-      
+  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String) {
+    val data_urls = get_data_urls(spark, ndays, since, country)
+
+    val filtered = data_urls
+      .select("url", "segments")
+      .withColumn("segments", explode(col("segments")))
+      .filter(
+        col("segments")
+          .isin(List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017))
+      )
+
+    filtered.write
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_url_classifier/gt_multi_class")
+
+    filtered
   }
 
   def main(args: Array[String]) {
@@ -505,14 +522,8 @@ object GenerateFeaturesUrls {
     // Parseo de parametros
     val ndays = if (args.length > 0) args(0).toInt else 10
     val since = if (args.length > 1) args(1).toInt else 1
-    val name = if (args.length > 2) args(2).toString else ""
-    val country = if (args.length > 3) args(3).toString else ""
+    val country = if (args.length > 2) args(2).toString else ""
 
-    get_datasets_gt(spark, ndays, since)
-    //get_dataset_timestamps(spark, ndays, since, name, country)
-    get_dataset_user_agent(spark, ndays, since, name, country)
-    get_dataset_keywords(spark, ndays, since, name, country)
-
-    get_datasets_training(spark)
+    get_url_content(spark, country = country, since = since, ndays = ndays)
   }
 }
