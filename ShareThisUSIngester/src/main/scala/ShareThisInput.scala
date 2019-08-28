@@ -96,7 +96,8 @@ object ShareThisInput {
           "ios_idfa",
           "connected_tv",
           "searchQuery",
-          "refDomain")
+          "refDomain",
+          "country")
 
     download_data(spark, nDays, from, columns)
   }
