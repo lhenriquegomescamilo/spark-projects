@@ -21,6 +21,7 @@ object ShareThisInput {
         
     val data_columns = input_data
         .select(columns.head, columns.tail: _*)
+        .withColumn("country", lit("US"))
         .withColumn("day", lit(day))
         .na.fill("")
     
@@ -96,8 +97,7 @@ object ShareThisInput {
           "ios_idfa",
           "connected_tv",
           "searchQuery",
-          "refDomain",
-          "country")
+          "refDomain")
 
     download_data(spark, nDays, from, columns)
   }
