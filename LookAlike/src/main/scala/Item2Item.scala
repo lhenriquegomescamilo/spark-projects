@@ -390,7 +390,7 @@ object Item2Item {
     // reload indexed data
     var indexedData = spark.read.load(indexTmpPath).as[(Long, String, Array[Int], Array[Double])].rdd
 
-    var nSegments = similartyMatrix.numRows.toInt
+    var nSegments = segmentToIndex.size
 
     //IndexedRow -> new (index: Long, vector: Vector) 
     val indexedRows: RDD[IndexedRow] = {
@@ -502,10 +502,10 @@ object Item2Item {
       writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
     }
 
-    // delete temp files
-    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
-    fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
+    // delete temp files TODO -- commented to test!!!!!
+    //val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    //fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
+    //fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
   }
 
   /*
