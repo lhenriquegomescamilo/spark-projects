@@ -502,7 +502,7 @@ def user_aggregate_for_moving_transport(
       .load("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
 
     
-    val filter_by_distance = data.filter("distance < %s".format(value_dictionary("umbraldist")))
+    val filter_by_distance = data.filter("distance < %s".format(value_dictionary("umbraldist").toInt))
     val exploded_by_stop_id =  filter_by_distance
                     .withColumn("stop_id", explode(split(col(value_dictionary("column_w_stop_list_id")), ",")))
  
