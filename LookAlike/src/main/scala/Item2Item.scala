@@ -158,12 +158,17 @@ object Item2Item {
       .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
 
     // Generate similarities matrix
-    val simMatrix = getSimilarities(spark,
-                                    usersSegmentsData,
-                                    segments.size,
-                                    nSegmentToExpand,
-                                    0.05,
-                                    simMatrixHits)
+    val simMatrix: Matrix = {
+      if(!existsTmpFiles(spark, metaInput)("scores"))
+        getSimilarities(spark,
+          usersSegmentsData,
+          segments.size,
+          nSegmentToExpand,
+          0.05,
+          simMatrixHits)
+      else
+        null
+      }
 
     println("LOOKALIKE LOG: Expansion")
     expand(spark,
@@ -356,8 +361,6 @@ object Item2Item {
     import org.apache.spark.sql.expressions.Window
     import org.apache.spark.sql.functions.row_number
 
-    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-
     val country = metaParameters("country")
     val jobId = metaParameters("job_id")
     val isOnDemand = jobId.length > 0
@@ -365,14 +368,9 @@ object Item2Item {
     val minUserSegments = if(isTest) 2 else 1
 
     // index data and write in temporal file
-    val indexTmpPath = {
-      if(isOnDemand)
-        "/datascience/data_lookalike/tmp/indexed_devices/jobId=%s/".format(jobId)
-      else
-       "/datascience/data_lookalike/tmp/indexed_devices/country=%s/".format(country)
-    }
+    val indexTmpPath = getTmpPathNames(metaParameters)("indexed")
 
-    if (!fs.exists(new org.apache.hadoop.fs.Path(indexTmpPath))){
+    if (!existsTmpFiles(spark, metaParameters)("indexed")){
       // generte data to store
       data
         .filter(row => row._2.size >= minUserSegments) // filter users
@@ -424,13 +422,9 @@ object Item2Item {
     val userSegmentMatrix = new IndexedRowMatrix(indexedRows)
 
     // write scores in temporal file
-    val scoresTmpPath = { 
-      if(isOnDemand)
-        "/datascience/data_lookalike/tmp/scores/jobId=%s/".format(jobId)
-      else
-       "/datascience/data_lookalike/tmp/scores/country=%s/".format(country)
-    }
-    if (!fs.exists(new org.apache.hadoop.fs.Path(scoresTmpPath))){
+    val scoresTmpPath = getTmpPathNames(metaParameters)("scores")
+
+    if (!existsTmpFiles(spark, metaParameters)("scores")){
       userSegmentMatrix
         .multiply(similartyMatrix)
         .rows
@@ -509,8 +503,55 @@ object Item2Item {
     }
 
     // delete temp files
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
     fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
+  }
+
+  /*
+  * It validates if temporal files alredy exist.
+  * There are 2 temporal files:
+  *   - indexed: Contains devices indexed and its asociated segments
+  *   - scores: Contains prediction scores per devices 
+  */
+  def existsTmpFiles(spark: SparkSession,
+                     metaParameters: Map[String, String]): Map[String, Boolean] = {
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    val pathTmpFiles = getTmpPathNames(metaParameters)
+    val existsTmpFiles: Map[String, Boolean] = Map(
+        "scores" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("scores"))),
+        "indexed" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("indexed")))
+      )
+    existsTmpFiles
+  }
+
+  /*
+  * It returns a map with hdfs path names used to store temporal data.
+  * There are 2 temporal files:
+  *   - indexed: Contains devices indexed and its asociated segments
+  *   - scores: Contains prediction scores per devices 
+  */
+  def getTmpPathNames(metaParameters: Map[String, String]): Map[String, String] = {
+    val country = metaParameters("country")
+    val jobId = metaParameters("job_id")
+    val isOnDemand = jobId.length > 0
+    val scoresTmpPath = { 
+      if(isOnDemand)
+        "/datascience/data_lookalike/tmp/scores/jobId=%s/".format(jobId)
+      else
+       "/datascience/data_lookalike/tmp/scores/country=%s/".format(country)
+    }
+    val indexTmpPath = {
+      if(isOnDemand)
+        "/datascience/data_lookalike/tmp/indexed_devices/jobId=%s/".format(jobId)
+      else
+       "/datascience/data_lookalike/tmp/indexed_devices/country=%s/".format(country)
+    }
+    val pathTmpFiles: Map[String, String] = Map(
+        "scores" -> scoresTmpPath,
+        "indexed" -> indexTmpPath
+      )
+    pathTmpFiles
   }
 
   /**
