@@ -1,4 +1,5 @@
 package main.scala
+import spark.implicits._
 import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
@@ -20,7 +21,7 @@ object ByTwoOutput {
         .load("/data/providers/sharethis/processed/day=%s".format(day))
         
     val filter = data_input
-            .filter(col("country") === "US")
+            .filter($"country" === "US")
 
     val final_data = filter
             .withColumn("android_id", concat_ws("|", $"android_id"))
