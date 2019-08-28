@@ -376,9 +376,9 @@ object Geodevicer {
 
       POICrossDevicerJson.match_POI(spark, value_dictionary)
       // If we need to calculate the aggregations, we do so as well.
-      if (value_dictionary("analytics_df") == "1")
+      if (value_dictionary("analytics_df") == "1" && value_dictionary("column_w_stop_list_id") == "0")
         Aggregations.userAggregate(spark, value_dictionary)
-      if (value_dictionary("map_df") == "1")
+      if (value_dictionary("map_df") == "1" && value_dictionary("column_w_stop_list_id") == "0")
         Aggregations.POIAggregate(spark, value_dictionary)
 
     }
