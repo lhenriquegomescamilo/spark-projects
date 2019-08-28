@@ -520,7 +520,7 @@ object Item2Item {
     val pathTmpFiles = getTmpPathNames(metaParameters)
     val existsTmpFiles: Map[String, String] = Map(
         "scores" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("scores"))),
-        "indexed" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("indexed"))),
+        "indexed" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("indexed")))
       )
     existsTmpFiles
   }
@@ -549,7 +549,7 @@ object Item2Item {
     }
     val pathTmpFiles: Map[String, String] = Map(
         "scores" -> scoresTmpPath,
-        "indexed" -> indexTmpPath,
+        "indexed" -> indexTmpPath
       )
     pathTmpFiles
   }
