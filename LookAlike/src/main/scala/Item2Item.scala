@@ -159,7 +159,7 @@ object Item2Item {
 
     // Generate similarities matrix
     val simMatrix: Matrix = {
-      if(!existsTmpFiles(spark, metaInput)("scored")){
+      if(!existsTmpFiles(spark, metaInput)("scored"))
         getSimilarities(spark,
           usersSegmentsData,
           segments.size,
