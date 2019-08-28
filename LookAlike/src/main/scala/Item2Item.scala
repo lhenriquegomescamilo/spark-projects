@@ -390,7 +390,7 @@ object Item2Item {
     // reload indexed data
     var indexedData = spark.read.load(indexTmpPath).as[(Long, String, Array[Int], Array[Double])].rdd
 
-    var nSegments = similartyMatrix.numRows.toInt
+    var nSegments = segmentToIndex.length
 
     //IndexedRow -> new (index: Long, vector: Vector) 
     val indexedRows: RDD[IndexedRow] = {
