@@ -503,12 +503,12 @@ def user_aggregate_for_moving_transport(
 
     
     val filter_by_distance = data.filter("distance < %s".format(value_dictionary("umbraldist").toInt))
-    val exploded_by_stop_id =  filter_by_distance
+    val exploded_by_transport_id =  filter_by_distance
                     .withColumn("transport_id", explode(split(col(value_dictionary("column_w_stop_list_id")), ",")))
  
  
       //hacemos un collect de timestamps y stop id para cada usuario en cada linea. 
-      val poi_line = exploded_by_stop_id.groupBy("transport_id","device_id","device_type")
+      val poi_line = exploded_by_transport_id.groupBy("transport_id","device_id","device_type")
             .agg(
               collect_list(col("timestamp")).as("times_array"), 
               collect_list(value_dictionary("poi_column_name")).as("location_array"), 
@@ -532,26 +532,26 @@ def user_aggregate_for_moving_transport(
  
  
       //creamos una columna si nos dice si es un usuario o no usando la función. filtramos para que no esté vacía en línea y que no sea nula
-        val users_aggregated_by_stop_id = poi_line
+        val users_aggregated_by_transport_id = poi_line
         .withColumn("user",hasUsedTransport(
                 poi_line("times_array"),
                 poi_line("location_array"),
                 poi_line("distance_array")))
         .filter("user == true")
-        .filter((col("stop_id") =!= "") && ((col("stop_id").isNotNull)))
+        .filter((col("transport_id") =!= "") && ((col("transport_id").isNotNull)))
         // Here we transform the lists into strings
       .withColumn("times_array", concat_ws(",", col("times_array")))
       .withColumn("location_array", concat_ws(",", col("location_array")))
       .withColumn("distance_array", concat_ws(",", col("distance_array")))
       .withColumn("distance_array", concat_ws(",", col("distance_array")))
-      .withColumn(value_dictionary("poi_column_name"),col("stop_id")) 
+      .withColumn(value_dictionary("poi_column_name"),col("transport_id")) 
                 //this creates a column with the lines as names, so that the process can continue using this column
       
                // Path where we will store the results.
     val output_path_anlytics = "/datascience/geo/geo_processed/%s_aggregated"
       .format(value_dictionary("poi_output_file"))
 
-    users_aggregated_by_stop_id     
+    users_aggregated_by_transport_id
       // Finally we write the results
       .write
       .format("csv")
