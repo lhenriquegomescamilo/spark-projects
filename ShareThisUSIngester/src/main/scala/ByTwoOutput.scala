@@ -20,7 +20,7 @@ object ByTwoOutput {
         .load("/data/providers/sharethis/processed/day=%s".format(day))
         
     val filter = data_input
-            .filter($"country" === "US")
+            .filter(col("country") === "US")
 
     val final_data = filter
             .withColumn("android_id", concat_ws("|", $"android_id"))
