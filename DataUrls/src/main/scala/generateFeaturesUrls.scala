@@ -482,13 +482,14 @@ object GenerateFeaturesUrls {
 
   def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String): DataFrame = {
     val data_urls = get_data_urls(spark, ndays, since, country)
+    val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
 
     val filtered = data_urls
       .select("url", "segments")
       .withColumn("segments", explode(col("segments")))
       .filter(
         col("segments")
-          .isin(List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017))
+          .isin(segments: _*)
       )
 
     filtered.write
