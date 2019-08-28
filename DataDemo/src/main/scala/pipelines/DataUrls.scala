@@ -78,7 +78,7 @@ object DataUrls{
     df.write
       .format("parquet")
       .partitionBy("day","country")
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .save("/datascience/data_demo/data_urls")
 
   }
@@ -87,6 +87,7 @@ object DataUrls{
     val spark = SparkSession.builder
       .appName("Generate Data urls")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.sources.partitionOverwriteMode","dynamic")
       .getOrCreate()
 
     val ndays = if (args.length > 0) args(0).toInt else 30
