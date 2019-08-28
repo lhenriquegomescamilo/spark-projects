@@ -513,8 +513,8 @@ def user_aggregate_for_moving_transport(
               collect_list(col("timestamp")).as("times_array"), 
               collect_list(value_dictionary("poi_column_name")).as("location_array"), 
               collect_list("distance").as("distance_array"))
-            .withColumn("line_detect", size(col("times_array")))
-           .filter("(location_detect >1)")
+            .withColumn("n_detections", size(col("times_array")))
+           .filter("n_detections >1")
  
 
       // this function checks if the user is a user of the specific transport
