@@ -533,11 +533,11 @@ def user_aggregate_for_moving_transport(
  
       //creamos una columna si nos dice si es un usuario o no usando la función. filtramos para que no esté vacía en línea y que no sea nula
         val users_aggregated_by_transport_id = poi_line
-        .withColumn("user",hasUsedTransport(
+        .withColumn("validUser",hasUsedTransport(
                 poi_line("times_array"),
                 poi_line("location_array"),
                 poi_line("distance_array")))
-        .filter("user == true")
+        .filter("validUser == true")
         .filter((col("transport_id") =!= "") && ((col("transport_id").isNotNull)))
         // Here we transform the lists into strings
       .withColumn("times_array", concat_ws(",", col("times_array")))
