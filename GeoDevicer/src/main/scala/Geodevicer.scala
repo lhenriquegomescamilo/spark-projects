@@ -423,20 +423,19 @@ val atribute_day_name = DateTime.now.minusDays(value_dictionary("atribution_date
         header = "true"
       )
 
-/*
+
 // Here we perform the analysis of transport pois
 if (value_dictionary("column_w_stop_list_id") != "0" && 
-  (value_dictionary("transport_min_ocurrence") | value_dictionary("transport_min_distance"))
+  value_dictionary("transport_min_ocurrence") !=0 | value_dictionary("transport_min_distance") !=0 )
 
       Aggregations.user_aggregate_for_moving_transport(
         spark,
         value_dictionary)
-
+/*
 if (value_dictionary("column_w_stop_list_id") != "0" && 
   (value_dictionary("transport_min_ocurrence") | value_dictionary("transport_min_distance") &&
-value_dictionary("crossdevice") != "false" &&  value_dictionary("crossdevice") != "0")
-
-CrossDevicer.cross_device(
+value_dictionary("crossdevice") != "false" &&  value_dictionary("crossdevice") != "0"))
+      CrossDevicer.cross_device(
         spark,
         value_dictionary,
         path = "/datascience/geo/geo_processed/%s_att_date-%s".format(value_dictionary("poi_output_file"),atribute_day_name),
@@ -444,9 +443,9 @@ CrossDevicer.cross_device(
         columns_to_save = Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"new_user","churn_user","fidelity_user"),
         header = "true"
       )
-
-
 */
+
+
     
     // Here we join with web behaviour
     if (value_dictionary("web_days").toInt > 0)
