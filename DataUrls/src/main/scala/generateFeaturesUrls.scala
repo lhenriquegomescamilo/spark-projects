@@ -485,18 +485,15 @@ object GenerateFeaturesUrls {
       .join(URLkeys, Seq("composite_key"))
       .drop("composite_key")
       .withColumn("content_keys", explode(col("content_keys")))
-      .groupBy("device_id", "device_type", "country", "content_keys")
-      // .agg(
-      //   // collect_list("segments").as("segments"),
-      //   // collect_list("url").as("url"),
-      //   collect_list("content_keys").as("content_keys")
-      // )
-      // .withColumn("content_keys", flatten(col("content_keys")))
-      // .withColumn("segments", flatten(col("segments")))
-      // .withColumn("url", concat_ws("|", col("url")))
+      .groupBy("url", "content_keys")
       .count()
-      .withColumn("day", lit(today)) // Agregamos el dia
+      
+    joint.write.mode(SaveMode.Overwrite).save("/datascience/data_url_classifier/dataset_keywords")
 
+  }
+
+  def get_url_gt(spark:SparkSession, ndays:Int, since:Int, country:String){
+      
   }
 
   def main(args: Array[String]) {
