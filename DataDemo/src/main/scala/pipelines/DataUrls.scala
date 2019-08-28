@@ -69,7 +69,7 @@ object DataUrls{
             .parquet(x)
             .filter("url is not null AND event_type IN ('pv', 'batch')")
             .withColumn("day", lit(x.split("/").last.slice(5, 13)))
-            .select("device_id", "url", "referer", "event_type","country","day")
+            .select("device_id", "url", "referer", "event_type","country","day","segments","time")
       )
 
     /// Concatenamos los dataframes
@@ -89,8 +89,11 @@ object DataUrls{
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
 
-    for(day <- 1 to 30){
-      generate_data_urls(spark, 1, day)
+    val ndays = if (args.length > 0) args(0).toInt else 30
+    val since = if (args.length > 1) args(1).toInt else 1
+
+    for(day <- 1 to ndays){
+      generate_data_urls(spark, since, day)
     }
   }
 }
