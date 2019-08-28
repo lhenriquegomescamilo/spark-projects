@@ -518,7 +518,7 @@ object Item2Item {
                      metaParameters: Map[String, String]): Map[String, Boolean] = {
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     val pathTmpFiles = getTmpPathNames(metaParameters)
-    val existsTmpFiles: Map[String, String] = Map(
+    val existsTmpFiles: Map[String, Boolean] = Map(
         "scores" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("scores"))),
         "indexed" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("indexed")))
       )
