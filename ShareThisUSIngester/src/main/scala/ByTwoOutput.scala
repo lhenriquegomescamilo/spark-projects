@@ -1,5 +1,4 @@
 package main.scala
-import org.apache.spark.implicits._
 import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
@@ -15,6 +14,7 @@ object ByTwoOutput {
   def processDayNew(spark: SparkSession,
                     day: String,
                     columns: Seq[String]) = {
+    import spark.implicits._
 
     val data_input = spark.read
         .format("parquet")
