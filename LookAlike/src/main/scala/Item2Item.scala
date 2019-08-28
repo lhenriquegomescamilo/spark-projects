@@ -159,7 +159,7 @@ object Item2Item {
 
     // Generate similarities matrix
     val simMatrix: Matrix = {
-      if(!existsTmpFiles(spark, metaInput)("scored"))
+      if(!existsTmpFiles(spark, metaInput)("scores"))
         getSimilarities(spark,
           usersSegmentsData,
           segments.size,
@@ -422,9 +422,9 @@ object Item2Item {
     val userSegmentMatrix = new IndexedRowMatrix(indexedRows)
 
     // write scores in temporal file
-    val scoresTmpPath = getTmpPathNames(metaParameters)("scored")
+    val scoresTmpPath = getTmpPathNames(metaParameters)("scores")
 
-    if (!existsTmpFiles(spark, metaParameters)("scored")){
+    if (!existsTmpFiles(spark, metaParameters)("scores")){
       userSegmentMatrix
         .multiply(similartyMatrix)
         .rows
