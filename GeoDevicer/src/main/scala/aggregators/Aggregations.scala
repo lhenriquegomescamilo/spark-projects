@@ -504,11 +504,11 @@ def user_aggregate_for_moving_transport(
     
     val filter_by_distance = data.filter("distance < %s".format(value_dictionary("umbraldist").toInt))
     val exploded_by_stop_id =  filter_by_distance
-                    .withColumn("stop_id", explode(split(col(value_dictionary("column_w_stop_list_id")), ",")))
+                    .withColumn("transport_id", explode(split(col(value_dictionary("column_w_stop_list_id")), ",")))
  
  
       //hacemos un collect de timestamps y stop id para cada usuario en cada linea. 
-      val poi_line = exploded_by_stop_id.groupBy("stop_id","device_id")
+      val poi_line = exploded_by_stop_id.groupBy("transport_id","device_id","device_type")
             .agg(
               collect_list(col("timestamp")).as("times_array"), 
               collect_list(value_dictionary("poi_column_name")).as("location_array"), 
