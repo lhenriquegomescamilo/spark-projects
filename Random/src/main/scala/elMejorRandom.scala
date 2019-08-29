@@ -76,6 +76,7 @@ val ua = spark.read.format("parquet")
 
 val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","5","10")
               .withColumn("device_id",upper(col("device_id")))
+              .groupBy("device_id").agg(concat_ws(",",collect_set("feature")) as "segments")
 
 val joined = ua.join(segments,Seq("device_id"))
 .write.format("csv")
