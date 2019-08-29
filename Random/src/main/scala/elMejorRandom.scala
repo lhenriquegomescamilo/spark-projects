@@ -85,7 +85,7 @@ val joined = ua.join(df,Seq("device_id"))
 .mode(SaveMode.Overwrite)
 .save("/datascience/misc/ua_w_segments_5d")
 
-}
+                                          }
 
 
 
@@ -94,13 +94,10 @@ val joined = ua.join(df,Seq("device_id"))
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer")
+    val spark = SparkSession.builder.appName("Spark devicer")
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
-
-       
-    getDataPipeline(spark)
+      
+    get_ua_segments(spark)
      
   }
-}
