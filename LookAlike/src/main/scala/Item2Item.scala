@@ -474,7 +474,7 @@ object Item2Item {
     def getScore(segmentIdx: Int): Double = {
       val partitionPath = rankTmpPath + "segment_idx=%s/".format(segmentIdx)
       val ret = {
-        if(fs.exists(new org.apache.hadoop.fs.Path(partitionPath)){
+        if(fs.exists(new org.apache.hadoop.fs.Path(partitionPath))){
         val query = spark.read.load(partitionPath)
           .load()
           .filter($"rank" === sizeMap(segmentIdx) + 1)
