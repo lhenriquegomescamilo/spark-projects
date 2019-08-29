@@ -456,6 +456,7 @@ object Item2Item {
         .toDF("segment_idx", "score")
         .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
         .filter($"rank" <= sizeMax)
+        .filter($"rank" >= sizeMin)
         .write
         .mode(SaveMode.Overwrite)
         .format("parquet")
@@ -467,17 +468,14 @@ object Item2Item {
       val partitionPath = rankTmpPath + "segment_idx=%s/".format(segmentIdx)
       val ret = {
         if(fs.exists(new org.apache.hadoop.fs.Path(partitionPath))){
-          val query = spark.read.load(partitionPath)
-            .filter($"rank" === sizeMap(segmentIdx) + 1)
-            .select("score")
-            .take(1)
-            .map(row => row(0).toString.toDouble)
+        val query = spark.read.load(partitionPath)
+          .filter($"rank" === sizeMap(segmentIdx) + 1)
+          .select("score")
+          .take(1)
+          .map(row => row(0).toString.toDouble)
           if(!query.isEmpty) query.apply(0) else 0.0                            
         }
-        else{
-          println("Lookalike LOG: No users found for segment = %s".format(segmentToIndex(segmentIdx)))
-          0.0
-        } 
+        else 0.0
       }
       ret
     }
