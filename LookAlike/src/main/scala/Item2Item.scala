@@ -444,8 +444,8 @@ object Item2Item {
     // It gets the score thresholds to get at least k elements per segment.
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
     val sizeMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
-    val sizeMax = expandInput.map(m => m("size").toString.toInt).max + 1
-    val sizeMin = expandInput.map(m => m("size").toString.toInt).min + 1
+    val sizeMax = expandInput.map(m => m("size").toString.toInt).max
+    val sizeMin = expandInput.map(m => m("size").toString.toInt).min
 
     val rankTmpPath = getTmpPathNames(metaParameters)("rank")
     if (!existsTmpFiles(spark, metaParameters)("rank")){
@@ -469,7 +469,7 @@ object Item2Item {
       val ret = {
         if(fs.exists(new org.apache.hadoop.fs.Path(partitionPath))){
         val query = spark.read.load(partitionPath)
-          .filter($"rank" === sizeMap(segmentIdx) + 1)
+          .filter($"rank" === sizeMap(segmentIdx))
           .select("score")
           .take(1)
           .map(row => row(0).toString.toDouble)
@@ -483,7 +483,9 @@ object Item2Item {
     val minScoreMap = selSegmentsIdx.map(segmentIdx => (segmentIdx, getScore(segmentIdx))).toMap
 
     var maskedScores = scoreMatrix
-      .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => tup._2.apply(segmentIdx) > minScoreMap(segmentIdx)).toArray) )
+      .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => 
+                                (minScoreMap(segmentIdx) > 0.0 && tup._2.apply(segmentIdx) >= minScoreMap(segmentIdx)) || 
+                                (minScoreMap(segmentIdx) == 0.0 &&  tup._2.apply(segmentIdx) > 0.0 )).toArray ))
       .filter(tup=> tup._2.reduce(_||_))
       // <device_idx, array(boolean))>
 
@@ -605,6 +607,7 @@ object Item2Item {
     else{ // on demand expansion
       val jobId = metaParameters("job_id")
       val partnerId = metaParameters("partner_id")
+      val priority = metaParameters("priority")
 
       val dataExpansion = data
       .flatMap(
@@ -624,7 +627,7 @@ object Item2Item {
         .option("header", "false")
         .mode(SaveMode.Overwrite)
         .save(filePath)
-      writeOutputMetaFile(filePath, jobId, partnerId)
+      writeOutputMetaFile(filePath, jobId, partnerId, priority)
     }
     
   }
@@ -645,8 +648,7 @@ object Item2Item {
     var description = "Lookalike on demand - jobId = %s".format(jobId)
 
     // Then we generate the content for the json file.
-    val json_content = """{"filePath":"%s", "priority":%s, "D":%s,
-                          "queue":"%s", "jobId":%s, "description":"%s"}"""
+    val json_content = """{"filePath":"%s", "priority":%s, "partnerId":%s, "queue":"%s", "jobId":%s, "description":"%s"}"""
       .format(
         file_path,
         priority,
@@ -801,7 +803,8 @@ object Item2Item {
       .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
     // Now we extract the different values from each row.
     var jobId = ""
-    var partnerId = ""
+    var partnerId = "119"
+    var priority = "10"
     var country = ""
 
     for (line <- data) {
@@ -811,26 +814,31 @@ object Item2Item {
             .toString
             .length > 0) line("jobId").toString
           else jobId
-
       partnerId =
           if (line.contains("partnerId") && Option(line("partnerId"))
             .getOrElse("")
             .toString
             .length > 0) line("partnerId").toString
           else partnerId
-
       country =
           if (line.contains("country") && Option(line("country"))
             .getOrElse("")
             .toString
             .length > 0) line("country").toString.toUpperCase
           else country
+      priority =
+          if (line.contains("priority") && Option(line("priority"))
+            .getOrElse("")
+            .toString
+            .length > 0) line("priority").toString
+          else priority
           
     }
     val map: Map[String, String] = Map(
         "job_id" -> jobId,
         "partner_id" -> partnerId,
-        "country" -> country
+        "country" -> country,
+        "priority" -> priority
     )
     map
   }
