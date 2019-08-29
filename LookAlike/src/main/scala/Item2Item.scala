@@ -447,31 +447,21 @@ object Item2Item {
     val sizeMax = expandInput.map(m => m("size").toString.toInt).max + 1
     val sizeMin = expandInput.map(m => m("size").toString.toInt).min + 1
 
-    /*
-    val minScoreMap = scoreMatrix
-      .flatMap(tup =>  selSegmentsIdx
-                        .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx)))
-                        .filter(tup => tup._2 >0) // remove scores <= 0
-      ) //<segment_idx, score>
-      .topByKey(sizeMax)
-      .map(t => (t._1, if (t._2.length >= sizeMap(t._1.toInt)) t._2( sizeMap(t._1.toInt) - 1 ) else t._2.last )) // get the kth value #
-      .collect()
-      .toMap
-    */
     val rankTmpPath = getTmpPathNames(metaParameters)("rank")
-    var rankedScoreDF = scoreMatrix
-      .flatMap(tup =>  selSegmentsIdx
-                          .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))) .filter(tup => tup._2 >0) // remove scores <= 0
-              ) //<segment_idx, score>
-      .toDF("segment_idx", "score")
-      .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
-      .filter($"rank" <= sizeMax)
-      .filter($"rank" >= sizeMin)
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("parquet")
-      .partitionBy("segment_idx")
-      .save(rankTmpPath)
+    if (!existsTmpFiles(spark, metaParameters)("rank")){
+      var rankedScoreDF = scoreMatrix
+        .flatMap(tup =>  selSegmentsIdx
+                            .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))) .filter(tup => tup._2 >0) // remove scores <= 0
+                ) //<segment_idx, score>
+        .toDF("segment_idx", "score")
+        .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
+        .filter($"rank" <= sizeMax)
+        .write
+        .mode(SaveMode.Overwrite)
+        .format("parquet")
+        .partitionBy("segment_idx")
+        .save(rankTmpPath)
+    }
 
     def getScore(segmentIdx: Int): Double = {
       val partitionPath = rankTmpPath + "segment_idx=%s/".format(segmentIdx)
@@ -484,6 +474,7 @@ object Item2Item {
           .map(row => row(0).toString.toDouble)
         if(!query.isEmpty) query.apply(0) else 0.0                            
         }
+        println("Lookalike LOG: No users found for segment = %s".format(segmentToIndex(segmentIdx)))
         else 0.0
       }
       ret
@@ -491,14 +482,6 @@ object Item2Item {
 
     val minScoreMap = selSegmentsIdx.map(segmentIdx => (segmentIdx, getScore(segmentIdx))).toMap
 
-
-
-    // It generates masked vectors per indexed user, to indicate segments to expand (scores > threshold)
-    /*var maskedScores = scoreMatrix
-      .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => (minScoreMap contains segmentIdx) && (tup._2.apply(segmentIdx) >= minScoreMap(segmentIdx))).toArray) )
-      .filter(tup=> tup._2.reduce(_||_))
-      // <device_idx, array(boolean))>
-    */
     var maskedScores = scoreMatrix
       .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => tup._2.apply(segmentIdx) > minScoreMap(segmentIdx)).toArray) )
       .filter(tup=> tup._2.reduce(_||_))
@@ -516,10 +499,10 @@ object Item2Item {
       writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
     }
 
-    // delete temp files TODO -- commented to test!!!!!
-    //
-    //fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
-    //fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
+    // delete temp files
+    fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
+    fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
+    fs.delete(new org.apache.hadoop.fs.Path(rankTmpPath), true)
   }
 
   /*
