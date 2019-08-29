@@ -467,15 +467,16 @@ object Item2Item {
       val partitionPath = rankTmpPath + "segment_idx=%s/".format(segmentIdx)
       val ret = {
         if(fs.exists(new org.apache.hadoop.fs.Path(partitionPath))){
-        val query = spark.read.load(partitionPath)
-          .filter($"rank" === sizeMap(segmentIdx) + 1)
-          .select("score")
-          .take(1)
-          .map(row => row(0).toString.toDouble)
-        if(!query.isEmpty) query.apply(0) else 0.0                            
+          val query = spark.read.load(partitionPath)
+            .filter($"rank" === sizeMap(segmentIdx) + 1)
+            .select("score")
+            .take(1)
+            .map(row => row(0).toString.toDouble)
+          if(!query.isEmpty) query.apply(0) else 0.0                            
         }
-        println("Lookalike LOG: No users found for segment = %s".format(segmentToIndex(segmentIdx)))
-        else 0.0
+        else{
+          println("Lookalike LOG: No users found for segment = %s".format(segmentToIndex(segmentIdx)))
+        } 0.0
       }
       ret
     }
