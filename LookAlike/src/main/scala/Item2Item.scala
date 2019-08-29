@@ -456,7 +456,7 @@ object Item2Item {
       .collect()
       .toMap
     */
-
+    val rankTmpPath = getTmpPathNames(metaParameters)("rank")
     var rankedScoreDF = scoreMatrix
       .flatMap(tup =>  selSegmentsIdx
                           .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))) .filter(tup => tup._2 >0) // remove scores <= 0
@@ -465,16 +465,32 @@ object Item2Item {
       .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
       .filter($"rank" <= sizeMax)
       .filter($"rank" >= sizeMin)
-      .cache()
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("parquet")
+      .partitionBy("segment_idx")
+      .save(rankTmpPath)
 
-    val minScoreMap = selSegmentsIdx
-      .map(segmentIdx => (segmentIdx,
-                          rankedScoreDF.filter($"rank" === (sizeMap(segmentIdx) + 1) && $"segment_idx" ===  segmentIdx)
-                          .take(1).map(row => row(1))
-                         )
-      )
-      .map(tup => (tup._1, if(!tup._2.isEmpty) tup._2.toString.toDouble else 0.0))
-      .toMap
+    def getScore(segmentIdx: Int): Double = {
+      val partitionPath = rankTmpPath + "segment_idx=%s/".format(segmentIdx)
+      if(fs.exists(new org.apache.hadoop.fs.Path(partitionPath)){
+        val query = spark.read.load(partitionPath)
+          .load()
+          .filter($"rank" === sizeMap(segmentIdx) + 1)
+          .select("score")
+          .take(1)
+          .map(row => row(0).toString.toDouble)
+        
+        val ret = if(!query.isEmpty) query.apply(0) else 0.0                            
+        ret
+      }
+      else{
+        val ret = 0.0
+        ret
+      }
+    }
+
+    val minScoreMap = selSegmentsIdx.map(segmentIdx => (segmentIdx, getScore(segmentIdx))).toMap
 
     rankedScoreDF.unpersist()
 
@@ -520,7 +536,8 @@ object Item2Item {
     val pathTmpFiles = getTmpPathNames(metaParameters)
     val existsTmpFiles: Map[String, Boolean] = Map(
         "scores" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("scores"))),
-        "indexed" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("indexed")))
+        "indexed" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("indexed"))),
+        "rank" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("rank")))
       )
     existsTmpFiles
   }
@@ -547,9 +564,18 @@ object Item2Item {
       else
        "/datascience/data_lookalike/tmp/indexed_devices/country=%s/".format(country)
     }
+
+    val rankTmpPath = {
+      if(isOnDemand)
+        "/datascience/data_lookalike/tmp/rank/jobId=%s/".format(jobId)
+      else
+       "/datascience/data_lookalike/tmp/rank/country=%s/".format(country)
+    }
+
     val pathTmpFiles: Map[String, String] = Map(
         "scores" -> scoresTmpPath,
-        "indexed" -> indexTmpPath
+        "indexed" -> indexTmpPath,
+        "rank" -> rankTmpPath
       )
     pathTmpFiles
   }
