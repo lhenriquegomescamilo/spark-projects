@@ -50,8 +50,7 @@ def getDataPipeline(
 
     //specifying country
     val country_iso = "AR"
-      /datascience/data_useragents/
-
+      
         // Get the days to be loaded
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since.toInt)
@@ -71,12 +70,12 @@ def get_ua_segments(spark:SparkSession) = {
 val ua = spark.read.format("parquet")
         .load("/datascience/data_useragents/day=*/country=AR")
         .filter("model != ''") //con esto filtramos los desktop
-        .withColumn("device_id",upper("device_id"))
+        .withColumn("device_id",upper(col("device_id")))
         .drop("user_agent","event_type","url")
         .dropDuplicates("device_id")
 
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/",5,10)
-              .withColumn("device_id",upper("device_id"))
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","5","10")
+              .withColumn("device_id",upper(col("device_id")))
 
 val joined = ua.join(df,Seq("device_id"))
 .write.format("csv")
