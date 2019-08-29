@@ -38,7 +38,7 @@ object ShareThisUS {
         .filter(
           ($"_c5" === "*" || $"_c5".isNull || $"_c5" === $"extension") &&
           ($"_c2" === "*" || $"_c2".isNull || $"_c2" === $"path") &&
-          (when( $"_c3".isNull, true).otherwise(split($"_c3", "&") === $"query" || $"_c3" === "*"  ))
+          (when( $"_c3".isNull, true).otherwise( arr_compare(split($"_c3", "&"), $"query") || $"_c3" === "*"  ))
         )
 
     val fin = filter
@@ -50,9 +50,7 @@ object ShareThisUS {
             )
         .withColumn("segments", concat($"pre_final", lit(","), get_country($"country") ))
         .select("estid", "segments", "external_id")
-    
 
-    
     fin.write
         .mode("overwrite")
         .format("csv")
@@ -104,6 +102,8 @@ object ShareThisUS {
   })
 
   val get_country = udf((key: String) => country_codes.getOrElse(key, 0).toString )
+
+  val arr_compare = udf( (a: WrappedArray[String], b: WrappedArray[String]) => a.sorted == b.sorted )
 
   def download_data(spark: SparkSession, nDays: Int, from: Int, columns: Seq[String]): Unit = {
     // Now we get the list of days to be downloaded
