@@ -230,7 +230,7 @@ object Geodevicer {
             .getOrElse("")
             .toString
             .length > 0) query("repartition").toString
-      else "1"
+      else "10"
     
 
     // Finally we construct the Map that is going to be returned
@@ -279,11 +279,11 @@ object Geodevicer {
     "web_days" -> $web_days,
     "polygon_input"->$polygon_input,
     "old_pipeline"-> $old_pipeline,
-     "atribution_date" -> $atribution_date,
+    "atribution_date" -> $atribution_date,
     "column_w_stop_list_id" -> $column_w_stop_list_id,
-      "transport_min_ocurrence" -> $transport_min_ocurrence,
-      "transport_min_distance" -> $transport_min_distance,
-      "min_frequency_of_detection" -> $min_frequency_of_detection,
+    "transport_min_ocurrence" -> $transport_min_ocurrence,
+    "transport_min_distance" -> $transport_min_distance,
+    "min_frequency_of_detection" -> $min_frequency_of_detection,
     "filter_true_user" -> $filter_true_user,
     "repartition" -> $repartition""")
     value_dictionary
@@ -376,10 +376,16 @@ object Geodevicer {
 
       POICrossDevicerJson.match_POI(spark, value_dictionary)
       // If we need to calculate the aggregations, we do so as well.
-      if (value_dictionary("analytics_df") == "1")
+      if (value_dictionary("analytics_df") == "1" && value_dictionary("column_w_stop_list_id") == "0")
         Aggregations.userAggregate(spark, value_dictionary)
-      if (value_dictionary("map_df") == "1")
+      if (value_dictionary("map_df") == "1" && value_dictionary("column_w_stop_list_id") == "0")
         Aggregations.POIAggregate(spark, value_dictionary)
+      
+      // Here we perform the analysis of transport pois
+      if (value_dictionary("column_w_stop_list_id") != "0")
+        Aggregations.user_aggregate_for_moving_transport(
+        spark,
+        value_dictionary)
 
     }
 
@@ -391,14 +397,68 @@ object Geodevicer {
         spark,
         value_dictionary,
         column_name = "device_id",
-        header = "true"
+        header = "true",
+        columns_to_save = Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"validUser","frequency")
       )
 
     if (value_dictionary("crossdevice") != "false" && value_dictionary(
           "crossdevice"
-        ) != "0" && value_dictionary("map_df") == "1")
+        ) != "0" && value_dictionary("map_df") == "1" && value_dictionary("column_w_stop_list_id") == "0")
       Aggregations.POIAggregate_w_xd(spark, value_dictionary)
 
+// Here we perform the attribution by date
+val atribute_day_name = DateTime.now.minusDays(value_dictionary("atribution_date").toInt)
+.minusDays(value_dictionary("since").toInt)
+.toString("YYYYMMDD")
+
+  if (value_dictionary("atribution_date") != "0")
+      Aggregations.create_audiences_from_attribution_date(
+        spark,
+        value_dictionary)
+  
+  if (value_dictionary("crossdevice") != "false" && 
+    value_dictionary("crossdevice") != "0" && 
+  value_dictionary("atribution_date") != "0") 
+
+      CrossDevicer.cross_device(
+        spark,
+        value_dictionary,
+        path = "/datascience/geo/geo_processed/%s_att_date-%s".format(value_dictionary("poi_output_file"),atribute_day_name),
+        column_name = "device_id",
+        columns_to_save = Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"new_user","churn_user","fidelity_user"),
+        header = "true"
+      )
+
+
+
+
+/*
+if (value_dictionary("crossdevice") != "false" &&
+  value_dictionary("crossdevice") != "0" && 
+  value_dictionary("column_w_stop_list_id") != "0" )
+      CrossDevicer.cross_device(
+        spark,
+        value_dictionary,
+        column_name = "device_id",
+        header = "true",
+        columns_to_save = Seq[String]("device_type","device_id", "transport_id","validUser","n_detections")
+      )
+
+if (value_dictionary("column_w_stop_list_id") != "0" && 
+  (value_dictionary("transport_min_ocurrence") | value_dictionary("transport_min_distance") &&
+value_dictionary("crossdevice") != "false" &&  value_dictionary("crossdevice") != "0"))
+      CrossDevicer.cross_device(
+        spark,
+        value_dictionary,
+        path = "/datascience/geo/geo_processed/%s_att_date-%s".format(value_dictionary("poi_output_file"),atribute_day_name),
+        column_name = "device_id",
+        columns_to_save = Seq[String]("device_type","device_id", value_dictionary("poi_column_name"),"new_user","churn_user","fidelity_user"),
+        header = "true"
+      )
+*/
+
+
+    
     // Here we join with web behaviour
     if (value_dictionary("web_days").toInt > 0)
       Aggregations.get_segments_from_triplets(spark, value_dictionary)

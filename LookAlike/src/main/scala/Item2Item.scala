@@ -158,12 +158,17 @@ object Item2Item {
       .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
 
     // Generate similarities matrix
-    val simMatrix = getSimilarities(spark,
-                                    usersSegmentsData,
-                                    segments.size,
-                                    nSegmentToExpand,
-                                    0.05,
-                                    simMatrixHits)
+    val simMatrix: Matrix = {
+      if(!existsTmpFiles(spark, metaInput)("scores"))
+        getSimilarities(spark,
+          usersSegmentsData,
+          segments.size,
+          nSegmentToExpand,
+          0.05,
+          simMatrixHits)
+      else
+        null
+      }
 
     println("LOOKALIKE LOG: Expansion")
     expand(spark,
@@ -351,55 +356,61 @@ object Item2Item {
               similartyMatrix: Matrix,
               predMatrixHits: String = "binary",
               isTest: Boolean = false) =  {
-    
+    import spark.implicits._
     import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
+    import org.apache.spark.sql.expressions.Window
+    import org.apache.spark.sql.functions.row_number
 
+    val country = metaParameters("country")
+    val jobId = metaParameters("job_id")
+    val isOnDemand = jobId.length > 0
+    
     val minUserSegments = if(isTest) 2 else 1
 
-    var indexedData = data
-      .filter(row => row._2.size >= minUserSegments) // filter users
-      .zipWithIndex() // <device_id, device_idx>
-      .map(tup => (tup._2, tup._1._1, tup._1._2)) // <device_idx, device_id, segments>
-      .persist(StorageLevel.MEMORY_AND_DISK)
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
 
-    var nSegments = similartyMatrix.numRows.toInt
+    // index data and write in temporal file
+    val indexTmpPath = getTmpPathNames(metaParameters)("indexed")
+
+    if (!existsTmpFiles(spark, metaParameters)("indexed")){
+      // generte data to store
+      data
+        .filter(row => row._2.size >= minUserSegments) // filter users
+        .zipWithIndex() // <device_id, device_idx>
+        .map(tup => (tup._2.toLong, 
+                    tup._1._1.toString,
+                    tup._1._2.map(t => t._1.toString.toInt).toArray,
+                    tup._1._2.map(t => t._2.toString.toInt).toArray )
+        ) // <device_idx, device_id, array segments, array counts>
+        .toDF("device_idx", "device_id", "segments", "counts")
+            .write
+            .mode(SaveMode.Overwrite)
+            .format("parquet")
+            .save(indexTmpPath)
+    } 
+
+    // reload indexed data
+    var indexedData = spark.read.load(indexTmpPath).as[(Long, String, Array[Int], Array[Double])].rdd
+
+    var nSegments = segmentToIndex.size
 
     //IndexedRow -> new (index: Long, vector: Vector) 
     val indexedRows: RDD[IndexedRow] = {
       if (predMatrixHits == "count"){
         println(s"User matrix: counts")
         indexedData
-        .map(row => new IndexedRow 
-          (row._1, 
-          Vectors.sparse(
-            nSegments,
-            row._3.map(t => t._1.toString.toInt).toArray,
-            row._3.map(t => t._2.toString.toDouble).toArray)
-          .toDense.asInstanceOf[Vector]))
+        .map(row => new IndexedRow(row._1, Vectors.sparse(nSegments, row._3, row._4).toDense.asInstanceOf[Vector]))
       }
       else if (predMatrixHits == "normalized"){
         println(s"User matrix: normalized count")
         indexedData
-          .map(row => (row._1, row._3, row._3.map(t => t._2.toString.toDouble).toArray.sum)) // sum counts by device id
-          .map(row => new IndexedRow 
-            (row._1, 
-            Vectors.sparse(
-                        nSegments,
-                        row._2.map(t => t._1.toString.toInt).toArray,
-                        row._2.map(t => t._2.toString.toDouble/row._3).toArray)
-                      .toDense.asInstanceOf[Vector]))
+          .map(row => (row._1, row._3, row._4, row._4.sum)) // sum counts by device id
+          .map(row => new IndexedRow(row._1,Vectors.sparse(nSegments, row._2, row._3.map(t => t/row._4)).toDense.asInstanceOf[Vector]))
       }
       else{
         println(s"User matrix: binary")
         indexedData
-        .map(row => new IndexedRow 
-          (row._1, 
-          Vectors.sparse(
-            nSegments,
-            row._3.map(t => t._1.toString.toInt).toArray, 
-            Array.fill(row._3.size)(1.0))
-          .toDense.asInstanceOf[Vector]
-          ))
+        .map(row => new IndexedRow(row._1,Vectors.sparse(nSegments, row._3, Array.fill(row._3.size)(1.0)).toDense.asInstanceOf[Vector]))
       }
     }
     /*
@@ -412,50 +423,149 @@ object Item2Item {
 
     val userSegmentMatrix = new IndexedRowMatrix(indexedRows)
 
-    // it calculates the prediction scores
-    var scoreMatrix = userSegmentMatrix.multiply(similartyMatrix)
+    // write scores in temporal file
+    val scoresTmpPath = getTmpPathNames(metaParameters)("scores")
+
+    if (!existsTmpFiles(spark, metaParameters)("scores")){
+      userSegmentMatrix
+        .multiply(similartyMatrix)
+        .rows
+        .map(row =>  (row.index, row.vector)) 
+        .toDF("device_idx", "scores")  
+        .write
+        .mode(SaveMode.Overwrite)
+        .format("parquet")
+        .save(scoresTmpPath)
+    }
+
+    // reload scores
+    val scoreMatrix = spark.read.load(scoresTmpPath).as[(Long, Vector)].rdd
 
     // It gets the score thresholds to get at least k elements per segment.
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
     val sizeMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
-    val sizeMax = expandInput.map(m => m("size").toString.toInt).max
+    val sizeMax = expandInput.map(m => m("size").toString.toInt).max + 1
+    val sizeMin = expandInput.map(m => m("size").toString.toInt).min + 1
 
-    val minScoreMap = scoreMatrix
-      .rows
-      .flatMap(row =>  selSegmentsIdx.map(segmentIdx => (segmentIdx, row.vector.apply(segmentIdx)))) 
-      .filter(tup => (tup._2 > 0)) // it selects scores > 0 (score is negative If the user already contains the segment)
-      .map(tup => (tup._1, tup._2))// Format  <segment_idx, score>
-      .topByKey(sizeMax)
-      .map(t => (t._1, if (t._2.length >= sizeMap(t._1.toInt)) t._2( sizeMap(t._1.toInt) - 1 ) else t._2.last )) // get the kth value #
-      .collect()
-      .toMap
+    val rankTmpPath = getTmpPathNames(metaParameters)("rank")
+    if (!existsTmpFiles(spark, metaParameters)("rank")){
+      var rankedScoreDF = scoreMatrix
+        .flatMap(tup =>  selSegmentsIdx
+                            .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))) .filter(tup => tup._2 >0) // remove scores <= 0
+                ) //<segment_idx, score>
+        .toDF("segment_idx", "score")
+        .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
+        .filter($"rank" <= sizeMax)
+        .filter($"rank" >= sizeMin)
+        .write
+        .mode(SaveMode.Overwrite)
+        .format("parquet")
+        .partitionBy("segment_idx")
+        .save(rankTmpPath)
+    }
 
+    def getScore(segmentIdx: Int): Double = {
+      val partitionPath = rankTmpPath + "segment_idx=%s/".format(segmentIdx)
+      val ret = {
+        if(fs.exists(new org.apache.hadoop.fs.Path(partitionPath))){
+        val query = spark.read.load(partitionPath)
+          .filter($"rank" === sizeMap(segmentIdx) + 1)
+          .select("score")
+          .take(1)
+          .map(row => row(0).toString.toDouble)
+          if(!query.isEmpty) query.apply(0) else 0.0                            
+        }
+        else 0.0
+      }
+      ret
+    }
 
-    // It generates masked vectors per indexed user, to indicate segments to expand (scores > threshold)
+    val minScoreMap = selSegmentsIdx.map(segmentIdx => (segmentIdx, getScore(segmentIdx))).toMap
+
     var maskedScores = scoreMatrix
-      .rows
-      .map(row => (row.index, selSegmentsIdx.map(segmentIdx => (minScoreMap contains segmentIdx) && (row.vector.apply(segmentIdx) >= minScoreMap(segmentIdx))).toArray) )
+      .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => tup._2.apply(segmentIdx) > minScoreMap(segmentIdx)).toArray) )
       .filter(tup=> tup._2.reduce(_||_))
       // <device_idx, array(boolean))>
 
     if(!isTest){
-      val devicesId = indexedData.map(t => (t._1, t._2))
+      val devicesId = indexedData.map(t => (t._1, t._2)) // <device_idx, device_id>
       val userPredictions = maskedScores.join(devicesId).map(tup => (tup._2._2, tup._2._1))
       // <device_id, array(boolean)>
       writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters)
     }
     else{ 
-      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._3.map(v => v._1.toString.toInt).toArray contains segmentIdx)).toArray))
+      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._3 contains segmentIdx)).toArray))
       val userPredictions = maskedScores.join(maskedRelevant).map(tup => (tup._2._2, tup._2._1))
       writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
     }
+
+    // delete temp files
+    fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
+    fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
+    fs.delete(new org.apache.hadoop.fs.Path(rankTmpPath), true)
+  }
+
+  /*
+  * It validates if temporal files alredy exist.
+  * There are 2 temporal files:
+  *   - indexed: Contains devices indexed and its asociated segments
+  *   - scores: Contains prediction scores per devices 
+  */
+  def existsTmpFiles(spark: SparkSession,
+                     metaParameters: Map[String, String]): Map[String, Boolean] = {
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    val pathTmpFiles = getTmpPathNames(metaParameters)
+    val existsTmpFiles: Map[String, Boolean] = Map(
+        "scores" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("scores"))),
+        "indexed" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("indexed"))),
+        "rank" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("rank")))
+      )
+    existsTmpFiles
+  }
+
+  /*
+  * It returns a map with hdfs path names used to store temporal data.
+  * There are 2 temporal files:
+  *   - indexed: Contains devices indexed and its asociated segments
+  *   - scores: Contains prediction scores per devices 
+  */
+  def getTmpPathNames(metaParameters: Map[String, String]): Map[String, String] = {
+    val country = metaParameters("country")
+    val jobId = metaParameters("job_id")
+    val isOnDemand = jobId.length > 0
+    val scoresTmpPath = { 
+      if(isOnDemand)
+        "/datascience/data_lookalike/tmp/scores/jobId=%s/".format(jobId)
+      else
+       "/datascience/data_lookalike/tmp/scores/country=%s/".format(country)
+    }
+    val indexTmpPath = {
+      if(isOnDemand)
+        "/datascience/data_lookalike/tmp/indexed_devices/jobId=%s/".format(jobId)
+      else
+       "/datascience/data_lookalike/tmp/indexed_devices/country=%s/".format(country)
+    }
+
+    val rankTmpPath = {
+      if(isOnDemand)
+        "/datascience/data_lookalike/tmp/rank/jobId=%s/".format(jobId)
+      else
+       "/datascience/data_lookalike/tmp/rank/country=%s/".format(country)
+    }
+
+    val pathTmpFiles: Map[String, String] = Map(
+        "scores" -> scoresTmpPath,
+        "indexed" -> indexTmpPath,
+        "rank" -> rankTmpPath
+      )
+    pathTmpFiles
   }
 
   /**
   * Generate output files
   */
   def writeOutput(spark: SparkSession,
-                  data: RDD[(Any, Array[(Boolean)])],
+                  data: RDD[(String, Array[(Boolean)])],
                   expandInput: List[Map[String, Any]],
                   segmentToIndex: Map[String, Int],
                   metaParameters: Map[String, String]){
@@ -472,7 +582,7 @@ object Item2Item {
       val dataExpansion = data
         .map(
             tup => 
-              (tup._1.toString, // device_id
+              (tup._1, // device_id
               selSegmentsIdx
                 .filter(segmentIdx => tup._2.apply(segmentIdx)) // select segments to expand
                 .map(segmentIdx => dstSegmentIdMap(segmentIdx)) // get segment label
@@ -516,6 +626,7 @@ object Item2Item {
         .save(filePath)
       writeOutputMetaFile(filePath, jobId, partnerId)
     }
+    
   }
 
   /**

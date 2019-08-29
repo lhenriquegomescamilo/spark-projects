@@ -1,5 +1,6 @@
 package main.scala.aggregators
 
+import main.scala.Geodevicer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.Window
@@ -140,7 +141,7 @@ def POIAggregate_w_xd(
         "/datascience/audiences/crossdeviced/%s_xd"
           .format(value_dictionary("poi_output_file")))
 
-  val audienceByCode = xd_result.withColumn(value_dictionary("poi_column_name"),explode(split(col("name"),",")))
+  val audienceByCode = xd_result.withColumn(value_dictionary("poi_column_name"),explode(split(col(value_dictionary("poi_column_name")),",")))
 
   val countByCode = audienceByCode
                         .groupBy(value_dictionary("poi_column_name"))
@@ -440,10 +441,20 @@ def userAggregateFromPolygon(
 
 
 
-    val new_user = user_attributions.filter("new_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
-    val churn_user = user_attributions.filter("churn_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
-    val fidelity_user = user_attributions.filter("fidelity_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
+    //val new_user = user_attributions.filter("new_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
+    //val churn_user = user_attributions.filter("churn_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
+    //val fidelity_user = user_attributions.filter("fidelity_user == 1").select("device_type","device_id",value_dictionary("audience_column_name"))
 
+
+      user_attributions.select("device_type","device_id",value_dictionary("poi_column_name"),"new_user","churn_user","fidelity_user")
+      .write
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/geo_processed/%s_att_date-%s"
+          .format(value_dictionary("poi_output_file"),atribute_day_name))
+/*
       new_user.write
       .format("csv")
       .option("header", "true")
@@ -471,7 +482,7 @@ def userAggregateFromPolygon(
         "/datascience/geo/audience/%s_churn_user_att_date%s"
           .format(value_dictionary("poi_output_file"),atribute_day_name))
       
-                     
+  */                   
   }
 
 //this function create audiences from multiple stops of public transport
@@ -491,19 +502,19 @@ def user_aggregate_for_moving_transport(
       .load("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
 
     
-    val filter_by_distance = data.filter("distance < %s".format(value_dictionary("umbraldist")))
-    val exploded_by_stop_id =  filter_by_distance
-                    .withColumn("stop_id", explode(split(col(value_dictionary("column_w_stop_list_id")), ",")))
+    val filter_by_distance = data.filter("distance < %s".format(value_dictionary("umbraldist").toInt))
+    val exploded_by_transport_id =  filter_by_distance
+                    .withColumn("transport_id", explode(split(col(value_dictionary("column_w_stop_list_id")), ",")))
  
  
       //hacemos un collect de timestamps y stop id para cada usuario en cada linea. 
-      val poi_line = exploded_by_stop_id.groupBy("stop_id","device_id")
+      val poi_line = exploded_by_transport_id.groupBy("transport_id","device_id","device_type")
             .agg(
               collect_list(col("timestamp")).as("times_array"), 
               collect_list(value_dictionary("poi_column_name")).as("location_array"), 
               collect_list("distance").as("distance_array"))
-            .withColumn("line_detect", size(col("times_array")))
-           .filter("(location_detect >1)")
+            .withColumn("frequency", size(col("times_array")))
+           .filter("frequency >1")
  
 
       // this function checks if the user is a user of the specific transport
@@ -521,26 +532,26 @@ def user_aggregate_for_moving_transport(
  
  
       //creamos una columna si nos dice si es un usuario o no usando la función. filtramos para que no esté vacía en línea y que no sea nula
-        val users_aggregated_by_stop_id = poi_line
-        .withColumn("user",hasUsedTransport(
+        val users_aggregated_by_transport_id = poi_line
+        .withColumn("validUser",hasUsedTransport(
                 poi_line("times_array"),
                 poi_line("location_array"),
                 poi_line("distance_array")))
-        .filter("user == true")
-        .filter((col("stop_id") =!= "") && ((col("stop_id").isNotNull)))
+        .filter("validUser == true")
+        .filter((col("transport_id") =!= "") && ((col("transport_id").isNotNull)))
         // Here we transform the lists into strings
       .withColumn("times_array", concat_ws(",", col("times_array")))
       .withColumn("location_array", concat_ws(",", col("location_array")))
       .withColumn("distance_array", concat_ws(",", col("distance_array")))
       .withColumn("distance_array", concat_ws(",", col("distance_array")))
-      .withColumn(value_dictionary("poi_column_name"),col("stop_id")) 
+      .withColumn(value_dictionary("poi_column_name"),col("transport_id")) 
                 //this creates a column with the lines as names, so that the process can continue using this column
       
                // Path where we will store the results.
     val output_path_anlytics = "/datascience/geo/geo_processed/%s_aggregated"
       .format(value_dictionary("poi_output_file"))
 
-    users_aggregated_by_stop_id     
+    users_aggregated_by_transport_id
       // Finally we write the results
       .write
       .format("csv")

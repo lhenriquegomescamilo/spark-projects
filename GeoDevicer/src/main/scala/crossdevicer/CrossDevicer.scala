@@ -1,5 +1,6 @@
 package main.scala.crossdevicer
 
+import main.scala.Geodevicer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{upper, col, coalesce, udf}
 import org.apache.spark.sql.SaveMode
@@ -22,8 +23,10 @@ object CrossDevicer {
   def cross_device(
       spark: SparkSession,
       value_dictionary: Map[String, String],
+      path: String =  "/datascience/geo/geo_processed/%s_aggregated",
       sep: String = "\t",
       column_name: String = "_c1",
+      columns_to_save: Seq[String], 
       header: String = "false"
   ) {
     // First we get the audience. Also, we transform the device id to be upper case.
@@ -31,7 +34,7 @@ object CrossDevicer {
       .format("csv")
       .option("sep", sep)
       .option("header", header)
-      .load("/datascience/geo/geo_processed/%s_aggregated".format(value_dictionary("poi_output_file")))
+      .load(path.format(value_dictionary("poi_output_file")))
       .withColumn("device_id", upper(col("device_id")))
     
     /*
@@ -56,6 +59,9 @@ object CrossDevicer {
 
     // Get DrawBridge Index. Here we transform the device id to upper case too.
     // BIG ASSUMPTION: we only want the cookies out of the cross-device.
+
+    val colNames = columns_to_save.map(name => col(name))
+
     val db_data = spark.read
       .format("parquet")
       .load("/datascience/crossdevice/double_index")
@@ -70,8 +76,7 @@ object CrossDevicer {
       val cross_deviced = db_data      
       .join(        
         audience    
-        .select("device_id","device_type","validUser","frequency",
-                  value_dictionary("poi_column_name"))      //,     value_dictionary("audience_column_name")    
+        .select(colNames:_*)      //,     value_dictionary("audience_column_name"),"validUser","frequency",     "device_id","device_type",           value_dictionary("poi_column_name"),
         .distinct(),        
         Seq("device_id"),
             "right_outer")      
@@ -81,10 +86,10 @@ object CrossDevicer {
       .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))
 
-      val cross_deviced_agg = cross_deviced.groupBy("device_id","device_type","validUser","frequency")
+      val cross_deviced_agg = cross_deviced.groupBy(colNames.filter(y => y.toString !=  value_dictionary("poi_column_name").toString):_*) // ,"validUser","frequency"
       .agg(collect_list(value_dictionary("poi_column_name")) as value_dictionary("poi_column_name"))
       .withColumn(value_dictionary("poi_column_name"), concat_ws(",", col(value_dictionary("poi_column_name"))))
-      .select("device_type","device_id",value_dictionary("poi_column_name")) //,"validUser","frequency" antes se seleccionaban estas para filtar luego, pero si se dejan el archivo no se empuja
+      .select(colNames:_*)//.select("device_type","device_id",value_dictionary("poi_column_name")) //,"validUser","frequency" antes se seleccionaban estas para filtar luego, pero si se dejan el archivo no se empuja
 
     // We want information about the process
     cross_deviced_agg.explain(extended = true)
