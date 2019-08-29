@@ -77,7 +77,7 @@ val ua = spark.read.format("parquet")
 val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","5","10")
               .withColumn("device_id",upper(col("device_id")))
 
-val joined = ua.join(df,Seq("device_id"))
+val joined = ua.join(segments,Seq("device_id"))
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
