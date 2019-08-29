@@ -476,7 +476,8 @@ object Item2Item {
         }
         else{
           println("Lookalike LOG: No users found for segment = %s".format(segmentToIndex(segmentIdx)))
-        } 0.0
+          0.0
+        } 
       }
       ret
     }
