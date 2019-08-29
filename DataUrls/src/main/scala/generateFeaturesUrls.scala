@@ -471,7 +471,7 @@ object GenerateFeaturesUrls {
       .join(URLkeys, Seq("composite_key"))
       .drop("composite_key")
       .withColumn("content_keys", explode(col("content_keys")))
-      .groupBy("url", "content_keys")
+      .groupBy("url", "content_keys","segments")
       .count()
 
     joint.write
