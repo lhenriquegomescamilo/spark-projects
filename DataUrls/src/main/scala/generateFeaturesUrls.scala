@@ -475,6 +475,7 @@ object GenerateFeaturesUrls {
       .count()
 
     joint.write
+      .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_url_classifier/dataset_keywords")
 
@@ -493,6 +494,7 @@ object GenerateFeaturesUrls {
       )
 
     filtered.write
+      .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_url_classifier/gt_multi_class")
 
