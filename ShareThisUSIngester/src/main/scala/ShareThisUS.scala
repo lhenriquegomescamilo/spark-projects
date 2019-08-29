@@ -6,6 +6,7 @@ import org.joda.time.{Days, DateTime}
 import org.joda.time.format.DateTimeFormat
 import org.apache.hadoop.fs.{FileSystem, Path}
 import scala.collection.mutable.ListBuffer
+import collection.mutable.WrappedArray
 
 object ShareThisUS {
 
