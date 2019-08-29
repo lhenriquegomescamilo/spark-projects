@@ -9,7 +9,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 //import org.apache.spark.sql.{Encoders, SparkSession}
 //import org.apache.hadoop.conf.Configuration
 
-object ByTwoOutput {
+object ShareThisUS {
 
   def processDayNew(spark: SparkSession,
                     day: String,
