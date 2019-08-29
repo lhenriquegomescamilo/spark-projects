@@ -68,7 +68,7 @@ object ByTwoOutput {
     val from = if (options.contains('from)) options('from) else 1
 
     val spark = SparkSession.builder
-        .appName("ShreThis Input")
+        .appName("ByTwo Output")
         //.config("spark.sql.files.ignoreCorruptFiles", "true")
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
