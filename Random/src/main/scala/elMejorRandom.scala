@@ -96,8 +96,14 @@ val joined = ua.join(segments,Seq("device_id"))
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-      
-    get_ua_segments(spark)
+    val uas = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_5d")  
+    
+    uas.withColumn("segments",explode(split(col("segments"),","))).groupBy("brand","model","segments").agg(countDistinct("device_id"))
+    .write.format("csv")
+    .option("header",true)
+    .option("delimiter","\t")
+    .mode(SaveMode.Overwrite)
+    .save("/datascience/misc/ua_agg_segments_5d")
      
   }
 }
