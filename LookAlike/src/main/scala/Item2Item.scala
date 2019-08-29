@@ -367,6 +367,8 @@ object Item2Item {
     
     val minUserSegments = if(isTest) 2 else 1
 
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+
     // index data and write in temporal file
     val indexTmpPath = getTmpPathNames(metaParameters)("indexed")
 
@@ -517,7 +519,7 @@ object Item2Item {
     }
 
     // delete temp files TODO -- commented to test!!!!!
-    //val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    //
     //fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
     //fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
   }
