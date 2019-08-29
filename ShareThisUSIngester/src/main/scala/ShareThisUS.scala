@@ -16,7 +16,7 @@ object ShareThisUS {
 
     val data = spark.read
         .format("parquet")
-        .load("data/providers/sharethis/processed/day=%s".format(day))
+        .load("/data/providers/sharethis/processed/day=%s".format(day))
         .withColumn("external_id", concat_ws("|", $"adnxs_id", $"ttd_id", $"mediamath_id", $"lotame_id", $"nlsn_id", $"eyeota_id"))
         .select("estid", "url", "external_id", "country")
     
