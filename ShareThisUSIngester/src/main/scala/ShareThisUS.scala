@@ -51,7 +51,9 @@ object ShareThisUS {
         .withColumn("segments", concat($"pre_final", lit(","), get_country($"country") ))
         .select("estid", "segments", "external_id")
     
-    filter.write
+
+    
+    fin.write
         .mode("overwrite")
         .format("csv")
         .option("header", "false")
