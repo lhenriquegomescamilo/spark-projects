@@ -89,15 +89,15 @@ val joined = ua.join(df,Seq("device_id"))
 
 
 
-}
-  /*****************************************************/
+ /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(args: Array[String]) {
-    val spark = SparkSession.builder.appName("Spark devicer")
-    .config("spark.sql.files.ignoreCorruptFiles", "true")
-    .getOrCreate()
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
       
     get_ua_segments(spark)
      
   }
+}
