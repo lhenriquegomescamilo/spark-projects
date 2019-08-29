@@ -478,7 +478,6 @@ object Item2Item {
       val ret = {
         if(fs.exists(new org.apache.hadoop.fs.Path(partitionPath))){
         val query = spark.read.load(partitionPath)
-          .load()
           .filter($"rank" === sizeMap(segmentIdx) + 1)
           .select("score")
           .take(1)
@@ -492,7 +491,6 @@ object Item2Item {
 
     val minScoreMap = selSegmentsIdx.map(segmentIdx => (segmentIdx, getScore(segmentIdx))).toMap
 
-    rankedScoreDF.unpersist()
 
 
     // It generates masked vectors per indexed user, to indicate segments to expand (scores > threshold)
