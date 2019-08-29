@@ -230,7 +230,7 @@ object Geodevicer {
             .getOrElse("")
             .toString
             .length > 0) query("repartition").toString
-      else "1"
+      else "10"
     
 
     // Finally we construct the Map that is going to be returned
