@@ -501,7 +501,7 @@ object Item2Item {
     else{ 
       val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._3 contains segmentIdx)).toArray))
       val defaultPrediction = selSegmentsIdx.map(segmentIdx => false).toArray
-      val userPredictions = maskedScores.rightOuterJoin(maskedRelevant).map(tup => (tup._2._2, if(tup._2._1 != null) tup._2._1 else defaultPrediction ))
+      val userPredictions = maskedScores.rightOuterJoin(maskedRelevant).map(tup => (tup._2._2, if(tup._2._1 != null) tup._2._1.toArray else defaultPrediction ))
       writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
     }
 
