@@ -52,13 +52,17 @@ object keywordIngestion {
     val df = spark.read
       .format("csv")
       .load(dfs: _*)
+
+    val stem_column = if (df.columns.contains("_c6")) "_c6" else "_c3"
+
+    val processed = df
       .withColumnRenamed("_c0", "url")
       .withColumnRenamed("_c1", "count")
       .withColumnRenamed("_c2", "country_web")
       .withColumnRenamed("_c3", "content_keys")
       .withColumnRenamed("_c4", "scores")
-      .withColumnRenamed("_c3", "domain")
-      .withColumnRenamed("_c4", "stemmed_keys")
+      .withColumnRenamed("_c5", "domain")
+      .withColumnRenamed(stem_column, "stemmed_keys")
       .withColumn("content_keys", split(col("content_keys"), " "))
       .withColumn("stemmed_keys", split(col("stemmed_keys"), " "))
       .withColumn(
