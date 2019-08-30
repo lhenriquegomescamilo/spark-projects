@@ -4,7 +4,6 @@ import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{FileSystem, Path}
 
-
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
@@ -88,96 +87,10 @@ val joined = ua.join(segments,Seq("device_id"))
                                           }
 
 
- def get_ISP_Homes(
-      spark: SparkSession,
-      nDays: Integer,
-      since: Integer = 1
-  ) = {
-
-    import spark.implicits._
-    import org.apache.hadoop.fs.{FileSystem, Path}
-    import org.joda.time.DateTime
-    import org.apache.spark.sql.functions.{
-      round,
-      broadcast,
-      col,
-      abs,
-      to_date,
-      to_timestamp,
-      hour,
-      date_format,
-      from_unixtime,
-      count,
-      avg
-    }
-    import org.apache.spark.sql.SaveMode
-
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-    // Now we obtain the list of hdfs folders to be read
-    val path = "/datascience/data_audiences/"
-    val hdfs_files = days
-      .map(day => path + "day=%s/country=AR/".format(day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    fs.close()
-
-    //cargamos el df de audiences
-    val df_audiences = spark.read.parquet(hdfs_files: _*)
-
-    val daud = df_audiences
-      .select("device_id", "segments", "timestamp", "device_type")
-      .withColumn(
-        "ISP",
-        when(array_contains(col("segments"), 1192), "Telecentro")
-          .otherwise(
-            when(array_contains(col("segments"), 1191), "Fibertel")
-              .otherwise(
-                when(array_contains(col("segments"), 1190), "Arnet")
-                  .otherwise(
-                    when(array_contains(col("segments"), 1069), "Speedy")
-                      .otherwise(0)
-                  )
-              )
-          )
-      )
-      .filter("ISP != '0'")
-
-    val country = "argentina"
-
-    //dictionary for timezones
-    val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
-
-    //setting timezone depending on country
-    spark.conf.set("spark.sql.session.timeZone", timezone(country))
-
-    val daud_time = daud
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-      .withColumn("Hour", date_format(col("Time"), "HH"))
-      .filter(
-        (col("Hour") >= 19 || col("Hour") <= 8) || (date_format(
-          col("Time"),
-          "EEEE"
-        ).isin(List("Saturday", "Sunday"): _*))
-      )
-
-    val audience_final = daud_time
-      .groupBy("device_type", "device_id", "ISP")
-      .agg(count("timestamp") as "home_detections")
-
-    audience_final.write
-      .format("csv")
-      .option("header", true)
-      .option("delimiter", "\t")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/audiences/crossdeviced/Telecentro_Test_ISP")
-  }
-
   /*
+
+Funciones  para telecentro
+
     val uas = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_5d")  
     
     uas.withColumn("segments",explode(split(col("segments"),","))).groupBy("brand","model","segments").agg(countDistinct("device_id"))
@@ -217,6 +130,15 @@ telecentro_hash.withColumn("ISP_Name",audienceUDF(col("ISP"))).write.format("csv
 hash_loaded.select("ml_sh2","mb_sh2","nid_sh2","ISP_Name").distinct().write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique") 
 
 
+
+spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Arnet'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Arnet") 
+
+spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Speedy'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Speedy") 
+
+spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Fibertel'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Fibertel") 
+
+spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Telecentro'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Telecentro") 
+
   }
 */
 
@@ -228,16 +150,20 @@ hash_loaded.select("ml_sh2","mb_sh2","nid_sh2","ISP_Name").distinct().write.form
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-    
-    import org.apache.spark.sql.SaveMode
+  
+val HourFrom = 19
+val HourTo = 7
 
-spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Arnet'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Arnet") 
+val raw = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/radios_argentina_2010_geodevicer_30d_argentina_30-8-2019-14h")
 
-spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Speedy'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Speedy") 
+ val geo_hour = raw.select("device_id","device_type", "latitude", "longitude","utc_timestamp","name").withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp")))).withColumn("Hour", date_format(col("Time"), "HH")).filter(col("Hour") >= HourFrom || col("Hour") <= HourTo)
+                                                                 
+                                                    
+val geo_counts = geo_hour.groupBy("device_id","device_type").agg(collect_list("name") as "radios_censales")
 
-spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Fibertel'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Fibertel") 
+  geo_counts.write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/geo/geo_processed/radios_argentina_2010_geodevicer_30d_argentina_30-8-2019-14h_agg") 
 
-spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Telecentro'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Telecentro") 
+
 
     
      
