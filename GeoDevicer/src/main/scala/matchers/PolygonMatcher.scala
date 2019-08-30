@@ -212,7 +212,7 @@ object PolygonMatcher {
     // broadcast(polygonGDf)
 
     //broadcast(polygonGDf.repartition(value_dictionary("repartition").toInt)).createOrReplaceTempView("poligono_amigo")
-    polygonGDf.repartition(value_dictionary("repartition").toInt).createOrReplaceTempView("poligono_amigo")
+    polygonGDf.createOrReplaceTempView("poligono_amigo") //.repartition(value_dictionary("repartition").toInt)
     safegraphDf.createOrReplaceTempView("users")
 
 
