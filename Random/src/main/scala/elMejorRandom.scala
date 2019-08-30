@@ -177,7 +177,7 @@ val joined = ua.join(segments,Seq("device_id"))
       .save("/datascience/audiences/crossdeviced/Telecentro_Test_ISP")
   }
 
-  {
+  /*
     val uas = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_5d")  
     
     uas.withColumn("segments",explode(split(col("segments"),","))).groupBy("brand","model","segments").agg(countDistinct("device_id"))
@@ -187,7 +187,7 @@ val joined = ua.join(segments,Seq("device_id"))
     .mode(SaveMode.Overwrite)
     .save("/datascience/misc/ua_agg_segments_5d")
   }
-
+*/
 
 
  /*****************************************************/
