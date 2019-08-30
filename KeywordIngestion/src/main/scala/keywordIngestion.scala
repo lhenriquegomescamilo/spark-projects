@@ -149,7 +149,7 @@ object keywordIngestion {
       .join(URLkeys, Seq("composite_key"))
       .drop("composite_key")
       .withColumn("keys", explode(zip(col("content_keys"), col("stemmed_keys"))))
-      .select("device_id", "device_type", "country", col("keys._1").alias("content_keys"), col("keys._2").alias("stemmed_keys"), "domain")
+      .select(col("device_id"), col("device_type"), col("country"), col("keys._1").alias("content_keys"), col("keys._2").alias("stemmed_keys"), col("domain"))
       .groupBy("device_id", "device_type", "country", "content_keys", "stemmed_keys", "domain")
       .count()
       .withColumn("day", lit(today)) // Agregamos el dia
