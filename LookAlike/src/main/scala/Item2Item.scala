@@ -726,6 +726,7 @@ object Item2Item {
     var dfMetrics = metrics
       .toDF("segment", "nRelevant", "nSelected", "precision", "recall" ) //.filter($"nRelevant" >= minSegmentSupport) TODO ADD all relevants
       .withColumn("f1", when($"precision" + $"recall" > 0.0, ($"precision" * $"recall") / ( $"precision" + $"recall") * 2.0).otherwise(0.0))
+      .filter($"nRelevant" >= minSegmentSupport)
       .sort(desc("precision"))
     
     var dfAvgMetrics = dfMetrics
