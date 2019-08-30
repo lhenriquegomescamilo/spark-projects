@@ -67,8 +67,8 @@ object SegmentTriplets {
           spark.read
             .option("basePath", "/datascience/data_audiences_streaming/")
             .parquet(x)
-            .filter("event_type IN ('batch', 'data', 'tk', 'pv')")
-            .select("device_id", "segments", "country")
+            .filter("event_type IN ('batch', 'data', 'tk', 'pv', 'retroactive')")
+            .select("device_id", "segments", "country", "event_type")
             .withColumn("segments", explode(col("segments")))
             .withColumn("day", lit(x.split("/").last.slice(5, 13)))
             .withColumnRenamed("segments", "feature")
