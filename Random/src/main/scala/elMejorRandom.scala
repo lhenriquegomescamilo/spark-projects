@@ -186,19 +186,8 @@ val joined = ua.join(segments,Seq("device_id"))
     .option("delimiter","\t")
     .mode(SaveMode.Overwrite)
     .save("/datascience/misc/ua_agg_segments_5d")
-  }
-*/
 
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-    
-    import org.apache.spark.sql.SaveMode
 
 //Hay que matchear con los PII para obtener los hashes
 
@@ -221,6 +210,24 @@ val telecentro_hash = telecentro_isp.join(pii,Seq("device_id"))
           val audienceUDF = udf((dev_type: String) => ispMap(dev_type))
           
 telecentro_hash.withColumn("ISP_Name",audienceUDF(col("ISP"))).write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash") 
+
+  }
+*/
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    
+    import org.apache.spark.sql.SaveMode
+
+    val hash_loaded = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash")
+    
+hash_loaded.select("ml_sh2","mb_sh2","nid_sh2","ISP_Name").distinct().write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique") 
 
     
      
