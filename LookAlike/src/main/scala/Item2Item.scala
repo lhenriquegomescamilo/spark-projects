@@ -45,6 +45,7 @@ object Item2Item {
   def processPendingJobs(spark: SparkSession,
                          nDays: Int = -1,
                          simMatrixHits: String = "binary",
+                         simThreshold: Double = 0.05,
                          predMatrixHits: String = "binary") {
 
     val pathToProcess = "/datascience/data_lookalike/to_process/"
@@ -83,7 +84,7 @@ object Item2Item {
       fs.rename(new Path(fileToProcess), new Path(fileInProcess))
 
       try {
-        runExpand(spark, fileInProcess, nDays, simMatrixHits, predMatrixHits)
+        runExpand(spark, fileInProcess, nDays, simMatrixHits, simThreshold, predMatrixHits)
       } catch {
         case e: Throwable => {
           var errorMessage = e.toString()
@@ -106,6 +107,7 @@ object Item2Item {
                 filePath: String,
                 nDays: Int = -1,
                 simMatrixHits: String = "binary",
+                simThreshold: Double = 0.05,
                 predMatrixHits: String = "binary") {
     import spark.implicits._
 
@@ -164,7 +166,7 @@ object Item2Item {
           usersSegmentsData,
           segments.size,
           nSegmentToExpand,
-          0.05,
+          simThreshold,
           simMatrixHits)
       else
         null
@@ -190,6 +192,7 @@ object Item2Item {
               country: String,
               nDays: Int = -1,
               simMatrixHits: String = "binary",
+              simThreshold: Double = 0.05,
               predMatrixHits: String = "binary",
               k: Int = 1000) {
     import spark.implicits._
@@ -235,7 +238,7 @@ object Item2Item {
                                       usersSegmentsData,
                                       segments.size,
                                       nSegmentToExpand,
-                                      0.05,
+                                      simThreshold,
                                       simMatrixHits,
                                       true)
       expand(spark,
@@ -497,7 +500,8 @@ object Item2Item {
     }
     else{ 
       val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._3 contains segmentIdx)).toArray))
-      val userPredictions = maskedScores.join(maskedRelevant).map(tup => (tup._2._2, tup._2._1))
+      val defaultPrediction = selSegmentsIdx.map(segmentIdx => false).toArray
+      val userPredictions = maskedScores.rightOuterJoin(maskedRelevant).map(tup => (tup._2._2, if(tup._2._1 != null) tup._2._1 else defaultPrediction ))
       writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
     }
 
@@ -949,6 +953,8 @@ object Item2Item {
         nextOption(map ++ Map('testSize -> value), tail)
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value), tail)
+      case "--simThreshold" :: value :: tail =>
+        nextOption(map ++ Map('simThreshold -> value), tail)
     }
   }
 
@@ -981,11 +987,13 @@ object Item2Item {
       if (options.contains('testSize)) options('testSize).toInt else 1000
     val nDays =
       if (options.contains('nDays)) options('nDays).toInt else -1
+    val simThreshold =
+      if (options.contains('simThreshold)) options('simThreshold).toDouble else 0.05
     if(isTest)
-      runTest(spark, testCountry, nDays, simHits, predHits, testSize)
+      runTest(spark, testCountry, nDays, simHits, simThreshold, predHits, testSize)
     else if(filePath.length > 0)
-      runExpand(spark, filePath, nDays, simHits, predHits)
+      runExpand(spark, filePath, nDays, simHits, simThreshold, predHits)
     else
-      processPendingJobs(spark, nDays, simHits, predHits)
+      processPendingJobs(spark, nDays, simHits, simThreshold, predHits)
   }
 }
