@@ -197,7 +197,7 @@ object Item2Item {
               k: Int = 1000) {
     import spark.implicits._
     val expandInput = getSegmentsToTest(k)
-    val metaInput: Map[String, String] = Map("country" -> country)
+    val metaInput: Map[String, String] = Map("country" -> country, "job_id" -> "", "partner_id" -> "")
 
     val nSegmentToExpand = expandInput.length
     val baseFeatureSegments = getBaseFeatureSegments()
