@@ -38,7 +38,7 @@ object DataExporter {
         .option("header", "true")
         .option("delimiter","\t")
         .option("compression", "gzip")
-        .save(out_path + "/" + day)
+        .save(out_path + "/" + day.replace("/", ""))
           
   }
   
