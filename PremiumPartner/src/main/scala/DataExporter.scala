@@ -32,7 +32,7 @@ object DataExporter {
         .select( customm_filter.columns.map( r => regexp_replace(col(r), "\u0001", del).alias(r) ): _* )
       
     // store the results.
-    ready.write.repartition(24)
+    data_final.write.repartition(24)
         .mode("overwrite")
         .format("csv")
         .option("header", "true")
