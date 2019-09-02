@@ -72,7 +72,7 @@ object keywordIngestion {
       .drop("count", "scores")
       .dropDuplicates("url")
 
-    df
+    processed
   }
 
   /**
