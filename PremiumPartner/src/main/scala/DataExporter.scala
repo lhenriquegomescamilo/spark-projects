@@ -124,7 +124,7 @@ object DataExporter {
     val lista = fs.listStatus(new Path("/data/exports/"))
 
     lista.filter(x => x.getPath.toString.endsWith(".meta") )
-        .foreach(x => download_data(spark, x.getPath, nDays, from)//println(x.getPath))
+        .foreach(x => download_data(spark, x.getPath, nDays, from))//println(x.getPath))
 
     // Finally, we download the data
     //download_data(spark, nDays, from)
