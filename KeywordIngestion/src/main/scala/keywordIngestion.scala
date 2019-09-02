@@ -52,41 +52,32 @@ object keywordIngestion {
     val df = spark.read
       .format("csv")
       .load(dfs: _*)
-
-    val stem_column = if (df.columns.contains("_c6")) "_c6" else "_c3"
+      .withColumnRenamed("_c0", "url")
+      .withColumnRenamed("_c1", "count")
+      .withColumnRenamed("_c2", "country_web")
+      .withColumnRenamed("_c3", "content_keys")
+      .withColumnRenamed("_c4", "scores")
+      .withColumn("content_keys", split(col("content_keys"), " "))
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+      .drop("count", "scores")
+      .na
+      .drop()
+      .dropDuplicates("url")
 
     val processed =
       if (df.columns.contains("_c6"))
-        df.withColumnRenamed("_c0", "url")
-          .withColumnRenamed("_c1", "count")
-          .withColumnRenamed("_c2", "country_web")
-          .withColumnRenamed("_c3", "content_keys")
-          .withColumnRenamed("_c4", "scores")
-          .withColumnRenamed("_c5", "domain")
+        df.withColumnRenamed("_c5", "domain")
           .withColumnRenamed("_c6", "stemmed_keys")
-          .withColumn("content_keys", split(col("content_keys"), " "))
           .withColumn("stemmed_keys", split(col("stemmed_keys"), " "))
-          .withColumn(
-            "url",
-            regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-          )
-          .drop("count", "scores")
-          .dropDuplicates("url")
-      else
-        df.withColumnRenamed("_c0", "url")
-          .withColumnRenamed("_c1", "count")
-          .withColumnRenamed("_c2", "country_web")
-          .withColumnRenamed("_c3", "content_keys")
-          .withColumnRenamed("_c4", "scores")
-          .withColumnRenamed("_c5", "domain")
-          .withColumn("content_keys", split(col("content_keys"), " "))
+      else if (df.columns.contains("_c5"))
+        df.withColumnRenamed("_c5", "domain")
           .withColumn("stemmed_keys", col("content_keys"))
-          .withColumn(
-            "url",
-            regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-          )
-          .drop("count", "scores")
-          .dropDuplicates("url")
+      else
+        df.withColumn("domain", lit(""))
+          .withColumn("stemmed_keys", col("content_keys"))
 
     processed
   }
