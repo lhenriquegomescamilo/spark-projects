@@ -6,76 +6,21 @@ import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.hadoop.fs.Path
 
-
 object keywordIngestion {
 
   /**
-    * Este metodo se encarga de generar un archivo de la pinta <device_id, url_keywords, content_keys, all_segments, country>
-    * utilizando la data ubicada en data_keywords_p. Siendo url_keywords y content_keywords listas de keywords separadas por ','
-    * y all_segments una lista de segmentos tambien separada por ','.
-    * La diferencia principal con el metodo get_data_for_queries es que este
-    * metodo formatea los datos para que puedan ser ingestados en elastic (se agrega c_ al country, as_ a cada segmento)
-    * Una vez generado el dataframe se lo guarda en formato tsv dentro de /datascience/data_keywords_elastic/
-    * Los parametros que recibe son:
+    * This method reads the data from the selected keywords, processes them and returns them as a DataFrame.
+    * This data contains the following columns:
+    *    - URL
+    *    - Count
+    *    - Country
+    *    - Keywords
+    *    - TF/IDF Scores
+    *    - Domain
+    *    - Stemmed keywords
     *
-    * @param spark: Spark session object que sera utilizado para cargar los DataFrames.
-    * @param today: Es un string con el dia actual (se utilizara el dia como nombre de archivo al guardar).
-    *
+    * The URL is parsed in such a way that it is easier to join with data_audiences.
     */
-  def get_data_for_elastic(spark: SparkSession, today: String) {
-    // Armamos el archivo que se utilizara para ingestar en elastic
-    val udfAs = udf(
-      (segments: Seq[String]) => segments.map(token => "as_" + token)
-    )
-    val udfCountry = udf((country: String) => "c_" + country)
-    val udfXp = udf(
-      (segments: Seq[String], et: String) =>
-        if (et == "xp") segments :+ "xp"
-        else segments
-    )
-    val udfJoin = udf(
-      (lista: Seq[String]) =>
-        if (lista.length > 0) lista.reduce((seg1, seg2) => seg1 + "," + seg2)
-        else ""
-    )
-    /// Leemos la data del dia actual previamente generada
-    val joint = spark.read
-      .format("parquet")
-      .load("/datascience/data_keywords_p/day=%s".format(today))
-
-    /// Formateamos la data en formato elastic
-    val to_csv = joint
-      .select(
-        "device_id",
-        "url_keys",
-        "content_keys",
-        "all_segments",
-        "event_type",
-        "country"
-      )
-      .withColumn("all_segments", udfAs(col("all_segments")))
-      .withColumn("all_segments", udfXp(col("all_segments"), col("event_type")))
-      .withColumn("country", udfCountry(col("country")))
-      .withColumn("all_segments", udfJoin(col("all_segments")))
-      .withColumn("url_keys", udfJoin(col("url_keys")))
-      .select(
-        "device_id",
-        "url_keys",
-        "content_keys",
-        "all_segments",
-        "country"
-      )
-
-    to_csv
-      .repartition(100)
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("csv")
-      .option("sep", "\t")
-      .save("/datascience/data_keywords_elastic/%s.csv".format(today))
-
-  }
-
   def getKeywordsByURL(
       spark: SparkSession,
       ndays: Int,
@@ -118,9 +63,23 @@ object keywordIngestion {
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
       )
       .drop("count", "scores")
+      .na
+      .drop()
       .dropDuplicates("url")
 
-    df
+    val processed =
+      if (df.columns.contains("_c6"))
+        df.withColumnRenamed("_c5", "domain")
+          .withColumnRenamed("_c6", "stemmed_keys")
+          .withColumn("stemmed_keys", split(col("stemmed_keys"), " "))
+      else if (df.columns.contains("_c5"))
+        df.withColumnRenamed("_c5", "domain")
+          .withColumn("stemmed_keys", col("content_keys"))
+      else
+        df.withColumn("domain", lit(""))
+          .withColumn("stemmed_keys", col("content_keys"))
+
+    processed
   }
 
   /**
@@ -129,42 +88,18 @@ object keywordIngestion {
     * keywords de dicha data.
     */
   def getAudienceData(spark: SparkSession, today: String): DataFrame = {
-    // En primer lugar definimos un par de funciones que seran de utilidad
-    // La primer funcion sirve para eliminar todos los tokens que tienen digitos
-    val udfFilter = udf(
-      (segments: Seq[String]) =>
-        segments.filter(token => !(token.matches("\\d*")))
-    )
-
-    // Esta funcion toma el campo segments y all_segments y los pone todos en un mismo listado
-    val udfGetSegments = udf(
-      (segments: Seq[String], all_segments: Seq[String], event_type: String) =>
-        (segments
-          .map(s => "s_%s".format(s))
-          .toList ::: all_segments.map(s => "as_%s".format(s)).toList)
-          .map(s => "%s%s".format((if (event_type == "xp") "xp" else ""), s))
-          .toSeq
-    )
-
-    // Finalme
     spark.read
       .option("basePath", "/datascience/data_audiences_streaming/")
-      .parquet("/datascience/data_audiences_streaming/hour=%s*".format(today)) // Leemos la data
-      //.repartition(500)
-      .withColumn(
-        "segments",
-        udfGetSegments(col("segments"), col("all_segments"), col("event_type"))
-      ) // En este punto juntamos todos los segmentos en una misma columna
+      .parquet("/datascience/data_audiences_streaming/hour=%s*".format(today)) // We read the data
       .withColumn(
         "url",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
+      ) // Standarize the URL
       .select(
         "device_id",
         "device_type",
         "url",
-        "country",
-        "segments"
+        "country"
       )
   }
 
@@ -197,7 +132,7 @@ object keywordIngestion {
     val URLkeys = (0 until replicationFactor)
       .map(
         i =>
-          getKeywordsByURL(spark, ndays, today, 1)
+          getKeywordsByURL(spark, ndays, today, since)
             .withColumn("composite_key", concat(col("url"), lit("@"), lit(i)))
       )
       .reduce((df1, df2) => df1.unionAll(df2))
@@ -217,20 +152,33 @@ object keywordIngestion {
       )
     )
 
+    // This function appends two columns
+    val zip = udf((xs: Seq[String], ys: Seq[String]) => xs.zip(ys))
+
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
     val joint = df_audiences
       .join(URLkeys, Seq("composite_key"))
       .drop("composite_key")
-      .withColumn("content_keys", explode(col("content_keys")))
-      .groupBy("device_id", "device_type", "country", "content_keys")
-      // .agg(
-      //   // collect_list("segments").as("segments"),
-      //   // collect_list("url").as("url"),
-      //   collect_list("content_keys").as("content_keys")
-      // )
-      // .withColumn("content_keys", flatten(col("content_keys")))
-      // .withColumn("segments", flatten(col("segments")))
-      // .withColumn("url", concat_ws("|", col("url")))
+      .withColumn(
+        "keys",
+        explode(zip(col("content_keys"), col("stemmed_keys")))
+      )
+      .select(
+        col("device_id"),
+        col("device_type"),
+        col("country"),
+        col("keys._1").alias("content_keys"),
+        col("keys._2").alias("stemmed_keys"),
+        col("domain")
+      )
+      .groupBy(
+        "device_id",
+        "device_type",
+        "country",
+        "content_keys",
+        "stemmed_keys",
+        "domain"
+      )
       .count()
       .withColumn("day", lit(today)) // Agregamos el dia
 
@@ -245,9 +193,9 @@ object keywordIngestion {
   def main(args: Array[String]) {
     /// Configuracion spark
     val spark = SparkSession.builder
-          .appName("keyword ingestion")
-          .config("spark.sql.files.ignoreCorruptFiles", "true")
-          .getOrCreate()
+      .appName("keyword ingestion")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .getOrCreate()
     val ndays = if (args.length > 0) args(0).toInt else 10
     val since = if (args.length > 1) args(1).toInt else 1
     val actual_day = if (args.length > 2) args(2).toInt else 1
@@ -255,18 +203,5 @@ object keywordIngestion {
     val today = DateTime.now().minusDays(actual_day).toString("yyyyMMdd")
 
     get_data_for_queries(spark, ndays, today, since, replicationFactor = 4)
-
-    // val today = DateTime.now().minusDays(1)
-    // val days = (0 until 20).map(
-    //   since =>
-    //     get_data_for_queries(
-    //       spark,
-    //       ndays,
-    //       today.minusDays(since).toString("yyyyMMdd"),
-    //       since
-    //     )
-    // )
-
-    //get_data_for_elastic(spark,today)
   }
 }

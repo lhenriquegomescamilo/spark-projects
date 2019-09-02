@@ -451,21 +451,21 @@ object Item2Item {
     val sizeMin = expandInput.map(m => m("size").toString.toInt).min
 
     val rankTmpPath = getTmpPathNames(metaParameters)("rank")
-    if (!existsTmpFiles(spark, metaParameters)("rank")){
-      var rankedScoreDF = scoreMatrix
-        .flatMap(tup =>  selSegmentsIdx
-                            .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))) .filter(tup => tup._2 >0) // remove scores <= 0
-                ) //<segment_idx, score>
-        .toDF("segment_idx", "score")
-        .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
-        .filter($"rank" <= sizeMax)
-        .filter($"rank" >= sizeMin)
-        .write
-        .mode(SaveMode.Overwrite)
-        .format("parquet")
-        .partitionBy("segment_idx")
-        .save(rankTmpPath)
-    }
+  
+    var rankedScoreDF = scoreMatrix
+      .flatMap(tup =>  selSegmentsIdx
+                          .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))) .filter(tup => tup._2 >0) // remove scores <= 0
+              ) //<segment_idx, score>
+      .toDF("segment_idx", "score")
+      .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
+      .filter($"rank" <= sizeMax)
+      .filter($"rank" >= sizeMin)
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("parquet")
+      .partitionBy("segment_idx")
+      .save(rankTmpPath)
+
 
     def getScore(segmentIdx: Int): Double = {
       val partitionPath = rankTmpPath + "segment_idx=%s/".format(segmentIdx)
