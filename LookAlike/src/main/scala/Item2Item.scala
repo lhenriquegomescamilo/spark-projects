@@ -314,6 +314,7 @@ object Item2Item {
                     
     // Collect the distributed matrix on the driver
     var localMartix = simSymmetric.toBlockMatrix().toLocalMatrix()
+    //l2 =localMartix.colIter().map().rows.map(row => Math.sqrt(Vectors.norm(row, 2))).collect() TODO normalize to apply cosine
     localMartix
   }
 
@@ -466,6 +467,24 @@ object Item2Item {
       .partitionBy("segment_idx")
       .save(rankTmpPath)
 
+ /*
+    var rankedScoreDF = scoreMatrix
+      .flatMap(tup =>  selSegmentsIdx                     // round .001
+                          .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx) )) .filter(tup => tup._2 >0) // remove scores <= 0
+              ) //<segment_idx, score>
+       //.reduceByKey or countByKey
+       // <segment_id, score, count>
+       // group by segment_id -> [(scores, count)]
+      .toDF("segment_idx", "score")
+      .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
+      .filter($"rank" <= sizeMax)
+      .filter($"rank" >= sizeMin)
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("parquet")
+      .partitionBy("segment_idx")
+      .save(rankTmpPath)
+*/
 
     def getScore(segmentIdx: Int): Double = {
       val partitionPath = rankTmpPath + "segment_idx=%s/".format(segmentIdx)
