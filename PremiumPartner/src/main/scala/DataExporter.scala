@@ -1,6 +1,6 @@
 package main.scala
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.functions.{lit, length, split, col}
+import org.apache.spark.sql.functions.{lit, length, split, col, regexp_replace}
 import org.apache.spark.sql.types.IntegerType
 import org.apache.spark.sql.SparkSession
 import org.joda.time.{DateTime, Days}
