@@ -6,6 +6,8 @@ import org.apache.spark.sql.SparkSession
 import org.joda.time.{DateTime, Days}
 
 object DataExporter {
+  import spark.implicits._
+  
   def process_day(spark: SparkSession, day:String, columns: Seq[String], 
         ids_partners: Seq[String],
         filters: Seq[String],
@@ -53,8 +55,7 @@ object DataExporter {
    * @param from: number of days to be skipped. Integer.
    **/
   def download_data(spark: SparkSession, meta: String, nDays: Int, from: Int): Unit = {
-    import spark.implicits._
-    
+
     val configs = spark.read
             .format("csv")
             .option("sep", ":")
