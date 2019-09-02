@@ -53,7 +53,8 @@ object DataExporter {
    * @param from: number of days to be skipped. Integer.
    **/
   def download_data(spark: SparkSession, meta: String, nDays: Int, from: Int): Unit = {
-
+    import spark.implicits._
+    
     val configs = spark.read
             .format("csv")
             .option("sep", ":")
