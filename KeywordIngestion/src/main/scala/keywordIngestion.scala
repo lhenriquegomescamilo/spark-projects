@@ -6,21 +6,21 @@ import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.hadoop.fs.Path
 
-
 object keywordIngestion {
+
   /**
-   * This method reads the data from the selected keywords, processes them and returns them as a DataFrame. 
-   * This data contains the following columns:
-   *    - URL
-   *    - Count
-   *    - Country
-   *    - Keywords
-   *    - TF/IDF Scores
-   *    - Domain
-   *    - Stemmed keywords
-   * 
-   * The URL is parsed in such a way that it is easier to join with data_audiences.
-  */
+    * This method reads the data from the selected keywords, processes them and returns them as a DataFrame.
+    * This data contains the following columns:
+    *    - URL
+    *    - Count
+    *    - Country
+    *    - Keywords
+    *    - TF/IDF Scores
+    *    - Domain
+    *    - Stemmed keywords
+    *
+    * The URL is parsed in such a way that it is easier to join with data_audiences.
+    */
   def getKeywordsByURL(
       spark: SparkSession,
       ndays: Int,
@@ -55,22 +55,38 @@ object keywordIngestion {
 
     val stem_column = if (df.columns.contains("_c6")) "_c6" else "_c3"
 
-    val processed = df
-      .withColumnRenamed("_c0", "url")
-      .withColumnRenamed("_c1", "count")
-      .withColumnRenamed("_c2", "country_web")
-      .withColumnRenamed("_c3", "content_keys")
-      .withColumnRenamed("_c4", "scores")
-      .withColumnRenamed("_c5", "domain")
-      .withColumnRenamed(stem_column, "stemmed_keys")
-      .withColumn("content_keys", split(col("content_keys"), " "))
-      .withColumn("stemmed_keys", split(col("stemmed_keys"), " "))
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
-      .drop("count", "scores")
-      .dropDuplicates("url")
+    val processed =
+      if (df.columns.contains("_c6"))
+        df.withColumnRenamed("_c0", "url")
+          .withColumnRenamed("_c1", "count")
+          .withColumnRenamed("_c2", "country_web")
+          .withColumnRenamed("_c3", "content_keys")
+          .withColumnRenamed("_c4", "scores")
+          .withColumnRenamed("_c5", "domain")
+          .withColumnRenamed("_c6", "stemmed_keys")
+          .withColumn("content_keys", split(col("content_keys"), " "))
+          .withColumn("stemmed_keys", split(col("stemmed_keys"), " "))
+          .withColumn(
+            "url",
+            regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+          )
+          .drop("count", "scores")
+          .dropDuplicates("url")
+      else
+        df.withColumnRenamed("_c0", "url")
+          .withColumnRenamed("_c1", "count")
+          .withColumnRenamed("_c2", "country_web")
+          .withColumnRenamed("_c3", "content_keys")
+          .withColumnRenamed("_c4", "scores")
+          .withColumnRenamed("_c5", "domain")
+          .withColumn("content_keys", split(col("content_keys"), " "))
+          .withColumn("stemmed_keys", col("content_keys"))
+          .withColumn(
+            "url",
+            regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+          )
+          .drop("count", "scores")
+          .dropDuplicates("url")
 
     processed
   }
@@ -152,9 +168,26 @@ object keywordIngestion {
     val joint = df_audiences
       .join(URLkeys, Seq("composite_key"))
       .drop("composite_key")
-      .withColumn("keys", explode(zip(col("content_keys"), col("stemmed_keys"))))
-      .select(col("device_id"), col("device_type"), col("country"), col("keys._1").alias("content_keys"), col("keys._2").alias("stemmed_keys"), col("domain"))
-      .groupBy("device_id", "device_type", "country", "content_keys", "stemmed_keys", "domain")
+      .withColumn(
+        "keys",
+        explode(zip(col("content_keys"), col("stemmed_keys")))
+      )
+      .select(
+        col("device_id"),
+        col("device_type"),
+        col("country"),
+        col("keys._1").alias("content_keys"),
+        col("keys._2").alias("stemmed_keys"),
+        col("domain")
+      )
+      .groupBy(
+        "device_id",
+        "device_type",
+        "country",
+        "content_keys",
+        "stemmed_keys",
+        "domain"
+      )
       .count()
       .withColumn("day", lit(today)) // Agregamos el dia
 
@@ -169,9 +202,9 @@ object keywordIngestion {
   def main(args: Array[String]) {
     /// Configuracion spark
     val spark = SparkSession.builder
-          .appName("keyword ingestion")
-          .config("spark.sql.files.ignoreCorruptFiles", "true")
-          .getOrCreate()
+      .appName("keyword ingestion")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .getOrCreate()
     val ndays = if (args.length > 0) args(0).toInt else 10
     val since = if (args.length > 1) args(1).toInt else 1
     val actual_day = if (args.length > 2) args(2).toInt else 1
