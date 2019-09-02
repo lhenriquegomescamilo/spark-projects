@@ -8,7 +8,7 @@ import org.joda.time.{DateTime, Days}
 object DataExporter {
   def process_day(spark: SparkSession, day:String, columns: Seq[String], 
         ids_partners: Seq[String],
-        filters: Seq[String],
+        filters: String,
         out_path: String,
         del: String) = {
     
