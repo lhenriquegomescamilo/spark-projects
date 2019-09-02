@@ -6,14 +6,13 @@ import org.apache.spark.sql.SparkSession
 import org.joda.time.{DateTime, Days}
 
 object DataExporter {
-  import spark.implicits._
-  
   def process_day(spark: SparkSession, day:String, columns: Seq[String], 
         ids_partners: Seq[String],
         filters: Seq[String],
         out_path: String,
         del: String) = {
-
+    
+    import spark.implicits._
     val data = spark.read.format("csv")
         .option("sep", "\t")
         .option("header", "true")
