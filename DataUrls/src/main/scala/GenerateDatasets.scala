@@ -81,45 +81,40 @@ object GenerateDatasetsUrls {
 
     
     // Training Data
-    val gtDF = get_url_gt(spark,ndays,since,country,segments)
-                    .withColumn("country",lit(country))
-                    .withColumnRenamed("_c0","url")
-                    .withColumnRenamed("_c1","segments")
+    val gtDF = get_url_gt(spark,ndays,since,country,segments).withColumn("country",lit(country))
     
     gtDF.write
-        .format("csv")
         .mode(SaveMode.Overwrite)
         .partitionBy("country")
         .save("/datascience/data_url_classifier/gt")
 
     val data_keywords_content = DatasetKeywordContent.get_url_content(spark,
-                                                      ndays,
-                                                      since,
-                                                      country,
-                                                      4,
-                                                      gtDF,
-                                                      "inner")
+                                                        country = country,
+                                                        since = since,
+                                                        ndays = ndays,
+                                                        gtDF = gtDF,
+                                                        joinType = "inner" )
 
     val data_referer = DatasetReferer.get_url_referer(spark,
-                                                      ndays,
-                                                      since,
-                                                      country,
-                                                      data_keywords_content,
-                                                      "left")
+                                                        country = country,
+                                                        since = since,
+                                                        ndays = ndays,
+                                                        gtDF = data_keywords_content,
+                                                        joinType = "left" )
 
     val data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
-                                                      ndays,
-                                                      since,
-                                                      country,
-                                                      data_referer,
-                                                      "left")
-/*
-    val data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
-                                                      ndays,
-                                                      since,
-                                                      country,
-                                                      data_timestamp,
-                                                      "left")
-*/
+                                                        country = country,
+                                                        since = since,
+                                                        ndays = ndays,
+                                                        gtDF = data_referer,
+                                                        joinType = "left" )
+
+    //val data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
+    //                                                  ndays,
+    //                                                 since,
+    //                                                  country,
+    //                                                  data_timestamp,
+    //                                                  "left")
+
   }
 }
