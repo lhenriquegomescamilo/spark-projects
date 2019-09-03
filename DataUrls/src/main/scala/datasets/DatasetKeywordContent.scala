@@ -166,10 +166,12 @@ object DatasetKeywordContent {
       .drop("composite_key","count")
       .withColumn("content_keys", explode(col("content_keys")))
       .withColumn("country", lit(country))
+      .withColumn("count", lit(1))
       .groupBy("url", "content_keys","segments","country")
-      .agg(count("url").as("count"))
+      .agg(sum("count").as("count"))
 
     joint.write
+      .format("csv")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_keywords")
