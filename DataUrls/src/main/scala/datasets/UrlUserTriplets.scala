@@ -30,6 +30,10 @@ object UrlUserTriplets {
     // Load the data from data_urls pipeline
     val data_urls = getDataUrls(spark, nDays, from)
       .select("device_id", "url", "country")
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
       .groupBy("device_id", "url", "country")
       .count()
 
