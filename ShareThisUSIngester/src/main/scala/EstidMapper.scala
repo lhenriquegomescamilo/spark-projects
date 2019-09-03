@@ -76,7 +76,45 @@ object EstidMapper {
     cross_deviced.write.mode(SaveMode.Overwrite).save(output_path)
   }
 
+  def download_data(spark: SparkSession, nDays: Int, from: Int): Unit = {
+    val format = "yyyy/MM/dd"
+    val end   = DateTime.now.minusDays(from)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    days.foreach(day => getEstIdsMatching(spark, day))
+  }
+
+  type OptionMap = Map[Symbol, Int]
+
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--from" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toInt), tail)
+    }
+  }
+
   def main(args: Array[String]) {
+    val options = nextOption(Map(), args.toList)
+    val nDays = if (options.contains('nDays)) options('nDays) else 1
+    val from = if (options.contains('from)) options('from) else 1
+
+    val spark = SparkSession.builder
+        .appName("Run matching estid-device_id")
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
+        .getOrCreate()
+
+    download_data(spark, nDays, from)
+
+    if (DateTime.now.getDayOfWeek()==7){
+      crossDeviceTable(spark)
+    }
+  }
+
+  /*def main(args: Array[String]) {
     val spark = SparkSession.builder
         .appName("Run matching estid-device_id")
         .config("spark.sql.files.ignoreCorruptFiles", "true")
@@ -94,5 +132,5 @@ object EstidMapper {
     if (DateTime.now.getDayOfWeek()==7){
       crossDeviceTable(spark)
     }
-  }
+  }*/
 }
