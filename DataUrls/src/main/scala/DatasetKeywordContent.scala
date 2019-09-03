@@ -102,7 +102,8 @@ object DatasetKeywordContent {
       since: Int,
       country: String,
       replicationFactor: Int = 4,
-      gtDF: DataFrame
+      gtDF: DataFrame,
+      joinType:String
   ): DataFrame =  {
 
     // We add the composite key to the gt data in order to do an improved join
@@ -131,7 +132,7 @@ object DatasetKeywordContent {
 
     // Smart join between data GT (<url, segments>) and urls with content_keywords
     val joint = urls
-      .join(URLkeys, Seq("composite_key"))
+      .join(URLkeys, Seq("composite_key"),joinType)
       .drop("composite_key")
       .withColumn("content_keys", explode(col("content_keys")))
       .groupBy("url", "content_keys","segments")
@@ -178,6 +179,6 @@ object DatasetKeywordContent {
 
     val gtDF = get_url_gt(spark,ndays,since,country,segments)
 
-    get_url_content(spark, country = country, since = since, ndays = ndays, gtDF = gtDF )
+    get_url_content(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner" )
   }
 }
