@@ -104,7 +104,7 @@ object DatasetTimestamp {
   def main(args: Array[String]) {
     // Spark configuration
     val spark = SparkSession.builder
-      .appName("Data URLs: Dataset Referer")
+      .appName("Data URLs: Dataset Timestamp")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode","dynamic")
       .getOrCreate()
