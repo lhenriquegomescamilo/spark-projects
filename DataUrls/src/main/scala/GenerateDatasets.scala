@@ -5,7 +5,6 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.broadcast
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
@@ -89,7 +88,7 @@ def get_data_urls(
                                                         ndays = ndays,
                                                         gtDF = gtDF,
                                                         joinType = "inner" )
-
+/**
     val data_referer = DatasetReferer.get_url_referer(spark,
                                                         country = country,
                                                         since = since,
@@ -117,6 +116,6 @@ def get_data_urls(
         .mode(SaveMode.Overwrite)
         .partitionBy("country")
         .save("/datascience/data_url_classifier/gt")
-
+**/
   }
 }
