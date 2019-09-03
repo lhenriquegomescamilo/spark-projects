@@ -372,6 +372,7 @@ object Item2Item {
     import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
     import org.apache.spark.sql.expressions.Window
     import org.apache.spark.sql.functions.row_number
+    import scala.math.BigDecimal
 
     val country = metaParameters("country")
     val jobId = metaParameters("job_id")
@@ -474,11 +475,13 @@ object Item2Item {
     // It gets the score thresholds to get at least k elements per segment.
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
     val sizeMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
-    val sizeMax = expandInput.map(m => m("size").toString.toInt).max
-    val sizeMin = expandInput.map(m => m("size").toString.toInt).min
+    //val sizeMax = expandInput.map(m => m("size").toString.toInt).max
+    //val sizeMin = expandInput.map(m => m("size").toString.toInt).min
 
+    
+  /*
     val rankTmpPath = getTmpPathNames(metaParameters)("rank")
-  
+
     var rankedScoreDF = scoreMatrix
       .flatMap(tup =>  selSegmentsIdx
                           .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))) .filter(tup => tup._2 >0) // remove scores <= 0
@@ -492,25 +495,6 @@ object Item2Item {
       .format("parquet")
       .partitionBy("segment_idx")
       .save(rankTmpPath)
-
- /*
-    var rankedScoreDF = scoreMatrix
-      .flatMap(tup =>  selSegmentsIdx                     // round .001
-                          .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx) )) .filter(tup => tup._2 >0) // remove scores <= 0
-              ) //<segment_idx, score>
-       //.reduceByKey or countByKey
-       // <segment_id, score, count>
-       // group by segment_id -> [(scores, count)]
-      .toDF("segment_idx", "score")
-      .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
-      .filter($"rank" <= sizeMax)
-      .filter($"rank" >= sizeMin)
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("parquet")
-      .partitionBy("segment_idx")
-      .save(rankTmpPath)
-*/
 
     def getScore(segmentIdx: Int): Double = {
       val partitionPath = rankTmpPath + "segment_idx=%s/".format(segmentIdx)
@@ -529,6 +513,25 @@ object Item2Item {
     }
 
     val minScoreMap = selSegmentsIdx.map(segmentIdx => (segmentIdx, getScore(segmentIdx))).toMap
+
+    */
+    val minScoreMap = scoreMatrix
+      .flatMap(tup =>  selSegmentsIdx
+                           .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))).filter(tup => tup._2 >0) // remove scores <= 0
+              ) //<segment_idx, score>
+      .map(tup => ((tup._1,BigDecimal(tup._2).setScale(3, BigDecimal.RoundingMode.FLOOR).toDouble), 1L)) //<(segment_idx, rounded score) , 1L>
+      .reduceByKey(_ + _) // count by <segment_idx, rounded score>
+      .map{ case ((segment_idx, score), cnt) => (segment_idx, (score, cnt)) } //<(segment_idx, (rounded score , count) >
+      .groupByKey // group scores by segments
+      .map{ case (segment_idx, l) => (segment_idx, l.toList.sortWith(_._1 > _._1) ) } //<(segment_idx, List(rounded score , count) sorted by scores >
+      .map{ case (segment_idx, l) => 
+        (segment_idx, 
+         l.zipWithIndex
+         .filter({ case (v, i) => l.map(v => v._2).slice(0,i+1).sum > sizeMap(segment_idx) })
+         .lift(0).getOrElse((0.0,0), 0)._1._1  ) } // cumulative count sum by th
+      .collect
+      .toMap
+
     println("Lookalike LOG: threshold scores")
     println(minScoreMap)
 
@@ -555,7 +558,7 @@ object Item2Item {
     // delete temp files
     fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
     fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
-    fs.delete(new org.apache.hadoop.fs.Path(rankTmpPath), true)
+    //fs.delete(new org.apache.hadoop.fs.Path(rankTmpPath), true)
   }
 
   /*
