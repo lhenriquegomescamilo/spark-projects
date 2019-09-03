@@ -83,6 +83,8 @@ object GenerateDatasetsUrls {
     // Training Data
     val gtDF = get_url_gt(spark,ndays,since,country,segments)
                     .withColumn("country",lit(country))
+                    .withColumnRenamed("_c0","url")
+                    .withColumnRenamed("_c1","segments")
     
     gtDF.write
         .format("csv")

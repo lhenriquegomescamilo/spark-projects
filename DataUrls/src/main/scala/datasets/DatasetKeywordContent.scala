@@ -149,9 +149,9 @@ object DatasetKeywordContent {
       .join(URLkeys, Seq("composite_key"),joinType)
       .drop("composite_key","count")
       .withColumn("content_keys", explode(col("content_keys")))
-      .groupBy("url", "content_keys","segments")
-      .count()
       .withColumn("country", lit(country))
+      .groupBy("url", "content_keys","segments","country")
+      .agg(sum("count").as("count"))
 
     joint.write
       .mode(SaveMode.Overwrite)
