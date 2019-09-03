@@ -451,7 +451,6 @@ object Item2Item {
     }
     */
 
-    var indexedRows = indexedRows.rows.map()
     val userSegmentMatrix = new IndexedRowMatrix(indexedRows)
 
     // write scores in temporal file
