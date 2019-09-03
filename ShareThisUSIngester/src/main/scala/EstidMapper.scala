@@ -18,15 +18,15 @@ object EstidMapper {
       .option("header", "true")
       .load("/data/eventqueue/%s/*.tsv.gz".format(day))
       .filter(
-        "d17 is not null and country = 'US' and event_type IN ('sync', 'ltm_sync')"
+        "d17 is not null and event_type IN ('sync', 'ltm_sync')"
       )
-      .select("d17", "device_id", "device_type")
+      .select("d17", "device_id", "device_type", "country")
       .withColumn("day", lit(day.replace("/", "")))
       .dropDuplicates()
 
     df.write
       .format("parquet")
-      .partitionBy("day")
+      .partitionBy("day", "country")
       .mode("append")
       .save("/datascience/sharethis/estid_table/")
   }
@@ -49,8 +49,6 @@ object EstidMapper {
 
     df
   }
-
-
 
   def crossDeviceTable(spark: SparkSession) = {
     // Get the estid table
@@ -79,8 +77,10 @@ object EstidMapper {
   }
 
   def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Run matching estid-device_id").getOrCreate()
+    val spark = SparkSession.builder
+        .appName("Run matching estid-device_id")
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
+        .getOrCreate()
 
     val today = DateTime.now()
     val days = (1 until 2).map(
