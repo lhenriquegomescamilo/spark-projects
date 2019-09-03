@@ -59,7 +59,7 @@ object UrlUserTriplets {
 
   def main(args: Array[String]) {
     // Parse the parameters
-    val options = nextOption(Map(), Args.toList)
+    val options = nextOption(Map(), args.toList)
     val nDays = if (options.contains('nDays)) options('nDays) else 30
     val from = if (options.contains('from)) options('from) else 1
 
