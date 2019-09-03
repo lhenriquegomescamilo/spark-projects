@@ -529,6 +529,7 @@ object Item2Item {
          l.zipWithIndex
          .filter({ case (v, i) => l.map(v => v._2).slice(0,i+1).sum > sizeMap(segment_idx) })
          .lift(0).getOrElse((0.0,0), 0)._1._1  ) } // cumulative count sum by th
+      .filter{ case (segment_idx, score): score > 0 }
       .collect
       .toMap
 
@@ -537,8 +538,8 @@ object Item2Item {
 
     var maskedScores = scoreMatrix
       .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => 
-                                (minScoreMap(segmentIdx) > 0.0 && tup._2.apply(segmentIdx) >= minScoreMap(segmentIdx)) || 
-                                (minScoreMap(segmentIdx) == 0.0 &&  tup._2.apply(segmentIdx) > 0.0 )).toArray ))
+                                (minScoreMap contains segmentIdx && tup._2.apply(segmentIdx) >= minScoreMap(segmentIdx)) || 
+                                (!(minScoreMap contains segmentIdx) && tup._2.apply(segmentIdx) > 0.0 )).toArray ))
       .filter(tup=> tup._2.reduce(_||_))
       // <device_idx, array(boolean))>
 
