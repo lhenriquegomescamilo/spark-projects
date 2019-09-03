@@ -319,7 +319,7 @@ object Item2Item {
     val nRows = localMartix.numRows
     val nCols = localMartix.numCols
     val values = for (j <- 0 until nCols; i <- 0 until nRows) yield {
-      var norm = if(colcolNormssL2.apply(j) > 0) colNorms.apply(j) else 1.0
+      var norm = if(colNorms.apply(j) > 0) colNorms.apply(j) else 1.0
       if (i!=j) localMartix.apply(i, j) / norm else diagonalValue
     }
     localMartix = new DenseMatrix(nRows, nCols, values.toArray)
