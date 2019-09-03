@@ -104,12 +104,13 @@ object GenerateDatasetsUrls {
                                                       country,
                                                       data_referer,
                                                       "left")
-
+/*
     val data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
                                                       ndays,
                                                       since,
                                                       country,
                                                       data_timestamp,
                                                       "left")
+*/
   }
 }
