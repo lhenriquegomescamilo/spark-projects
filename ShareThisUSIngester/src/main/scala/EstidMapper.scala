@@ -134,8 +134,8 @@ object EstidMapper {
     val options = nextOption(Map(), args.toList)
     val nDays = if (options.contains('nDays)) options('nDays) else 1
     val from = if (options.contains('from)) options('from) else 1
-    val mode = if (options.contains('mode)) option('mode) else 0
-    val evalDays = if (options.contains('evalDays)) option('evalDays) else 20
+    val mode = if (options.contains('mode)) options('mode) else 0
+    val evalDays = if (options.contains('evalDays)) options('evalDays) else 20
 
     val spark = SparkSession.builder
         .appName("Run matching estid-device_id")
