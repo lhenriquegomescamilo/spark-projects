@@ -1,7 +1,7 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.{lit, col, upper}
+import org.apache.spark.sql.functions.{lit, col, upper, collect_list}
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.spark.sql.{ SaveMode, DataFrame }
 
@@ -20,15 +20,35 @@ object EstidMapper {
       .filter(
         "d17 is not null and event_type IN ('sync', 'ltm_sync')"
       )
-      .select("d17", "device_id", "device_type", "country")
+      .select("d17", "device_id", "country")
       .withColumn("day", lit(day.replace("/", "")))
+      .withColumnRenamed("d17", "estid")
       .dropDuplicates()
 
     df.write
       .format("parquet")
       .partitionBy("day", "country")
-      .mode("append")
+      .mode("overwrite")
       .save("/datascience/sharethis/estid_table/")
+  }
+
+  def getEstIdsMatchingAT(spark: SparkSession, start: String, end: String){
+    import spark.implicits._
+    val input = spark.read
+        .format("parquet")
+        .load("/datascience/sharethis/estid_table/")
+        .filter(($"day" >= start && $"day" <= end ))
+        .dropDuplicates()
+
+    val group_by = input
+        .groupBy("country", "estid")
+        .agg(collect_list("device_id").as("device_id"))
+    
+    group_by.write
+        .format("parquet")
+        .mode("overwrite")
+        .partitionBy("country")
+        .save("/datascience/sharethis/estid_active_table/")
   }
 
 
@@ -84,6 +104,15 @@ object EstidMapper {
     days.foreach(day => getEstIdsMatching(spark, day))
   }
 
+  def download_data_AT(spark: SparkSession, from: Int, evalDays: Int): Unit = {
+    val format = "yyyyMMdd"
+    val dt_end = DateTime.now.minusDays(from)
+    val end = dt_end.toString(format)
+    val start = dt_end.minusDays(evalDays).toString(format)
+
+    getEstIdsMatchingAT(spark, start, end)
+  }
+
   type OptionMap = Map[Symbol, Int]
 
   def nextOption(map: OptionMap, list: List[String]): OptionMap = {
@@ -94,6 +123,10 @@ object EstidMapper {
         nextOption(map ++ Map('nDays -> value.toInt), tail)
       case "--from" :: value :: tail =>
         nextOption(map ++ Map('from -> value.toInt), tail)
+      case "--mode" :: value :: tail =>
+        nextOption(map ++ Map('mode -> value.toInt), tail)
+      case "--evalDays" :: value :: tail =>
+        nextOption(map ++ Map('evalDays -> value.toInt), tail)
     }
   }
 
@@ -101,17 +134,26 @@ object EstidMapper {
     val options = nextOption(Map(), args.toList)
     val nDays = if (options.contains('nDays)) options('nDays) else 1
     val from = if (options.contains('from)) options('from) else 1
+    val mode = if (options.contains('mode)) option('mode) else 0
+    val evalDays = if (options.contains('evalDays)) option('evalDays) else 20
 
     val spark = SparkSession.builder
         .appName("Run matching estid-device_id")
         .config("spark.sql.files.ignoreCorruptFiles", "true")
+        .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
 
-    download_data(spark, nDays, from)
-
-    if (DateTime.now.getDayOfWeek()==7){
-      crossDeviceTable(spark)
+    if (mode == 0 || mode == 2){
+        download_data(spark, nDays, from)
     }
+
+    if (mode == 1 || mode == 2){
+        download_data_AT(spark, from, evalDays)
+    }
+
+    //if (DateTime.now.getDayOfWeek()==7){
+    //  crossDeviceTable(spark)
+    //}
   }
 
   /*def main(args: Array[String]) {
