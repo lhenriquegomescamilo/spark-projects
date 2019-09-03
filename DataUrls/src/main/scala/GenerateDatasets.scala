@@ -86,7 +86,7 @@ object GenerateDatasetsUrls {
     
     gtDF.write
         .format("csv")
-        .SaveMode(Overwrite)
+        .mode(SaveMode.Overwrite)
         .partitionBy("country")
         .save("/datascience/data_url_classifier/gt")
 
