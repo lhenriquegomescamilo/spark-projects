@@ -151,7 +151,7 @@ object DatasetKeywordContent {
       .withColumn("content_keys", explode(col("content_keys")))
       .withColumn("country", lit(country))
       .groupBy("url", "content_keys","segments","country")
-      .agg(sum("count").as("count"))
+      .agg(count("url").as("count"))
 
     joint.write
       .mode(SaveMode.Overwrite)
