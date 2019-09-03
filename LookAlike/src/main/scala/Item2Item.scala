@@ -29,7 +29,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 
-import org.apache.spark.mllib.linalg.{Vector, Vectors, Matrix}
+import org.apache.spark.mllib.linalg.{Vector, Vectors, DenseMatrix, Matrix}
 import org.apache.spark.mllib.linalg.distributed.RowMatrix
 import org.apache.spark.mllib.linalg.distributed.IndexedRow
 import org.apache.spark.mllib.linalg.distributed.MatrixEntry
@@ -308,13 +308,21 @@ object Item2Item {
       simMatrix
       .entries
       .union(simMatrix.entries.map(me => MatrixEntry(me.j, me.i,me.value))) // it makes the matrix symmetric
-      .union(spark.sparkContext.parallelize((0 until nSegmentToExpand).map(v => MatrixEntry(v, v, diagonalValue))))
       .filter(me => me.j.toInt < nSegmentToExpand) // select only columns to predict
       ,simMatrix.numRows(), nSegmentToExpand)
                     
     // Collect the distributed matrix on the driver
     var localMartix = simSymmetric.toBlockMatrix().toLocalMatrix()
-    //l2 =localMartix.colIter().map().rows.map(row => Math.sqrt(Vectors.norm(row, 2))).collect() TODO normalize to apply cosine
+
+    // normalize matrix columns (to compute cosine scores in matrix multiplication)
+    val colNorms = localMartix.colIter.map(col => Vectors.norm(col, 2)).toArray
+    val nRows = localMartix.numRows
+    val nCols = localMartix.numCols
+    val values = for (j <- 0 until nCols; i <- 0 until nRows) yield {
+      var norm = if(colcolNormssL2.apply(j) > 0) colNorms.apply(j) else 1.0
+      if (i!=j) localMartix.apply(i, j) / norm else diagonalValue
+    }
+    localMartix = new DenseMatrix(nRows, nCols, values.toArray)
     localMartix
   }
 
