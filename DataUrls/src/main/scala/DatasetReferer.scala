@@ -102,6 +102,6 @@ object DatasetReferer {
 
     val gtDF = get_url_gt(spark,ndays,since,country,segments)
 
-    get_url_referer(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "left")
+    get_url_referer(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
   }
 }
