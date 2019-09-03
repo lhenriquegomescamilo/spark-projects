@@ -538,7 +538,7 @@ object Item2Item {
 
     var maskedScores = scoreMatrix
       .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => 
-                                (minScoreMap contains segmentIdx && tup._2.apply(segmentIdx) >= minScoreMap(segmentIdx)) || 
+                                ((minScoreMap contains segmentIdx) && tup._2.apply(segmentIdx) >= minScoreMap(segmentIdx)) || 
                                 (!(minScoreMap contains segmentIdx) && tup._2.apply(segmentIdx) > 0.0 )).toArray ))
       .filter(tup=> tup._2.reduce(_||_))
       // <device_idx, array(boolean))>
