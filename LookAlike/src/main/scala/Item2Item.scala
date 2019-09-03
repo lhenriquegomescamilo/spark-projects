@@ -529,6 +529,8 @@ object Item2Item {
     }
 
     val minScoreMap = selSegmentsIdx.map(segmentIdx => (segmentIdx, getScore(segmentIdx))).toMap
+    println("Lookalike LOG: threshold scores")
+    println(minScoreMap)
 
     var maskedScores = scoreMatrix
       .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => 
