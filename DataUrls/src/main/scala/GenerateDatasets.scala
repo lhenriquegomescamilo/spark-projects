@@ -12,7 +12,7 @@ import org.apache.spark.sql.{SaveMode, DataFrame}
 
 object GenerateDatasetsUrls {
 
-  def get_data_urls(
+def get_data_urls(
       spark: SparkSession,
       ndays: Int,
       since: Int,
@@ -81,12 +81,7 @@ object GenerateDatasetsUrls {
 
     
     // Training Data
-    val gtDF = get_url_gt(spark,ndays,since,country,segments).withColumn("country",lit(country))
-    
-    gtDF.write
-        .mode(SaveMode.Overwrite)
-        .partitionBy("country")
-        .save("/datascience/data_url_classifier/gt")
+    val gtDF = get_url_gt(spark,ndays,since,country,segments)
 
     val data_keywords_content = DatasetKeywordContent.get_url_content(spark,
                                                         country = country,
@@ -115,6 +110,13 @@ object GenerateDatasetsUrls {
     //                                                  country,
     //                                                  data_timestamp,
     //                                                  "left")
+
+    // Saving GT dataframe
+    gtDF.withColumn("country",lit(country))
+        .write
+        .mode(SaveMode.Overwrite)
+        .partitionBy("country")
+        .save("/datascience/data_url_classifier/gt")
 
   }
 }
