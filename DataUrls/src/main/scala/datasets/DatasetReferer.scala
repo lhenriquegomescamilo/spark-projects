@@ -50,6 +50,20 @@ object DatasetReferer {
     urls
   }
 
+  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String, segments:List[Int]): DataFrame = {
+    val data_urls = get_data_urls(spark, ndays, since, country)
+
+    val filtered = data_urls
+      .select("url", "segments")
+      .withColumn("segments", explode(col("segments")))
+      .filter(
+        col("segments")
+          .isin(segments: _*)
+      )
+
+    filtered
+  }
+
   def get_url_referer(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String): DataFrame =  {
     // First we get the data from urls, we filter it and we group it (<url, referer, count>)
     val data_urls = get_data_urls(spark, ndays, since, country)
@@ -70,20 +84,6 @@ object DatasetReferer {
           .save("/datascience/data_url_classifier/dataset_referer")
 
     joint
-  }
-
-  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String, segments:List[Int]): DataFrame = {
-    val data_urls = get_data_urls(spark, ndays, since, country)
-
-    val filtered = data_urls
-      .select("url", "segments")
-      .withColumn("segments", explode(col("segments")))
-      .filter(
-        col("segments")
-          .isin(segments: _*)
-      )
-
-    filtered
   }
 
   def main(args: Array[String]) {

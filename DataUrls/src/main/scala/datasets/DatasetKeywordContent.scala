@@ -96,6 +96,20 @@ object DatasetKeywordContent {
     urls
   }
 
+  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String, segments:List[Int]): DataFrame = {
+    val data_urls = get_data_urls(spark, ndays, since, country)
+
+    val filtered = data_urls
+      .select("url", "segments")
+      .withColumn("segments", explode(col("segments")))
+      .filter(
+        col("segments")
+          .isin(segments: _*)
+      )
+
+    filtered
+  }
+
   def get_url_content(
       spark: SparkSession,
       ndays: Int,
@@ -147,20 +161,6 @@ object DatasetKeywordContent {
 
     joint
 
-  }
-
-  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String, segments:List[Int]): DataFrame = {
-    val data_urls = get_data_urls(spark, ndays, since, country)
-
-    val filtered = data_urls
-      .select("url", "segments")
-      .withColumn("segments", explode(col("segments")))
-      .filter(
-        col("segments")
-          .isin(segments: _*)
-      )
-
-    filtered
   }
 
   def main(args: Array[String]) {

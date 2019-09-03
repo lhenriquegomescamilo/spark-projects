@@ -50,6 +50,20 @@ object DatasetTimestamp {
     urls
   }
 
+  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String, segments:List[Int]): DataFrame = {
+    val data_urls = get_data_urls(spark, ndays, since, country)
+
+    val filtered = data_urls
+      .select("url", "segments")
+      .withColumn("segments", explode(col("segments")))
+      .filter(
+        col("segments")
+          .isin(segments: _*)
+      )
+
+    filtered
+  }
+
   def get_url_timestamp(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String): DataFrame =  {
     
     // First we get the data from urls (<url, time>)
@@ -84,21 +98,6 @@ object DatasetTimestamp {
       .save("/datascience/data_url_classifier/dataset_timestamp")
 
     res
-  }
-
-
-  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String, segments:List[Int]): DataFrame = {
-    val data_urls = get_data_urls(spark, ndays, since, country)
-
-    val filtered = data_urls
-      .select("url", "segments")
-      .withColumn("segments", explode(col("segments")))
-      .filter(
-        col("segments")
-          .isin(segments: _*)
-      )
-
-    filtered
   }
 
   def main(args: Array[String]) {
