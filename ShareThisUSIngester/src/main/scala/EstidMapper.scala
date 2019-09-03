@@ -1,7 +1,7 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.{lit, col, upper}
+import org.apache.spark.sql.functions.{lit, col, upper, collect_list}
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.spark.sql.{ SaveMode, DataFrame }
 
