@@ -86,6 +86,50 @@ val joined = ua.join(segments,Seq("device_id"))
 
                                           }
 
+def get_safegraph_data(
+      spark: SparkSession,
+      nDays: String,
+      since: String,
+      country: String
+     
+  ) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+   
+    // Get the days to be loaded
+    val format = "yyMMdd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+      
+
+    // Now we obtain the list of hdfs files to be read
+    val path = "/datascience/geo/safegraph_pipeline/"
+    val hdfs_files = days
+      .map(day => path +  "day=0%s/country=%s/".format(day,country))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
+      .map(day => day + "*.snappy.parquet")
+
+
+    // Finally we read, filter by country, rename the columns and return the data
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .parquet(hdfs_files: _*)
+      .dropDuplicates("ad_id", "latitude", "longitude")
+      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      .withColumnRenamed("ad_id","device_type")
+      .withColumnRenamed("id_type","device_id")
+
+
+     df_safegraph                    
+    
+  }
+
 
   /*
 
@@ -138,19 +182,9 @@ spark.read.format("csv").option("header",true).option("delimiter","\t").load("/d
 spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Fibertel'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Fibertel") 
 
 spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Telecentro'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Telecentro") 
-
   }
-*/
 
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-  
 val HourFrom = 19
 val HourTo = 7
 
@@ -163,9 +197,33 @@ val geo_counts = geo_hour.groupBy("device_id","device_type").agg(collect_list("n
 
   geo_counts.write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/geo/geo_processed/radios_argentina_2010_geodevicer_30d_argentina_30-8-2019-14h_agg") 
 
+*/
 
 
-    
-     
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+  
+
+   val safegraph_data = get_safegraph_data(spark,"5","1","mexico")
+  
+
+    val all_audience_xd = spark.read.format("csv")
+    .load("/datascience/audiences/crossdeviced/all_audience_a_k_s_h_a_xd")
+    .select("_c0","_c1","_c2")
+    .toDF("device_id","device_xd","device_type_xd")
+
+val joined = all_audience_xd.join(safegraph_data,Seq("device_id"))
+
+joined.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph")
+
   }
 }
