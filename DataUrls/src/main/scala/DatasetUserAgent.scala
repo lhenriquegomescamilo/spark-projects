@@ -92,7 +92,7 @@ object DatasetUserAgent {
       .union(triplets_model)
       .union(triplets_browser)
       .union(triplets_os)
-      .withColumn("country",country)
+      .withColumn("country",lit(country))
 
     // Joining dataset with GT urls
     val joint = gtDF.join(features_ua,Seq("url"),joinType)
