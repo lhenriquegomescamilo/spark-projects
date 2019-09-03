@@ -432,13 +432,13 @@ object Item2Item {
       if (predMatrixHits == "count"){
         println(s"User matrix: count")
         indexedData  
-          .map(row => (row._1, row._3, row._4, Math.sqrt(row._4.map(v => v*v).sum)) //<device_idx, array(segment_idx), array(counts), l2norm >
+          .map(row => (row._1, row._3, row._4, Math.sqrt(row._4.map(v => v*v).sum))) //<device_idx, array(segment_idx), array(counts), l2norm >
           .map(row => new IndexedRow(row._1,Vectors.sparse(nSegments, row._2, row._3.map(t => t/row._4)).toDense.asInstanceOf[Vector]))
       }
       else{
         println(s"User matrix: binary")
         indexedData
-        .map(row => (row._1, row._3, Array.fill(row._3.size)(1.0), Math.sqrt(row._3.size) ))  //<device_idx, array(segment_idx), array(binary), l2norm >
+        .map(row => (row._1, row._3, Array.fill(row._3.size)(1.0), Math.sqrt(row._3.size)))  //<device_idx, array(segment_idx), array(binary), l2norm >
         .map(row => new IndexedRow(row._1,Vectors.sparse(nSegments, row._2, row._3.map(t => t/row._4)).toDense.asInstanceOf[Vector]))
       }
     }
