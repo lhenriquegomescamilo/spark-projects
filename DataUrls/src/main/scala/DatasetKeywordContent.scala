@@ -103,7 +103,7 @@ object DatasetKeywordContent {
       country: String,
       replicationFactor: Int = 4,
       gtDF: DataFrame
-  ) {
+  ): DataFrame =  {
 
     // We add the composite key to the gt data in order to do an improved join
     val urls = gtDF.withColumn(
@@ -143,6 +143,8 @@ object DatasetKeywordContent {
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_keywords")
+
+    joint
 
   }
 
