@@ -124,7 +124,7 @@ def get_safegraph_data(
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
       .withColumnRenamed("ad_id","device_type")
       .withColumnRenamed("id_type","device_id")
-
+      .withColumn("device_id",upper(col("device_id")))
 
      df_safegraph                    
     
@@ -209,13 +209,14 @@ val geo_counts = geo_hour.groupBy("device_id","device_type").agg(collect_list("n
 
   
 
-   val safegraph_data = get_safegraph_data(spark,"5","1","mexico")
+   val safegraph_data = get_safegraph_data(spark,"10","1","mexico")
   
 
     val all_audience_xd = spark.read.format("csv")
     .load("/datascience/audiences/crossdeviced/all_audience_a_k_s_h_a_xd")
     .select("_c0","_c1","_c2")
     .toDF("device_id","device_xd","device_type_xd")
+    .withColumn("device_id",upper(col("device_id")))
 
 val joined = all_audience_xd.join(safegraph_data,Seq("device_id"))
 
