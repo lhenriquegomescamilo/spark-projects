@@ -40,7 +40,7 @@ object EstidMapper {
         .filter(($"day" >= start && $"day" <= end ))
         .dropDuplicates()
 
-    val group_by = filters
+    val group_by = input
         .groupBy("country", "estid")
         .agg(collect_list("device_id").as("device_id"))
     
