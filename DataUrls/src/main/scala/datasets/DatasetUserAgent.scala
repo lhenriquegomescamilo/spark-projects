@@ -113,7 +113,7 @@ object DatasetUserAgent {
     val joint = gtDF.join(features_ua,Seq("url"),joinType)
     
     joint.write
-      .format("csv")
+      .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_user_agent")
     

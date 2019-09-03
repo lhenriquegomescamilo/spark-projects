@@ -154,7 +154,6 @@ object DatasetKeywordContent {
       .withColumn("country", lit(country))
 
     joint.write
-      .format("csv")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_keywords")

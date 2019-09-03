@@ -93,7 +93,7 @@ object DatasetTimestamp {
                 .orderBy(asc("url"))
                 
     res.write
-      .format("csv")
+      .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_timestamp")
 
