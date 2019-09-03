@@ -147,7 +147,7 @@ object DatasetKeywordContent {
     // Smart join between data GT (<url, segments>) and urls with content_keywords
     val joint = urls
       .join(URLkeys, Seq("composite_key"),joinType)
-      .drop("composite_key")
+      .drop("composite_key","count")
       .withColumn("content_keys", explode(col("content_keys")))
       .groupBy("url", "content_keys","segments")
       .count()

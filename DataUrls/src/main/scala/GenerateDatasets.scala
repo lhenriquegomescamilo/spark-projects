@@ -82,6 +82,13 @@ object GenerateDatasetsUrls {
     
     // Training Data
     val gtDF = get_url_gt(spark,ndays,since,country,segments)
+                    .withColumn("country",lit(country))
+    
+    gtDF.write
+        .format("csv")
+        .SaveMode(Overwrite)
+        .partitionBy("country")
+        .save("/datascience/data_url_classifier/gt")
 
     val data_keywords_content = DatasetKeywordContent.get_url_content(spark,
                                                       ndays,
