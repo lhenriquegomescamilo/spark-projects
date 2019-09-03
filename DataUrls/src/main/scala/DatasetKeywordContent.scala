@@ -135,8 +135,8 @@ object DatasetKeywordContent {
       .drop("composite_key")
       .withColumn("content_keys", explode(col("content_keys")))
       .groupBy("url", "content_keys","segments")
-      .withColumn("country", lit(country))
       .count()
+      .withColumn("country", lit(country))
 
     joint.write
       .format("csv")
