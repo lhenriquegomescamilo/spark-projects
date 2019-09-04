@@ -97,6 +97,7 @@ object DatasetReferer {
                     .select("url","referer","count")
                     .orderBy(asc("url"))
                     .withColumn("country",lit(country))
+                    .filter("referer is not null")
     
     joint.write
           .format("csv")

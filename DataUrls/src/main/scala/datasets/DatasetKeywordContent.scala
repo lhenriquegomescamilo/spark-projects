@@ -171,7 +171,7 @@ object DatasetKeywordContent {
       .agg(sum("count").as("count"))
 
     joint.write
-      .format("parquet")
+      .format("csv")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_keywords")
