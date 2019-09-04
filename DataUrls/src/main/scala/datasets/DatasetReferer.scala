@@ -96,7 +96,7 @@ object DatasetReferer {
                     .join(data_urls, Seq("url"), joinType)
                     .select("url","referer","count")
                     .withColumn("country",lit(country))
-                    .na.drop()
+                    .filter("referer is not null")
     
     joint.write
           .format("parquet")

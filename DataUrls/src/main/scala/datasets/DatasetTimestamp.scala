@@ -67,8 +67,7 @@ object DatasetTimestamp {
                     .join(data_urls,Seq("url"),joinType)
                     .select("url","time")
                     .withColumn("country",lit(country))
-                    .na.drop()
-
+                    .filter("time is not null")
     // Generate dataset with columns weekday and hour
     //val res = joint
     //            .withColumn("Hour", date_format(col("time"), "HH"))

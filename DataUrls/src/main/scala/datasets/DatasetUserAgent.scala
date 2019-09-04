@@ -71,7 +71,7 @@ object DatasetUserAgent {
     val joint = gtDF.select("url")
                     .join(features_ua,Seq("url"),joinType)
                     .withColumn("country",lit(country))
-                    .na.drop()
+                    .filter("feature is not null")
     
     joint.write
       .format("parquet")
