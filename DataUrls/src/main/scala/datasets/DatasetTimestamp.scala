@@ -64,11 +64,11 @@ object DatasetTimestamp {
     filtered
   }
 
-  def get_url_timestamp(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String): DataFrame =  {
+  def get_url_timestamp(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,
+                        joinType:String,df_urls: DataFrame): DataFrame =  {
     
     // First we get the data from urls (<url, time>)
-    val data_urls = get_data_urls(spark, ndays, since, country)
-                                  .select("url","time")
+    val data_urls = df_urls.select("url","time")
                                   
     val myUDF = udf(
       (weekday: String, hour: String) =>
@@ -77,8 +77,10 @@ object DatasetTimestamp {
     )
 
     // Join with the GT dataframe
-    val joint = gtDF.join(data_urls,Seq("url"),joinType)
+    val joint = gtDF.select("url")
+                    .join(data_urls,Seq("url"),joinType)
                     .withColumn("country",lit(country))
+                    .select("url","time")
 
     // Generate dataset with columns weekday and hour
     val res = joint
@@ -93,6 +95,7 @@ object DatasetTimestamp {
                 .orderBy(asc("url"))
                 
     res.write
+      .format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_timestamp")
@@ -116,6 +119,6 @@ object DatasetTimestamp {
 
     val gtDF = get_url_gt(spark,ndays,since,country,segments)
 
-    get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
+    //get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
   }
 }
