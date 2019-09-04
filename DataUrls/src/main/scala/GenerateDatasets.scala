@@ -109,7 +109,8 @@ def get_data_urls(
                                                         since = since,
                                                         ndays = ndays,
                                                         gtDF = data_referer,
-                                                        joinType = "left" )
+                                                        joinType = "left",
+                                                        df_urls = data_urls )
 
     //val data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
     //                                                  ndays,
