@@ -62,7 +62,7 @@ object ShareThisInput {
 
     val spark = SparkSession.builder
         .appName("ShreThis Input")
-        //.config("spark.sql.files.ignoreCorruptFiles", "true")
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
 
