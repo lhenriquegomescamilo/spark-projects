@@ -122,8 +122,8 @@ def get_safegraph_data(
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
-      .withColumnRenamed("ad_id","device_type")
-      .withColumnRenamed("id_type","device_id")
+      .withColumnRenamed("ad_id","device_id")
+      .withColumnRenamed("id_type","device_type")
       .withColumn("device_id",upper(col("device_id")))
 
      df_safegraph                    
@@ -224,7 +224,7 @@ joined.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph")
+.save("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph_100")
 
   }
 }
