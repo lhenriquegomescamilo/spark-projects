@@ -91,12 +91,13 @@ object DatasetReferer {
                       .agg(sum("count").as("count"))
 
     // Then we join the data with the GT
-    val joint = gtDF.drop("count").join(data_urls, Seq("url"), joinType)
+    val joint = gtDF.select("url").join(data_urls, Seq("url"), joinType)
         .select("url","referer","count")
         .orderBy(asc("url"))
         .withColumn("country",lit(country))
     
     joint.write
+          .format("parquet")
           .mode(SaveMode.Overwrite)
           .partitionBy("country")
           .save("/datascience/data_url_classifier/dataset_referer")

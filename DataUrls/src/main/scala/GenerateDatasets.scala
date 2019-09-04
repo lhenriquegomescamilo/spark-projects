@@ -87,7 +87,7 @@ def get_data_urls(
                         .filter(
                           col("segments")
                             .isin(segments: _*)
-                        )
+                        ).distinct()
 
     val data_keywords_content = DatasetKeywordContent.get_url_content(spark,
                                                         country = country,

@@ -77,7 +77,8 @@ object DatasetTimestamp {
     )
 
     // Join with the GT dataframe
-    val joint = gtDF.join(data_urls,Seq("url"),joinType)
+    val joint = gtDF.select("url")
+                    .join(data_urls,Seq("url"),joinType)
                     .withColumn("country",lit(country))
                     .select("url","time")
 
@@ -94,6 +95,7 @@ object DatasetTimestamp {
                 .orderBy(asc("url"))
                 
     res.write
+      .format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_timestamp")
