@@ -122,8 +122,8 @@ def get_safegraph_data(
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
-      .withColumnRenamed("ad_id","device_type")
-      .withColumnRenamed("id_type","device_id")
+      .withColumnRenamed("ad_id","device_id")
+      .withColumnRenamed("id_type","device_type")
       .withColumn("device_id",upper(col("device_id")))
 
      df_safegraph                    
@@ -209,7 +209,7 @@ val geo_counts = geo_hour.groupBy("device_id","device_type").agg(collect_list("n
 
   
 
-   val safegraph_data = get_safegraph_data(spark,"100","1","mexico")
+   val safegraph_data = get_safegraph_data(spark,"10","1","mexico")
   
 
     val all_audience_xd = spark.read.format("csv")
