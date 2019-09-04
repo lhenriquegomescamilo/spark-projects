@@ -124,12 +124,12 @@ def get_data_urls(
                                                         joinType = "left",
                                                         df_urls = data_urls )
 
-    //val data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
-    //                                                  ndays,
-    //                                                 since,
-    //                                                  country,
-    //                                                  data_timestamp,
-    //                                                  "left")
+    val data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
+                                                      ndays,
+                                                     since,
+                                                      country,
+                                                      data_timestamp,
+                                                      "left")
 
 
 
