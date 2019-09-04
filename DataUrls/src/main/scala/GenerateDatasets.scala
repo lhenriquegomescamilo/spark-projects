@@ -89,6 +89,14 @@ def get_data_urls(
                             .isin(segments: _*)
                         ).distinct()
 
+    // Saving GT dataframe
+    gtDF.withColumn("country",lit(country))
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .partitionBy("country")
+        .save("/datascience/data_url_classifier/gt")
+
     val data_keywords_content = DatasetKeywordContent.get_url_content(spark,
                                                         country = country,
                                                         since = since,
@@ -119,12 +127,7 @@ def get_data_urls(
     //                                                  data_timestamp,
     //                                                  "left")
 
-    // Saving GT dataframe
-    gtDF.withColumn("country",lit(country))
-        .write
-        .mode(SaveMode.Overwrite)
-        .partitionBy("country")
-        .save("/datascience/data_url_classifier/gt")
+
 
   }
 }
