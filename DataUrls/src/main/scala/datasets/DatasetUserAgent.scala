@@ -98,6 +98,6 @@ object DatasetUserAgent {
 
     val gtDF = spark.read.load("/datascience/data_url_classifier/dataset_referer/country=AR/")
 
-    get_url_user_agent(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
+    get_url_user_agent(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "left")
   }
 }

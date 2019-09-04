@@ -108,6 +108,6 @@ object DatasetTimestamp {
 
     val gtDF = spark.read.load("/datascience/data_url_classifier/dataset_referer/country=AR")
 
-    get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", df_urls = data_urls)
+    get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "left", df_urls = data_urls)
   }
 }
