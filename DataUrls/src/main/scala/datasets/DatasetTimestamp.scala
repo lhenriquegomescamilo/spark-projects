@@ -79,6 +79,7 @@ object DatasetTimestamp {
     // Join with the GT dataframe
     val joint = gtDF.join(data_urls,Seq("url"),joinType)
                     .withColumn("country",lit(country))
+                    .select("url","time")
 
     // Generate dataset with columns weekday and hour
     val res = joint
