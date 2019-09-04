@@ -54,7 +54,7 @@ object DatasetTimestamp {
                         joinType:String,df_urls: DataFrame): DataFrame =  {
     
     // First we get the data from urls (<url, time>)
-    val data_urls = df_urls.select("url","time")
+    val data_urls = df_urls.groupBy("url","time").count()
                                   
     val myUDF = udf(
       (weekday: String, hour: String) =>
