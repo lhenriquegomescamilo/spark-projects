@@ -64,7 +64,8 @@ object DatasetTimestamp {
     filtered
   }
 
-  def get_url_timestamp(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String,df_urls: DataFrame): DataFrame =  {
+  def get_url_timestamp(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,
+                        joinType:String,df_urls: DataFrame): DataFrame =  {
     
     // First we get the data from urls (<url, time>)
     val data_urls = df_urls.select("url","time")
@@ -116,6 +117,6 @@ object DatasetTimestamp {
 
     val gtDF = get_url_gt(spark,ndays,since,country,segments)
 
-    get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
+    //get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
   }
 }
