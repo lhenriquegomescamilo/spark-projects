@@ -80,7 +80,14 @@ def get_data_urls(
 
     
     // Training Data
-    val gtDF = get_url_gt(spark,ndays,since,country,segments)
+    val data_urls = get_data_urls(spark, ndays, since, country)
+
+    val gtDF = data_urls.select("url", "segments")
+                        .withColumn("segments", explode(col("segments")))
+                        .filter(
+                          col("segments")
+                            .isin(segments: _*)
+                        )
 
     val data_keywords_content = DatasetKeywordContent.get_url_content(spark,
                                                         country = country,
@@ -94,7 +101,8 @@ def get_data_urls(
                                                         since = since,
                                                         ndays = ndays,
                                                         gtDF = data_keywords_content,
-                                                        joinType = "left" )
+                                                        joinType = "left",
+                                                        df_urls = data_urls )
 
     val data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
                                                         country = country,

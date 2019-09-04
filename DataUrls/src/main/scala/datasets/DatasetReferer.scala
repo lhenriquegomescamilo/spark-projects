@@ -80,14 +80,14 @@ object DatasetReferer {
     filtered
   }
 
-  def get_url_referer(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String): DataFrame =  {
+  def get_url_referer(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String, df_urls: DataFrame): DataFrame =  {
     // First we get the data from urls, we filter it and we group it (<url, referer, count>)
-    val data_urls = get_data_urls(spark, ndays, since, country)
-                                  .filter("referer is not null")
-                                  .select("url","referer")
-                                  .withColumn("count", lit(1))
-                                  .groupBy("url", "referer")
-                                  .agg(sum("count").as("count"))
+    val data_urls = df_urls
+                      .filter("referer is not null")
+                      .select("url","referer")
+                      .withColumn("count", lit(1))
+                      .groupBy("url", "referer")
+                      .agg(sum("count").as("count"))
 
     // Then we join the data with the GT
     val joint = gtDF.drop("count").join(data_urls, Seq("url"), joinType)

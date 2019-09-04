@@ -64,11 +64,10 @@ object DatasetTimestamp {
     filtered
   }
 
-  def get_url_timestamp(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String): DataFrame =  {
+  def get_url_timestamp(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String,df_urls: DataFrame): DataFrame =  {
     
     // First we get the data from urls (<url, time>)
-    val data_urls = get_data_urls(spark, ndays, since, country)
-                                  .select("url","time")
+    val data_urls = df_urls.select("url","time")
                                   
     val myUDF = udf(
       (weekday: String, hour: String) =>
