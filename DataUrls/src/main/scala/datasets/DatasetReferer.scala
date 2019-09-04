@@ -86,21 +86,21 @@ object DatasetReferer {
     // First we get the data from urls, we filter it and we group it (<url, referer, count>)
     val data_urls = df_urls
                       .filter("referer is not null")
-                      .select("url","referer")
+                      .select("device_id","url","referer")
                       .withColumn("count", lit(1))
-                      .groupBy("url", "referer")
+                      .groupBy("device_id","url", "referer")
                       .agg(sum("count").as("count"))
 
     // Then we join the data with the GT
     val joint = gtDF.select("url")
                     .join(data_urls, Seq("url"), joinType)
-                    .select("url","referer","count")
+                    .select("device_id","url","referer","count")
                     .orderBy(asc("url"))
                     .withColumn("country",lit(country))
-                    .filter("referer is not null")
+                    .na.drop()
     
     joint.write
-          .format("csv")
+          .format("parquet")
           .mode(SaveMode.Overwrite)
           .partitionBy("country")
           .save("/datascience/data_url_classifier/dataset_referer")

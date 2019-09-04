@@ -79,28 +79,29 @@ object DatasetTimestamp {
     // Join with the GT dataframe
     val joint = gtDF.select("url")
                     .join(data_urls,Seq("url"),joinType)
-                    .withColumn("country",lit(country))
                     .select("url","time")
+                    .withColumn("country",lit(country))
+                    .na.drop()
 
     // Generate dataset with columns weekday and hour
-    val res = joint
-                .withColumn("Hour", date_format(col("time"), "HH"))
-                .withColumn("Weekday", date_format(col("time"), "EEEE"))
-                .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
-                .groupBy("url", "wd")
-                .count()
-                .groupBy("url")
-                .pivot("wd")
-                .agg(sum("count"))
-                .orderBy(asc("url"))
+    //val res = joint
+    //            .withColumn("Hour", date_format(col("time"), "HH"))
+    //            .withColumn("Weekday", date_format(col("time"), "EEEE"))
+    //            .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
+    //            .groupBy("url", "wd")
+    //            .count()
+    //            .groupBy("url")
+     //           .pivot("wd")
+     //           .agg(sum("count"))
+     //           .orderBy(asc("url"))
                 
-    res.write
-      .format("csv")
+    joint.write
+      .format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_timestamp")
 
-    res
+    joint
   }
 
   def main(args: Array[String]) {
