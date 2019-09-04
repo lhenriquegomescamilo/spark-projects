@@ -209,7 +209,7 @@ val geo_counts = geo_hour.groupBy("device_id","device_type").agg(collect_list("n
 
   
 
-   val safegraph_data = get_safegraph_data(spark,"10","1","mexico")
+   val safegraph_data = get_safegraph_data(spark,"100","1","mexico")
   
 
     val all_audience_xd = spark.read.format("csv")
@@ -224,7 +224,7 @@ joined.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph")
+.save("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph_100")
 
   }
 }
