@@ -82,6 +82,7 @@ object DatasetReferer {
 
   def get_url_referer(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,
                       joinType:String, df_urls: DataFrame): DataFrame =  {
+    
     // First we get the data from urls, we filter it and we group it (<url, referer, count>)
     val data_urls = df_urls
                       .filter("referer is not null")
@@ -91,10 +92,11 @@ object DatasetReferer {
                       .agg(sum("count").as("count"))
 
     // Then we join the data with the GT
-    val joint = gtDF.select("url").join(data_urls, Seq("url"), joinType)
-        .select("url","referer","count")
-        .orderBy(asc("url"))
-        .withColumn("country",lit(country))
+    val joint = gtDF.select("url")
+                    .join(data_urls, Seq("url"), joinType)
+                    .select("url","referer","count")
+                    .orderBy(asc("url"))
+                    .withColumn("country",lit(country))
     
     joint.write
           .format("parquet")
@@ -121,14 +123,8 @@ object DatasetReferer {
 
     val data_urls = get_data_urls(spark, ndays, since, country)
 
-    val gtDF = data_urls.select("url", "segments")
-                        .withColumn("segments", explode(col("segments")))
-                        .filter(
-                          col("segments")
-                            .isin(segments: _*)
-                        ).distinct()
+    val gtDF = spark.read.load("/datascience/data_url_classifier/dataset_keywords/country=AR")
 
-
-    get_url_referer(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner",df_urls = data_urls)
+    get_url_referer(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "left", df_urls = data_urls)
   }
 }
