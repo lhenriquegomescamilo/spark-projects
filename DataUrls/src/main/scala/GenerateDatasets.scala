@@ -90,11 +90,11 @@ def get_data_urls(
                         ).distinct()
 
     // Saving GT dataframe grouped by url and list of segments
-    gtDF.withColumn("country",lit(country))
-        .groupBy("url")
+    gtDF.groupBy("url")
         .agg(collect_list(col("segments")).as("segments"))
         .withColumn("segments", concat_ws(";", col("segments")))
         .orderBy(asc("url"))
+        .withColumn("country",lit(country))
         .write
         .format("parquet")
         .mode(SaveMode.Overwrite)
