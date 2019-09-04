@@ -88,7 +88,7 @@ def get_data_urls(
                                                         ndays = ndays,
                                                         gtDF = gtDF,
                                                         joinType = "inner" )
-/**
+
     val data_referer = DatasetReferer.get_url_referer(spark,
                                                         country = country,
                                                         since = since,
@@ -116,6 +116,6 @@ def get_data_urls(
         .mode(SaveMode.Overwrite)
         .partitionBy("country")
         .save("/datascience/data_url_classifier/gt")
-**/
+
   }
 }

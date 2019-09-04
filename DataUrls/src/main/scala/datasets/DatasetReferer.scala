@@ -8,6 +8,22 @@ import org.apache.spark.sql.functions.broadcast
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
+import org.apache.spark.sql.functions.{
+  upper,
+  count,
+  col,
+  abs,
+  udf,
+  regexp_replace,
+  split,
+  lit,
+  explode,
+  length,
+  to_timestamp,
+  from_unixtime,
+  date_format,
+  sum
+}
 
 object DatasetReferer {
 
@@ -69,11 +85,12 @@ object DatasetReferer {
     val data_urls = get_data_urls(spark, ndays, since, country)
                                   .filter("referer is not null")
                                   .select("url","referer")
+                                  .withColumn("count", lit(1))
                                   .groupBy("url", "referer")
-                                  .count()
+                                  .agg(sum("count").as("count"))
 
     // Then we join the data with the GT
-    val joint = gtDF.join(data_urls, Seq("url"), joinType)
+    val joint = gtDF.drop("count").join(data_urls, Seq("url"), joinType)
         .select("url","referer","count")
         .orderBy(asc("url"))
         .withColumn("country",lit(country))
