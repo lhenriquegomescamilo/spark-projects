@@ -119,8 +119,16 @@ object DatasetReferer {
     val country = if (args.length > 2) args(2).toString else ""
     val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
 
-    val gtDF = get_url_gt(spark,ndays,since,country,segments)
+    val data_urls = get_data_urls(spark, ndays, since, country)
 
-    //get_url_referer(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
+    val gtDF = data_urls.select("url", "segments")
+                        .withColumn("segments", explode(col("segments")))
+                        .filter(
+                          col("segments")
+                            .isin(segments: _*)
+                        ).distinct()
+
+
+    get_url_referer(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner",df_urls = data_urls)
   }
 }
