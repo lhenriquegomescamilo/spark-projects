@@ -158,9 +158,9 @@ object ContentKws {
     if(populate == 1) {
       val conf = spark.sparkContext.hadoopConfiguration
       val fs = FileSystem.get(conf)
-      val os = fs.create(new Path("/datascience/ingester/ready/%s".format(job_name)))
+      val os = fs.create(new Path("/datascience/ingester/ready/%s.meta".format(job_name)))
       val content =
-        """{"filePath":"%s", "pipeline": 3, "priority": 20, "partnerId": 0, "queue":"datascience", "jobid": 0, "description":"%s"}"""
+        """{"filePath":"%s", "pipeline": 3, "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"%s"}"""
           .format(fileNameFinal,job_name)
       println(content)
       os.write(content.getBytes)
@@ -653,7 +653,7 @@ object ContentKws {
     get_users_pipeline_3(spark = spark,
                          nDays = 30,
                          since = 1,
-                         json_path = "/datascience/custom/MX_taxo_nueva.json",
+                         json_path = "/datascience/custom/CL_pitch_havas_CL.json",
                          populate = 0) 
   
      
