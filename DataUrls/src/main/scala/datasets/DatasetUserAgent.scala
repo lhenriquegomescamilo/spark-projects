@@ -96,8 +96,8 @@ object DatasetUserAgent {
     val country = if (args.length > 2) args(2).toString else ""
     val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
 
-    val gtDF = spark.read.load("/datascience/data_url_classifier/dataset_timestamp/country=AR/")
+    val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR/")
 
-    get_url_user_agent(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "left")
+    get_url_user_agent(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
   }
 }
