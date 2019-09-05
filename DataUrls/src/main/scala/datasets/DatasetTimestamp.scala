@@ -54,13 +54,13 @@ object DatasetTimestamp {
                         joinType:String,df_urls: DataFrame): DataFrame =  {
     
     // First we get the data from urls (<url, time>)
-    val data_urls = df_urls.groupBy("url","time").count()
+    val data_urls = df_urls.select("url","time")
                                   
-    val myUDF = udf(
-      (weekday: String, hour: String) =>
-        if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
-        else "%s0".format(hour)
-    )
+    //val myUDF = udf(
+    //  (weekday: String, hour: String) =>
+    //    if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
+    //    else "%s0".format(hour)
+   // )
 
     // Join with the GT dataframe
     val joint = gtDF.select("url")

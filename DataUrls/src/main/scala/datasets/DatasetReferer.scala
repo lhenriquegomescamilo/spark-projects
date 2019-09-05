@@ -97,6 +97,7 @@ object DatasetReferer {
                     .select("url","referer","count")
                     .withColumn("country",lit(country))
                     .filter("referer is not null")
+                    .dropDuplicates()
     
     joint.write
           .format("parquet")

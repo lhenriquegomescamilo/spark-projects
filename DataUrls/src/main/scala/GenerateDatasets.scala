@@ -113,7 +113,7 @@ def get_data_urls(
                                                         since = since,
                                                         ndays = ndays,
                                                         gtDF = data_keywords_content,
-                                                        joinType = "left",
+                                                        joinType = "inner",
                                                         df_urls = data_urls )
 
     val data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
@@ -121,7 +121,7 @@ def get_data_urls(
                                                         since = since,
                                                         ndays = ndays,
                                                         gtDF = data_referer,
-                                                        joinType = "left",
+                                                        joinType = "inner",
                                                         df_urls = data_urls )
 
     val data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
@@ -129,7 +129,7 @@ def get_data_urls(
                                                      since,
                                                       country,
                                                       data_timestamp,
-                                                      "left")
+                                                      "inner")
 
 
 
