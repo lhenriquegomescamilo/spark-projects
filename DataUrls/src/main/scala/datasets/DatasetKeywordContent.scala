@@ -167,7 +167,7 @@ object DatasetKeywordContent {
       .withColumn("content_keys", explode(col("content_keys")))
       .withColumn("country", lit(country))
       .withColumn("count", lit(1))
-      .groupBy("url", "content_keys","segments","country")
+      .groupBy("url", "content_keys","country")
       .agg(sum("count").as("count"))
       .dropDuplicates()
 
