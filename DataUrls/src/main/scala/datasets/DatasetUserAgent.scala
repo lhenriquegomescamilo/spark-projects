@@ -68,10 +68,9 @@ object DatasetUserAgent {
       .union(triplets_os)
 
     // Joining dataset with GT urls
-    val joint = gtDF.select("url")
-                    .join(features_ua,Seq("url"),joinType)
+    val joint = gtDF.join(features_ua,Seq("url"),joinType)
                     .withColumn("country",lit(country))
-                    .filter("feature is not null")
+                    .dropDuplicates()
     
     joint.write
       .format("parquet")

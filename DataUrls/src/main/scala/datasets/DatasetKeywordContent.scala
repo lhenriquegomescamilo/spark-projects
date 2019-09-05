@@ -169,7 +169,7 @@ object DatasetKeywordContent {
       .withColumn("count", lit(1))
       .groupBy("url", "content_keys","segments","country")
       .agg(sum("count").as("count"))
-      .na.drop()
+      .dropDuplicates()
 
     joint.write
       .format("parquet")
@@ -178,7 +178,6 @@ object DatasetKeywordContent {
       .save("/datascience/data_url_classifier/dataset_keywords")
 
     joint
-
   }
 
   def main(args: Array[String]) {

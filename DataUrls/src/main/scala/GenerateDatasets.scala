@@ -82,25 +82,27 @@ def get_data_urls(
     // Training Data
     val data_urls = get_data_urls(spark, ndays, since, country)
 
-    val gtDF = data_urls.select("url", "segments")
+    var gtDF = data_urls.select("url", "segments")
                         .withColumn("segments", explode(col("segments")))
                         .filter(
                           col("segments")
                             .isin(segments: _*)
                         ).distinct()
-
+    
     // Saving GT dataframe grouped by url and list of segments
     gtDF.groupBy("url")
         .agg(collect_list(col("segments")).as("segments"))
         .withColumn("segments", concat_ws(";", col("segments")))
-        .orderBy(asc("url"))
         .withColumn("country",lit(country))
         .write
         .format("parquet")
         .mode(SaveMode.Overwrite)
         .partitionBy("country")
         .save("/datascience/data_url_classifier/gt")
-
+    
+    gtDF = broadcast(gtDF.select("url"))
+    gtDF.cache()
+    
     val data_keywords_content = DatasetKeywordContent.get_url_content(spark,
                                                         country = country,
                                                         since = since,
@@ -112,7 +114,7 @@ def get_data_urls(
                                                         country = country,
                                                         since = since,
                                                         ndays = ndays,
-                                                        gtDF = data_keywords_content,
+                                                        gtDF = gtDF,
                                                         joinType = "inner",
                                                         df_urls = data_urls )
 
@@ -120,7 +122,7 @@ def get_data_urls(
                                                         country = country,
                                                         since = since,
                                                         ndays = ndays,
-                                                        gtDF = data_referer,
+                                                        gtDF = gtDF,
                                                         joinType = "inner",
                                                         df_urls = data_urls )
 
@@ -128,7 +130,7 @@ def get_data_urls(
                                                       ndays,
                                                      since,
                                                       country,
-                                                      data_timestamp,
+                                                      gtDF,
                                                       "inner")
 
 

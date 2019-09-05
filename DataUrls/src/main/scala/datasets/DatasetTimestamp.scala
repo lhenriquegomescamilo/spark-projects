@@ -63,11 +63,11 @@ object DatasetTimestamp {
    // )
 
     // Join with the GT dataframe
-    val joint = gtDF.select("url")
-                    .join(data_urls,Seq("url"),joinType)
+    val joint = gtDF.join(data_urls,Seq("url"),joinType)
                     .select("url","time")
                     .withColumn("country",lit(country))
-                    .filter("time is not null")
+                    .dropDuplicates()
+                    
     // Generate dataset with columns weekday and hour
     //val res = joint
     //            .withColumn("Hour", date_format(col("time"), "HH"))
