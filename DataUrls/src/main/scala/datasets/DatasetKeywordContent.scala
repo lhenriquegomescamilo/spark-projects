@@ -169,9 +169,10 @@ object DatasetKeywordContent {
       .withColumn("count", lit(1))
       .groupBy("url", "content_keys","segments","country")
       .agg(sum("count").as("count"))
+      .na.drop()
 
     joint.write
-      .format("csv")
+      .format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_keywords")

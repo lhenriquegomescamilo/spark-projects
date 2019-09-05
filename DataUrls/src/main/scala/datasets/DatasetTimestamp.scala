@@ -50,25 +50,11 @@ object DatasetTimestamp {
     urls
   }
 
-  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String, segments:List[Int]): DataFrame = {
-    val data_urls = get_data_urls(spark, ndays, since, country)
-
-    val filtered = data_urls
-      .select("url", "segments")
-      .withColumn("segments", explode(col("segments")))
-      .filter(
-        col("segments")
-          .isin(segments: _*)
-      )
-
-    filtered
-  }
-
-  def get_url_timestamp(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String): DataFrame =  {
+  def get_url_timestamp(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,
+                        joinType:String,df_urls: DataFrame): DataFrame =  {
     
     // First we get the data from urls (<url, time>)
-    val data_urls = get_data_urls(spark, ndays, since, country)
-                                  .select("url","time")
+    val data_urls = df_urls.groupBy("url","time").count()
                                   
     val myUDF = udf(
       (weekday: String, hour: String) =>
@@ -77,27 +63,30 @@ object DatasetTimestamp {
     )
 
     // Join with the GT dataframe
-    val joint = gtDF.join(data_urls,Seq("url"),joinType)
+    val joint = gtDF.select("url")
+                    .join(data_urls,Seq("url"),joinType)
+                    .select("url","time")
                     .withColumn("country",lit(country))
-
+                    .filter("time is not null")
     // Generate dataset with columns weekday and hour
-    val res = joint
-                .withColumn("Hour", date_format(col("time"), "HH"))
-                .withColumn("Weekday", date_format(col("time"), "EEEE"))
-                .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
-                .groupBy("url", "wd")
-                .count()
-                .groupBy("url")
-                .pivot("wd")
-                .agg(sum("count"))
-                .orderBy(asc("url"))
+    //val res = joint
+    //            .withColumn("Hour", date_format(col("time"), "HH"))
+    //            .withColumn("Weekday", date_format(col("time"), "EEEE"))
+    //            .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
+    //            .groupBy("url", "wd")
+    //            .count()
+    //            .groupBy("url")
+     //           .pivot("wd")
+     //           .agg(sum("count"))
+     //           .orderBy(asc("url"))
                 
-    res.write
+    joint.write
+      .format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_timestamp")
 
-    res
+    joint
   }
 
   def main(args: Array[String]) {
@@ -114,8 +103,10 @@ object DatasetTimestamp {
     val country = if (args.length > 2) args(2).toString else ""
     val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
 
-    val gtDF = get_url_gt(spark,ndays,since,country,segments)
+    val data_urls = get_data_urls(spark, ndays, since, country)
 
-    get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
+    val gtDF = spark.read.load("/datascience/data_url_classifier/dataset_referer/country=AR")
+
+    get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "left", df_urls = data_urls)
   }
 }

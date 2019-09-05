@@ -8,6 +8,22 @@ import org.apache.spark.sql.functions.broadcast
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
+import org.apache.spark.sql.functions.{
+  upper,
+  count,
+  col,
+  abs,
+  udf,
+  regexp_replace,
+  split,
+  lit,
+  explode,
+  length,
+  to_timestamp,
+  from_unixtime,
+  date_format,
+  sum
+}
 
 object DatasetReferer {
 
@@ -64,21 +80,26 @@ object DatasetReferer {
     filtered
   }
 
-  def get_url_referer(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String): DataFrame =  {
+  def get_url_referer(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,
+                      joinType:String, df_urls: DataFrame): DataFrame =  {
+    
     // First we get the data from urls, we filter it and we group it (<url, referer, count>)
-    val data_urls = get_data_urls(spark, ndays, since, country)
-                                  .filter("referer is not null")
-                                  .select("url","referer")
-                                  .groupBy("url", "referer")
-                                  .count()
+    val data_urls = df_urls
+                      .filter("referer is not null")
+                      .select("url","referer")
+                      .withColumn("count", lit(1))
+                      .groupBy("url", "referer")
+                      .agg(sum("count").as("count"))
 
     // Then we join the data with the GT
-    val joint = gtDF.join(data_urls, Seq("url"), joinType)
-        .select("url","referer","count")
-        .orderBy(asc("url"))
-        .withColumn("country",lit(country))
+    val joint = gtDF.select("url")
+                    .join(data_urls, Seq("url"), joinType)
+                    .select("url","referer","count")
+                    .withColumn("country",lit(country))
+                    .filter("referer is not null")
     
     joint.write
+          .format("parquet")
           .mode(SaveMode.Overwrite)
           .partitionBy("country")
           .save("/datascience/data_url_classifier/dataset_referer")
@@ -100,8 +121,10 @@ object DatasetReferer {
     val country = if (args.length > 2) args(2).toString else ""
     val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
 
-    val gtDF = get_url_gt(spark,ndays,since,country,segments)
+    val data_urls = get_data_urls(spark, ndays, since, country)
 
-    get_url_referer(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
+    val gtDF = spark.read.load("/datascience/data_url_classifier/dataset_keywords/country=AR")
+
+    get_url_referer(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "left", df_urls = data_urls)
   }
 }
