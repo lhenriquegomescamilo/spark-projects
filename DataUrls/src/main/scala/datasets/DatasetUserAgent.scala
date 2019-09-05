@@ -8,6 +8,22 @@ import org.apache.spark.sql.functions.broadcast
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
+import org.apache.spark.sql.functions.{
+  upper,
+  count,
+  col,
+  abs,
+  udf,
+  regexp_replace,
+  split,
+  lit,
+  explode,
+  length,
+  to_timestamp,
+  from_unixtime,
+  date_format,
+  sum
+}
 
 object DatasetUserAgent {
 
@@ -61,11 +77,15 @@ object DatasetUserAgent {
       .agg(count("device_id").as("count"))
       .withColumnRenamed("os", "feature")
 
-    // Concatenating all triplets dataframes and adding country for partitioning
+    // Concatenating all triplets dataframes and processing the url
     val features_ua = triplets_brand
       .union(triplets_model)
       .union(triplets_browser)
       .union(triplets_os)
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
 
     // Joining dataset with GT urls
     val joint = gtDF.join(features_ua,Seq("url"),joinType)
@@ -76,7 +96,7 @@ object DatasetUserAgent {
       .format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
-      .save("/datascience/data_url_classifier/dataset_user_agent")
+      .save("/datascience/data_url_classifier/dataset_user_agent/")
     
     joint
   }
