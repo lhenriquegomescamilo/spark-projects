@@ -243,6 +243,7 @@ val madid_w_category = equivalence_table.join(audience_ranked,Seq("device_id"))
 .drop("device_id")
 .withColumnRenamed("device_id_xd","device_id")
 .withColumn("device_id",upper(col("device_id")))
+.dropDuplicates("device_id")
 
 val the_people_10 = spark.read.format("csv").option("header",true)
 .option("delimiter","\t")
