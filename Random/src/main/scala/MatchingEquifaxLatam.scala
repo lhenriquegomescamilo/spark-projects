@@ -83,7 +83,7 @@ object MatchingEquifaxLatam {
       .mode("overwrite")
       .save("/datascience/custom/aud_banco_ciudad_cookies_con_urls")
 
-    val user_agents = get_data_user_agent(30, 4)
+    val user_agents = get_data_user_agent(spark, 30, 4)
 
     user_agents
       .filter("country IN ('AR', 'CL', 'MX', 'PE', 'CO')")
