@@ -225,7 +225,7 @@ joined.write.format("csv")
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
   
-  val safegraph_data = get_safegraph_data(spark,"2","2","mexico")
+  val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
 
   val audience_ranked = spark.read.format("csv").option("header",true).option("delimiter",",")
   .load("/datascience/geo/MX/JCDecaux/all_audience_ranked.csv")
