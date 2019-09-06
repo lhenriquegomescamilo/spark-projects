@@ -17,7 +17,7 @@ import java.security.MessageDigest
 import org.apache.hadoop.fs._
 
 object generateCrossDevice {
-  def generate_organic_xd(spark: SparkSession, organicPath: String, runType: String) {
+  def generate_organic_xd(spark: SparkSession, organicPath: String, runType: String, from: Int) {
     // This function takes a list of ids, hashes all of them to SHA256, and then concatenates all of them separated by commas
     val hashUDF = udf(
       (ids: Seq[String]) =>
@@ -53,7 +53,7 @@ object generateCrossDevice {
     // Now we store all the information
     val pathToJson =
       "hdfs://rely-hdfs/datascience/data_publicis/idmap/%s/dt=%s"
-        .format(runType, DateTime.now.toString("yyyyMMdd"))
+        .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
 
     joint.write
       .format("com.databricks.spark.csv")
