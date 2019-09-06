@@ -76,7 +76,9 @@ def get_data_urls(
     val ndays = if (args.length > 0) args(0).toInt else 10
     val since = if (args.length > 1) args(1).toInt else 1
     val country = if (args.length > 2) args(2).toString else ""
-    val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
+    val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017,  // Interest
+                        396,2720,2737,3034,955,385,3420,3564,411,363,         // Intent
+                        3582,3600,3580,462,3035,446,3779,916,3587,3040)       // Intent
 
     
     // Training Data
