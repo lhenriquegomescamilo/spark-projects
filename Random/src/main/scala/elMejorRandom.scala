@@ -197,22 +197,10 @@ val geo_counts = geo_hour.groupBy("device_id","device_type").agg(collect_list("n
 
   geo_counts.write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/geo/geo_processed/radios_argentina_2010_geodevicer_30d_argentina_30-8-2019-14h_agg") 
 
-*/
 
-
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-  
-
-   val safegraph_data = get_safegraph_data(spark,"60","1","mexico")
-  
-
-    val all_audience_xd = spark.read.format("csv")
+// Esto es para el proceso de jcdaux
+val safegraph_data = get_safegraph_data(spark,"60","1","mexico")
+val all_audience_xd = spark.read.format("csv")
     .load("/datascience/audiences/crossdeviced/all_audience_a_k_s_h_a_xd")
     .select("_c1")
     .withColumnRenamed("_c1","device_id")
@@ -225,6 +213,45 @@ joined.write.format("csv")
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph_60")
+
+*/
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+  
+  val safegraph_data = get_safegraph_data(spark,"2","2","mexico")
+
+  val audience_ranked = spark.read.format("csv").option("header",true).option("delimiter",",")
+  .load("/datascience/geo/MX/JCDecaux/all_audience_ranked.csv")
+  .withColumn("device_id",upper(col("device_id")))
+  .select("device_id","audience","confidence")
+
+
+
+val equivalence_table = spark.read.format("csv").load("/datascience/audiences/crossdeviced/all_audience_a_k_s_h_a_xd")
+.select("_c0","_c1").toDF("device_id","device_id_xd")
+equivalence_table.show(2)
+
+val madid_w_category = equivalence_table
+.join(audience_ranked,Seq("device_id"))
+.orderBy(asc("confidence"))
+.drop("device_id")
+.withColumnRenamed("device_id_xd","device_id")
+.dropDuplicates("device_id")
+
+val category_locations = madid_w_category.join(safegraph_data,Seq("device_id"))
+
+category_locations.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/MX/JCDecaux/category_locations_2")
 
   }
 }
