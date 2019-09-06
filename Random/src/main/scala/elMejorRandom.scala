@@ -224,34 +224,39 @@ joined.write.format("csv")
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-  
+  /*
   val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
 
-  val audience_ranked = spark.read.format("csv").option("header",true).option("delimiter",",")
+  
+*/
+
+val audience_ranked = spark.read.format("csv").option("header",true).option("delimiter",",")
   .load("/datascience/geo/MX/JCDecaux/all_audience_ranked.csv")
   .withColumn("device_id",upper(col("device_id")))
   .select("device_id","audience","confidence")
 
-
-
 val equivalence_table = spark.read.format("csv").load("/datascience/audiences/crossdeviced/all_audience_a_k_s_h_a_xd")
 .select("_c0","_c1").toDF("device_id","device_id_xd")
-equivalence_table.show(2)
 
-val madid_w_category = equivalence_table
-.join(audience_ranked,Seq("device_id"))
+val madid_w_category = equivalence_table.join(audience_ranked,Seq("device_id"))
 .orderBy(asc("confidence"))
 .drop("device_id")
 .withColumnRenamed("device_id_xd","device_id")
-.dropDuplicates("device_id")
+.withColumn("device_id",upper(col("device_id")))
 
-val category_locations = madid_w_category.join(safegraph_data,Seq("device_id"))
+val the_people_10 = spark.read.format("csv").option("header",true)
+.option("delimiter","\t")
+.load("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph_10")
+.distinct()
+
+val category_locations = the_people_10.join(madid_w_category,Seq("device_id"))
+
 
 category_locations.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/MX/JCDecaux/category_locations_2")
+.save("/datascience/geo/MX/JCDecaux/category_locations_10")
 
   }
 }
