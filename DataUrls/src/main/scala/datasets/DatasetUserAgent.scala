@@ -86,6 +86,10 @@ object DatasetUserAgent {
         "url",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
       )
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "(\\?|#).*", "")
+      )
 
     // Joining dataset with GT urls
     val joint = gtDF.join(features_ua,Seq("url"),joinType)

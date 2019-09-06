@@ -46,6 +46,10 @@ def get_data_urls(
         "url",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
       )
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "(\\?|#).*", "")
+      )
 
     urls
   }

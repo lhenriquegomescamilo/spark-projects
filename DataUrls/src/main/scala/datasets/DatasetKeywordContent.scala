@@ -67,6 +67,10 @@ object DatasetKeywordContent {
         "url",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
       )
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "(\\?|#).*", "")
+      )
       .drop("count", "scores")
       .dropDuplicates("url")
 
@@ -107,6 +111,10 @@ object DatasetKeywordContent {
       .withColumn(
         "url",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "(\\?|#).*", "")
       )
 
     urls
