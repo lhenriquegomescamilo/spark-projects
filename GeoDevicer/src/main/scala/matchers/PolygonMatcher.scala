@@ -209,10 +209,11 @@ object PolygonMatcher {
     val polygonGDf = getPolygons(spark,value_dictionary)
     val safegraphDf = get_safegraph_data(spark,value_dictionary)
 
-    broadcast(polygonGDf)
+    //broadcast(polygonGDf)
 
     //broadcast(polygonGDf.repartition(value_dictionary("repartition").toInt)).createOrReplaceTempView("poligono_amigo")
     //polygonGDf.repartition(value_dictionary("repartition").toInt).createOrReplaceTempView("poligono_amigo")    
+    polygonGDf.createOrReplaceTempView("poligono_amigo")    
     safegraphDf.createOrReplaceTempView("users")
 
 
