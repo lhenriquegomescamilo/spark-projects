@@ -262,7 +262,7 @@ val homes_in_df = spark.read.format("csv")
 .withColumn("ENT", substring(col("CVEGEO"), 1, 2)).filter("ENT == '09'")
 .withColumn("device_id",upper(col("ad_id"))).select("device_id")
 
-val the_people_in_CITY = homes_in_df.join(the_people_10,Seq("device_id"))
+val the_people_in_CITY = homes_in_df.join(the_people_100,Seq("device_id"))
 
 val category_locations = the_people_in_CITY.join(madid_w_category,Seq("device_id"))
 
