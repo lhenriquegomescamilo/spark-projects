@@ -249,9 +249,9 @@ val madid_w_category = equivalence_table.join(audience_ranked,Seq("device_id"))
 .dropDuplicates("device_id")
 
 //levanto lo geo que había generado para esta audiencia los últimos 10 días. esto es todo méxico
-val the_people_10 = spark.read.format("csv").option("header",true)
+val the_people_100 = spark.read.format("csv").option("header",true)
 .option("delimiter","\t")
-.load("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph")
+.load("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph_100")
 .distinct()
 
 //me quedo con los homes que estan en distrito federal
@@ -271,7 +271,7 @@ category_locations.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/MX/JCDecaux/category_locations_10")
+.save("/datascience/geo/MX/JCDecaux/category_locations_100")
 
   }
 }
