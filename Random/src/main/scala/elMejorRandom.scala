@@ -246,7 +246,7 @@ val madid_w_category = equivalence_table.join(audience_ranked,Seq("device_id"))
 
 val the_people_10 = spark.read.format("csv").option("header",true)
 .option("delimiter","\t")
-.load("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph_10")
+.load("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph")
 .distinct()
 
 val category_locations = the_people_10.join(madid_w_category,Seq("device_id"))
