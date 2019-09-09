@@ -67,28 +67,28 @@ object MatchingEquifaxLatam {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    val urls = getDataUrls(spark, 30, 4)
+    // val urls = getDataUrls(spark, 30, 4)
     val equifax_match = spark.read
       .format("csv")
       .option("header", "true")
       .load("/datascience/custom/aud_banco_ciudad_cookies_matched.csv")
       .withColumnRenamed("cookie", "device_id")
 
-    urls
-      .filter("country IN ('AR', 'CL', 'MX', 'PE', 'CO')")
-      .join(equifax_match, Seq("device_id"))
-      .select("device_id", "pii", "pii_type", "url", "country")
-      .write
-      .format("csv")
-      .mode("overwrite")
-      .save("/datascience/custom/aud_banco_ciudad_cookies_con_urls")
+    // urls
+    //   .filter("country IN ('AR', 'CL', 'MX', 'PE', 'CO')")
+    //   .join(equifax_match, Seq("device_id"))
+    //   .select("device_id", "pii", "pii_type", "url", "country")
+    //   .write
+    //   .format("csv")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/aud_banco_ciudad_cookies_con_urls")
 
     val user_agents = get_data_user_agent(spark, 30, 4)
 
     user_agents
       .filter("country IN ('AR', 'CL', 'MX', 'PE', 'CO')")
       .join(equifax_match, Seq("device_id"))
-      .select("device_id", "pii", "pii_type", "url", "country")
+      .drop("url")
       .write
       .format("csv")
       .mode("overwrite")
