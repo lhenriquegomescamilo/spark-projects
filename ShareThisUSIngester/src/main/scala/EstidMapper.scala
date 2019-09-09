@@ -32,7 +32,7 @@ object EstidMapper {
       .save("/datascience/sharethis/estid_table/")
   }
 
-  def getEstIdsMatchingAT(spark: SparkSession, start: String, end: String){
+  def getEstIdsMatchingMap(spark: SparkSession, start: String, end: String){
     import spark.implicits._
     val input = spark.read
         .format("parquet")
@@ -48,9 +48,8 @@ object EstidMapper {
         .format("parquet")
         .mode("overwrite")
         .partitionBy("country")
-        .save("/datascience/sharethis/estid_active_table/")
+        .save("/datascience/sharethis/estid_map/")
   }
-
 
   def getEstidTable(spark: SparkSession, nDays: Int = 60): DataFrame = {
     val conf = spark.sparkContext.hadoopConfiguration
@@ -94,7 +93,7 @@ object EstidMapper {
     val output_path =
       "/datascience/sharethis/estid_madid_table/"
     cross_deviced.write.mode(SaveMode.Overwrite).save(output_path)
-  }
+  }hour
 
   def download_data(spark: SparkSession, nDays: Int, from: Int): Unit = {
     val format = "yyyy/MM/dd"
@@ -104,13 +103,13 @@ object EstidMapper {
     days.foreach(day => getEstIdsMatching(spark, day))
   }
 
-  def download_data_AT(spark: SparkSession, from: Int, evalDays: Int): Unit = {
+  def download_data_map(spark: SparkSession, from: Int, evalDays: Int): Unit = {
     val format = "yyyyMMdd"
     val dt_end = DateTime.now.minusDays(from)
     val end = dt_end.toString(format)
     val start = dt_end.minusDays(evalDays).toString(format)
 
-    getEstIdsMatchingAT(spark, start, end)
+    getEstIdsMatchingMap(spark, start, end)
   }
 
   type OptionMap = Map[Symbol, Int]
@@ -148,7 +147,7 @@ object EstidMapper {
     }
 
     if (mode == 1 || mode == 2){
-        download_data_AT(spark, from, evalDays)
+        download_data_map(spark, from, evalDays)
     }
 
     //if (DateTime.now.getDayOfWeek()==7){
