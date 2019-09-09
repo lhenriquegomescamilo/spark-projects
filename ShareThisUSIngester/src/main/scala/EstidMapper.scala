@@ -93,7 +93,7 @@ object EstidMapper {
     val output_path =
       "/datascience/sharethis/estid_madid_table/"
     cross_deviced.write.mode(SaveMode.Overwrite).save(output_path)
-  }hour
+  }
 
   def download_data(spark: SparkSession, nDays: Int, from: Int): Unit = {
     val format = "yyyy/MM/dd"
