@@ -5133,7 +5133,7 @@ def get_timestamps_urls(spark:SparkSession){
                     .select("url","time")
 
   
-  df.groupby("url","time").count()
+  df.groupBy("url","time").count()
     .write.format("parquet")
     .mode(SaveMode.Overwrite)
     .save("/datascience/data_url_classifier/dataset_timestamp_final")
