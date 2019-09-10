@@ -14,12 +14,20 @@ object ShareThisInput {
   def processDayNew(spark: SparkSession,
                     day: String,
                     columns: Seq[String]) = {
-
+    import spark.implicits._
     val input_data = spark.read
         .format("json")
         .load("/data/providers/sharethis/json/dt=%s/".format(day))
-        
-    val data_columns = input_data
+
+    val input_estid = spark.read
+        .format("parquet")
+        .load("/datascience/sharethis/estid_map/")
+        .select($"estid".alias("map_estid"), $"device_id")
+
+    val joint = input_data
+        .join(input_estid, $"estid"===$"map_estid", "left")
+
+    val data_columns = joint
         .select(columns.head, columns.tail: _*)
         .withColumn("country", lit("US"))
         .withColumn("day", lit(day))
@@ -97,7 +105,8 @@ object ShareThisInput {
           "ios_idfa",
           "connected_tv",
           "searchQuery",
-          "refDomain")
+          "refDomain",
+          "device_id")
 
     download_data(spark, nDays, from, columns)
   }
