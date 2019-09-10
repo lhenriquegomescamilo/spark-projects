@@ -5114,46 +5114,46 @@ def get_volumes_santi_us(spark:SparkSession){
                     .save("/datascience/custom/volumes_us_santi")
 }
 
-def get_segments_pmi(spark:SparkSession){
+// def get_segments_pmi(spark:SparkSession){
 
-  val files = List("/datascience/misc/cookies_chesterfield.csv"
-                "/datascience/misc/cookies_marlboro.csv",
-                "/datascience/misc/cookies_phillip_morris.csv",
-                "/datascience/misc/cookies_parliament.csv")
+//   val files = List("/datascience/misc/cookies_chesterfield.csv",
+//                 "/datascience/misc/cookies_marlboro.csv",
+//                 "/datascience/misc/cookies_phillip_morris.csv",
+//                 "/datascience/misc/cookies_parliament.csv")
 
-  /// Configuraciones de spark
-  val sc = spark.sparkContext
-  val conf = sc.hadoopConfiguration
-  val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+//   /// Configuraciones de spark
+//   val sc = spark.sparkContext
+//   val conf = sc.hadoopConfiguration
+//   val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-  val format = "yyyyMMdd"
-  val start = DateTime.now.minusDays(1)
+//   val format = "yyyyMMdd"
+//   val start = DateTime.now.minusDays(1)
 
-  val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
-  val path = "/datascience/data_triplets/segments/"
-  val dfs = days.map(day => path + "day=%s/".format(day) + "country=AR")
-    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    .map(
-      x =>
-        spark.read
-          .option("basePath", "/datascience/data_triplets/segments/")
-          .parquet(x)
-    )
+//   val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+//   val path = "/datascience/data_triplets/segments/"
+//   val dfs = days.map(day => path + "day=%s/".format(day) + "country=AR")
+//     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+//     .map(
+//       x =>
+//         spark.read
+//           .option("basePath", "/datascience/data_triplets/segments/")
+//           .parquet(x)
+//     )
 
-  var data = dfs.reduce((df1, df2) => df1.union(df2))
+//   var data = dfs.reduce((df1, df2) => df1.union(df2))
 
-  for (filename <- files){
-    var cookies = spark.read.format("csv").load(filename)
-                                        .withColumnRenamed("_c0","device_id")
+//   for (filename <- files){
+//     var cookies = spark.read.format("csv").load(filename)
+//                                         .withColumnRenamed("_c0","device_id")
 
-    data.join(broadcast(cookies),Seq("device_id"))
-        .select("device_id","feature","count")
-        .dropDuplicates()
-        .write.format("csv")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/custom/segments_%s".format(filename.split("/").last.split("_").last))
-  }
-}
+//     data.join(broadcast(cookies),Seq("device_id"))
+//         .select("device_id","feature","count")
+//         .dropDuplicates()
+//         .write.format("csv")
+//         .mode(SaveMode.Overwrite)
+//         .save("/datascience/custom/segments_%s".format(filename.split("/").last.split("_").last))
+//   }
+// }
 
   /*****************************************************/
   /******************     MAIN     *********************/
