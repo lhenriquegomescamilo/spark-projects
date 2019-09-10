@@ -624,7 +624,7 @@ object ContentKws {
       var tuples = df_queries.select("seg_id", "query")
     }
     
-    var tuples = tuples.collect().map(r => (r(0).toString, r(1).toString))
+    tuples = tuples.collect().map(r => (r(0).toString, r(1).toString))
 
     for (t <- tuples) {
       df_joint
@@ -701,7 +701,7 @@ object ContentKws {
       var df_keys = df_queries.select("kws").withColumnRenamed("kws", "content_keys")
     }
     
-    var df_keys = df_queries.select("content_keys")
+    df_keys = df_keys.select("content_keys")
       .withColumn("content_keys", split(col("content_keys"), ","))
       .withColumn("content_keys", explode(col("content_keys")))
       .dropDuplicates("content_keys")
