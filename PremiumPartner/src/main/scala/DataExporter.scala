@@ -54,7 +54,7 @@ object DataExporter {
    * @param from: number of days to be skipped. Integer.
    **/
   def download_data(spark: SparkSession, jason: String, nDays: Int, from: Int): Unit = {
-
+    import spark.implicits._
     val configs = spark.read
         .format("json")
         .option("multiLine", true).option("mode", "PERMISSIVE")
