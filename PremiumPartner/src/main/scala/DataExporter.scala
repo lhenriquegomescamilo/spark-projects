@@ -67,7 +67,7 @@ object DataExporter {
     val out_path = List(configs.select($"exportName").collect)(0)(0).toString
     val columns = List(configs.select($"fields").collect)(0)(0).toString.split(",").map(x => x.trim.replace("\"", "") ).toSeq
     val ids_partners = List(configs.select($"partnerIds").collect)(0)(0).toString.split(",").map(x => x.trim.replace("\"", "") ).toSeq
-    val filter = List(configs.select($"filters").collect)(0)(0).toString
+    val filters = List(configs.select($"filters").collect)(0)(0).toString
     val del = List(configs.select($"arrayDelimiter").collect)(0)(0).toString
 
     /* cargo variables old
