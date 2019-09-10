@@ -6,7 +6,7 @@ import org.apache.spark.sql.SparkSession
 import org.joda.time.{DateTime, Days}
 
 object DataExporter {
-  def process_day(spark: SparkSession, day:String, columns: Seq[String], 
+  def process_day(spark: SparkSession, day: String, columns: Seq[String], 
         ids_partners: Seq[String],
         filters: String,
         out_path: String,
@@ -38,7 +38,7 @@ object DataExporter {
         .option("header", "true")
         .option("delimiter","\t")
         .option("compression", "gzip")
-        .save(out_path + "/" + day.replace("/", ""))
+        .save( "/data/exports/" + out_path + "/" + day.replace("/", ""))
           
   }
   
@@ -77,7 +77,7 @@ object DataExporter {
     val filters = mapa("filters")
     val del = mapa("arrayDelimiter")
     */
-
+    println(out_path, columns, ids_partners, filters, del)
     // Now we get the list of days to be downloaded
     val format = "yyyy/MM/dd"
     val end   = DateTime.now.minusDays(from)
