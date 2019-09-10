@@ -5129,8 +5129,14 @@ def get_timestamps_urls(spark:SparkSession){
                     .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
                     .withColumn("daytime", myUDFTime(col("wd")))
                     .withColumn("final",UDFFinal(col("daytime"),col("wd")))
+                    .withColumnRenamed("final","time")
+                    .select("url","time")
+
   
-  df.write.format("parquet").save("/datascience/data_url_classifier/dataset_timestamp_final")
+  df.groupby("url","time").count()
+    .write.format("parquet")
+    .mode(SaveMode.Overwrite)
+    .save("/datascience/data_url_classifier/dataset_timestamp_final")
 
 }
 
