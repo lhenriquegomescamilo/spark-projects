@@ -53,24 +53,30 @@ object DataExporter {
    * @param nDays: number of days to be downloaded. Integer.
    * @param from: number of days to be skipped. Integer.
    **/
-  def download_data(spark: SparkSession, meta: String, nDays: Int, from: Int): Unit = {
+  def download_data(spark: SparkSession, jason: String, nDays: Int, from: Int): Unit = {
 
     val configs = spark.read
-            .format("csv")
-            .option("sep", ":")
-            .load(meta)
-            .collect
+        .format("json")
+        .option("multiLine", true).option("mode", "PERMISSIVE")
+        .load(jason)
 
-    val ls = List(configs)(0)
+    //val ls = List(configs)(0)
 
-    val mapa: Map[String, String] = ls.map(x => x(0).asInstanceOf[String] -> x(1).asInstanceOf[String] ).toMap
+    //val mapa: Map[String, String] = ls.map(x => x(0).asInstanceOf[String] -> x(1).asInstanceOf[String] ).toMap
+    //Cargo parametros
+    val out_path = List(configs.select($"exportName").collect)(0)(0).toString
+    val columns = List(configs.select($"fields").collect)(0)(0).toString.split(",").map(x => x.trim.replace("\"", "") ).toSeq
+    val ids_partners = List(configs.select($"partnerIds").collect)(0)(0).toString.split(",").map(x => x.trim.replace("\"", "") ).toSeq
+    val filter = List(configs.select($"filters").collect)(0)(0).toString
+    val del = List(configs.select($"arrayDelimiter").collect)(0)(0).toString
 
-    //cargo variables
+    /* cargo variables old
     val out_path: String = "/data/exports/%s".format(mapa("exportName"))
     val columns = mapa("fields").split(",").map(x => x.trim).toSeq
     val ids_partners = mapa("partnerIds").split(",").map(x => x.trim.replace("\"", "") ).toSeq
     val filters = mapa("filters")
     val del = mapa("arrayDelimiter")
+    */
 
     // Now we get the list of days to be downloaded
     val format = "yyyy/MM/dd"
@@ -124,7 +130,7 @@ object DataExporter {
 
     val lista = fs.listStatus(new Path("/data/exports/"))
 
-    lista.filter(x => x.getPath.toString.endsWith(".meta") )
+    lista.filter(x => x.getPath.toString.endsWith(".json") )
         .foreach(x => download_data(spark, x.getPath.toString, nDays, from))//println(x.getPath))
 
     // Finally, we download the data
