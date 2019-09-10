@@ -687,17 +687,15 @@ object ContentKws {
     
     //selects "content_keys" (every keyword that appears in the queries) to match with df_kws
 
-    if (stemming == 1) {
-      var df_keys = df_queries.select("stem_kws").withColumnRenamed("stem_kws", "content_keys")
-    }
-    else {
-      var df_keys = df_queries.select("kws").withColumnRenamed("kws", "content_keys")
-    }
-    
-    df_keys = df_keys.select("content_keys")
-      .withColumn("content_keys", split(col("content_keys"), ","))
-      .withColumn("content_keys", explode(col("content_keys")))
-      .dropDuplicates("content_keys")
+    val to_select = if (stemming == 1) List("stem_kws") else List("kws")
+
+    val columnName = df_queries.select(to_select.head, to_select.tail: _*).columns(0)
+
+    val df_keys = df_queries.select(to_select.head, to_select.tail: _*)
+                            .withColumnRenamed(columnName, "content_keys")
+                            .withColumn("content_keys", split(col("content_keys"), ","))
+                            .withColumn("content_keys", explode(col("content_keys")))
+                            .dropDuplicates("content_keys")
     
     val country = df_queries.select("country").first.getString(0)
 
