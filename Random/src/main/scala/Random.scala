@@ -5114,7 +5114,13 @@ def get_volumes_santi_us(spark:SparkSession){
                     .save("/datascience/custom/volumes_us_santi")
 }
 
-def get_segments_pmi(spark:SparkSession, files:List[String]){
+def get_segments_pmi(spark:SparkSession){
+
+  val files = List("/datascience/misc/cookies_chesterfield.csv"
+                "/datascience/misc/cookies_marlboro.csv",
+                "/datascience/misc/cookies_phillip_morris.csv",
+                "/datascience/misc/cookies_parliament.csv")
+
   /// Configuraciones de spark
   val sc = spark.sparkContext
   val conf = sc.hadoopConfiguration
@@ -5123,7 +5129,7 @@ def get_segments_pmi(spark:SparkSession, files:List[String]){
   val format = "yyyyMMdd"
   val start = DateTime.now.minusDays(1)
 
-  val days = (0 until 60).map(start.minusDays(_)).map(_.toString(format))
+  val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
   val path = "/datascience/data_triplets/segments/"
   val dfs = days.map(day => path + "day=%s/".format(day) + "country=AR")
     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
@@ -5146,7 +5152,6 @@ def get_segments_pmi(spark:SparkSession, files:List[String]){
         .write.format("csv")
         .mode(SaveMode.Overwrite)
         .save("/datascience/custom/segments_%s".format(filename.split("/").last.split("_").last))
-  
   }
 }
 
@@ -5160,10 +5165,7 @@ def get_segments_pmi(spark:SparkSession, files:List[String]){
     Logger.getRootLogger.setLevel(Level.WARN)
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
-    val files = List("/datascience/misc/cookies_chesterfield.csv")
-                    //"/datascience/misc/cookies_marlboro.csv",
-                    //"/datascience/misc/cookies_phillip_morris.csv",
-                    //"/datascience/misc/cookies_parliament.csv"
+
     get_segments_pmi(spark,files)
      
   }

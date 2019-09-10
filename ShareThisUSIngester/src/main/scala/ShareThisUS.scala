@@ -57,7 +57,7 @@ object ShareThisUS {
         .format("csv")
         .option("header", "false")
         .option("sep", " ")
-        .save("/data/providers/sharethis/test/day=%s".format(day))
+        .save("/data/providers/sharethis/to_ingest/day=%s".format(day))
 
   }
 

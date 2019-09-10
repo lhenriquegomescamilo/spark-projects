@@ -19,7 +19,9 @@ object dataGCBA {
   }
   def main(args: Array[String]) {
     /// Configuracion spark
-    val spark = SparkSession.builder.appName("Data GCBA Process").getOrCreate()
+    val spark = SparkSession.builder.appName("Data GCBA Process")
+                                    .config("spark.sql.files.ignoreCorruptFiles", "true")
+                                    .getOrCreate()
 
     /// Parseo de parametros
     val since = if (args.length > 0) args(0).toInt else 0
