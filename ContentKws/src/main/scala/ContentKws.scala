@@ -221,7 +221,7 @@ object ContentKws {
   }
   
    */
-   
+
    /**
     *
     *
@@ -608,6 +608,7 @@ object ContentKws {
       spark: SparkSession,
       df_queries: DataFrame,
       df_joint: DataFrame,
+      stemming: Int,
       populate: Int,
       job_name: String) = {
   
@@ -616,9 +617,15 @@ object ContentKws {
     val fileName = "/datascience/devicer/processed/" + job_name
     val fileNameFinal = fileName + "_grouped"
 
-    val tuples = df_queries.select("seg_id", "query")
-      .collect()
-      .map(r => (r(0).toString, r(1).toString))
+    if (stemming == 1) {
+      var tuples = df_queries.select("seg_id", "stem_query")
+    }
+    else {
+      var tuples = df_queries.select("seg_id", "query")
+    }
+    
+    var tuples = tuples.collect().map(r => (r(0).toString, r(1).toString))
+
     for (t <- tuples) {
       df_joint
         .filter(t._2)
@@ -630,8 +637,6 @@ object ContentKws {
         .mode("append")
         .save(fileName)
     }
-  
-    //var done, if (parametro) --> distinct()
 
     val done = spark.read
       .format("csv")
@@ -678,6 +683,7 @@ object ContentKws {
       nDays: Integer,
       since: Integer,
       json_path: String,
+      stemming: Int,
       populate: Int) = {
 
 
@@ -687,11 +693,18 @@ object ContentKws {
       .load(json_path)
     
     //selects "content_keys" (every keyword that appears in the queries) to match with df_kws
-    val df_keys = df_queries.select("kws")
-      .withColumn("kws", split(col("kws"), ","))
-      .withColumn("kws", explode(col("kws")))
-      .dropDuplicates("kws")
-      .withColumnRenamed("kws", "content_keys")
+
+    if (stemming == 1) {
+      var df_keys = df_queries.select("stem_kws").withColumnRenamed("stem_kws", "content_keys")
+    }
+    else {
+      var df_keys = df_queries.select("kws").withColumnRenamed("kws", "content_keys")
+    }
+    
+    var df_keys = df_queries.select("content_keys")
+      .withColumn("content_keys", split(col("content_keys"), ","))
+      .withColumn("content_keys", explode(col("content_keys")))
+      .dropDuplicates("content_keys")
     
     val country = df_queries.select("country").first.getString(0)
 
@@ -715,6 +728,7 @@ object ContentKws {
                        df_queries = df_queries,
                        df_joint = df_joint,
                        populate = populate,
+                       stemming = stemming,
                        job_name = job_name)
 
   }
