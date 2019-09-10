@@ -93,8 +93,8 @@ object DataUrls{
     val ndays = if (args.length > 0) args(0).toInt else 30
     val since = if (args.length > 1) args(1).toInt else 1
 
-    for(day <- 1 to ndays){
-      generate_data_urls(spark, since, day)
+    for(day <- since to since+ndays){
+      generate_data_urls(spark, 1, day)
     }
   }
 }
