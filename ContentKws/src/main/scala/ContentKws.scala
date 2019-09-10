@@ -735,7 +735,7 @@ object ContentKws {
 
     
     get_users_pipeline_3(spark = spark,
-                         nDays = 30,
+                         nDays = 10,
                          since = 1,
                          json_path = "/datascience/custom/testMX_taxo_nueva.json",
                          stemming = 0,
