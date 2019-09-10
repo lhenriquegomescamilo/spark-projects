@@ -36,3 +36,4 @@ barrio_chino_polygon = Polygon(map(lambda t: (t[1], t[0]), barrio_chino))
 rdd_total_chino = rdd_total.filter(lambda r: r is not None and barrio_chino_polygon.contains(Point(r[2], r[3])))   
 
 rdd_total_chino.map(lambda r: r[1]+","+r[4]).saveAsTextFile("hdfs://rely-hdfs/datascience/geo/AR/barrio_chino_60d")
+
