@@ -64,11 +64,11 @@ object DataExporter {
 
     //val mapa: Map[String, String] = ls.map(x => x(0).asInstanceOf[String] -> x(1).asInstanceOf[String] ).toMap
     //Cargo parametros
-    val out_path = List(configs.select($"exportName").collect)(0)(0).toString
-    val columns = List(configs.select($"fields").collect)(0)(0).toString.split(",").map(x => x.trim.replace("\"", "") ).toSeq
-    val ids_partners = List(configs.select($"partnerIds").collect)(0)(0).toString.split(",").map(x => x.trim.replace("\"", "") ).toSeq
-    val filters = List(configs.select($"filters").collect)(0)(0).toString
-    val del = List(configs.select($"arrayDelimiter").collect)(0)(0).toString
+    val out_path = List(configs.select($"exportName").collect)(0)(0).toString.replaceAll("[\\[\\]]","")
+    val columns = List( configs.select($"fields").collect() )(0)(0).toString.split(",").map(x => x.trim.replace("\"", "").replaceAll("[\\[\\]]","") ).toSeq
+    val ids_partners = List(configs.select($"partnerIds").collect)(0)(0).toString.split(",").map(x => x.trim.replace("\"", "").replaceAll("[\\[\\]]","") ).toSeq
+    val filters = List(configs.select($"filters").collect)(0)(0).toString.replaceAll("[\\[\\]]","")
+    val del = List(configs.select($"arrayDelimiter").collect)(0)(0).toString.replaceAll("[\\[\\]]","")
 
     /* cargo variables old
     val out_path: String = "/data/exports/%s".format(mapa("exportName"))
