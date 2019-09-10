@@ -738,7 +738,7 @@ object ContentKws {
                          nDays = 10,
                          since = 1,
                          json_path = "/datascience/custom/testMX_taxo_nueva.json",
-                         stemming = 0,
+                         stemming = 1,
                          populate = 0) 
   
      
