@@ -59,6 +59,25 @@ object MatchingEquifaxLatam {
     df
   }
 
+  def getDataKeywords(spark: SparkSession, nDays: Int, since: Int): DataFrame = {
+    val end = DateTime.now.minusDays(since)
+
+    val lista_files = (0 until nDays)
+      .map(end.minusDays(_))
+      .map(
+        day =>
+          "/datascience/data_keywords/day=%s"
+            .format(day.toString("yyyyMMdd"))
+      )
+
+    val keywords = spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/data_keywords/")
+      .load(lista_files: _*)
+
+    keywords
+}
+
   def main(args: Array[String]) {
     // Spark configuration
     val spark = SparkSession.builder
@@ -83,15 +102,26 @@ object MatchingEquifaxLatam {
     //   .mode("overwrite")
     //   .save("/datascience/custom/aud_banco_ciudad_cookies_con_urls")
 
-    val user_agents = get_data_user_agent(spark, 30, 4)
+    // val user_agents = get_data_user_agent(spark, 30, 4)
 
-    user_agents
+    // user_agents
+    //   .filter("country IN ('AR', 'CL', 'MX', 'PE', 'CO')")
+    //   .join(equifax_match, Seq("device_id"))
+    //   .drop("url")
+    //   .write
+    //   .format("csv")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/aud_banco_ciudad_cookies_con_useragents")
+
+    val keywords = getDataKeywords(spark, 30, 1)
+
+    keywords
       .filter("country IN ('AR', 'CL', 'MX', 'PE', 'CO')")
+      .select("device_id", "content_keys")
       .join(equifax_match, Seq("device_id"))
-      .drop("url")
       .write
       .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/aud_banco_ciudad_cookies_con_useragents")
+      .save("/datascience/custom/aud_banco_ciudad_cookies_con_keywords")
   }
 }
