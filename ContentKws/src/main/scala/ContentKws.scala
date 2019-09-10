@@ -617,14 +617,9 @@ object ContentKws {
     val fileName = "/datascience/devicer/processed/" + job_name
     val fileNameFinal = fileName + "_grouped"
 
-    if (stemming == 1) {
-      var tuples = df_queries.select("seg_id", "stem_query")
-    }
-    else {
-      var tuples = df_queries.select("seg_id", "query")
-    }
-    
-    tuples = tuples.collect().map(r => (r(0).toString, r(1).toString))
+    val to_select = if (stemming == 1) List("seg_id", "stem_query") else List("seg_id", "query")
+
+    val tuples = df_queries.select(to_select.head, to_select.tail: _*).collect().map(r => (r(0).toString, r(1).toString))
 
     for (t <- tuples) {
       df_joint
@@ -666,8 +661,6 @@ object ContentKws {
     }
     
   }
-  
-
 
   //main method:
 
