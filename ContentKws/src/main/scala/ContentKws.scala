@@ -746,7 +746,8 @@ object ContentKws {
     get_users_pipeline_3(spark = spark,
                          nDays = 30,
                          since = 1,
-                         json_path = "/datascience/custom/CL_pitch_havas_CL.json",
+                         json_path = "/datascience/custom/testMX_taxo_nueva.json",
+                         stemming = 0,
                          populate = 0) 
   
      
