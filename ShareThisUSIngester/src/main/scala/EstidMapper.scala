@@ -38,6 +38,7 @@ object EstidMapper {
         .format("parquet")
         .load("/datascience/sharethis/estid_table/")
         .filter(($"day" >= start && $"day" <= end ))
+        .select($"country", $"estid", $"device_id")
         .dropDuplicates()
 
     val group_by = input

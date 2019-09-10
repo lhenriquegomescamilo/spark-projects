@@ -23,6 +23,7 @@ object ShareThisInput {
         .format("parquet")
         .load("/datascience/sharethis/estid_map/")
         .select($"estid".alias("map_estid"), $"device_id")
+        .dropDuplicates()
 
     val joint = input_data
         .join(input_estid, $"estid"===$"map_estid", "left")

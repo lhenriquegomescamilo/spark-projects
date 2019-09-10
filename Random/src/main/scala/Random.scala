@@ -5114,6 +5114,26 @@ def get_volumes_santi_us(spark:SparkSession){
                     .save("/datascience/custom/volumes_us_santi")
 }
 
+
+def get_timestamps_urls(spark:SparkSession){
+
+  val myUDF = udf((weekday: String, hour: String) => if (weekday == "Sunday" || weekday == "Saturday") "weekend" else "week")
+
+  val myUDFTime = udf((hour: String) =>   if (List(9,10,11,12,13).contains(hour)) "morning" else if (List(14,15,16,17,18,19,20,21).contains(hour)) "afternoon" else "night")
+
+  val UDFFinal = udf((daytime: String, wd:String) => "%s_%s".format(daytime,wd))
+
+  val df = spark.read.load("/datascience/data_url_classifier/dataset_timestamp/country=AR/")
+                    .withColumn("Hour", date_format(col("Time"), "HH"))
+                    .withColumn("Weekday", date_format(col("Time"), "EEEE"))
+                    .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
+                    .withColumn("daytime", myUDFTime(col("wd")))
+                    .withColumn("final",UDFFinal(col("daytime"),col("wd")))
+  
+  df.write.format("parquet").save("/datascience/data_url_classifier/dataset_timestamp_final")
+
+}
+
 // def get_segments_pmi(spark:SparkSession){
 
 //   val files = List("/datascience/misc/cookies_chesterfield.csv",
@@ -5167,6 +5187,7 @@ def get_volumes_santi_us(spark:SparkSession){
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
 
     // get_segments_pmi(spark,files)
+    get_timestamps_urls(spark)
      
   }
 
