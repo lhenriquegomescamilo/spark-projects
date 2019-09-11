@@ -43,7 +43,9 @@ object EstidMapper {
 
     val group_by = input
         .groupBy("country", "estid")
-        .agg(collect_list("device_id").as("device_id"))
+        .agg(
+            collect_set("device_id").as("device_id"),
+            last("country").as("country"))
     
     group_by.write
         .format("parquet")
