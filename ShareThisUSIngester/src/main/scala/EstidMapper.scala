@@ -42,7 +42,7 @@ object EstidMapper {
         .dropDuplicates()
 
     val group_by = input
-        .groupBy("country", "estid")
+        .groupBy("estid")
         .agg(
             collect_set("device_id").as("device_id"),
             last("country").as("country"))
