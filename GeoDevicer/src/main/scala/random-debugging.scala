@@ -1,8 +1,4 @@
 package main.scala
-import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
-import org.apache.spark.sql.functions._
-import org.joda.time.{Days, DateTime}
-import org.apache.hadoop.fs.{FileSystem, Path}
 
 //esto para hacer funcionar geopsark y sus geofunciones
 import org.apache.spark.sql.SparkSession
@@ -47,9 +43,13 @@ import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 
+
+import org.datasyslab.geospark.utils.GeoSparkConf
+import org.datasyslab.geospark.formatMapper._
 import org.datasyslab.geospark.formatMapper.GeoJsonReader
 import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
-import org.datasyslab.geospark.utils.GeoSparkConf
+
+
 
 
 /**
@@ -332,13 +332,6 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 println(geosparkConf)
 
-%spark
-
-//Acá lo importantes son las característicsa de invalid geometries
-
-
-import org.datasyslab.geospark.formatMapper.GeoJsonReader
-import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 
 //acá cargamos el polígono
 //val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_deshape.json"
