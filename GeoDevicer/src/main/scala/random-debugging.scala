@@ -26,7 +26,6 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.apache.log4j.{Level, Logger}
 
-import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, Point, GeometryFactory}
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.apache.spark.storage.StorageLevel
@@ -354,7 +353,8 @@ users.createOrReplaceTempView("data")
               FROM data
           """)
 
-          
+   
+safegraphDf.createOrReplaceTempView("data")        
 
 
 val intersection = spark.sql(
