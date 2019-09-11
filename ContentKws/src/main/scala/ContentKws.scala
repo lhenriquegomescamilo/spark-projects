@@ -463,7 +463,7 @@ object ContentKws {
       case "--json" :: value :: tail =>
         nextOption(map ++ Map('json -> value), tail)
       case "--verbose" :: tail =>
-        nextOption(map ++ Map('verbose -> value), tail)
+        nextOption(map ++ Map('verbose -> true), tail)
     }
   }
 
@@ -491,8 +491,8 @@ object ContentKws {
       since = 1,
       json_path = "/datascience/custom/testMX_taxo_nueva.json",
       stemming = 1,
-      populate = 0,
-      verbose = verbose
+      populate = 0//,
+      //verbose = verbose
     )
 
   }
