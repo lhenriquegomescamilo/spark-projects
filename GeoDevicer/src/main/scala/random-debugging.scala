@@ -337,7 +337,7 @@ val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocati
 //acá para visualizar el DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,*  FROM rawSpatialDf        """.stripMargin)
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as polygon_name  FROM rawSpatialDf        """.stripMargin)
 .drop("rddshape")
 
 spatialDf.createOrReplaceTempView("poligonomagico")
@@ -358,11 +358,11 @@ users.createOrReplaceTempView("data")
 val intersection = spark.sql(
       """SELECT  *                   FROM data, poligonomagico       WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
                    
-intersection .write.format("csv")
+intersection.select("ad_id","polygon_name") .write.format("parquet")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/sample")
+.save("/datascience/geo/geospark_debugging/sample_random")
 
 
   /*
