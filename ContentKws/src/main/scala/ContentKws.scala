@@ -323,7 +323,7 @@ object ContentKws {
 
     df_joint.cache()
 
-    val fileName = "/datascience/devicer/processed/" + job_name
+    val fileName = "/datascience/devicer/processed/" + "test_taxo_nueva_MX_no_stemming"
     val fileNameFinal = fileName + "_grouped"
 
     val to_select =
@@ -490,7 +490,7 @@ object ContentKws {
       nDays = 10,
       since = 1,
       json_path = "/datascience/custom/testMX_taxo_nueva.json",
-      stemming = 1,
+      stemming = 0,
       populate = 0//,
       //verbose = verbose
     )
