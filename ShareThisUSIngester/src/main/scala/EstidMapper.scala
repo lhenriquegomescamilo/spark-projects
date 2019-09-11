@@ -108,7 +108,7 @@ object EstidMapper {
 
   def download_data_map(spark: SparkSession, from: Int, evalDays: Int): Unit = {
     val format = "yyyyMMdd"
-    val dt_end = DateTime.ngroup by firstow.minusDays(from)
+    val dt_end = DateTime.now.minusDays(from)
     val end = dt_end.toString(format)
     val start = dt_end.minusDays(evalDays).toString(format)
 
