@@ -574,7 +574,7 @@ object ContentKws {
 
     val to_select = if (stemming == 1) List("stemmed_keys","device_id") else List("content_keys","device_id")
 
-    val columnName = to_select.lift(0)
+    val columnName = to_select(0).toString
 
     val df = spark.read
       .option("basePath", path).parquet(hdfs_files: _*)
@@ -696,7 +696,7 @@ object ContentKws {
     val to_select = if (stemming == 1) List("stem_kws") else List("kws")
 
     //val columnName = df_queries.select(to_select.head, to_select.tail: _*).columns(0)
-    val columnName = to_select.lift(0)
+    val columnName = to_select(0).toString
 
     val df_keys = df_queries.select(to_select.head, to_select.tail: _*)
                             .withColumnRenamed(columnName, "content_keys")
