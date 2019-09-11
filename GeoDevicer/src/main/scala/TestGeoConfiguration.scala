@@ -47,7 +47,9 @@ import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 
-object AudienceCrossDevicer {
+import org.datasyslab.geospark.utils.GeoSparkConf
+
+object TestGeoConfiguration {
   def main(args: Array[String]) {
     Logger.getRootLogger.setLevel(Level.WARN)
     var sparkSession: SparkSession = SparkSession
