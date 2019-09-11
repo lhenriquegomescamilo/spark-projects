@@ -319,7 +319,7 @@ val spark = SparkSession.builder()
       master("local[*]").appName("myGeoSparkSQLdemo").getOrCreate()
 // .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
      
-      //GeoSparkSQLRegistrator.registerAll(spark)
+GeoSparkSQLRegistrator.registerAll(spark)
 
    // Initialize the variables
 val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
