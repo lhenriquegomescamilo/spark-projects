@@ -19,16 +19,16 @@ object ShareThisInput {
         .format("json")
         .load("/data/providers/sharethis/json/dt=%s/".format(day))
 
-    val input_estid = spark.read
-        .format("parquet")
-        .load("/datascience/sharethis/estid_map/")
-        .select($"estid".alias("map_estid"), $"device_id")
-        .dropDuplicates()
+    //val input_estid = spark.read
+    //    .format("parquet")
+    //    .load("/datascience/sharethis/estid_map/")
+    //    .select($"estid".alias("map_estid"), $"device_id")
+    //    .dropDuplicates()
 
-    val joint = input_data
-        .join(input_estid, $"estid"===$"map_estid", "left")
+    //val joint = input_data
+    //    .join(input_estid, $"estid"===$"map_estid", "left")
 
-    val data_columns = joint
+    val data_columns = input_data
         .select(columns.head, columns.tail: _*)
         .withColumn("country", lit("US"))
         .withColumn("day", lit(day))
