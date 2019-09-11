@@ -70,7 +70,7 @@ code.join(home_index,Seq("device_id"))
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/AR/tapad_w_geocode")
 
-  }import org.datasyslab.geospark.formatMapper
+  }
 
 def getDataPipeline(
       spark: SparkSession,
