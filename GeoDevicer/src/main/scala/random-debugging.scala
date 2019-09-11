@@ -28,11 +28,10 @@ import org.apache.spark.serializer.KryoRegistrator
 import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 //import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 import org.datasyslab.geospark.utils.GeoSparkConf
-import org.datasyslab.geospark.formatMapper.GeoJsonReader
-import org.datasyslab.geospark.formatMapper.shapefile
-import org.datasyslab.geospark.formatMapper
-import org.apache.spark.sql.types.{DataType, StructType}
 import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
+import org.datasyslab.geospark.formatMapper.GeoJsonReader
+import org.apache.spark.sql.types.{DataType, StructType}
+
 
 
 
