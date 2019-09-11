@@ -463,7 +463,7 @@ object ContentKws {
       case "--json" :: value :: tail =>
         nextOption(map ++ Map('json -> value), tail)
       case "--verbose" :: tail =>
-        nextOption(map ++ Map('verbose -> true), tail)
+        nextOption(map ++ Map('verbose -> "true"), tail)
     }
   }
 
