@@ -73,9 +73,9 @@ object Item2Item {
 
     println("LOOKALIKE LOG: Jobs to process = " + filesToProcess.length.toString)
 
-    //for (file <- filesToProcess){
-    if(filesToProcess.length > 0){
-      var file = filesToProcess.head
+    for (file <- filesToProcess){
+    //if(filesToProcess.length > 0){
+    //  var file = filesToProcess.head
       var filename = file._1
       var fileToProcess = pathToProcess + filename
       var fileInProcess = pathInProcess + filename
