@@ -106,8 +106,8 @@ object ShareThisInput {
           "ios_idfa",
           "connected_tv",
           "searchQuery",
-          "refDomain",
-          "device_id")
+          "refDomain")
+          //"device_id")
 
     download_data(spark, nDays, from, columns)
   }
