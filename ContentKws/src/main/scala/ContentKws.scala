@@ -555,7 +555,8 @@ object ContentKws {
       spark: SparkSession,
       country: String,
       nDays: Integer,
-      since: Integer) : DataFrame = {
+      since: Integer,
+      stemming: Int) : DataFrame = {
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -571,9 +572,14 @@ object ContentKws {
       .map(day => path + "/day=%s/country=%s".format(day,country)) //para cada dia de la lista day devuelve el path del día
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
 
+    val to_select = if (stemming == 1) List("stemmed_keys","device_id") else List("content_keys","device_id")
+
+    val columnName = to_select.lift(0)
+
     val df = spark.read
       .option("basePath", path).parquet(hdfs_files: _*)
-      .select("content_keys","device_id")
+      .select(to_select.head, to_select.tail: _*)
+      .withColumnRenamed(columnName, "content_keys")
       .na.drop() 
 
     df
@@ -689,7 +695,8 @@ object ContentKws {
 
     val to_select = if (stemming == 1) List("stem_kws") else List("kws")
 
-    val columnName = df_queries.select(to_select.head, to_select.tail: _*).columns(0)
+    //val columnName = df_queries.select(to_select.head, to_select.tail: _*).columns(0)
+    val columnName = to_select.lift(0)
 
     val df_keys = df_queries.select(to_select.head, to_select.tail: _*)
                             .withColumnRenamed(columnName, "content_keys")
@@ -703,7 +710,8 @@ object ContentKws {
     val df_data_keywords = read_data_kws(spark = spark,
                                          country = country,
                                          nDays = nDays,
-                                         since = since)
+                                         since = since,
+                                         stemming = stemming)
 
     println("count de data_keywords para %sD: %s".format(nDays,df_data_keywords.select("device_id").distinct().count())) 
         
