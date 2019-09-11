@@ -353,9 +353,7 @@ users.createOrReplaceTempView("data")
               FROM data
           """)
 
-   
-safegraphDf.createOrReplaceTempView("data")        
-
+ safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *                   FROM data, poligonomagico       WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
