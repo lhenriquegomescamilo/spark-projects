@@ -451,10 +451,32 @@ object ContentKws {
 
   }
 
+  type OptionMap = Map[Symbol, String]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--json" :: value :: tail =>
+        nextOption(map ++ Map('json -> value), tail)
+      case "--verbose" :: tail =>
+        nextOption(map ++ Map('verbose -> value), tail)
+    }
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(args: Array[String]) {
+    // Reading the parameters
+    val options = nextOption(Map(), args.toList)
+    val verbose = if (options.contains('verbose)) true else false
+    // If there is no json specified, it is going to fail
+    val json = if (options.contains('json)) options('json) else "" 
+
     val spark =
       SparkSession.builder
         .appName("Spark devicer")
@@ -469,7 +491,8 @@ object ContentKws {
       since = 1,
       json_path = "/datascience/custom/testMX_taxo_nueva.json",
       stemming = 1,
-      populate = 0
+      populate = 0,
+      verbose = verbose
     )
 
   }
