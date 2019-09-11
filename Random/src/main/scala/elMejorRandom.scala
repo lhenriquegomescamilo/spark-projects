@@ -4,6 +4,53 @@ import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{FileSystem, Path}
 
+//esto para hacer funcionar geopsark y sus geofunciones
+import org.apache.spark.sql.SparkSession
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.joda.time.DateTime
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.SaveMode
+import org.apache.log4j.{Level, Logger}
+
+import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
+import com.vividsolutions.jts.geom.{
+  Coordinate,
+  Geometry,
+  Point,
+  GeometryFactory
+}
+import org.datasyslab.geospark.spatialRDD.SpatialRDD
+import org.apache.spark.storage.StorageLevel
+
+import org.apache.spark.serializer.KryoSerializer
+import org.apache.spark.serializer.KryoRegistrator
+import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
+//import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
+
+
+import org.apache.spark.sql.SparkSession
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.joda.time.DateTime
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.SaveMode
+import org.apache.log4j.{Level, Logger}
+
+import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, Point, GeometryFactory}
+import org.datasyslab.geospark.spatialRDD.SpatialRDD
+import org.apache.spark.storage.StorageLevel
+
+import org.apache.spark.serializer.KryoSerializer
+import org.apache.spark.serializer.KryoRegistrator
+import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
+//import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
+import org.apache.spark.sql.types.{DataType, StructType}
+import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
+
+
+import org.datasyslab.geospark.utils.GeoSparkConf
+
+
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
@@ -214,21 +261,6 @@ joined.write.format("csv")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph_60")
 
-*/
-
-
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-  /*
-  val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
-
-  
-*/
 
 //tomo la audiencia de usuarios rankeados, madid y web
 val audience_ranked = spark.read.format("csv").option("header",true).option("delimiter",",")
@@ -272,6 +304,84 @@ category_locations.write.format("csv")
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/MX/JCDecaux/category_locations_100")
+
+*/
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+   
+
+val spark = SparkSession.builder()
+.config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.serializer", classOf[KryoSerializer].getName)
+      .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
+       .config("geospark.global.index","true")
+       .config("geospark.join.gridtype", "kdbtree")
+       .config("geospark.join.spatitionside","right").
+      master("local[*]").appName("myGeoSparkSQLdemo").getOrCreate()
+
+      GeoSparkSQLRegistrator.registerAll(spark)
+
+   // Initialize the variables
+val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
+
+
+println(geosparkConf)
+
+%spark
+
+//Acá lo importantes son las característicsa de invalid geometries
+
+
+import org.datasyslab.geospark.formatMapper.GeoJsonReader
+import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
+
+//acá cargamos el polígono
+//val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_deshape.json"
+val inputLocation = "/datascience/geo/polygons/AR/audiencias/estadios.json"
+val allowTopologyInvalidGeometris = true // Optional
+val skipSyntaxInvalidGeometries = true // Optional
+val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+
+//acá para visualizar el DF
+var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
+rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,*  FROM rawSpatialDf        """.stripMargin).drop("rddshape")
+spatialDf.createOrReplaceTempView("poligonomagico")
+
+
+val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
+.load("/datascience/geo/safegraph_pipeline/day=0190614/country=argentina/part-00012-494c1e93-51ed-4910-816a-081cf232d7fe.c000.snappy.parquet").withColumn("latitude",col("latitude").cast("Double")).withColumn("longitude",col("longitude").cast("Double"))
+
+//Aplicando geometría a los puntos
+
+users.createOrReplaceTempView("data")
+    var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
+              FROM data
+          """)
+
+          
+
+
+val intersection = spark.sql(
+      """SELECT  *                   FROM data, poligonomagico       WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+                   
+intersection .write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geospark_debugging/sample")
+
+
+  /*
+  val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
+
+  
+*/
+
 
   }
 }
