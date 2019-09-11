@@ -13,7 +13,7 @@ import main.scala.matchers._
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
 import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
-import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
+//import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 import org.apache.log4j.{Level, Logger}
 
