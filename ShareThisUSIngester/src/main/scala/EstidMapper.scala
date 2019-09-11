@@ -1,7 +1,7 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.{lit, col, upper, collect_list}
+import org.apache.spark.sql.functions.{lit, col, upper, collect_list, collect_set, last}
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.spark.sql.{ SaveMode, DataFrame }
 
@@ -108,7 +108,7 @@ object EstidMapper {
 
   def download_data_map(spark: SparkSession, from: Int, evalDays: Int): Unit = {
     val format = "yyyyMMdd"
-    val dt_end = DateTime.now.minusDays(from)
+    val dt_end = DateTime.ngroup by firstow.minusDays(from)
     val end = dt_end.toString(format)
     val start = dt_end.minusDays(evalDays).toString(format)
 
