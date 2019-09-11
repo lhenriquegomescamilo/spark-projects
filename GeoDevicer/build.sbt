@@ -10,7 +10,7 @@ libraryDependencies += "org.apache.spark" %% "spark-core" % "2.3.1"
 libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.3.1"
 libraryDependencies += "org.datasyslab" % "geospark" % "1.2.0"
 libraryDependencies += "org.datasyslab" % "geospark-sql_2.3" % "1.2.0"
-libraryDependencies += "org.datasyslab" % "geospark-viz" % "1.2.0"
+//libraryDependencies += "org.datasyslab" % "geospark-viz" % "1.2.0"
 
 
 resolvers +=
