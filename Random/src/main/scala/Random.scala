@@ -5119,7 +5119,9 @@ def get_timestamps_urls(spark:SparkSession){
 
   val myUDF = udf((weekday: String, hour: String) => if (weekday == "Sunday" || weekday == "Saturday") "weekend" else "week")
 
-  val myUDFTime = udf((hour: String) =>   if (List(9,10,11,12,13).contains(hour)) "morning" else if (List(14,15,16,17,18,19,20,21).contains(hour)) "afternoon" else "night")
+  val myUDFTime = udf((hour: String) =>   if (List("09","10","11","12","13").contains(hour)) "morning" 
+                                            else if (List("14","15","16","17","18","19","20","21").contains(hour)) "afternoon"
+                                                  else "night")
 
   val UDFFinal = udf((daytime: String, wd:String) => "%s_%s".format(daytime,wd))
 
@@ -5127,12 +5129,12 @@ def get_timestamps_urls(spark:SparkSession){
                     .withColumn("Hour", date_format(col("Time"), "HH"))
                     .withColumn("Weekday", date_format(col("Time"), "EEEE"))
                     .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
-                    .withColumn("daytime", myUDFTime(col("wd")))
-                    .withColumn("final",UDFFinal(col("daytime"),col("wd")))
-                    .select("url","final")
+                    .withColumn("daytime", myUDFTime(col("Hour")))
+                    .withColumn("feature",UDFFinal(col("daytime"),col("wd")))
+                    .select("url","feature")
 
   
-  df.groupBy("url","final").count()
+  df.groupBy("url","feature").count()
     .write.format("parquet")
     .mode(SaveMode.Overwrite)
     .save("/datascience/data_url_classifier/dataset_timestamp_final")
