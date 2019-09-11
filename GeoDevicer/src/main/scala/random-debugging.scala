@@ -19,8 +19,6 @@ import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.apache.spark.storage.StorageLevel
 
 import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.serializer.KryoRegistrator
-import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 //import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -36,7 +34,7 @@ import org.apache.spark.storage.StorageLevel
 
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
-import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
+//import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 //import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
@@ -317,12 +315,12 @@ category_locations.write.format("csv")
 val spark = SparkSession.builder()
 .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.serializer", classOf[KryoSerializer].getName)
-      .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
        .config("geospark.global.index","true")
        .config("geospark.join.gridtype", "kdbtree")
        .config("geospark.join.spatitionside","right").
       master("local[*]").appName("myGeoSparkSQLdemo").getOrCreate()
-
+// .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
+     
       //GeoSparkSQLRegistrator.registerAll(spark)
 
    // Initialize the variables
