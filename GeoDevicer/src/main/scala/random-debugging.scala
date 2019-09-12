@@ -348,11 +348,11 @@ val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefile
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,,RADIO  FROM rawSpatialDf""".stripMargin).drop("rddshape")
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,RADIO  FROM rawSpatialDf""".stripMargin).drop("rddshape")
 spatialDf.show(3)
 spatialDf.printSchema()
 spatialDf.createOrReplaceTempView("poligonomagico")
-spatialDf.count()
+println("size polygons",spatialDf.count())
 
 //acá cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
@@ -368,10 +368,13 @@ users.createOrReplaceTempView("data")
 
 safegraphDf.createOrReplaceTempView("data")
 
+println("size users",safegraphDf.count())
+
 val intersection = spark.sql(
       """SELECT  *                   FROM data, poligonomagico       WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
             
-intersection.show()                   
+intersection.show(5)
+println("size intersection",intersection.count())                   
 
 intersection.select("ad_id","RADIO")
 .write.format("csv")
