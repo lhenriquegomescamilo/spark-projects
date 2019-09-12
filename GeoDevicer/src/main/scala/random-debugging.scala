@@ -377,7 +377,7 @@ intersection.select("ad_id","RADIO")
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/geospark_debugging/sample_random")
-*/
+
 
   /*
   val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
