@@ -344,7 +344,7 @@ val spatialRDD = GeoJsonReader
 
 //por alguna razón al correrlo en spark rompe el json, probemos n shapefile
 val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
-val spatialRDD = ShapefileReader.readToGeometryRDD(sparkSession.sparkContext, shapefileInputLocation)
+val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
 
 //acá para visualizar el DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
