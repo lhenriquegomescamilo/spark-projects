@@ -73,6 +73,34 @@ object GetDataForAudience {
     df
   }
 
+  def getDataTriplets(
+      spark: SparkSession,
+      country: String,
+      nDays: Int = -1,
+      path: String = "/datascience/data_triplets/segments/"
+  ) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    val df = if (nDays > 0) {
+      // read files from dates
+      val format = "yyyyMMdd"
+      val endDate = DateTime.now.minusDays(1)
+      val days =
+        (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+      // Now we obtain the list of hdfs folders to be read
+      val hdfs_files = days
+        .map(day => path + "/day=%s/country=%s".format(day, country))
+        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    } else {
+      // read all date files
+      spark.read.load(path + "/day=*/country=%s/".format(country))
+    }
+    df
+  }
+
   /**
     *
     *
@@ -85,18 +113,18 @@ object GetDataForAudience {
     *
     */
   def getDataVotaciones(spark: SparkSession) = {
-    val data_audience =
-      getDataAudiences(spark, nDays = 10, since = 1)
-        .filter(
-          "country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')"
-        )
-        .select("device_id", "url", "time") //, "all_segments")
+    val data_audience = getDataTriplets(spark, "AR")
+    // getDataAudiences(spark, nDays = 10, since = 1)
+    //   .filter(
+    //     "country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')"
+    //   )
+    //   .select("device_id", "url", "time") //, "all_segments")
     val data_votaciones =
       spark.read
         .format("csv")
         .option("sep", ",")
         .option("header", "true")
-        .load("/datascience/custom/base_votantes_pba.csv")
+        .load("/datascience/custom/votacion_2019.csv")
 
     val joint = data_audience
       .join(data_votaciones, Seq("device_id"))
@@ -105,7 +133,7 @@ object GetDataForAudience {
     joint.write
       .format("csv")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/base_votantes_pba_url_time")
+      .save("/datascience/custom/votaciones_2019_segments")
   }
 
   /**
@@ -182,7 +210,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataAmexSegments(spark = spark)
+    getDataVotaciones(spark = spark)
 
   }
 }
