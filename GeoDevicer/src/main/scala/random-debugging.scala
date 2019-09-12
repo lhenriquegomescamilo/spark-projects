@@ -347,7 +347,7 @@ val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefile
 //acá para visualizar el DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape, as polygon_name  FROM rawSpatialDf        """.stripMargin).drop("rddshape")
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape, FROM rawSpatialDf        """.stripMargin).drop("rddshape")
 spatialDf.show(3)
 
 spatialDf.createOrReplaceTempView("poligonomagico")
