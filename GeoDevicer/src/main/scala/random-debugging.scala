@@ -373,7 +373,8 @@ safegraphDf.createOrReplaceTempView("data")
 val intersection = spark.sql(
       """SELECT  *                   FROM data, poligonomagico       WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
                    
-intersection.select("ad_id","RADIO").write.format("parquet")
+intersection.select("ad_id")
+.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
