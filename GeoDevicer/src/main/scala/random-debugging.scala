@@ -357,7 +357,7 @@ spatialDf.createOrReplaceTempView("poligonomagico")
 
 //acá cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
-.load("/datascience/geo/safegraph_pipeline/day=0190614/country=argentina/part-00012-494c1e93-51ed-4910-816a-081cf232d7fe.c000.snappy.parquet").withColumn("latitude",col("latitude").cast("Double")).withColumn("longitude",col("longitude").cast("Double"))
+.load("/datascience/geo/safegraph_pipeline/day=0190614/country=argentina/").withColumn("latitude",col("latitude").cast("Double")).withColumn("longitude",col("longitude").cast("Double"))
 
 //Aplicando geometría a los puntos
 
