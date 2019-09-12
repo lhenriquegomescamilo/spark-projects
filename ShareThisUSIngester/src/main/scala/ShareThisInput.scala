@@ -17,7 +17,7 @@ object ShareThisInput {
     import spark.implicits._
     val input_data = spark.read
         .format("json")
-        .load("/data/providers/sharethis/json/dt=%s/".format(day))z
+        .load("/data/providers/sharethis/json/dt=%s/".format(day))
 
     //val input_estid = spark.read
     //    .format("parquet")
