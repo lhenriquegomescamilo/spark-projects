@@ -34,7 +34,7 @@ object ShareThisInput {
         .na.fill("")
         .orderBy($"estid")
     
-    data_columns.repartition(200).write
+    data_columns.write
       .mode(SaveMode.Overwrite)
       .format("parquet")
       .save("/data/providers/sharethis/processed/day=%s".format(day))
