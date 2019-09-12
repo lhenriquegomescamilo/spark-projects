@@ -341,16 +341,20 @@ val spatialRDD = GeoJsonReader
 //SHAPEFILE
 
 //por alguna razón al correrlo en spark rompe el json, probemos n shapefile
+
+//por alguna razón al correrlo en spark rompe el json, probemos n shapefile
 val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
-val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
+val spatialRDD = ShapefileReader.readToGeometryRDD(sparkSession.sparkContext, shapefileInputLocation)
 
 //acá para visualizar el DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape, FROM rawSpatialDf        """.stripMargin).drop("rddshape")
-spatialDf.show(3)
 
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,*  FROM rawSpatialDf        """.stripMargin).drop("rddshape")
+spatialDf.show(3)
+spatialDf.printSchema()
 spatialDf.createOrReplaceTempView("poligonomagico")
+spatialDf.count()
 
 //acá cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
