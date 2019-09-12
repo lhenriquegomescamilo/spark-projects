@@ -348,7 +348,7 @@ val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefile
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry),RADIO as myshape  FROM rawSpatialDf""".stripMargin).drop("rddshape")
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,,RADIO  FROM rawSpatialDf""".stripMargin).drop("rddshape")
 spatialDf.show(3)
 spatialDf.printSchema()
 spatialDf.createOrReplaceTempView("poligonomagico")
@@ -370,7 +370,9 @@ safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *                   FROM data, poligonomagico       WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-                   
+            
+intersection.show()                   
+
 intersection.select("ad_id","RADIO")
 .write.format("csv")
 .option("header",true)
