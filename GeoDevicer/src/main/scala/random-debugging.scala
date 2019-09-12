@@ -328,12 +328,21 @@ println(geosparkConf)
 
 
 //acá cargamos el polígono
+//GEOJSON
 //val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_deshape.json"
+/*
 val inputLocation = "/datascience/geo/polygons/AR/audiencias/embajadas.json"
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDD = GeoJsonReader
 .readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+*/
+
+//SHAPEFILE
+
+//por alguna razón al correrlo en spark rompe el json, probemos n shapefile
+val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
+val spatialRDD = ShapefileReader.readToGeometryRDD(sparkSession.sparkContext, shapefileInputLocation)
 
 //acá para visualizar el DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
