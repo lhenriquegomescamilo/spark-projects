@@ -32,7 +32,7 @@ object ShareThisInput {
         .withColumn("country", lit("US"))
         .withColumn("day", lit(day))
         .na.fill("")
-        .orderBy($"estid")
+        //.orderBy($"estid")
     
     data_columns.write
       .mode(SaveMode.Overwrite)
