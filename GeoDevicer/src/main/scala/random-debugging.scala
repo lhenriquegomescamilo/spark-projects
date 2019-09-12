@@ -326,7 +326,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 println(geosparkConf)
 
-
+/*
 //acá cargamos el polígono
 //GEOJSON
 //val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_deshape.json"
@@ -336,19 +336,19 @@ val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDD = GeoJsonReader
 .readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+*/
 
-
-/*//SHAPEFILE
+//SHAPEFILE
 //por alguna razón al correrlo en spark rompe el json, probemos n shapefile
 
 val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
 val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
-*/
+
 //acá para visualizar el DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape  FROM rawSpatialDf""".stripMargin).drop("rddshape")
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry),RADIO as myshape  FROM rawSpatialDf""".stripMargin).drop("rddshape")
 spatialDf.show(3)
 spatialDf.printSchema()
 spatialDf.createOrReplaceTempView("poligonomagico")
@@ -371,9 +371,7 @@ safegraphDf.createOrReplaceTempView("data")
 val intersection = spark.sql(
       """SELECT  *                   FROM data, poligonomagico       WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
                    
-intersection.show()
-
-/*
+intersection.select("ad_id","RADIO")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
