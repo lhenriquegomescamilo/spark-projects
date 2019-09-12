@@ -73,9 +73,9 @@ object Item2Item {
 
     println("LOOKALIKE LOG: Jobs to process = " + filesToProcess.length.toString)
 
-    //for (file <- filesToProcess){
-    if(filesToProcess.length > 0){
-      var file = filesToProcess.head
+    for (file <- filesToProcess){
+    //if(filesToProcess.length > 0){
+    //  var file = filesToProcess.head
       var filename = file._1
       var fileToProcess = pathToProcess + filename
       var fileInProcess = pathInProcess + filename
@@ -521,7 +521,7 @@ object Item2Item {
       .flatMap(tup =>  selSegmentsIdx
                            .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))).filter(tup => tup._2 >0) // remove scores <= 0
               ) //<segment_idx, score>
-      .map(tup => ((tup._1,BigDecimal(tup._2).setScale(3, BigDecimal.RoundingMode.FLOOR).toDouble), 1L)) //<(segment_idx, rounded score) , 1L>
+      .map(tup => ((tup._1,BigDecimal(tup._2).setScale(4, BigDecimal.RoundingMode.FLOOR).toDouble), 1L)) //<(segment_idx, rounded score) , 1L>
       .reduceByKey(_ + _) // count by <segment_idx, rounded score>
       .map{ case ((segment_idx, score), cnt) => (segment_idx, (score, cnt)) } //<(segment_idx, (rounded score , count) >
       .groupByKey // group scores by segments

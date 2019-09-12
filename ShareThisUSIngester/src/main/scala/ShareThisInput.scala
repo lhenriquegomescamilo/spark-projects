@@ -19,25 +19,25 @@ object ShareThisInput {
         .format("json")
         .load("/data/providers/sharethis/json/dt=%s/".format(day))
 
-    val input_estid = spark.read
-        .format("parquet")
-        .load("/datascience/sharethis/estid_map/")
-        .select($"estid".alias("map_estid"), $"device_id")
+    //val input_estid = spark.read
+    //    .format("parquet")
+    //    .load("/datascience/sharethis/estid_map/")
+    //    .select($"estid".alias("map_estid"), $"device_id")
 
-    val joint = input_data
-        .join(input_estid, $"estid"===$"map_estid", "left")
+    //val joint = input_data
+    //    .join(input_estid, $"estid"===$"map_estid", "left")
 
-    val data_columns = joint
+    val data_columns = input_data
         .select(columns.head, columns.tail: _*)
         .withColumn("country", lit("US"))
         .withColumn("day", lit(day))
         .na.fill("")
+        .orderBy($"estid")
     
-    data_columns.write
+    data_columns.repartition(200).write
       .mode(SaveMode.Overwrite)
       .format("parquet")
       .save("/data/providers/sharethis/processed/day=%s".format(day))
-    
   }
 
   def download_data(spark: SparkSession, nDays: Int, from: Int, columns: Seq[String]): Unit = {
@@ -105,8 +105,8 @@ object ShareThisInput {
           "ios_idfa",
           "connected_tv",
           "searchQuery",
-          "refDomain",
-          "device_id")
+          "refDomain")
+          //"device_id")
 
     download_data(spark, nDays, from, columns)
   }
