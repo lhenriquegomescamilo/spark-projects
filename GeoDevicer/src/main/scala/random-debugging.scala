@@ -357,13 +357,13 @@ spatialDf.createOrReplaceTempView("poligonomagico")
 
 //acá cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
-.load("/datascience/geo/safegraph_pipeline/day=0190614/country=argentina/").withColumn("latitude",col("latitude").cast("Double")).withColumn("longitude",col("longitude").cast("Double"))
+.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/").withColumn("latitude",col("latitude").cast("Double")).withColumn("longitude",col("longitude").cast("Double"))
 
 //Aplicando geometría a los puntos
 
 users.createOrReplaceTempView("data")
 
-    var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
+var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
               FROM data
           """)
 
@@ -382,14 +382,7 @@ intersection.select("ad_id","polygon_name")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/sample_random_opt")
-
-
-  /*
-  val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
-
-  
-*/
+.save("/datascience/geo/geospark_debugging/sample_random_opt_month")
 
 
   }
