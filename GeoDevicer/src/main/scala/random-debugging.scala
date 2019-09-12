@@ -344,7 +344,7 @@ val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefile
 */
 
 //acá para visualizar el DF
-var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
+var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(50)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
 var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as polygon_name  FROM rawSpatialDf""".stripMargin).drop("rddshape")
@@ -352,7 +352,7 @@ spatialDf.show(3)
 
 spatialDf.printSchema()
 
-spatialDf.createOrReplaceTempView("poligonomagico").repartition(50)
+spatialDf.createOrReplaceTempView("poligonomagico")
 //println("size polygons",spatialDf.count())
 
 //acá cargamos los usuarios
