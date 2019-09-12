@@ -19,9 +19,6 @@ import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.apache.spark.storage.StorageLevel
 
 import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.serializer.KryoRegistrator
-import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
-//import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
@@ -29,15 +26,13 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.apache.log4j.{Level, Logger}
 
-import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, Point, GeometryFactory}
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.apache.spark.storage.StorageLevel
 
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
-import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
-//import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
+//import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 
@@ -45,7 +40,7 @@ import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 import org.datasyslab.geospark.utils.GeoSparkConf
 
 
-
+import org.datasyslab.geospark.formatMapper.GeoJsonReader
 
 
 
@@ -317,13 +312,13 @@ category_locations.write.format("csv")
 val spark = SparkSession.builder()
 .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.serializer", classOf[KryoSerializer].getName)
-      .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
        .config("geospark.global.index","true")
        .config("geospark.join.gridtype", "kdbtree")
-       .config("geospark.join.spatitionside","right").
+       .config("geospark.join.spatitionside","left").
       master("local[*]").appName("myGeoSparkSQLdemo").getOrCreate()
-
-      //GeoSparkSQLRegistrator.registerAll(spark)
+// .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
+     
+GeoSparkSQLRegistrator.registerAll(spark)
 
    // Initialize the variables
 val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
@@ -337,17 +332,18 @@ println(geosparkConf)
 val inputLocation = "/datascience/geo/polygons/AR/audiencias/estadios.json"
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
-val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+val spatialRDD = GeoJsonReader
+.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
 //acá para visualizar el DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,*  FROM rawSpatialDf        """.stripMargin)
-.drop("rddshape")
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as polygon_name  FROM rawSpatialDf        """.stripMargin).drop("rddshape")
+spatialDf.show(3)
 
 spatialDf.createOrReplaceTempView("poligonomagico")
 
-
+//acá cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
 .load("/datascience/geo/safegraph_pipeline/day=0190614/country=argentina/part-00012-494c1e93-51ed-4910-816a-081cf232d7fe.c000.snappy.parquet").withColumn("latitude",col("latitude").cast("Double")).withColumn("longitude",col("longitude").cast("Double"))
 
@@ -358,17 +354,16 @@ users.createOrReplaceTempView("data")
               FROM data
           """)
 
-          
-
+safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *                   FROM data, poligonomagico       WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
                    
-intersection .write.format("csv")
+intersection.select("ad_id","polygon_name") .write.format("parquet")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/sample")
+.save("/datascience/geo/geospark_debugging/sample_random")
 
 
   /*
