@@ -147,7 +147,7 @@ object ContentKws {
       df_queries: DataFrame,
       df_joint: DataFrame,
       stemming: Int,
-      populate: Int,
+      push: Int,
       job_name: String
   ) = {
 
@@ -192,7 +192,7 @@ object ContentKws {
       .mode(SaveMode.Overwrite)
       .save(fileNameFinal)
 
-    if (populate == 1) {
+    if (push == 1) {
       val conf = spark.sparkContext.hadoopConfiguration
       val fs = FileSystem.get(conf)
       val os =
@@ -220,26 +220,29 @@ object ContentKws {
 
   def get_users_pipeline_3(
       spark: SparkSession,
-      nDays: Integer,
-      since: Integer,
       json_path: String,
-      stemming: Int,
-      populate: Int
+      verbose: Boolean,
   ) = {
 
-    //reads json with queries, kws and seg_ids
+    /** Read json with queries, keywordss and seg_ids */
     val df_queries = spark.read
       .format("json")
       .load(json_path)
 
-    //load parameters
+    /** Load parameters */
     val country = df_queries.select("country").first.getString(0)
+    val nDays = df_queries.select("ndays").first.getString(0)
+    val since = df_queries.select("since").first.getString(0)
+    val stemming = df_queries.select("stemming").first.getString(0)
+    val push = df_queries.select("push").first.getString(0)
+    val job_name = df_queries.select("job_name").first.getString(0)
 
-    //selects "content_keys" (every keyword that appears in the queries) to match with df_kws
-
+    /**
+    Select "content_keywords" (every keyword that appears in the queries) to match with df_kws
+    depending on stemming parameter selects stemmed keywords or not stemmed.
+    */
     val to_select = if (stemming == 1) List("stem_kws") else List("kws")
 
-    //val columnName = df_queries.select(to_select.head, to_select.tail: _*).columns(0)
     val columnName = to_select(0).toString
 
     val df_keys = df_queries
@@ -249,7 +252,7 @@ object ContentKws {
       .withColumn("content_keywords", explode(col("content_keywords")))
       .dropDuplicates("content_keywords")
 
-    // reads from "data_keywords"
+    /** Read from "data_keywords" folder */
     val df_data_keywords = read_data_kws(
       spark = spark,
       country = country,
@@ -267,7 +270,7 @@ object ContentKws {
     }
     */
 
-    // matches content_keys with data_keywords
+    /**  Match content_keywords with data_keywords */
     val df_joint =
       get_joint_keys(df_keys = df_keys, df_data_keywords = df_data_keywords)
 
@@ -279,14 +282,13 @@ object ContentKws {
       )
     }
     */
-
-    val job_name = df_queries.select("job_name").first.getString(0)
+    
 
     save_query_results(
       spark = spark,
       df_queries = df_queries,
       df_joint = df_joint,
-      populate = populate,
+      push = push,
       stemming = stemming,
       job_name = job_name
     )
@@ -329,12 +331,8 @@ object ContentKws {
 
     get_users_pipeline_3(
       spark = spark,
-      nDays = 10,
-      since = 1,
-      json_path = "/datascience/custom/testMX_taxo_nueva.json",
-      stemming = 0,
-      populate = 0//,
-      //verbose = verbose
+      json_path = json,
+      verbose = verbose
     )
 
   }
