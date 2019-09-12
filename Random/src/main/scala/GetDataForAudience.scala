@@ -123,8 +123,10 @@ object GetDataForAudience {
       spark.read
         .format("csv")
         .option("sep", ",")
-        .option("header", "true")
-        .load("/datascience/custom/votacion_2019.csv")
+        // .option("header", "true")
+        .load("/datascience/custom/votacion_2019_impacted.csv")
+        .withColumnRenamed("_c0", "device_id")
+        .distinct()
 
     val joint = data_audience
       .join(data_votaciones, Seq("device_id"))
