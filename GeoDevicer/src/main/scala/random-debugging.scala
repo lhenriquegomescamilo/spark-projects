@@ -329,7 +329,7 @@ println(geosparkConf)
 
 //acá cargamos el polígono
 //val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_deshape.json"
-val inputLocation = "/datascience/geo/polygons/AR/audiencias/estadios.json"
+val inputLocation = "/datascience/geo/polygons/AR/audiencias/embajadas.json"
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDD = GeoJsonReader
@@ -350,6 +350,7 @@ val users = spark.read.format("parquet").option("delimiter","\t").option("header
 //Aplicando geometría a los puntos
 
 users.createOrReplaceTempView("data")
+
     var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
               FROM data
           """)
