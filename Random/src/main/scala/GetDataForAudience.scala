@@ -101,6 +101,29 @@ object GetDataForAudience {
     df
   }
 
+  def getDataKeywords(
+      spark: SparkSession,
+      nDays: Int,
+      since: Int
+  ): DataFrame = {
+    val end = DateTime.now.minusDays(since)
+
+    val lista_files = (0 until nDays)
+      .map(end.minusDays(_))
+      .map(
+        day =>
+          "/datascience/data_keywords/day=%s"
+            .format(day.toString("yyyyMMdd"))
+      )
+
+    val keywords = spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/data_keywords/")
+      .load(lista_files: _*)
+
+    keywords
+  }
+
   /**
     *
     *
@@ -113,7 +136,7 @@ object GetDataForAudience {
     *
     */
   def getDataVotaciones(spark: SparkSession) = {
-    val data_audience = getDataTriplets(spark, "AR")
+    val data_audience = getDataKeywords(spark, 40, 2).filter("country = 'AR'")
     // getDataAudiences(spark, nDays = 10, since = 1)
     //   .filter(
     //     "country = 'AR' and event_type IN ('tk', 'batch', 'data', 'pv')"
