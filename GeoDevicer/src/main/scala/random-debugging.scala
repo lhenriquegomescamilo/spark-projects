@@ -314,8 +314,8 @@ val spark = SparkSession.builder()
       .config("spark.serializer", classOf[KryoSerializer].getName)
        .config("geospark.global.index","true")
        .config("geospark.join.gridtype", "kdbtree")
-       .config("geospark.join.spatitionside","left").
-      master("local[*]").appName("myGeoSparkSQLdemo").getOrCreate()
+       .config("geospark.join.spatitionside","left")
+       .appName("myGeoSparkSQLdemo").getOrCreate()
 // .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
      
 GeoSparkSQLRegistrator.registerAll(spark)
