@@ -19,7 +19,7 @@ object IndexGenerator {
     *
     * As a result it stores a DataFrame as a Parquet folder in /datascience/crossdevice/double_index.
     **/
-  def generate_index_double(spark: SparkSession) {
+  def generate_index_double(spark: SparkSession, individual: Boolean) {
     // // This is the path to the last DrawBridge id
     // val drawBridgePath = "/data/crossdevice/2019-04-04/*.gz"
     // // First we obtain the data from DrawBridge
@@ -72,7 +72,7 @@ object IndexGenerator {
       .load(last_file)
       .repartition(300)
       .withColumn("device", explode(split(col("_c2"), "\t")))
-      .withColumnRenamed("_c1", "tapad_id") // Here I will use the household id instead of the Individual id
+      .withColumnRenamed(if (individual) "_c1" else "_c0", "tapad_id") // Here I will use the household id instead of the Individual id
       .withColumn("device", split(col("device"), "="))
       .withColumn("device_type", col("device").getItem(0))
       .withColumn("device", col("device").getItem(1))
@@ -84,11 +84,15 @@ object IndexGenerator {
       .withColumnRenamed("device", "index")
       .withColumnRenamed("device_type", "index_type")
       .join(data, Seq("tapad_id"))
-      .na.fill("")
+      .na
+      .fill("")
       .select("index", "index_type", "device", "device_type")
 
     println(index.printSchema)
 
+    val path =
+      if (individual) "/datascience/crossdevice/double_index_individual"
+      else "/datascience/crossdevice/double_index"
     // Finally we store the results
     index
       .coalesce(120)
@@ -96,7 +100,7 @@ object IndexGenerator {
       .mode(SaveMode.Overwrite)
       .format("parquet")
       .partitionBy("index_type", "device_type")
-      .save("/datascience/crossdevice/double_index_individual")
+      .save(path)
   }
 
   /**
@@ -107,13 +111,16 @@ object IndexGenerator {
     *
     * As a result it stores a DataFrame as a Parquet folder in /datascience/crossdevice/list_index.
     **/
-  def generate_index_lists(spark: SparkSession) {
+  def generate_index_lists(spark: SparkSession, individual: Boolean) {
     // First of all, we generate a DataFrame with three columns. The first column is a cookie,
     // the second one is a list of devices coming from such cookie,
     // the third column is the list of types that corresponds to the devices
+    val path =
+      if (individual) "/datascience/crossdevice/double_index_individual"
+      else "/datascience/crossdevice/double_index"
     val df = spark.read
       .format("parquet")
-      .load("/datascience/crossdevice/double_index")
+      .load(path)
       .filter("index_type = 'coo'")
       .groupBy("index")
       .agg(
@@ -157,14 +164,28 @@ object IndexGenerator {
       .save("/datascience/crossdevice/list_index")
   }
 
+  type OptionMap = Map[Symbol, Int]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case "--individual" :: tail =>
+        nextOption(map ++ Map('individual -> 0), tail)
+    }
+  }
+
   def main(args: Array[String]) {
     val spark = SparkSession.builder
       .appName("audience generator by keywords")
       .getOrCreate()
 
+    val individual = if (options.contains('individual)) true else false
     println("\n\nLOGGER: RUNNING INDEX DOUBLE\n\n")
-    generate_index_double(spark)
+    generate_index_double(spark, individual)
     println("\n\nLOGGER: RUNNING INDEX LIST\n\n")
-    generate_index_lists(spark)
+    generate_index_lists(spark, individual)
   }
 }
