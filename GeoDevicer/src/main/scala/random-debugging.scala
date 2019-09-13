@@ -346,7 +346,7 @@ val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, sh
 
 
 //reparticionamos
-spatialRDDpolygon.rawSpatialRDD.rdd.repartition(50)
+spatialRDDpolygon.rawSpatialRDD.rdd.repartition(100)
 
 //cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
@@ -372,7 +372,7 @@ println(spatialRDDusers.analyze())
 //spatialRDDpolygon.spatialPartitioning(GridType.KDBTREE)
 //spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 val joinQueryPartitioningType = GridType.KDBTREE
-val numPartitions = 50
+val numPartitions = 100
 spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
 spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 
