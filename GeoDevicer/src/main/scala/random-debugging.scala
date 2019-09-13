@@ -315,7 +315,6 @@ val spark = SparkSession.builder()
       .config("geospark.global.index","true")
        .config("geospark.join.gridtype", "kdbtree")
        .config("geospark.join.spatitionside","left")
-       .config("geospark.join.numpartition","20")
        .appName("myGeoSparkSQLdemo").getOrCreate()
 // .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
      
@@ -338,6 +337,9 @@ val inputLocation = "/datascience/geo/polygons/AR/audiencias/embajadas.json"
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+
+//reparticionamos
+spatialRDDpolygon.rawSpatialRDD.rdd.repartition(20)
 
 //cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
@@ -370,9 +372,9 @@ spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
 val usingIndex = true
 val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
-val numPartitions = 10
+//val numPartitions = 10
 
-spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
+//spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
