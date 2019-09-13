@@ -376,7 +376,12 @@ val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, 
 //result.saveAsObjectFile("/datascience/geo/geospark_debugging/sample_rdd_2")
 var rawSpatialDf = Adapter.toDf(result,spark).select("_c1","_c3")
 //println(rawSpatialDf.count())
-rawSpatialDf.mode(SaveMode.Overwrite).save("/datascience/geo/geospark_debugging/sample_w_rdd")
+rawSpatialD
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geospark_debugging/sample_w_rdd")
 
   }
 }
