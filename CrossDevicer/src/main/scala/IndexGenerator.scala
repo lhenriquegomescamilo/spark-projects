@@ -182,6 +182,7 @@ object IndexGenerator {
       .appName("audience generator by keywords")
       .getOrCreate()
 
+    val options = nextOption(Map(), args.toList)
     val individual = if (options.contains('individual)) true else false
     println("\n\nLOGGER: RUNNING INDEX DOUBLE\n\n")
     generate_index_double(spark, individual)
