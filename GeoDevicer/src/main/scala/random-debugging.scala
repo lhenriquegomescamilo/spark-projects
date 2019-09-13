@@ -332,14 +332,21 @@ import org.datasyslab.geospark.spatialOperator.{JoinQuery, KNNQuery, RangeQuery}
 
 
 //Quiero probar qué onda con RDD
-//acá cargamos el polígono
+//acá cargamos el polígono 
+/*
+Esto es para JSON
 val inputLocation = "/datascience/geo/polygons/AR/audiencias/embajadas.json"
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+*/
+
+val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
+val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
+
 
 //reparticionamos
-spatialRDDpolygon.rawSpatialRDD.rdd.repartition(20)
+spatialRDDpolygon.rawSpatialRDD.rdd.repartition(50)
 
 //cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
@@ -365,7 +372,7 @@ println(spatialRDDusers.analyze())
 //spatialRDDpolygon.spatialPartitioning(GridType.KDBTREE)
 //spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 val joinQueryPartitioningType = GridType.KDBTREE
-val numPartitions = 20
+val numPartitions = 50
 spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
 spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 
