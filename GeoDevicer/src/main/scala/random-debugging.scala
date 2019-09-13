@@ -330,24 +330,24 @@ println(geosparkConf)
 //acá cargamos el polígono
 //GEOJSON
 //val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_deshape.json"
-
+/*
 val inputLocation = "/datascience/geo/polygons/AR/audiencias/embajadas.json"
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
-/*
+*/
+
 //SHAPEFILE
 //por alguna razón al correrlo en spark rompe el json, probemos n shapefile
 
 val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
 val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
-*/
 
 //acá para visualizar el DF
-var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(50)
+var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as polygon_name  FROM rawSpatialDf""".stripMargin).drop("rddshape")
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,RADIO as polygon_name FROM rawSpatialDf""".stripMargin).drop("rddshape")
 spatialDf.show(3)
 
 spatialDf.printSchema()
