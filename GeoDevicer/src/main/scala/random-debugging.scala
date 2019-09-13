@@ -326,7 +326,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 println(geosparkConf)
 
-
+import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 import org.datasyslab.geospark.enums.{FileDataSplitter, GridType, IndexType}
 import org.datasyslab.geospark.spatialOperator.{JoinQuery, KNNQuery, RangeQuery}
 
