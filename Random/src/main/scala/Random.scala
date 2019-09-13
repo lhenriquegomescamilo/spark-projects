@@ -5193,7 +5193,7 @@ def get_timestamps_urls(spark:SparkSession){
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
 
-    get_segments_pmi(spark,files)   
+    get_segments_pmi(spark)   
   }
 
 }
