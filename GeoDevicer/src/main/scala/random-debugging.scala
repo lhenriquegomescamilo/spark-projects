@@ -343,7 +343,7 @@ spatialRDDpolygon.rawSpatialRDD.rdd.repartition(20)
 
 //cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
-.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
+.load("/datascience/geo/safegraph_pipeline/day=0190610/country=argentina/")
 .withColumn("latitude",col("latitude").cast("Double"))
 .withColumn("longitude",col("longitude").cast("Double"))
 
@@ -365,7 +365,8 @@ println(spatialRDDusers.analyze())
 //spatialRDDpolygon.spatialPartitioning(GridType.KDBTREE)
 //spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 val joinQueryPartitioningType = GridType.KDBTREE
-spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType)
+val numPartitions = 20
+spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
 spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 
 
