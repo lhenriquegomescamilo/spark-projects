@@ -221,7 +221,7 @@ object ContentKws {
   def get_users_pipeline_3(
       spark: SparkSession,
       json_path: String,
-      verbose: Boolean,
+      verbose: Boolean
   ) = {
 
     /** Read json with queries, keywordss and seg_ids */
