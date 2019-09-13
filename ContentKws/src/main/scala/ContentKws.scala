@@ -120,7 +120,7 @@ object ContentKws {
       .dropDuplicates()
 
     /**
-    if (verbose == true) {
+    if verbose {
       println(
         "count del join con duplicados: %s"
           .format(df_joint.select("device_id").distinct().count())
@@ -221,7 +221,7 @@ object ContentKws {
   def get_users_pipeline_3(
       spark: SparkSession,
       json_path: String,
-      verbose: Boolean,
+      verbose: Boolean
   ) = {
 
     /** Read json with queries, keywordss and seg_ids */
@@ -231,10 +231,10 @@ object ContentKws {
 
     /** Load parameters */
     val country = df_queries.select("country").first.getString(0)
-    val nDays = df_queries.select("ndays").first.getString(0)
-    val since = df_queries.select("since").first.getString(0)
-    val stemming = df_queries.select("stemming").first.getString(0)
-    val push = df_queries.select("push").first.getString(0)
+    val nDays = df_queries.select("ndays").selectExpr("cast(cast(ndays as int ) as String)").first.getString(0).toInt
+    val since = df_queries.select("since").selectExpr("cast(cast(since as int ) as String)").first.getString(0).toInt
+    val stemming = df_queries.select("stemming").selectExpr("cast(cast(stemming as int ) as String)").first.getString(0).toInt
+    val push = df_queries.select("push").selectExpr("cast(cast(push as int ) as String)").first.getString(0).toInt
     val job_name = df_queries.select("job_name").first.getString(0)
 
     /**
@@ -262,7 +262,7 @@ object ContentKws {
     )
 
     /**
-    if (verbose == true) {
+    if verbose {
       println(
         "count de data_keywords para %sD: %s"
           .format(nDays, df_data_keywords.select("device_id").distinct().count())
@@ -275,7 +275,7 @@ object ContentKws {
       get_joint_keys(df_keys = df_keys, df_data_keywords = df_data_keywords)
 
     /**
-    if (verbose == true) {
+    if verbose {
       println(
         "count del join after groupby: %s"
           .format(df_joint.select("device_id").distinct().count())
