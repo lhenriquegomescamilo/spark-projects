@@ -120,7 +120,7 @@ object ContentKws {
       .dropDuplicates()
 
     /**
-    if (verbose == true) {
+    if verbose {
       println(
         "count del join con duplicados: %s"
           .format(df_joint.select("device_id").distinct().count())
@@ -262,7 +262,7 @@ object ContentKws {
     )
 
     /**
-    if (verbose == true) {
+    if verbose {
       println(
         "count de data_keywords para %sD: %s"
           .format(nDays, df_data_keywords.select("device_id").distinct().count())
@@ -275,7 +275,7 @@ object ContentKws {
       get_joint_keys(df_keys = df_keys, df_data_keywords = df_data_keywords)
 
     /**
-    if (verbose == true) {
+    if verbose {
       println(
         "count del join after groupby: %s"
           .format(df_joint.select("device_id").distinct().count())
