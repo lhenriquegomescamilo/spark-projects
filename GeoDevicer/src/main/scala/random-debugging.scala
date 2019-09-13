@@ -313,11 +313,10 @@ val spark = SparkSession.builder()
  .config("spark.serializer", classOf[KryoSerializer].getName)
  .config("spark.kryo.registrator", classOf[GeoSparkKryoRegistrator].getName)
       .config("geospark.global.index","true")
-       .config("geospark.join.gridtype", "kdbtree")
-       .config("geospark.join.spatitionside","left")
        .appName("myGeoSparkSQLdemo").getOrCreate()
 // .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
-     
+     //.config("geospark.join.gridtype", "kdbtree")
+      // .config("geospark.join.spatitionside","left")
 GeoSparkSQLRegistrator.registerAll(spark)
 
    // Initialize the variables
@@ -373,16 +372,12 @@ println(spatialRDDusers.analyze())
 //spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 val joinQueryPartitioningType = GridType.KDBTREE
 val numPartitions = 100
-spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
-spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
-
-
 val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
 val usingIndex = true
 val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
-//val numPartitions = 10
-
-//spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
+spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
+spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+spatialRDDusers.buildIndex(IndexType.KDBTREE, buildOnSpatialPartitionedRDD)
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
