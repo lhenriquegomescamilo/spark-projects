@@ -315,6 +315,7 @@ val spark = SparkSession.builder()
       .config("geospark.global.index","true")
        .config("geospark.join.gridtype", "kdbtree")
        .config("geospark.join.spatitionside","left")
+       .config("geospark.join.numpartition","20")
        .appName("myGeoSparkSQLdemo").getOrCreate()
 // .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
      
@@ -339,7 +340,10 @@ val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
 //cargamos los usuarios
-val users = spark.read.format("parquet").option("delimiter","\t").option("header",true).load("/datascience/geo/safegraph_pipeline/day=0190614/country=argentina/part-00012-494c1e93-51ed-4910-816a-081cf232d7fe.c000.snappy.parquet").withColumn("latitude",col("latitude").cast("Double")).withColumn("longitude",col("longitude").cast("Double"))
+val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
+.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
+.withColumn("latitude",col("latitude").cast("Double"))
+.withColumn("longitude",col("longitude").cast("Double"))
 
 //Aplicando geometría a los puntos
 users.createOrReplaceTempView("data")
@@ -349,7 +353,7 @@ var safegraphDf = spark .sql(""" SELECT ST_Point(CAST(data.longitude AS Decimal(
 
 
 safegraphDf.createOrReplaceTempView("data")   
-safegraphDf.show(2)
+
 var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
 
 println(spatialRDDpolygon.analyze())
@@ -361,7 +365,6 @@ println(spatialRDDusers.analyze())
 val joinQueryPartitioningType = GridType.KDBTREE
 spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType)
 spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
-
 
 
 val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
