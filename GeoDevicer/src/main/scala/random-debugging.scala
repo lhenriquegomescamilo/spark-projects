@@ -342,7 +342,7 @@ val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inpu
 */
 
 val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
-val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
+val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
 
 
 //reparticionamos
