@@ -327,63 +327,56 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 println(geosparkConf)
 
 
+import org.datasyslab.geospark.enums.{FileDataSplitter, GridType, IndexType}
+import org.datasyslab.geospark.spatialOperator.{JoinQuery, KNNQuery, RangeQuery}
+
+
+//Quiero probar qué onda con RDD
 //acá cargamos el polígono
-//GEOJSON
-//val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_deshape.json"
-/*
 val inputLocation = "/datascience/geo/polygons/AR/audiencias/embajadas.json"
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
-val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
-*/
+val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
-//SHAPEFILE
-//por alguna razón al correrlo en spark rompe el json, probemos n shapefile
-
-val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
-val spatialRDD = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
-
-//acá para visualizar el DF
-var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
-rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
-
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,RADIO as polygon_name FROM rawSpatialDf""".stripMargin).drop("rddshape")
-spatialDf.show(3)
-
-spatialDf.printSchema()
-
-spatialDf.createOrReplaceTempView("poligonomagico")
-//println("size polygons",spatialDf.count())
-
-//acá cargamos los usuarios
-val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
-.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/").withColumn("latitude",col("latitude").cast("Double")).withColumn("longitude",col("longitude").cast("Double"))
+//cargamos los usuarios
+val users = spark.read.format("parquet").option("delimiter","\t").option("header",true).load("/datascience/geo/safegraph_pipeline/day=0190614/country=argentina/part-00012-494c1e93-51ed-4910-816a-081cf232d7fe.c000.snappy.parquet").withColumn("latitude",col("latitude").cast("Double")).withColumn("longitude",col("longitude").cast("Double"))
 
 //Aplicando geometría a los puntos
-
 users.createOrReplaceTempView("data")
 
-var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
-              FROM data
-          """)
+var safegraphDf = spark .sql(""" SELECT ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry,ad_id
+              FROM data  """)
 
-safegraphDf.createOrReplaceTempView("data")
 
-//println("size users",safegraphDf.count())
+safegraphDf.createOrReplaceTempView("data")   
+safegraphDf.show(2)
+var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
 
-val intersection = spark.sql(
-      """SELECT  *                   FROM poligonomagico, data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-            
-//intersection.show(5)
-//println("size intersection",intersection.count())                   
+println(spatialRDDpolygon.analyze())
+println(spatialRDDusers.analyze())
 
-intersection.select("ad_id","polygon_name")
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/sample_random_opt_month")
 
+//spatialRDDpolygon.spatialPartitioning(GridType.KDBTREE)
+//spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+val joinQueryPartitioningType = GridType.KDBTREE
+spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType)
+spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+
+
+
+val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
+val usingIndex = true
+val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
+val numPartitions = 10
+
+spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
+
+val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
+
+//result.saveAsObjectFile("/datascience/geo/geospark_debugging/sample_rdd_2")
+var rawSpatialDf = Adapter.toDf(result,spark).select("_c1","_c3")
+//println(rawSpatialDf.count())
+rawSpatialDf.mode(SaveMode.Overwrite).save("/datascience/geo/geospark_debugging/sample_w_rdd")
 
   }
 }
