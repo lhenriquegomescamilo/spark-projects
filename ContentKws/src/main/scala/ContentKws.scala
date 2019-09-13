@@ -231,10 +231,10 @@ object ContentKws {
 
     /** Load parameters */
     val country = df_queries.select("country").first.getString(0)
-    val nDays = df_queries.select("ndays").first.getString(0).toInt
-    val since = df_queries.select("since").first.getString(0).toInt
-    val stemming = df_queries.select("stemming").first.getString(0).toInt
-    val push = df_queries.select("push").first.getString(0).toInt
+    val nDays = df_queries.select("ndays").selectExpr("cast(cast(ndays as int ) as String)").first.getString(0).toInt
+    val since = df_queries.select("since").selectExpr("cast(cast(since as int ) as String)").first.getString(0).toInt
+    val stemming = df_queries.select("stemming").selectExpr("cast(cast(stemming as int ) as String)").first.getString(0).toInt
+    val push = df_queries.select("push").selectExpr("cast(cast(push as int ) as String)").first.getString(0).toInt
     val job_name = df_queries.select("job_name").first.getString(0)
 
     /**
