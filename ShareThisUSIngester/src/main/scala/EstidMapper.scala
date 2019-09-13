@@ -24,6 +24,7 @@ object EstidMapper {
       .withColumn("day", lit(day.replace("/", "")))
       .withColumnRenamed("d17", "estid")
       .dropDuplicates()
+      .orderBy(col("estid"))
 
     df.write
       .format("parquet")
@@ -46,6 +47,7 @@ object EstidMapper {
         .agg(
             collect_set("device_id").as("device_id"),
             last("country").as("country"))
+        .orderBy(col("estid"))
     
     group_by.write
         .format("parquet")
