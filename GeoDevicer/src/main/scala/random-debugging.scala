@@ -370,14 +370,14 @@ println(spatialRDDusers.analyze())
 
 //spatialRDDpolygon.spatialPartitioning(GridType.KDBTREE)
 //spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
-val joinQueryPartitioningType = GridType.QUADTREE
+val joinQueryPartitioningType = GridType.RTREE
 val numPartitions = 100
 val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
 val usingIndex = true
 val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
 spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
 spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
-spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
+spatialRDDusers.buildIndex(IndexType.RTREE, buildOnSpatialPartitionedRDD)
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
