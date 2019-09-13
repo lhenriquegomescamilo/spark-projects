@@ -350,7 +350,7 @@ spatialRDDpolygon.rawSpatialRDD.rdd.repartition(100)
 
 //cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
-.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
+.load("/datascience/geo/safegraph_pipeline/day=0190610/country=argentina/")
 .withColumn("latitude",col("latitude").cast("Double"))
 .withColumn("longitude",col("longitude").cast("Double"))
 
