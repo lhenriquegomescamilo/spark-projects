@@ -172,6 +172,7 @@ object IndexGenerator {
   def nextOption(map: OptionMap, list: List[String]): OptionMap = {
     def isSwitch(s: String) = (s(0) == '-')
     list match {
+      case Nil => map
       case "--individual" :: tail =>
         nextOption(map ++ Map('individual -> 0), tail)
     }
