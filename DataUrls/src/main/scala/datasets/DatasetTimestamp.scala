@@ -56,12 +56,6 @@ object DatasetTimestamp {
     // First we get the data from urls (<url, time>)
     val data_urls = df_urls.select("url","time")
                                   
-    //val myUDF = udf(
-    //  (weekday: String, hour: String) =>
-    //    if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
-    //    else "%s0".format(hour)
-   // )
-
     // Join with the GT dataframe
     val joint = gtDF.join(data_urls,Seq("url"),joinType)
                     .select("url","time")
@@ -69,24 +63,29 @@ object DatasetTimestamp {
                     .dropDuplicates()
                     
     // Generate dataset with columns weekday and hour
-    //val res = joint
-    //            .withColumn("Hour", date_format(col("time"), "HH"))
-    //            .withColumn("Weekday", date_format(col("time"), "EEEE"))
-    //            .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
-    //            .groupBy("url", "wd")
-    //            .count()
-    //            .groupBy("url")
-     //           .pivot("wd")
-     //           .agg(sum("count"))
-     //           .orderBy(asc("url"))
-                
-    joint.write
-      .format("parquet")
+    val myUDF = udf((weekday: String, hour: String) => if (weekday == "Sunday" || weekday == "Saturday") "weekend" else "week")
+
+    val myUDFTime = udf((hour: String) =>   if (List("09","10","11","12","13").contains(hour)) "morning" 
+                                            else if (List("14","15","16","17","18","19","20","21").contains(hour)) "afternoon"
+                                                  else "night")
+
+    val UDFFinal = udf((daytime: String, wd:String) => "%s_%s".format(daytime,wd))
+
+    val df = joint.withColumn("Hour", date_format(col("time"), "HH"))
+                  .withColumn("Weekday", date_format(col("time"), "EEEE"))
+                  .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
+                  .withColumn("daytime", myUDFTime(col("Hour")))
+                  .withColumn("feature",UDFFinal(col("daytime"),col("wd")))
+                  .select("url","feature")
+
+  
+    df.groupBy("url","feature").count()
+      .write.format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/dataset_timestamp")
-
-    joint
+      
+    df
   }
 
   def main(args: Array[String]) {
