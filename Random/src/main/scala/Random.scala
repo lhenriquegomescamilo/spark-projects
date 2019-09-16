@@ -5149,9 +5149,8 @@ def processURL(url: String): String = {
     if (params.contains("r_mobile") && params("r_mobile").length>0 && !params("r_mobile").contains("[")){
         res = columns.map(col => if (params.contains(col)) params(col) else "").mkString(",")
     }
-    
-    res
   }
+  res
 }
 
 
