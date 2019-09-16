@@ -4003,7 +4003,7 @@ def get_untagged(spark: SparkSession,
   }
     */
 
-    def user_agents_1day(spark: SparkSession) {
+    def user_agents_1day(spark: SparkSession) {}
 
     
     def parse_day(day: String) {
