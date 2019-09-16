@@ -351,7 +351,7 @@ spatialRDDpolygon.rawSpatialRDD.rdd.repartition(100)
 
 //cargamos los usuarios
 val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
-.load("/datascience/geo/safegraph_pipeline/day=0190610/country=argentina/")
+.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
 .withColumn("latitude",col("latitude").cast("Double"))
 .withColumn("longitude",col("longitude").cast("Double"))
 
@@ -391,7 +391,7 @@ rawSpatialDf
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/sample_w_rdd")
+.save("/datascience/geo/geospark_debugging/sample_w_rdd_30")
 
   }
 }
