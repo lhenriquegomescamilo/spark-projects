@@ -130,12 +130,13 @@ object Item2Item {
       println("LOOKALIKE LOG: JobId: " + metaInput("job_id") + " - Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
     else
       println("LOOKALIKE LOG: Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
-    
 
+    var nDaysData = if(nDays != -1 ) nDays else if (List("AR", "MX") contains country) 15 else 30
+    
     // Read data
     println("LOOKALIKE LOG: Model training")
 
-    val data = getDataTriplets(spark, country, nDays)
+    val data = getDataTriplets(spark, country, nDaysData)
 
     // Create segment index
     var segments = expandInput.map(row=> row("segment_id").toString) // First: segments to expand
@@ -343,8 +344,8 @@ object Item2Item {
     val df = if(nDays > 0){
       // read files from dates
       val format = "yyyyMMdd"
-      val endDate = DateTime.now.minusDays(1)
-      val days = (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+      val endDate = DateTime.now
+      val days = (0 to nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
       // Now we obtain the list of hdfs folders to be read
       val hdfs_files = days
         .map(day => path + "/day=%s/country=%s".format(day, country))
@@ -477,46 +478,7 @@ object Item2Item {
     // It gets the score thresholds to get at least k elements per segment.
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
     val sizeMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
-    //val sizeMax = expandInput.map(m => m("size").toString.toInt).max
-    //val sizeMin = expandInput.map(m => m("size").toString.toInt).min
 
-    
-  /*
-    val rankTmpPath = getTmpPathNames(metaParameters)("rank")
-
-    var rankedScoreDF = scoreMatrix
-      .flatMap(tup =>  selSegmentsIdx
-                          .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))) .filter(tup => tup._2 >0) // remove scores <= 0
-              ) //<segment_idx, score>
-      .toDF("segment_idx", "score")
-      .withColumn("rank", row_number.over(Window.partitionBy("segment_idx").orderBy($"score".desc)))
-      .filter($"rank" <= sizeMax)
-      .filter($"rank" >= sizeMin)
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("parquet")
-      .partitionBy("segment_idx")
-      .save(rankTmpPath)
-
-    def getScore(segmentIdx: Int): Double = {
-      val partitionPath = rankTmpPath + "segment_idx=%s/".format(segmentIdx)
-      val ret = {
-        if(fs.exists(new org.apache.hadoop.fs.Path(partitionPath))){
-        val query = spark.read.load(partitionPath)
-          .filter($"rank" === sizeMap(segmentIdx))
-          .select("score")
-          .take(1)
-          .map(row => row(0).toString.toDouble)
-          if(!query.isEmpty) query.apply(0) else 0.0                            
-        }
-        else 0.0
-      }
-      ret
-    }
-
-    val minScoreMap = selSegmentsIdx.map(segmentIdx => (segmentIdx, getScore(segmentIdx))).toMap
-
-    */
     val minScoreMap = scoreMatrix
       .flatMap(tup =>  selSegmentsIdx
                            .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))).filter(tup => tup._2 >0) // remove scores <= 0
@@ -535,8 +497,13 @@ object Item2Item {
       .collect
       .toMap
 
-    println("Lookalike LOG: threshold scores")
-    println(minScoreMap)
+    println("Lookalike LOG: threshold scores = %s".format(minScoreMap))
+
+    var resultDescription = if (minScoreMap.size > 0)
+         "%d/%d segments with results".format(minScoreMap.size, selSegmentsIdx.size)
+      else
+        "no results found"
+    println("Lookalike LOG: %s".format(resultDescription))
 
     var maskedScores = scoreMatrix
       .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => 
@@ -549,7 +516,8 @@ object Item2Item {
       val devicesId = indexedData.map(t => (t._1, t._2)) // <device_idx, device_id>
       val userPredictions = maskedScores.join(devicesId).map(tup => (tup._2._2, tup._2._1))
       // <device_id, array(boolean)>
-      writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters)
+
+      writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters, resultDescription)
     }
     else{ 
       val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._3 contains segmentIdx)).toArray))
@@ -561,7 +529,6 @@ object Item2Item {
     // delete temp files
     fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
     fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
-    //fs.delete(new org.apache.hadoop.fs.Path(rankTmpPath), true)
   }
 
   /*
@@ -576,8 +543,7 @@ object Item2Item {
     val pathTmpFiles = getTmpPathNames(metaParameters)
     val existsTmpFiles: Map[String, Boolean] = Map(
         "scores" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("scores"))),
-        "indexed" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("indexed"))),
-        "rank" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("rank")))
+        "indexed" -> fs.exists(new org.apache.hadoop.fs.Path(pathTmpFiles("indexed")))
       )
     existsTmpFiles
   }
@@ -605,17 +571,10 @@ object Item2Item {
        "/datascience/data_lookalike/tmp/indexed_devices/country=%s/".format(country)
     }
 
-    val rankTmpPath = {
-      if(isOnDemand)
-        "/datascience/data_lookalike/tmp/rank/jobId=%s/".format(jobId)
-      else
-       "/datascience/data_lookalike/tmp/rank/country=%s/".format(country)
-    }
 
     val pathTmpFiles: Map[String, String] = Map(
         "scores" -> scoresTmpPath,
-        "indexed" -> indexTmpPath,
-        "rank" -> rankTmpPath
+        "indexed" -> indexTmpPath
       )
     pathTmpFiles
   }
@@ -627,7 +586,8 @@ object Item2Item {
                   data: RDD[(String, Array[(Boolean)])],
                   expandInput: List[Map[String, Any]],
                   segmentToIndex: Map[String, Int],
-                  metaParameters: Map[String, String]){
+                  metaParameters: Map[String, String],
+                  resultDescription: String = ""){
     import spark.implicits._ 
     
     val isOnDemand = metaParameters("job_id").length > 0
@@ -684,7 +644,7 @@ object Item2Item {
         .option("header", "false")
         .mode(SaveMode.Overwrite)
         .save(filePath)
-      writeOutputMetaFile(filePath, jobId, partnerId, priority)
+      writeOutputMetaFile(filePath, jobId, partnerId, priority, resultDescription)
     }
     
   }
@@ -698,16 +658,17 @@ object Item2Item {
       jobId: String,
       partnerId: String,
       priority: String = "10",
-      queue: String = "datascience"
+      queue: String = "datascience",
+      resultDescription: String = ""
   ) {
     println("Lookalike LOG:\n\tPushing the audience to the ingester")
 
-    var description = "Lookalike on demand - jobId = %s".format(jobId)
+    var description = "Lookalike on demand - jobId = %s - %s".format(jobId, resultDescription)
 
     // Then we generate the content for the json file.
     val json_content = """{"filePath":"%s", "priority":%s, "partnerId":%s, "queue":"%s", "jobId":%s, "description":"%s"}"""
       .format(
-        file_path,
+        if (file_path.takeRight(1) == "/") file_path.dropRight(1) else file_path, // remove last '/''
         priority,
         partnerId,
         queue,
