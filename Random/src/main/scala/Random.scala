@@ -5255,7 +5255,7 @@ def get_report_gcba_1134(spark:SparkSession){
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
 
-    get_segments_pmi(spark)   
+    get_report_gcba_1134(spark) 
   }
 
 }
