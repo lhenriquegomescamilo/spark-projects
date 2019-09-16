@@ -5143,13 +5143,20 @@ def get_timestamps_urls(spark:SparkSession){
 def processURL(url: String): String = {
   val columns = List("r_mobile", "r_mobile_type", "r_app_name", "r_campaign", "r_lat_long", "id_campaign")
   var res = ""
-  if (url.toString.contains("?")){
-    val params = url.split("\\?", -1)(1).split("&").map(p => p.split("=", -1)).map(p => (p(0), p(1))).toMap
 
-    if (params.contains("r_mobile") && params("r_mobile").length>0 && !params("r_mobile").contains("[")){
-        res = columns.map(col => if (params.contains(col)) params(col) else "").mkString(",")
+  try {
+    if (url.toString.contains("?")){
+      val params = url.split("\\?", -1)(1).split("&").map(p => p.split("=", -1)).map(p => (p(0), p(1))).toMap
+
+      if (params.contains("r_mobile") && params("r_mobile").length>0 && !params("r_mobile").contains("[")){
+          res = columns.map(col => if (params.contains(col)) params(col) else "").mkString(",")
+      }
     }
+  } 
+  catch {
+    case _: Throwable => println("Error")
   }
+
   res
 }
 
