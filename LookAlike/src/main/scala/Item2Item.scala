@@ -344,8 +344,8 @@ object Item2Item {
     val df = if(nDays > 0){
       // read files from dates
       val format = "yyyyMMdd"
-      val endDate = DateTime.now.minusDays(1)
-      val days = (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+      val endDate = DateTime.now
+      val days = (0 to nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
       // Now we obtain the list of hdfs folders to be read
       val hdfs_files = days
         .map(day => path + "/day=%s/country=%s".format(day, country))
