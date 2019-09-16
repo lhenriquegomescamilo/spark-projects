@@ -5189,7 +5189,7 @@ def get_report_gcba_1134(spark:SparkSession){
     .map(
       x =>
         spark.read
-          .option("basePath", "/datascience/data_audiences_streaming/")
+          .option("basePath", "/datascience/data_partner_streaming/")
           .parquet(x)
           .filter("event_type = 'tk' AND url LIKE '%r_mobile=%'")
           .select("url")
