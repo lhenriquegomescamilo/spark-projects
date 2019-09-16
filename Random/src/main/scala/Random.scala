@@ -1562,9 +1562,7 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
-
-    def get_pii_acxiom_AR_BR(spark: SparkSession) {
-
+  def get_pii_acxiom_AR_BR(spark: SparkSession) {
     val piis_ar =  spark.read.load("/datascience/pii_matching/pii_tuples/")
           .filter("country='AR'").select("device_id","nid_sh2")
           .groupBy("nid_sh2")
@@ -1573,8 +1571,7 @@ val records_common = the_join.select(col("identifier"))
               .withColumn("device_list",concat_ws(",",col("device_list")))
               .drop("len")
 
-      piis_ar.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/_axiom_pii_AR_20190815")
-
+    piis_ar.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/_axiom_pii_AR_20190815")
 
     val piis_br =  spark.read.load("/datascience/pii_matching/pii_tuples/")
           .filter("country='BR'").select("device_id","nid_sh2")
@@ -5156,7 +5153,8 @@ def processURL(url: String): String = {
 }
 
 
-def get_report_gcba_1134(spark:SparkSession){
+def get_report_gcba_1134(spark:SparkSession)
+    get_segments_pmi(spark)  {
   val myUDF = udf((url: String) => processURL(url))
 
   /// Configuraciones de spark
