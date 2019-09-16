@@ -3758,7 +3758,7 @@ user_granularity.write
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/untagged_categories")
 
-  }
+    }
 
   /**
     *
@@ -4002,7 +4002,7 @@ user_granularity.write
     parse_day("AR", day)
   }
     */
-
+/**
     def user_agents_1day(spark: SparkSession) {}
 
     
@@ -4025,11 +4025,12 @@ user_granularity.write
           "/datascience/misc/data_useragents/20190808AR"//.format(day)
         )
       println("Day %s processed!".format(day))
-    
+    }
      val day = "2019/08/08"
     //val day = DateTime.now.minusDays(1).toString("yyyy/MM/dd")
     parse_day(day)
   }
+  **//
   /**
     *
     *
