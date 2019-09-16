@@ -5193,8 +5193,8 @@ def get_report_gcba_1134(spark:SparkSession){
           .parquet(x)
           .filter("event_type = 'tk' AND url LIKE '%r_mobile=%'")
           .select("url")
-          .withColumn("values", myUDF(col("url")))
-          .filter(length(col("values"))>0)
+          //.withColumn("values", myUDF(col("url")))
+          //.filter(length(col("values"))>0)
     )
 
   /// Concatenamos los dataframes
