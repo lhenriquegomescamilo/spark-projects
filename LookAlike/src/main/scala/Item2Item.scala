@@ -130,12 +130,13 @@ object Item2Item {
       println("LOOKALIKE LOG: JobId: " + metaInput("job_id") + " - Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
     else
       println("LOOKALIKE LOG: Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
-    
 
+    var nDaysData = if(nDays != -1 ) nDays else if (List("AR", "MX") contains country) 15 else 30
+    
     // Read data
     println("LOOKALIKE LOG: Model training")
 
-    val data = getDataTriplets(spark, country, nDays)
+    val data = getDataTriplets(spark, country, nDaysData)
 
     // Create segment index
     var segments = expandInput.map(row=> row("segment_id").toString) // First: segments to expand
@@ -707,7 +708,7 @@ object Item2Item {
     // Then we generate the content for the json file.
     val json_content = """{"filePath":"%s", "priority":%s, "partnerId":%s, "queue":"%s", "jobId":%s, "description":"%s"}"""
       .format(
-        file_path,
+        if (file_path.takeRight(1) == "/") file_path.dropRight(1) else file_path, // remove last '/''
         priority,
         partnerId,
         queue,
