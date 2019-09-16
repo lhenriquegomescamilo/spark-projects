@@ -46,6 +46,7 @@ object generateOrganic {
       runType: String = "full",
       from: Int = 1
   ) {
+    import spark.implicits._
     // Setting all the meta-classes that will be used to work with the data and file systems
     val sc = spark.sparkContext
     val conf = sc.hadoopConfiguration
