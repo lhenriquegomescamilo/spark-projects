@@ -155,11 +155,23 @@ object generateOrganic {
       .withColumnRenamed("device_id", "rtgtly_uid")
       .select("rtgtly_uid", "segids")
 
+    // New join with estid
+    val input_estid = spark.read
+        .format("parquet")
+        .load("/datascience/sharethis/estid_map/")
+        .select($"estid".alias("map_estid"), $"device_id")
+
+    val joint = userSegments
+        .join(input_estid, $"rtgtly_uid"===$"map_estid", "left")
+        .select("rtgtly_uid", "segids", "device_id")
+        .orderBy($"rtgtly_uid")
+    //end join
+
     // Last step is to store the data in the format required (.tsv.bz)
-    val pathToJson =
-      "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
-        .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
-    userSegments.write
+    val pathToJson = "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
+      .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
+
+    joint.write
       .format("json")
       .option("compression", "bzip2")
       .option("quote", "")
