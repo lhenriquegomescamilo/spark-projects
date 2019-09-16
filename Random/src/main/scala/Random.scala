@@ -5153,8 +5153,7 @@ def processURL(url: String): String = {
 }
 
 
-def get_report_gcba_1134(spark:SparkSession)
-    get_segments_pmi(spark)  {
+def get_report_gcba_1134(spark:SparkSession){
   val myUDF = udf((url: String) => processURL(url))
 
   /// Configuraciones de spark
