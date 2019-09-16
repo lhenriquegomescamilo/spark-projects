@@ -332,17 +332,19 @@ import org.datasyslab.geospark.spatialOperator.{JoinQuery, KNNQuery, RangeQuery}
 
 //Quiero probar qué onda con RDD
 //acá cargamos el polígono 
-/*
-Esto es para JSON
-val inputLocation = "/datascience/geo/polygons/AR/audiencias/embajadas.json"
+
+
+val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_caba.json"
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
-*/
 
+
+/*
+Esto es para shapefile
 val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
 val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
-
+*/
 
 //reparticionamos
 spatialRDDpolygon.rawSpatialRDD.rdd.repartition(100)
@@ -370,14 +372,14 @@ println(spatialRDDusers.analyze())
 
 //spatialRDDpolygon.spatialPartitioning(GridType.KDBTREE)
 //spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
-val joinQueryPartitioningType = GridType.RTREE
+val joinQueryPartitioningType = GridType.KDBTREE
 val numPartitions = 100
 val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
 val usingIndex = true
 val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
 spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
 spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
-spatialRDDusers.buildIndex(IndexType.RTREE, buildOnSpatialPartitionedRDD)
+spatialRDDusers.buildIndex(IndexType.KDBTREE, buildOnSpatialPartitionedRDD)
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
