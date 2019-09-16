@@ -5191,7 +5191,7 @@ def get_report_gcba_1134(spark:SparkSession){
         spark.read
           .option("basePath", "/datascience/data_partner_streaming/")
           .parquet(x)
-          .filter("event_type = 'tk' AND url LIKE '%r_mobile=%'")
+          .filter("event_type = 'tk'")
           .select("url")
           //.withColumn("values", myUDF(col("url")))
           //.filter(length(col("values"))>0)
