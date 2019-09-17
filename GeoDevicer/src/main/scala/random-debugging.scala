@@ -354,7 +354,7 @@ val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, sh
 spatialRDDpolygon.rawSpatialRDD.rdd.repartition(100)
 
 //cargamos los usuarios
-val users = get_safegraph_data(spark,"180","1","argentina")
+val users = get_safegraph_data(spark,"5","1","argentina")
 
 //val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
 //.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
@@ -383,7 +383,7 @@ val numPartitions = 100
 val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
 val usingIndex = true
 val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
-spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
+spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType)
 spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
 
