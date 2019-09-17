@@ -16,7 +16,7 @@ object TaringaIngester {
           "/datascience/data_audiences_streaming/hour=%s*/country=%s"
             .format(day, c)
         )
-        .filter("url LIKE '%taringa%'") // country IN ('AR', 'CL', 'MX', 'CO') AND 
+        .filter("url LIKE '%taringa%'") // country IN ('AR', 'CL', 'MX', 'CO') AND
         .withColumn("day", lit(day))
         .withColumn("all_segments", concat_ws(",", col("all_segments")))
         .select("device_id", "all_segments", "url", "datetime", "day")
@@ -31,7 +31,10 @@ object TaringaIngester {
 
   def main(args: Array[String]) {
     /// Configuracion spark
-    val spark = SparkSession.builder.appName("Data GCBA Process").getOrCreate()
+    val spark = SparkSession.builder
+      .appName("Data GCBA Process")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .getOrCreate()
 
     /// Parseo de parametros
     val since = if (args.length > 0) args(0).toInt else 1
