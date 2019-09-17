@@ -49,7 +49,7 @@ object IpgMaids {
   val encriptador = udf { (device_id: String) =>
     encrypt(device_id)
   }
-  
+
   val desencriptador = udf { (device_id: String) =>
     decrypt(device_id)
   }
@@ -134,6 +134,63 @@ object IpgMaids {
 
   }
 
+  def getDataTriplets(
+      spark: SparkSession,
+      country: String,
+      nDays: Int = -1,
+      path: String = "/datascience/data_triplets/segments/"
+  ) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    val df = if (nDays > 0) {
+      // read files from dates
+      val format = "yyyyMMdd"
+      val endDate = DateTime.now.minusDays(1)
+      val days =
+        (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+      // Now we obtain the list of hdfs folders to be read
+      val hdfs_files = days
+        .map(day => path + "/day=%s/country=%s".format(day, country))
+        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    } else {
+      // read all date files
+      spark.read.load(path + "/day=*/country=%s/".format(country))
+    }
+    df
+  }
+
+  def getDataSegments(spark: SparkSession) = {
+    val data_triplets =
+      getDataTriplets(spark, "MX").select("device_id", "feature")
+    val dataIpg = spark.read
+      .format("csv")
+      .load("/datascience/custom/IPG_maids")
+      .withColumnRenamed("_c0", "device_id")
+    val dataIpgXd =
+      spark.read
+        .format("csv")
+        .load("/datascience/audiences/crossdeviced/IPG_maids_xd")
+        .withColumnRenamed("_c1", "device_id")
+        .select("_c0", "_c1")
+
+    dataIpg
+      .join(data_triplets, Seq("device_id"))
+      .repartition(300)
+      .write
+      .format("csv")
+      .save("/datascience/custom/IPG_maids_segments")
+
+    dataIpgXd
+      .join(data_triplets, Seq("device_id"))
+      .repartition(300)
+      .write
+      .format("csv")
+      .save("/datascience/custom/IPG_maids_xd_segments")
+  }
+
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder
@@ -143,7 +200,8 @@ object IpgMaids {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataAcxiom(spark)
+    //getDataAcxiom(spark)
+    getDataSegments(spark)
 
   }
 }
