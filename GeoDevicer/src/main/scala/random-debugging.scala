@@ -127,6 +127,7 @@ val joined = ua.join(segments,Seq("device_id"))
 
                                           }
 
+
 def get_safegraph_data(
       spark: SparkSession,
       nDays: String,
@@ -161,11 +162,14 @@ def get_safegraph_data(
     val df_safegraph = spark.read
       .option("header", "true")
       .parquet(hdfs_files: _*)
-      .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
       .withColumnRenamed("ad_id","device_id")
       .withColumnRenamed("id_type","device_type")
       .withColumn("device_id",upper(col("device_id")))
+      .withColumn("latitude",col("latitude").cast("Double"))
+      .withColumn("longitude",col("longitude").cast("Double"))
+
+      //.dropDuplicates("ad_id", "latitude", "longitude")
 
      df_safegraph                    
     
@@ -313,11 +317,10 @@ val spark = SparkSession.builder()
  .config("spark.serializer", classOf[KryoSerializer].getName)
  .config("spark.kryo.registrator", classOf[GeoSparkKryoRegistrator].getName)
       .config("geospark.global.index","true")
-       .config("geospark.join.gridtype", "kdbtree")
-       .config("geospark.join.spatitionside","left")
        .appName("myGeoSparkSQLdemo").getOrCreate()
 // .config("spark.kryo.registrator",classOf[GeoSparkKryoRegistrator].getName)
-     
+     //.config("geospark.join.gridtype", "kdbtree")
+      // .config("geospark.join.spatitionside","left")
 GeoSparkSQLRegistrator.registerAll(spark)
 
    // Initialize the variables
@@ -333,31 +336,35 @@ import org.datasyslab.geospark.spatialOperator.{JoinQuery, KNNQuery, RangeQuery}
 
 //Quiero probar qué onda con RDD
 //acá cargamos el polígono 
-/*
-Esto es para JSON
-val inputLocation = "/datascience/geo/polygons/AR/audiencias/embajadas.json"
+
+
+val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_caba.json"
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
-*/
 
+
+/*
+Esto es para shapefile
 val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
 val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
-
+*/
 
 //reparticionamos
 spatialRDDpolygon.rawSpatialRDD.rdd.repartition(100)
 
 //cargamos los usuarios
-val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
-.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
-.withColumn("latitude",col("latitude").cast("Double"))
-.withColumn("longitude",col("longitude").cast("Double"))
+val users = get_safegraph_data(spark,"180","1","argentina")
+
+//val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
+//.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
+//.withColumn("latitude",col("latitude").cast("Double"))
+//.withColumn("longitude",col("longitude").cast("Double"))
 
 //Aplicando geometría a los puntos
 users.createOrReplaceTempView("data")
 
-var safegraphDf = spark .sql(""" SELECT ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry,ad_id
+var safegraphDf = spark .sql(""" SELECT ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry,device_id
               FROM data  """)
 
 
@@ -371,18 +378,14 @@ println(spatialRDDusers.analyze())
 
 //spatialRDDpolygon.spatialPartitioning(GridType.KDBTREE)
 //spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
-val joinQueryPartitioningType = GridType.KDBTREE
+val joinQueryPartitioningType = GridType.QUADTREE
 val numPartitions = 100
-spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
-spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
-
-
 val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
 val usingIndex = true
 val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
-//val numPartitions = 10
-
-//spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
+spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
+spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
@@ -394,7 +397,7 @@ rawSpatialDf
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/sample_w_rdd")
+.save("/datascience/geo/geospark_debugging/sample_w_rdd_60")
 
   }
 }

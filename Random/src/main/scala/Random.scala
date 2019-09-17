@@ -1562,9 +1562,7 @@ val records_common = the_join.select(col("identifier"))
 
   }
 
-
-    def get_pii_acxiom_AR_BR(spark: SparkSession) {
-
+  def get_pii_acxiom_AR_BR(spark: SparkSession) {
     val piis_ar =  spark.read.load("/datascience/pii_matching/pii_tuples/")
           .filter("country='AR'").select("device_id","nid_sh2")
           .groupBy("nid_sh2")
@@ -1573,8 +1571,7 @@ val records_common = the_join.select(col("identifier"))
               .withColumn("device_list",concat_ws(",",col("device_list")))
               .drop("len")
 
-      piis_ar.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/_axiom_pii_AR_20190815")
-
+    piis_ar.write.format("csv").mode(SaveMode.Overwrite).save("/datascience/custom/_axiom_pii_AR_20190815")
 
     val piis_br =  spark.read.load("/datascience/pii_matching/pii_tuples/")
           .filter("country='BR'").select("device_id","nid_sh2")
@@ -3728,9 +3725,9 @@ user_granularity.write
   }
 
   
-def get_untagged(spark: SparkSession,
-                 nDays: Integer,
-                 since: Integer) = {
+  def get_untagged(spark: SparkSession,
+                  nDays: Integer,
+                  since: Integer) = {
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -4005,8 +4002,8 @@ def get_untagged(spark: SparkSession,
     parse_day("AR", day)
   }
     */
-
-    def user_agents_1day(spark: SparkSession) {
+/**
+    def user_agents_1day(spark: SparkSession) {}
 
     
     def parse_day(day: String) {
@@ -4033,6 +4030,7 @@ def get_untagged(spark: SparkSession,
     //val day = DateTime.now.minusDays(1).toString("yyyy/MM/dd")
     parse_day(day)
   }
+  **/
   /**
     *
     *
@@ -5141,6 +5139,73 @@ def get_timestamps_urls(spark:SparkSession){
 
 }
 
+
+def processURL(url: String): String = {
+  val columns = List("r_mobile", "r_mobile_type", "r_app_name", "r_campaign", "r_lat_long", "id_campaign")
+  var res = ""
+
+  try {
+    if (url.toString.contains("?")){
+      val params = url.split("\\?", -1)(1).split("&").map(p => p.split("=", -1)).map(p => (p(0), p(1))).toMap
+
+      if (params.contains("r_mobile") && params("r_mobile").length>0 && !params("r_mobile").contains("[")){
+          res = columns.map(col => if (params.contains(col)) params(col) else "").mkString(",")
+      }
+    }
+  } 
+  catch {
+    case _: Throwable => println("Error")
+  }
+
+  res
+}
+
+
+def get_report_gcba_1134(spark:SparkSession){
+  val myUDF = udf((url: String) => processURL(url))
+
+  /// Configuraciones de spark
+  val sc = spark.sparkContext
+  val conf = sc.hadoopConfiguration
+  val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+  /// Obtenemos la data de los ultimos ndays
+  val format = "yyyyMMdd"
+  val start = DateTime.now.minusDays(1)
+
+  val days =
+    (0 until 33).map(start.minusDays(_)).map(_.toString(format))
+  val path = "/datascience/data_partner_streaming"
+  val dfs = days
+    .flatMap(
+      day =>
+        (0 until 24).map(
+          hour =>
+            path + "/hour=%s%02d/id_partner=1134"
+              .format(day, hour)
+        )
+    )
+    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    .map(
+      x =>
+        spark.read
+          .option("basePath", "/datascience/data_partner_streaming/")
+          .parquet(x)
+          .filter("event_type = 'tk'")
+          .select("url")
+          //.withColumn("values", myUDF(col("url")))
+          //.filter(length(col("values"))>0)
+    )
+
+  /// Concatenamos los dataframes
+  val dataset = dfs.reduce((df1, df2) => df1.union(df2)).distinct()
+
+  dataset.write.format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/1134_septiembre")
+
+}
+
  def get_segments_pmi(spark:SparkSession){
 
    val files = List("/datascience/misc/cookies_chesterfield.csv",
@@ -5182,6 +5247,8 @@ def get_timestamps_urls(spark:SparkSession){
    }
  }
 
+ 
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -5193,7 +5260,7 @@ def get_timestamps_urls(spark:SparkSession){
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
 
-    get_segments_pmi(spark)   
+    get_report_gcba_1134(spark) 
   }
 
 }
