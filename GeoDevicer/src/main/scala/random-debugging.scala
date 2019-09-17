@@ -384,13 +384,15 @@ val numPartitions = 100
 val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
 val usingIndex = true
 val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
-spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType)
-spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+
+spatialRDDusers.spatialPartitioning(joinQueryPartitioningType)
+spatialRDDpolygon.spatialPartitioning(spatialRDDusers.getPartitioner)
 spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
+
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
-result.rdd.map(line => "%s,%s".format(line._1, line._2)).saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_%s".format(nDays.toString))
+result.rdd.map(line => "%s,%s".format(line._1, line._2)).saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_%s_invererted_partition".format(nDays.toString))
 
 
 //result.saveAsObjectFile("/datascience/geo/geospark_debugging/sample_rdd_2")
