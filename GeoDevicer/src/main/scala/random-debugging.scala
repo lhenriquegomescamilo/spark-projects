@@ -354,7 +354,7 @@ val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, sh
 spatialRDDpolygon.rawSpatialRDD.rdd.repartition(100)
 
 //cargamos los usuarios
-val nDays = 5
+val nDays = 90
 val users = get_safegraph_data(spark,nDays.toString,"1","argentina")
 
 //val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
@@ -404,7 +404,7 @@ rawSpatialDf
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/sample_w_rdd_%s_dataframe_transformation_points_first".format(nDays.toString))
+.save("/datascience/geo/geospark_debugging/sample_w_rdd_%s_points_first".format(nDays.toString))
 
   }
 }
