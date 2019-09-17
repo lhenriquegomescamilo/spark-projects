@@ -159,12 +159,13 @@ object generateOrganic {
     // New join with estid
     val input_estid = spark.read
         .format("parquet")
-        .load("/datascience/sharethis/estid_map/")
-        .select($"estid".alias("map_estid"), $"device_id")
+        .load("/datascience/sharethis/estid_map/country=MX")
+        .select($"estid", explode($"device_id").as("map_device_id"))
+        .dropDuplicates("map_device_id")
 
     val joint = userSegments
-        .join(input_estid, $"rtgtly_uid"===$"map_estid", "left")
-        .select("rtgtly_uid", "segids", "device_id")
+        .join(input_estid, $"rtgtly_uid"===$"map_device_id", "left")
+        .select("rtgtly_uid", "segids", "estid")
         //.orderBy($"rtgtly_uid") 
     //end join
 
