@@ -392,19 +392,19 @@ spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
-result.rdd.map(line => "%s,%s".format(line._1, line._2)).saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_%s_invererted_partition".format(nDays.toString))
+//result.rdd.map(line => "%s,%s".format(line._1, line._2)).saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_%s_invererted_partition".format(nDays.toString))
 
 
-//result.saveAsObjectFile("/datascience/geo/geospark_debugging/sample_rdd_2")
-//var rawSpatialDf = Adapter.toDf(result,spark).select("_c1","_c3")
+//("/datascience/geo/geospark_debugging/sample_w_rdd_%s_dataframe_transform".format(nDays.toString))
+var rawSpatialDf = Adapter.toDf(result,spark).select("_c1","_c3")
 //println(rawSpatialDf.count())
-/*
+
 rawSpatialDf
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/sample_w_rdd_60")
-*/
+.save("/datascience/geo/geospark_debugging/sample_w_rdd_%s_dataframe_transformation_points_first".format(nDays.toString))
+
   }
 }
