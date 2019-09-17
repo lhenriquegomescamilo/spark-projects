@@ -174,7 +174,7 @@ object IpgMaids {
         .format("csv")
         .load("/datascience/audiences/crossdeviced/IPG_maids_xd")
         .withColumnRenamed("_c1", "device_id")
-        .select("_c0", "_c1")
+        .select("_c0", "device_id")
 
     dataIpg
       .join(data_triplets, Seq("device_id"))
