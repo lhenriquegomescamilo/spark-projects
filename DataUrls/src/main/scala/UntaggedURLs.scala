@@ -1,6 +1,6 @@
 package main.scala
 
-import org.apache.spark.sql.{SparkSession, SaveMode, SaveMode, DataFrame}
+import org.apache.spark.sql.{SparkSession, SaveMode, DataFrame}
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{FileSystem, Path}
