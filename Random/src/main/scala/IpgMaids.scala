@@ -206,6 +206,42 @@ object IpgMaids {
     //   .save("/datascience/custom/IPG_maids_xd_segments")
   }
 
+  def getSegmentsPerMaid(spark: SparkSession) = {
+    val segmentsForMaids =
+      spark.read
+        .format("csv")
+        .load("/datascience/custom/IPG_maids_segments")
+        .withColumnRenamed("_c0", "device_id")
+        .withColumnRenamed("_c2", "segment")
+        .select("device_id", "segment")
+
+    val segmentsForCookies =
+      spark.read
+        .format("csv")
+        .load("/datascience/custom/IPG_maids_xd_segments")
+        .withColumnRenamed("_c1", "device_id")
+        .withColumnRenamed("_c2", "segment")
+        .select("device_id", "segment")
+
+    val segmentsForAll = segmentsForCookies.unionAll(segmentsForMaids)
+
+    segmentsForAll
+      .distinct()
+      .groupBy("device_id")
+      .agg(collect_list("segment") as "segments")
+      .withColumn("segments", concat_ws(",", col("segments")))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .withColumn("salt", encriptador(col("device_id")))
+      .select("device_id", "salt", "segments")
+      .repartition(300)
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/IPG_maids_enriched")
+  }
+
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder
@@ -216,7 +252,7 @@ object IpgMaids {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     //getDataAcxiom(spark)
-    getDataSegments(spark)
+    getSegmentsPerMaid(spark)
 
   }
 }
