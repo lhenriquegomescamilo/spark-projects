@@ -4,6 +4,7 @@ import org.apache.spark.sql.{SparkSession, SaveMode, DataFrame}
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.log4j.{Level, Logger}
 
 object UntaggedURLs {
 
