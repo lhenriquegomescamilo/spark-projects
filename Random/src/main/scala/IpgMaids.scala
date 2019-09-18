@@ -192,6 +192,7 @@ object IpgMaids {
       .repartition(300)
       .write
       .format("csv")
+      .mode("overwrite")
       .save("/datascience/custom/IPG_maids_segments")
     // dataIpgXd
     //   .join(
