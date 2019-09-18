@@ -176,19 +176,68 @@ object IpgMaids {
         .withColumnRenamed("_c1", "device_id")
         .select("_c0", "device_id")
 
-    dataIpg
-      .join(data_triplets, Seq("device_id"))
-      .repartition(300)
-      .write
+    val segments = spark.read
       .format("csv")
-      .save("/datascience/custom/IPG_maids_segments")
+      .option("header", "true")
+      .load("/datascience/custom/segments_IPG.csv")
+      .withColumnRenamed("ID", "feature")
+      .withColumn("feature", col("feature").cast("int"))
+      .select("feature")
 
-    dataIpgXd
-      .join(data_triplets, Seq("device_id"))
+    dataIpg
+      .join(
+        data_triplets.join(broadcast(segments), Seq("feature")),
+        Seq("device_id")
+      )
       .repartition(300)
       .write
       .format("csv")
-      .save("/datascience/custom/IPG_maids_xd_segments")
+      .mode("overwrite")
+      .save("/datascience/custom/IPG_maids_segments")
+    // dataIpgXd
+    //   .join(
+    //     data_triplets.join(broadcast(segments), Seq("feature")),
+    //     Seq("device_id")
+    //   )
+    //   .repartition(300)
+    //   .write
+    //   .format("csv")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/IPG_maids_xd_segments")
+  }
+
+  def getSegmentsPerMaid(spark: SparkSession) = {
+    val segmentsForMaids =
+      spark.read
+        .format("csv")
+        .load("/datascience/custom/IPG_maids_segments")
+        .withColumnRenamed("_c0", "device_id")
+        .withColumnRenamed("_c2", "segment")
+        .select("device_id", "segment")
+
+    val segmentsForCookies =
+      spark.read
+        .format("csv")
+        .load("/datascience/custom/IPG_maids_xd_segments")
+        .withColumnRenamed("_c1", "device_id")
+        .withColumnRenamed("_c2", "segment")
+        .select("device_id", "segment")
+
+    val segmentsForAll = segmentsForCookies.unionAll(segmentsForMaids)
+
+    segmentsForAll
+      .distinct()
+      .groupBy("device_id")
+      .agg(collect_list("segment") as "segments")
+      .withColumn("segments", concat_ws(",", col("segments")))
+      .withColumn("salt", encriptador(col("device_id")))
+      .select("device_id", "salt", "segments")
+      .repartition(300)
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/IPG_maids_enriched")
   }
 
   def main(args: Array[String]) {
@@ -201,7 +250,7 @@ object IpgMaids {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     //getDataAcxiom(spark)
-    getDataSegments(spark)
+    getSegmentsPerMaid(spark)
 
   }
 }
