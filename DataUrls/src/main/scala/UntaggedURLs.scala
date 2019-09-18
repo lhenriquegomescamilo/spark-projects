@@ -18,7 +18,7 @@ object UntaggedURLs {
     data
       .select("url", "tagged", "share_data", "event_type", "country")
       .filter(
-        "event_type IN ('pv', 'batch', 'data') AND tagged IS NULL AND share_data == '1' AND url IS NOT NULL"
+        "event_type IN ('pv', 'batch', 'data') AND tagged IS NULL AND share_data == '1' AND url IS NOT NULL AND country IN ('AR', 'MX', 'CL', 'CO', 'BR', 'PE', 'US')"
       )
       .select("url", "country")
       .withColumn("day", lit(day.replace("/", "")))
