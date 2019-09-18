@@ -1,10 +1,12 @@
 spark-submit\
+  --class "main.scala.Item2Item"\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\
-  --executor-memory 8g\
-  --num-executors 15\
-  --executor-cores 4\
+  --executor-memory 10g\
+  --num-executors 20\
+  --executor-cores 2\
   --queue default\
   --conf spark.yarn.maxAppAttempts=1\
-  /home/rely/spark-projects/LookAlike/target/scala-2.11/lookalike_2.11-1.0.jar
+  --conf spark.sql.shuffle.partitions=400\
+ /home/rely/spark-projects/LookAlike/target/scala-2.11/lookalike_2.11-1.0.jar --filePath "/datascience/data_lookalike/input/input_BR.json" --simHits "binary" --predHits "binary" --nDays 30

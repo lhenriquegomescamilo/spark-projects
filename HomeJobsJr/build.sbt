@@ -1,4 +1,4 @@
-name := "GeoDevicer"
+name := "HomeJobsJr"
 
 version := "1.0"
 
