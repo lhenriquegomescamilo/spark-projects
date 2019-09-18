@@ -245,10 +245,12 @@ object IpgMaids {
       .format("csv")
       .option("sep", "\t")
       .load("/datascience/custom/IPG_maids_enriched")
+      .select("_c1", "_c2")
       .write
       .format("csv")
       .option("sep", "\t")
       .option("compression", "gzip")
+      .mode("overwrite")
       .save("/datascience/custom/IPG_maids_enriched_gz")
   }
 
