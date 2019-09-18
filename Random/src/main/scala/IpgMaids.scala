@@ -193,7 +193,7 @@ object IpgMaids {
 
     dataIpgXd
       .join(
-        data_triplets.join(broadcast(segments, Seq("feature"))),
+        data_triplets.join(broadcast(segments), Seq("feature")),
         Seq("device_id")
       )
       .repartition(300)
