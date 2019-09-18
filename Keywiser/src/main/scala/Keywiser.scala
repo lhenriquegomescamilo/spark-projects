@@ -43,7 +43,7 @@ import java.sql.Savepoint
 /**
   * The idea of this script is to run processes using content keywords from urls.
   */
-object ContentKws {
+object Keywiser {
 
   /**
     *
