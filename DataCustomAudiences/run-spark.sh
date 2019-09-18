@@ -1,13 +1,13 @@
 #!/bin/bash
 
-source /home/rely/.bashrc
+#source /home/rely/.bashrc
 
-/home/rely/spark/bin/spark-submit\
+spark-submit\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\
   --executor-memory 8g\
-  --num-executors 10\
+  --num-executors 15\
   --executor-cores 3\
   --queue default\
   --conf spark.yarn.maxAppAttempts=1\
