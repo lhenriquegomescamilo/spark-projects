@@ -189,7 +189,7 @@ object IpgMaids {
       .load("/datascience/custom/segments_IPG.csv")
       .withColumnRenamed("ID", "feature")
       .withColumn("feature", col("feature").cast("int"))
-      .select("ID")
+      .select("feature")
 
     dataIpgXd
       .join(
