@@ -230,14 +230,12 @@ object IpgMaids {
       .groupBy("device_id")
       .agg(collect_list("segment") as "segments")
       .withColumn("segments", concat_ws(",", col("segments")))
-      .write
-      .format("csv")
-      .option("sep", "\t")
       .withColumn("salt", encriptador(col("device_id")))
       .select("device_id", "salt", "segments")
       .repartition(300)
       .write
       .format("csv")
+      .option("sep", "\t")
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/IPG_maids_enriched")
   }
