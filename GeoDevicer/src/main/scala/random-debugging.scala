@@ -354,7 +354,7 @@ val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, sh
 spatialRDDpolygon.rawSpatialRDD.rdd.repartition(100)
 
 //cargamos los usuarios
-val nDays = 180
+val nDays = 2
 val users = get_safegraph_data(spark,nDays.toString,"1","argentina")
 
 //val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
@@ -365,7 +365,7 @@ val users = get_safegraph_data(spark,nDays.toString,"1","argentina")
 //Aplicando geometría a los puntos
 users.createOrReplaceTempView("data")
 
-var safegraphDf = spark .sql(""" SELECT ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry,device_id
+var safegraphDf = spark .sql(""" SELECT ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry,device_id,utc_timestamp
               FROM data  """)
 
 
