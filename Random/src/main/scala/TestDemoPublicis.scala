@@ -9,7 +9,7 @@ import org.apache.spark.sql.types._
 object TestDemoPublicis {
 
   def getDataPublicis(spark: SparkSession, day: String): DataFrame = {
-    val udfSegments = udf((segments: Seq[Row]) => segments.map(row => row(0)))
+    val udfSegments = udf( (segments: Seq[Row]) => segments.map(row => row(0).toString) )
 
     spark.read
       .format("json")
