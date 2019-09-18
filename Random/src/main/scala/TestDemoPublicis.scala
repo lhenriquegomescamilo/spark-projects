@@ -9,7 +9,9 @@ import org.apache.spark.sql.types._
 object TestDemoPublicis {
 
   def getDataPublicis(spark: SparkSession, day: String): DataFrame = {
-    val udfSegments = udf( (segments: Seq[Row]) => segments.map(row => row(0).toString) )
+    val udfSegments = udf(
+      (segments: Seq[Row]) => segments.map(row => row(0).toString)
+    )
 
     spark.read
       .format("json")
@@ -20,14 +22,27 @@ object TestDemoPublicis {
   def getStats(spark: SparkSession, day: String) = {
     val publicis = getDataPublicis(spark, day)
 
+    println("LOG for day: %s".format(day))
     publicis.cache()
-    println(publicis.count())
+    println("Total: %s".format(publicis.count()))
 
     println(
-      publicis
-        .filter("array_contains(segids, '2') OR array_contains(segids, '3')")
-        .count()
+      "With gender: %s".format(
+        publicis
+          .filter("array_contains(segids, '2') OR array_contains(segids, '3')")
+          .count()
+      )
     )
+
+    println(
+      "With gender xp: %s".format(
+        publicis
+          .filter("array_contains(segids, 'm_2') OR array_contains(segids, 'm_3')")
+          .count()
+      )
+    )
+    publicis.unpersist()
+    println()
   }
 
   def main(args: Array[String]) {
@@ -40,7 +55,7 @@ object TestDemoPublicis {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(2)
+    val end = DateTime.now.minusDays(4)
     val days = (0 until 20).map(end.minusDays(_)).map(_.toString(format))
 
     days.map(getStats(spark, _))
