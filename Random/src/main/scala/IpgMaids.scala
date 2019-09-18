@@ -176,18 +176,30 @@ object IpgMaids {
         .withColumnRenamed("_c1", "device_id")
         .select("_c0", "device_id")
 
-    dataIpg
-      .join(data_triplets, Seq("device_id"))
-      .repartition(300)
-      .write
+    // dataIpg
+    //   .join(data_triplets, Seq("device_id"))
+    //   .repartition(300)
+    //   .write
+    //   .format("csv")
+    //   .save("/datascience/custom/IPG_maids_segments")
+
+    val segments = spark.read
       .format("csv")
-      .save("/datascience/custom/IPG_maids_segments")
+      .option("header", "true")
+      .load("/datascience/custom/segments_IPG.csv")
+      .withColumnRenamed("ID", "feature")
+      .withColumn("feature", col("feature").cast("int"))
+      .select("ID")
 
     dataIpgXd
-      .join(data_triplets, Seq("device_id"))
+      .join(
+        data_triplets.join(broadcast(segments, Seq("feature"))),
+        Seq("device_id")
+      )
       .repartition(300)
       .write
       .format("csv")
+      .mode("overwrite")
       .save("/datascience/custom/IPG_maids_xd_segments")
   }
 
