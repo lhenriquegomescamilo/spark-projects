@@ -354,7 +354,8 @@ val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, sh
 spatialRDDpolygon.rawSpatialRDD.rdd.repartition(100)
 
 //cargamos los usuarios
-val users = get_safegraph_data(spark,"180","1","argentina")
+val nDays = 90
+val users = get_safegraph_data(spark,nDays.toString,"1","argentina")
 
 //val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
 //.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
@@ -383,25 +384,29 @@ val numPartitions = 100
 val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
 val usingIndex = true
 val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
-spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
-spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+
+spatialRDDusers.spatialPartitioning(joinQueryPartitioningType)
+spatialRDDpolygon.spatialPartitioning(spatialRDDusers.getPartitioner)
 spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
+
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
-result.rdd.map(line => "%s,%s".format(line._1, line._2)).saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_180")
+result.rdd.map(line => "%s,%s".format(line._1, line._2)).saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_%s_points_first".format(nDays.toString))
 
 
-//result.saveAsObjectFile("/datascience/geo/geospark_debugging/sample_rdd_2")
-//var rawSpatialDf = Adapter.toDf(result,spark).select("_c1","_c3")
-//println(rawSpatialDf.count())
 /*
+//("/datascience/geo/geospark_debugging/sample_w_rdd_%s_dataframe_transform".format(nDays.toString))
+var rawSpatialDf = Adapter.toDf(result,spark).select("_c1","_c3")
+//println(rawSpatialDf.count())
+
+
 rawSpatialDf
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/sample_w_rdd_60")
+.save("/datascience/geo/geospark_debugging/sample_w_rdd_%s_points_first".format(nDays.toString))
 */
   }
 }
