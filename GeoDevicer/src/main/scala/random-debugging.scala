@@ -399,7 +399,7 @@ result.rdd.map(line => "%s;%s".format(line._1, line._2))
 
 ///*
 //("/datascience/geo/geospark_debugging/sample_w_rdd_%s_dataframe_transform".format(nDays.toString))
-var rawSpatialDf = Adapter.toDf(result,spark).select("_c1","_c3")
+var rawSpatialDf = Adapter.toDf(result,spark)//.select("_c1","_c3")
 //println(rawSpatialDf.count())
 
 
