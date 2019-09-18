@@ -19,6 +19,7 @@ import org.apache.hadoop.fs._
 object generateCrossDevice {
   def generate_organic_xd(spark: SparkSession, organicPath: String, runType: String, from: Int) {
     // This function takes a list of ids, hashes all of them to SHA256, and then concatenates all of them separated by commas
+    import spark.implicits._
     val hashUDF = udf(
       (ids: Seq[String]) =>
         ids
@@ -50,12 +51,23 @@ object generateCrossDevice {
 
     val joint = organic.join(index_xd, Seq("rtgtly_uid"), "inner")
 
+    //new join whith estid
+    val input_estid = spark.read
+      .format("parquet")
+      .load("/datascience/sharethis/estid_map/country=MX")
+      .select($"estid", explode($"device_id").as("map_device_id"))
+      .dropDuplicates("map_device_id")
+    
+    val fin = joint
+      .join(input_estid, $"rtgtly_uid"===$"map_device_id", "left")
+      .select("rtgtly_uid", "android", "ios", "estid")
+
     // Now we store all the information
     val pathToJson =
       "hdfs://rely-hdfs/datascience/data_publicis/idmap/%s/dt=%s"
         .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
 
-    joint.write
+    fin.write
       .format("com.databricks.spark.csv")
       .option("compression", "bzip2")
       .option("sep", "\t")

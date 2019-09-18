@@ -46,7 +46,6 @@ object generateOrganic {
       runType: String = "full",
       from: Int = 1
   ) {
-    import spark.implicits._
     // Setting all the meta-classes that will be used to work with the data and file systems
     val sc = spark.sparkContext
     val conf = sc.hadoopConfiguration
@@ -156,24 +155,11 @@ object generateOrganic {
       .withColumnRenamed("device_id", "rtgtly_uid")
       .select("rtgtly_uid", "segids")
 
-    // New join with estid
-    val input_estid = spark.read
-        .format("parquet")
-        .load("/datascience/sharethis/estid_map/country=MX")
-        .select($"estid", explode($"device_id").as("map_device_id"))
-        .dropDuplicates("map_device_id")
-
-    val joint = userSegments
-        .join(input_estid, $"rtgtly_uid"===$"map_device_id", "left")
-        .select("rtgtly_uid", "segids", "estid")
-        //.orderBy($"rtgtly_uid") 
-    //end join
-
     // Last step is to store the data in the format required (.tsv.bz)
     val pathToJson = "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
       .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
 
-    joint.write
+    userSegments.write
       .format("json")
       .option("compression", "bzip2")
       .option("quote", "")
@@ -203,7 +189,6 @@ object generateOrganic {
             )
           )
       )
-
   }
   def main(args: Array[String]) {
     /// Configuracion spark
