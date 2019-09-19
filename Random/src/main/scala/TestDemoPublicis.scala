@@ -26,7 +26,7 @@ object TestDemoPublicis {
 
     spark.read
       .format("json")
-      .load("/datascience/data_publicis/memb/full/dt=20190823/".format(day))
+      .load("/datascience/data_publicis/memb/full/dt=20190823/")
       .withColumn("segids", udfSegments(col("segids")))
   }
 
