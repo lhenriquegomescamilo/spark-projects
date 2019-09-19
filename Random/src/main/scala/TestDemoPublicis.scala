@@ -26,7 +26,7 @@ object TestDemoPublicis {
 
     spark.read
       .format("json")
-      .load("/datascience/data_publicis/memb/full/dt=20190823/")
+      .load("/datascience/data_publicis/memb/full/dt=20190823/retargetly_MX_memb_full_00199_20190723.json.bz2")
       .withColumn("segids", udfSegments(col("segids")))
   }
 
@@ -36,6 +36,7 @@ object TestDemoPublicis {
     println("LOG for day: %s".format(day))
     publicis.cache()
     println("Total: %s".format(publicis.count()))
+    println("Total distinct: %s".format(publicis.select("rtgtly_uid").distinct().count()))
 
     println(
       "With gender: %s".format(

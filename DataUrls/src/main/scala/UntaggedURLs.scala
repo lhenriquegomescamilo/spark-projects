@@ -21,14 +21,22 @@ object UntaggedURLs {
         "event_type IN ('pv', 'batch', 'data') AND tagged IS NULL AND share_data == '1' AND url IS NOT NULL AND country IN ('AR', 'MX', 'CL', 'CO', 'BR', 'PE', 'US')"
       )
       .select("url", "country")
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "(\\?|#).*", "")
+      )
       .withColumn("day", lit(day.replace("/", "")))
       .write
       .format("parquet")
       .partitionBy("day", "country")
       .mode("append")
       .save("/datascience/data_url_classifier/untagged_urls/")
-  }
 
+  }
 
   type OptionMap = Map[Symbol, Int]
 

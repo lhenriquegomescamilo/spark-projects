@@ -54,19 +54,34 @@ def get_data_urls(
     urls
   }
 
-  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String, segments:List[Int]): DataFrame = {
-    val data_urls = get_data_urls(spark, ndays, since, country)
+  def get_data_untagged(spark: SparkSession, ndays: Int, since: Int, country: String): DataFrame = {
+    // Configuraciones de spark
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-    val filtered = data_urls
-      .select("url", "segments")
-      .withColumn("segments", explode(col("segments")))
-      .filter(
-        col("segments")
-          .isin(segments: _*)
+    /// Obtenemos la data de los ultimos ndays
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since)
+
+    val days =
+      (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_url_classifier/untagged_urls/"
+    val dfs = days
+      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(
+        x =>
+          spark.read
+            .option("basePath", path)
+            .parquet(x)
       )
 
-    filtered
+    val untagged = dfs.reduce((df1, df2) => df1.union(df2)).select("url")
+
+    untagged
   }
+
 
  def main(args: Array[String]) {
     // Spark configuration
@@ -85,7 +100,7 @@ def get_data_urls(
                         3582,3600,3580,462,3035,446,3779,916,3587,3040)       // Intent
 
     
-    // Training Data
+//////////////////////////////////////// Training Data ////////////////////////////////////////
     val data_urls = get_data_urls(spark, ndays, since, country)
 
     var gtDF = data_urls.select("url", "segments")
@@ -109,46 +124,98 @@ def get_data_urls(
     gtDF = broadcast(gtDF.select("url"))
     gtDF.cache()
     
-    val data_keywords_content = DatasetKeywordContent.get_url_content(spark,
-                                                        country = country,
-                                                        since = since,
-                                                        ndays = ndays,
-                                                        gtDF = gtDF,
-                                                        joinType = "inner" )
-
-    val data_referer = DatasetReferer.get_url_referer(spark,
+    var data_keywords_content = DatasetKeywordContent.get_url_content(spark,
                                                         country = country,
                                                         since = since,
                                                         ndays = ndays,
                                                         gtDF = gtDF,
                                                         joinType = "inner",
-                                                        df_urls = data_urls )
+                                                        name = "dataset_keyword_content_training")
 
-    val data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
+    var data_referer = DatasetReferer.get_url_referer(spark,
                                                         country = country,
                                                         since = since,
                                                         ndays = ndays,
                                                         gtDF = gtDF,
                                                         joinType = "inner",
-                                                        df_urls = data_urls )
+                                                        df_urls = data_urls,
+                                                        name = "dataset_referer_training" )
 
-    val data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
+    var data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
+                                                        country = country,
+                                                        since = since,
+                                                        ndays = ndays,
+                                                        gtDF = gtDF,
+                                                        joinType = "inner",
+                                                        df_urls = data_urls,
+                                                        name = "dataset_timestamp_training")
+
+    var data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
                                                       ndays,
                                                      since,
                                                       country,
                                                       gtDF,
-                                                      "inner")
+                                                      "inner",
+                                                      name = "dataset_user_agent_training")
 
-    val data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
+    var data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
                                                       ndays,
                                                      since,
                                                       country,
                                                       gtDF,
-                                                      "inner")
-
-                                                    
-
+                                                      "inner",
+                                                      name = "dataset_segments_branded_training")
 
 
+  //////////////////////////////////////// Test Data ////////////////////////////////////////
+
+  // First we get the untagged urls
+  val untagged_df = broadcast(get_data_untagged(spark,ndays,since,country))
+  untagged_df.cache()
+
+  // Then we download each dataset making an inner join with the untagged urls
+
+  data_keywords_content = DatasetKeywordContent.get_url_content(spark,
+                                                    country = country,
+                                                    since = since,
+                                                    ndays = ndays,
+                                                    gtDF = gtDF,
+                                                    joinType = "inner",
+                                                    name = "dataset_keyword_content_expansion")
+
+  data_referer = DatasetReferer.get_url_referer(spark,
+                                                    country = country,
+                                                    since = since,
+                                                    ndays = ndays,
+                                                    gtDF = gtDF,
+                                                    joinType = "inner",
+                                                    df_urls = data_urls,
+                                                    name = "dataset_referer_expansion")
+
+  data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
+                                                    country = country,
+                                                    since = since,
+                                                    ndays = ndays,
+                                                    gtDF = gtDF,
+                                                    joinType = "inner",
+                                                    df_urls = data_urls,
+                                                    name = "dataset_timestamp_expansion")
+
+  data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
+                                                  ndays,
+                                                  since,
+                                                  country,
+                                                  gtDF,
+                                                  "inner",
+                                                  name = "dataset_user_agent_expansion")
+
+  data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
+                                                  ndays,
+                                                  since,
+                                                  country,
+                                                  gtDF,
+                                                  "inner",
+                                                  name = "dataset_segments_branded_expansion")
+  
   }
 }
