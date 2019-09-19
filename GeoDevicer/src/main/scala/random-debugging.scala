@@ -392,6 +392,8 @@ spatialRDDusers.spatialPartitioning(joinQueryPartitioningType,numPartitions)
 spatialRDDpolygon.spatialPartitioning(spatialRDDusers.getPartitioner)
 spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
 
+println("polygon_partitions",spatialRDDpolygon.spatialPartitionedRDD.getNumPartitions)
+println("points_partitions",spatialRDDusers.spatialPartitionedRDD.getNumPartitions)
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
