@@ -145,7 +145,9 @@ object FromEventqueuePII {
     val nDays = if (options.contains('nDays)) options('nDays).toInt else 1
 
     val spark =
-      SparkSession.builder.appName("Get Pii from Eventqueue").getOrCreate()
+      SparkSession.builder
+        .appName("Get Pii from Eventqueue")
+        .getOrCreate()
 
     // Here we obtain the list of days to be downloaded
     // val nDays = 1
@@ -155,7 +157,7 @@ object FromEventqueuePII {
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we effectively download the data day by day
-    //days.map(day => getPII(spark, day))
+    days.map(day => getPII(spark, day))
 
     procesPII(spark)
   }
