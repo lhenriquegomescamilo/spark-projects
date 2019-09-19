@@ -68,7 +68,8 @@ object DatasetSegmentsBranded {
                                 ,20117,20118,20119,20120,20121,20122,20123,20124,20125,20126)
 
     // First we get the data from the segments (<device_id, segment, count>) and we take only branded segments
-    val data_segments = get_triplets_segments(spark,ndays,since,country).filter(col("segment").isin(branded_segments: _*))
+    val data_segments = get_triplets_segments(spark,ndays,since,country)
+                                    .filter(col("feature").isin(branded_segments: _*))
 
     // Then we get the data from the url - user triplets (<device_id, url, count>)       
     val data_url_user = spark.read
