@@ -61,7 +61,7 @@ object DatasetSegmentsBranded {
   }
 
   def get_segment_branded(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,
-                      joinType:String): DataFrame =  {
+                      joinType:String, name:String): DataFrame =  {
     
 
     val branded_segments = List(20107,20108,20109,20110,20111,20112,20113,20114,20115,20116
@@ -91,7 +91,7 @@ object DatasetSegmentsBranded {
           .format("parquet")
           .mode(SaveMode.Overwrite)
           .partitionBy("country")
-          .save("/datascience/data_url_classifier/dataset_segments_branded")
+          .save("/datascience/data_url_classifier/%s".format(name))
 
     joint
   }

@@ -53,7 +53,7 @@ object DatasetUserAgent {
     df
   }
 
-  def get_url_user_agent(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String): DataFrame =  {
+  def get_url_user_agent(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String,name:String): DataFrame =  {
 
     // Get data from user agent pipeline <device_id, brand,model,browser,os,os_min_version,os_max_version,user_agent,url,event_type>
     val df = get_data_user_agent(spark = spark, ndays = ndays, since = since, country = country)
@@ -100,7 +100,7 @@ object DatasetUserAgent {
       .format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
-      .save("/datascience/data_url_classifier/dataset_user_agent/")
+      .save("/datascience/data_url_classifier/%s".format(name))
     
     joint
   }
