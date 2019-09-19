@@ -108,6 +108,17 @@ object FromEventqueuePII {
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
       .save("/datascience/pii_matching/temp/")
+
+    // Load files again 
+    val fls = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/temp/")
+    
+    fls.repartition(1).write
+      .format("csv")
+      .partitionBy("country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/pii_matching/pii_table")
   }
 
 
