@@ -350,11 +350,10 @@ val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file
 val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
 */
 
-//reparticionamos
-spatialRDDpolygon.rawSpatialRDD.rdd.repartition(100)
+
 
 //cargamos los usuarios
-val nDays = 180
+val nDays = 90
 val users = get_safegraph_data(spark,nDays.toString,"1","argentina")
 
 //val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
@@ -373,6 +372,10 @@ safegraphDf.createOrReplaceTempView("data")
 
 var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
 
+
+spatialRDDpolygon.rawSpatialRDD.persist(StorageLevel.MEMORY_ONLY)
+spatialRDDusers.rawSpatialRDD.persist(StorageLevel.MEMORY_ONLY)
+
 println(spatialRDDpolygon.analyze())
 println(spatialRDDusers.analyze())
 
@@ -385,7 +388,7 @@ val considerBoundaryIntersection = true // Only return gemeotries fully covered 
 val usingIndex = true
 val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
 
-spatialRDDusers.spatialPartitioning(joinQueryPartitioningType)
+spatialRDDusers.spatialPartitioning(joinQueryPartitioningType,numPartitions)
 spatialRDDpolygon.spatialPartitioning(spatialRDDusers.getPartitioner)
 spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
 
