@@ -338,7 +338,7 @@ object Keywiser {
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
 
-    //var actual_path = "/datascience/devicer/to_process/%s".format(file)
+    //var actual_path = "/datascience/keywiser/to_process/%s".format(file)
     var actual_path = path + file
     var srcPath = new Path("/datascience")
     var destPath = new Path("/datascience")
@@ -378,33 +378,38 @@ object Keywiser {
       hdfs.rename(srcPath, destPath)
       actual_path = "/datascience/keywiser/in_progress/%s".format(file)
 
-      // Here we obtain three parameters that are supposed to be equal for every query in the file
-      val partner_ids = queries(0)("partner_id")
+      // Here we obtain parameters that are supposed to be equal for every query in the file
+      val country = queries(0)("country").toString
       val since = queries(0)("since").toString.toInt
       val nDays = queries(0)("ndays").toString.toInt
       val pipeline = queries(0)("pipeline").toString.toInt
-      val commonFilter = queries(0)("common").toString
-      val push = queries(0)("push").toString
-      val xd = queries(0)("xd").toString
-      val limit = queries(0)("limit").toString.toInt
-      val country = queries(0)("country").toString
-      val unique = queries(0)("unique").toString.toInt
+      val push = queries(0)("push").toString.toInt
+      val stemming = queries(0)("stemming").toString.toInt
+      val description = queries(0)("description").toString
+      //val commonFilter = queries(0)("common").toString
+      //val xd = queries(0)("xd").toString
+      //val limit = queries(0)("limit").toString.toInt
+      //val unique = queries(0)("unique").toString.toInt
 
       println(
-        "DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
+        "DEVICER LOG: Parameters obtained for file %s:\n\country: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
+        //"DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
           .format(
             file,
-            partner_ids,
+            country,
             since,
             nDays,
-            commonFilter,
             pipeline,
             queries.length,
             push,
-            xd
+            stemming,
+            description
           )
       )
       println("DEVICER LOG: \n\t%s".format(queries(0)("filter").toString))
+      
+      NO IRIA-->>>
+
 
       // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
       // Now we finally get the data that will be used
@@ -468,10 +473,12 @@ object Keywiser {
       var file_name = file.replace(".json", "")
       // Flag to indicate if execution failed
       var failed = false
+
+
       val partitionedData = if (data.rdd.getNumPartitions<5000000) data else data.repartition(1000)
 
       if (queries.length > 10000) {
-        // getMultipleAudience(spark, data, queries, file_name, commonFilter)
+        // getMultipleAudience(spark, data, queries, file_name, commonFilter)          //ESTO NOOO!!
         val dataDays = getDataAudiencesDays(
           spark,
           nDays.toString.toInt,
@@ -548,6 +555,129 @@ object Keywiser {
     }
   }
 
+
+
+  /**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR QUERYING DATA     //////////////////////
+    *
+    */
+  /**
+    * This method takes a list of queries and their corresponding segment ids, and generates a file where the first
+    * column is the device_type, the second column is the device_id, and the last column is the list of segment ids
+    * for that user separated by comma. Every column is separated by a space. The file is stored in the folder
+    * /datascience/devicer/processed/file_name. The file_name value is extracted from the file path given by parameter.
+    *
+    * @param data: DataFrame that will be used to extract the audience from, applying the corresponding filters.
+    * @param queries: List of Maps, where the key is the parameter and the values are the values.
+    * @param fileName: File where we will store all the audiences.
+    * @param commonFilter: filter that will be used prior to the querying process. Especially useful when all the queries come
+    * from the same country.
+    *
+    * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
+    * the file_name is extracted from the file path.
+  **/
+
+
+   def getAudience(
+      spark: SparkSession,
+      data: DataFrame,
+      queries: List[Map[String, Any]],
+      fileName: String,
+      commonFilter: String = "",
+      limit: Int,
+      unique: Int
+  ) = {
+    println(
+      "DEVICER LOG:\n\tCommon filter: %s\n\tCommon filter length: %d"
+        .format(commonFilter, commonFilter.length)
+    )
+
+    // First we filter the data using the common filter, if given.
+    val filtered: DataFrame =
+      if (commonFilter.length > 0 && queries.length > 5)
+        data.filter(commonFilter)
+      else data
+
+    // Now we print the execution plan
+    println("\n\n\n\n")
+    filtered.explain()
+
+    // If the number of queries is big enough, we persist the data so that it is faster to query.
+    // [OUTDATED] THIS SECTION OF THE CODE IS NOT BEING USED, SINCE PERSISTING THE DATA TAKES
+    // MUCH MORE TIME THAN JUST LOADING AND QUERYING. REVISE!
+    if (queries.length > 5000) {
+      println("DEVICER LOG:\n\tPersisting data!")
+      filtered.persist(StorageLevel.MEMORY_AND_DISK)
+    }
+
+    // For every query we apply the filter and get only the distinct ids along with the
+    // device type and segment id.
+
+    val results = queries.map(
+      query =>
+        query("revenue") match {
+          case 0 =>
+            filtered
+              .filter(query("filter").toString)
+              .select("device_type", "device_id")
+              .withColumn("segmentIds", lit(query("segment_id").toString))
+          case 1 =>
+            filtered
+              .filter(query("filter").toString)
+              .select("device_type", "device_id", "id_partner")
+              .withColumn("segmentIds", lit(query("segment_id").toString))
+        }
+    )
+
+    // Here we select distinct users if needed
+    val results_distinct =
+      if (unique > 0) results.map(df => df.distinct()) else results
+
+    // If there is a limit on the number of rows, we also apply it
+    val results_limited =
+      if (limit > 0)
+        results_distinct.map(
+          singleDf => singleDf.limit(limit)
+        )
+      else results_distinct
+    // Now we store every single audience separately
+    results_limited.foreach(
+      dataframe =>
+        dataframe.write
+          .format("csv")
+          .option("sep", "\t")
+          .mode("append")
+          .save("/datascience/devicer/processed/" + fileName)
+    )
+
+    // If we previously persisted the data, now we unpersist it back.
+    if (queries.length > 5000) {
+      filtered.unpersist()
+    }
+
+    // If the number of queries is greater than one, then we merge all the audiences,
+    // into one single DataFrame where every device id now contains a list of segments
+    // separated by commas.
+    if (results_limited.length > 1) {
+      val fileNameFinal = "/datascience/devicer/processed/" + fileName + "_grouped"
+      val done = spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .load("/datascience/devicer/processed/" + fileName)
+        .distinct()
+      done
+        .groupBy("_c0", "_c1")
+        .agg(collect_list("_c2") as "segments")
+        .withColumn("segments", concat_ws(",", col("segments")))
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode("append")
+        .save(fileNameFinal)
+    }
+  }
+ 
 
   /**
   This function appends a file per query (for each segment), containing users that matched the query
