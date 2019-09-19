@@ -395,7 +395,7 @@ spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
-result.rdd.map(line => "%s;%s".format(line._1.getUserData, line._2.iterator().next().getUserData))
+result.rdd.map(line => "%s;%s".format(line._1.getUserData, line._2.getUserData))
 .saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_%s_points_first_RDD".format(nDays.toString))
 
 /*
