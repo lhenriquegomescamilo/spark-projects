@@ -451,13 +451,8 @@ object Keywiser {
     //hdfs.close()
   }
 
-  type OptionMap = Map[Symbol, Int]
 
  
-  }
-
-
-
   /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR QUERYING DATA     //////////////////////
