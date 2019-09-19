@@ -115,13 +115,15 @@ object Keywiser {
     *
     * @param df_keys: DataFrame obtained from json queries.
     * @param df_data_keywords: DataFrame obtained from getDataKeywords().
+    * @param verbose: if true prints are logged.
     *
     * @return a DataFrame with "device_type", "device_id", "kws", being "kws" a list of keywords.
    **/
 
   def getJointKeys(
       df_keys: DataFrame,
-      df_data_keywords: DataFrame
+      df_data_keywords: DataFrame,
+      verbose: Boolean
   ): DataFrame = {
 
     val df_joint = df_data_keywords
@@ -144,6 +146,224 @@ object Keywiser {
       .select("device_type", "device_id", "kws")
     df_grouped
   }
+
+
+  /**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR PARSING JSON FILES     //////////////////////
+    *
+    */
+  /**
+    * This method gets all the files to be processed from the folder /datascience/devicer/to_process/
+    * and also it removes from the list all the files that have been already processed (which are
+    * located in /datascience/devicer/done/).
+    *
+    * @param spark: Spark session that will be used to access HDFS.
+    * @param pathToProcess: Default: "/datascience/devicer/to_process/".
+    *
+    * @return a list of strings, where every element is the complete path to the files to be processed.
+  **/
+  def getQueryFiles(
+      spark: SparkSession,
+      pathToProcess: String) = {
+
+    // First we get the list of files to be processed
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Now we order the files according to their date (filename, timestamp).
+    val filesReady = fs
+      .listStatus(new Path(pathToProcess))
+      .map(
+        f =>
+          (f.getPath.toString.split("/").last.toString, f.getModificationTime)
+      )
+      .toList
+
+    // Now we sort the list by the second component (timestamp) ????
+    val filesReadyOrdered = scala.util.Sorting.stableSort(
+      filesReady,
+      (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
+    )
+
+    // Now we get the list of files that have been processed already
+    val pathDone = "/datascience/devicer/done/"
+    val filesDone = fs
+      .listStatus(new Path(pathDone))
+      .map(x => x.getPath.toString.split("/").last)
+      .toList
+    // Finally we return the ones that have not been processed yet
+    //filesReady diff filesDone
+    filesReadyOrdered.map(x => x._1).filterNot(filesDone.contains(_))
+  }
+
+  /**
+    * This method obtains all the data from a single file, iterating through each row.
+    * Every row has to have a filter (or query) and the segment to which the audience is going to be pushed,
+    * (or a ficticious segment if push = 0). Rows will also have other parameters. In sum:
+    * "country" and "job_name" will be the same for all rows (REVISE!). 
+    * - "seg_id"
+    * - "kws" or "stem_kws"
+    * - "query" or "stem_query"
+    *
+    * @param spark: Spark session that will be used to access HDFS.
+    * @param file: The file that is going to be read.
+    *
+    * @return a list of Map's of query and parameters.
+  **/
+
+  def getQueriesFromFile(
+      spark: SparkSession,
+      file: String
+  ): List[Map[String, Any]] = {
+    // First of all we obtain all the data from the file
+    val df = spark.sqlContext.read.json(file)
+    val columns = df.columns
+    val data = df
+      .collect()
+      .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
+
+    // Now we extract the different values from each row. Every row has to have a filter and the segment to which the
+    // audience is going to be pushed. Then it might have the partnerId, the number of days to be skipped, and the
+    // number of days to be loaded from the pipeline
+    var queries = List[Map[String, Any]]()
+
+    for (query <- data) {
+      val filter = query("query")
+      val segmentId = query("segmentId")
+      val partnerId =
+        if (query.contains("partnerId") && Option(query("partnerId"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("partnerId")
+        else ""
+      val since =
+        if (query.contains("from") && Option(query("from"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("from")
+        else 1
+      val nDays =
+        if (query.contains("ndays") && Option(query("ndays"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("ndays")
+        else 30
+      val push =
+        if (query.contains("push") && Option(query("push"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("push")
+        else false
+      val priority =
+        if (query.contains("priority") && Option(query("priority"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("priority")
+        else 14
+      val as_view =
+        if (query.contains("as_view") && Option(query("as_view"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("as_view")
+        else ""
+      val queue =
+        if (query.contains("queue") && Option(query("queue"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("queue")
+        else "datascience"
+      val pipeline =
+        if (query.contains("pipeline") && Option(query("pipeline"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("pipeline")
+        else 0
+      val description =
+        if (query.contains("description") && Option(query("description"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("description")
+        else ""
+      val jobid =
+        if (query.contains("jobId") && Option(query("jobId"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("jobId")
+        else ""
+      val xd =
+        if (query.contains("xd") && Option(query("xd"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("xd")
+        else false
+      val commonFilter =
+        if (query.contains("common") && Option(query("common"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("common")
+        else ""
+      val xdFilter =
+        if (query.contains("xdFilter") && Option(query("xdFilter"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("xdFilter")
+        else "device_type IN ('coo', 'and', 'ios')"
+      val limit =
+        if (query.contains("limit") && Option(query("limit"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("limit")
+        else "30000000"
+      val country =
+        if (query.contains("country") && Option(query("country"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("country")
+        else ""
+      val revenue =
+        if (query.contains("revenue") && Option(query("revenue"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("revenue")
+        else 0
+      val unique =
+        if (query.contains("unique") && Option(query("unique"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("unique")
+        else 1
+
+      val actual_map: Map[String, Any] = Map(
+        "filter" -> filter,
+        "segment_id" -> segmentId,
+        "partner_id" -> partnerId,
+        "since" -> since,
+        "ndays" -> nDays,
+        "push" -> push,
+        "priority" -> priority,
+        "as_view" -> as_view,
+        "queue" -> queue,
+        "pipeline" -> pipeline,
+        "xdFilter" -> xdFilter,
+        "description" -> description,
+        "jobid" -> jobid,
+        "xd" -> xd,
+        "common" -> commonFilter,
+        "limit" -> limit,
+        "country" -> country,
+        "revenue" -> revenue,
+        "unique" -> unique
+      )
+
+      queries = queries ::: List(actual_map)
+    }
+    queries
+  }
+
+ 
+
+
 
   /**
   This function appends a file per query (for each segment), containing users that matched the query
@@ -281,8 +501,10 @@ object Keywiser {
     */
 
     /**  Match content_keywords with data_keywords */
-    val df_joint =
-      getJointKeys(df_keys = df_keys, df_data_keywords = df_data_keywords)
+    val df_joint = getJointKeys(
+      df_keys = df_keys,
+      df_data_keywords = df_data_keywords,
+      verbose = verbose)
 
     /**
     if verbose {
