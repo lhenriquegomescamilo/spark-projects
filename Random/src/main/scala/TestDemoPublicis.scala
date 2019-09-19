@@ -30,7 +30,7 @@ object TestDemoPublicis {
       .withColumn("segids", udfSegments(col("segids")))
   }
 
-  def getStats(spark: SparkSession) = {
+  def getStats(spark: SparkSession, day: String = "full") = {
     val publicis = getDataPublicisFull(spark)
 
     println("LOG for day: %s".format(day))
