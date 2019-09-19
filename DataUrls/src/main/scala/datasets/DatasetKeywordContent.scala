@@ -189,8 +189,7 @@ object DatasetKeywordContent {
     val country = if (args.length > 2) args(2).toString else ""
     val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
 
-    val gtDF = get_url_gt(spark,ndays,since,country,segments)
-
-    get_url_content(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner" )
+    //val gtDF = get_url_gt(spark,ndays,since,country,segments)
+    //get_url_content(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner" )
   }
 }
