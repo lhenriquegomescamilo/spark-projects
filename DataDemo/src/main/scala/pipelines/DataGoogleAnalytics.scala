@@ -119,6 +119,6 @@ object DataGoogleAnalytics {
     // Path con data del devicer
     val filename_domain = "/data/metadata/20190316-domains-counts.tsv"
 
-    val ga_domain = DataGoogleAnalytics.generate_google_analytics_domain(spark, ndays, from, filename_domain);
+    val ga_domain = generate_google_analytics_domain(spark, ndays, from, filename_domain);
   }
 }
