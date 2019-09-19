@@ -19,8 +19,19 @@ object TestDemoPublicis {
       .withColumn("segids", udfSegments(col("segids")))
   }
 
-  def getStats(spark: SparkSession, day: String) = {
-    val publicis = getDataPublicis(spark, day)
+  def getDataPublicisFull(spark: SparkSession): DataFrame = {
+    val udfSegments = udf(
+      (segments: Seq[Row]) => segments.map(row => row(0).toString)
+    )
+
+    spark.read
+      .format("json")
+      .load("/datascience/data_publicis/memb/full/dt=20190823/")
+      .withColumn("segids", udfSegments(col("segids")))
+  }
+
+  def getStats(spark: SparkSession, day: String = "full") = {
+    val publicis = getDataPublicisFull(spark)
 
     println("LOG for day: %s".format(day))
     publicis.cache()
@@ -58,6 +69,6 @@ object TestDemoPublicis {
     val end = DateTime.now.minusDays(4)
     val days = (0 until 20).map(end.minusDays(_)).map(_.toString(format))
 
-    days.map(getStats(spark, _))
+    getStats(spark)
   }
 }

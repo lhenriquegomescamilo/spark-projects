@@ -41,29 +41,29 @@ import java.time.DateTimeException
 import java.sql.Savepoint
 
 /**
-  * The idea of this script is to run processes using content keywords from urls.
+  * The idea of this script is to generate audiences based on keywords obtained from url content. 
   */
 object Keywiser {
 
   /**
     *
-    *
-    *
-    *
-    *
-    *
-    *                    PIPELINE 3 - GET USERS
-    *
-    *
-    *
-    *
+    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR LOADING DATA     //////////////////////
     *
     */
-  // This function reads from data_keywords
-  //Input = country, nDays, since and stemming (1 or 0).
-  //Output = DataFrame with "content_keywords"| "device_id"
+   /**
+    * This method returns a DataFrame with the data from the "data_keywords" pipeline, for the interval
+    * of days specified. Basically, it loads every DataFrame for the days specified, and merges them as a single
+    * DataFrame that will be returned. Full or stemmed keywords can be chosen to read.
+    *
+    * @param spark: Spark Session that will be used to load the data from HDFS.
+    * @param nDays: number of days that will be read.
+    * @param since: number of days ago from where the data is going to be read.
+    * @param stemming: if 1, stemmed keywords are read, if 0, full keywords are read.    
+    *
+    * @return a DataFrame with the information coming from the read data. Columns: "content_keywords" and "device_id"
+   **/
 
-  def read_data_kws(
+  def getDataKeywords(
       spark: SparkSession,
       country: String,
       nDays: Integer,
@@ -82,8 +82,8 @@ object Keywiser {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/country=%s".format(day, country)) //para cada dia de la lista day devuelve el path del día
-      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
+      .map(day => path + "/day=%s/country=%s".format(day, country)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
     val to_select =
       if (stemming == 1) List("stemmed_keys", "device_id")
@@ -102,14 +102,24 @@ object Keywiser {
     df
   }
 
-  /**
-  This function joins data from "data_keywords" with all keywords from queries ("content_keywords")
-  Then it groups by "device_id" and collects a list ok keywords for each.
-  - Input = df from read_data_kws() and df from desired keys.
-  - Output = DataFrame with "device_type"|"device_id"|"kws", grouped by kws list for each user
-  */
+/**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR MERGING DATA     //////////////////////
+    *
+    */
+   /**
+    * This method joins "content_keywords" from the "data_keywords" pipeline,
+    * with "content_keywords" from the queries in the json file, obtaining corresponding device_ids for each keyword.
+    * Then it drops duplicates and after that it groups by "device_id", obtaining a list of keywords for each device.
+    * Also adds "device_type" as "web". 
+    *
+    * @param df_keys: DataFrame obtained from json queries.
+    * @param df_data_keywords: DataFrame obtained from getDataKeywords().
+    *
+    * @return a DataFrame with "device_type", "device_id", "kws", being "kws" a list of keywords.
+   **/
 
-  def get_joint_keys(
+  def getJointKeys(
       df_keys: DataFrame,
       df_data_keywords: DataFrame
   ): DataFrame = {
@@ -253,7 +263,7 @@ object Keywiser {
       .dropDuplicates("content_keywords")
 
     /** Read from "data_keywords" folder */
-    val df_data_keywords = read_data_kws(
+    val df_data_keywords = getDataKeywords(
       spark = spark,
       country = country,
       nDays = nDays,
@@ -272,7 +282,7 @@ object Keywiser {
 
     /**  Match content_keywords with data_keywords */
     val df_joint =
-      get_joint_keys(df_keys = df_keys, df_data_keywords = df_data_keywords)
+      getJointKeys(df_keys = df_keys, df_data_keywords = df_data_keywords)
 
     /**
     if verbose {
