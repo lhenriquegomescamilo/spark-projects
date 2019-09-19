@@ -29,7 +29,25 @@ object UntaggedURLs {
       .save("/datascience/data_url_classifier/untagged_urls/")
   }
 
+
+  type OptionMap = Map[Symbol, Int]
+
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--from" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toInt), tail)
+    }
+  }
+
   def main(args: Array[String]) {
+    val options = nextOption(Map(), args.toList)
+    val nDays = if (options.contains('nDays)) options('nDays) else 1
+    val since = if (options.contains('from)) options('from) else 1
+
     val spark =
       SparkSession.builder
         .appName("Spark devicer")
@@ -37,9 +55,6 @@ object UntaggedURLs {
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-
-    val since = 1
-    val nDays = 1
 
     val format = "yyyy/MM/dd"
     val end = DateTime.now.minusDays(since)
