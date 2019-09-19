@@ -12,4 +12,4 @@ source /home/rely/.bashrc
   --executor-cores 4\
   --queue default\
   --conf spark.yarn.maxAppAttempts=1\
-  /home/rely/spark-projects/ByTwoGeoData/target/scala-2.11/bytwo-data_2.11-1.0.jar 
+  /home/rely/spark-projects/ByTwoGeoData/target/scala-2.11/bytwo-data_2.11-1.0.jar 9 1

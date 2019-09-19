@@ -1,7 +1,4 @@
-#!/bin/bash
-
-/home/rely/spark/bin/spark-submit\
-  --class "main.scala.TaringaIngester"\
+spark-submit\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\
@@ -10,4 +7,8 @@
   --executor-cores 3\
   --queue default\
   --conf spark.yarn.maxAppAttempts=1\
-  /home/rely/spark-projects/TaringaIngester/target/scala-2.11/taringa-ingester_2.11-1.0.jar
+  /home/rely/spark-projects/ContentKws/target/scala-2.11/content-keywords_2.11-1.0.jar
+
+
+
+
