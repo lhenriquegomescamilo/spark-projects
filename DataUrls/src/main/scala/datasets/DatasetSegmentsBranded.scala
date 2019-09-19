@@ -85,6 +85,7 @@ object DatasetSegmentsBranded {
     // Finally we make the final join with the GT data
     val final_join = gtDF.join(joint, Seq("url"), joinType)
                           .withColumn("country",lit(country))
+                          .select("url","segment","count")
     
     final_join.write
           .format("parquet")
