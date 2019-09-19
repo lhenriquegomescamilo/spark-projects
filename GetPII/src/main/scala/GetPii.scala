@@ -52,7 +52,7 @@ object FromEventqueuePII {
 
   def procesPII(spark: SparkSession) {
     // First we load all the data generated from PIIs
-    val pii_input = spark.read
+    val data = spark.read
         .format("parquet")
         .load("/datascience/pii_matching/pii_tuples/")
         .filter("day >= 20190918")
