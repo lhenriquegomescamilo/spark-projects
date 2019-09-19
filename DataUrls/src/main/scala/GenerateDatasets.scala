@@ -139,6 +139,15 @@ def get_data_urls(
                                                       gtDF,
                                                       "inner")
 
+    val data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
+                                                      ndays,
+                                                     since,
+                                                      country,
+                                                      gtDF,
+                                                      "inner")
+
+                                                    
+
 
 
   }
