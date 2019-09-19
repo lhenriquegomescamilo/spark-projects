@@ -54,7 +54,7 @@ def get_data_urls(
     urls
   }
 
-  def get_url_gt(spark: SparkSession, ndays: Int, since: Int, country: String, segments:List[Int]): DataFrame = {
+  def get_data_untagged(spark: SparkSession, ndays: Int, since: Int, country: String): DataFrame = {
     // Configuraciones de spark
     val sc = spark.sparkContext
     val conf = sc.hadoopConfiguration
