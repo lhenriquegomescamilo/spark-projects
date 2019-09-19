@@ -377,7 +377,7 @@ spatialRDDpolygon.rawSpatialRDD.persist(StorageLevel.MEMORY_ONLY)
 //spatialRDDusers.rawSpatialRDD.persist(StorageLevel.MEMORY_ONLY)
 
 println(spatialRDDpolygon.analyze())
-//println(spatialRDDusers.analyze())
+println(spatialRDDusers.analyze())
 
 
 //spatialRDDpolygon.spatialPartitioning(GridType.KDBTREE)
