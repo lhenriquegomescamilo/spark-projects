@@ -109,8 +109,7 @@ object DatasetSegmentsBranded {
     val since = if (args.length > 1) args(1).toInt else 1
     val country = if (args.length > 2) args(2).toString else "AR"
 
-    val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR")
-
-    get_segment_branded(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
+    //val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR")
+    //get_segment_branded(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", name="")
   }
 }
