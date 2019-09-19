@@ -300,7 +300,6 @@ object Keywiser {
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
         "segment_id" -> segmentId,
-        //"partner_id" -> partnerId,
         "since" -> since,
         "ndays" -> nDays,
         "push" -> push,
@@ -308,15 +307,9 @@ object Keywiser {
         "as_view" -> as_view,
         "queue" -> queue,
         "pipeline" -> pipeline,
-        //"xdFilter" -> xdFilter,
         "description" -> description,
         "jobid" -> jobid,
-        //"xd" -> xd,
-        //"common" -> commonFilter,
-        //"limit" -> limit,
-        "country" -> country//,
-        //"revenue" -> revenue,
-        //"unique" -> unique
+        "country" -> country
       )
 
       queries = queries ::: List(actual_map)
@@ -349,13 +342,7 @@ object Keywiser {
       "DEVICER LOG: actual path is: %s".format(actual_path)
     )
 
-    //REVISEEEE!!!! 
-    // Here we define a function that might be used when asking for an IN in a multivalue column
-    spark.udf.register(
-      "array_intersect",
-      (xs: Seq[String], ys: Seq[String]) => xs.intersect(ys).size > 0
-    )
-
+ 
     try {
       queries = getQueriesFromFile(spark, actual_path)
     } catch {
@@ -386,10 +373,10 @@ object Keywiser {
       val push = queries(0)("push").toString.toInt
       val stemming = queries(0)("stemming").toString.toInt
       val description = queries(0)("description").toString
-      //val commonFilter = queries(0)("common").toString
-      //val xd = queries(0)("xd").toString
-      //val limit = queries(0)("limit").toString.toInt
-      //val unique = queries(0)("unique").toString.toInt
+
+      // AGREGAR FULL QUERIES
+
+
 
       println(
         "DEVICER LOG: Parameters obtained for file %s:\n\country: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
@@ -408,66 +395,17 @@ object Keywiser {
       )
       println("DEVICER LOG: \n\t%s".format(queries(0)("filter").toString))
       
-      NO IRIA-->>>
 
 
-      // If the partner id is set, then we will use the data_partner pipeline, otherwise it is going to be data_audiences_p
-      // Now we finally get the data that will be used
-      val ids = partner_ids.toString.split(",").toList
 
       // Here we select the pipeline where we will gather the data
-      val data = pipeline match {
-        case 0 =>
-          if (ids.length > 0 && partner_ids.toString.length>0)
-            getDataIdPartners(
-              spark,
-              ids,
-              nDays.toString.toInt,
-              since.toString.toInt,
-              "streaming"
-            )
-          else
-            getDataAudiences(
-              spark,
-              nDays.toString.toInt,
-              since.toString.toInt,
-              "streaming"
-            )
-        case 1 =>
-          getDataIdPartners(
-            spark,
-            ids,
-            nDays.toString.toInt,
-            since.toString.toInt,
-            "streaming"
-          )
-        case 2 =>
-          getDataAudiences(
-            spark,
-            nDays.toString.toInt,
-            since.toString.toInt,
-            "streaming"
-          )
-        case 3 =>
-          getDataKeywords(spark, nDays.toString.toInt, since.toString.toInt)
-        case 4 =>
-          getDataUS(spark, nDays.toString.toInt, since.toString.toInt)
-        case 5 =>
-          getDataAudiences(
-            spark,
-            nDays.toString.toInt,
-            since.toString.toInt,
-            "streaming"
-          )
-        case 6 =>
-          getDataIdPartners(
-            spark,
-            ids,
-            nDays.toString.toInt,
-            since.toString.toInt,
-            "streaming"
-          )
-      }
+
+      // ACÄ LEO DATA KEYWORDS
+
+
+
+      
+     
 
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
@@ -475,22 +413,7 @@ object Keywiser {
       var failed = false
 
 
-      val partitionedData = if (data.rdd.getNumPartitions<5000000) data else data.repartition(1000)
-
-      if (queries.length > 10000) {
-        // getMultipleAudience(spark, data, queries, file_name, commonFilter)          //ESTO NOOO!!
-        val dataDays = getDataAudiencesDays(
-          spark,
-          nDays.toString.toInt,
-          since.toString.toInt
-        )
-        getAudienceDays(
-          spark,
-          dataDays,
-          queries,
-          file_name,
-          commonFilter
-        )
+    
       } else {
         try {
           getAudience(
@@ -510,26 +433,13 @@ object Keywiser {
         }
       }
 
-      // We cross device the audience if the parameter is set.
-      if (!failed && Set("1", "true", "True").contains(xd)) {
-        println(
-          "LOGGER: the audience will be cross-deviced. XD parameter value: %s"
-            .format(xd)
-        )
-        val object_xd = AudienceCrossDevicer.cross_device(
-          spark,
-          "/datascience/devicer/processed/" + file_name,
-          queries(0)("xdFilter").toString,
-          "\t",
-          "_c1"
-        )
-      }
 
-      // If everything worked out ok, then move file from the folder /datascience/devicer/in_progress/ to /datascience/devicer/done/
+
+      // If everything worked out ok, then move file from the folder /datascience/keywiser/in_progress/ to /datascience/keywiser/done/
       srcPath = new Path(actual_path)
       val destFolder =
-        if (failed) "/datascience/devicer/errors/"
-        else "/datascience/devicer/done/"
+        if (failed) "/datascience/keywiser/errors/"
+        else "/datascience/keywiser/done/"
       destPath = new Path(destFolder)
       hdfs.rename(srcPath, destPath)
 
@@ -543,16 +453,7 @@ object Keywiser {
 
   type OptionMap = Map[Symbol, Int]
 
-  /**
-    * This method parses the parameters sent.
-    */
-  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
-    def isSwitch(s: String) = (s(0) == '-')
-    list match {
-      case Nil => map
-      case "--priority" :: tail =>
-        nextOption(map ++ Map('exclusion -> 0), tail)
-    }
+ 
   }
 
 
@@ -692,7 +593,7 @@ object Keywiser {
       df_joint: DataFrame,
       stemming: Int,
       push: Int,
-      job_name: String
+      description: String
   ) = {
 
     df_joint.cache()
@@ -700,14 +601,9 @@ object Keywiser {
     val fileName = "/datascience/devicer/processed/" + job_name
     val fileNameFinal = fileName + "_grouped"
 
-    val to_select =
-      if (stemming == 1) List("seg_id", "stem_query")
-      else List("seg_id", "query")
+    val tuples = queries
+      .map(r => (r("seg_id").toString, r("query").toString))
 
-    val tuples = df_queries
-      .select(to_select.head, to_select.tail: _*)
-      .collect()
-      .map(r => (r(0).toString, r(1).toString))
 
     for (t <- tuples) {
       df_joint
@@ -740,7 +636,7 @@ object Keywiser {
       val conf = spark.sparkContext.hadoopConfiguration
       val fs = FileSystem.get(conf)
       val os =
-        fs.create(new Path("/datascience/ingester/ready/%s.meta".format(job_name)))
+        fs.create(new Path("/datascience/ingester/ready/%s.meta".format(description)))
       val content =
         """{"filePath":"%s", "pipeline": 3, "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"%s"}"""
           .format(fileNameFinal, job_name)
