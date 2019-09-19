@@ -353,7 +353,7 @@ val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, sh
 
 
 //cargamos los usuarios
-val nDays = 90
+val nDays = 91
 val users = get_safegraph_data(spark,nDays.toString,"1","argentina")
 
 //val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
@@ -392,6 +392,8 @@ spatialRDDusers.spatialPartitioning(joinQueryPartitioningType,numPartitions)
 spatialRDDpolygon.spatialPartitioning(spatialRDDusers.getPartitioner)
 spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
 
+println("polygon_partitions",spatialRDDpolygon.spatialPartitionedRDD.getNumPartitions)
+println("points_partitions",spatialRDDusers.spatialPartitionedRDD.getNumPartitions)
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 

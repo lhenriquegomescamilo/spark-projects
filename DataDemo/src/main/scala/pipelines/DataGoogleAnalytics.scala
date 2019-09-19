@@ -112,5 +112,13 @@ object DataGoogleAnalytics {
       .appName("Generate Google analytics data")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
+
+    val ndays = if (args.length > 0) args(0).toInt else 1
+    val from = if (args.length > 1) args(1).toInt else 1
+
+    // Path con data del devicer
+    val filename_domain = "/data/metadata/20190316-domains-counts.tsv"
+
+    val ga_domain = generate_google_analytics_domain(spark, ndays, from, filename_domain);
   }
 }
