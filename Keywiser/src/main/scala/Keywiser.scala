@@ -579,7 +579,7 @@ object Keywiser {
       
       /** Format all keywords from queries to join */
       val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
-      val df_keys = trimmedList.sqlContext.toDF().withColumnRenamed("value", "content_keywords")
+      val df_keys = sc.trimmedList.toDF().withColumnRenamed("value", "content_keywords")
 
       /**  Match all keywords with data_keywords */
       val df_joint = getJointKeys(
