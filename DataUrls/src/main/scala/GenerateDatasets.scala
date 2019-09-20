@@ -180,7 +180,7 @@ def get_data_urls(
                                                     country = country,
                                                     since = since,
                                                     ndays = ndays,
-                                                    gtDF = gtDF,
+                                                    gtDF = untagged_df,
                                                     joinType = "inner",
                                                     name = "dataset_keyword_content_expansion")
 
@@ -188,7 +188,7 @@ def get_data_urls(
                                                     country = country,
                                                     since = since,
                                                     ndays = ndays,
-                                                    gtDF = gtDF,
+                                                    gtDF = untagged_df,
                                                     joinType = "inner",
                                                     df_urls = data_urls,
                                                     name = "dataset_referer_expansion")
@@ -197,7 +197,7 @@ def get_data_urls(
                                                     country = country,
                                                     since = since,
                                                     ndays = ndays,
-                                                    gtDF = gtDF,
+                                                    gtDF = untagged_df,
                                                     joinType = "inner",
                                                     df_urls = data_urls,
                                                     name = "dataset_timestamp_expansion")
@@ -206,7 +206,7 @@ def get_data_urls(
                                                   ndays,
                                                   since,
                                                   country,
-                                                  gtDF,
+                                                  untagged_df,
                                                   "inner",
                                                   name = "dataset_user_agent_expansion")
 
@@ -214,7 +214,7 @@ def get_data_urls(
                                                   ndays,
                                                   since,
                                                   country,
-                                                  gtDF,
+                                                  untagged_df,
                                                   "inner",
                                                   name = "dataset_segments_branded_expansion")
   
