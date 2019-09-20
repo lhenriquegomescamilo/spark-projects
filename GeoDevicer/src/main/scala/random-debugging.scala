@@ -354,7 +354,7 @@ val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, sh
 
 //cargamos los usuarios
 val nDays = 30
-val users = get_safegraph_data(spark,nDays.toString,"61","argentina")
+val users = get_safegraph_data(spark,nDays.toString,"91","argentina")
 
 //val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
 //.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
