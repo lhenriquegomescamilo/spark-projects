@@ -101,6 +101,7 @@ def get_data_urls(
 
     
 //////////////////////////////////////// Training Data ////////////////////////////////////////
+/**   
     val data_urls = get_data_urls(spark, ndays, since, country)
 
     var gtDF = data_urls.select("url", "segments")
@@ -166,7 +167,7 @@ def get_data_urls(
                                                       "inner",
                                                       name = "dataset_segments_branded_training")
 
-
+**/
   //////////////////////////////////////// Test Data ////////////////////////////////////////
 
   // First we get the untagged urls
