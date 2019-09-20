@@ -41,6 +41,7 @@ object DatasetTimestamp {
 
   
     df.groupBy("url","feature").count()
+      .withColumn("country",lit(country))
       .write.format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
