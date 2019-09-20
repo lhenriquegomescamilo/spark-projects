@@ -55,7 +55,7 @@ object FromEventqueuePII {
     val data = spark.read
         .format("parquet")
         .load("/datascience/pii_matching/pii_tuples/")
-        .filter("day >= 20190918")
+        //.filter("day >= 20190918")
         .filter("country in('AR', 'CL', 'PE')")
     // Then we separate the data acording to the PII type
     var mails = data
