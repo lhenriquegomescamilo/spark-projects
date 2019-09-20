@@ -758,19 +758,36 @@ object Keywiser {
     // If there is no json specified, it is going to fail
     val json = if (options.contains('json)) options('json) else "" 
 
-    val spark =
-      SparkSession.builder
-        .appName("Spark devicer")
-        .config("spark.sql.files.ignoreCorruptFiles", "true")
-        .getOrCreate()
-
+    // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
+
+    // First we obtain the Spark session
+    val spark = SparkSession.builder
+      .appName("Spark devicer")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .getOrCreate()
+
+    println("LOGGER: Path: %s".format(path))
 
     get_users_pipeline_3(
       spark = spark,
       json_path = json,
       verbose = verbose
     )
+
+  
+    val files = getQueryFiles(spark, path)
+
+    files.foreach(file => processFile(spark, file, path))  
+
+  }
+
+}
+
+  def main(args: Array[String]) {
+
+
+
 
   }
 
