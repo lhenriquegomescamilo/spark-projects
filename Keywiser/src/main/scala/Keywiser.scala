@@ -670,7 +670,6 @@ object Keywiser {
     //val sc = spark.sparkContext
     //val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 
-
     val path =  "/datascience/keywiser/to_process/"
 
     println("LOGGER: Path: %s".format(path))
