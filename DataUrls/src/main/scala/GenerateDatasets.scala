@@ -176,7 +176,7 @@ def get_data_urls(
 
   // Then we download each dataset making an inner join with the untagged urls
 
-  data_keywords_content = DatasetKeywordContent.get_url_content(spark,
+  val data_keywords_content = DatasetKeywordContent.get_url_content(spark,
                                                     country = country,
                                                     since = since,
                                                     ndays = ndays,
@@ -184,7 +184,7 @@ def get_data_urls(
                                                     joinType = "inner",
                                                     name = "dataset_keyword_content_expansion")
 
-  data_referer = DatasetReferer.get_url_referer(spark,
+  val data_referer = DatasetReferer.get_url_referer(spark,
                                                     country = country,
                                                     since = since,
                                                     ndays = ndays,
@@ -193,7 +193,7 @@ def get_data_urls(
                                                     df_urls = data_urls,
                                                     name = "dataset_referer_expansion")
 
-  data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
+  val data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
                                                     country = country,
                                                     since = since,
                                                     ndays = ndays,
@@ -202,7 +202,7 @@ def get_data_urls(
                                                     df_urls = data_urls,
                                                     name = "dataset_timestamp_expansion")
 
-  data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
+  val data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
                                                   ndays,
                                                   since,
                                                   country,
@@ -210,7 +210,7 @@ def get_data_urls(
                                                   "inner",
                                                   name = "dataset_user_agent_expansion")
 
-  data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
+  val data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
                                                   ndays,
                                                   since,
                                                   country,
