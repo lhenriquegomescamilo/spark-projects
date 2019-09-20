@@ -114,11 +114,14 @@ object FromEventqueuePIIMonth {
       .format("parquet")
       .load("/datascience/pii_matching/temp/")
     
+    val dt = DateTime.now.toString("yyyyMMdd")
+
     fls.repartition(1).write
       .format("csv")
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/pii_matching/pii_table")
+      .save("/datascience/pii_matching/pii_table/%s".format(dt))
+      
   }
 
 
