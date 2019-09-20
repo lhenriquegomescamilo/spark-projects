@@ -670,12 +670,3 @@ object Keywiser {
   }
 
 }
-
-  def main(args: Array[String]) {
-
-
-
-
-  }
-
-}
