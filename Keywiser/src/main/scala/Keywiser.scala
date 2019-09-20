@@ -325,16 +325,111 @@ object Keywiser {
   }
 
   /**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR QUERYING DATA     //////////////////////
+    *
+    */
+  /**
+    * This method takes a list of queries and their corresponding segment ids, and generates a file where the first
+    * column is the device_type, the second column is the device_id, and the last column is the list of segment ids
+    * for that user separated by comma. Every column is separated by a space. The file is stored in the folder
+    * /datascience/keywiser/processed/file_name. The file_name value is extracted from the file path given by parameter.
+    * In other words, this method appends a file per query (for each segment), containing users that matched the query
+    * then it groups segments by device_id, obtaining a list of segments for each device.
+    *
+    * @param spark: Spark session that will be used to write results to HDFS.
+    * @param queries: List of Maps, where the key is the parameter and the values are the values.
+    * @param df_joint: DataFrame that will be used to extract the audience from, applying the corresponding filters.
+    * @param file_name: File where we will store all the audiences.
+    * @param push: if 1 it creates a .meta for ingester to populate the audiences. Else 0.
+    *
+    * As a result this method stores the audience in the file /datascience/keywiser/processed/file_name, where
+    * the file_name is extracted from the file path.
+  **/
+
+  def getAudiences(
+      spark: SparkSession,
+      queries: List[Map[String, Any]],
+      df_joint: DataFrame,
+      push: Int,
+      file_name: String,
+  ) = {
+
+    df_joint.cache()
+
+    val fileName = "/datascience/keywiser/processed/" + file_name
+    val fileNameFinal = fileName + "_grouped"
+
+    val tuples = queries
+      .map(r => (r("seg_id").toString, r("query").toString))
+
+
+    for (t <- tuples) {
+      df_joint
+        .filter(t._2)
+        .withColumn("seg_id", lit(t._1))
+        .select("device_type", "device_id", "seg_id")
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode("append")
+        .save(fileName)
+    }
+
+    val done = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load(fileName)
+      .distinct()
+    done
+      .groupBy("_c0", "_c1")
+      .agg(collect_list("_c2") as "segments")
+      .withColumn("segments", concat_ws(",", col("segments")))
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save(fileNameFinal)
+
+    if (push == 1) {
+      val conf = spark.sparkContext.hadoopConfiguration
+      val fs = FileSystem.get(conf)
+      val os =
+        fs.create(new Path("/datascience/ingester/ready/%s.meta".format(description)))
+      val content =
+        """{"filePath":"%s", "pipeline": 3, "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"%s"}"""
+          .format(fileNameFinal, job_name)
+      println(content)
+      os.write(content.getBytes)
+      os.close()
+    }
+
+  }
+  
+
+/**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\     MAIN METHOD     //////////////////////
+    *
+    */
+  /**
     * Given a file path, this method takes all the information from it (query, days to be read, etc)
     * and gets the audience.
     *
     * @param spark: Spark session that will be used to read the data from HDFS.
     * @param file: file path String.
+    * @param path: Default: "/datascience/keywiser/to_process/".
+    * @param verbose: if true, prints are logged.
     *
     * As a result this method stores the audience in the file /datascience/keywiser/processed/file_name, where
     * the file_name is extracted from the file path.
   **/
-  def processFile(spark: SparkSession, file: String, path: String) {
+  def processFile(
+      spark: SparkSession,
+      file: String,
+      path: String,
+      verbose: Boolean) = {
+
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
 
@@ -349,7 +444,6 @@ object Keywiser {
       "DEVICER LOG: actual path is: %s".format(actual_path)
     )
 
- 
     try {
       queries = getQueriesFromFile(spark, actual_path)
     } catch {
@@ -447,8 +541,8 @@ object Keywiser {
       var failed = false
 
       try {
-        getAudience(
-          spark,
+        getAudiences(
+          spark = spark,
           partitionedData,
           queries,
           file_name,
@@ -464,8 +558,6 @@ object Keywiser {
       }
       
 
-
-
       // If everything worked out ok, then move file from the folder /datascience/keywiser/in_progress/ to /datascience/keywiser/done/
       srcPath = new Path(actual_path)
       val destFolder =
@@ -476,289 +568,13 @@ object Keywiser {
 
       // If push parameter is true, we generate a file with the metadata.
       if (!failed && Set("1", "true", "True").contains(push)) {
-        generateMetaFile(file_name, queries, xd)
+        generateMetaFile(file_name, queries)
       }
     }
     //hdfs.close()
   }
 
-
- 
-  /**
-    *
-    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR QUERYING DATA     //////////////////////
-    *
-    */
-  /**
-    * This method takes a list of queries and their corresponding segment ids, and generates a file where the first
-    * column is the device_type, the second column is the device_id, and the last column is the list of segment ids
-    * for that user separated by comma. Every column is separated by a space. The file is stored in the folder
-    * /datascience/devicer/processed/file_name. The file_name value is extracted from the file path given by parameter.
-    *
-    * @param data: DataFrame that will be used to extract the audience from, applying the corresponding filters.
-    * @param queries: List of Maps, where the key is the parameter and the values are the values.
-    * @param fileName: File where we will store all the audiences.
-    * @param commonFilter: filter that will be used prior to the querying process. Especially useful when all the queries come
-    * from the same country.
-    *
-    * As a result this method stores the audience in the file /datascience/devicer/processed/file_name, where
-    * the file_name is extracted from the file path.
-  **/
-
-
-   def getAudience(
-      spark: SparkSession,
-      data: DataFrame,
-      queries: List[Map[String, Any]],
-      fileName: String,
-      commonFilter: String = "",
-      limit: Int,
-      unique: Int
-  ) = {
-    println(
-      "DEVICER LOG:\n\tCommon filter: %s\n\tCommon filter length: %d"
-        .format(commonFilter, commonFilter.length)
-    )
-
-    // First we filter the data using the common filter, if given.
-    val filtered: DataFrame =
-      if (commonFilter.length > 0 && queries.length > 5)
-        data.filter(commonFilter)
-      else data
-
-    // Now we print the execution plan
-    println("\n\n\n\n")
-    filtered.explain()
-
-    // If the number of queries is big enough, we persist the data so that it is faster to query.
-    // [OUTDATED] THIS SECTION OF THE CODE IS NOT BEING USED, SINCE PERSISTING THE DATA TAKES
-    // MUCH MORE TIME THAN JUST LOADING AND QUERYING. REVISE!
-    if (queries.length > 5000) {
-      println("DEVICER LOG:\n\tPersisting data!")
-      filtered.persist(StorageLevel.MEMORY_AND_DISK)
-    }
-
-    // For every query we apply the filter and get only the distinct ids along with the
-    // device type and segment id.
-
-    val results = queries.map(
-      query =>
-        query("revenue") match {
-          case 0 =>
-            filtered
-              .filter(query("filter").toString)
-              .select("device_type", "device_id")
-              .withColumn("segmentIds", lit(query("segment_id").toString))
-          case 1 =>
-            filtered
-              .filter(query("filter").toString)
-              .select("device_type", "device_id", "id_partner")
-              .withColumn("segmentIds", lit(query("segment_id").toString))
-        }
-    )
-
-    // Here we select distinct users if needed
-    val results_distinct =
-      if (unique > 0) results.map(df => df.distinct()) else results
-
-    // If there is a limit on the number of rows, we also apply it
-    val results_limited =
-      if (limit > 0)
-        results_distinct.map(
-          singleDf => singleDf.limit(limit)
-        )
-      else results_distinct
-    // Now we store every single audience separately
-    results_limited.foreach(
-      dataframe =>
-        dataframe.write
-          .format("csv")
-          .option("sep", "\t")
-          .mode("append")
-          .save("/datascience/devicer/processed/" + fileName)
-    )
-
-    // If we previously persisted the data, now we unpersist it back.
-    if (queries.length > 5000) {
-      filtered.unpersist()
-    }
-
-    // If the number of queries is greater than one, then we merge all the audiences,
-    // into one single DataFrame where every device id now contains a list of segments
-    // separated by commas.
-    if (results_limited.length > 1) {
-      val fileNameFinal = "/datascience/devicer/processed/" + fileName + "_grouped"
-      val done = spark.read
-        .format("csv")
-        .option("sep", "\t")
-        .load("/datascience/devicer/processed/" + fileName)
-        .distinct()
-      done
-        .groupBy("_c0", "_c1")
-        .agg(collect_list("_c2") as "segments")
-        .withColumn("segments", concat_ws(",", col("segments")))
-        .write
-        .format("csv")
-        .option("sep", "\t")
-        .mode("append")
-        .save(fileNameFinal)
-    }
-  }
- 
-
-  /**
-  This function appends a file per query (for each segment), containing users that matched the query
-  then it groups segments by device_id, obtaining a list of segments for each device.
-  Input = df with queries |"seg_id"|"query"| and joint df from get_joint_keys().
-  Output = DataFrame with "device_type"|"device_id"|"seg_id"
-  if populate True (1), it creates a file for ingester.
-  */
-  def save_query_results(
-      spark: SparkSession,
-      df_queries: DataFrame,
-      df_joint: DataFrame,
-      stemming: Int,
-      push: Int,
-      description: String
-  ) = {
-
-    df_joint.cache()
-
-    val fileName = "/datascience/devicer/processed/" + job_name
-    val fileNameFinal = fileName + "_grouped"
-
-    val tuples = queries
-      .map(r => (r("seg_id").toString, r("query").toString))
-
-
-    for (t <- tuples) {
-      df_joint
-        .filter(t._2)
-        .withColumn("seg_id", lit(t._1))
-        .select("device_type", "device_id", "seg_id")
-        .write
-        .format("csv")
-        .option("sep", "\t")
-        .mode("append")
-        .save(fileName)
-    }
-
-    val done = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .load(fileName)
-      .distinct()
-    done
-      .groupBy("_c0", "_c1")
-      .agg(collect_list("_c2") as "segments")
-      .withColumn("segments", concat_ws(",", col("segments")))
-      .write
-      .format("csv")
-      .option("sep", "\t")
-      .mode(SaveMode.Overwrite)
-      .save(fileNameFinal)
-
-    if (push == 1) {
-      val conf = spark.sparkContext.hadoopConfiguration
-      val fs = FileSystem.get(conf)
-      val os =
-        fs.create(new Path("/datascience/ingester/ready/%s.meta".format(description)))
-      val content =
-        """{"filePath":"%s", "pipeline": 3, "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"%s"}"""
-          .format(fileNameFinal, job_name)
-      println(content)
-      os.write(content.getBytes)
-      os.close()
-    }
-
-  }
-
-  /**
-
-  MAIN METHOD
-  This function saves a file per query (for each segment), containing users that matched the query
-  and sends file to ingester if populate == 1.
-  Input = country,nDays,since,keys_path,queries,path,populate,job_name
-  Output = DataFrame with "device_type"|"device_id"|"seg_id"
-  if populate True (1), it creates a file for ingester.
-
-  */
-
-  def get_users_pipeline_3(
-      spark: SparkSession,
-      json_path: String,
-      verbose: Boolean
-  ) = {
-
-    /** Read json with queries, keywordss and seg_ids */
-    val df_queries = spark.read
-      .format("json")
-      .load(json_path)
-
-    /** Load parameters */
-    val country = df_queries.select("country").first.getString(0)
-    val nDays = df_queries.select("ndays").selectExpr("cast(cast(ndays as int ) as String)").first.getString(0).toInt
-    val since = df_queries.select("since").selectExpr("cast(cast(since as int ) as String)").first.getString(0).toInt
-    val stemming = df_queries.select("stemming").selectExpr("cast(cast(stemming as int ) as String)").first.getString(0).toInt
-    val push = df_queries.select("push").selectExpr("cast(cast(push as int ) as String)").first.getString(0).toInt
-    val job_name = df_queries.select("job_name").first.getString(0)
-
-    /**
-    Select "content_keywords" (every keyword that appears in the queries) to match with df_kws
-    depending on stemming parameter selects stemmed keywords or not stemmed.
-    */
-
-    val df_keys = df_queries
-      .select("kws")
-      .withColumnRenamed(columnName, "content_keywords")
-      .withColumn("content_keywords", split(col("content_keywords"), ","))
-      .withColumn("content_keywords", explode(col("content_keywords")))
-      .dropDuplicates("content_keywords")
-
-    /** Read from "data_keywords" folder */
-    val df_data_keywords = getDataKeywords(
-      spark = spark,
-      country = country,
-      nDays = nDays,
-      since = since,
-      stemming = stemming
-    )
-
-    /**
-    if verbose {
-      println(
-        "count de data_keywords para %sD: %s"
-          .format(nDays, df_data_keywords.select("device_id").distinct().count())
-      )
-    }
-    */
-
-    /**  Match content_keywords with data_keywords */
-    val df_joint = getJointKeys(
-      df_keys = df_keys,
-      df_data_keywords = df_data_keywords,
-      verbose = verbose)
-
-    /**
-    if verbose {
-      println(
-        "count del join after groupby: %s"
-          .format(df_joint.select("device_id").distinct().count())
-      )
-    }
-    */
-    
-
-    save_query_results(
-      spark = spark,
-      df_queries = df_queries,
-      df_joint = df_joint,
-      push = push,
-      stemming = stemming,
-      job_name = job_name
-    )
-
-  }
+  
 
   type OptionMap = Map[Symbol, String]
 
@@ -769,8 +585,6 @@ object Keywiser {
     def isSwitch(s: String) = (s(0) == '-')
     list match {
       case Nil => map
-      case "--json" :: value :: tail =>
-        nextOption(map ++ Map('json -> value), tail)
       case "--verbose" :: tail =>
         nextOption(map ++ Map('verbose -> "true"), tail)
     }
@@ -783,8 +597,6 @@ object Keywiser {
     // Reading the parameters
     val options = nextOption(Map(), args.toList)
     val verbose = if (options.contains('verbose)) true else false
-    // If there is no json specified, it is going to fail
-    val json = if (options.contains('json)) options('json) else "" 
 
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
@@ -796,17 +608,10 @@ object Keywiser {
       .getOrCreate()
 
     println("LOGGER: Path: %s".format(path))
-
-    get_users_pipeline_3(
-      spark = spark,
-      json_path = json,
-      verbose = verbose
-    )
-
   
     val files = getQueryFiles(spark, path)
 
-    files.foreach(file => processFile(spark, file, path))  
+    files.foreach(file => processFile(spark, file, path, verbose))  
 
   }
 
