@@ -656,7 +656,7 @@ object Keywiser {
   
     val files = getQueryFiles(spark, path)
 
-    println("files: \n\t%s".format(files)
+    println("files: \n\t%s".format(files))
 
     files.foreach(file => processFile(spark, file, path, verbose))  
 
