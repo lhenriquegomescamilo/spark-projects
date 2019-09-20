@@ -573,9 +573,13 @@ object Keywiser {
         }
       **/
 
+      // Import sqlContext
+      val sc = spark.sparkContext
+      val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+      
       /** Format all keywords from queries to join */
       val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
-      val df_keys = spark.sparkContext.trimmedList.toDF().withColumnRenamed("value", "content_keywords")
+      val df_keys = sqlContext.trimmedList.toDF().withColumnRenamed("value", "content_keywords")
 
       /**  Match all keywords with data_keywords */
       val df_joint = getJointKeys(
@@ -661,9 +665,6 @@ object Keywiser {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
 
-    // Import sqlContext
-    val sc = spark.sparkContext
-    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
     import spark.implicits._
     import sqlContext.implicits._
 
