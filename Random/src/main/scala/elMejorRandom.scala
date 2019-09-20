@@ -66,14 +66,23 @@ def getDataPipeline(
 
 def get_ua_segments(spark:SparkSession) = {
 
-val ua = spark.read.format("parquet")
-        .load("/datascience/data_useragents/day=*/country=AR")
+//
+//val ua = spark.read.format("parquet")
+//        .load("/datascience/data_useragents/day=*/country=AR")
+ //       .filter("model != ''") //con esto filtramos los desktop
+  //      .withColumn("device_id",upper(col("device_id")))
+   //     .drop("user_agent","event_type","url")
+    //    .dropDuplicates("device_id")
+
+
+
+val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1")
         .filter("model != ''") //con esto filtramos los desktop
         .withColumn("device_id",upper(col("device_id")))
         .drop("user_agent","event_type","url")
-        .dropDuplicates("device_id")
+        .dropDuplicates("device_id")        
 
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","5","10")
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1")
               .withColumn("device_id",upper(col("device_id")))
               .groupBy("device_id").agg(concat_ws(",",collect_set("feature")) as "segments")
 
@@ -82,7 +91,7 @@ val joined = ua.join(segments,Seq("device_id"))
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/misc/ua_w_segments_5d")
+.save("/datascience/misc/ua_w_segments_30d")
 
                                           }
 
@@ -216,19 +225,7 @@ joined.write.format("csv")
 
 */
 
-
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-  /*
-  val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
-
-  
-*/
+/*
 
 //tomo la audiencia de usuarios rankeados, madid y web
 val audience_ranked = spark.read.format("csv").option("header",true).option("delimiter",",")
@@ -272,6 +269,21 @@ category_locations.write.format("csv")
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/MX/JCDecaux/category_locations_100")
+*/
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+  /*
+  val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
+
+  
+*/
+get_ua_segments(spark)
 
   }
 }
