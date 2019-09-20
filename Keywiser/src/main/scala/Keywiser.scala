@@ -39,6 +39,7 @@ import javax.crypto.spec.SecretKeySpec
 import org.apache.commons.codec.binary.Base64
 import java.time.DateTimeException
 import java.sql.Savepoint
+import sqlContext.implicits._
 
 /**
   * The idea of this script is to generate audiences based on keywords obtained from url content. 
