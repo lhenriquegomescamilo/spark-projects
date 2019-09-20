@@ -354,7 +354,7 @@ val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, sh
 
 //cargamos los usuarios
 val nDays = 30
-val users = get_safegraph_data(spark,nDays.toString,"91","argentina")
+val users = get_safegraph_data(spark,nDays.toString,"121","argentina")
 
 //val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
 //.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
@@ -398,7 +398,7 @@ println("points_partitions",spatialRDDusers.spatialPartitionedRDD.getNumPartitio
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
 result.rdd.map(line => "%s;%s".format(line._1.getUserData.toString.split("\t").mkString(";"), line._2.getUserData))
-.saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_%s_points_first_RDD_partIV".format(nDays.toString))
+.saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_%s_points_first_RDD_partV".format(nDays.toString))
 
 /*
 result.rdd.map(line => "%s;%s".format(line._1, line._2))
