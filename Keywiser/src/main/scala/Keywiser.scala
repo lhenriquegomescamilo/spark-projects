@@ -423,7 +423,7 @@ object Keywiser {
       spark: SparkSession,
       queries: List[Map[String, Any]],
       df_joint: DataFrame,
-      file_name: String,
+      file_name: String
   ) = {
 
     df_joint.cache()
@@ -534,7 +534,7 @@ object Keywiser {
       val description = queries(0)("description").toString
 
       println(
-        "DEVICER LOG: Parameters obtained for file %s:\n\country: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
+        "DEVICER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
         //"DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
           .format(
             file,
@@ -548,13 +548,13 @@ object Keywiser {
             description
           )
       )
+    
       println("DEVICER LOG: \n\t%s".format(queries(0)("filter").toString))
       
-    /**
-      * Here we read data_keywords, format the keywords list from the json file.
-      * Then we call getJointKeys() to merge them and group a list of keywords for each device_id.
-    **/  
-      
+      /**
+        * Here we read data_keywords, format the keywords list from the json file.
+        * Then we call getJointKeys() to merge them and group a list of keywords for each device_id.
+      **/      
       /** Read from "data_keywords" database */
       val df_data_keywords = getDataKeywords(
         spark = spark,
