@@ -600,12 +600,9 @@ object Keywiser {
       try {
         getAudiences(
           spark = spark,
-          partitionedData,
-          queries,
-          file_name,
-          commonFilter,
-          limit,
-          unique
+          queries = queries,
+          df_joint = df_joint,
+          file_name = file_name
         )
       } catch {
         case e: Exception => {
