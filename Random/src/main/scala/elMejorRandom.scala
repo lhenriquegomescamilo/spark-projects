@@ -48,7 +48,7 @@ def getDataPipeline(
     val fs = FileSystem.get(conf)
 
     //specifying country
-    val country_iso = "AR"
+    //val country_iso = "AR"
       
         // Get the days to be loaded
     val format = "yyyyMMdd"
@@ -57,7 +57,7 @@ def getDataPipeline(
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/country=%s".format(day,country_iso))
+      .map(day => path + "/day=%s/country=%s".format(day)) //,country_iso
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
@@ -81,6 +81,7 @@ val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1")
         .withColumn("device_id",upper(col("device_id")))
         .drop("user_agent","event_type","url")
         .dropDuplicates("device_id")        
+        .filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
 
 val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1")
               .withColumn("device_id",upper(col("device_id")))
@@ -91,7 +92,7 @@ val joined = ua.join(segments,Seq("device_id"))
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/misc/ua_w_segments_30d")
+.save("/datascience/misc/ua_w_segments_30d_AR_CL_MX")
 
                                           }
 
