@@ -223,7 +223,7 @@ object Keywiser {
       )
       .toList
 
-    // Now we sort the list by the second component (timestamp) ????
+    // Now we sort the list by the second component (timestamp) 
     val filesReadyOrdered = scala.util.Sorting.stableSort(
       filesReady,
       (e1: (String, Long), e2: (String, Long)) => e1._2 < e2._2
@@ -244,7 +244,7 @@ object Keywiser {
     * This method obtains all the data from a single file, iterating through each row.
     * Every row has to have a filter (or query) and the segment to which the audience is going to be pushed,
     * (or a ficticious segment if push = 0). Rows will also have other parameters.
-    * Each parameter will be the same for every row, except for "country", "seg_id", "query" and "kws" (REVISE!).
+    * Each parameter will be the same for every row, except for "country", "seg_id", "query" and "kws".
     * - "country".
     * - "seg_id".
     * - "query". (stemmed if stemming == 1).
