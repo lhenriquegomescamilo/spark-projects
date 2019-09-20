@@ -236,6 +236,12 @@ object Keywiser {
     for (query <- data) {
       val filter = query("query")
       val segmentId = query("seg_id")
+      val keywords =
+        if (query.contains("kws") && Option(query("kws"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("kws")
+        else ""
       val country =
         if (query.contains("country") && Option(query("country"))
               .getOrElse("")
@@ -300,6 +306,7 @@ object Keywiser {
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
         "segment_id" -> segmentId,
+        "keywords" -> keywords,
         "since" -> since,
         "ndays" -> nDays,
         "push" -> push,
@@ -367,16 +374,13 @@ object Keywiser {
 
       // Here we obtain parameters that are supposed to be equal for every query in the file
       val country = queries(0)("country").toString
+      val keywords = queries(0)("keywords").toString
       val since = queries(0)("since").toString.toInt
       val nDays = queries(0)("ndays").toString.toInt
       val pipeline = queries(0)("pipeline").toString.toInt
       val push = queries(0)("push").toString.toInt
       val stemming = queries(0)("stemming").toString.toInt
       val description = queries(0)("description").toString
-
-      // AGREGAR FULL QUERIES
-
-
 
       println(
         "DEVICER LOG: Parameters obtained for file %s:\n\country: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
@@ -395,43 +399,70 @@ object Keywiser {
       )
       println("DEVICER LOG: \n\t%s".format(queries(0)("filter").toString))
       
-
-
-
-      // Here we select the pipeline where we will gather the data
-
-      // ACÄ LEO DATA KEYWORDS
-
-
-
+    /**
+      * Here we read data_keywords, format the keywords list from the json file.
+      * Then we call getJointKeys() to merge them and group a list of keywords for each device_id.
+    **/  
       
-     
+      /** Read from "data_keywords" database */
+      val df_data_keywords = getDataKeywords(
+        spark = spark,
+        country = country,
+        nDays = nDays,
+        since = since,
+        stemming = stemming
+      )
 
+      /**
+        if verbose {
+          println(
+            "count de data_keywords para %sD: %s"
+              .format(nDays, df_data_keywords.select("device_id").distinct().count())
+          )
+        }
+      **/
+
+      /** Format all keywords from queries to join */
+      val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
+      val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
+
+      /**  Match all keywords with data_keywords */
+      val df_joint = getJointKeys(
+        df_keys = df_keys,
+        df_data_keywords = df_data_keywords,
+        verbose = verbose)
+
+      /**
+      if verbose {
+        println(
+          "count del join after groupby: %s"
+            .format(df_joint.select("device_id").distinct().count())
+        )
+      }
+      **/      
+     
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
       // Flag to indicate if execution failed
       var failed = false
 
-
-    
-      } else {
-        try {
-          getAudience(
-            spark,
-            partitionedData,
-            queries,
-            file_name,
-            commonFilter,
-            limit,
-            unique
-          )
-        } catch {
-          case e: Exception => {
-            e.printStackTrace()
-            failed = true
-          }
+      try {
+        getAudience(
+          spark,
+          partitionedData,
+          queries,
+          file_name,
+          commonFilter,
+          limit,
+          unique
+        )
+      } catch {
+        case e: Exception => {
+          e.printStackTrace()
+          failed = true
         }
       }
+      
 
 
 
@@ -676,12 +707,9 @@ object Keywiser {
     Select "content_keywords" (every keyword that appears in the queries) to match with df_kws
     depending on stemming parameter selects stemmed keywords or not stemmed.
     */
-    val to_select = if (stemming == 1) List("stem_kws") else List("kws")
-
-    val columnName = to_select(0).toString
 
     val df_keys = df_queries
-      .select(to_select.head, to_select.tail: _*)
+      .select("kws")
       .withColumnRenamed(columnName, "content_keywords")
       .withColumn("content_keywords", split(col("content_keywords"), ","))
       .withColumn("content_keywords", explode(col("content_keywords")))
