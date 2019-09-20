@@ -76,7 +76,7 @@ def get_ua_segments(spark:SparkSession) = {
 
 
 
-val ua = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1")
+val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1")
         .filter("model != ''") //con esto filtramos los desktop
         .withColumn("device_id",upper(col("device_id")))
         .drop("user_agent","event_type","url")
