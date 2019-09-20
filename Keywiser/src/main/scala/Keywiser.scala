@@ -104,6 +104,77 @@ object Keywiser {
 
 /**
     *
+    *         \\\\\\\\\\\\\\\\\\\\\     AUXILIARY METHODS    //////////////////////
+    *
+    */
+  /**
+    * This method parses all the information given in the original json files, so that it
+    * can generate a new json file that will be used by the Ingester to push the recently
+    * downloaded audiences into the corresponding DSPs.
+    *
+    * @param file_name: File where we store all the audiences.
+    * @param queries: list of parsed queries with all the information. Only the first
+    * query is used to extract the properties.
+    */
+  def generateMetaFile(
+      file_name: String,
+      queries: List[Map[String, Any]]
+  ) {
+    println("DEVICER LOG:\n\tPushing the audience to the ingester")
+
+    // First we obtain the variables that will be stored in the meta data file.
+    val priority = queries(0)("priority")
+    val as_view =
+      if (queries(0)("as_view").toString.length > 0)
+        queries(0)("as_view").toString.toInt
+      else 0
+    val queue = queries(0)("queue").toString    
+    val jobid =
+      if (queries(0)("jobid").toString.length > 0)
+        queries(0)("jobid").toString.toInt
+      else 0
+    val pipeline =
+      if (queries(0)("pipeline").toString.length > 0)
+        queries(0)("pipeline").toString.toInt
+      else 3
+
+    val description = queries(0)("description")
+    var file_name_final =
+      if (queries.length > 1) file_name + "_grouped" else file_name
+
+    // Now we calculate the path of the file according to the properties.
+    val file_path = "/datascience/devicer/processed/"
+    
+
+    // Then we generate the content for the json file.
+    val json_content = """{"filePath":"%s%s", "priority":%s, "as_view":%s,
+                           "pipeline":"%s", "queue":"%s", "jobId":%s, "description":"%s"}"""
+      .format(
+        file_path,
+        priority,
+        as_view,
+        pipeline,
+        queue,
+        jobid,
+        description
+      )
+      .replace("\n", "")
+    println("DEVICER LOG:\n\t%s".format(json_content))
+
+    // Finally we store the json.
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    val fs = FileSystem.get(conf)
+    val os = fs.create(
+      new Path("/datascience/ingester/ready/%s.meta".format(file_name))
+    )
+    os.write(json_content.getBytes)
+    os.close()
+    // fs.close()
+  }
+
+/**
+    *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR MERGING DATA     //////////////////////
     *
     */
@@ -209,7 +280,7 @@ object Keywiser {
     * - "ndays" and "since".  
     * - "stemming": 1 or 0.  .
     * - "push": 1 or 0. 
-    * - "job_name".  
+    * - "description".  
     *
     * @param spark: Spark session that will be used to access HDFS.
     * @param file: The file that is going to be read.
@@ -296,12 +367,14 @@ object Keywiser {
               .toString
               .length > 0) query("description")
         else ""
+      /**  
       val jobid =
         if (query.contains("jobId") && Option(query("jobId"))
               .getOrElse("")
               .toString
               .length > 0) query("jobId")
         else ""
+       **/
 
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
@@ -315,7 +388,7 @@ object Keywiser {
         "queue" -> queue,
         "pipeline" -> pipeline,
         "description" -> description,
-        "jobid" -> jobid,
+        //"jobid" -> jobid,
         "country" -> country
       )
 
@@ -341,7 +414,6 @@ object Keywiser {
     * @param queries: List of Maps, where the key is the parameter and the values are the values.
     * @param df_joint: DataFrame that will be used to extract the audience from, applying the corresponding filters.
     * @param file_name: File where we will store all the audiences.
-    * @param push: if 1 it creates a .meta for ingester to populate the audiences. Else 0.
     *
     * As a result this method stores the audience in the file /datascience/keywiser/processed/file_name, where
     * the file_name is extracted from the file path.
@@ -351,7 +423,6 @@ object Keywiser {
       spark: SparkSession,
       queries: List[Map[String, Any]],
       df_joint: DataFrame,
-      push: Int,
       file_name: String,
   ) = {
 
@@ -390,20 +461,6 @@ object Keywiser {
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
       .save(fileNameFinal)
-
-    if (push == 1) {
-      val conf = spark.sparkContext.hadoopConfiguration
-      val fs = FileSystem.get(conf)
-      val os =
-        fs.create(new Path("/datascience/ingester/ready/%s.meta".format(description)))
-      val content =
-        """{"filePath":"%s", "pipeline": 3, "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"%s"}"""
-          .format(fileNameFinal, job_name)
-      println(content)
-      os.write(content.getBytes)
-      os.close()
-    }
-
   }
   
 
@@ -574,7 +631,7 @@ object Keywiser {
     //hdfs.close()
   }
 
-  
+
 
   type OptionMap = Map[Symbol, String]
 
