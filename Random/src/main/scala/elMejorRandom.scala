@@ -324,7 +324,7 @@ df_count
 
   
 */
-get_ua_segments(spark)
+get_homes_from_radius(spark)
 
   }
 }
