@@ -662,7 +662,7 @@ object Keywiser {
       .getOrCreate()
 
     // Import sqlContext
-    val sc: SparkContext
+    val sc = spark.sparkContext
     val sqlContext = new org.apache.spark.sql.SQLContext(sc)
     import sqlContext.implicits._
 
