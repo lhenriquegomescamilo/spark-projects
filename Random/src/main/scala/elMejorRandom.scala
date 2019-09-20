@@ -272,6 +272,46 @@ category_locations.write.format("csv")
 .save("/datascience/geo/MX/JCDecaux/category_locations_100")
 */
 
+def get_homes_from_radius( spark: SparkSession) {
+val df_users = spark.read.format("csv").option("delimiter","\t").load("/datascience/geo/geospark_debugging/sample_w_rdd_30_points_first_RDD_part*").dropDuplicates().toDF("device_id","utc_timestamp","radio")
+
+  val value_dictionary: Map[String, String] = Map(
+      "country" -> "argentina",
+      "HourFrom" -> "19",
+      "HourTo" -> "7",
+      "UseType" -> "home",
+      "minFreq" -> "0")
+
+
+//dictionary for timezones
+val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
+    
+//setting timezone depending on country
+spark.conf.set("spark.sql.session.timeZone", timezone(value_dictionary("country")))
+
+val geo_hour = df_users     .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+                                            .withColumn("Hour", date_format(col("Time"), "HH"))
+                                                .filter(
+                                                    if (value_dictionary("UseType")=="home") { 
+                                                                col("Hour") >= value_dictionary("HourFrom") || col("Hour") <= value_dictionary("HourTo") 
+                                                                            } 
+                                                    else {
+                                                          (col("Hour") <= value_dictionary("HourFrom") && col("Hour") >= value_dictionary("HourTo")) && 
+                                                                !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_*) })
+
+
+val df_count  = geo_hour.groupBy(col("device_id"),col("radio"))
+                        .agg(count(col("utc_timestamp")).as("freq"))
+
+df_count
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geospark_debugging/homes_from_polygons_AR_180")
+
+                }
+
  /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
