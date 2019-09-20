@@ -55,7 +55,7 @@ object FromEventqueuePIIMonth {
     val data = spark.read
         .format("parquet")
         .load("/datascience/pii_matching/pii_tuples/")
-        //.filter("day >= 20190918")
+        .filter("day >= 20190919")
         .filter("country in('AR', 'CL', 'PE')")
     // Then we separate the data acording to the PII type
     var mails = data
@@ -114,11 +114,14 @@ object FromEventqueuePIIMonth {
       .format("parquet")
       .load("/datascience/pii_matching/temp/")
     
+    val dt = DateTime.now.toString("yyyyMMdd")
+
     fls.repartition(1).write
       .format("csv")
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/pii_matching/pii_table")
+      .save("/datascience/pii_matching/pii_table/%s".format(dt))
+      
   }
 
 
