@@ -5,9 +5,8 @@ import org.apache.spark.sql.functions._
 import org.joda.time.DateTime
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.SparkSession
-import org.apache.hadoop.fs._
 
-object FromEventqueuePII {
+object FromEventqueuePIIMonth {
 
   /**
     * Given a particular day, this method downloads the data from the eventqueue to build a PII table. Basically, it takes the following columns:
@@ -115,15 +114,13 @@ object FromEventqueuePII {
       .format("parquet")
       .load("/datascience/pii_matching/temp/")
     
-    val dt = DateTime.now.toString("yyyyMMdd")
-
     fls.repartition(1).write
       .format("csv")
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/pii_matching/pii_table/%s".format(dt))
-
+      .save("/datascience/pii_matching/pii_table")
   }
+
 
   type OptionMap = Map[Symbol, String]
 
@@ -134,9 +131,10 @@ object FromEventqueuePII {
     def isSwitch(s: String) = (s(0) == '-')
     list match {
       case Nil => map
-      case "--from" :: value :: tail => nextOption(map ++ Map('from -> value.toString), tail)
-      case "--nDays" :: value :: tail => nextOption(map ++ Map('nDays -> value.toString), tail)
-      case "--month" :: value :: tail => nextOption(map ++ Map('month -> value.toString), tail)
+      case "--from" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toString), tail)
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toString), tail)
     }
   }
 
@@ -159,7 +157,7 @@ object FromEventqueuePII {
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we effectively download the data day by day
-    //days.map(day => getPII(spark, day))
+    days.map(day => getPII(spark, day))
 
     procesPII(spark)
   }

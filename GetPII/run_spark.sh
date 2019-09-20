@@ -7,8 +7,8 @@ source /home/rely/.bashrc
   --class "main.scala.FromEventqueuePII"\
   --deploy-mode cluster\
   --driver-memory 8g\
-  --executor-memory 8g\
-  --num-executors 10\
+  --executor-memory 9g\
+  --num-executors 15\
   --executor-cores 3\
   --queue spark\
   --conf spark.yarn.maxAppAttempts=1\
