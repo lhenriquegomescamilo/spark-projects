@@ -333,7 +333,13 @@ object Keywiser {
               .getOrElse("")
               .toString
               .length > 0) query("pipeline")
-        else 0                                                       // REVISE !!!
+        else 0                                                       
+      val stemming =
+        if (query.contains("stemming") && Option(query("stemming"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("stemming")
+        else 0      
       val description =
         if (query.contains("description") && Option(query("description"))
               .getOrElse("")
@@ -360,6 +366,7 @@ object Keywiser {
         "as_view" -> as_view,
         "queue" -> queue,
         "pipeline" -> pipeline,
+        "stemming" -> stemming,
         "description" -> description,
         //"jobid" -> jobid,
         "country" -> country
