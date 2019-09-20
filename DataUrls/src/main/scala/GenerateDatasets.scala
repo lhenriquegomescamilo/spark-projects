@@ -101,9 +101,9 @@ def get_data_urls(
 
     
 //////////////////////////////////////// Training Data ////////////////////////////////////////
-/**   
+ 
     val data_urls = get_data_urls(spark, ndays, since, country)
-
+/**  
     var gtDF = data_urls.select("url", "segments")
                         .withColumn("segments", explode(col("segments")))
                         .filter(
