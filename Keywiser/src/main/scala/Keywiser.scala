@@ -120,7 +120,7 @@ object Keywiser {
       file_name: String,
       queries: List[Map[String, Any]]
   ) {
-    println("DEVICER LOG:\n\tPushing the audience to the ingester")
+    println("KEYWISER LOG:\n\tPushing the audience to the ingester")
 
     // First we obtain the variables that will be stored in the meta data file.
     val priority = queries(0)("priority")
@@ -143,7 +143,7 @@ object Keywiser {
       if (queries.length > 1) file_name + "_grouped" else file_name
 
     // Now we calculate the path of the file according to the properties.
-    val file_path = "/datascience/devicer/processed/"
+    val file_path = "/datascience/keywiser/processed/"
     
 
     // Then we generate the content for the json file.
@@ -159,7 +159,7 @@ object Keywiser {
         description
       )
       .replace("\n", "")
-    println("DEVICER LOG:\n\t%s".format(json_content))
+    println("KEYWISER LOG:\n\t%s".format(json_content))
 
     // Finally we store the json.
     val conf = new Configuration()
@@ -227,7 +227,7 @@ object Keywiser {
   /**
     * This method gets all the files to be processed from the folder /datascience/keywiser/to_process/
     * and also it removes from the list all the files that have been already processed (which are
-    * located in /datascience/devicer/done/).
+    * located in /datascience/keywiser/done/).
     *
     * @param spark: Spark session that will be used to access HDFS.
     * @param pathToProcess: Default: "/datascience/keywiser/to_process/".
@@ -498,7 +498,7 @@ object Keywiser {
     var errorMessage = ""
 
     println(
-      "DEVICER LOG: actual path is: %s".format(actual_path)
+      "KEYWISER LOG: actual path is: %s".format(actual_path)
     )
 
     try {
@@ -511,7 +511,7 @@ object Keywiser {
     if (queries.length == 0) {
       // If there is an error in the file, move file from the folder /datascience/keywiser/to_process/ to /datascience/keywiser/errors/
       println(
-        "DEVICER LOG: The devicer process failed on " + file + "\nThe error was: " + errorMessage
+        "KEYWISER LOG: The keywiser process failed on " + file + "\nThe error was: " + errorMessage
       )
       srcPath = new Path(actual_path)
       destPath = new Path("/datascience/keywiser/errors/")
@@ -529,13 +529,13 @@ object Keywiser {
       val since = queries(0)("since").toString.toInt
       val nDays = queries(0)("ndays").toString.toInt
       val pipeline = queries(0)("pipeline").toString.toInt
-      val push = queries(0)("push").toString.toInt
+      val push = queries(0)("push").toString
       val stemming = queries(0)("stemming").toString.toInt
       val description = queries(0)("description").toString
 
       println(
-        "DEVICER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
-        //"DEVICER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
+        "KEYWISER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
+        //"KEYWISER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
           .format(
             file,
             country,
@@ -549,7 +549,7 @@ object Keywiser {
           )
       )
     
-      println("DEVICER LOG: \n\t%s".format(queries(0)("filter").toString))
+      println("KEYWISER LOG: \n\t%s".format(queries(0)("filter").toString))
       
       /**
         * Here we read data_keywords, format the keywords list from the json file.
@@ -657,9 +657,11 @@ object Keywiser {
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
-      .appName("Spark devicer")
+      .appName("Spark keywiser")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
+
+    val path =  "/datascience/keywiser/to_process/"
 
     println("LOGGER: Path: %s".format(path))
   
