@@ -600,12 +600,9 @@ object Keywiser {
       try {
         getAudiences(
           spark = spark,
-          partitionedData,
-          queries,
-          file_name,
-          commonFilter,
-          limit,
-          unique
+          queries = queries,
+          df_joint = df_joint,
+          file_name = file_name
         )
       } catch {
         case e: Exception => {
@@ -669,15 +666,6 @@ object Keywiser {
     val files = getQueryFiles(spark, path)
 
     files.foreach(file => processFile(spark, file, path, verbose))  
-
-  }
-
-}
-
-  def main(args: Array[String]) {
-
-
-
 
   }
 
