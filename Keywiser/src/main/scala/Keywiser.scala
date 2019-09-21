@@ -123,6 +123,7 @@ object Keywiser {
                            "pipeline":"%s", "queue":"%s", "jobId":%s, "description":"%s"}"""
       .format(
         file_path,
+        file_name_final,
         priority,
         as_view,
         pipeline,
