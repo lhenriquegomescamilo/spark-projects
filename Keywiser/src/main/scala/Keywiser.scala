@@ -392,7 +392,7 @@ object Keywiser {
     *
     * @param spark: Spark session that will be used to write results to HDFS.
     * @param queries: List of Maps, where the key is the parameter and the values are the values.
-    * @param df_joint: DataFrame that will be used to extract the audience from, applying the corresponding filters.
+    * @param data: DataFrame that will be used to extract the audience from, applying the corresponding filters.
     * @param file_name: File where we will store all the audiences.
     *
     * As a result this method stores the audience in the file /datascience/keywiser/processed/file_name, where
@@ -402,11 +402,11 @@ object Keywiser {
   def getAudiences(
       spark: SparkSession,
       queries: List[Map[String, Any]],
-      df_joint: DataFrame,
+      data: DataFrame,
       file_name: String
   ) = {
 
-    df_joint.cache()
+    data.cache()
 
     val fileName = "/datascience/keywiser/processed/" + file_name
     val fileNameFinal = fileName + "_grouped"
@@ -416,7 +416,7 @@ object Keywiser {
 
 
     for (t <- tuples) {
-      df_joint
+      data
         .filter(t._2)
         .withColumn("seg_id", lit(t._1))
         .select("device_type", "device_id", "seg_id")
@@ -560,7 +560,7 @@ object Keywiser {
       val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
 
       /**  Match all keywords with data_keywords */
-      val df_joint = getJointKeys(
+      val data = getJointKeys(
         df_keys = df_keys,
         df_data_keywords = df_data_keywords,
         verbose = verbose)
@@ -569,7 +569,7 @@ object Keywiser {
       if verbose {
         println(
           "count del join after groupby: %s"
-            .format(df_joint.select("device_id").distinct().count())
+            .format(data.select("device_id").distinct().count())
         )
       }
       **/      
@@ -583,7 +583,7 @@ object Keywiser {
         getAudiences(
           spark = spark,
           queries = queries,
-          df_joint = df_joint,
+          data = data,
           file_name = file_name
         )
       } catch {
@@ -655,8 +655,6 @@ object Keywiser {
     println("LOGGER: Path: %s".format(path))
   
     val files = getQueryFiles(spark, path)
-
-    println("files: \n\t%s".format(files))
 
     files.foreach(file => processFile(spark, file, path, verbose))  
 
