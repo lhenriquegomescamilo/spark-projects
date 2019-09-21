@@ -139,8 +139,7 @@ object Keywiser {
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
     val os = fs.create(
-      //new Path("/datascience/ingester/ready/%s.meta".format(file_name))
-      new Path("/datascience/misc/%s.meta".format(file_name))
+      new Path("/datascience/ingester/ready/%s.meta".format(file_name))
     )
     os.write(json_content.getBytes)
     os.close()
@@ -266,6 +265,7 @@ object Keywiser {
       spark: SparkSession,
       file: String
   ): List[Map[String, Any]] = {
+  
     // First of all we obtain all the data from the file
     val df = spark.sqlContext.read.json(file)
     val columns = df.columns
@@ -643,13 +643,6 @@ object Keywiser {
       .appName("Spark keywiser")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
-
-    //import spark.implicits._
-    //import sqlContext.implicits._
-
-    // Import sqlContext
-    //val sc = spark.sparkContext
-    //val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 
     val path =  "/datascience/keywiser/to_process/"
 
