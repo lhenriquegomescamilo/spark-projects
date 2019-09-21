@@ -346,14 +346,14 @@ object Keywiser {
               .toString
               .length > 0) query("description")
         else ""
-      /**  
+        
       val jobid =
         if (query.contains("jobId") && Option(query("jobId"))
               .getOrElse("")
               .toString
               .length > 0) query("jobId")
         else ""
-       **/
+       
 
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
@@ -368,7 +368,7 @@ object Keywiser {
         "pipeline" -> pipeline,
         "stemming" -> stemming,
         "description" -> description,
-        //"jobid" -> jobid,
+        "jobid" -> jobid,
         "country" -> country
       )
 
