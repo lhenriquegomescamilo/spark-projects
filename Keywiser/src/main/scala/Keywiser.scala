@@ -258,7 +258,7 @@ object Keywiser {
     * @param spark: Spark session that will be used to access HDFS.
     * @param file: The file that is going to be read.
     *
-    * @return a list of Map's of query and parameters.????
+    * @return a list of Map's of query and parameters.
   **/
 
   def getQueriesFromFile(
@@ -412,7 +412,7 @@ object Keywiser {
     val fileNameFinal = fileName + "_grouped"
 
     val tuples = queries
-      .map(r => (r("seg_id").toString, r("query").toString))
+      .map(r => (r("segment_id").toString, r("filter").toString))
 
 
     for (t <- tuples) {
