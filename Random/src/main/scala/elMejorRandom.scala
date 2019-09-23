@@ -321,39 +321,39 @@ def aggregations_ua ( spark: SparkSession){
 
 
   ua_ar.withColumn("segments",explode(split(col("segments"),",")))
-    .groupBy("brand","model","segments")
+    .groupBy("brand","segments")
     .agg(countDistinct("device_id") as "segment_country") 
     .write.format("csv")    
     .option("header",true)    
     .option("delimiter","\t")    
     .mode(SaveMode.Overwrite)    
-    .save("/datascience/misc/ua_agg_segments_30d_AR")
+    .save("/datascience/misc/ua_agg_segments_BRAND_30d_AR")
 
 
  val ua_cl = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_CL")
 
 
   ua_cl.withColumn("segments",explode(split(col("segments"),",")))
-    .groupBy("brand","model","segments")
+    .groupBy("brand","segments")
     .agg(countDistinct("device_id") as "segment_country") 
     .write.format("csv")    
     .option("header",true)    
     .option("delimiter","\t")    
     .mode(SaveMode.Overwrite)    
-    .save("/datascience/misc/ua_agg_segments_30d_CL")   
+    .save("/datascience/misc/ua_agg_segments_BRAND_30d_CL")   
 
 
  val ua_mx = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_MX")
 
 
   ua_mx.withColumn("segments",explode(split(col("segments"),",")))
-    .groupBy("brand","model","segments")
+    .groupBy("brand","segments")
     .agg(countDistinct("device_id") as "segment_country") 
     .write.format("csv")    
     .option("header",true)    
     .option("delimiter","\t")    
     .mode(SaveMode.Overwrite)    
-    .save("/datascience/misc/ua_agg_segments_30d_MX")
+    .save("/datascience/misc/ua_agg_segments_BRAND_30d_MX")
  
 }
 
