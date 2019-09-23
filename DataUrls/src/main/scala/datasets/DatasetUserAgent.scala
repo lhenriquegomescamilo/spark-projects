@@ -108,7 +108,7 @@ object DatasetUserAgent {
       )
 
     // Joining features with top user agent features
-    val join_ua = features_ua.join(top_ua,Seq("feature"),"inner")
+    val join_ua = features_ua.join(top_ua.drop("count"),Seq("feature"),"inner")
                               .select("url","feature","count")
 
     // Joining dataset with GT urls
