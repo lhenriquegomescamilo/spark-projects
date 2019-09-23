@@ -319,12 +319,55 @@ df_count
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
+
+def aggregations_ua ( spark: SparkSession){
+
+  val ua_ar = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d")
+
+
+  ua_ar.withColumn("segments",explode(split(col("segments"),",")))
+    .groupBy("brand","model","segments")
+    .agg(countDistinct("device_id") as "segment_country") 
+    .write.format("csv")    
+    .option("header",true)    
+    .option("delimiter","\t")    
+    .mode(SaveMode.Overwrite)    
+    .save("/datascience/misc/ua_agg_segments_30d_AR")
+
+
+ val ua_cl = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_CL")
+
+
+  ua_cl.withColumn("segments",explode(split(col("segments"),",")))
+    .groupBy("brand","model","segments")
+    .agg(countDistinct("device_id") as "segment_country") 
+    .write.format("csv")    
+    .option("header",true)    
+    .option("delimiter","\t")    
+    .mode(SaveMode.Overwrite)    
+    .save("/datascience/misc/ua_agg_segments_30d_CL")   
+
+
+ val ua_mx = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_MX")
+
+
+  ua_mx.withColumn("segments",explode(split(col("segments"),",")))
+    .groupBy("brand","model","segments")
+    .agg(countDistinct("device_id") as "segment_country") 
+    .write.format("csv")    
+    .option("header",true)    
+    .option("delimiter","\t")    
+    .mode(SaveMode.Overwrite)    
+    .save("/datascience/misc/ua_agg_segments_30d_MX")
+ 
+}
+
   /*
   val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
 
   
 */
-get_homes_from_radius(spark)
+//get_homes_from_radius(spark)
 
   }
 }
