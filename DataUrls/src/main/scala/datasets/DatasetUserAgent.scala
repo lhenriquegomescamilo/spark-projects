@@ -4,7 +4,6 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
-import spark.implicits._
 import org.apache.spark.sql.functions.broadcast
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -56,7 +55,7 @@ object DatasetUserAgent {
 
   def get_url_user_agent(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String,name:String): DataFrame =  {
 
-    // Defining top 100 urls to take
+    /**
     val top_ua = List("Android","Apple","C","C Plus","CAM-L03","Chrome","Chrome Mobile","Chrome Mobile WebView","Chrome Mobile iOS",
                       "E (4) Plus","Edge","Facebook","Firefox","Firefox Mobile","G (4)","G (5)","G (5) Plus","G (5S) Plus","G3","Generic",
                       "Generic_Android","H340AR","H440AR","Huawei","IE","IE Mobile","K120","K350","K430","LG","Lenovo","Linux","M250",
@@ -67,6 +66,10 @@ object DatasetUserAgent {
                       "Smartphone","Ubuntu","Windows","Windows Phone","X230","X240","XiaoMi","iOS","iPad","iPhone","iPhone10,2","iPhone10,3"
                       ,"iPhone10,5","iPhone11,8","iPhone7","iPhone8,1","iPhone8,2","iPhone8,4","iPhone9,1","iPhone9,2","iPhone9,3","iPhone9,4",
                       "moto e5","moto e5 play")
+    **/
+    // Defining top 100 urls to take
+    val top_ua = spark.read.format("csv").option("header","true").load("/datascience/custom/top_user_agent.csv")
+    val top_ua_b = broadcast(top_ua)
 
     // Get data from user agent pipeline <device_id, brand,model,browser,os,os_min_version,os_max_version,user_agent,url,event_type>
     val df = get_data_user_agent(spark = spark, ndays = ndays, since = since, country = country)
@@ -102,15 +105,19 @@ object DatasetUserAgent {
       .withColumn(
         "url",
         regexp_replace(col("url"), "(\\?|#).*", "")
-      ).filter(col("feature").isin(top_ua: _*))
+      ).filter(col("feature").
+
+    // Joining features with top user agent features
+    val join_ua = features_ua.join(top_ua,Seq("feature"),"inner")
+                              .select("url","feature","count")
 
     // Joining dataset with GT urls
-    val joint = gtDF.join(features_ua,Seq("url"),joinType)
+    val joint = gtDF.join(join_ua,Seq("url"),joinType)
                     .dropDuplicates()
+                    .select("url","feature","count")
 
     // Adding all features as a fake df in order to get all column names in the final df
-    val fake_df = top_ua.map(name => ("www.google.com",name,1)).toDF("url", "feature","count")
-    val final_df = joint.union(fake_df)
+    val final_df = joint.union(fake_df.withColumnRenamed("url_fake","url"))
 
     // Groupby and pivot by user agent
     final_df.groupBy("url")
