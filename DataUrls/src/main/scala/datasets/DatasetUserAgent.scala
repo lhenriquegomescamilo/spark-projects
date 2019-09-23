@@ -105,7 +105,7 @@ object DatasetUserAgent {
       .withColumn(
         "url",
         regexp_replace(col("url"), "(\\?|#).*", "")
-      ).filter(col("feature")
+      )
 
     // Joining features with top user agent features
     val join_ua = features_ua.join(top_ua,Seq("feature"),"inner")
