@@ -106,9 +106,13 @@ object DatasetUserAgent {
     // Joining dataset with GT urls
     val joint = gtDF.join(features_ua,Seq("url"),joinType)
                     .dropDuplicates()
-    
+
+    // Adding all features as a fake df in order to get all column names in the final df
+    val fake_df = top_ua.map(name => ("www.google.com",name,1)).toDF("url", "feature","count")
+    val final_df = joint.union(fake_df)
+
     // Groupby and pivot by user agent
-    joint.groupBy("url")
+    final_df.groupBy("url")
           .pivot("feature")
           .agg(sum("count"))
           .na.fill(0)
