@@ -373,14 +373,14 @@ def aggregations_ua ( spark: SparkSession){
 //get_homes_from_radius(spark)
 
 
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1")
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30")
               
               
 
 
 val theNSE = segments.filter(col("feature") isin ("35360","35361","35362", "35363"))
 
-theNSE.groupBy("feature").agg(countDistinct("device_id") as "unique_devices") .write.format("csv")    .option("header",true)    .option("delimiter","\t")    .mode(SaveMode.Overwrite)    .save("/datascience/misc/equifax_count_AR")
+theNSE.groupBy("feature").agg(countDistinct("device_id") as "unique_devices") .write.format("csv")    .option("header",true)    .option("delimiter","\t")    .mode(SaveMode.Overwrite)    .save("/datascience/misc/equifax_count_AR_plus_30")
 
 
 
