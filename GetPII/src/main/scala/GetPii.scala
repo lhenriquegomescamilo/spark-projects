@@ -159,9 +159,9 @@ object FromEventqueuePII {
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we effectively download the data day by day
-    //days.map(day => getPII(spark, day))
+    days.map(day => getPII(spark, day))
 
-    procesPII(spark)
+    //procesPII(spark)
   }
 
 }

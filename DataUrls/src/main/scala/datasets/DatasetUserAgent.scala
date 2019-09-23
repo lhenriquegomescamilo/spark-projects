@@ -4,6 +4,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
+import spark.implicits._
 import org.apache.spark.sql.functions.broadcast
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -106,15 +107,19 @@ object DatasetUserAgent {
     // Joining dataset with GT urls
     val joint = gtDF.join(features_ua,Seq("url"),joinType)
                     .dropDuplicates()
-    
+
+    // Adding all features as a fake df in order to get all column names in the final df
+    val fake_df = top_ua.map(name => ("www.google.com",name,1)).toDF("url", "feature","count")
+    val final_df = joint.union(fake_df)
+
     // Groupby and pivot by user agent
-    joint.groupBy("url")
+    final_df.groupBy("url")
           .pivot("feature")
           .agg(sum("count"))
           .na.fill(0)
           .withColumn("country",lit(country))
           .write
-          .format("parquet")
+          .format("csv") // Using csv because there are problems saving in parquet with spaces in column names
           .mode(SaveMode.Overwrite)
           .partitionBy("country")
           .save("/datascience/data_url_classifier/%s".format(name))

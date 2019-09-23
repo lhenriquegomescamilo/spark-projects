@@ -55,7 +55,7 @@ object FromEventqueuePIIMonth {
     val data = spark.read
         .format("parquet")
         .load("/datascience/pii_matching/pii_tuples/")
-        .filter("day >= 20190919")
+        //.filter("day >= 20190919")
         .filter("country in('AR', 'CL', 'PE')")
     // Then we separate the data acording to the PII type
     var mails = data
@@ -124,7 +124,6 @@ object FromEventqueuePIIMonth {
       
   }
 
-
   type OptionMap = Map[Symbol, String]
 
   /**
@@ -160,7 +159,7 @@ object FromEventqueuePIIMonth {
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we effectively download the data day by day
-    days.map(day => getPII(spark, day))
+    //days.map(day => getPII(spark, day))
 
     procesPII(spark)
   }
