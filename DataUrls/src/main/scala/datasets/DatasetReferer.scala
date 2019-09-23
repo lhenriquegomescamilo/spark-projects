@@ -37,6 +37,13 @@ object DatasetReferer {
                       .withColumn("count", lit(1))
                       .groupBy("device_id","url", "referer")
                       .agg(sum("count").as("count"))
+                      .withColumn("referer",
+                                    regexp_replace(col("referer"), "http.*://(.\\.)*(www\\.){0,1}", "")
+                            )
+                            .withColumn("referer",
+                                  regexp_replace(col("referer"), "(\\?|#).*", "")
+                            )
+
 
     // Then we join the data with the GT
     val joint = gtDF.join(data_urls, Seq("url"), joinType)
