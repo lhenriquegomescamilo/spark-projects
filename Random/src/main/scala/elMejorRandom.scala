@@ -312,12 +312,7 @@ df_count
 
                 }
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
 
 
 def aggregations_ua ( spark: SparkSession){
@@ -362,12 +357,21 @@ def aggregations_ua ( spark: SparkSession){
  
 }
 
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+
   /*
   val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
 
   
 */
 //get_homes_from_radius(spark)
+aggregations_ua(spark)
 
   }
 }
