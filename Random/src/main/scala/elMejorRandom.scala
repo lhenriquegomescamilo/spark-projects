@@ -372,15 +372,18 @@ def aggregations_ua ( spark: SparkSession){
 */
 //get_homes_from_radius(spark)
 
+val segments_new = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30")
 
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30")
-              
-              
+val theNSE_new = segments_new.filter(col("feature") isin (35360,35361,35362, 35363))
+
+theNSE_new.groupBy("feature").agg(countDistinct("device_id") as "unique_devices") .write.format("csv")    .option("header",true)    .option("delimiter","\t")    .mode(SaveMode.Overwrite)    .save("/datascience/misc/equifax_count_AR_new")
 
 
-val theNSE = segments.filter(col("feature") isin ("35360","35361","35362", "35363"))
+val segments_old = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30")
 
-theNSE.groupBy("feature").agg(countDistinct("device_id") as "unique_devices") .write.format("csv")    .option("header",true)    .option("delimiter","\t")    .mode(SaveMode.Overwrite)    .save("/datascience/misc/equifax_count_AR_plus_30")
+val theNSE_old = segments_old.filter(col("feature") isin (35360,35361,35362, 35363))
+
+theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices") .write.format("csv")    .option("header",true)    .option("delimiter","\t")    .mode(SaveMode.Overwrite)    .save("/datascience/misc/equifax_count_AR_old")
 
 
 
