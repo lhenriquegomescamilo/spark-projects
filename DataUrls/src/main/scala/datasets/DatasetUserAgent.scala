@@ -105,10 +105,10 @@ object DatasetUserAgent {
       .withColumn(
         "url",
         regexp_replace(col("url"), "(\\?|#).*", "")
-      ).filter(col("feature").
+      )
 
     // Joining features with top user agent features
-    val join_ua = features_ua.join(top_ua,Seq("feature"),"inner")
+    val join_ua = features_ua.join(top_ua.drop("count"),Seq("feature"),"inner")
                               .select("url","feature","count")
 
     // Joining dataset with GT urls
@@ -117,7 +117,7 @@ object DatasetUserAgent {
                     .select("url","feature","count")
 
     // Adding all features as a fake df in order to get all column names in the final df
-    val final_df = joint.union(fake_df.withColumnRenamed("url_fake","url"))
+    val final_df = joint.union(top_ua.withColumnRenamed("url_fake","url"))
 
     // Groupby and pivot by user agent
     final_df.groupBy("url")
@@ -127,6 +127,7 @@ object DatasetUserAgent {
           .withColumn("country",lit(country))
           .write
           .format("csv") // Using csv because there are problems saving in parquet with spaces in column names
+          .option("header","true")
           .mode(SaveMode.Overwrite)
           .partitionBy("country")
           .save("/datascience/data_url_classifier/%s".format(name))
@@ -148,7 +149,7 @@ object DatasetUserAgent {
     val country = if (args.length > 2) args(2).toString else ""
     val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
 
-    //val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR/")
-    //get_url_user_agent(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner")
+    val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR/")
+    get_url_user_agent(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner",name="dataset_user_agent_training")
   }
 }
