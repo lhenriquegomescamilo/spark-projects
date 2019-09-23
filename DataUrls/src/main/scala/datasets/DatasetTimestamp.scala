@@ -39,8 +39,12 @@ object DatasetTimestamp {
                   .withColumn("feature",UDFFinal(col("daytime"),col("wd")))
                   .select("url","feature")
 
-  
+    // Groupby and pivot by timestamp feature
     df.groupBy("url","feature").count()
+      .groupBy("url")
+      .pivot("feature")
+      .agg(sum("count"))
+      .na.fill(0)
       .withColumn("country",lit(country))
       .write.format("parquet")
       .mode(SaveMode.Overwrite)
