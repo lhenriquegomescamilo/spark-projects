@@ -127,6 +127,7 @@ object DatasetUserAgent {
           .withColumn("country",lit(country))
           .write
           .format("csv") // Using csv because there are problems saving in parquet with spaces in column names
+          .option("header","true")
           .mode(SaveMode.Overwrite)
           .partitionBy("country")
           .save("/datascience/data_url_classifier/%s".format(name))
