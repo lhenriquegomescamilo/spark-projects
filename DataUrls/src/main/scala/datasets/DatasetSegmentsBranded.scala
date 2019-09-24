@@ -43,7 +43,7 @@ object DatasetSegmentsBranded {
     val start = DateTime.now.minusDays(since)
 
     val days =
-      (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+      (0 until 30).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_triplets/segments/"
     val dfs = days
       .map(day => path + "/day=%s/country=%s".format(day, country))
@@ -67,7 +67,7 @@ object DatasetSegmentsBranded {
     val branded_segments = List(20107,20108,20109,20110,20111,20112,20113,20114,20115,20116
                                 ,20117,20118,20119,20120,20121,20122,20123,20124,20125,20126)
 
-    // First we get the data from the segments (<device_id, segment, count>) and we take only branded segments
+    // First we get the data from the segments (<device_id, segment>) and we take only branded segments
     val data_segments = get_triplets_segments(spark,ndays,since,country)
                                     .filter(col("feature").isin(branded_segments: _*))
 
@@ -115,7 +115,7 @@ object DatasetSegmentsBranded {
     val since = if (args.length > 1) args(1).toInt else 1
     val country = if (args.length > 2) args(2).toString else "AR"
 
-    //val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR")
-    //get_segment_branded(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", name="")
+    val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR")
+    get_segment_branded(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", name="dataset_segments_branded_training")
   }
 }
