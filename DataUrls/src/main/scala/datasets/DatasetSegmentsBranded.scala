@@ -55,7 +55,7 @@ object DatasetSegmentsBranded {
             .parquet(x)
       )
 
-    val segments = dfs.reduce((df1, df2) => df1.union(df2)).drop("count")
+    val segments = dfs.reduce((df1, df2) => df1.union(df2))
 
     segments
   }
@@ -71,6 +71,11 @@ object DatasetSegmentsBranded {
     val data_segments = get_triplets_segments(spark,ndays,since,country)
                                     .filter(col("feature").isin(branded_segments: _*))
 
+    data_segments.write
+                  .format("parquet")
+                  .mode(SaveMode.Overwrite)
+                  .save("/datascience/data_url_classifier/triplets_%s".format(name.split("_").last))
+
     // Then we get the data from the url - user triplets (<device_id, url, count>)       
     val data_url_user = spark.read
                             .load("/datascience/data_triplets/urls/country=%s/".format(country))
@@ -83,7 +88,8 @@ object DatasetSegmentsBranded {
 
 
     // Then we join both datasets
-    val joint = data_segments.join(data_url_user, Seq("device_id"), "inner")
+    val joint = data_segments.drop("count")
+                              .join(data_url_user, Seq("device_id"), "inner")
                               .withColumnRenamed("feature","segment")
                               //.groupBy("url", "segment")
                               //.agg(sum("count").as("count"))
