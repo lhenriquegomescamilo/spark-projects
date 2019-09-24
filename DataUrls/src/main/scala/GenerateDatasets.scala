@@ -8,6 +8,12 @@ import org.joda.time.DateTime
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
+import org.apache.spark.sql.types.{
+ StructType,
+ StructField,
+ StringType,
+ IntegerType
+}
 
 object GenerateDatasetsUrls {
 
@@ -40,8 +46,85 @@ def get_data_urls(
             .withColumn("day", lit(x.split("/").last.slice(4, 13)))
       )
 
-    val urls = dfs
-      .reduce((df1, df2) => df1.union(df2))
+    val urls = dfs.reduce((df1, df2) => df1.union(df2))
+
+    processURL(dfURL = urls, field = "url")
+  }
+
+def processURL(dfURL: DataFrame, field: String = "url"): DataFrame = {
+    // First of all, we get the domains, and filter out those ones that are very generic
+    val generic_domains = List(
+      "google",
+      "facebook",
+      "yahoo",
+      "android",
+      "bing",
+      "instagram",
+      "cxpublic",
+      "criteo",
+      "outbrain",
+      "flipboard",
+      "googleapis",
+      "googlequicksearchbox"
+    )
+    val query_generic_domains = generic_domains
+      .map(dom => "domain NOT LIKE '%" + dom + "%'")
+      .mkString(" AND ")
+    val filtered_domains = dfURL
+      .selectExpr("*", "parse_url(%s, 'HOST') as domain".format(field))
+      .filter(query_generic_domains)
+    // Now we filter out the domains that are IPs
+    val filtered_IPs = filtered_domains
+      .withColumn(
+        "domain",
+        regexp_replace(col("domain"), "^([0-9]+\\.){3}[0-9]+$", "IP")
+      )
+      .filter("domain != 'IP'")
+    // Now if the host belongs to Retargetly, then we will take the r_url field from the QS
+    val retargetly_domains = filtered_IPs
+      .filter("domain LIKE '%retargetly%'")
+      .selectExpr(
+        "*",
+        "parse_url(%s, 'QUERY', 'r_url') as new_url".format(field)
+      )
+      .filter("new_url IS NOT NULL")
+      .withColumn(field, col("new_url"))
+      .drop("new_url")
+    // Then we process the domains that come from ampprojects
+    val pattern =
+      """^([a-zA-Z0-9_\-]+).cdn.ampproject.org/?([a-z]/)*([a-zA-Z0-9_\-\/\.]+)?""".r
+    def ampPatternReplace(url: String): String = {
+      var result = ""
+      if (url != null) {
+        val matches = pattern.findAllIn(url).matchData.toList
+        if (matches.length > 0) {
+          val list = matches
+            .map(
+              m =>
+                if (m.groupCount > 2) m.group(3)
+                else if (m.groupCount > 0) m.group(1).replace("-", ".")
+                else "a"
+            )
+            .toList
+          result = list(0).toString
+        }
+      }
+      result
+    }
+    val ampUDF = udf(ampPatternReplace _, StringType)
+    val ampproject_domains = filtered_IPs
+      .filter("domain LIKE '%ampproject%'")
+      .withColumn(field, ampUDF(col(field)))
+      .filter("length(%s)>0".format(field))
+    // Now we union the filtered dfs with the rest of domains
+    val non_filtered_domains = filtered_IPs.filter(
+      "domain NOT LIKE '%retargetly%' AND domain NOT LIKE '%ampproject%'"
+    )
+    val filtered_retargetly = non_filtered_domains
+      .unionAll(retargetly_domains)
+      .unionAll(ampproject_domains)
+    // Finally, we remove the querystring and protocol
+    filtered_retargetly
       .withColumn(
         "url",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
@@ -50,9 +133,8 @@ def get_data_urls(
         "url",
         regexp_replace(col("url"), "(\\?|#).*", "")
       )
-
-    urls
   }
+
 
   def get_data_untagged(spark: SparkSession, ndays: Int, since: Int, country: String): DataFrame = {
     // Configuraciones de spark
@@ -165,47 +247,47 @@ def get_data_urls(
     gtDF = broadcast(gtDF.select("url"))
     gtDF.cache()
 
-    var data_keywords_content = DatasetKeywordContent.get_url_content(spark,
-                                                        country = country,
-                                                        since = since,
-                                                        ndays = ndays,
-                                                        gtDF = gtDF,
-                                                        joinType = "inner",
-                                                        name = "dataset_keyword_content_training")
+    // var data_keywords_content = DatasetKeywordContent.get_url_content(spark,
+    //                                                     country = country,
+    //                                                     since = since,
+    //                                                     ndays = ndays,
+    //                                                     gtDF = gtDF,
+    //                                                     joinType = "inner",
+    //                                                     name = "dataset_keyword_content_training")
 
-    var data_referer = DatasetReferer.get_url_referer(spark,
-                                                        country = country,
-                                                        since = since,
-                                                        ndays = ndays,
-                                                        gtDF = gtDF,
-                                                        joinType = "inner",
-                                                        df_urls = data_urls,
-                                                        name = "dataset_referer_training" )
+    // var data_referer = DatasetReferer.get_url_referer(spark,
+    //                                                     country = country,
+    //                                                     since = since,
+    //                                                     ndays = ndays,
+    //                                                     gtDF = gtDF,
+    //                                                     joinType = "inner",
+    //                                                     df_urls = data_urls,
+    //                                                     name = "dataset_referer_training" )
 
-    var data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
-                                                        country = country,
-                                                        since = since,
-                                                        ndays = ndays,
-                                                        gtDF = gtDF,
-                                                        joinType = "inner",
-                                                        df_urls = data_urls,
-                                                        name = "dataset_timestamp_training")
+    // var data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
+    //                                                     country = country,
+    //                                                     since = since,
+    //                                                     ndays = ndays,
+    //                                                     gtDF = gtDF,
+    //                                                     joinType = "inner",
+    //                                                     df_urls = data_urls,
+    //                                                     name = "dataset_timestamp_training")
 
-    var data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
-                                                      ndays,
-                                                      since,
-                                                      country,
-                                                      gtDF,
-                                                      "inner",
-                                                      name = "dataset_user_agent_training")
+    // var data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
+    //                                                   ndays,
+    //                                                   since,
+    //                                                   country,
+    //                                                   gtDF,
+    //                                                   "inner",
+    //                                                   name = "dataset_user_agent_training")
 
-    var data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
-                                                      ndays,
-                                                      since,
-                                                      country,
-                                                      gtDF,
-                                                      "inner",
-                                                      name = "dataset_segments_branded_training")
+    // var data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
+    //                                                   ndays,
+    //                                                   since,
+    //                                                   country,
+    //                                                   gtDF,
+    //                                                   "inner",
+    //                                                   name = "dataset_segments_branded_training")
 
 
   }
