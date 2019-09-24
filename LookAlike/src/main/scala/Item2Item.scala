@@ -644,7 +644,7 @@ object Item2Item {
         .option("header", "false")
         .mode(SaveMode.Overwrite)
         .save(filePath)
-      writeOutputMetaFile(filePath, jobId, partnerId, priority, resultDescription)
+      writeOutputMetaFile(filePath, jobId, partnerId, priority, "datascience", resultDescription)
     }
     
   }
