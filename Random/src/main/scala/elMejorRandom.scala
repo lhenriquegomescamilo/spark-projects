@@ -11,30 +11,30 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 object elMejorRandom {
   def get_tapad_home_cluster(spark:SparkSession){
 
+/*
 val code = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/argentina_365d_home_21-8-2019-0h").withColumn("device_id",upper(col("ad_id")))
 
 
 val poly = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/radios_argentina_2010_geodevicer_5d_argentina_14-8-2019-17h").withColumn("device_id",upper(col("device_id")))
+*/
+val codepoly = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/geospark_debugging/homes_AR_180_code_and_poly_for_crossdevice")
 
-val index = spark.read.format("csv").option("delimiter","\t").load("/data/crossdevice/2019-07-14/Retargetly_ids_full_20190714_193703_part_00.gz")
-val home_index = index.withColumn("tmp",split(col("_c2"),"=")).select(col("_c0"),col("tmp").getItem(1).as("_c2")).drop("tmp").filter(col("_c2").isNotNull).toDF("house_cluster","device_id").withColumn("device_id",upper(col("device_id")))
+val home_index = spark.read.format("csv").option("delimiter","\t").load("/data/crossdevice/2019-09-10/")
+.withColumn("tmp",split(col("_c2"),"="))
+.select(col("_c0"),col("tmp").getItem(1).as("_c2")).drop("tmp").filter(col("_c2").isNotNull).toDF("house_cluster","device_id").withColumn("device_id",upper(col("device_id")))
 
 
-poly.join(home_index,Seq("device_id"))
+codepoly.join(home_index,Seq("device_id"))
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/AR/tapad_w_polygon")
+.save("/datascience/geo/geospark_debugging/homes_AR_180_code_and_poly_home_cluster")
 
-code.join(home_index,Seq("device_id"))
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/AR/tapad_w_geocode")
+
 
   }
 
@@ -356,6 +356,27 @@ def aggregations_ua ( spark: SparkSession){
     .save("/datascience/misc/ua_agg_segments_BRAND_30d_MX")
  
 }
+def equifax_count ( spark: SparkSession){
+
+  val segments_new = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30")
+
+val theNSE_new = segments_new.filter(col("feature") isin (35360,35361,35362, 35363))
+
+theNSE_new.groupBy("feature").agg(countDistinct("device_id") as "unique_devices") 
+.write.format("csv")    .option("header",true)    .option("delimiter","\t")    
+.mode(SaveMode.Overwrite)    
+.save("/datascience/misc/equifax_count_AR_new")
+
+
+val segments_old = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30")
+
+val theNSE_old = segments_old.filter(col("feature") isin (35360,35361,35362, 35363))
+
+theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices") 
+.write.format("csv")    .option("header",true)    .option("delimiter","\t")    
+.mode(SaveMode.Overwrite)    
+.save("/datascience/misc/equifax_count_AR_old")
+}
 
  /*****************************************************/
   /******************     MAIN     *********************/
@@ -372,20 +393,8 @@ def aggregations_ua ( spark: SparkSession){
 */
 //get_homes_from_radius(spark)
 
-val segments_new = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30")
-
-val theNSE_new = segments_new.filter(col("feature") isin (35360,35361,35362, 35363))
-
-theNSE_new.groupBy("feature").agg(countDistinct("device_id") as "unique_devices") .write.format("csv")    .option("header",true)    .option("delimiter","\t")    .mode(SaveMode.Overwrite)    .save("/datascience/misc/equifax_count_AR_new")
 
 
-val segments_old = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30")
-
-val theNSE_old = segments_old.filter(col("feature") isin (35360,35361,35362, 35363))
-
-theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices") .write.format("csv")    .option("header",true)    .option("delimiter","\t")    .mode(SaveMode.Overwrite)    .save("/datascience/misc/equifax_count_AR_old")
-
-
-
+get_tapad_home_cluster(spark)
   }
 }

@@ -60,50 +60,60 @@ object DatasetSegmentsBranded {
     segments
   }
 
-  def get_segment_branded(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,
-                      joinType:String, name:String): DataFrame =  {
-    
+  def get_segment_branded(
+      spark: SparkSession,
+      ndays: Int,
+      since: Int,
+      country: String,
+      gtDF: DataFrame,
+      joinType: String,
+      name: String
+  ): DataFrame = {
 
-    val branded_segments = List(20107,20108,20109,20110,20111,20112,20113,20114,20115,20116
-                                ,20117,20118,20119,20120,20121,20122,20123,20124,20125,20126)
+    val branded_segments =
+      List(20107, 20108, 20109, 20110, 20111, 20112, 20113, 20114, 20115, 20116,
+        20117, 20118, 20119, 20120, 20121, 20122, 20123, 20124, 20125, 20126)
 
     // First we get the data from the segments (<device_id, segment>) and we take only branded segments
-    val data_segments = get_triplets_segments(spark,ndays,since,country)
-                                    .filter(col("feature").isin(branded_segments: _*))
+    val data_segments = get_triplets_segments(spark, ndays, since, country)
+      .filter(col("feature").isin(branded_segments: _*))
 
     data_segments.write
-                  .format("parquet")
-                  .mode(SaveMode.Overwrite)
-                  .save("/datascience/data_url_classifier/triplets_%s".format(name.split("_").last))
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/data_url_classifier/triplets_%s"
+          .format(name.split("_").last)
+      )
 
-    // Then we get the data from the url - user triplets (<device_id, url, count>)       
+    // Then we get the data from the url - user triplets (<device_id, url, count>)
     val data_url_user = spark.read
-                            .load("/datascience/data_triplets/urls/country=%s/".format(country))
-                            .withColumn("url",
-                                    regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-                            )
-                            .withColumn("url",
-                                  regexp_replace(col("url"), "(\\?|#).*", "")
-                            )
-
+      .load("/datascience/data_triplets/urls/country=%s/".format(country))
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+      .withColumn("url", regexp_replace(col("url"), "(\\?|#).*", ""))
 
     // Then we join both datasets
-    val joint = data_segments.drop("count")
-                              .join(data_url_user, Seq("device_id"), "inner")
-                              .withColumnRenamed("feature","segment")
-                              //.groupBy("url", "segment")
-                              //.agg(sum("count").as("count"))
+    val joint = data_segments
+      .drop("count")
+      .join(data_url_user, Seq("device_id"), "inner")
+      .withColumnRenamed("feature", "segment")
+    //.groupBy("url", "segment")
+    //.agg(sum("count").as("count"))
 
     // Finally we make the final join with the GT data
-    val final_join = gtDF.join(joint, Seq("url"), joinType)
-                          .select("url","segment","count")
-                          .withColumn("country",lit(country))
-    
+    val final_join = gtDF
+      .join(joint, Seq("url"), joinType)
+      .select("url", "segment", "count")
+      .withColumn("country", lit(country))
+
     final_join.write
-          .format("parquet")
-          .mode(SaveMode.Overwrite)
-          .partitionBy("country")
-          .save("/datascience/data_url_classifier/%s".format(name))
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .partitionBy("country")
+      .save("/datascience/data_url_classifier/%s".format(name))
 
     joint
   }
@@ -113,7 +123,7 @@ object DatasetSegmentsBranded {
     val spark = SparkSession.builder
       .appName("Data URLs: Dataset Referer")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
-      .config("spark.sql.sources.partitionOverwriteMode","dynamic")
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
     // Parseo de parametros
@@ -122,6 +132,14 @@ object DatasetSegmentsBranded {
     val country = if (args.length > 2) args(2).toString else "AR"
 
     val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR")
-    get_segment_branded(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", name="dataset_segments_branded_training")
+    get_segment_branded(
+      spark,
+      country = country,
+      since = since,
+      ndays = ndays,
+      gtDF = gtDF,
+      joinType = "inner",
+      name = "dataset_segments_branded_training"
+    )
   }
 }
