@@ -43,7 +43,7 @@ object DatasetSegmentsBranded {
     val start = DateTime.now.minusDays(since)
 
     val days =
-      (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+      (0 until 60).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_triplets/segments/"
     val dfs = days
       .map(day => path + "/day=%s/country=%s".format(day, country))
