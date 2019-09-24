@@ -8,7 +8,12 @@ import org.joda.time.DateTime
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
-import org.apache.spark.sql.types
+import org.apache.spark.sql.types.{
+ StructType,
+ StructField,
+ StringType,
+ IntegerType
+}
 
 object GenerateDatasetsUrls {
 
