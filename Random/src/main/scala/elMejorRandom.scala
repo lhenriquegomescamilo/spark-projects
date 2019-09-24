@@ -24,7 +24,7 @@ val codepoly = spark.read.format("csv").option("header",true).option("delimiter"
 
 val home_index = spark.read.format("csv").option("delimiter","\t").load("/data/crossdevice/2019-09-10/")
 .withColumn("tmp",split(col("_c2"),"="))
-.select(col("_c0"),col("tmp").getItem(1).as("_c2")).drop("tmp").filter(col("_c2").isNotNull).toDF("house_cluster","device_id").withColumn("device_id",upper(col("device_id"))).show()
+.select(col("_c0"),col("tmp").getItem(1).as("_c2")).drop("tmp").filter(col("_c2").isNotNull).toDF("house_cluster","device_id").withColumn("device_id",upper(col("device_id")))
 
 
 codepoly.join(home_index,Seq("device_id"))
