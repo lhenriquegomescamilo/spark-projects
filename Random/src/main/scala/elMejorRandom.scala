@@ -92,7 +92,7 @@ val joined = ua.join(segments,Seq("device_id"))
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/misc/ua_w_segments_30d_MX")
+.save("/datascience/misc/ua_w_segments_30d_MX_II")
 
                                           }
 
@@ -395,6 +395,7 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
 
 
 
-get_tapad_home_cluster(spark)
+//get_tapad_home_cluster(spark)
+get_ua_segments(spark)
   }
 }
