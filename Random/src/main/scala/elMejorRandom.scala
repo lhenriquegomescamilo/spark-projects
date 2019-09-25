@@ -385,17 +385,6 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-
-  /*
-  val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
-
-  
-*/
-//get_homes_from_radius(spark)
-
-
-
-//get_tapad_home_cluster(spark)
 get_ua_segments(spark)
   }
 }
