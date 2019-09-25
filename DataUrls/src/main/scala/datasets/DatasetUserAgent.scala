@@ -1,4 +1,5 @@
 package main.scala.datasets
+import main.scala.datasets.{UrlUtils}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
@@ -50,7 +51,9 @@ object DatasetUserAgent {
 
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
-    df
+    val df_filtered = UrlUtils.processURL(dfURL = df, field = "url")
+
+    df_filtered
   }
 
   def get_url_user_agent(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String,name:String): DataFrame =  {
@@ -93,19 +96,11 @@ object DatasetUserAgent {
       .agg(count("device_id").as("count"))
       .withColumnRenamed("os", "feature")
 
-    // Concatenating all triplets dataframes and processing the url
+    // Concatenating all triplets dataframes
     val features_ua = triplets_brand
       .union(triplets_model)
       .union(triplets_browser)
       .union(triplets_os)
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "(\\?|#).*", "")
-      )
 
     // Joining features with top user agent features
     val join_ua = features_ua.join(top_ua.drop("count"),Seq("feature"),"inner")
