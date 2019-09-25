@@ -48,7 +48,7 @@ def getDataPipeline(
     val fs = FileSystem.get(conf)
 
     //specifying country
-    val country_iso = "AR"
+    val country_iso = "CL"
       
         // Get the days to be loaded
     val format = "yyyyMMdd"
@@ -92,7 +92,7 @@ val joined = ua.join(segments,Seq("device_id"))
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/misc/ua_w_segments_30d_MX_II")
+.save("/datascience/misc/ua_w_segments_30d_CL_II")
 
                                           }
 
@@ -385,17 +385,6 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-
-  /*
-  val safegraph_data = get_safegraph_data(spark,"2","10","mexico")
-
-  
-*/
-//get_homes_from_radius(spark)
-
-
-
-//get_tapad_home_cluster(spark)
 get_ua_segments(spark)
   }
 }
