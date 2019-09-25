@@ -135,18 +135,11 @@ object UrlUtils {
     val days =
       (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_demo/data_urls/"
-    val dfs = days
+    val hdfs_files = days
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      .map(
-        x =>
-          spark.read
-            .option("basePath", path)
-            .parquet(x)
-            .withColumn("day", lit(x.split("/").last.slice(4, 13)))
-      )
 
-    val urls = dfs.reduce((df1, df2) => df1.union(df2))
+    val urls = spark.read.option("basePath", basePath).parquet(hdfs_files: _*).select("url")
 
     processURL(dfURL = urls, field = "url")
   }
@@ -164,19 +157,13 @@ object UrlUtils {
     val days =
       (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_url_classifier/untagged_urls/"
-    val dfs = days
+    val hdfs_files = days
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      .map(
-        x =>
-          spark.read
-            .option("basePath", path)
-            .parquet(x)
-      )
 
-    val untagged = dfs.reduce((df1, df2) => df1.union(df2)).select("url")
+    val untagged = spark.read.option("basePath", basePath).parquet(hdfs_files: _*).select("url")
 
-    untagged
+    processURL(dfURL = untagged, field = "url")
   }
 
   def main(args: Array[String]) {
