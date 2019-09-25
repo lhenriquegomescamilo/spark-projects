@@ -158,12 +158,19 @@ object GenerateDatasetsUrls {
     val ndays = if (args.length > 0) args(0).toInt else 10
     val since = if (args.length > 1) args(1).toInt else 1
     val country = if (args.length > 2) args(2).toString else ""
+    val train = if (args.length > 3) args(3).toString else false
+    val test = if (args.length > 4) args(4).toString else false
      
     val data_urls = UrlUtils.get_data_urls(spark, ndays, since, country)
 
     // Training datasets
-    //generate_training_datasets(spark,ndays,since,country,data_urls)
+    if (Set("1", "true", "True").contains(train)) {
+      generate_training_datasets(spark,ndays,since,country,data_urls)
+    }
+
     // Expansion datasets
-    generate_expansion_datasets(spark,ndays,since,country,data_urls)
+    if (Set("1", "true", "True").contains(expansion)){
+      generate_expansion_datasets(spark,ndays,since,country,data_urls)
+    }
   }
 }
