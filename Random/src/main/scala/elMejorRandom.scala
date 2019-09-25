@@ -48,7 +48,7 @@ def getDataPipeline(
     val fs = FileSystem.get(conf)
 
     //specifying country
-    val country_iso = "MX"
+    val country_iso = "AR"
       
         // Get the days to be loaded
     val format = "yyyyMMdd"
