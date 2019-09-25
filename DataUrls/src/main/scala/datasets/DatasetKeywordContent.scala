@@ -1,4 +1,5 @@
 package main.scala.datasets
+import main.scala.datasets.{UrlUtils}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
@@ -77,49 +78,6 @@ object DatasetKeywordContent {
     df
   }
 
-  def get_data_urls(
-      spark: SparkSession,
-      ndays: Int,
-      since: Int,
-      country: String
-  ): DataFrame = {
-    /// Configuraciones de spark
-    val sc = spark.sparkContext
-    val conf = sc.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-
-    /// Obtenemos la data de los ultimos ndays
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(since)
-
-    val days =
-      (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_demo/data_urls/"
-    val dfs = days
-      .map(day => path + "/day=%s/country=%s".format(day, country))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      .map(
-        x =>
-          spark.read
-            .option("basePath", path)
-            .parquet(x)
-            .withColumn("day", lit(x.split("/").last.slice(4, 13)))
-      )
-
-    val urls = dfs
-      .reduce((df1, df2) => df1.union(df2))
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "(\\?|#).*", "")
-      )
-
-    urls
-  }
-
   def get_url_content(
       spark: SparkSession,
       ndays: Int,
@@ -166,7 +124,10 @@ object DatasetKeywordContent {
       .agg(sum("count").as("count"))
       .dropDuplicates()
 
-    joint.write
+    // Preprocess urls
+    val filtered_join = UrlUtils.processURL(dfURL = joint, field = "url")
+
+    filtered_join.write
       .format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
@@ -189,7 +150,7 @@ object DatasetKeywordContent {
     val country = if (args.length > 2) args(2).toString else ""
     val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
 
-    //val gtDF = get_url_gt(spark,ndays,since,country,segments)
-    //get_url_content(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner" )
+    val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR/")
+    get_url_content(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", name = "dataset_keyword_content_training")
   }
 }

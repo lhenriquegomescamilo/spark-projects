@@ -2,6 +2,7 @@ package main.scala.datasets
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
+import main.scala.datasets.{UrlUtils}
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.broadcast
@@ -37,12 +38,7 @@ object DatasetReferer {
                       .withColumn("count", lit(1))
                       .groupBy("device_id","url", "referer")
                       .agg(sum("count").as("count"))
-                      .withColumn("referer",
-                                    regexp_replace(col("referer"), "http.*://(.\\.)*(www\\.){0,1}", "")
-                            )
-                            .withColumn("referer",
-                                  regexp_replace(col("referer"), "(\\?|#).*", "")
-                            )
+                      
 
 
     // Then we join the data with the GT
@@ -50,14 +46,17 @@ object DatasetReferer {
                     .select("device_id","url","referer","count")
                     .withColumn("country",lit(country))
                     .dropDuplicates()
+
+    // Preprocess urls
+    val filtered_join = UrlUtils.processURL(dfURL = joint, field = "referer")
     
-    joint.write
+    filtered_join.write
           .format("parquet")
           .mode(SaveMode.Overwrite)
           .partitionBy("country")
           .save("/datascience/data_url_classifier/%s".format(name))
 
-    joint
+    filtered_join
   }
 
   def main(args: Array[String]) {
@@ -72,10 +71,10 @@ object DatasetReferer {
     val ndays = if (args.length > 0) args(0).toInt else 10
     val since = if (args.length > 1) args(1).toInt else 1
     val country = if (args.length > 2) args(2).toString else ""
-    val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
-
-    //val data_urls = get_data_urls(spark, ndays, since, country)
-    //val gtDF = spark.read.load("/datascience/data_url_classifier/dataset_keywords/country=AR")
-    //get_url_referer(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "left", df_urls = data_urls)
+    
+    val data_urls = UrlUtils.get_data_urls(spark, ndays, since, country)
+    val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR/")
+    get_url_referer(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", df_urls = data_urls,
+                    name = "dataset_referer_training")
   }
 }

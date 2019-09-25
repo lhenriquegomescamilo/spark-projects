@@ -1,4 +1,5 @@
 package main.scala.datasets
+import main.scala.datasets.{UrlUtils}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
@@ -89,19 +90,14 @@ object DatasetSegmentsBranded {
     // Then we get the data from the url - user triplets (<device_id, url, count>)
     val data_url_user = spark.read
       .load("/datascience/data_triplets/urls/country=%s/".format(country))
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
-      .withColumn("url", regexp_replace(col("url"), "(\\?|#).*", ""))
+      
+    val filtered_url_user = UrlUtils.processURL(dfURL = data_url_user, field = "url")
 
     // Then we join both datasets
     val joint = data_segments
       .drop("count")
-      .join(data_url_user, Seq("device_id"), "inner")
+      .join(filtered_url_user, Seq("device_id"), "inner")
       .withColumnRenamed("feature", "segment")
-    //.groupBy("url", "segment")
-    //.agg(sum("count").as("count"))
 
     // Finally we make the final join with the GT data
     val final_join = gtDF
