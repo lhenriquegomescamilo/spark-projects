@@ -85,6 +85,8 @@ object GenerateDatasetsUrls {
                           col("segments")
                             .isin(segments: _*)
                         ).distinct()
+    
+    gtDF.cache()
 
     // Saving GT dataframe grouped by url and list of segments
     gtDF.groupBy("url")
@@ -98,7 +100,6 @@ object GenerateDatasetsUrls {
         .save("/datascience/data_url_classifier/gt")
 
     gtDF = broadcast(gtDF.select("url"))
-    gtDF.cache()
 
     var data_keywords_content = DatasetKeywordContent.get_url_content(spark,
                                                         country = country,
