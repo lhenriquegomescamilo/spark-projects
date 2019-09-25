@@ -1,4 +1,5 @@
 package main.scala.datasets
+import main.scala.datasets.{UrlUtils}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
@@ -68,8 +69,9 @@ object DatasetTimestamp {
     val country = if (args.length > 2) args(2).toString else ""
     val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
 
-    //val data_urls = get_data_urls(spark, ndays, since, country)
-    //val gtDF = spark.read.load("/datascience/data_url_classifier/dataset_referer/country=AR")
-    //get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", df_urls = data_urls)
+    val data_urls = UrlUtils.get_data_urls(spark, ndays, since, country)
+    val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR")
+    get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", df_urls = data_urls,
+                      name = "dataset_segments_branded_training")
   }
 }
