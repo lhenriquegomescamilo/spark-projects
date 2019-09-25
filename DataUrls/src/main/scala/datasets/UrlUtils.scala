@@ -139,7 +139,7 @@ object UrlUtils {
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    val urls = spark.read.option("basePath", basePath).parquet(hdfs_files: _*).select("url")
+    val urls = spark.read.option("basePath", path).parquet(hdfs_files: _*).select("url")
 
     processURL(dfURL = urls, field = "url")
   }
@@ -161,7 +161,7 @@ object UrlUtils {
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    val untagged = spark.read.option("basePath", basePath).parquet(hdfs_files: _*).select("url")
+    val untagged = spark.read.option("basePath", path).parquet(hdfs_files: _*).select("url")
 
     processURL(dfURL = untagged, field = "url")
   }
