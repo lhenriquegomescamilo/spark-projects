@@ -161,7 +161,7 @@ object GenerateDatasetsUrls {
     val data_urls = UrlUtils.get_data_urls(spark, ndays, since, country)
 
     // Training datasets
-    generate_training_datasets(spark,ndays,since,country,data_urls)
+    //generate_training_datasets(spark,ndays,since,country,data_urls)
     // Expansion datasets
     generate_expansion_datasets(spark,ndays,since,country,data_urls)
   }
