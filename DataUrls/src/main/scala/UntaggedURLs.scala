@@ -20,7 +20,7 @@ object UntaggedURLs {
                             )
                             .select("url", "country")
 
-    val data_processed = UrlUtils.processURL(dfURL = joint, field = "referer")
+    val data_processed = UrlUtils.processURL(dfURL = data_filtered, field = "url")
 
     data_processed.withColumn("day", lit(day.replace("/", "")))
                   .write
