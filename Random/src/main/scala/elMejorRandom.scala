@@ -48,7 +48,7 @@ def getDataPipeline(
     val fs = FileSystem.get(conf)
 
     //specifying country
-    val country_iso = "AR"
+    val country_iso = "MX"
       
         // Get the days to be loaded
     val format = "yyyyMMdd"
@@ -92,7 +92,7 @@ val joined = ua.join(segments,Seq("device_id"))
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/misc/ua_w_segments_30d_AR_II")
+.save("/datascience/misc/ua_w_segments_30d_MX_II")
 
                                           }
 
