@@ -83,7 +83,7 @@ val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1")
         .dropDuplicates("device_id")        
         //.filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
 
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1")
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","15","1")
               .withColumn("device_id",upper(col("device_id")))
               .groupBy("device_id").agg(concat_ws(",",collect_set("feature")) as "segments")
 
