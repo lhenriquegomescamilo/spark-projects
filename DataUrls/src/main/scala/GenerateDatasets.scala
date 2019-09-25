@@ -20,7 +20,7 @@ object GenerateDatasetsUrls {
   def generate_expansion_datasets(spark:SparkSession,ndays:Int,since:Int,country:String,data_urls: DataFrame){
     
     // First we get the untagged urls
-    val untagged_df = broadcast(UrlUtils.get_data_untagged(spark,ndays,since,country))
+    val untagged_df = UrlUtils.get_data_untagged(spark,ndays,since,country)
     untagged_df.cache()
 
     // Then we download each dataset making an inner join with the untagged urls
