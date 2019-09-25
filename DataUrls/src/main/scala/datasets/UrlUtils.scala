@@ -163,7 +163,7 @@ object UrlUtils {
 
     val untagged = spark.read.option("basePath", path).parquet(hdfs_files: _*).select("url")
 
-    processURL(dfURL = untagged, field = "url")
+    untagged
   }
 
   def main(args: Array[String]) {
