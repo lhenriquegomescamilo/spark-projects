@@ -1,5 +1,5 @@
 package main.scala
-
+import main.scala.datasets.{UrlUtils}
 import org.apache.spark.sql.{SparkSession, SaveMode, DataFrame}
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
@@ -15,26 +15,19 @@ object UntaggedURLs {
       .option("header", "true")
       .load("/data/eventqueue/%s/".format(day))
 
-    data
-      .select("url", "tagged", "share_data", "event_type", "country")
-      .filter(
-        "event_type IN ('pv', 'batch', 'data') AND tagged IS NULL AND share_data == '1' AND url IS NOT NULL AND country IN ('AR', 'MX', 'CL', 'CO', 'BR', 'PE', 'US')"
-      )
-      .select("url", "country")
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "(\\?|#).*", "")
-      )
-      .withColumn("day", lit(day.replace("/", "")))
-      .write
-      .format("parquet")
-      .partitionBy("day", "country")
-      .mode("append")
-      .save("/datascience/data_url_classifier/untagged_urls/")
+    val data_filtered = data.select("url", "tagged", "share_data", "event_type", "country")
+                            .filter("event_type IN ('pv', 'batch', 'data') AND tagged IS NULL AND share_data == '1' AND url IS NOT NULL AND country IN ('AR', 'MX', 'CL', 'CO', 'BR', 'PE', 'US')"
+                            )
+                            .select("url", "country")
+
+    val data_processed = UrlUtils.processURL(dfURL = joint, field = "referer")
+
+    data_processed.withColumn("day", lit(day.replace("/", "")))
+                  .write
+                  .format("parquet")
+                  .partitionBy("day", "country")
+                  .mode("append")
+                  .save("/datascience/data_url_classifier/untagged_urls/")
 
   }
 
