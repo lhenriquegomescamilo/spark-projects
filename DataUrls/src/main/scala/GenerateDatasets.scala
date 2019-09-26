@@ -141,7 +141,31 @@ object GenerateDatasetsUrls {
                                                       "inner",
                                                       name = "dataset_segments_branded_training")
 
+  }
 
+
+type OptionMap = Map[Symbol, Int]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--ndays" :: value :: tail =>
+        nextOption(map ++ Map('ndays -> value.toInt), tail)
+      case "--since" :: value :: tail =>
+        nextOption(map ++ Map('since -> value.toInt), tail)
+      case "--country" :: value :: tail =>
+        nextOption(map ++ Map('country -> value.toString), tail)
+      case "--train" :: value :: tail =>
+        nextOption(map ++ Map('train -> value.toString), tail)
+      case "--expansion" :: value :: tail =>
+        nextOption(map ++ Map('expansion -> value.toString), tail)  
+      case "--ndaysDataset" :: value :: tail =>
+        nextOption(map ++ Map('ndaysDataset -> value.toInt), tail)  
+    }
   }
 
  def main(args: Array[String]) {
@@ -153,13 +177,14 @@ object GenerateDatasetsUrls {
       .getOrCreate()
 
     // Parseo de parametros
-    val ndays = if (args.length > 0) args(0).toInt else 10
-    val since = if (args.length > 1) args(1).toInt else 1
-    val country = if (args.length > 2) args(2).toString else ""
-    val train = if (args.length > 3) args(3).toString else "false"
-    val expansion = if (args.length > 4) args(4).toString else "false"
-    val ndays_dataset = if (args.length > 5) args(5).toInt else 30
-     
+    val options = nextOption(Map(), args.toList)
+    val nDays = if (options.contains('nDays)) options('nDays) else 10
+    val since = if (options.contains('since)) options('since) else 1
+    val country = if (options.contains('since)) options('since) else ""
+    val train = if (options.contains('since)) options('since) else "false"
+    val expansion = if (options.contains('since)) options('since) else "false"
+    val ndays_dataset = if (options.contains('since)) options('since) else "30"
+    
     val data_urls = UrlUtils.get_data_urls(spark, ndays_dataset, since, country)
 
     // Training datasets
