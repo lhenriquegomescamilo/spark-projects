@@ -183,7 +183,7 @@ type OptionMap = Map[Symbol, String]
     val country = if (options.contains('country)) options('country).toString else ""
     val train = if (options.contains('train)) options('train).toString else "false"
     val expansion = if (options.contains('expansion)) options('expansion).toString else "false"
-    val ndays_dataset = if (options.contains('ndaysDataset)) options('ndaysDataset).toInt else "30"
+    val ndays_dataset = if (options.contains('ndaysDataset)) options('ndaysDataset).toInt else 30
     
     val data_urls = UrlUtils.get_data_urls(spark, ndays_dataset, since, country)
 

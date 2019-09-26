@@ -72,7 +72,7 @@ object DatasetTimestamp {
       .partitionBy("country")
       .save("/datascience/data_url_classifier/%s".format(name))
 
-    df
+    joint
   }
 
   def main(args: Array[String]) {
