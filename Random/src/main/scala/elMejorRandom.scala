@@ -385,6 +385,29 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-aggregations_ua(spark)
+//Estos son los devices que hicieron match con TAPAD.
+//Vamos a considerarlos como usuarios únicos
+val matched = spark.read.format("csv").option("header",false).option("delimiter",",").load("/datascience/audiences/crossdeviced/devices_by_country_II_xd").select("_c0","_c4").toDF("device_id","country").withColumn("device_id",upper(col("device_id"))).dropDuplicates()
+
+
+val ar = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_AR_II")
+val cl = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_CL_II")
+val mx = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_MX_II")
+
+val all_data = List(ar,cl,mx).reduce(_.unionByName (_)).withColumn("device_id",upper(col("device_id")))
+
+val all_data_unique =  matched.join(matched,Seq("device_id"))
+
+all_data_unique.withColumn("segments",explode(split(col("segments"),",")))
+    .groupBy("brand","segments","country")
+    .agg(countDistinct("device_id") as "segment_count") 
+    .write.format("csv")    
+    .option("header",true)    
+    .option("delimiter","\t")    
+    .mode(SaveMode.Overwrite)    
+    .save("/datascience/misc/all_data_unique_seg_brand")
+
+
+
   }
 }
