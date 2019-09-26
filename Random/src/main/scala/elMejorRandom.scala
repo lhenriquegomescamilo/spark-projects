@@ -317,7 +317,7 @@ df_count
 
 def aggregations_ua ( spark: SparkSession){
 
-  val ua_ar = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d")
+  val ua_ar = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_AR_II")
 
 
   ua_ar.withColumn("segments",explode(split(col("segments"),",")))
@@ -327,10 +327,10 @@ def aggregations_ua ( spark: SparkSession){
     .option("header",true)    
     .option("delimiter","\t")    
     .mode(SaveMode.Overwrite)    
-    .save("/datascience/misc/ua_agg_segments_BRAND_30d_AR")
+    .save("/datascience/misc/ua_agg_segments_BRAND_30d_AR_II")
 
 
- val ua_cl = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_CL")
+ val ua_cl = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_CL_II")
 
 
   ua_cl.withColumn("segments",explode(split(col("segments"),",")))
@@ -340,10 +340,10 @@ def aggregations_ua ( spark: SparkSession){
     .option("header",true)    
     .option("delimiter","\t")    
     .mode(SaveMode.Overwrite)    
-    .save("/datascience/misc/ua_agg_segments_BRAND_30d_CL")   
+    .save("/datascience/misc/ua_agg_segments_BRAND_30d_CL_II")   
 
 
- val ua_mx = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_MX")
+ val ua_mx = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_MX_II")
 
 
   ua_mx.withColumn("segments",explode(split(col("segments"),",")))
@@ -353,7 +353,7 @@ def aggregations_ua ( spark: SparkSession){
     .option("header",true)    
     .option("delimiter","\t")    
     .mode(SaveMode.Overwrite)    
-    .save("/datascience/misc/ua_agg_segments_BRAND_30d_MX")
+    .save("/datascience/misc/ua_agg_segments_BRAND_30d_MX_II")
  
 }
 def equifax_count ( spark: SparkSession){
@@ -385,6 +385,6 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-get_ua_segments(spark)
+aggregations_ua(spark)
   }
 }
