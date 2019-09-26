@@ -42,7 +42,7 @@ object UrlUserTriplets {
 
     val data_referer = getDataUrls(spark, nDays, from)
       .select("device_id", "url", "referer")
-      .withCoulumnRenamed("referer", "url")
+      .withColumnRenamed("referer", "url")
       .distinct()
 
     // Now we save the data
