@@ -144,7 +144,7 @@ object GenerateDatasetsUrls {
   }
 
 
-type OptionMap = Map[Symbol, Int]
+type OptionMap = Map[Symbol, String]
 
   /**
     * This method parses the parameters sent.
