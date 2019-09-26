@@ -121,7 +121,7 @@ object DatasetKeywordContent {
     // Preprocess urls
     //val filtered_join = UrlUtils.processURL(dfURL = joint, field = "url")
 
-    filtered_join.write
+    joint.write
       .format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
