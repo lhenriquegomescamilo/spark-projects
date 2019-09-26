@@ -178,12 +178,12 @@ type OptionMap = Map[Symbol, String]
 
     // Parseo de parametros
     val options = nextOption(Map(), args.toList)
-    val nDays = if (options.contains('nDays)) options('nDays).toInt else 10
+    val ndays = if (options.contains('ndays)) options('ndays).toInt else 10
     val since = if (options.contains('since)) options('since).toInt else 1
-    val country = if (options.contains('since)) options('since).toString else ""
-    val train = if (options.contains('since)) options('since).toString else "false"
-    val expansion = if (options.contains('since)) options('since).toString else "false"
-    val ndays_dataset = if (options.contains('since)) options('since).toString else "30"
+    val country = if (options.contains('country)) options('country).toString else ""
+    val train = if (options.contains('train)) options('train).toString else "false"
+    val expansion = if (options.contains('expansion)) options('expansion).toString else "false"
+    val ndays_dataset = if (options.contains('ndaysDataset)) options('ndaysDataset).toInt else "30"
     
     val data_urls = UrlUtils.get_data_urls(spark, ndays_dataset, since, country)
 
