@@ -402,6 +402,7 @@ val all_data = List(ar,cl,mx).reduce(_.unionByName (_)).withColumn("device_id",u
 
 val all_data_unique =  matched.join(all_data,Seq("device_id","country"))
 
+/*
 all_data_unique.withColumn("segments",explode(split(col("segments"),",")))
     .groupBy("brand","model","segments","country")
     .agg(countDistinct("device_id") as "segment_count") 
@@ -411,7 +412,8 @@ all_data_unique.withColumn("segments",explode(split(col("segments"),",")))
     .mode(SaveMode.Overwrite)    
     .save("/datascience/misc/all_data_unique_seg_model")
 
-all_data.groupBy("brand","model","country")
+*/ 
+all_data_unique.groupBy("brand","model","country")
   .agg(countDistinct("device_id") as "market_share") 
   .write.format("csv")    
     .option("header",true)    
