@@ -101,7 +101,9 @@ object DatasetUserAgent {
 
     // Adding all features as a fake df in order to get all column names in the final df
     val final_df = joint.union(top_ua.withColumnRenamed("url_fake","url"))
-                        .withColumn("feature",regexp_replace(col("feature") ," ", "_")) // Removing spaces
+                        .withColumn("feature",regexp_replace(col("feature") ," ", "_"))
+                        .withColumn("feature",regexp_replace(col("feature") ,"(", ""))
+                        .withColumn("feature",regexp_replace(col("feature") ,")", ""))
 
     // Groupby and pivot by user agent
     final_df.groupBy("url")
@@ -132,7 +134,7 @@ object DatasetUserAgent {
     val country = if (args.length > 2) args(2).toString else ""
     val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
 
-    val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR/")
-    get_url_user_agent(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner",name="dataset_user_agent_training")
+    val untagged_df = UrlUtils.get_data_untagged(spark,ndays,since,country)
+    get_url_user_agent(spark, country = country, since = since, ndays = ndays, gtDF = untagged_df, joinType = "inner",name="dataset_user_agent_expansion")
   }
 }
