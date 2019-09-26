@@ -64,18 +64,12 @@ object DatasetKeywordContent {
       .withColumnRenamed("_c3", "content_keys")
       .withColumnRenamed("_c4", "scores")
       .withColumn("content_keys", split(col("content_keys"), " "))
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "(\\?|#).*", "")
-      )
       .drop("count", "scores")
       .dropDuplicates("url")
 
-    df
+    val filtered_df = UrlUtils.processURL(dfURL = df, field = "url")
+
+    filtered_df
   }
 
   def get_url_content(
@@ -125,7 +119,7 @@ object DatasetKeywordContent {
       .dropDuplicates()
 
     // Preprocess urls
-    val filtered_join = UrlUtils.processURL(dfURL = joint, field = "url")
+    //val filtered_join = UrlUtils.processURL(dfURL = joint, field = "url")
 
     filtered_join.write
       .format("parquet")

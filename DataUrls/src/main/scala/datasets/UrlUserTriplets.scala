@@ -1,5 +1,13 @@
 package main.scala.datasets
 
+import main.scala.datasets.{
+  DatasetKeywordContent,
+  DatasetReferer,
+  DatasetTimestamp,
+  DatasetUserAgent,
+  DatasetSegmentsBranded,
+  UrlUtils
+}
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
 import org.apache.spark.sql.{SaveMode, DataFrame, SparkSession}
@@ -30,15 +38,17 @@ object UrlUserTriplets {
     // Load the data from data_urls pipeline
     val data_urls = getDataUrls(spark, nDays, from)
       .select("device_id", "url", "country")
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
-      .groupBy("device_id", "url", "country")
-      .count()
+      .distinct()
+
+    val data_referer = getDataUrls(spark, nDays, from)
+      .select("device_id", "url", "referer")
+      .withColumnRenamed("referer", "url")
+      .distinct()
 
     // Now we save the data
-    data_urls.write
+    UrlUtils
+      .processURL(data_urls, field = "url")
+      .write
       .format("parquet")
       .partitionBy("country")
       .mode(SaveMode.Overwrite)

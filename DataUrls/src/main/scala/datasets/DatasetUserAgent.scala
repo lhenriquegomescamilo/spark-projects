@@ -113,6 +113,7 @@ object DatasetUserAgent {
 
     // Adding all features as a fake df in order to get all column names in the final df
     val final_df = joint.union(top_ua.withColumnRenamed("url_fake","url"))
+                        .withColumn("feature",regexp_replace(col("sentence") ," ", "_")) // Removing spaces
 
     // Groupby and pivot by user agent
     final_df.groupBy("url")
@@ -121,8 +122,7 @@ object DatasetUserAgent {
           .na.fill(0)
           .withColumn("country",lit(country))
           .write
-          .format("csv") // Using csv because there are problems saving in parquet with spaces in column names
-          .option("header","true")
+          .format("parquet")
           .mode(SaveMode.Overwrite)
           .partitionBy("country")
           .save("/datascience/data_url_classifier/%s".format(name))
