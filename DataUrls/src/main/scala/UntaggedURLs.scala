@@ -24,7 +24,7 @@ object UntaggedURLs {
       .distinct()
 
     val data_processed =
-      UrlUtils.processURL(dfURL = data_filtered, field = "url")
+      UrlUtils.processURL(dfURL = data_filtered, field = "url").distinct()
 
     data_processed
       .withColumn("day", lit(day.replace("/", "")))
