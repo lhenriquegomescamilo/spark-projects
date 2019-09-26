@@ -104,6 +104,7 @@ object DatasetUserAgent {
                         .withColumn("feature",regexp_replace(col("feature") ," ", "_"))
                         .withColumn("feature",regexp_replace(col("feature") ,"\\(", ""))
                         .withColumn("feature",regexp_replace(col("feature") ,"\\)", ""))
+                        .withColumn("feature",regexp_replace(col("feature") ,",", ""))
 
     // Groupby and pivot by user agent
     final_df.groupBy("url")
