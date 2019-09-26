@@ -154,17 +154,17 @@ type OptionMap = Map[Symbol, Int]
     list match {
       case Nil => map
       case "--ndays" :: value :: tail =>
-        nextOption(map ++ Map('ndays -> value.toInt), tail)
+        nextOption(map ++ Map('ndays -> value), tail)
       case "--since" :: value :: tail =>
-        nextOption(map ++ Map('since -> value.toInt), tail)
+        nextOption(map ++ Map('since -> value), tail)
       case "--country" :: value :: tail =>
-        nextOption(map ++ Map('country -> value.toString), tail)
+        nextOption(map ++ Map('country -> value), tail)
       case "--train" :: value :: tail =>
-        nextOption(map ++ Map('train -> value.toString), tail)
+        nextOption(map ++ Map('train -> value), tail)
       case "--expansion" :: value :: tail =>
-        nextOption(map ++ Map('expansion -> value.toString), tail)  
+        nextOption(map ++ Map('expansion -> value), tail)  
       case "--ndaysDataset" :: value :: tail =>
-        nextOption(map ++ Map('ndaysDataset -> value.toInt), tail)  
+        nextOption(map ++ Map('ndaysDataset -> value), tail)  
     }
   }
 
