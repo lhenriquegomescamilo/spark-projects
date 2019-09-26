@@ -135,6 +135,6 @@ object DatasetUserAgent {
     val country = "AR"
 
     val untagged_df = UrlUtils.get_data_untagged(spark,ndays,since,country)
-    get_url_user_agent(spark, country = country, since = since, ndays = 30, gtDF = untagged_df, joinType = "inner",name="dataset_user_agent_expansion")
+    get_url_user_agent(spark, country = country, since = since, ndays = ndays, gtDF = untagged_df, joinType = "inner",name="dataset_user_agent_expansion")
   }
 }
