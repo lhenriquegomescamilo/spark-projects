@@ -102,8 +102,8 @@ object DatasetUserAgent {
     // Adding all features as a fake df in order to get all column names in the final df
     val final_df = joint.union(top_ua.withColumnRenamed("url_fake","url"))
                         .withColumn("feature",regexp_replace(col("feature") ," ", "_"))
-                        .withColumn("feature",regexp_replace(col("feature") ,"(", ""))
-                        .withColumn("feature",regexp_replace(col("feature") ,")", ""))
+                        .withColumn("feature",regexp_replace(col("feature") ,"\\(", ""))
+                        .withColumn("feature",regexp_replace(col("feature") ,"\\)", ""))
 
     // Groupby and pivot by user agent
     final_df.groupBy("url")
