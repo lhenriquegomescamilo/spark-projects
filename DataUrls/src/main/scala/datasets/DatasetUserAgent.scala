@@ -58,18 +58,6 @@ object DatasetUserAgent {
 
   def get_url_user_agent(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,joinType:String,name:String): DataFrame =  {
 
-    /**
-    val top_ua = List("Android","Apple","C","C Plus","CAM-L03","Chrome","Chrome Mobile","Chrome Mobile WebView","Chrome Mobile iOS",
-                      "E (4) Plus","Edge","Facebook","Firefox","Firefox Mobile","G (4)","G (5)","G (5) Plus","G (5S) Plus","G3","Generic",
-                      "Generic_Android","H340AR","H440AR","Huawei","IE","IE Mobile","K120","K350","K430","LG","Lenovo","Linux","M250",
-                      "M700","Mac OS X","Mobile Safari","Mobile Safari UI/WKWebView","Motorola","Nexus 5","Nokia","Opera","Other","Pinterest",
-                      "SM-A105M","SM-A305G","SM-A505G","SM-A520F","SM-A720F","SM-G531M","SM-G532M","SM-G570M","SM-G610M","SM-G930F","SM-G935F",
-                      "SM-G950F","SM-G955F","SM-G9600","SM-G9650","SM-J111M","SM-J200M","SM-J260M","SM-J320M","SM-J400M","SM-J410G","SM-J415G",
-                      "SM-J510MN","SM-J600G","SM-J610G","SM-J700M","SM-J701M","SM-J710MN","SM-J810M","Safari","Samsung","Samsung Internet",
-                      "Smartphone","Ubuntu","Windows","Windows Phone","X230","X240","XiaoMi","iOS","iPad","iPhone","iPhone10,2","iPhone10,3"
-                      ,"iPhone10,5","iPhone11,8","iPhone7","iPhone8,1","iPhone8,2","iPhone8,4","iPhone9,1","iPhone9,2","iPhone9,3","iPhone9,4",
-                      "moto e5","moto e5 play")
-    **/
     // Defining top 100 urls to take
     val top_ua = spark.read.format("csv").option("header","true").load("/datascience/custom/top_user_agent.csv")
     val top_ua_b = broadcast(top_ua)

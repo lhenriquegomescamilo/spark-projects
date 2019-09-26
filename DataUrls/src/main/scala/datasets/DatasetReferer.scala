@@ -40,7 +40,6 @@ object DatasetReferer {
                       .agg(sum("count").as("count"))
                       
 
-
     // Then we join the data with the GT
     val joint = gtDF.join(data_urls, Seq("url"), joinType)
                     .select("device_id","url","referer","count")
