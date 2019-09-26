@@ -25,10 +25,10 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.spark.sql.types.{
- StructType,
- StructField,
- StringType,
- IntegerType
+  StructType,
+  StructField,
+  StringType,
+  IntegerType
 }
 
 object UrlUtils {
@@ -144,7 +144,12 @@ object UrlUtils {
     processURL(dfURL = urls, field = "url")
   }
 
-  def get_data_untagged(spark: SparkSession, ndays: Int, since: Int, country: String): DataFrame = {
+  def get_data_untagged(
+      spark: SparkSession,
+      ndays: Int,
+      since: Int,
+      country: String
+  ): DataFrame = {
     // Configuraciones de spark
     val sc = spark.sparkContext
     val conf = sc.hadoopConfiguration
@@ -161,7 +166,12 @@ object UrlUtils {
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    val untagged = spark.read.option("basePath", path).parquet(hdfs_files: _*).select("url")
+    val untagged =
+      spark.read
+        .option("basePath", path)
+        .parquet(hdfs_files: _*)
+        .select("url")
+        .distinct()
 
     untagged
   }
@@ -171,7 +181,7 @@ object UrlUtils {
     val spark = SparkSession.builder
       .appName("Data URLs: Utils")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
-      .config("spark.sql.sources.partitionOverwriteMode","dynamic")
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
   }
 }

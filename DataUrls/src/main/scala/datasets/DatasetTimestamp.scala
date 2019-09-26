@@ -12,46 +12,66 @@ import org.apache.spark.sql.{SaveMode, DataFrame}
 
 object DatasetTimestamp {
 
-  def get_url_timestamp(spark: SparkSession,ndays: Int,since: Int,country: String,gtDF: DataFrame,
-                        joinType:String,df_urls: DataFrame, name:String): DataFrame =  {
-    
-    // First we get the data from urls (<url, time>)
-    val data_urls = df_urls.select("url","time")
-                                  
-    // Join with the GT dataframe
-    val joint = gtDF.join(data_urls,Seq("url"),joinType)
-                    .select("url","time")
-                    .withColumn("country",lit(country))
-                    .dropDuplicates()
-                    
+  def get_url_timestamp(
+      spark: SparkSession,
+      ndays: Int,
+      since: Int,
+      country: String,
+      gtDF: DataFrame,
+      joinType: String,
+      df_urls: DataFrame,
+      name: String
+  ): DataFrame = {
     // Generate dataset with columns weekday and hour
-    val myUDF = udf((weekday: String, hour: String) => if (weekday == "Sunday" || weekday == "Saturday") "weekend" else "week")
+    val myUDF = udf(
+      (weekday: String, hour: String) =>
+        if (weekday == "Sunday" || weekday == "Saturday") "weekend" else "week"
+    )
 
-    val myUDFTime = udf((hour: String) =>   if (List("09","10","11","12","13").contains(hour)) "morning" 
-                                            else if (List("14","15","16","17","18","19","20","21").contains(hour)) "afternoon"
-                                                  else "night")
+    val myUDFTime = udf(
+      (hour: String) =>
+        if (List("09", "10", "11", "12", "13").contains(hour)) "morning"
+        else if (List("14", "15", "16", "17", "18", "19", "20", "21")
+                   .contains(hour)) "afternoon"
+        else "night"
+    )
 
-    val UDFFinal = udf((daytime: String, wd:String) => "%s_%s".format(daytime,wd))
+    val UDFFinal = udf(
+      (daytime: String, wd: String) => "%s_%s".format(daytime, wd)
+    )
 
-    val df = joint.withColumn("Hour", date_format(col("time"), "HH"))
-                  .withColumn("Weekday", date_format(col("time"), "EEEE"))
-                  .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
-                  .withColumn("daytime", myUDFTime(col("Hour")))
-                  .withColumn("feature",UDFFinal(col("daytime"),col("wd")))
-                  .select("url","feature")
+    // First we get the data from urls (<url, time>)
+    val data_urls = df_urls
+      .select("url", "time")
+      .withColumn("Hour", date_format(col("time"), "HH"))
+      .withColumn("Weekday", date_format(col("time"), "EEEE"))
+      .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
+      .withColumn("daytime", myUDFTime(col("Hour")))
+      .withColumn("feature", UDFFinal(col("daytime"), col("wd")))
+      .select("url", "feature")
+      .distinct()
+
+    // Join with the GT dataframe
+    val joint = gtDF
+      .join(data_urls, Seq("url"), joinType)
+      .select("url", "feature")
+      .withColumn("country", lit(country))
 
     // Groupby and pivot by timestamp feature
-    df.groupBy("url","feature").count()
+    joint
+      .withColumn("count", lit(1))
       .groupBy("url")
       .pivot("feature")
       .agg(sum("count"))
-      .na.fill(0)
-      .withColumn("country",lit(country))
-      .write.format("parquet")
+      .na
+      .fill(0)
+      .withColumn("country", lit(country))
+      .write
+      .format("parquet")
       .mode(SaveMode.Overwrite)
       .partitionBy("country")
       .save("/datascience/data_url_classifier/%s".format(name))
-      
+
     df
   }
 
@@ -60,7 +80,7 @@ object DatasetTimestamp {
     val spark = SparkSession.builder
       .appName("Data URLs: Dataset Timestamp")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
-      .config("spark.sql.sources.partitionOverwriteMode","dynamic")
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
     // Parseo de parametros
@@ -71,7 +91,15 @@ object DatasetTimestamp {
 
     val data_urls = UrlUtils.get_data_urls(spark, ndays, since, country)
     val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR")
-    get_url_timestamp(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", df_urls = data_urls,
-                      name = "dataset_segments_branded_training")
+    get_url_timestamp(
+      spark,
+      country = country,
+      since = since,
+      ndays = ndays,
+      gtDF = gtDF,
+      joinType = "inner",
+      df_urls = data_urls,
+      name = "dataset_segments_branded_training"
+    )
   }
 }
