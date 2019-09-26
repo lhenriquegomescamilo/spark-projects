@@ -108,12 +108,12 @@ object UrlUtils {
     // Finally, we remove the querystring and protocol
     filtered_retargetly
       .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+        field,
+        regexp_replace(col(field), "http.*://(.\\.)*(www\\.){0,1}", "")
       )
       .withColumn(
-        "url",
-        regexp_replace(col("url"), "(\\?|#).*", "")
+        field,
+        regexp_replace(col(field), "(\\?|#).*", "")
       )
   }
 
