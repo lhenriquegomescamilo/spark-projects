@@ -15,19 +15,24 @@ object UntaggedURLs {
       .option("header", "true")
       .load("/data/eventqueue/%s/".format(day))
 
-    val data_filtered = data.select("url", "tagged", "share_data", "event_type", "country")
-                            .filter("event_type IN ('pv', 'batch', 'data') AND tagged IS NULL AND share_data == '1' AND url IS NOT NULL AND country IN ('AR', 'MX', 'CL', 'CO', 'BR', 'PE', 'US')"
-                            )
-                            .select("url", "country")
+    val data_filtered = data
+      .select("url", "tagged", "share_data", "event_type", "country")
+      .filter(
+        "event_type IN ('pv', 'batch', 'data') AND tagged IS NULL AND share_data == '1' AND url IS NOT NULL AND country IN ('AR', 'MX', 'CL', 'CO', 'BR', 'PE', 'US')"
+      )
+      .select("url", "country")
+      .distinct()
 
-    val data_processed = UrlUtils.processURL(dfURL = data_filtered, field = "url")
+    val data_processed =
+      UrlUtils.processURL(dfURL = data_filtered, field = "url")
 
-    data_processed.withColumn("day", lit(day.replace("/", "")))
-                  .write
-                  .format("parquet")
-                  .partitionBy("day", "country")
-                  .mode("append")
-                  .save("/datascience/data_url_classifier/untagged_urls/")
+    data_processed
+      .withColumn("day", lit(day.replace("/", "")))
+      .write
+      .format("parquet")
+      .partitionBy("day", "country")
+      .mode("append")
+      .save("/datascience/data_url_classifier/untagged_urls/")
 
   }
 
