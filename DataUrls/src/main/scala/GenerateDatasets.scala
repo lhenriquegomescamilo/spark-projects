@@ -32,14 +32,14 @@ object GenerateDatasetsUrls {
                                                       joinType = "inner",
                                                       name = "dataset_keyword_content_expansion")
 
-    val data_referer = DatasetReferer.get_url_referer(spark,
-                                                      country = country,
-                                                      since = since,
-                                                      ndays = ndays,
-                                                      gtDF = untagged_df,
-                                                      joinType = "inner",
-                                                      df_urls = data_urls,
-                                                      name = "dataset_referer_expansion")
+    // val data_referer = DatasetReferer.get_url_referer(spark,
+    //                                                   country = country,
+    //                                                   since = since,
+    //                                                   ndays = ndays,
+    //                                                   gtDF = untagged_df,
+    //                                                   joinType = "inner",
+    //                                                   df_urls = data_urls,
+    //                                                   name = "dataset_referer_expansion")
 
     val data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
                                                       country = country,
