@@ -19,6 +19,7 @@ import org.apache.spark.sql.functions.{
   to_timestamp,
   from_unixtime,
   date_format,
+  lower,
   sum
 }
 import org.apache.hadoop.fs.Path
@@ -114,7 +115,9 @@ object UrlUtils {
       .withColumn(
         field,
         regexp_replace(col(field), "(\\?|#).*", "")
-      ).drop("domain")
+      )
+      .drop("domain")
+      .withColumn(field,lower(col(field))))
   }
 
   def get_data_urls(
