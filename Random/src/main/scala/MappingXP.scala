@@ -70,6 +70,6 @@ object MappingXP {
 
     val countries = List("MX", "AR", "CL", "CO", "PE", "US")
 
-    countries.map(c => processCountry(c))
+    countries.map(c => processCountry(spark, c))
   }
 }
