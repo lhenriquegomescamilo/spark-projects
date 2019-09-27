@@ -107,15 +107,6 @@ object GenerateDatasetsUrls {
                                                         joinType = "inner",
                                                         name = "dataset_keyword_content_training")
 
-    var data_referer = DatasetReferer.get_url_referer(spark,
-                                                        country = country,
-                                                        since = since,
-                                                        ndays = ndays_dataset,
-                                                        gtDF = gtDF,
-                                                        joinType = "inner",
-                                                        df_urls = data_urls,
-                                                        name = "dataset_referer_training" )
-
     var data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
                                                         country = country,
                                                         since = since,
