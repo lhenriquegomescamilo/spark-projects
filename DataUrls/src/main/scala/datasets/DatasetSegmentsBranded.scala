@@ -83,7 +83,7 @@ object DatasetSegmentsBranded {
       .format("parquet")
       .mode(SaveMode.Overwrite)
       .save(
-        "/datascience/data_url_classifier/triplets_%s"
+        "/datascience/data_url_classifier/dataset_user_segments_branded_%s"
           .format(name.split("_").last)
       )
 
