@@ -21,6 +21,7 @@ object Randomcito {
     filters.repartition(1).write
         .mode("overwrite")
         .format("csv")
+        .option("header", "true")
         .option("sep", ";")
         .save("/datascience/data_audiences_temporal")
   }
