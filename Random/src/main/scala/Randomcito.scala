@@ -20,7 +20,8 @@ object Randomcito {
 
     filters.write
         .mode("overwrite")
-        .format("parquet")
+        .format("csv")
+        .option("sep", ";")
         .save("/datascience/data_audiences_temporal")
   }
 
