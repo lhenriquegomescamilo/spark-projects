@@ -39,7 +39,14 @@ object MappingXP {
 
     val mappingUDF = udf(
       (segments: String) =>
-        segments.split(",").map(segment => segmentMap(segment)).mkString(",")
+        segments
+          .split(",")
+          .map(
+            segment =>
+              if (segmentMap.contains(segment)) segmentMap(segment)
+              else segment
+          )
+          .mkString(",")
     )
     data
       .withColumn("_c2", mappingUDF(col("_c1")))
