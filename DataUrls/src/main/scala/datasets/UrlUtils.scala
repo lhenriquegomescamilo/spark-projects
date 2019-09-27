@@ -114,7 +114,7 @@ object UrlUtils {
       .withColumn(
         field,
         regexp_replace(col(field), "(\\?|#).*", "")
-      )
+      ).drop("domain")
   }
 
   def get_data_urls(
