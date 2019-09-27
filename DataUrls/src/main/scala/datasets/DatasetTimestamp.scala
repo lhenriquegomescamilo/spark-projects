@@ -48,18 +48,17 @@ object DatasetTimestamp {
       .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
       .withColumn("daytime", myUDFTime(col("Hour")))
       .withColumn("feature", UDFFinal(col("daytime"), col("wd")))
-      .select("url", "feature")
-      .distinct()
+      .groupBy("url", "feature")
+      .count()
 
     // Join with the GT dataframe
     val joint = gtDF
       .join(data_urls, Seq("url"), joinType)
-      .select("url", "feature")
+      .select("url", "feature","count")
       .withColumn("country", lit(country))
 
     // Groupby and pivot by timestamp feature
     joint
-      .withColumn("count", lit(1))
       .groupBy("url")
       .pivot("feature")
       .agg(sum("count"))
