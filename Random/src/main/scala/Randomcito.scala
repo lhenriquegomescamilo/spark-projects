@@ -18,7 +18,7 @@ object Randomcito {
         .agg(count("*").as("Cantidad"))
         .orderBy("id_partner", "share_data")
 
-    filters.reparrtition(1).write
+    filters.repartition(1).write
         .mode("overwrite")
         .format("csv")
         .option("sep", ";")
