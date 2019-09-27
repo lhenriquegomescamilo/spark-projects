@@ -32,7 +32,7 @@ object Randomcito {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    download_data(spark)
+    process_data(spark)
   }
 
 }
