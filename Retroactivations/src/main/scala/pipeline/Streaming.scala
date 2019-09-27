@@ -50,7 +50,7 @@ object Streaming {
       """device_id, id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
                      search_keyword, tags, track_code, campaign_name, campaign_id, site_id, time,
                      placement_id, advertiser_name, advertiser_id, app_name, app_installed,
-                     version, country, activable"""
+                     version, country, activable, share_data"""
         .replace("\n", "")
         .replace(" ", "")
         .split(",")
