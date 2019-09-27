@@ -23,7 +23,7 @@ object MappingXP {
   def processCountry(
       spark: SparkSession,
       country: String
-  ): DataFrame = {
+  ) = {
     val data = spark.read
       .format("csv")
       .option("sep", "\t")
