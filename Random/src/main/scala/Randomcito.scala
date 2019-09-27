@@ -14,11 +14,11 @@ object Randomcito {
     .option("basePath", "/datascience/data_audiences_streaming_5/")
     .load("/datascience/data_audiences_streaming_5/hour=20190924*")
     
-    test.groupBy("id_partner","share_data")
+    val filters = test.groupBy("id_partner","share_data")
         .agg(count("*").as("Cantidad"))
         .orderBy("id_partner", "share_data")
 
-    test.write
+    filters.write
         .mode("overwrite")
         .format("parquet")
         .save("/datascience/data_audiences_temporal")
