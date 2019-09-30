@@ -183,7 +183,7 @@ object GetDataForAudience {
           .load("/datascience/misc/maids_mcdonalds.csv")
           .distinct()
   
-      val joint = data_audience
+      val joint = data_segments
         .join(broadcast(maids), Seq("device_id"))
 
       joint.write
