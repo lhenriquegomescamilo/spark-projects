@@ -414,7 +414,7 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
 
-
+get_ua_urls(spark)
 
   }
 }
