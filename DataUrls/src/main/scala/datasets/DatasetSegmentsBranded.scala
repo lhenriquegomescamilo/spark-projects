@@ -89,7 +89,7 @@ object DatasetSegmentsBranded {
 
     // Then we get the data from the url - user triplets (<device_id, url, count>)
     val data_url_user = spark.read
-      .load("/datascience/data_triplets/urls/country=%s/".format(country))
+      .load("/datascience/data_triplets/urls/country=%s/".format(country)).drop("domain")
       
     val filtered_url_user = UrlUtils.processURL(dfURL = data_url_user, field = "url")
 
