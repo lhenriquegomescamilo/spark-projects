@@ -58,7 +58,7 @@ def getDataPipeline(
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/country=%s".format(day,country_iso)) //
+      .map(day => path + "/day=%s/country=%s".format(day,country)) //
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
@@ -77,14 +77,14 @@ def get_ua_segments(spark:SparkSession) = {
 
 
 
-val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1")
+val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1","MX")
         .filter("model != ''") //con esto filtramos los desktop
         .withColumn("device_id",upper(col("device_id")))
         .drop("user_agent","event_type","url")
         .dropDuplicates("device_id")        
         //.filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
 
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","15","1")
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","15","1","MX")
               .withColumn("device_id",upper(col("device_id")))
               .groupBy("device_id").agg(concat_ws(",",collect_set("feature")) as "segments")
 
@@ -114,7 +114,7 @@ val urls = getDataPipeline(spark,"/datascience/data_triplets/urls/","10","1",cou
               .withColumn("device_id",upper(col("device_id")))
               .groupBy("device_id").agg(concat_ws(",",collect_set("url")) as "urls")
 
-val joined = ua.join(segments,Seq("device_id"))
+val joined = ua.join(urls,Seq("device_id"))
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
@@ -386,7 +386,7 @@ def aggregations_ua ( spark: SparkSession){
 }
 def equifax_count ( spark: SparkSession){
 
-  val segments_new = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30")
+  val segments_new = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30","AR")
 
 val theNSE_new = segments_new.filter(col("feature") isin (35360,35361,35362, 35363))
 
@@ -396,7 +396,7 @@ theNSE_new.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
 .save("/datascience/misc/equifax_count_AR_new")
 
 
-val segments_old = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30")
+val segments_old = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30","AR")
 
 val theNSE_old = segments_old.filter(col("feature") isin (35360,35361,35362, 35363))
 
