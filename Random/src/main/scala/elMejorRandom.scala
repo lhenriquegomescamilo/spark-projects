@@ -114,7 +114,7 @@ val urls = getDataPipeline(spark,"/datascience/data_triplets/urls/","10","1",cou
               .withColumn("device_id",upper(col("device_id")))
               .groupBy("device_id").agg(concat_ws(",",collect_set("url")) as "urls")
 
-val joined = ua.join(segments,Seq("device_id"))
+val joined = ua.join(urls,Seq("device_id"))
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
@@ -386,7 +386,7 @@ def aggregations_ua ( spark: SparkSession){
 }
 def equifax_count ( spark: SparkSession){
 
-  val segments_new = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30")
+  val segments_new = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30","AR")
 
 val theNSE_new = segments_new.filter(col("feature") isin (35360,35361,35362, 35363))
 
@@ -396,7 +396,7 @@ theNSE_new.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
 .save("/datascience/misc/equifax_count_AR_new")
 
 
-val segments_old = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30")
+val segments_old = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30","AR")
 
 val theNSE_old = segments_old.filter(col("feature") isin (35360,35361,35362, 35363))
 
