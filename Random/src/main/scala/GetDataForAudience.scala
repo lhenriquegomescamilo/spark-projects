@@ -161,6 +161,38 @@ object GetDataForAudience {
       .save("/datascience/custom/votaciones_2019_segments")
   }
 
+/**
+    *
+    *
+    *
+    *
+    *        DATA DE ENCUESTAS DE LAS VOTACIONES
+    *
+    *
+    *
+    *
+    */
+    def getDataMaids(spark: SparkSession) = {
+      val data_segments = getDataTriplets(spark, "MX")
+      
+      val maids =
+        spark.read
+          .format("csv")
+          .option("sep", ",")
+          .option("header", "true")
+          .load("/datascience/misc/maids_mcdonalds.csv")
+          .withColumnRenamed("maid", "device_id")
+  
+      val joint = data_segments
+        .join(broadcast(maids), Seq("device_id"))
+
+      joint.write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/misc/maids_mcdonalds_segments")
+    }
+
+
   /**
     *
     *
@@ -235,7 +267,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataVotaciones(spark = spark)
+    getDataMaids(spark = spark)
 
   }
 }
