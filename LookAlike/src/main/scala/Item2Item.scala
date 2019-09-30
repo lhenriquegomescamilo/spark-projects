@@ -74,8 +74,6 @@ object Item2Item {
     println("LOOKALIKE LOG: Jobs to process = " + filesToProcess.length.toString)
 
     for (file <- filesToProcess){
-    //if(filesToProcess.length > 0){
-    //  var file = filesToProcess.head
       var filename = file._1
       var fileToProcess = pathToProcess + filename
       var fileInProcess = pathInProcess + filename
@@ -325,6 +323,7 @@ object Item2Item {
       var norm = if(colNorms.apply(j) > 0) colNorms.apply(j) else 1.0
       if (i!=j) localMartix.apply(i, j) / norm else diagonalValue
     }
+    println("Lookalike LOG: Similarity Matrix - elements non-zero per columns: %s".format(localMartix.colIter.map(col => col.numNonzeros ).toArray)
     localMartix = new DenseMatrix(nRows, nCols, values.toArray)
     localMartix
   }
