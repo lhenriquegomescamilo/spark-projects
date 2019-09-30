@@ -130,7 +130,7 @@ object DatasetUserAgent {
       .getOrCreate()
 
     // Parseo de parametros
-    val ndays =  1
+    val ndays =  30
     val since =  1
     val country = "AR"
 
