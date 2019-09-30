@@ -95,7 +95,6 @@ object DatasetSegmentsBranded {
 
     // Then we join both datasets
     val joint = data_segments
-      .drop("count")
       .join(filtered_url_user, Seq("device_id"), "inner")
       .withColumnRenamed("feature", "segment")
 
