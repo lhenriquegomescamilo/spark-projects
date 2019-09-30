@@ -181,7 +181,7 @@ object GetDataForAudience {
           .option("sep", ",")
           .option("header", "true")
           .load("/datascience/misc/maids_mcdonalds.csv")
-          .distinct()
+          .withColumnRenamed("maid", "device_id")
   
       val joint = data_segments
         .join(broadcast(maids), Seq("device_id"))
