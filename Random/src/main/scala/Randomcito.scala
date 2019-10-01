@@ -38,11 +38,11 @@ object Randomcito {
     //input.orderBy("device_id")
       .repartition(1)
       .write
-      .format("csv")
+      .format("parquet")
       .mode("overwrite")
-      .option("sep", "\t")
-      .option("header", "true")
-      .option("compression", "gzip")
+      //.option("sep", "\t")
+      //.option("header", "true")
+      //.option("compression", "gzip")
       .save("/datascience/data_audiences_temporal/prueba_pq/")
   }
 
