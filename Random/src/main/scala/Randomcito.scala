@@ -26,6 +26,22 @@ object Randomcito {
         .save("/datascience/data_audiences_temporal")
   }
 
+  def prueba_eq(spark: SparkSession) = {
+    val input = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load("/data/eventqueue/2019/10/01/1300.tsv.gz")
+
+    input.orderBy("device_type", "nav_type", "event_type", "data_type", "country", "site_id", "category")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .option("compression", "gzip")
+      .save("/datascience/data_audiences_temporal/prueba/")
+  }
+
   def main(args: Array[String]) {
 
     val spark = SparkSession.builder
@@ -34,7 +50,7 @@ object Randomcito {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    process_data(spark)
+    prueba_eq(spark)
   }
 
 }
