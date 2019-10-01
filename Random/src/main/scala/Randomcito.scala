@@ -38,7 +38,7 @@ object Randomcito {
     //input.orderBy("device_id")
       .repartition(1)
       .write
-      .format("parquet")
+      .format("orc")
       .mode("overwrite")
       //.option("sep", "\t")
       //.option("header", "true")
