@@ -36,6 +36,7 @@ object Randomcito {
     //input.orderBy("device_type", "nav_type", "event_type", "data_type", "country", "site_id", "category")
     input.orderBy("device_type", "device_id")
     //input.orderBy("device_id")
+      .repartition(1)
       .write
       .format("parquet")
       .mode("overwrite")
