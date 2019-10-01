@@ -34,7 +34,7 @@ object Randomcito {
       .load("/data/eventqueue/2019/10/01/1300.tsv.gz")
 
     //input.orderBy("device_type", "nav_type", "event_type", "data_type", "country", "site_id", "category")
-    input.orderBy("device_type", "nav_type", "event_type", "data_type")
+    input.orderBy("device_type", "event_type", "data_type")
     //input.orderBy("device_id")
       .write
       .format("parquet")
