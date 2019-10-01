@@ -33,10 +33,12 @@ object Randomcito {
       .option("header", "true")
       .load("/data/eventqueue/2019/10/01/1300.tsv.gz")
 
-    input.orderBy("device_type", "nav_type", "event_type", "data_type", "country", "site_id", "category")
+    //input.orderBy("device_type", "nav_type", "event_type", "data_type", "country", "site_id", "category")
+    input.orderBy("device_id")
       .repartition(1)
       .write
       .format("parquet")
+      .mode("overwrite")
       //.option("sep", "\t")
       //.option("header", "true")
       //.option("compression", "gzip")
