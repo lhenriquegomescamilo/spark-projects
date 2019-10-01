@@ -34,6 +34,7 @@ object Randomcito {
       .load("/data/eventqueue/2019/10/01/1300.tsv.gz")
 
     input.orderBy("device_type", "nav_type", "event_type", "data_type", "country", "site_id", "category")
+      .repartition(1)
       .write
       .format("csv")
       .option("sep", "\t")
