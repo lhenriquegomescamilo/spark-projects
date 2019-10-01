@@ -36,11 +36,11 @@ object Randomcito {
     input.orderBy("device_type", "nav_type", "event_type", "data_type", "country", "site_id", "category")
       .repartition(1)
       .write
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .option("compression", "gzip")
-      .save("/datascience/data_audiences_temporal/prueba/")
+      .format("parquet")
+      //.option("sep", "\t")
+      //.option("header", "true")
+      //.option("compression", "gzip")
+      .save("/datascience/data_audiences_temporal/prueba_pq/")
   }
 
   def main(args: Array[String]) {
