@@ -112,7 +112,7 @@ val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1",country_
 
 val urls = spark.read.format("parquet").load("/datascience/data_triplets/urls/country=%s".format(country_iso))
               .withColumn("device_id",upper(col("device_id")))
-              .groupBy("device_id").agg(concat_ws(",",collect_set("url")) as "urls")
+              .groupBy("device_id").agg(concat_ws(",",collect_set("url")) as "urls",concat_ws(",",collect_set("domain")) as "domains")
 
 val joined = ua.join(urls,Seq("device_id"))
 .write.format("csv")
@@ -120,6 +120,31 @@ val joined = ua.join(urls,Seq("device_id"))
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
 .save("/datascience/misc/ua_30d_w_url_%s".format(country_iso))
+
+val result = spark.read.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.load("/datascience/misc/ua_30d_w_url_%s".format(country_iso))
+
+result
+    .withColumn("segments",explode(split(col("segments"),",")))
+    .groupBy("brand","urls")
+    .agg(countDistinct("device_id") as "url_count") 
+    .write.format("csv")    
+    .option("header",true)    
+    .option("delimiter","\t")    
+    .mode(SaveMode.Overwrite)    
+    .save("/datascience/misc/ua_agg_url_%s".format(country_iso))
+
+result
+    .withColumn("segments",explode(split(col("segments"),",")))
+    .groupBy("brand","domains")
+    .agg(countDistinct("device_id") as "domains_count") 
+    .write.format("csv")    
+    .option("header",true)    
+    .option("delimiter","\t")    
+    .mode(SaveMode.Overwrite)    
+    .save("/datascience/misc/ua_agg_domain_%s".format(country_iso))    
         }
       }
 
