@@ -127,8 +127,8 @@ val result = spark.read.format("csv")
 .load("/datascience/misc/ua_30d_w_url_%s".format(country_iso))
 
 result
-    .withColumn("segments",explode(split(col("segments"),",")))
-    .groupBy("brand","urls")
+    .withColumn("url",explode(split(col("urls"),",")))
+    .groupBy("brand","url")
     .agg(countDistinct("device_id") as "url_count") 
     .write.format("csv")    
     .option("header",true)    
@@ -137,8 +137,8 @@ result
     .save("/datascience/misc/ua_agg_url_%s".format(country_iso))
 
 result
-    .withColumn("segments",explode(split(col("segments"),",")))
-    .groupBy("brand","domains")
+    .withColumn("domain",explode(split(col("domains"),",")))
+    .groupBy("brand","domain")
     .agg(countDistinct("device_id") as "domains_count") 
     .write.format("csv")    
     .option("header",true)    
