@@ -33,7 +33,7 @@ object Randomcito {
       .option("header", "true")
       .load("/data/eventqueue/2019/10/01/1300.tsv.gz")
 
-    input.orderBy("device_type", "event_type", "country", "site_id")
+    input.orderBy("time","device_type", "event_type", "country", "site_id")
     //input.orderBy("device_type", "device_id")
     //input.orderBy("device_id")
       .repartition(1)
