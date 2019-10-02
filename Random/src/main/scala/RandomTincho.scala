@@ -59,6 +59,7 @@ object RandomTincho {
       .option("header","true")
       .load(dfs: _*)
       .withColumnRenamed("kw", "kws")
+      .withColumnRenamed("url_raw", "url")
       .withColumn("kws", split(col("kws"), " "))
       .select("url","kws")
       .dropDuplicates("url")
