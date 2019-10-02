@@ -108,18 +108,43 @@ val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1",country_
         .withColumn("device_id",upper(col("device_id")))
         .drop("user_agent","event_type","url")
         .dropDuplicates("device_id")        
-        //.filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
+        //./datascience/data_triplets/urls/country=/"filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
 
-val urls = getDataPipeline(spark,"/datascience/data_triplets/urls/","10","1",country_iso)
+val urls = spark.read.format("parquet").load("/datascience/data_triplets/urls/country=%s".format(country_iso))
               .withColumn("device_id",upper(col("device_id")))
-              .groupBy("device_id").agg(concat_ws(",",collect_set("url")) as "urls")
+              .groupBy("device_id").agg(concat_ws(",",collect_set("url")) as "urls",concat_ws(",",collect_set("domain")) as "domains")
 
 val joined = ua.join(urls,Seq("device_id"))
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/misc/ua_30d_w_url_10d_%s".format(country_iso))
+.save("/datascience/misc/ua_30d_w_url_%s".format(country_iso))
+
+val result = spark.read.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.load("/datascience/misc/ua_30d_w_url_%s".format(country_iso))
+
+result
+    .withColumn("url",explode(split(col("urls"),",")))
+    .groupBy("brand","url")
+    .agg(countDistinct("device_id") as "url_count") 
+    .write.format("csv")    
+    .option("header",true)    
+    .option("delimiter","\t")    
+    .mode(SaveMode.Overwrite)    
+    .save("/datascience/misc/ua_agg_url_%s".format(country_iso))
+
+result
+    .withColumn("domain",explode(split(col("domains"),",")))
+    .groupBy("brand","domain")
+    .agg(countDistinct("device_id") as "domains_count") 
+    .write.format("csv")    
+    .option("header",true)    
+    .option("delimiter","\t")    
+    .mode(SaveMode.Overwrite)    
+    .save("/datascience/misc/ua_agg_domain_%s".format(country_iso))    
         }
       }
 

@@ -323,7 +323,7 @@ object Item2Item {
       var norm = if(colNorms.apply(j) > 0) colNorms.apply(j) else 1.0
       if (i!=j) localMartix.apply(i, j) / norm else diagonalValue
     }
-    println("Lookalike LOG: Similarity Matrix - elements non-zero per columns: %s".format(localMartix.colIter.map(col => col.numNonzeros ).toArray))
+    println(s"Lookalike LOG: Similarity Matrix - elements non-zero per columns: %s".format(localMartix.colIter.map(col => col.numNonzeros ).toList.toString))
     localMartix = new DenseMatrix(nRows, nCols, values.toArray)
     localMartix
   }
