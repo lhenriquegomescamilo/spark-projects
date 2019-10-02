@@ -567,17 +567,21 @@ object GetAudience {
     println("\n\n\n\n")
     filtered.explain()
 
-    // If the number of queries is big enough, we persist the data so that it is faster to query.
-    // [OUTDATED] THIS SECTION OF THE CODE IS NOT BEING USED, SINCE PERSISTING THE DATA TAKES
-    // MUCH MORE TIME THAN JUST LOADING AND QUERYING. REVISE!
-    if (queries.length > 5000) {
-      println("DEVICER LOG:\n\tPersisting data!")
-      filtered.persist(StorageLevel.MEMORY_AND_DISK)
-    }
+    // We create an empty DataFrame so that it doesn't fail when there is no data.
+    val empty_df = spark.createDataFrame(
+      spark.sparkContext.parallelize(Seq(Row("web", "empty", "1"))),
+      StructType(
+        Array(
+          StructField("device_type", StringType, true),
+          StructField("device_id", StringType, true),
+          StructField("segment_id", StringType, true)
+        )
+      )
+    )
+    empty_df.cache()
 
     // For every query we apply the filter and get only the distinct ids along with the
     // device type and segment id.
-
     val results = queries.map(
       query =>
         query("revenue") match {
@@ -586,11 +590,13 @@ object GetAudience {
               .filter(query("filter").toString)
               .select("device_type", "device_id")
               .withColumn("segmentIds", lit(query("segment_id").toString))
+              .unionAll(empty_df)
           case 1 =>
             filtered
               .filter(query("filter").toString)
               .select("device_type", "device_id", "id_partner")
               .withColumn("segmentIds", lit(query("segment_id").toString))
+              .unionAll(empty_df)
         }
     )
 
@@ -614,11 +620,6 @@ object GetAudience {
           .mode("append")
           .save("/datascience/devicer/processed/" + fileName)
     )
-
-    // If we previously persisted the data, now we unpersist it back.
-    if (queries.length > 5000) {
-      filtered.unpersist()
-    }
 
     // If the number of queries is greater than one, then we merge all the audiences,
     // into one single DataFrame where every device id now contains a list of segments
