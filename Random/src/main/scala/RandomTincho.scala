@@ -98,6 +98,9 @@ object RandomTincho {
   }
 
   def main(args: Array[String]) {
+     
+    // Setting logger config
+    Logger.getRootLogger.setLevel(Level.WARN)
 
     val spark = SparkSession.builder
         .appName("Random de Tincho")
