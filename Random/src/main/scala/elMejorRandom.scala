@@ -42,13 +42,14 @@ def getDataPipeline(
       spark: SparkSession,
       path: String,
       nDays: String,
-      since: String) = {
+      since: String,
+      country: String) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     //specifying country
-    val country_iso = "MX"
+    //val country_iso = "MX"
       
         // Get the days to be loaded
     val format = "yyyyMMdd"
@@ -57,7 +58,7 @@ def getDataPipeline(
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/country=%s".format(day,country_iso)) //
+      .map(day => path + "/day=%s/country=%s".format(day,country)) //
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
@@ -76,14 +77,14 @@ def get_ua_segments(spark:SparkSession) = {
 
 
 
-val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1")
+val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1","MX")
         .filter("model != ''") //con esto filtramos los desktop
         .withColumn("device_id",upper(col("device_id")))
         .drop("user_agent","event_type","url")
         .dropDuplicates("device_id")        
         //.filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
 
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","15","1")
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","15","1","MX")
               .withColumn("device_id",upper(col("device_id")))
               .groupBy("device_id").agg(concat_ws(",",collect_set("feature")) as "segments")
 
@@ -95,6 +96,58 @@ val joined = ua.join(segments,Seq("device_id"))
 .save("/datascience/misc/ua_w_segments_30d_MX_II")
 
                                           }
+
+
+
+def get_ua_urls(spark:SparkSession) = {
+
+for (country_iso <- List("AR","CL","MX")) {
+
+val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1",country_iso)
+        .filter("model != ''") //con esto filtramos los desktop
+        .withColumn("device_id",upper(col("device_id")))
+        .drop("user_agent","event_type","url")
+        .dropDuplicates("device_id")        
+        //./datascience/data_triplets/urls/country=/"filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
+
+val urls = spark.read.format("parquet").load("/datascience/data_triplets/urls/country=%s".format(country_iso))
+              .withColumn("device_id",upper(col("device_id")))
+              .groupBy("device_id").agg(concat_ws(",",collect_set("url")) as "urls",concat_ws(",",collect_set("domain")) as "domains")
+
+val joined = ua.join(urls,Seq("device_id"))
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/misc/ua_30d_w_url_%s".format(country_iso))
+
+val result = spark.read.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.load("/datascience/misc/ua_30d_w_url_%s".format(country_iso))
+
+result
+    .withColumn("url",explode(split(col("urls"),",")))
+    .groupBy("brand","url")
+    .agg(countDistinct("device_id") as "url_count") 
+    .write.format("csv")    
+    .option("header",true)    
+    .option("delimiter","\t")    
+    .mode(SaveMode.Overwrite)    
+    .save("/datascience/misc/ua_agg_url_%s".format(country_iso))
+
+result
+    .withColumn("domain",explode(split(col("domains"),",")))
+    .groupBy("brand","domain")
+    .agg(countDistinct("device_id") as "domains_count") 
+    .write.format("csv")    
+    .option("header",true)    
+    .option("delimiter","\t")    
+    .mode(SaveMode.Overwrite)    
+    .save("/datascience/misc/ua_agg_domain_%s".format(country_iso))    
+        }
+      }
+
 
 def get_safegraph_data(
       spark: SparkSession,
@@ -358,7 +411,7 @@ def aggregations_ua ( spark: SparkSession){
 }
 def equifax_count ( spark: SparkSession){
 
-  val segments_new = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30")
+  val segments_new = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30","AR")
 
 val theNSE_new = segments_new.filter(col("feature") isin (35360,35361,35362, 35363))
 
@@ -368,7 +421,7 @@ theNSE_new.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
 .save("/datascience/misc/equifax_count_AR_new")
 
 
-val segments_old = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30")
+val segments_old = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30","AR")
 
 val theNSE_old = segments_old.filter(col("feature") isin (35360,35361,35362, 35363))
 
@@ -385,43 +438,8 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-//Estos son los devices que hicieron match con TAPAD.
-//Vamos a considerarlos como usuarios únicos
-val matched = spark.read.format("csv").option("header",false).option("delimiter",",")
-.load("/datascience/audiences/crossdeviced/devices_by_country_II_xd")
-.select("_c0","_c4").toDF("device_id","country")
-.withColumn("device_id",upper(col("device_id")))
-.dropDuplicates()
 
-
-val ar = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_AR_II")
-val cl = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_CL_II")
-val mx = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_30d_MX_II")
-
-val all_data = List(ar,cl,mx).reduce(_.unionByName (_)).withColumn("device_id",upper(col("device_id")))
-
-val all_data_unique =  matched.join(all_data,Seq("device_id","country"))
-
-/*
-all_data_unique.withColumn("segments",explode(split(col("segments"),",")))
-    .groupBy("brand","model","segments","country")
-    .agg(countDistinct("device_id") as "segment_count") 
-    .write.format("csv")    
-    .option("header",true)    
-    .option("delimiter","\t")    
-    .mode(SaveMode.Overwrite)    
-    .save("/datascience/misc/all_data_unique_seg_model")
-
-*/ 
-all_data_unique.groupBy("brand","model","country")
-  .agg(countDistinct("device_id") as "market_share") 
-  .write.format("csv")    
-    .option("header",true)    
-    .option("delimiter","\t")    
-    .mode(SaveMode.Overwrite)    
-    .save("/datascience/misc/all_data_unique_market_share")
-
-
+get_ua_urls(spark)
 
   }
 }
