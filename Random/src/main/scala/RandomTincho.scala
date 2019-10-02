@@ -56,12 +56,9 @@ object RandomTincho {
 
     val df = spark.read
       .format("csv")
+      .option("header","true")
       .load(dfs: _*)
-      .withColumnRenamed("_c0", "url")
-      .withColumnRenamed("_c1", "count")
-      .withColumnRenamed("_c2", "country_web")
-      .withColumnRenamed("_c3", "kws")
-      .withColumnRenamed("_c4", "scores")
+      .withColumnRenamed("kw", "kws")
       .withColumn("kws", split(col("kws"), " "))
       .select("url","kws")
       .dropDuplicates("url")
@@ -72,14 +69,14 @@ object RandomTincho {
   def get_gt_new_taxo(spark: SparkSession) = {
     
     val selected_keywords = get_selected_keywords(spark, ndays = 5, since = 1)
-    val queries = broadcast(spark.read.format("csv")
+    val queries = spark.read.format("csv")
                         .option("header","true")
-                        .load("/datascience/custom/new_taxo_queries.csv"))
+                        .load("/datascience/custom/new_taxo_queries.csv")
     
     var dfs: DataFrame = null
     var first = true
 
-    for (row <- queries.rdd.collect){   
+    for (row <- queries.rdd.collect){  
       var segment = row(0)
       var query = row(1).toString
       var local = selected_keywords.filter(query).withColumn("segment",lit(segment)).select("url","segment")
@@ -103,7 +100,7 @@ object RandomTincho {
 
     val spark = SparkSession.builder
         .appName("Random de Tincho")
-        //.config("spark.sql.files.ignoreCorruptFiles", "true")
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
