@@ -1,11 +1,29 @@
 package main.scala
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SaveMode, DataFrame}
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Encoders, SparkSession}
+import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
+import org.apache.spark.sql.functions.broadcast
+import org.apache.spark.sql.functions.{
+  upper,
+  count,
+  col,
+  abs,
+  udf,
+  regexp_replace,
+  split,
+  lit,
+  explode,
+  length,
+  to_timestamp,
+  from_unixtime,
+  date_format,
+  sum
+}
+import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.{SaveMode, DataFrame}
 
 object RandomTincho {
 
@@ -62,9 +80,9 @@ object RandomTincho {
     var first = true
 
     for (row <- queries.rdd.collect){   
-      var segment = row(0).toInt
+      var segment = row(0)
       var query = row(1).toString
-      var local = df.filter(query).withColumn("segment",lit(segment)).select("url","segment")
+      var local = selected_keywords.filter(query).withColumn("segment",lit(segment)).select("url","segment")
       if (first) {
           dfs = local
           first = false
