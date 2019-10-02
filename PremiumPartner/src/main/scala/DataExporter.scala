@@ -64,11 +64,11 @@ object DataExporter {
 
     //val mapa: Map[String, String] = ls.map(x => x(0).asInstanceOf[String] -> x(1).asInstanceOf[String] ).toMap
     //Cargo parametros
-    val out_path = List(configs.select($"exportName").collect)(0)(0).toString.replaceAll("[\\[\\]]","")
-    val columns = List( configs.select($"fields").collect() )(0)(0).toString.split(",").map(x => x.trim.replace("\"", "").replaceAll("[\\[\\]]","") ).toSeq
-    val ids_partners = List(configs.select($"partnerIds").collect)(0)(0).toString.split(",").map(x => x.trim.replace("\"", "").replaceAll("[\\[\\]]","") ).toSeq
-    val filters = List(configs.select($"filters").collect)(0)(0).toString.replaceAll("[\\[\\]]","")
-    val del = List(configs.select($"arrayDelimiter").collect)(0)(0).toString.replaceAll("[\\[\\]]","")
+    val out_path = configs.select("exportName").first.getString(0)
+    val columns = configs.select("fields").first.getString(0).replaceAll("[\"\'\\s]", "").split(",").toSeq
+    val ids_partners = configs.select("partnerIds").first.getString(0).replaceAll("[\"\'\\s]", "").split(",").toSeq
+    val filters = configs.select("filters").first.getString(0)
+    val del = configs.select("arrayDelimiter").first.getString(0)
 
     /* cargo variables old
     val out_path: String = "/data/exports/%s".format(mapa("exportName"))
@@ -128,7 +128,7 @@ object DataExporter {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
-    val lista = fs.listStatus(new Path("/data/exports/"))
+    val lista = fs.listStatus(new Path("/data/exports/configs/"))
 
     lista.filter(x => x.getPath.toString.endsWith(".json") )
         .foreach(x => download_data(spark, x.getPath.toString, nDays, from))//println(x.getPath))
