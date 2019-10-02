@@ -71,10 +71,10 @@ object RandomTincho {
 
   def get_gt_new_taxo(spark: SparkSession) = {
     
-    val selected_keywords = broadcast(get_selected_keywords(spark, ndays = 5, since = 1))
-    val queries = spark.read.format("csv")
+    val selected_keywords = get_selected_keywords(spark, ndays = 5, since = 1)
+    val queries = broadcast(spark.read.format("csv")
                         .option("header","true")
-                        .load("/datascience/custom/new_taxo_queries.csv")
+                        .load("/datascience/custom/new_taxo_queries.csv"))
     
     var dfs: DataFrame = null
     var first = true
