@@ -68,7 +68,7 @@ object SegmentTriplets {
             .option("basePath", "/datascience/data_audiences_streaming/")
             .parquet(x)
             .filter("event_type IN ('batch', 'data', 'tk', 'pv', 'retroactive')")
-            .select("device_id", "segments", "country", "event_type")
+            .select("device_id", "segments", "country", "event_type", "id_partner")
             .withColumn("segments", explode(col("segments")))
             .withColumn("day", lit(x.split("/").last.slice(5, 13)))
             .withColumnRenamed("segments", "feature")
@@ -78,7 +78,7 @@ object SegmentTriplets {
     val df = dfs.reduce((df1, df2) => df1.union(df2))
 
     val grouped_data = df
-      .groupBy("device_id", "feature", "country", "day")
+      .groupBy("device_id", "feature", "country", "day", "id_partner")
       .agg(sum("count").as("count"))
 
     grouped_data.write
