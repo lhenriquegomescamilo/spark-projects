@@ -94,7 +94,6 @@ object RandomTincho {
     dfs.write
     .format("parquet")
     .mode(SaveMode.Overwrite)
-    .partitionBy("country")
     .save("/datascience/data_url_classifier/GT_new_taxo")
 
 
