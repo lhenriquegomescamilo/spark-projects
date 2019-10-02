@@ -312,7 +312,6 @@ object GetAudience {
           spark.sparkContext.emptyRDD[Row],
           StructType(Array(StructField("empty", StringType, true)))
         )
-    //fs.close()
 
     df
   }
@@ -974,7 +973,7 @@ object GetAudience {
       // Here we select the pipeline where we will gather the data
       val data = pipeline match {
         case 0 =>
-          if (ids.length > 0 && partner_ids.toString.length>0)
+          if (ids.length > 0 && partner_ids.toString.length > 0)
             getDataIdPartners(
               spark,
               ids,
@@ -1029,38 +1028,22 @@ object GetAudience {
       var file_name = file.replace(".json", "")
       // Flag to indicate if execution failed
       var failed = false
-      val partitionedData = if (data.rdd.getNumPartitions<5000000) data else data.repartition(1000)
 
-      if (queries.length > 10000) {
-        // getMultipleAudience(spark, data, queries, file_name, commonFilter)
-        val dataDays = getDataAudiencesDays(
+      // Finally we download the data
+      try {
+        getAudience(
           spark,
-          nDays.toString.toInt,
-          since.toString.toInt
-        )
-        getAudienceDays(
-          spark,
-          dataDays,
+          data,
           queries,
           file_name,
-          commonFilter
+          commonFilter,
+          limit,
+          unique
         )
-      } else {
-        try {
-          getAudience(
-            spark,
-            partitionedData,
-            queries,
-            file_name,
-            commonFilter,
-            limit,
-            unique
-          )
-        } catch {
-          case e: Exception => {
-            e.printStackTrace()
-            failed = true
-          }
+      } catch {
+        case e: Exception => {
+          e.printStackTrace()
+          failed = true
         }
       }
 
@@ -1092,7 +1075,6 @@ object GetAudience {
         generateMetaFile(file_name, queries, xd)
       }
     }
-    //hdfs.close()
   }
 
   type OptionMap = Map[Symbol, Int]
@@ -1124,6 +1106,7 @@ object GetAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    // Queues for processing the json files
     val path = p match {
       case 0 => "/datascience/devicer/priority/"
 
