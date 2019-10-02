@@ -24,6 +24,7 @@ import org.apache.spark.sql.functions.{
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
+import org.apache.log4j.{Level, Logger}
 
 object RandomTincho {
 
