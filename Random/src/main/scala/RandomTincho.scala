@@ -60,7 +60,8 @@ object RandomTincho {
   def get_selected_keywords(
       spark: SparkSession,
       ndays: Int,
-      since: Int
+      since: Int,
+      country: String
   ): DataFrame = {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
@@ -88,23 +89,25 @@ object RandomTincho {
       .format("csv")
       .option("header","true")
       .load(dfs: _*)
+      .filter("country = '%s'".format(country))
       .withColumnRenamed("kw", "kws")
       .withColumnRenamed("url_raw", "url")
       .withColumn("kws", split(col("kws"), " "))
       .select("url","kws")
       .dropDuplicates("url")
 
+
     df
   }
 
-  def get_gt_new_taxo(spark: SparkSession) = {
+  def get_gt_new_taxo(spark: SparkSession, ndays:Int, since:Int, country:String) = {
     
     // Get selected keywords <url, [kws]>
-    val selected_keywords = get_selected_keywords(spark, ndays = 10, since = 1)
+    val selected_keywords = get_selected_keywords(spark, ndays = ndays, since = since, country = country)
     selected_keywords.cache()
 
     // Get Data urls <url>
-    val data_urls = get_data_urls(spark, ndays = 10, since = 1, country = "AR")
+    val data_urls = get_data_urls(spark, ndays = ndays, since = since, country = country)
     data_urls.cache()
 
     // Get queries <seg_id, query (array contains), query (url like)>
@@ -159,7 +162,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_gt_new_taxo(spark)
+    get_gt_new_taxo(spark, ndays = 10, since = 1, country = "AR")
   }
 
 }
