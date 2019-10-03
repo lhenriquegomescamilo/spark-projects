@@ -2,12 +2,11 @@ package main.scala.updaters
 
 import main.scala.Geodevicer
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{SparkSession, DataFrame, SaveMode}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.SaveMode
 import org.apache.log4j.{Level, Logger}
 
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
@@ -25,7 +24,115 @@ import org.apache.spark.serializer.KryoRegistrator
 import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
 
-object UpdateSharethisData {
+/**
+  * This process takes the daily data that comes from SafeGraph and generates a new pipeline in
+  * parquet, with the same set of columns.
+  *
+  * The resulting pipeline is stored in /datascience/geo/safegraph_pipeline/.
+  */
+object UpdateSafeGraphData {
+
+  /**
+    * This method loads the data from GCBA and processes it, so that it has the same
+    * schema as the SafeGraph pipeline.
+    *
+    */
+  def get_gcba_geo_data(
+      spark: SparkSession,
+      nDays: Int,
+      since: Int
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "dd_MM_yyyy"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+
+    // Now we obtain the list of hdfs files to be read
+    val path = "/datascience/geo/AR/"
+    val hdfs_files = days
+      .map(day => path + "data_gcba_%s.csv/".format(day))
+      .filter(
+        dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath))
+      )
+
+    // Time format that will be used to transform the date to Unix time
+    val time_format = "yyyy-MM-dd HH:mm:ss"
+
+    if (hdfs_files.length > 0) {
+      // Read the data
+      val gcba_df = spark.read
+        .format("csv")
+        .option("header", "true")
+        .load(hdfs_files: _*)
+        .na
+        .drop()
+
+      // Finally we process all the columns so that they match the safegraph schema
+      gcba_df
+        .withColumn("Lat/Lon", split(col("Lat/Lon"), ","))
+        .withColumn("latitude", col("Lat/Lon").getItem(0).cast("double"))
+        .withColumn("longitude", col("Lat/Lon").getItem(0).cast("double"))
+        .withColumn("country", lit("argentina"))
+        .withColumn("id_type", lit("maid"))
+        .withColumn("geo_hash", lit("gcba"))
+        .withColumn("horizontal_accuracy", lit(0f))
+        .withColumnRenamed("Device Id", "ad_id")
+        // Transform the date from format 2019-10-01T20:30:08.969Z to Unix time (in seconds)
+        .withColumn("timestamp", regexp_replace(col("timestamp"), "T", " "))
+        .withColumn("timestamp", regexp_replace(col("timestamp"), "\\..*Z", ""))
+        .withColumn(
+          "utc_timestamp",
+          unix_timestamp(col("timestamp"), time_format)
+        )
+        .select(
+          "utc_timestamp",
+          "ad_id",
+          "id_type",
+          "geo_hash",
+          "latitude",
+          "longitude",
+          "horizontal_accuracy",
+          "country"
+        )
+    } else {
+      // If there are no files, then we create an empty dataframe.
+      val schema =
+        new StructType()
+          .add("utc_timestamp", "long")
+          .add("ad_id", "string")
+          .add("id_type", "string")
+          .add("geo_hash", "string")
+          .add("latitude", "double")
+          .add("longitude", "double")
+          .add("horizontal_accuracy", "float")
+          .add("country", "string")
+      val empty_df = spark.createDataFrame(
+        spark.sparkContext.parallelize(
+          Seq(Row(0L, "empty", "empty", "gcba", 0d, 0d, 0f, "argentina"))
+        ),
+        schema
+      )
+      empty_df
+    }
+
+  }
+
+  /**
+    * This function takes as input the number of days to process (nDays) and the number of days
+    * to skip (from), and generates a parquet pipeline reading the data from SafeGraph, partitioning by
+    * day and by country.
+    * - nDays: number of days to be read from SafeGraph.
+    * - since: number of days to be skiped.
+    *
+    * As a result, this function stores the pipeline in /datascience/geo/safegraph_pipeline/, partitioned
+    * by day and by country.
+    */
   def get_safegraph_data(spark: SparkSession, nDays: Int, since: Int) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -67,7 +174,7 @@ object UpdateSharethisData {
           .csv(file)
           .withColumn(
             "day",
-            lit(file.slice(file.length - 10, file.length).replace("/", ""))
+            lit(file.slice(file.length - 10, file.length).replace("/", "")) // Here we obtain the day from the file name.
           )
     )
 
