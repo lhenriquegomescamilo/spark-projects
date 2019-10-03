@@ -146,8 +146,7 @@ object FromEventqueuePII {
     val from = if (options.contains('from)) options('from).toInt else 1
     val nDays = if (options.contains('nDays)) options('nDays).toInt else 1
 
-    val spark =
-      SparkSession.builder
+    val spark = SparkSession.builder
         .appName("Get Pii from Eventqueue")
         .getOrCreate()
 
