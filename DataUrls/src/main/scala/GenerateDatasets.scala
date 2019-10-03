@@ -98,7 +98,7 @@ object GenerateDatasetsUrls {
     //     .save("/datascience/data_url_classifier/gt")
 
     var gtDF = spark.read.format("parquet").load("/datascience/data_url_classifier/GT_new_taxo")
-    gtDF = processURL(dfURL = gtDF, field = "url")
+    gtDF = UrlUtils.processURL(dfURL = gtDF, field = "url")
     gtDF.cache()
     gtDF = broadcast(gtDF.select("url"))
 
