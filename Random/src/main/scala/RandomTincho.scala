@@ -28,6 +28,35 @@ import org.apache.log4j.{Level, Logger}
 
 object RandomTincho {
 
+  def get_data_urls(
+      spark: SparkSession,
+      ndays: Int,
+      since: Int,
+      country: String
+  ): DataFrame = {
+    /// Configuraciones de spark
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    /// Obtenemos la data de los ultimos ndays
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since)
+
+    val days =
+      (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_demo/data_urls/"
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    val urls = spark.read
+                    .option("basePath", path)
+                    .parquet(hdfs_files: _*)
+                    .select("url")
+    urls
+  }
+
   def get_selected_keywords(
       spark: SparkSession,
       ndays: Int,
@@ -70,18 +99,26 @@ object RandomTincho {
 
   def get_gt_new_taxo(spark: SparkSession) = {
     
+    // Get selected keywords <url, [kws]>
     val selected_keywords = get_selected_keywords(spark, ndays = 10, since = 1)
     selected_keywords.cache()
-    val queries = spark.read.format("csv")
-                        .option("header","true")
-                        .load("/datascience/custom/new_taxo_queries.csv")
+
+    // Get Data urls <url>
+    val data_urls = get_data_urls(spark, ndays = 10, since = 1)
+    data_urls.cache()
+
+    // Get queries <seg_id, query (array contains), query (url like)>
+    var queries = spark.read.load("/datascience/custom/new_taxo_queries_join")
     
     var dfs: DataFrame = null
     var first = true
-
+    // Iterate queries and get urls
     for (row <- queries.rdd.collect){  
       var segment = row(0).toString
       var query = row(1).toString
+      var query_url_like = row(2).toString
+      
+      // Filter selected keywords dataframe using query with array contains
       selected_keywords.filter(query)
                         .withColumn("segment",lit(segment))
                         .select("url","segment")
@@ -89,8 +126,18 @@ object RandomTincho {
                         .format("parquet")
                         .mode("append")
                         .save("/datascience/data_url_classifier/GT_new_taxo_queries")
+
+      // Filter data_urls dataframe using query with array url LIKE                        
+      data_urls.filter(query_url_like)
+                  .withColumn("segment",lit(segment))
+                  .select("url","segment")
+                  .write
+                  .format("parquet")
+                  .mode("append")
+                  .save("/datascience/data_url_classifier/GT_new_taxo_queries")
     }
 
+    // Groupby by url and concatenating segments with ;
     spark.read.load("/datascience/data_url_classifier/GT_new_taxo_queries")
           .groupBy("url")
           .agg(collect_list(col("segment")).as("segment"))
