@@ -3,7 +3,6 @@ package main.scala
 import org.apache.spark.sql.{SparkSession, SaveMode}
 import org.apache.spark.sql.functions._
 import org.joda.time.DateTime
-import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs._
 
