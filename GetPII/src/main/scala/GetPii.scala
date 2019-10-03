@@ -43,6 +43,7 @@ object FromEventqueuePII {
         "day"
       )
       .distinct()
+      .orderBy(asc("country"), asc("device_id"))
       .write
       .format("parquet")
       .mode(SaveMode.Append)
@@ -105,10 +106,10 @@ object FromEventqueuePII {
     // We save the generated file
     total.write
       .format("parquet")
-      .partitionBy("country")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/pii_matching/temp/")
-
+      .partitionBy("country")/datascience/pii_matching/pii_tuples
+      .mode(SaveMode.Overwrite)/datascience/pii_matching/pii_tuples
+      .save("/datascience/pii_matching/temp/")/datascience/pii_matching/pii_tuples
+/datascience/pii_matching/pii_tuples
     // Load files again 
     val fls = spark.read
       .format("parquet")
