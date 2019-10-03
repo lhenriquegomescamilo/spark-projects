@@ -2,7 +2,7 @@ package main.scala.updaters
 
 import main.scala.Geodevicer
 
-import org.apache.spark.sql.{SparkSession, DataFrame, SaveMode}
+import org.apache.spark.sql.{SparkSession, DataFrame, SaveMode, Row}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions._
