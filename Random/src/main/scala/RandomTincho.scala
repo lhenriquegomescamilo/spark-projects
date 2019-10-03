@@ -70,7 +70,7 @@ object RandomTincho {
 
   def get_gt_new_taxo(spark: SparkSession) = {
     
-    val selected_keywords = get_selected_keywords(spark, ndays = 5, since = 1)
+    val selected_keywords = get_selected_keywords(spark, ndays = 2, since = 1)
     val queries = spark.read.format("csv")
                         .option("header","true")
                         .load("/datascience/custom/new_taxo_queries.csv")
@@ -79,7 +79,7 @@ object RandomTincho {
     var first = true
 
     for (row <- queries.rdd.collect){  
-      var segment = row(0)
+      var segment = row(0).toString
       var query = row(1).toString
       var local = selected_keywords.filter(query).withColumn("segment",lit(segment)).select("url","segment")
       if (first) {
