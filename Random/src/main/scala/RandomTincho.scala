@@ -104,7 +104,7 @@ object RandomTincho {
     selected_keywords.cache()
 
     // Get Data urls <url>
-    val data_urls = get_data_urls(spark, ndays = 10, since = 1)
+    val data_urls = get_data_urls(spark, ndays = 10, since = 1, country = "AR")
     data_urls.cache()
 
     // Get queries <seg_id, query (array contains), query (url like)>
@@ -117,7 +117,7 @@ object RandomTincho {
       var segment = row(0).toString
       var query = row(1).toString
       var query_url_like = row(2).toString
-      
+
       // Filter selected keywords dataframe using query with array contains
       selected_keywords.filter(query)
                         .withColumn("segment",lit(segment))
