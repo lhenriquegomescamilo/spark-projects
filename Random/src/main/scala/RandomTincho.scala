@@ -71,6 +71,7 @@ object RandomTincho {
   def get_gt_new_taxo(spark: SparkSession) = {
     
     val selected_keywords = get_selected_keywords(spark, ndays = 2, since = 1)
+    selected_keywords.cache()
     val queries = spark.read.format("csv")
                         .option("header","true")
                         .load("/datascience/custom/new_taxo_queries.csv")
@@ -90,10 +91,13 @@ object RandomTincho {
       }
     }
 
-    dfs.write
-    .format("parquet")
-    .mode(SaveMode.Overwrite)
-    .save("/datascience/data_url_classifier/GT_new_taxo")
+    dfs.groupBy("url")
+      .agg(collect_list(col("segment")).as("segment"))
+      .withColumn("segment", concat_ws(";", col("segment")))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_url_classifier/GT_new_taxo")
 
 
   }
