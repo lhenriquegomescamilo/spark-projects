@@ -128,9 +128,10 @@ object UpdateSafeGraphData {
           .add("longitude", "double")
           .add("horizontal_accuracy", "float")
           .add("country", "string")
+          .add("day", "string")
       val empty_df = spark.createDataFrame(
         spark.sparkContext.parallelize(
-          Seq(Row(0L, "empty", "empty", "gcba", 0d, 0d, 0f, "argentina"))
+          Seq(Row(0L, "empty", "empty", "gcba", 0d, 0d, 0f, "argentina", "empty"))
         ),
         schema
       )
@@ -223,8 +224,10 @@ object UpdateSafeGraphData {
   def storeData(spark: SparkSession, nDays: Int, since: Int) = {
     // Read data from SafeGraph
     val df_safegraph = get_safegraph_data(spark, nDays, since)
+    df_safegraph.printSchema
     // Read data from GCBA
     val df_gcba = get_gcba_geo_data(spark, nDays, since)
+    df_gcba.printSchema
 
     // Store the data in parquet format
     df_safegraph
