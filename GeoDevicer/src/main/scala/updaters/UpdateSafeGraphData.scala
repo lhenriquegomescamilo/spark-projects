@@ -35,7 +35,19 @@ object UpdateSafeGraphData {
   /**
     * This method loads the data from GCBA and processes it, so that it has the same
     * schema as the SafeGraph pipeline.
+    * - nDays: number of days to be read from GCBA.
+    * - since: number of days to be skiped.
     *
+    * As a result, this function returns a DataFrame with GCBA data. The DataFrame has the following
+    * schema:
+    *              "utc_timestamp": "long"
+    *              "ad_id": "string"
+    *              "id_type": "string"
+    *              "geo_hash": "string"
+    *              "latitude": "double"
+    *              "longitude": "double"
+    *              "horizontal_accuracy": "float"
+    *              "country": "string"
     */
   def get_gcba_geo_data(
       spark: SparkSession,
@@ -83,6 +95,9 @@ object UpdateSafeGraphData {
         .withColumn("geo_hash", lit("gcba"))
         .withColumn("horizontal_accuracy", lit(0f))
         .withColumnRenamed("Device Id", "ad_id")
+        // Now we define the day
+        .withColumn("day", regexp_replace(col("timestamp"), "T.*", ""))
+        .withColumn("day", regexp_replace(col("day"), "-", ""))
         // Transform the date from format 2019-10-01T20:30:08.969Z to Unix time (in seconds)
         .withColumn("timestamp", regexp_replace(col("timestamp"), "T", " "))
         .withColumn("timestamp", regexp_replace(col("timestamp"), "\\..*Z", ""))
@@ -98,7 +113,8 @@ object UpdateSafeGraphData {
           "latitude",
           "longitude",
           "horizontal_accuracy",
-          "country"
+          "country",
+          "day"
         )
     } else {
       // If there are no files, then we create an empty dataframe.
@@ -130,10 +146,22 @@ object UpdateSafeGraphData {
     * - nDays: number of days to be read from SafeGraph.
     * - since: number of days to be skiped.
     *
-    * As a result, this function stores the pipeline in /datascience/geo/safegraph_pipeline/, partitioned
-    * by day and by country.
+    * As a result, this function returns a DataFrame with SafeGraph data. The DataFrame has the following
+    * schema:
+    *              "utc_timestamp": "long"
+    *              "ad_id": "string"
+    *              "id_type": "string"
+    *              "geo_hash": "string"
+    *              "latitude": "double"
+    *              "longitude": "double"
+    *              "horizontal_accuracy": "float"
+    *              "country": "string"
     */
-  def get_safegraph_data(spark: SparkSession, nDays: Int, since: Int) = {
+  def get_safegraph_data(
+      spark: SparkSession,
+      nDays: Int,
+      since: Int
+  ): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -181,7 +209,27 @@ object UpdateSafeGraphData {
     val df_safegraph = dfs.reduce((df1, df2) => df1.union(df2))
 
     // In the last step we write the data partitioned by day and country.
-    df_safegraph.write
+    df_safegraph
+  }
+
+  /**
+    * This function reads all the sources of Geo data and stores the results in parquet format.
+    * - nDays: number of days to be read from SafeGraph.
+    * - since: number of days to be skiped.
+    *
+    * As a result, this function stores the pipeline in /datascience/geo/safegraph_pipeline/, partitioned
+    * by day and by country.
+    */
+  def storeData(spark: SparkSession, nDays: Int, since: Int) = {
+    // Read data from SafeGraph
+    val df_safegraph = get_safegraph_data(spark, nDays, since)
+    // Read data from GCBA
+    val df_gcba = get_gcba_geo_data(spark, nDays, since)
+
+    // Store the data in parquet format
+    df_safegraph
+      .unionAll(df_gcba)
+      .write
       .format("parquet")
       .partitionBy("day", "country")
       .mode("append")
@@ -214,20 +262,12 @@ object UpdateSafeGraphData {
     // Start Spark Session
     val spark = SparkSession
       .builder()
-      .config("spark.serializer", classOf[KryoSerializer].getName)
-      .config(
-        "spark.kryo.registrator",
-        classOf[GeoSparkKryoRegistrator].getName
-      )
-      // .config("geospark.join.gridtype", "rtree")
       .appName("match_POI_geospark")
       .getOrCreate()
 
-    // Initialize the variables
-    // GeoSparkSQLRegistrator.registerAll(spark)
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // Finally we perform the GeoJoin
-    get_safegraph_data(spark, nDays, from)
+    storeData(spark, nDays, from)
   }
 }
