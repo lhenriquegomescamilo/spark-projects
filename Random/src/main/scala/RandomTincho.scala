@@ -82,22 +82,29 @@ object RandomTincho {
     for (row <- queries.rdd.collect){  
       var segment = row(0).toString
       var query = row(1).toString
-      var local = selected_keywords.filter(query).withColumn("segment",lit(segment)).select("url","segment")
-      if (first) {
-          dfs = local
-          first = false
-      } else {
-          dfs = dfs.unionAll(local)
-      }
+      selected_keywords.filter(query)
+                        .withColumn("segment",lit(segment))
+                        .select("url","segment")
+                        .write
+                        .format("parquet")
+                        .mode("append")
+                        .save("/datascience/data_url_classifier/GT_new_taxo_queries")
+      // if (first) {
+      //     dfs = local
+      //     first = false
+      // } else {
+      //     dfs = dfs.unionAll(local)
+      // }
     }
 
-    dfs.groupBy("url")
-      .agg(collect_list(col("segment")).as("segment"))
-      .withColumn("segment", concat_ws(";", col("segment")))
-      .write
-      .format("parquet")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/data_url_classifier/GT_new_taxo")
+    spark.read.load("/datascience/data_url_classifier/GT_new_taxo_queries")
+          .groupBy("url")
+          .agg(collect_list(col("segment")).as("segment"))
+          .withColumn("segment", concat_ws(";", col("segment")))
+          .write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/data_url_classifier/GT_new_taxo")
 
 
   }
