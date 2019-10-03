@@ -70,7 +70,7 @@ object RandomTincho {
 
   def get_gt_new_taxo(spark: SparkSession) = {
     
-    val selected_keywords = get_selected_keywords(spark, ndays = 2, since = 1)
+    val selected_keywords = get_selected_keywords(spark, ndays = 10, since = 1)
     selected_keywords.cache()
     val queries = spark.read.format("csv")
                         .option("header","true")
@@ -89,12 +89,6 @@ object RandomTincho {
                         .format("parquet")
                         .mode("append")
                         .save("/datascience/data_url_classifier/GT_new_taxo_queries")
-      // if (first) {
-      //     dfs = local
-      //     first = false
-      // } else {
-      //     dfs = dfs.unionAll(local)
-      // }
     }
 
     spark.read.load("/datascience/data_url_classifier/GT_new_taxo_queries")
@@ -105,8 +99,6 @@ object RandomTincho {
           .format("parquet")
           .mode(SaveMode.Overwrite)
           .save("/datascience/data_url_classifier/GT_new_taxo")
-
-
   }
 
   def main(args: Array[String]) {
