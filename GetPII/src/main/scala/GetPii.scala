@@ -3,7 +3,6 @@ package main.scala
 import org.apache.spark.sql.{SparkSession, SaveMode}
 import org.apache.spark.sql.functions._
 import org.joda.time.DateTime
-import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs._
 
@@ -146,8 +145,7 @@ object FromEventqueuePII {
     val from = if (options.contains('from)) options('from).toInt else 1
     val nDays = if (options.contains('nDays)) options('nDays).toInt else 1
 
-    val spark =
-      SparkSession.builder
+    val spark = SparkSession.builder
         .appName("Get Pii from Eventqueue")
         .getOrCreate()
 
