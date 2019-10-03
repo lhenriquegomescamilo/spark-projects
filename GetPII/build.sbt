@@ -1,4 +1,4 @@
-name := "Pii Table"
+name := "PiiTable"
 
 version := "1.0"
 
