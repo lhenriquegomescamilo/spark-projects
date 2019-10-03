@@ -106,10 +106,10 @@ object FromEventqueuePII {
     // We save the generated file
     total.write
       .format("parquet")
-      .partitionBy("country")/datascience/pii_matching/pii_tuples
-      .mode(SaveMode.Overwrite)/datascience/pii_matching/pii_tuples
-      .save("/datascience/pii_matching/temp/")/datascience/pii_matching/pii_tuples
-/datascience/pii_matching/pii_tuples
+      .partitionBy("country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/pii_matching/temp/")
+
     // Load files again 
     val fls = spark.read
       .format("parquet")
