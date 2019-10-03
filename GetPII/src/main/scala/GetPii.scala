@@ -43,7 +43,7 @@ object FromEventqueuePII {
         "day"
       )
       .distinct()
-      .orderBy(asc("country"), asc("device_id"))
+      .orderBy(asc("country"))
       .write
       .format("parquet")
       .mode(SaveMode.Append)
