@@ -203,7 +203,7 @@ object UpdateSafeGraphData {
           .csv(file)
           .withColumn(
             "day",
-            lit(file.slice(file.length - 10, file.length).replace("/", "")) // Here we obtain the day from the file name.
+            lit(file.slice(file.length - 11, file.length).replace("/", "")) // Here we obtain the day from the file name.
           )
     )
 
