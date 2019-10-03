@@ -71,32 +71,35 @@ object GenerateDatasetsUrls {
                         3087, 3913, 4097)     
 
     // Filtering data from url to get GT segments from ndays
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(ndays).toString(format).toInt
+    // val format = "yyyyMMdd"
+    // val start = DateTime.now.minusDays(ndays).toString(format).toInt
 
-    var gtDF = data_urls.withColumn("date",date_format(col("time"), format))
-                        .withColumn("date",col("date").cast(IntegerType))
-                        .filter("date > %s".format(start))
-                        .select("url", "segments")
-                        .withColumn("segments", explode(col("segments")))
-                        .filter(
-                          col("segments")
-                            .isin(segments: _*)
-                        ).distinct()
+    // var gtDF = data_urls.withColumn("date",date_format(col("time"), format))
+    //                     .withColumn("date",col("date").cast(IntegerType))
+    //                     .filter("date > %s".format(start))
+    //                     .select("url", "segments")
+    //                     .withColumn("segments", explode(col("segments")))
+    //                     .filter(
+    //                       col("segments")
+    //                         .isin(segments: _*)
+    //                     ).distinct()
     
+    // gtDF.cache()
+
+    // // Saving GT dataframe grouped by url and list of segments
+    // gtDF.groupBy("url")
+    //     .agg(collect_list(col("segments")).as("segments"))
+    //     .withColumn("segments", concat_ws(";", col("segments")))
+    //     .withColumn("country",lit(country))
+    //     .write
+    //     .format("parquet")
+    //     .mode(SaveMode.Overwrite)
+    //     .partitionBy("country")
+    //     .save("/datascience/data_url_classifier/gt")
+
+    var gtDF = spark.read.format("parquet").load("/datascience/data_url_classifier/GT_new_taxo")
+    gtDF = processURL(dfURL = gtDF, field = "url")
     gtDF.cache()
-
-    // Saving GT dataframe grouped by url and list of segments
-    gtDF.groupBy("url")
-        .agg(collect_list(col("segments")).as("segments"))
-        .withColumn("segments", concat_ws(";", col("segments")))
-        .withColumn("country",lit(country))
-        .write
-        .format("parquet")
-        .mode(SaveMode.Overwrite)
-        .partitionBy("country")
-        .save("/datascience/data_url_classifier/gt")
-
     gtDF = broadcast(gtDF.select("url"))
 
     var data_keywords_content = DatasetKeywordContent.get_url_content(spark,
@@ -105,7 +108,7 @@ object GenerateDatasetsUrls {
                                                         ndays = ndays_dataset,
                                                         gtDF = gtDF,
                                                         joinType = "inner",
-                                                        name = "dataset_keyword_content_training")
+                                                        name = "dataset_keyword_content_new_taxo_training")
 
     var data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
                                                         country = country,
@@ -114,7 +117,7 @@ object GenerateDatasetsUrls {
                                                         gtDF = gtDF,
                                                         joinType = "inner",
                                                         df_urls = data_urls,
-                                                        name = "dataset_timestamp_training")
+                                                        name = "dataset_timestamp_new_taxo_training")
 
     var data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
                                                       ndays_dataset,
@@ -122,7 +125,7 @@ object GenerateDatasetsUrls {
                                                       country,
                                                       gtDF,
                                                       "inner",
-                                                      name = "dataset_user_agent_training")
+                                                      name = "dataset_user_agent_new_taxo_training")
 
     var data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
                                                       ndays_dataset,
@@ -130,7 +133,7 @@ object GenerateDatasetsUrls {
                                                       country,
                                                       gtDF,
                                                       "inner",
-                                                      name = "dataset_segments_branded_training")
+                                                      name = "dataset_segments_branded_new_taxo_training")
 
   }
 
