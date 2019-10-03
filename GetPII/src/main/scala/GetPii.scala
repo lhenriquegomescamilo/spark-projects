@@ -25,7 +25,7 @@ object FromEventqueuePII {
 
     // Now we process the data and store it
     data
-      .withColumn("day", lit(day.replace("/", "")))
+      //.withColumn("day", lit(day.replace("/", "")))
       .filter(
         (col("ml_sh2").isNotNull || col(
           "mb_sh2"
@@ -39,16 +39,15 @@ object FromEventqueuePII {
         "data_type",
         "ml_sh2",
         "mb_sh2",
-        "nid_sh2",
-        "day"
+        "nid_sh2"
       )
       .distinct()
-      .orderBy(asc("country"))
+      .orderBy(asc("country"), asc("device_id"))
       .write
       .format("parquet")
-      .mode(SaveMode.Append)
-      .partitionBy("day")
-      .save("/datascience/pii_matching/pii_tuples")
+      .mode(SaveMode.Overwrite)
+      //.partitionBy("day")
+      .save("/datascience/pii_matching/pii_tuples/day=%s".format(day))
   }
 
   def procesPII(spark: SparkSession) {
@@ -153,7 +152,7 @@ object FromEventqueuePII {
     // Here we obtain the list of days to be downloaded
     // val nDays = 1
     // val from = 1
-    val format = "yyyy/MM/dd"
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(from)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
