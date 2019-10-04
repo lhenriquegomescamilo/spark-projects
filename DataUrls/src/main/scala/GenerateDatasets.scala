@@ -99,33 +99,38 @@ object GenerateDatasetsUrls {
 
     var gtDF = spark.read.format("parquet").load("/datascience/data_url_classifier/GT_new_taxo")
     gtDF = UrlUtils.processURL(dfURL = gtDF, field = "url")
+    gtDF.write
+         .format("parquet")
+         .mode(SaveMode.Overwrite)
+         .partitionBy("country")
+         .save("/datascience/data_url_classifier/gt_new_taxo_filtered")
     gtDF.cache()
     gtDF = broadcast(gtDF.select("url"))
 
-    // var data_keywords_content = DatasetKeywordContent.get_url_content(spark,
-    //                                                     country = country,
-    //                                                     since = since,
-    //                                                     ndays = ndays_dataset,
-    //                                                     gtDF = gtDF,
-    //                                                     joinType = "inner",
-    //                                                     name = "dataset_keyword_content_new_taxo_training")
+    var data_keywords_content = DatasetKeywordContent.get_url_content(spark,
+                                                        country = country,
+                                                        since = since,
+                                                        ndays = ndays_dataset,
+                                                        gtDF = gtDF,
+                                                        joinType = "inner",
+                                                        name = "dataset_keyword_content_new_taxo_training")
 
-    // var data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
-    //                                                     country = country,
-    //                                                     since = since,
-    //                                                     ndays = ndays_dataset,
-    //                                                     gtDF = gtDF,
-    //                                                     joinType = "inner",
-    //                                                     df_urls = data_urls,
-    //                                                     name = "dataset_timestamp_new_taxo_training")
+    var data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
+                                                        country = country,
+                                                        since = since,
+                                                        ndays = ndays_dataset,
+                                                        gtDF = gtDF,
+                                                        joinType = "inner",
+                                                        df_urls = data_urls,
+                                                        name = "dataset_timestamp_new_taxo_training")
 
-    // var data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
-    //                                                   ndays_dataset,
-    //                                                   since,
-    //                                                   country,
-    //                                                   gtDF,
-    //                                                   "inner",
-    //                                                   name = "dataset_user_agent_new_taxo_training")
+    var data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
+                                                      ndays_dataset,
+                                                      since,
+                                                      country,
+                                                      gtDF,
+                                                      "inner",
+                                                      name = "dataset_user_agent_new_taxo_training")
 
     var data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
                                                       ndays_dataset,
