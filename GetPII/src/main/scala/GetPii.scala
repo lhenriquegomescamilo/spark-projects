@@ -49,7 +49,7 @@ object FromEventqueuePII {
     data.createOrReplaceTempView("temp_pii")
     spark.sql("create table per_pii as select * from temp_pii")
     
-    fin = spark.table("per_pii")
+    val fin = spark.table("per_pii")
 
     fin.repartition(12)
       .write
