@@ -34,6 +34,98 @@ import org.apache.spark.sql.types.{
 
 object UrlUtils {
 
+  def get_selected_keywords(
+      spark: SparkSession,
+      ndays: Int,
+      since: Int,
+      country: String
+  ): DataFrame = {
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    /// Leemos la data de keywords de ndays hacia atras
+    val format = "yyyy-MM-dd"
+    val start = DateTime.now.minusDays(since + ndays)
+    val end = DateTime.now.minusDays(since)
+
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days =
+      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+    val dfs = (0 until daysCount)
+      .map(start.plusDays(_))
+      .map(_.toString(format))
+      .filter(
+        day =>
+          fs.exists(
+            new Path("/datascience/selected_keywords/%s.csv".format(day))
+          )
+      )
+      .map(day => "/datascience/selected_keywords/%s.csv".format(day))
+
+    val df = spark.read
+      .format("csv")
+      .option("header","true")
+      .load(dfs: _*)
+      .filter("country = '%s'".format(country))
+      .withColumnRenamed("kw", "kws")
+      .withColumnRenamed("url_raw", "url")
+      .withColumn("kws", split(col("kws"), " "))
+      .select("url","kws")
+      .dropDuplicates("url")
+    
+    processURL(dfURL = df, field = "url")
+  }
+
+   def get_gt_new_taxo(spark: SparkSession, ndays:Int, since:Int, country:String) = {
+    // Get selected keywords <url, [kws]>
+    val selected_keywords = get_selected_keywords(spark, ndays = ndays, since = since, country = country)
+    selected_keywords.cache()
+
+    // Get Data urls <url>
+    //val data_urls = get_data_urls(spark, ndays = ndays, since = since, country = country)
+    //data_urls.cache()
+
+    // Get queries <seg_id, query (array contains), query (url like)>
+    var queries = spark.read.load("/datascience/custom/new_taxo_queries_join")
+    
+    var dfs: DataFrame = null
+    var first = true
+    // Iterate queries and get urls
+    for (row <- queries.rdd.collect){  
+      var segment = row(0).toString
+      var query = row(1).toString
+      var query_url_like = row(2).toString
+
+      // Filter selected keywords dataframe using query with array contains
+      selected_keywords.filter(query)
+                        .withColumn("segment",lit(segment))
+                        .select("url","segment")
+                        .write
+                        .format("parquet")
+                        .mode("append")
+                        .save("/datascience/data_url_classifier/GT_new_taxo_queries")
+
+      // Filter data_urls dataframe using query with array url LIKE                        
+      // data_urls.filter(query_url_like)
+      //             .withColumn("segment",lit(segment))
+      //             .select("url","segment")
+      //             .write
+      //             .format("parquet")
+      //             .mode("append")
+      //             .save("/datascience/data_url_classifier/GT_new_taxo_queries")
+    }
+
+    // Groupby by url and concatenating segments with ;
+    spark.read.load("/datascience/data_url_classifier/GT_new_taxo_queries")
+          .groupBy("url")
+          .agg(collect_list(col("segment")).as("segment"))
+          .withColumn("segment", concat_ws(";", col("segment")))
+          .write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/data_url_classifier/gt_new_taxo")
+  }
+
   def processURL(dfURL: DataFrame, field: String = "url"): DataFrame = {
     // First of all, we get the domains, and filter out those ones that are very generic
     val generic_domains = List(
