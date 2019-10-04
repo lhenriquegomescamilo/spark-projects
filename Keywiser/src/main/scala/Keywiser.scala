@@ -531,19 +531,31 @@ object Keywiser {
       )
     
       println("KEYWISER LOG: \n\t%s".format(queries(0)("filter").toString))
+
+      // Flag to indicate if execution failed
+      var failed = false      
       
       /**
         * Here we read data_keywords, format the keywords list from the json file.
         * Then we call getJointKeys() to merge them and group a list of keywords for each device_id.
       **/      
-      /** Read from "data_keywords" database */
-      val df_data_keywords = getDataKeywords(
-        spark = spark,
-        country = country,
-        nDays = nDays,
-        since = since,
-        stemming = stemming
-      )
+
+      try {
+        /** Read from "data_keywords" database */
+        val df_data_keywords = getDataKeywords(
+          spark = spark,
+          country = country,
+          nDays = nDays,
+          since = since,
+          stemming = stemming
+        )
+
+      } catch {
+        case e: Exception => {
+          e.printStackTrace()
+          failed = true
+        }
+      }        
 
       /**
         if verbose {
@@ -556,15 +568,23 @@ object Keywiser {
 
       import spark.implicits._
       
-      /** Format all keywords from queries to join */
-      val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
-      val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
+      try {
+        /** Format all keywords from queries to join */
+        val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
+        val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
 
-      /**  Match all keywords with data_keywords */
-      val data = getJointKeys(
-        df_keys = df_keys,
-        df_data_keywords = df_data_keywords,
-        verbose = verbose)
+        /**  Match all keywords with data_keywords */
+        val data = getJointKeys(
+          df_keys = df_keys,
+          df_data_keywords = df_data_keywords,
+          verbose = verbose)
+
+      } catch {
+        case e: Exception => {
+          e.printStackTrace()
+          failed = true
+        }
+      }        
 
       /**
       if verbose {
@@ -577,8 +597,6 @@ object Keywiser {
      
       // Lastly we store the audience applying the filters
       var file_name = file.replace(".json", "")
-      // Flag to indicate if execution failed
-      var failed = false
 
       try {
         getAudiences(
