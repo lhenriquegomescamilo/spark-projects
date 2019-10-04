@@ -45,6 +45,8 @@ object FromEventqueuePII {
       .orderBy(asc("country"), asc("device_id"))
     
     data.createOrReplaceTempView("temPII")
+
+    spark.table("temPII").cache
     
     spark.table("temPII")
       .repartition(12)
