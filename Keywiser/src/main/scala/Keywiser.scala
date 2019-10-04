@@ -503,42 +503,42 @@ object Keywiser {
       destPath = new Path("/datascience/keywiser/in_progress/")
       hdfs.rename(srcPath, destPath)
       actual_path = "/datascience/keywiser/in_progress/%s".format(file)
+      
+      // Filename to save audiences with.
+      var file_name = file.replace(".json", "")
 
+      // Here we obtain parameters that are supposed to be equal for every query in the file
+      val country = queries(0)("country").toString
+      val keywords = queries(0)("keywords").toString
+      val since = queries(0)("since").toString.toInt
+      val nDays = queries(0)("ndays").toString.toInt
+      val pipeline = queries(0)("pipeline").toString.toInt
+      val push = queries(0)("push").toString
+      val stemming = queries(0)("stemming").toString.toInt
+      val description = queries(0)("description").toString
+
+      println(
+        "KEYWISER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
+        //"KEYWISER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
+          .format(
+            file,
+            country,
+            since,
+            nDays,
+            pipeline,
+            queries.length,
+            push,
+            stemming,
+            description
+          )
+      )
+    
+      println("KEYWISER LOG: \n\t%s".format(queries(0)("filter").toString))
+      
       // Flag to indicate if execution failed
       var failed = false      
 
-      try {
-
-        // Here we obtain parameters that are supposed to be equal for every query in the file
-        val country = queries(0)("country").toString
-        val keywords = queries(0)("keywords").toString
-        val since = queries(0)("since").toString.toInt
-        val nDays = queries(0)("ndays").toString.toInt
-        val pipeline = queries(0)("pipeline").toString.toInt
-        val push = queries(0)("push").toString
-        val stemming = queries(0)("stemming").toString.toInt
-        val description = queries(0)("description").toString
-
-        println(
-          "KEYWISER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
-          //"KEYWISER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
-            .format(
-              file,
-              country,
-              since,
-              nDays,
-              pipeline,
-              queries.length,
-              push,
-              stemming,
-              description
-            )
-        )
-      
-        println("KEYWISER LOG: \n\t%s".format(queries(0)("filter").toString))
-
-
-        
+      try {        
         /**
           * Here we read data_keywords, format the keywords list from the json file.
           * Then we call getJointKeys() to merge them and group a list of keywords for each device_id.
@@ -583,9 +583,7 @@ object Keywiser {
         }
         **/      
       
-        // Lastly we store the audience applying the filters
-        var file_name = file.replace(".json", "")
-
+        // Here we store the audience applying the filters
         getAudiences(
           spark = spark,
           queries = queries,

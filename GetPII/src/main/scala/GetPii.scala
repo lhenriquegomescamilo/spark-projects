@@ -42,12 +42,11 @@ object FromEventqueuePII {
         "nid_sh2"
       )
       .dropDuplicates()
-      //.orderBy(asc("country"), asc("device_id"))
+      .orderBy(asc("country"), asc("device_id"))
     
-    data.write.mode("overwrite").saveAsTable("temp_pii")
+    data.write.mode("overwrite").format("parquet").saveAsTable("temp_pii")
     
     spark.table("temp_pii")
-      .orderBy(asc("country"), asc("device_id"))
       .repartition(12)
       .write
       .format("parquet")
