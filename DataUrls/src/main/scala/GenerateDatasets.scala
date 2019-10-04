@@ -102,7 +102,6 @@ object GenerateDatasetsUrls {
     gtDF.write
          .format("parquet")
          .mode(SaveMode.Overwrite)
-         .partitionBy("country")
          .save("/datascience/data_url_classifier/gt_new_taxo_filtered")
     gtDF.cache()
     gtDF = broadcast(gtDF.select("url"))
