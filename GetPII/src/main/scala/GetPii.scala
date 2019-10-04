@@ -17,6 +17,7 @@ object FromEventqueuePII {
   def getPII(spark: SparkSession, day: String) {
     // First we load the data
     import spark.implicits._
+    import spark.sql
 
     val filePath = "/data/eventqueue/%s/*.tsv.gz".format(day)
     val data = spark.read
@@ -47,7 +48,7 @@ object FromEventqueuePII {
       .orderBy(asc("country"), asc("device_id"))
     
     data.createOrReplaceTempView("temp_pii")
-    spark.sql("create table per_pii as select * from temp_pii")
+    spark.sql("create table per_pii stored as parquet as select * from temp_pii")
     
     val fin = spark.table("per_pii")
 
