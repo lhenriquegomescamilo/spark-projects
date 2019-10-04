@@ -545,7 +545,7 @@ object Keywiser {
         **/      
 
         /** Read from "data_keywords" database */
-        df_data_keywords = getDataKeywords(
+        val df_data_keywords = getDataKeywords(
           spark = spark,
           country = country,
           nDays = nDays,
