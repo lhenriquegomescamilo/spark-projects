@@ -504,96 +504,101 @@ object Keywiser {
       hdfs.rename(srcPath, destPath)
       actual_path = "/datascience/keywiser/in_progress/%s".format(file)
 
-      // Here we obtain parameters that are supposed to be equal for every query in the file
-      val country = queries(0)("country").toString
-      val keywords = queries(0)("keywords").toString
-      val since = queries(0)("since").toString.toInt
-      val nDays = queries(0)("ndays").toString.toInt
-      val pipeline = queries(0)("pipeline").toString.toInt
-      val push = queries(0)("push").toString
-      val stemming = queries(0)("stemming").toString.toInt
-      val description = queries(0)("description").toString
-
-      println(
-        "KEYWISER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
-        //"KEYWISER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
-          .format(
-            file,
-            country,
-            since,
-            nDays,
-            pipeline,
-            queries.length,
-            push,
-            stemming,
-            description
-          )
-      )
-    
-      println("KEYWISER LOG: \n\t%s".format(queries(0)("filter").toString))
-      
-      /**
-        * Here we read data_keywords, format the keywords list from the json file.
-        * Then we call getJointKeys() to merge them and group a list of keywords for each device_id.
-      **/      
-      /** Read from "data_keywords" database */
-      val df_data_keywords = getDataKeywords(
-        spark = spark,
-        country = country,
-        nDays = nDays,
-        since = since,
-        stemming = stemming
-      )
-
-      /**
-        if verbose {
-          println(
-            "count de data_keywords para %sD: %s"
-              .format(nDays, df_data_keywords.select("device_id").distinct().count())
-          )
-        }
-      **/
-
-      import spark.implicits._
-      
-      /** Format all keywords from queries to join */
-      val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
-      val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
-
-      /**  Match all keywords with data_keywords */
-      val data = getJointKeys(
-        df_keys = df_keys,
-        df_data_keywords = df_data_keywords,
-        verbose = verbose)
-
-      /**
-      if verbose {
-        println(
-          "count del join after groupby: %s"
-            .format(data.select("device_id").distinct().count())
-        )
-      }
-      **/      
-     
-      // Lastly we store the audience applying the filters
-      var file_name = file.replace(".json", "")
       // Flag to indicate if execution failed
-      var failed = false
+      var failed = false      
 
       try {
+
+        // Here we obtain parameters that are supposed to be equal for every query in the file
+        val country = queries(0)("country").toString
+        val keywords = queries(0)("keywords").toString
+        val since = queries(0)("since").toString.toInt
+        val nDays = queries(0)("ndays").toString.toInt
+        val pipeline = queries(0)("pipeline").toString.toInt
+        val push = queries(0)("push").toString
+        val stemming = queries(0)("stemming").toString.toInt
+        val description = queries(0)("description").toString
+
+        println(
+          "KEYWISER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
+          //"KEYWISER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
+            .format(
+              file,
+              country,
+              since,
+              nDays,
+              pipeline,
+              queries.length,
+              push,
+              stemming,
+              description
+            )
+        )
+      
+        println("KEYWISER LOG: \n\t%s".format(queries(0)("filter").toString))
+
+
+        
+        /**
+          * Here we read data_keywords, format the keywords list from the json file.
+          * Then we call getJointKeys() to merge them and group a list of keywords for each device_id.
+        **/      
+
+        /** Read from "data_keywords" database */
+        val df_data_keywords = getDataKeywords(
+          spark = spark,
+          country = country,
+          nDays = nDays,
+          since = since,
+          stemming = stemming
+        )
+
+        /**
+          if verbose {
+            println(
+              "count de data_keywords para %sD: %s"
+                .format(nDays, df_data_keywords.select("device_id").distinct().count())
+            )
+          }
+        **/
+
+        import spark.implicits._
+        
+        /** Format all keywords from queries to join */
+        val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
+        val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
+
+        /**  Match all keywords with data_keywords */
+        val data = getJointKeys(
+          df_keys = df_keys,
+          df_data_keywords = df_data_keywords,
+          verbose = verbose)
+
+        /**
+        if verbose {
+          println(
+            "count del join after groupby: %s"
+              .format(data.select("device_id").distinct().count())
+          )
+        }
+        **/      
+      
+        // Lastly we store the audience applying the filters
+        var file_name = file.replace(".json", "")
+
         getAudiences(
           spark = spark,
           queries = queries,
           data = data,
           file_name = file_name
         )
+    
       } catch {
         case e: Exception => {
           e.printStackTrace()
           failed = true
         }
-      }
-      
+      }        
 
       // If everything worked out ok, then move file from the folder /datascience/keywiser/in_progress/ to /datascience/keywiser/done/
       srcPath = new Path(actual_path)
@@ -610,7 +615,6 @@ object Keywiser {
     }
     //hdfs.close()
   }
-
 
 
   type OptionMap = Map[Symbol, String]
