@@ -44,9 +44,10 @@ object FromEventqueuePII {
       .dropDuplicates()
       .orderBy(asc("country"), asc("device_id"))
     
-    data.write.mode("overwrite").format("parquet").saveAsTable("temp_pii")
+    data.createOrReplaceTempView("temp_pii")
+    spark.sql("create table per_pii as select * from temp_pii")
     
-    spark.table("temp_pii")
+    spark.table("per_pii")
       .repartition(12)
       .write
       .format("parquet")
@@ -54,7 +55,7 @@ object FromEventqueuePII {
       //.partitionBy("day")
       .save("/datascience/pii_matching/pii_tuples/day=%s".format( day.replace("/", "") ))
     
-    spark.sql("drop table if exists temp_pii")
+    spark.sql("drop table if exists per_pii")
   }
 
   def procesPII(spark: SparkSession) {
