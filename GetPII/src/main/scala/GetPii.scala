@@ -154,6 +154,7 @@ object FromEventqueuePII {
 
     val spark = SparkSession.builder
         .appName("Get Pii from Eventqueue")
+        .enableHiveSupport()
         .getOrCreate()
 
     // Here we obtain the list of days to be downloaded
