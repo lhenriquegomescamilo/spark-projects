@@ -27,7 +27,7 @@ object FromEventqueuePII {
       .load(filePath)
 
     // Now we process the data and store it
-    data
+    val mid = data
       //.withColumn("day", lit( day.replace("/", "") ))
       .filter((
         col("ml_sh2").isNotNull ||
@@ -47,7 +47,7 @@ object FromEventqueuePII {
       .dropDuplicates()
       .orderBy(asc("country"), asc("device_id"))
     
-    data.createOrReplaceTempView("temp_pii")
+    mid.createOrReplaceTempView("temp_pii")
     spark.sql("create table per_pii stored as parquet as select * from temp_pii")
     
     val fin = spark.table("per_pii")
