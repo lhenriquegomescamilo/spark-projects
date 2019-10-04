@@ -76,7 +76,7 @@ object UrlUtils {
     processURL(dfURL = df, field = "url")
   }
 
-   def get_gt_new_taxo(spark: SparkSession, ndays:Int, since:Int, country:String): Dataframe = {
+   def get_gt_new_taxo(spark: SparkSession, ndays:Int, since:Int, country:String) = {
     // Get selected keywords <url, [kws]>
     val selected_keywords = get_selected_keywords(spark, ndays = ndays, since = since, country = country)
     selected_keywords.cache()
