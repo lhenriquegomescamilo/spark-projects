@@ -143,7 +143,7 @@ object UpdateSafeGraphData {
           .add("country", "string")
           .add("day", "string")
       val empty_df = spark.createDataFrame(
-        sc.emptyRDD[Row],
+        spark.sparkContext.emptyRDD[Row],
         schema
       )
       empty_df
