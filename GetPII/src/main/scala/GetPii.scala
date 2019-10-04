@@ -26,11 +26,11 @@ object FromEventqueuePII {
     // Now we process the data and store it
     data
       //.withColumn("day", lit( day.replace("/", "") ))
-      .filter(
-        (col("ml_sh2").isNotNull || col(
-          "mb_sh2"
-        ).isNotNull || col("nid_sh2").isNotNull)
-      )
+      .filter((
+        col("ml_sh2").isNotNull ||
+        col("mb_sh2").isNotNull ||
+        col("nid_sh2").isNotNull
+      ))
       .select(
         "device_id",
         "device_type",
@@ -41,8 +41,13 @@ object FromEventqueuePII {
         "mb_sh2",
         "nid_sh2"
       )
-      .distinct()
+    
+    val data_prepared = data
+      .dropDuplicates()
       .orderBy(asc("country"), asc("device_id"))
+      .repartition(12)
+
+    data_prepared
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
@@ -121,7 +126,6 @@ object FromEventqueuePII {
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
       .save("/datascience/pii_matching/pii_table/%s".format(dt))
-
   }
 
   type OptionMap = Map[Symbol, String]
