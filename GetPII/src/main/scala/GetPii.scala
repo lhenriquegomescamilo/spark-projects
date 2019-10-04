@@ -44,14 +44,13 @@ object FromEventqueuePII {
         "nid_sh2"
       )
       .dropDuplicates()
-      //.orderBy(asc("country"), asc("device_id"))
+      .orderBy(asc("country"), asc("device_id"))
     
     mid.createOrReplaceTempView("temp_pii")
     
     val fin = spark.table("temp_pii")
-      .orderBy(asc("country"), asc("device_id"))
 
-    fin.repartition(12)
+    fin.repartition(50)
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
