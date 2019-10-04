@@ -76,7 +76,7 @@ object UrlUtils {
     processURL(dfURL = df, field = "url")
   }
 
-   def get_gt_new_taxo(spark: SparkSession, ndays:Int, since:Int, country:String) = {
+   def get_gt_new_taxo(spark: SparkSession, ndays:Int, since:Int, country:String): Dataframe = {
     // Get selected keywords <url, [kws]>
     val selected_keywords = get_selected_keywords(spark, ndays = ndays, since = since, country = country)
     selected_keywords.cache()
@@ -116,14 +116,17 @@ object UrlUtils {
     }
 
     // Groupby by url and concatenating segments with ;
-    spark.read.load("/datascience/data_url_classifier/GT_new_taxo_queries")
+    val joint = spark.read.load("/datascience/data_url_classifier/GT_new_taxo_queries")
           .groupBy("url")
           .agg(collect_list(col("segment")).as("segment"))
           .withColumn("segment", concat_ws(";", col("segment")))
-          .write
-          .format("parquet")
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/data_url_classifier/gt_new_taxo")
+          
+    joint.write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/data_url_classifier/gt_new_taxo")
+    
+    joint
   }
 
   def processURL(dfURL: DataFrame, field: String = "url"): DataFrame = {
