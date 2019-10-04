@@ -60,17 +60,18 @@ object UpdateSafeGraphData {
 
     // Get the days to be loaded
     val format = "dd_MM_yyyy"
+    val format_day = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays)
       .map(end.minusDays(_))
-      .map(_.toString(format))
+      .map(day => (day, day.toString(format)))
 
     // Now we obtain the list of hdfs files to be read
     val path = "/datascience/geo/AR/"
     val hdfs_files = days
-      .map(day => path + "data_gcba_%s.csv/".format(day))
+      .map(day => (day._1, path + "data_gcba_%s.csv/".format(day._2)))
       .filter(
-        dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath))
+        dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath._2))
       )
 
     // Time format that will be used to transform the date to Unix time
@@ -78,12 +79,19 @@ object UpdateSafeGraphData {
 
     if (hdfs_files.length > 0) {
       // Read the data
-      val gcba_df = spark.read
-        .format("csv")
-        .option("header", "true")
-        .load(hdfs_files: _*)
-        .na
-        .drop()
+
+      val dfs = hdfs_files.map(
+        hdfs_file =>
+          spark.read
+            .format("csv")
+            .option("header", "true")
+            .load(hdfs_file._2)
+            .na
+            .drop()
+            // Now we define the day
+            .withColumn("day", lit(hdfs_file._1.toString(format_day)))
+      )
+      val gcba_df = dfs.reduce((df1, df2) => df1.union(df2))
 
       // Finally we process all the columns so that they match the safegraph schema
       gcba_df
@@ -95,15 +103,20 @@ object UpdateSafeGraphData {
         .withColumn("geo_hash", lit("gcba"))
         .withColumn("horizontal_accuracy", lit(0f))
         .withColumnRenamed("Device Id", "ad_id")
-        // Now we define the day
-        .withColumn("day", regexp_replace(col("timestamp"), "T.*", ""))
-        .withColumn("day", regexp_replace(col("day"), "-", ""))
         // Transform the date from format 2019-10-01T20:30:08.969Z to Unix time (in seconds)
-        .withColumn("timestamp", regexp_replace(col("timestamp"), "T", " "))
-        .withColumn("timestamp", regexp_replace(col("timestamp"), "\\..*Z", ""))
         .withColumn(
           "utc_timestamp",
-          unix_timestamp(col("timestamp"), time_format)
+          when(
+            col("timestamp").contains("T"),
+            unix_timestamp(
+              regexp_replace(
+                regexp_replace(col("timestamp"), "T", " "),
+                "\\..*Z",
+                ""
+              ),
+              time_format
+            )
+          ).otherwise(col("timestamp").cast("long"))
         )
         .select(
           "utc_timestamp",
@@ -130,9 +143,7 @@ object UpdateSafeGraphData {
           .add("country", "string")
           .add("day", "string")
       val empty_df = spark.createDataFrame(
-        spark.sparkContext.parallelize(
-          Seq(Row(0L, "empty", "empty", "gcba", 0d, 0d, 0f, "argentina", "empty"))
-        ),
+        sc.emptyRDD[Row],
         schema
       )
       empty_df
