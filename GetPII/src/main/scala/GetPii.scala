@@ -16,6 +16,8 @@ object FromEventqueuePII {
     */
   def getPII(spark: SparkSession, day: String) {
     // First we load the data
+    import spark.implicits._
+
     val filePath = "/data/eventqueue/%s/*.tsv.gz".format(day)
     val data = spark.read
       .format("csv")
@@ -47,15 +49,16 @@ object FromEventqueuePII {
     data.createOrReplaceTempView("temp_pii")
     spark.sql("create table per_pii as select * from temp_pii")
     
-    spark.table("per_pii")
-      .repartition(12)
+    fin = spark.table("per_pii")
+
+    fin.repartition(12)
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
       //.partitionBy("day")
       .save("/datascience/pii_matching/pii_tuples/day=%s".format( day.replace("/", "") ))
     
-    spark.sql("drop table if exists per_pii")
+    //spark.sql("drop table if exists per_pii")
   }
 
   def procesPII(spark: SparkSession) {
