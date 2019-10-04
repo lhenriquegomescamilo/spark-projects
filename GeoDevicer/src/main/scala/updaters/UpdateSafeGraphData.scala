@@ -28,7 +28,7 @@ import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
   * This process takes the daily data that comes from SafeGraph and generates a new pipeline in
   * parquet, with the same set of columns.
   *
-  * The resulting pipeline is stored in /datascience/geo/safegraph_pipeline/.
+  * The resulting pipeline is stored in /datascience/geo/safegraph/.
   */
 object UpdateSafeGraphData {
 
@@ -229,7 +229,7 @@ object UpdateSafeGraphData {
     * - nDays: number of days to be read from SafeGraph.
     * - since: number of days to be skiped.
     *
-    * As a result, this function stores the pipeline in /datascience/geo/safegraph_pipeline/, partitioned
+    * As a result, this function stores the pipeline in /datascience/geo/safegraph/, partitioned
     * by day and by country.
     */
   def storeData(spark: SparkSession, nDays: Int, since: Int) = {
@@ -247,7 +247,7 @@ object UpdateSafeGraphData {
       .format("parquet")
       .partitionBy("day", "country")
       .mode("append")
-      .save("/datascience/geo/safegraph_pipeline/")
+      .save("/datascience/geo/safegraph/")
   }
 
   type OptionMap = Map[Symbol, String]
