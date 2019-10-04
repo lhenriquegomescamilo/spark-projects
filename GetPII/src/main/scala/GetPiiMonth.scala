@@ -93,8 +93,7 @@ object FromEventqueuePIIMonth {
     //  )
     // Then we sort the tuples and we keep the one with the smallest timestamp.
     val udfSort = udf(
-      (id_partner: Seq[String], days: Seq[String]) =>
-        (id_partner zip days).sortBy(_._2).toList(0)
+      (id_partner: Seq[String], days: Seq[String]) => (id_partner zip days).sortBy(_._2).toList(0)
     )
     //val df_final = grouped
     //  .withColumn("result", udfSort(col("id_partner"), col("days")))
