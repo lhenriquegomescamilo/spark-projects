@@ -7,10 +7,9 @@ import org.apache.spark.sql.SaveMode
 object dataGCBA {
   def process_day(spark: SparkSession, day: String) {
     val df = spark.read
-      .option("basePath", "/datascience/data_audiences_streaming")
-      .load("/datascience/data_audiences_streaming/hour=%s*/".format(day))
-      .select("id_partner", "event_type", "url", "time", "device_id")
-      .filter("event_type = 'tk' and id_partner = 349")
+      .option("basePath", "/datascience/data_partner_streaming")
+      .load("/datascience/data_partner_streaming/hour=%s*/id_partner=349".format(day))
+      .filter("event_type = 'tk'")
       .select("url", "time", "device_id")
     df.write
       .format("csv")
