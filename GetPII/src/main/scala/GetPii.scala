@@ -17,7 +17,6 @@ object FromEventqueuePII {
   def getPII(spark: SparkSession, day: String) {
     // First we load the data
     import spark.implicits._
-    import spark.sql
 
     val filePath = "/data/eventqueue/%s/*.tsv.gz".format(day)
     val data = spark.read
@@ -45,12 +44,12 @@ object FromEventqueuePII {
         "nid_sh2"
       )
       .dropDuplicates()
-      .orderBy(asc("country"), asc("device_id"))
+      //.orderBy(asc("country"), asc("device_id"))
     
     mid.createOrReplaceTempView("temp_pii")
-    spark.sql("create table per_pii stored as parquet as select * from temp_pii")
     
-    val fin = spark.table("per_pii")
+    val fin = spark.table("temp_pii")
+      .orderBy(asc("country"), asc("device_id"))
 
     fin.repartition(12)
       .write
@@ -58,8 +57,6 @@ object FromEventqueuePII {
       .mode(SaveMode.Overwrite)
       //.partitionBy("day")
       .save("/datascience/pii_matching/pii_tuples/day=%s".format( day.replace("/", "") ))
-    
-    //spark.sql("drop table if exists per_pii")
   }
 
   def procesPII(spark: SparkSession) {
@@ -158,7 +155,6 @@ object FromEventqueuePII {
 
     val spark = SparkSession.builder
         .appName("Get Pii from Eventqueue")
-        .enableHiveSupport()
         .getOrCreate()
 
     // Here we obtain the list of days to be downloaded
