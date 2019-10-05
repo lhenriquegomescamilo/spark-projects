@@ -90,7 +90,7 @@ object UpdateSafeGraphData {
             .drop()
             // Now we define the day
             .withColumn("day", lit(hdfs_file._1.toString(format_day)))
-            .select("Device Id", "Lat/Lon", "timestamp")
+            .select("Device Id", "Lat/Lon", "timestamp", "day")
       )
       val gcba_df = dfs.reduce((df1, df2) => df1.union(df2))
 
