@@ -393,6 +393,76 @@ object CrossDevicer {
       .save("/datascience/audiences/crossdeviced/taxo_gral_exclusion")
   }
 
+  def crossDevice(spark: SparkSession) = {
+    def getDataTriplets(
+        spark: SparkSession,
+        nDays: Int = -1,
+        path: String = "/datascience/data_triplets/segments/"
+    ): DataFrame = {
+      // First we obtain the configuration to be allowed to watch if a file exists or not
+      val conf = spark.sparkContext.hadoopConfiguration
+      val fs = FileSystem.get(conf)
+
+      val df = if (nDays > 0) {
+        // read files from dates
+        val format = "yyyyMMdd"
+        val endDate = DateTime.now.minusDays(1)
+        val days =
+          (0 until nDays.toInt)
+            .map(endDate.minusDays(_))
+            .map(_.toString(format))
+        // Now we obtain the list of hdfs folders to be read
+        val hdfs_files = days
+          .map(day => path + "/day=%s/".format(day))
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+        spark.read.option("basePath", path).parquet(hdfs_files: _*)
+      } else {
+        // read all date files
+        spark.read.load(path)
+      }
+      df
+    }
+
+    val mapping = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/data/metadata/xd_mapping_segments.csv")
+    val mapping_excl = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/data/metadata/xd_mapping_segments_exclusion.csv")
+    val data_triplets = getDataTriplets(spark, "AR", 60)
+
+    val devices_segments = data_triplets
+      .withColumnRenamed("feature", "segment_id")
+      .join(
+        broadcast(mapping.withColumnRenamed("parentId", "segment_id")),
+        Seq("segment_id")
+      )
+      .select("device_id", "segmentId")
+    val index = spark.read
+      .format("parquet")
+      .load("/datascience/crossdevice/double_index_individual")
+
+    val cross_deviced = devices_segments
+      .withColumnRenamed("device_id", "index")
+      .withColumn("index", upper(col("index")))
+      .join(index.withColumn("index", upper(col("index"))), Seq("index"))
+      .select("device", "segmentId", "device_type")
+
+    cross_deviced
+      .distinct()
+      .groupBy("device")
+      .agg(collect_list("segmentId") as "segments")
+      .withColumn("segments", concat_ws(",", col("segments")))
+      .select("device_type", "device", "segments")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode("overwrite")
+      .save("/datascience/audiences/crossdeviced/taxo_gral_new")
+  }
+
   type OptionMap = Map[Symbol, Int]
 
   /**
@@ -487,7 +557,8 @@ object CrossDevicer {
       if (merge) {
         mergeData(spark)
       } else {
-        regularCrossDevice(spark, nDays, from)
+        //regularCrossDevice(spark, nDays, from)
+        crossDevice(spark)
       }
     } else {
       exclusionCrossDevice(spark, nDays, from)
