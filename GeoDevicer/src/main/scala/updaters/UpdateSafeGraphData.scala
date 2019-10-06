@@ -80,18 +80,24 @@ object UpdateSafeGraphData {
     if (hdfs_files.length > 0) {
       // Read the data
 
-      val dfs = hdfs_files.map(
-        hdfs_file =>
-          spark.read
-            .format("csv")
-            .option("header", "true")
-            .load(hdfs_file._2)
-            .na
-            .drop()
-            // Now we define the day
-            .withColumn("day", lit(hdfs_file._1.toString(format_day)))
-            .select("Device Id", "Lat/Lon", "timestamp", "day")
-      )
+      val dfs = hdfs_files
+        .map(
+          hdfs_file =>
+            spark.read
+              .format("csv")
+              .option("header", "true")
+              .load(hdfs_file._2)
+              .na
+              .drop()
+              // Now we define the day
+              .withColumn("day", lit(hdfs_file._1.toString(format_day)))
+        )
+        .filter(
+          df =>
+            df.columns.contains("Device Id") && df.columns
+              .contains("Lat/Lon") && df.columns.contains("timestamp")
+        )
+        .map(df => df.select("Device Id", "Lat/Lon", "timestamp", "day"))
       val gcba_df = dfs.reduce((df1, df2) => df1.union(df2))
 
       // Finally we process all the columns so that they match the safegraph schema
