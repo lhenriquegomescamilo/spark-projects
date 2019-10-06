@@ -445,7 +445,7 @@ object CrossDevicer {
 
     cross_deviced
       .distinct()
-      .groupBy("device")
+      .groupBy("device", "device_type")
       .agg(collect_list("segmentId") as "segments")
       .withColumn("segments", concat_ws(",", col("segments")))
       .select("device_type", "device", "segments")
