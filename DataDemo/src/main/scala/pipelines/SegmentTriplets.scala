@@ -85,7 +85,7 @@ object SegmentTriplets {
       .format("parquet")
       .mode("append")
       .partitionBy("day", "country")
-      .save("/datascience/data_triplets/segments")
+      .save("/datascience/data_triplets/segments_")
   }
 
   /**
