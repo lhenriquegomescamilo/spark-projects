@@ -3,14 +3,7 @@ package main.scala
 import org.joda.time.{Days, DateTime}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{DataFrame, SparkSession, SQLContext, SaveMode}
-import org.apache.spark.sql.functions.{
-  udf,
-  col,
-  lit,
-  size,
-  collect_list,
-  concat_ws
-}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.Column
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.expressions.Window
