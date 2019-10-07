@@ -424,7 +424,7 @@ object CrossDevicer {
       .format("csv")
       .option("header", "true")
       .load("/data/metadata/xd_mapping_segments_exclusion.csv")
-    val data_triplets = getDataTriplets(spark, 6)
+    val data_triplets = getDataTriplets(spark, 60)
 
     val devices_segments = data_triplets
       .withColumnRenamed("feature", "segment_id")
