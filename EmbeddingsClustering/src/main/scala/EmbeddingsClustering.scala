@@ -35,12 +35,11 @@ object EmbeddingsClustering {
              embeddingVectors : RDD[Vector],
              numClusters : Int = 2,
              maxIterations: Int = 20,
-             epsilon: Double = 1e-4,
              runs: Int = 1) {
     import spark.implicits._
     embeddingVectors.persist(StorageLevel.MEMORY_AND_DISK)
-    println(s"kmeans conf: numClusters = $numClusters - maxIterations:$maxIterations - epsilon=$epsilon - runs=$runs")
-    val clusters = KMeans.train(embeddingVectors, k=numClusters, max_iterations=maxIterations, epsilon=epsilon)
+    println(s"kmeans conf: numClusters = $numClusters - maxIterations:$maxIterations - runs=$runs")
+    val clusters = KMeans.train(embeddingVectors, k=numClusters, max_iterations=maxIterations, runs=runs)
     val WSSSE = clusters.computeCost(embeddingVectors)
     println(s"Within Set Sum of Squared Errors = $WSSSE")
 
@@ -73,8 +72,6 @@ object EmbeddingsClustering {
         nextOption(map ++ Map('maxIterations -> value), tail)
       case "--numClusters" :: value :: tail =>
         nextOption(map ++ Map('numClusters -> value), tail)
-      case "--epsilon" :: value :: tail =>
-        nextOption(map ++ Map('epsilon -> value), tail)
       case "--runs" :: value :: tail =>
         nextOption(map ++ Map('runs -> value), tail)
       case "--normalize" :: value :: tail =>
@@ -99,8 +96,6 @@ object EmbeddingsClustering {
       if (options.contains('maxIterations)) options('maxIterations).toInt else 20
     val numClusters =
       if (options.contains('numClusters)) options('numClusters).toInt else 2
-    val epsilon =
-      if (options.contains('epsilon)) options('epsilon).toDouble else 1e-4
     val normalize =
       if (options.contains('normalize)) true else false
     val runs =
@@ -123,7 +118,6 @@ object EmbeddingsClustering {
           embeddingVectors,
           numClusters=numClusters,
           maxIterations=maxIterations,
-          epsilon=epsilon,
           runs=runs)
 
   }
