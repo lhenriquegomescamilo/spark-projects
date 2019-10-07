@@ -44,7 +44,11 @@ object EmbeddingsClustering {
     println(s"Within Set Sum of Squared Errors = $WSSSE")
 
     var pathModel="/datascience/data_clustering/models/kmeans_k=%s/".format(numClusters)
+
     println(s"Writing model in = $pathModel")
+    val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    if (fs.exists(new org.apache.hadoop.fs.Path(pathModel)))
+      fs.delete(new org.apache.hadoop.fs.Path(pathModel), true)
     clusters.save(spark.sparkContext, pathModel)
 
     var path="/datascience/data_clustering/kmeans_centers_k=%s/".format(numClusters)
