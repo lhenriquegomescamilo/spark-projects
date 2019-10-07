@@ -48,7 +48,7 @@ object FromEventqueuePII {
     
     mid.createOrReplaceTempView("temp_pii")
     
-    val fin = spark.table("temp_pii")
+    val fin = spark.table("temp_pii").cache
 
     fin.orderBy(asc("country"), asc("device_id"))
       .write
