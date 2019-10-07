@@ -8,6 +8,7 @@ import org.apache.spark.sql.Column
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.{row_number, max, broadcast}
+import org.apache.log4j.{Level, Logger}
 
 object CrossDevicer {
 
@@ -532,7 +533,10 @@ object CrossDevicer {
     val from = if (options.contains('from)) options('from) else 1
     val regular = if (options.contains('exclusion)) false else true
     val merge = if (options.contains('merge)) true else false
-
+    
+    // Setting logger config
+    Logger.getRootLogger.setLevel(Level.WARN)
+    
     // First we obtain the Spark session
     val conf = new SparkConf()
       .set("spark.sql.files.ignoreCorruptFiles", "true")
