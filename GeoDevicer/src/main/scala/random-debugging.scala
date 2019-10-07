@@ -303,6 +303,7 @@ category_locations.write.format("csv")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/MX/JCDecaux/category_locations_100")
 
+
 */
 
 
@@ -334,90 +335,61 @@ import org.datasyslab.geospark.enums.{FileDataSplitter, GridType, IndexType}
 import org.datasyslab.geospark.spatialOperator.{JoinQuery, KNNQuery, RangeQuery}
 
 
-//Quiero probar qué onda con RDD
-//acá cargamos el polígono 
-
-
-val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_caba.json"
+// Ahora tenemos que unir homes con la clasificacion, y pasar esto por los homes de Argentina.
+//GEOJSON
+// Ahora tenemos que unir homes con la clasificacion, y pasar esto por los homes de Argentina.
+//GEOJSON
+val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_deshape.json"
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
-val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
+rawSpatialDf.createOrReplaceTempView("poligonomagico")
 
-
-/*
-Esto es para shapefile
-val shapefileInputLocation="/datascience/geo/polygons/AR/radio_censal/shape_file"
-val spatialRDDpolygon = ShapefileReader.readToGeometryRDD(spark.sparkContext, shapefileInputLocation)
-*/
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as RADIO,_c2 as provincia FROM poligonomagico""".stripMargin).drop("rddshape")
 
 
 
-//cargamos los usuarios
-val nDays = 30
-val users = get_safegraph_data(spark,nDays.toString,"151","argentina")
+val NSE_radius = spark.read.format("csv").option("header",true)
+.option("delimiter","\t")
+.load("/datascience/geo/polygons/AR/radio_censal/argentina_NSE_radius_TABLE")
 
-//val users = spark.read.format("parquet").option("delimiter","\t").option("header",true)
-//.load("/datascience/geo/safegraph_pipeline/day=01906*/country=argentina/")
-//.withColumn("latitude",col("latitude").cast("Double"))
-//.withColumn("longitude",col("longitude").cast("Double"))
+val spatial_NSE = spatialDf.join(NSE_radius.select("RADIO","audience"),Seq("RADIO"))
+
+//Este es el df completo
+spatial_NSE.createOrReplaceTempView("poligonomagico")
+
+spatial_NSE.show(2)
+
+//Ahora levantamos los usuarios:
+val homes_raw = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/argentina_365d_home_1-10-2019-16h").toDF("device_id","device_type","freq","geocode","latitude","longitude").drop("geocode")
+
 
 //Aplicando geometría a los puntos
-users.createOrReplaceTempView("data")
 
-var safegraphDf = spark .sql(""" SELECT ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry,device_id,utc_timestamp
-              FROM data  """)
+homes_raw.createOrReplaceTempView("data")
 
+var safegraphDf = spark      .sql(""" SELECT device_id,device_type,ST_Point(CAST(data.longitude AS Decimal(24,20)),
+                                                             CAST(data.latitude AS Decimal(24,20))) 
+                                                             as pointshape
+              FROM data
+          """)
 
-safegraphDf.createOrReplaceTempView("data")   
-
-var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
-
-
-spatialRDDpolygon.rawSpatialRDD.persist(StorageLevel.MEMORY_ONLY)
-//spatialRDDusers.rawSpatialRDD.persist(StorageLevel.MEMORY_ONLY)
-
-println(spatialRDDpolygon.analyze())
-println(spatialRDDusers.analyze())
+safegraphDf.createOrReplaceTempView("data")
 
 
-//spatialRDDpolygon.spatialPartitioning(GridType.KDBTREE)
-//spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
-val joinQueryPartitioningType = GridType.QUADTREE
-val numPartitions = 100
-val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD
-val usingIndex = true
-val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
-
-spatialRDDusers.spatialPartitioning(joinQueryPartitioningType,numPartitions)
-spatialRDDpolygon.spatialPartitioning(spatialRDDusers.getPartitioner)
-spatialRDDusers.buildIndex(IndexType.QUADTREE, buildOnSpatialPartitionedRDD)
-
-println("polygon_partitions",spatialRDDpolygon.spatialPartitionedRDD.getNumPartitions)
-println("points_partitions",spatialRDDusers.spatialPartitionedRDD.getNumPartitions)
-
-val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
-
-result.rdd.map(line => "%s;%s".format(line._1.getUserData.toString.split("\t").mkString(";"), line._2.getUserData))
-.saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_%s_points_first_RDD_partVI".format(nDays.toString))
-
-/*
-result.rdd.map(line => "%s;%s".format(line._1, line._2))
-.saveAsTextFile("/datascience/geo/geospark_debugging/sample_w_rdd_%s_points_first".format(nDays.toString))
-*/
-
-
-/*
-//("/datascience/geo/geospark_debugging/sample_w_rdd_%s_dataframe_transform".format(nDays.toString))
-var rawSpatialDf = Adapter.toDf(result,spark)//.select("_c1","_c3")
-//println(rawSpatialDf.count())
-
-
-rawSpatialDf
-.write.format("csv")
-.option("header",true)
+val intersection = spark.sql(
+      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+            
+intersection.select("device_type","device_id","audience")
+intersection.drop("myshape")
+.write.format("csv").option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/sample_w_rdd_%s_points_first_Df".format(nDays.toString))
-*/
+.save("/datascience/geo/argentina_NSE_audience-7-10-19_MADID")
+
+
+
+
   }
 }
