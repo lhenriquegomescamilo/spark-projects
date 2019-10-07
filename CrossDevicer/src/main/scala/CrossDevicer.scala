@@ -440,10 +440,12 @@ object CrossDevicer {
       .toMap
 
     val map_udf = udf(
-      (segment: Integer) => if (m.contains(segment)) m(segment) else -1
+      (segment: Integer) =>
+        if (mapping.contains(segment)) mapping(segment) else -1
     )
 
     // This pipeline contains the devices along with their segments.
+    // Here we keep only those segment_ids that are in the mapping and transform them to their xd.
     // We will remove duplicates here.
     val data_triplets = getDataTriplets(spark, nDays, from)
       .withColumnRenamed("feature", "segment_id")
@@ -453,12 +455,12 @@ object CrossDevicer {
       .distinct()
 
     // Now we transform original segment ids to cross-device segment ids.
-    val devices_segments = data_triplets
-      .join(
-        broadcast(mapping.withColumnRenamed("parentId", "segment_id")),
-        Seq("segment_id")
-      )
-      .select("device_id", "segmentId")
+    // val devices_segments = data_triplets
+    //   .join(
+    //     broadcast(mapping.withColumnRenamed("parentId", "segment_id")),
+    //     Seq("segment_id")
+    //   )
+    //   .select("device_id", "segmentId")
 
     // This is the Tapad Index, that we will use to cross-device the users.
     val index = spark.read
@@ -466,7 +468,7 @@ object CrossDevicer {
       .load("/datascience/crossdevice/double_index_individual")
 
     // This is the actual cross-device
-    val cross_deviced = devices_segments
+    val cross_deviced = data_triplets
       .withColumnRenamed("device_id", "index")
       .withColumn("index", upper(col("index")))
       .join(index.withColumn("index", upper(col("index"))), Seq("index"))
