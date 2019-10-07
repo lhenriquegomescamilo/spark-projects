@@ -435,12 +435,21 @@ object CrossDevicer {
       .format("csv")
       .option("header", "true")
       .load("/data/metadata/xd_mapping_segments.csv")
+      .collect()
+      .map(row => (row(0).toString.toInt, row(1).toString.toInt))
+      .toMap
+
+    val map_udf = udf(
+      (segment: Integer) => if (m.contains(segment)) m(segment) else -1
+    )
 
     // This pipeline contains the devices along with their segments.
     // We will remove duplicates here.
     val data_triplets = getDataTriplets(spark, nDays, from)
       .withColumnRenamed("feature", "segment_id")
       .select("device_id", "segment_id")
+      .withColumn("segment_id", map_udf(col("segment_id")))
+      .filter("segment_id > 0")
       .distinct()
 
     // Now we transform original segment ids to cross-device segment ids.
@@ -450,7 +459,7 @@ object CrossDevicer {
         Seq("segment_id")
       )
       .select("device_id", "segmentId")
-    
+
     // This is the Tapad Index, that we will use to cross-device the users.
     val index = spark.read
       .format("parquet")
@@ -466,7 +475,6 @@ object CrossDevicer {
     // Finally, we group by user, so that we store the list of segments per user, and then store everything
     // in the given folder
     cross_deviced
-      .distinct()
       .groupBy("device", "device_type")
       .agg(collect_list("segmentId") as "segments")
       .withColumn("segments", concat_ws(",", col("segments")))
