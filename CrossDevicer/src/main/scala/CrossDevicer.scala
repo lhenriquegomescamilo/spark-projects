@@ -387,35 +387,37 @@ object CrossDevicer {
       .save("/datascience/audiences/crossdeviced/taxo_gral_exclusion")
   }
 
-  def crossDevice(spark: SparkSession) = {
-    def getDataTriplets(
-        spark: SparkSession,
-        nDays: Int = -1,
-        path: String = "/datascience/data_triplets/segments/"
-    ): DataFrame = {
-      // First we obtain the configuration to be allowed to watch if a file exists or not
-      val conf = spark.sparkContext.hadoopConfiguration
-      val fs = FileSystem.get(conf)
+  def getDataTriplets(
+      spark: SparkSession,
+      nDays: Int = -1,
+      from: Int = 1,
+      path: String = "/datascience/data_triplets/segments/"
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
 
-      val df = if (nDays > 0) {
-        // read files from dates
-        val format = "yyyyMMdd"
-        val endDate = DateTime.now.minusDays(1)
-        val days =
-          (0 until nDays.toInt)
-            .map(endDate.minusDays(_))
-            .map(_.toString(format))
-        // Now we obtain the list of hdfs folders to be read
-        val hdfs_files = days
-          .map(day => path + "/day=%s/".format(day))
-          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-        spark.read.option("basePath", path).parquet(hdfs_files: _*)
-      } else {
-        // read all date files
-        spark.read.load(path)
-      }
-      df
+    val df = if (nDays > 0) {
+      // read files from dates
+      val format = "yyyyMMdd"
+      val endDate = DateTime.now.minusDays(from)
+      val days =
+        (0 until nDays.toInt)
+          .map(endDate.minusDays(_))
+          .map(_.toString(format))
+      // Now we obtain the list of hdfs folders to be read
+      val hdfs_files = days
+        .map(day => path + "/day=%s/".format(day))
+        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    } else {
+      // read all date files
+      spark.read.load(path)
     }
+    df
+  }
+
+  def crossDevice(spark: SparkSession, nDays: Int, from: Int) = {
 
     val mapping = spark.read
       .format("csv")
@@ -425,10 +427,12 @@ object CrossDevicer {
       .format("csv")
       .option("header", "true")
       .load("/data/metadata/xd_mapping_segments_exclusion.csv")
-    val data_triplets = getDataTriplets(spark, 60)
+    val data_triplets = getDataTriplets(spark, nDays, from)
 
     val devices_segments = data_triplets
       .withColumnRenamed("feature", "segment_id")
+      .select("device_id", "segment_id")
+      .distinct()
       .join(
         broadcast(mapping.withColumnRenamed("parentId", "segment_id")),
         Seq("segment_id")
@@ -533,10 +537,10 @@ object CrossDevicer {
     val from = if (options.contains('from)) options('from) else 1
     val regular = if (options.contains('exclusion)) false else true
     val merge = if (options.contains('merge)) true else false
-    
+
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
-    
+
     // First we obtain the Spark session
     val conf = new SparkConf()
       .set("spark.sql.files.ignoreCorruptFiles", "true")
@@ -555,7 +559,7 @@ object CrossDevicer {
         mergeData(spark)
       } else {
         //regularCrossDevice(spark, nDays, from)
-        crossDevice(spark)
+        crossDevice(spark, nDays, from)
       }
     } else {
       exclusionCrossDevice(spark, nDays, from)
