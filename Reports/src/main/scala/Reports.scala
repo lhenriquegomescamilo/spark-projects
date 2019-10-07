@@ -158,8 +158,8 @@ object Reports {
   **/
   def getDataReport(
       spark: SparkSession,
-      ndays: String,
-      since: String,
+      nDays: Integer,
+      since: Integer,
       file_name: String) = {
 
     val hadoopConf = new Configuration()
@@ -218,7 +218,7 @@ object Reports {
 
     getDataReport(
       spark = spark,
-      ndays = 1,
+      nDays = 1,
       since = 1,
       file_name = file_name)
   }
