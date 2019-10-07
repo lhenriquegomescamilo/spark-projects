@@ -472,13 +472,13 @@ object CrossDevicer {
       .withColumnRenamed("device_id", "index")
       .withColumn("index", upper(col("index")))
       .join(index.withColumn("index", upper(col("index"))), Seq("index"))
-      .select("device", "segmentId", "device_type")
+      .select("device", "segment_id", "device_type")
 
     // Finally, we group by user, so that we store the list of segments per user, and then store everything
     // in the given folder
     cross_deviced
       .groupBy("device", "device_type")
-      .agg(collect_list("segmentId") as "segments")
+      .agg(collect_list("segment_id") as "segments")
       .withColumn("segments", concat_ws(",", col("segments")))
       .select("device_type", "device", "segments")
       .write
