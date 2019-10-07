@@ -39,7 +39,7 @@ object EmbeddingsClustering {
     import spark.implicits._
     embeddingVectors.persist(StorageLevel.MEMORY_AND_DISK)
     println(s"kmeans conf: numClusters = $numClusters - maxIterations:$maxIterations - runs=$runs")
-    val clusters = KMeans.train(embeddingVectors, k=numClusters, max_iterations=maxIterations, runs=runs)
+    val clusters = KMeans.train(embeddingVectors, k=numClusters, maxIterations=maxIterations, runs=runs)
     val WSSSE = clusters.computeCost(embeddingVectors)
     println(s"Within Set Sum of Squared Errors = $WSSSE")
 
