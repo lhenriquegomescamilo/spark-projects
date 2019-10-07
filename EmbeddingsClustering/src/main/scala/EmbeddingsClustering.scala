@@ -55,9 +55,7 @@ object EmbeddingsClustering {
       .option("sep", ";")
       .option("header", "false")
       .mode(SaveMode.Overwrite)
-      .save(
-      
-      )
+      .save(path)
 
   }
 
@@ -128,5 +126,6 @@ object EmbeddingsClustering {
           epsilon=epsilon,
           runs=runs)
 
-
+  }
 }
+
