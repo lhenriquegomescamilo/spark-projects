@@ -417,37 +417,54 @@ object CrossDevicer {
     df
   }
 
+  /**
+    * This method generates the taxonomy cross-device. That is, it loads all the users from the last
+    * N days, looks for the ones with some of the segment ids that will be cross-deviced, and finally
+    * it assigns the new segment. Then it looks for those users in the cross-device index and assigns
+    * the new segments to the users that have resulted from the cross-device.
+    *
+    * @param spark: Spark Session that will be used to load the data.
+    * @param nDays: number of days to be loaded for the cross-device
+    * @param from: number of days to be skipped from now into the past.
+    */
   def crossDevice(spark: SparkSession, nDays: Int, from: Int) = {
-
+    // This is the list of segments that we are going to cross-device.
+    // This list contains two columns: parentId and segmentId. The parentId is the
+    // original segment, the segmentId is the cross-device counterpart.
     val mapping = spark.read
       .format("csv")
       .option("header", "true")
       .load("/data/metadata/xd_mapping_segments.csv")
-    val mapping_excl = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load("/data/metadata/xd_mapping_segments_exclusion.csv")
-    val data_triplets = getDataTriplets(spark, nDays, from)
 
-    val devices_segments = data_triplets
+    // This pipeline contains the devices along with their segments.
+    // We will remove duplicates here.
+    val data_triplets = getDataTriplets(spark, nDays, from)
       .withColumnRenamed("feature", "segment_id")
       .select("device_id", "segment_id")
       .distinct()
+
+    // Now we transform original segment ids to cross-device segment ids.
+    val devices_segments = data_triplets
       .join(
         broadcast(mapping.withColumnRenamed("parentId", "segment_id")),
         Seq("segment_id")
       )
       .select("device_id", "segmentId")
+    
+    // This is the Tapad Index, that we will use to cross-device the users.
     val index = spark.read
       .format("parquet")
       .load("/datascience/crossdevice/double_index_individual")
 
+    // This is the actual cross-device
     val cross_deviced = devices_segments
       .withColumnRenamed("device_id", "index")
       .withColumn("index", upper(col("index")))
       .join(index.withColumn("index", upper(col("index"))), Seq("index"))
       .select("device", "segmentId", "device_type")
 
+    // Finally, we group by user, so that we store the list of segments per user, and then store everything
+    // in the given folder
     cross_deviced
       .distinct()
       .groupBy("device", "device_type")
@@ -545,11 +562,6 @@ object CrossDevicer {
     val conf = new SparkConf()
       .set("spark.sql.files.ignoreCorruptFiles", "true")
       .setAppName("Cross Device")
-      .setJars(
-        Seq(
-          "/home/rely/spark-projects/CrossDevicer/target/scala-2.11/cross-devicer_2.11-1.0.jar"
-        )
-      )
     val sc = new SparkContext(conf)
     val sqlContext = new SQLContext(sc);
     val spark = sqlContext.sparkSession
