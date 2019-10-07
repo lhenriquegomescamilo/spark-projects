@@ -43,7 +43,7 @@ object EmbeddingsClustering {
     val WSSSE = clusters.computeCost(embeddingVectors)
     println(s"Within Set Sum of Squared Errors = $WSSSE")
 
-    var path="/datascience/data_clustering/kmeans_centers_k={}.csv".format(numClusters)
+    var path="/datascience/data_clustering/kmeans_centers_k=%s.csv".format(numClusters)
     println(s"Writing centroids in = $path")
     clusters
       .clusterCenters.map(v => v.toArray.mkString(",") )
