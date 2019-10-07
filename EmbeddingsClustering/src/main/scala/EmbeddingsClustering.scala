@@ -43,6 +43,10 @@ object EmbeddingsClustering {
     val WSSSE = clusters.computeCost(embeddingVectors)
     println(s"Within Set Sum of Squared Errors = $WSSSE")
 
+    var pathModel="/datascience/data_clustering/models/kmeans_k=%s/".format(numClusters)
+    println(s"Writing model in = $pathModel")
+    clusters.save(spark, pathModel)
+
     var path="/datascience/data_clustering/kmeans_centers_k=%s/".format(numClusters)
     println(s"Writing centroids in = $path")
     clusters
