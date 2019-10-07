@@ -60,21 +60,21 @@ object FromEventqueuePIIMonth {
     // Then we separate the data acording to the PII type
     var mails = data
       .filter("ml_sh2 is not null")
-      .select("device_id","country")
+      .select("ml_sh2","country")
       .withColumnRenamed("ml_sh2", "device_id")
       .withColumn("device_type", lit("mail"))
       .dropDuplicates("country", "device_id")
 
     var dnis = data
       .filter("nid_sh2 is not null")
-      .select("device_id","country")
+      .select("nid_sh2","country")
       .withColumnRenamed("nid_sh2", "device_id")
       .withColumn("device_type", lit("nid"))
       .dropDuplicates("country", "device_id")
 
     var mobs = data
       .filter("mb_sh2 is not null")
-      .select("device_id","country")
+      .select("mb_sh2","country")
       .withColumnRenamed("mb_sh2", "device_id")
       .withColumn("device_type", lit("mob"))
       .dropDuplicates("country", "device_id")
@@ -82,7 +82,7 @@ object FromEventqueuePIIMonth {
     var total = mails
         .unionAll(dnis)
         .unionAll(mobs)
-        .orderBy("country", "device_type", "device_id")
+        .orderBy("country")
     // We group the data and get the list of pii for each device_id with the correspondant id_partner and timestamp in a tuple.
     //var grouped = total
     //  .groupBy("device_id", "country", "pii", "pii_type")
@@ -92,35 +92,36 @@ object FromEventqueuePIIMonth {
     //    collect_list("device_type").as("device_type")
     //  )
     // Then we sort the tuples and we keep the one with the smallest timestamp.
-    val udfSort = udf(
-      (id_partner: Seq[String], days: Seq[String]) => (id_partner zip days).sortBy(_._2).toList(0)
-    )
+    //val udfSort = udf(
+    //  (id_partner: Seq[String], days: Seq[String]) => (id_partner zip days).sortBy(_._2).toList(0)
+    //)
     //val df_final = grouped
     //  .withColumn("result", udfSort(col("id_partner"), col("days")))
     //  .withColumn("id_partner", col("result").getItem("_1"))
     //  .withColumn("days", col("result").getItem("_2"))
     //  .select("device_id", "country", "pii", "pii_type", "id_partner", "days")
-
+    total.createOrReplaceTempView("raw_pii")
+    val fin = spark.table("raw_pii").cache
     // We save the generated file
-    total.write
-      .format("parquet")
-      .partitionBy("country")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/pii_matching/temp/")
+    //total.write
+    //  .format("parquet")
+    //  .partitionBy("country")
+    //  .mode(SaveMode.Overwrite)
+    // .save("/datascience/pii_matching/temp/")
 
     // Load files again 
-    val fls = spark.read
-      .format("parquet")
-      .load("/datascience/pii_matching/temp/")
+    //val fls = spark.read
+    //  .format("parquet")
+    //  .load("/datascience/pii_matching/temp/")
     
     val dt = DateTime.now.toString("yyyyMMdd")
 
-    fls.repartition(1).write
+    //fls.repartition(1).write
+    fin.repartition(1).write
       .format("csv")
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
       .save("/datascience/pii_matching/pii_table/%s".format(dt))
-      
   }
 
   type OptionMap = Map[Symbol, String]
