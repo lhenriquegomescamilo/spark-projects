@@ -178,7 +178,7 @@ object Reports {
 
       /** Read standard taxonomy segment_ids */
       val taxo_path = "/datascience/misc/standard_ids.csv"
-      df_taxo =  spark.read.format("csv").option("header", "true").load(taxo_path)
+      val df_taxo =  spark.read.format("csv").option("header", "true").load(taxo_path)
 
       /**  Get number of devices per partner_id per segment */
       val data = getJointandGrouped(
