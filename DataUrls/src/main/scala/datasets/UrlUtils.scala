@@ -82,7 +82,7 @@ object UrlUtils {
     selected_keywords.cache()
 
     // Get Data urls <url>
-    //val data_urls = get_data_urls(spark, ndays = ndays, since = since, country = country)
+    //val data_urls = get_data_urls(spark, ndays = ndays, since = since, country = country).select("url")
     //data_urls.cache()
 
     // Get queries <seg_id, query (array contains), query (url like)>
