@@ -60,21 +60,21 @@ object FromEventqueuePIIMonth {
     // Then we separate the data acording to the PII type
     var mails = data
       .filter("ml_sh2 is not null")
-      .select("device_id","country")
+      .select("ml_sh2","country")
       .withColumnRenamed("ml_sh2", "device_id")
       .withColumn("device_type", lit("mail"))
       .dropDuplicates("country", "device_id")
 
     var dnis = data
       .filter("nid_sh2 is not null")
-      .select("device_id","country")
+      .select("nid_sh2","country")
       .withColumnRenamed("nid_sh2", "device_id")
       .withColumn("device_type", lit("nid"))
       .dropDuplicates("country", "device_id")
 
     var mobs = data
       .filter("mb_sh2 is not null")
-      .select("device_id","country")
+      .select("mb_sh2","country")
       .withColumnRenamed("mb_sh2", "device_id")
       .withColumn("device_type", lit("mob"))
       .dropDuplicates("country", "device_id")
