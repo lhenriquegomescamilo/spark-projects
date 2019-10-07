@@ -359,10 +359,12 @@ val spatial_NSE = spatialDf.join(NSE_radius.select("RADIO","audience"),Seq("RADI
 //Este es el df completo
 spatial_NSE.createOrReplaceTempView("poligonomagico")
 
-spatial_NSE.show(2)
 
 //Ahora levantamos los usuarios:
-val homes_raw = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/argentina_365d_home_1-10-2019-16h").toDF("device_id","device_type","freq","geocode","latitude","longitude").drop("geocode")
+val homes_raw = spark.read.format("csv").option("delimiter","\t").option("header",true)
+.load("/datascience/geo/argentina_365d_home_1-10-2019-16h")
+.toDF("device_id","device_type","freq","geocode","latitude","longitude")
+.drop("geocode")
 
 
 //Aplicando geometría a los puntos
@@ -382,7 +384,6 @@ val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
             
 intersection.select("device_type","device_id","audience")
-intersection.drop("myshape")
 .write.format("csv").option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
