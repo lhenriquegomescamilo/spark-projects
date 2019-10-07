@@ -36,7 +36,7 @@ object EmbeddingsClustering {
              numClusters : Int = 2,
              maxIterations: Int = 20,
              epsilon: Double = 1e-4,
-             runs: Int 1) {
+             runs: Int = 1) {
     import spark.implicits._
     embeddingVectors.persist(StorageLevel.MEMORY_AND_DISK)
     println(s"kmeans conf: numClusters = $numClusters - maxIterations:$maxIterations - epsilon=$epsilon - runs=$runs")
