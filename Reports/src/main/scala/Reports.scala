@@ -98,35 +98,24 @@ object Reports {
 
   /**
     *
-    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR QUERYING DATA     //////////////////////
+    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR SAVING DATA     //////////////////////
     *
     */
   /**
-    * This method takes a list of queries and their corresponding segment ids, and generates a file where the first
-    * column is the device_type, the second column is the device_id, and the last column is the list of segment ids
-    * for that user separated by comma. Every column is separated by a space. The file is stored in the folder
-    * /datascience/keywiser/processed/file_name. The file_name value is extracted from the file path given by parameter.
-    * In other words, this method appends a file per query (for each segment), containing users that matched the query
-    * then it groups segments by device_id, obtaining a list of segments for each device.
+    * This method saves the data generated to /datascience/reports/gain/, the filename is the current date.
     *
-    * @param spark: Spark session that will be used to write results to HDFS.
-    * @param queries: List of Maps, where the key is the parameter and the values are the values.
-    * @param data: DataFrame that will be used to extract the audience from, applying the corresponding filters.
-    * @param file_name: File where we will store all the audiences.
+    * @param data: DataFrame that will be saved.
     *
-    * As a result this method stores the audience in the file /datascience/keywiser/processed/file_name, where
-    * the file_name is extracted from the file path.
   **/
 
   def saveData(
-      data: DataFrame,
-      file_name: String
+      data: DataFrame
   ) = {
 
-    val fileName = "/datascience/reports/gain/" + file_name
-    val format = "yyyy_MM_dd"
+    val dir = "/datascience/reports/gain/"
+    val format = "yyyy-MM-dd'T'HH-m"
     val date_current = DateTime.now.toString(format)
-    val fileDate = fileName + "_" + date_current
+    val fileDate = dir + date_current
 
     data
       .write
@@ -147,15 +136,13 @@ object Reports {
     * @param spark: Spark session that will be used to read the data from HDFS.
     * @param ndays: number of days to query.
     * @param since: number of days since to query.
-    * @param file_name: file name to save file with.
     *
     * As a result this method stores the file in /datascience/reports/gain/file_name_currentdate.csv.
   **/
   def getDataReport(
       spark: SparkSession,
       nDays: Integer,
-      since: Integer,
-      file_name: String) = {
+      since: Integer) = {
        
     /** Read from "data_triplets" database */
     val df_data_triplets = getDataTriplets(
@@ -175,8 +162,7 @@ object Reports {
   
     // Here we store the audience applying the filters
     saveData(
-      data = data,
-      file_name = file_name
+      data = data
     )
   
   }    
@@ -195,8 +181,6 @@ object Reports {
         nextOption(map ++ Map('nDays -> value.toInt), tail)
       case "--since" :: value :: tail =>
         nextOption(map ++ Map('since -> value.toInt), tail)
-      case "--file_name" :: value :: tail =>
-        nextOption(map ++ Map('file_name -> value.toString), tail)
     }
   }    
 
@@ -209,7 +193,6 @@ object Reports {
     val options = nextOption(Map(), Args.toList)
     val nDays = if (options.contains('nDays)) options('nDays) else 7
     val since = if (options.contains('from)) options('from) else 1
-    val file_name = if (options.contains('file_name)) options('file_name) else "test"
 
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
@@ -223,7 +206,6 @@ object Reports {
     getDataReport(
       spark = spark,
       nDays = nDays,
-      since = since,
-      file_name = file_name)
+      since = since)
   }
 }
