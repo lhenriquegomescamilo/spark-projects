@@ -156,42 +156,30 @@ object Reports {
       nDays: Integer,
       since: Integer,
       file_name: String) = {
- 
-    // Flag to indicate if execution failed
-    var failed = false      
+       
+    /** Read from "data_triplets" database */
+    val df_data_triplets = getDataTriplets(
+      spark = spark,
+      nDays = nDays,
+      since = since
+    )
 
-    try {        
-      /** Read from "data_triplets" database */
-      val df_data_triplets = getDataTriplets(
-        spark = spark,
-        nDays = nDays,
-        since = since
-      )
+    /** Read standard taxonomy segment_ids */
+    val taxo_path = "/datascience/misc/standard_ids.csv"
+    val df_taxo =  spark.read.format("csv").option("header", "true").load(taxo_path)
 
-      /** Read standard taxonomy segment_ids */
-      val taxo_path = "/datascience/misc/standard_ids.csv"
-      val df_taxo =  spark.read.format("csv").option("header", "true").load(taxo_path)
-
-      /**  Get number of devices per partner_id per segment */
-      val data = getJointandGrouped(
-        df_taxo = df_taxo,
-        df_data_triplets = df_data_triplets)  
-    
-      // Here we store the audience applying the filters
-      saveData(
-        data = data,
-        file_name = file_name
-      )
+    /**  Get number of devices per partner_id per segment */
+    val data = getJointandGrouped(
+      df_taxo = df_taxo,
+      df_data_triplets = df_data_triplets)  
   
-    } catch {
-      case e: Exception => {
-        e.printStackTrace()
-        failed = true
-      }
-    }        
-
-  }
-
+    // Here we store the audience applying the filters
+    saveData(
+      data = data,
+      file_name = file_name
+    )
+  
+  }        
 
   /*****************************************************/
   /******************     MAIN     *********************/
