@@ -57,7 +57,7 @@ object Reports {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .select("id_partner","seg_id","device_id")
+      .select("id_partner","feature","device_id")
       .withColumnRenamed("feature", "seg_id")
       .na
       .drop()
@@ -125,14 +125,12 @@ object Reports {
       file_name: String
   ) = {
 
-    data.cache()
-
     val fileName = "/datascience/reports/gain/" + file_name
     val format = "yyyy_MM_dd"
     val date_current = DateTime.now.toString(format)
     val fileDate = fileName + "_" + date_current + ".csv"
 
-     data
+    data
       .write
       .format("csv")
       .option("sep", "\t")
