@@ -67,8 +67,16 @@ object SegmentTriplets {
           spark.read
             .option("basePath", "/datascience/data_audiences_streaming/")
             .parquet(x)
-            .filter("event_type IN ('batch', 'data', 'tk', 'pv', 'retroactive')")
-            .select("device_id", "segments", "country", "event_type", "id_partner")
+            .filter(
+              "event_type IN ('batch', 'data', 'tk', 'pv', 'retroactive')"
+            )
+            .select(
+              "device_id",
+              "segments",
+              "country",
+              "event_type",
+              "id_partner"
+            )
             .withColumn("segments", explode(col("segments")))
             .withColumn("day", lit(x.split("/").last.slice(5, 13)))
             .withColumnRenamed("segments", "feature")
@@ -81,11 +89,13 @@ object SegmentTriplets {
       .groupBy("device_id", "feature", "country", "day", "id_partner")
       .agg(sum("count").as("count"))
 
-    grouped_data.write
+    grouped_data
+      .orderBy("device_id")
+      .write
       .format("parquet")
       .mode("append")
       .partitionBy("day", "country")
-      .save("/datascience/data_triplets/segments_")
+      .save("/datascience/data_triplets/segments")
   }
 
   /**
@@ -166,8 +176,8 @@ object SegmentTriplets {
     val ndays = if (args.length > 0) args(0).toInt else 20
     val from = if (args.length > 1) args(1).toInt else 1
 
-    for (i <- 0 until ndays){
-        generate_triplets_segments(spark, 1, from+i)
+    for (i <- 0 until ndays) {
+      generate_triplets_segments(spark, 1, from + i)
     }
   }
 }

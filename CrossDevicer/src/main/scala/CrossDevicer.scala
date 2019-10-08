@@ -428,6 +428,8 @@ object CrossDevicer {
     * @param from: number of days to be skipped from now into the past.
     */
   def crossDevice(spark: SparkSession, nDays: Int, from: Int) = {
+    println(nDays)
+    println(from)
     // This is the list of segments that we are going to cross-device.
     // This list contains two columns: parentId and segmentId. The parentId is the
     // original segment, the segmentId is the cross-device counterpart.

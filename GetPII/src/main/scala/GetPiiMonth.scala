@@ -101,6 +101,7 @@ object FromEventqueuePIIMonth {
     //  .withColumn("days", col("result").getItem("_2"))
     //  .select("device_id", "country", "pii", "pii_type", "id_partner", "days")
     total.createOrReplaceTempView("raw_pii")
+    val fin = spark.table("raw_pii").cache
     // We save the generated file
     //total.write
     //  .format("parquet")
@@ -116,7 +117,7 @@ object FromEventqueuePIIMonth {
     val dt = DateTime.now.toString("yyyyMMdd")
 
     //fls.repartition(1).write
-    spark.table("raw_pii").repartition(1).write
+    fin.repartition(1).write
       .format("csv")
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
