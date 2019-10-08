@@ -179,12 +179,38 @@ object Reports {
       file_name = file_name
     )
   
-  }        
+  }    
+
+
+  type OptionMap = Map[Symbol, Int]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--since" :: value :: tail =>
+        nextOption(map ++ Map('since -> value.toInt), tail)
+      case "--file_name" :: tail =>
+        nextOption(map ++ Map('file_name -> 0), tail)
+    }
+  }    
 
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(args: Array[String]) {
+
+    // Parse the parameters
+    val options = nextOption(Map(), Args.toList)
+    val nDays = if (options.contains('nDays)) options('nDays) else 7
+    val since = if (options.contains('from)) options('from) else 1
+    val file_name = if (options.contains('file_name)) options('file_name) else "test"
+
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
 
@@ -194,12 +220,10 @@ object Reports {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
 
-    val file_name =  "test"
-
     getDataReport(
       spark = spark,
-      nDays = 1,
-      since = 1,
+      nDays = nDays,
+      since = since,
       file_name = file_name)
   }
 }
