@@ -196,7 +196,7 @@ object Reports {
       case "--since" :: value :: tail =>
         nextOption(map ++ Map('since -> value.toInt), tail)
       case "--file_name" :: tail =>
-        nextOption(map ++ Map('file_name -> value), tail)
+        nextOption(map ++ Map('file_name -> value.toString), tail)
     }
   }    
 
