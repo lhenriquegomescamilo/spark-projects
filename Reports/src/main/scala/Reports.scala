@@ -203,7 +203,7 @@ object Reports {
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
-  def main(args: Array[String]) {
+  def main(Args: Array[String]) {
 
     // Parse the parameters
     val options = nextOption(Map(), Args.toList)
