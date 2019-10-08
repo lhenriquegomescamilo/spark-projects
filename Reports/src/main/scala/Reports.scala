@@ -47,7 +47,7 @@ object Reports {
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_triplets/segments_"
+    val path = "/datascience/data_triplets/segments"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
