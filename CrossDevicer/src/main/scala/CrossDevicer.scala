@@ -436,9 +436,8 @@ object CrossDevicer {
       .option("header", "true")
       .load("/data/metadata/xd_mapping_segments.csv")
       .collect()
-      .map(row => (row(0).toString.toInt, row(1).toString.toInt))
-      // Now we add the country codes
-      .toList ::: ((579 to 827) zip (579 to 827)).toList).toMap
+      .map(row => (row(0).toString.toInt, row(1).toString.toInt)))
+      .toMap
 
     val map_udf = udf(
       (segment: Integer) =>
@@ -454,14 +453,6 @@ object CrossDevicer {
       .withColumn("segment_id", map_udf(col("segment_id")))
       .filter("segment_id > 0")
       .distinct()
-
-    // Now we transform original segment ids to cross-device segment ids.
-    // val devices_segments = data_triplets
-    //   .join(
-    //     broadcast(mapping.withColumnRenamed("parentId", "segment_id")),
-    //     Seq("segment_id")
-    //   )
-    //   .select("device_id", "segmentId")
 
     // This is the Tapad Index, that we will use to cross-device the users.
     val index = spark.read
@@ -611,7 +602,7 @@ object CrossDevicer {
       .format("csv")
       .option("sep", "\t")
       .mode("overwrite")
-      .save("/datascience/audiences/crossdeviced/taxo_gral_new")
+      .save("/datascience/audiences/crossdeviced/taxo_exclusion_new")
   }
 
   type OptionMap = Map[Symbol, Int]
@@ -638,16 +629,16 @@ object CrossDevicer {
     val gral = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/audiences/crossdeviced/taxo_gral/")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c1", "device_type")
+      .load("/datascience/audiences/crossdeviced/taxo_gral_new/")
+      .withColumnRenamed("_c0", "device_type")
+      .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "segment_ids")
     val excl = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/audiences/crossdeviced/taxo_gral_exclusion/")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c1", "device_type")
+      .load("/datascience/audiences/crossdeviced/taxo_exclusion_new/")
+      .withColumnRenamed("_c0", "device_type")
+      .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "exclusion_ids")
 
     val concatUDF = udf(
