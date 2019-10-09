@@ -546,9 +546,9 @@ object CrossDevicer {
         .map(
           s =>
             (
-              s,
-              new_exclusion_map(s)._1.toString.toInt,
-              new_exclusion_map(s)._2.toString.toInt
+              s, // XD Segment Id
+              new_exclusion_map(s)._1.toString, // Group
+              new_exclusion_map(s)._2.toString.toInt // Score
             )
         )
         .groupBy(s => (s._1, s._2))
