@@ -12,7 +12,7 @@ import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
 import main.scala.nseassignation.NSEAssignation
 
-
+import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
@@ -222,6 +222,9 @@ object NSEFromHomes {
   }
 
   def main(args: Array[String]) {
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+    
     // Parse the parameters
     val options = nextOption(Map(), args.toList)
     val path_geo_json =
