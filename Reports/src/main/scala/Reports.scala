@@ -47,7 +47,7 @@ object Reports {
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_triplets/segments_"
+    val path = "/datascience/data_triplets/segments"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
@@ -57,10 +57,8 @@ object Reports {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .select("id_partner","seg_id","device_id")
+      .select("id_partner","feature","device_id")
       .withColumnRenamed("feature", "seg_id")
-      .na
-      .drop()
 
     df
   }
@@ -100,42 +98,28 @@ object Reports {
 
   /**
     *
-    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR QUERYING DATA     //////////////////////
+    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR SAVING DATA     //////////////////////
     *
     */
   /**
-    * This method takes a list of queries and their corresponding segment ids, and generates a file where the first
-    * column is the device_type, the second column is the device_id, and the last column is the list of segment ids
-    * for that user separated by comma. Every column is separated by a space. The file is stored in the folder
-    * /datascience/keywiser/processed/file_name. The file_name value is extracted from the file path given by parameter.
-    * In other words, this method appends a file per query (for each segment), containing users that matched the query
-    * then it groups segments by device_id, obtaining a list of segments for each device.
+    * This method saves the data generated to /datascience/reports/gain/, the filename is the current date.
     *
-    * @param spark: Spark session that will be used to write results to HDFS.
-    * @param queries: List of Maps, where the key is the parameter and the values are the values.
-    * @param data: DataFrame that will be used to extract the audience from, applying the corresponding filters.
-    * @param file_name: File where we will store all the audiences.
+    * @param data: DataFrame that will be saved.
     *
-    * As a result this method stores the audience in the file /datascience/keywiser/processed/file_name, where
-    * the file_name is extracted from the file path.
   **/
 
   def saveData(
-      data: DataFrame,
-      file_name: String
+      data: DataFrame
   ) = {
 
-    data.cache()
-
-    val fileName = "/datascience/reports/gain/" + file_name
-    val format = "yyyy_MM_dd"
+    val dir = "/datascience/reports/gain/"
+    val format = "yyyy-MM-dd'T'HH-m"
     val date_current = DateTime.now.toString(format)
-    val fileDate = fileName + "_" + date_current + ".csv"
+    val fileDate = dir + date_current
 
-     data
+    data
       .write
-      .format("csv")
-      .option("sep", "\t")
+      .format("parquet")
       .mode(SaveMode.Overwrite)
       .save(fileDate)
   }
@@ -152,59 +136,64 @@ object Reports {
     * @param spark: Spark session that will be used to read the data from HDFS.
     * @param ndays: number of days to query.
     * @param since: number of days since to query.
-    * @param file_name: file name to save file with.
     *
     * As a result this method stores the file in /datascience/reports/gain/file_name_currentdate.csv.
   **/
   def getDataReport(
       spark: SparkSession,
       nDays: Integer,
-      since: Integer,
-      file_name: String) = {
+      since: Integer) = {
+       
+    /** Read from "data_triplets" database */
+    val df_data_triplets = getDataTriplets(
+      spark = spark,
+      nDays = nDays,
+      since = since
+    )
 
-    val hadoopConf = new Configuration()
-    val hdfs = FileSystem.get(hadoopConf)
+    /** Read standard taxonomy segment_ids */
+    val taxo_path = "/datascience/misc/standard_ids.csv"
+    val df_taxo =  spark.read.format("csv").option("header", "true").load(taxo_path)
+
+    /**  Get number of devices per partner_id per segment */
+    val data = getJointandGrouped(
+      df_taxo = df_taxo,
+      df_data_triplets = df_data_triplets)  
   
-    // Flag to indicate if execution failed
-    var failed = false      
-
-    try {        
-      /** Read from "data_triplets" database */
-      val df_data_triplets = getDataTriplets(
-        spark = spark,
-        nDays = nDays,
-        since = since
-      )
-
-      /** Read standard taxonomy segment_ids */
-      val taxo_path = "/datascience/misc/standard_ids.csv"
-      val df_taxo =  spark.read.format("csv").option("header", "true").load(taxo_path)
-
-      /**  Get number of devices per partner_id per segment */
-      val data = getJointandGrouped(
-        df_taxo = df_taxo,
-        df_data_triplets = df_data_triplets)  
-    
-      // Here we store the audience applying the filters
-      saveData(
-        data = data,
-        file_name = file_name
-      )
+    // Here we store the audience applying the filters
+    saveData(
+      data = data
+    )
   
-    } catch {
-      case e: Exception => {
-        e.printStackTrace()
-        failed = true
-      }
-    }        
+  }    
 
-  }
 
+  type OptionMap = Map[Symbol, Int]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toInt), tail)
+      case "--since" :: value :: tail =>
+        nextOption(map ++ Map('since -> value.toInt), tail)
+    }
+  }    
 
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
-  def main(args: Array[String]) {
+  def main(Args: Array[String]) {
+
+    // Parse the parameters
+    val options = nextOption(Map(), Args.toList)
+    val nDays = if (options.contains('nDays)) options('nDays) else 7
+    val since = if (options.contains('from)) options('from) else 1
+
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
 
@@ -214,12 +203,9 @@ object Reports {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
 
-    val file_name =  "test"
-
     getDataReport(
       spark = spark,
-      nDays = 1,
-      since = 1,
-      file_name = file_name)
+      nDays = nDays,
+      since = since)
   }
 }
