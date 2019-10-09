@@ -192,7 +192,8 @@ object Streaming {
         .start()
         .awaitTermination()
     } else {
-      filtered.write
+      filtered.orderBy(asc("event_type"))
+        .write
         .mode("append")
         .format("parquet")
         .partitionBy("hour", partition)
