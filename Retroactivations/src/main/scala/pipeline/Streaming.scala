@@ -192,7 +192,7 @@ object Streaming {
         .start()
         .awaitTermination()
     } else {
-      filtered.orderBy(asc("event_type"))
+      filtered//.orderBy(asc("event_type"))
         .write
         .mode("append")
         .format("parquet")
