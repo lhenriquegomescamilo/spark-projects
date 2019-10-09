@@ -528,7 +528,7 @@ object CrossDevicer {
       exclusion_map.keys.toArray.filter(s => mapping.contains(s.toString.toInt))
     val new_exclusion_map =
       exclusion_segments
-        .map(s => (mapping(s), exclusion_map(s)))
+        .map(s => (mapping(s.toString.toInt), exclusion_map(s.toString.toInt)))
         .toMap // (XD Segment ID -> (Group, Score))
 
     val map_udf = udf(
