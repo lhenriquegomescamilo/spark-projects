@@ -1,6 +1,6 @@
 package main.scala.homejobs
 
-import main.scala.Main
+import main.scala.NSEFromHomes
 
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{ FileSystem, Path }
