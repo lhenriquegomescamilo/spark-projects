@@ -21,7 +21,7 @@ object HomeJobs {
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val format = "yyMMdd"
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(value_dictionary("since").toInt)
     val days = (0 until value_dictionary("nDays").toInt)
       .map(end.minusDays(_))
@@ -156,6 +156,9 @@ object HomeJobs {
 
   def main(args: Array[String]) {
     // Parse the parameters
+    import org.apache.log4j.{Level, Logger}
+    Logger.getRootLogger.setLevel(Level.WARN)
+    
     val options = nextOption(Map(), args.toList)
     val path_geo_json =
       if (options.contains('path_geo_json)) options('path_geo_json).toString
@@ -163,7 +166,7 @@ object HomeJobs {
 
     // Start Spark Session
     val spark = SparkSession.builder
-      .appName("audience generator by keywords")
+      .appName("home assgination by geocode")
       .getOrCreate()
 
     val value_dictionary = HomeJobsJr.get_variables(spark, path_geo_json)
