@@ -525,7 +525,7 @@ object CrossDevicer {
       .toArray
       .toMap
     val exclusion_segments =
-      exclusion_map.keys.toArray.filter(s => mapping.contains(s))
+      exclusion_map.keys.toArray.filter(s => mapping.contains(s.toString.toInt))
     val new_exclusion_map =
       exclusion_segments
         .map(s => (mapping(s), exclusion_map(s)))
@@ -545,7 +545,7 @@ object CrossDevicer {
           s =>
             (
               s,
-              new_exclusion_map(s)._1,
+              new_exclusion_map(s)._1.toString.toInt,
               new_exclusion_map(s)._2.toString.toInt
             )
         )
