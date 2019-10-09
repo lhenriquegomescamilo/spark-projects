@@ -520,15 +520,16 @@ object CrossDevicer {
       .load("/data/metadata/segment_exclusion.tsv")
       .select("_c0", "_c1", "_c3") // group, segment id, score
       .rdd
-      .map(x => (x(1), (x(0), x(2)))) // (Segment ID -> (Group, Score))
+      .map(x => (x(1).toInt, (x(0).toInt, x(2).toInt))) // (Segment ID -> (Group, Score))
       .collect()
       .toArray
       .toMap
     val exclusion_segments =
       exclusion_map.keys.toArray.filter(s => mapping.contains(s.toString.toInt))
+    println(exclusion_segments)
+    println(exclusion_map)
     val new_exclusion_map =
       exclusion_segments
-        .filter(s => mapping.contains(s.toString.toInt))
         .map(s => (mapping(s.toString.toInt), exclusion_map(s.toString.toInt)))
         .toMap // (XD Segment ID -> (Group, Score))
 
