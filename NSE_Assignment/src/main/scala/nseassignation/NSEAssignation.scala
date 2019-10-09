@@ -1,6 +1,6 @@
 package  main.scala.nseassignation
 
-import main.scala.Main
+import main.scala.NSEFromHomes
 
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -164,7 +164,7 @@ val intersection = spark.sql(
       .appName("match_POI_geospark")
       .getOrCreate()
 
-  val value_dictionary = Main.get_variables(spark, path_geo_json)
+  val value_dictionary = NSEFromHomes.get_variables(spark, path_geo_json)
 
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
