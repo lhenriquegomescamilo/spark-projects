@@ -192,7 +192,10 @@ object Streaming {
         .start()
         .awaitTermination()
     } else {
-      filtered//.orderBy(asc("event_type"))
+      
+      filtered.createOrReplaceTempView("temp_data_5")
+
+      spark.table("temp_data_5").orderBy(asc("event_type"))
         .write
         .mode("append")
         .format("parquet")
