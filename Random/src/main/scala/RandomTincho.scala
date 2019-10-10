@@ -187,7 +187,7 @@ object RandomTincho {
      data.join(broadcast(cookies),Seq("device_id"))
          .select("device_id","feature","count")
          .dropDuplicates()
-         .write.format("csv")
+         .write.format("parquet")
          .mode(SaveMode.Overwrite)
          .save("/datascience/custom/segments_%s".format(filename.split("/").last.split("_").last))
    }
