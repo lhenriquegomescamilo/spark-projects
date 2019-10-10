@@ -152,7 +152,7 @@ object RandomTincho {
   }
 
 
- def get_segments_pmi(spark:SparkSession){
+ def get_segments_pmi(spark:SparkSession, ndays:Int, since:Int){
 
    val files = List("/datascience/misc/cookies_chesterfield.csv",
                  "/datascience/misc/cookies_marlboro.csv",
@@ -165,9 +165,9 @@ object RandomTincho {
    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
    val format = "yyyyMMdd"
-   val start = DateTime.now.minusDays(1)
+   val start = DateTime.now.minusDays(since)
 
-   val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+   val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
    val path = "/datascience/data_triplets/segments/"
    val dfs = days.map(day => path + "day=%s/".format(day) + "country=AR")
      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
@@ -204,7 +204,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_segments_pmi(spark)
+    get_segments_pmi(spark,ndays=22,since=1)
   }
 
 }
