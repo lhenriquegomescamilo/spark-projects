@@ -195,7 +195,7 @@ object Streaming {
       
       filtered.createOrReplaceTempView("temp_data_5")
 
-      spark.table("temp_data_5").orderBy(asc("event_type"))
+      spark.table("temp_data_5").orderBy(asc("device_id"))
         .write
         .mode("append")
         .format("parquet")
