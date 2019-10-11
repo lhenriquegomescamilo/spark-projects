@@ -387,6 +387,22 @@ object CrossDevicer {
       .save("/datascience/audiences/crossdeviced/taxo_gral_exclusion")
   }
 
+  /**
+    * This function returns a DataFrame with the segment triplets data.
+    *
+    * @param spark: Spark Session that will be used to load the data.
+    * @param nDays: number of days to be loaded for the pipeline. If -1, 
+    * then it loads the whole pipeline (120 days).
+    * @param from: number of days to be skipped from now into the past.
+    * @param path: path from which the data is loaded.
+    * 
+    * Returns a DataFrame with the following columns:
+    *   - device_id
+    *   - feature: this is the segment id
+    *   - count: number of times the device_id visited the segment for a day.
+    *   - id_partner: id_partner from which the visit was obtained.
+    *   - country
+    */
   def getDataTriplets(
       spark: SparkSession,
       nDays: Int = -1,
