@@ -179,11 +179,14 @@ object DunnhumbyEnrichment {
         )
     )
 
+    val final_select = "advertiser_id,campaign_id,device_id,placement_id,time,browser,device_type,os,ml_sh2,nid_sh2".split(",").toList
+
     joint
       .withColumn("browser", udfGetBrowser(col("all_segments")))
-      .withColumn("device_type", udfGetBrowser(col("all_segments")))
-      .withColumn("os", udfGetBrowser(col("all_segments")))
+      .withColumn("device_type", udfGetDevice(col("all_segments")))
+      .withColumn("os", udfGetOS(col("all_segments")))
       .drop("all_segments")
+      .select(final_select.head, final_select.tail: _*)
       .write
       .format("csv")
       .option("sep", "\t")
