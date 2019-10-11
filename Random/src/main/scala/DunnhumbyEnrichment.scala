@@ -9,7 +9,6 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.Row
 
-
 object DunnhumbyEnrichment {
 
   /**
@@ -120,12 +119,74 @@ object DunnhumbyEnrichment {
       .withColumn("ml_sh2", concat_ws(",", col("ml_sh2")))
       .withColumn("nid_sh2", concat_ws(",", col("nid_sh2")))
 
-    data
+    val joint = data
       .filter(query)
       .select(select.head, select.tail: _*)
       .join(pii, Seq("device_id"), "left")
+
+    val browser_segments = List(-1) ::: (563 to 568).toList
+    val dev_types_segments = List(-1) ::: (560 to 562).toList
+    val operating_sys_segments = List(-1) ::: (569 to 574).toList
+
+    val browsers = (browser_segments zip List(
+      "",
+      "Chrome",
+      "Firefox",
+      "Internet Explorer",
+      "Safari",
+      "Android browser",
+      "Opera"
+    )).toMap
+    val dev_types =
+      (dev_types_segments zip List("", "Desktop", "Mobile", "Tablet")).toMap
+    val operating_sys = (operating_sys_segments zip List(
+      "",
+      "Windows",
+      "iOS",
+      "Android",
+      "OS X",
+      "Linux",
+      "Windows Phone"
+    )).toMap
+
+    val udfGetBrowser = udf(
+      (segments: Seq[Int]) =>
+        browsers(
+          (segments :+ -1)
+            .filter(browser_segments.contains(_))
+            .toList
+            .sortWith(_ > _)(0)
+        )
+    )
+
+    val udfGetDevice = udf(
+      (segments: Seq[Int]) =>
+        dev_types(
+          (segments :+ -1)
+            .filter(dev_types_segments.contains(_))
+            .toList
+            .sortWith(_ > _)(0)
+        )
+    )
+
+    val udfGetOS = udf(
+      (segments: Seq[Int]) =>
+        operating_sys(
+          (segments :+ -1)
+            .filter(operating_sys_segments.contains(_))
+            .toList
+            .sortWith(_ > _)(0)
+        )
+    )
+
+    joint
+      .withColumn("browser", udfGetBrowser(col("all_segments")))
+      .withColumn("device_type", udfGetBrowser(col("all_segments")))
+      .withColumn("os", udfGetBrowser(col("all_segments")))
+      .drop("all_segments")
       .write
-      .format("parquet")
+      .format("csv")
+      .option("sep", "\t")
       .mode("overwrite")
       .save("/datascience/custom/dunnhumby_enrichment_piis")
   }
