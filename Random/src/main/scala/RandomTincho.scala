@@ -151,6 +151,48 @@ object RandomTincho {
           .save("/datascience/data_url_classifier/GT_new_taxo")
   }
 
+
+ def get_segments_pmi(spark:SparkSession, ndays:Int, since:Int){
+
+   val files = List("/datascience/misc/cookies_chesterfield.csv",
+                 "/datascience/misc/cookies_marlboro.csv",
+                 "/datascience/misc/cookies_phillip_morris.csv",
+                 "/datascience/misc/cookies_parliament.csv")
+
+   /// Configuraciones de spark
+   val sc = spark.sparkContext
+   val conf = sc.hadoopConfiguration
+   val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+   val format = "yyyyMMdd"
+   val start = DateTime.now.minusDays(since)
+
+   val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+   val path = "/datascience/data_triplets/segments/"
+   val dfs = days.map(day => path + "day=%s/".format(day) + "country=AR")
+     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+     .map(
+       x =>
+         spark.read
+           .option("basePath", "/datascience/data_triplets/segments/")
+           .parquet(x)
+     )
+
+   var data = dfs.reduce((df1, df2) => df1.union(df2))
+
+   for (filename <- files){
+     var cookies = spark.read.format("csv").load(filename)
+                                         .withColumnRenamed("_c0","device_id")
+
+     data.join(broadcast(cookies),Seq("device_id"))
+         .select("device_id","feature","count")
+         .dropDuplicates()
+         .write.format("parquet")
+         .mode(SaveMode.Overwrite)
+         .save("/datascience/custom/segments_%s".format(filename.split("/").last.split("_").last))
+   }
+ }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -162,7 +204,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_gt_new_taxo(spark, ndays = 10, since = 1, country = "AR")
+    get_segments_pmi(spark,ndays=22,since=1)
   }
 
 }

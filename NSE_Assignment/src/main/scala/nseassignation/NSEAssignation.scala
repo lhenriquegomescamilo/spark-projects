@@ -1,6 +1,6 @@
 package  main.scala.nseassignation
 
-import main.scala.Main
+import main.scala.NSEFromHomes
 
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -63,13 +63,13 @@ object NSEAssignation {
    
 				// Levantamos el polígono. Le aplicamos la geometría y lo unimos con los nombres...porque json y geospark
 				val geojson_path_formated =      value_dictionary("path_to_polygons")
-
 				//acá levantamos el geojson, nos quedamos con los nombres y el id
-				val names = spark.read.json(geojson_path_formated).withColumn("rowId1", monotonically_increasing_id())
-
+				
+        val names = spark.read.json(geojson_path_formated).withColumn("rowId1", monotonically_increasing_id())
 				//acá volvemos a levantar el json, pero nos quedamos con la geometría
 
-				var polygonJsonDfFormated = spark.read      .format("csv")      .option("sep", "\t")      .option("header", "false")      .load(geojson_path_formated)
+				var polygonJsonDfFormated = spark.read      .format("csv")      .option("sep", "\t")      
+        .option("header", "false")      .load(geojson_path_formated)
 				      
 
 				//le asignamos la geometría a lo que cargamos recién      
@@ -77,9 +77,13 @@ object NSEAssignation {
 				var polygonDf = spark.sql("select ST_GeomFromGeoJSON(polygontable._c0) as myshape from polygontable"    ).withColumn("rowId1", monotonically_increasing_id())
 
 				//unimos ambas en un solo dataframe
+        //mexico
 				val ageb_nse = names.join(polygonDf,Seq("rowId1"))
-        .drop("rowId1").withColumn("CVEGEO",col("properties.CVEGEO"))
-        .withColumn("NSE",col("properties.NSE_segment"))
+        .drop("rowId1").withColumn("GEOID",col("properties.GEOID"))
+        .withColumn("audience",col("properties.audience"))
+        .withColumn("NSE",col("properties.NSE"))
+
+        //argentina
 
 				//ageb_nse.createOrReplaceTempView("ageb_nse_polygons")
 
@@ -104,8 +108,9 @@ val intersection = spark.sql(
       			user_homes.freq, 
       			user_homes.pointshape,
       			ageb_nse_polygons.myshape,
+            ageb_nse_polygons.audience,
       			ageb_nse_polygons.NSE,
-      			ageb_nse_polygons.CVEGEO
+      			ageb_nse_polygons.GEOID
                 
                 FROM user_homes, ageb_nse_polygons
                 WHERE ST_Contains(ageb_nse_polygons.myshape, user_homes.pointshape)""")
@@ -159,7 +164,7 @@ val intersection = spark.sql(
       .appName("match_POI_geospark")
       .getOrCreate()
 
-  val value_dictionary = Main.get_variables(spark, path_geo_json)
+  val value_dictionary = NSEFromHomes.get_variables(spark, path_geo_json)
 
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
