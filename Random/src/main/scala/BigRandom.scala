@@ -32,11 +32,10 @@ def getDataEventQueue_27(
       .map(day => path + "/%s".format(day)) //
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read
-        .option("basePath", path).load(hdfs_files: _*)
+        .load(hdfs_files: _*)
         .option("sep", "\t")
         .option("header", "true")
         .format("csv")
-        .load(path)
         .select("country", "device_id","platforms")
         .na
         .drop()
