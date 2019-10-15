@@ -12,7 +12,7 @@ import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
 import main.scala.nseassignation.NSEAssignation
 
-
+import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
@@ -27,7 +27,7 @@ import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
    The method then proceeds to filter the users by a desired minimum distance returning a final dataset with user id and device type.
    The current method will provide the basis for future more customizable geolocation jobs.
   */
-object Main {
+object NSEFromHomes {
 
   /**
     * This method returns a Map with all the parameters obtained from the JSON file.
@@ -222,6 +222,9 @@ object Main {
   }
 
   def main(args: Array[String]) {
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+    
     // Parse the parameters
     val options = nextOption(Map(), args.toList)
     val path_geo_json =

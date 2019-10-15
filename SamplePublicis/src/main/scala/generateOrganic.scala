@@ -40,6 +40,53 @@ import org.apache.hadoop.fs._
   * The resulting dataframe is going to be stored in hdfs://rely-hdfs/datascience/data_publicis/memb/
  **/
 object generateOrganic {
+
+  /**
+    * This function returns a DataFrame with the segment triplets data.
+    *
+    * @param spark: Spark Session that will be used to load the data.
+    * @param nDays: number of days to be loaded for the pipeline. If -1,
+    * then it loads the whole pipeline (120 days).
+    * @param from: number of days to be skipped from now into the past.
+    * @param path: path from which the data is loaded.
+    *
+    * Returns a DataFrame with the following columns:
+    *   - device_id
+    *   - feature: this is the segment id
+    *   - count: number of times the device_id visited the segment for a day.
+    *   - id_partner: id_partner from which the visit was obtained.
+    *   - country
+    */
+  def getDataTriplets(
+      spark: SparkSession,
+      nDays: Int = -1,
+      from: Int = 1,
+      path: String = "/datascience/data_triplets/segments/"
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    val df = if (nDays > 0) {
+      // read files from dates
+      val format = "yyyyMMdd"
+      val endDate = DateTime.now.minusDays(from)
+      val days =
+        (0 until nDays.toInt)
+          .map(endDate.minusDays(_))
+          .map(_.toString(format))
+      // Now we obtain the list of hdfs folders to be read
+      val hdfs_files = days
+        .map(day => path + "/day=%s/".format(day))
+        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    } else {
+      // read all date files
+      spark.read.load(path)
+    }
+    df
+  }
+
   def generate_organic(
       spark: SparkSession,
       ndays: Int,
@@ -55,7 +102,10 @@ object generateOrganic {
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(from)
 
-    println("PUBLICIS LOGGER:\n  - From: %s\n  - ndays: %s\n  - Start date: %s".format(from, ndays, start))
+    println(
+      "PUBLICIS LOGGER:\n  - From: %s\n  - ndays: %s\n  - Start date: %s"
+        .format(from, ndays, start)
+    )
 
     val days =
       (0 until ndays).map(start.plusDays(_)).map(_.toString(format))
@@ -78,7 +128,8 @@ object generateOrganic {
             .filter("country = 'MX'")
             .withColumn("day", lit(x))
             .select("device_id", "day", "segments", "event_type")
-            .na.drop()
+            .na
+            .drop()
             .withColumn(
               "segments",
               udfGetSegments(col("segments"), col("event_type"))
@@ -104,7 +155,9 @@ object generateOrganic {
     /// This function filter out all the segments that don't belong to the general taxonomy.
     val udfGralSegments = udf(
       (segments: Seq[String]) =>
-        segments.filter(segment => taxo_general_b.value.contains(segment.replace("m_", "")))
+        segments.filter(
+          segment => taxo_general_b.value.contains(segment.replace("m_", ""))
+        )
     )
     /// Given a list of segments and a day, this function generates a list of tuples of the form (segment, day)
     val udfAddDay = udf(
@@ -126,21 +179,21 @@ object generateOrganic {
     val udfDropDuplicates = udf(
       (segments: Seq[Row]) =>
         //"[%s]".format(
-          segments
-            .map(
-              row => (row(0).asInstanceOf[String], row(1).asInstanceOf[String])
-            )
-            .groupBy(row => row._1)
-            .map(row => row._2.sorted.last)
-            .toList
-            .map(
-              tuple => Map("segid" -> tuple._1, "segmentstartdate" -> tuple._2)
-                // """{"segid": "%s", "segmentstartdate": %s}"""
-                //  .format(tuple._1, tuple._2)
-            )
-            .toSeq
-            //.mkString(", ")
-        //)
+        segments
+          .map(
+            row => (row(0).asInstanceOf[String], row(1).asInstanceOf[String])
+          )
+          .groupBy(row => row._1)
+          .map(row => row._2.sorted.last)
+          .toList
+          .map(
+            tuple => Map("segid" -> tuple._1, "segmentstartdate" -> tuple._2)
+            // """{"segid": "%s", "segmentstartdate": %s}"""
+            //  .format(tuple._1, tuple._2)
+          )
+          .toSeq
+      //.mkString(", ")
+      //)
     )
 
     // Here we process the data that will be sent.

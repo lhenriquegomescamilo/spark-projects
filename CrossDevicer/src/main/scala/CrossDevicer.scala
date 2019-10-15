@@ -387,6 +387,22 @@ object CrossDevicer {
       .save("/datascience/audiences/crossdeviced/taxo_gral_exclusion")
   }
 
+  /**
+    * This function returns a DataFrame with the segment triplets data.
+    *
+    * @param spark: Spark Session that will be used to load the data.
+    * @param nDays: number of days to be loaded for the pipeline. If -1, 
+    * then it loads the whole pipeline (120 days).
+    * @param from: number of days to be skipped from now into the past.
+    * @param path: path from which the data is loaded.
+    * 
+    * Returns a DataFrame with the following columns:
+    *   - device_id
+    *   - feature: this is the segment id
+    *   - count: number of times the device_id visited the segment for a day.
+    *   - id_partner: id_partner from which the visit was obtained.
+    *   - country
+    */
   def getDataTriplets(
       spark: SparkSession,
       nDays: Int = -1,
@@ -428,17 +444,15 @@ object CrossDevicer {
     * @param from: number of days to be skipped from now into the past.
     */
   def crossDevice(spark: SparkSession, nDays: Int, from: Int) = {
-    println(nDays)
-    println(from)
     // This is the list of segments that we are going to cross-device.
     // This list contains two columns: parentId and segmentId. The parentId is the
     // original segment, the segmentId is the cross-device counterpart.
-    val mapping = spark.read
+    val mapping = (spark.read
       .format("csv")
       .option("header", "true")
       .load("/data/metadata/xd_mapping_segments.csv")
       .collect()
-      .map(row => (row(0).toString.toInt, row(1).toString.toInt))
+      .map(row => (row(0).toString.toInt, row(1).toString.toInt)))
       .toMap
 
     val map_udf = udf(
@@ -455,14 +469,6 @@ object CrossDevicer {
       .withColumn("segment_id", map_udf(col("segment_id")))
       .filter("segment_id > 0")
       .distinct()
-
-    // Now we transform original segment ids to cross-device segment ids.
-    // val devices_segments = data_triplets
-    //   .join(
-    //     broadcast(mapping.withColumnRenamed("parentId", "segment_id")),
-    //     Seq("segment_id")
-    //   )
-    //   .select("device_id", "segmentId")
 
     // This is the Tapad Index, that we will use to cross-device the users.
     val index = spark.read
@@ -490,6 +496,131 @@ object CrossDevicer {
       .save("/datascience/audiences/crossdeviced/taxo_gral_new")
   }
 
+  /**
+    * This method generates the taxonomy cross-device. That is, it loads all the users from the last
+    * N days, looks for the ones with some of the segment ids that will be cross-deviced, and finally
+    * it assigns the new segment. Then it looks for those users in the cross-device index and assigns
+    * the new segments to the users that have resulted from the cross-device.
+    *
+    * @param spark: Spark Session that will be used to load the data.
+    * @param nDays: number of days to be loaded for the cross-device
+    * @param from: number of days to be skipped from now into the past.
+    */
+  def crossDeviceExclusion(spark: SparkSession, nDays: Int, from: Int) = {
+    // This is the list of segments that we are going to cross-device.
+    // This list contains two columns: parentId and segmentId. The parentId is the
+    // original segment, the segmentId is the cross-device counterpart.
+    val mapping = (spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/data/metadata/xd_mapping_segments_exclusion.csv")
+      .collect()
+      .map(row => (row(0).toString.toInt, row(1).toString.toInt))
+      // Now we add the country codes
+      .toList ::: ((579 to 827) zip (579 to 827)).toList).toMap
+    val country_codes = (579 to 827).toList.toSet
+
+    // Finally we load also the exclusion segments with all the information (group, segment id, and score)
+    val exclusion_map = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/data/metadata/segment_exclusion.tsv")
+      .select("_c0", "_c1", "_c3") // group, segment id, score
+      .rdd
+      .map(x => (x(1).toString.toInt, (x(0).toString, x(2).toString.toInt))) // (Segment ID -> (Group, Score))
+      .collect()
+      .toArray
+      .toMap
+    val exclusion_segments =
+      exclusion_map.keys.toArray.filter(s => mapping.contains(s.toString.toInt))
+    println(exclusion_segments)
+    println(exclusion_map)
+    val new_exclusion_map =
+      exclusion_segments
+        .map(s => (mapping(s.toString.toInt), exclusion_map(s.toString.toInt)))
+        .toMap // (XD Segment ID -> (Group, Score))
+
+    val map_udf = udf(
+      (segment: Integer) =>
+        if (mapping.contains(segment)) mapping(segment) else -1
+    )
+
+    // Some useful functions
+    // This function obtains the best exclusion segments from a cluster. That is, it checks all the occurrences of exclusion segments
+    // in the cluster, calculates a score and pick the segment with highest score.
+    val getExclusionSegments = (segments: Seq[Int]) =>
+      segments
+        .map(
+          s =>
+            (
+              s, // XD Segment Id
+              new_exclusion_map(s)._1.toString, // Group
+              new_exclusion_map(s)._2.toString.toInt // Score
+            )
+        )
+        .groupBy(s => (s._1, s._2))
+        .map(l => (l._1._1, l._1._2, l._2.map(_._3).reduce(_ + _))) // Here I get the total score per segment
+        .groupBy(_._2) //group by exclusion group
+        .values // For every group I have a list of tuples of this format (segment, group, total_score)
+        .map(l => l.maxBy(_._3)._1) // Here I save the segment with best score for eah group
+        .toSeq
+
+    // This method takes the list of original segments and only keeps the country with most occurrences
+    val getMostPopularCountry = (segments: Seq[Int]) =>
+      segments
+        .filter(s => country_codes.contains(s))
+        .groupBy(identity)
+        .mapValues(_.size)
+        .maxBy(_._2)
+        ._1 // Most popular country
+
+    // This function returns the best segment for every exclusion group concatenated with the country
+    val getSegments = udf(
+      (segments: Seq[Int]) =>
+        if (segments.filter(s => country_codes.contains(s)).length > 0) {
+          getExclusionSegments(segments.filter(s => !country_codes.contains(s))) :+ getMostPopularCountry(
+            segments
+          )
+        } else getExclusionSegments(segments)
+    )
+
+    // This pipeline contains the devices along with their segments.
+    // Here we keep only those segment_ids that are in the mapping and transform them to their xd.
+    // We will remove duplicates here.
+    val data_triplets = getDataTriplets(spark, nDays, from)
+      .withColumnRenamed("feature", "segment_id")
+      .select("device_id", "segment_id")
+      .withColumn("segment_id", map_udf(col("segment_id")))
+      .filter("segment_id > 0")
+      .distinct()
+
+    // This is the Tapad Index, that we will use to cross-device the users.
+    val index = spark.read
+      .format("parquet")
+      .load("/datascience/crossdevice/double_index_individual")
+
+    // This is the actual cross-device
+    val cross_deviced = data_triplets
+      .withColumnRenamed("device_id", "index")
+      .withColumn("index", upper(col("index")))
+      .join(index.withColumn("index", upper(col("index"))), Seq("index"))
+      .select("device", "segment_id", "device_type")
+
+    // Finally, we group by user, so that we store the list of segments per user, and then store everything
+    // in the given folder
+    cross_deviced
+      .groupBy("device", "device_type")
+      .agg(collect_list("segment_id") as "segments")
+      .withColumn("segments", getSegments(col("segments")))
+      .withColumn("segments", concat_ws(",", col("segments")))
+      .select("device_type", "device", "segments")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode("overwrite")
+      .save("/datascience/audiences/crossdeviced/taxo_exclusion_new")
+  }
+
   type OptionMap = Map[Symbol, Int]
 
   /**
@@ -514,16 +645,16 @@ object CrossDevicer {
     val gral = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/audiences/crossdeviced/taxo_gral/")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c1", "device_type")
+      .load("/datascience/audiences/crossdeviced/taxo_gral_new/")
+      .withColumnRenamed("_c0", "device_type")
+      .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "segment_ids")
     val excl = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/audiences/crossdeviced/taxo_gral_exclusion/")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c1", "device_type")
+      .load("/datascience/audiences/crossdeviced/taxo_exclusion_new/")
+      .withColumnRenamed("_c0", "device_type")
+      .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "exclusion_ids")
 
     val concatUDF = udf(
@@ -586,7 +717,7 @@ object CrossDevicer {
         crossDevice(spark, nDays, from)
       }
     } else {
-      exclusionCrossDevice(spark, nDays, from)
+      crossDeviceExclusion(spark, nDays, from)
     }
 
   }

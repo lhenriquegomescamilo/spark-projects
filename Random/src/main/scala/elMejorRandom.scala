@@ -438,8 +438,23 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
+//Geo Data
 
-get_ua_urls(spark)
+
+val xd = spark.read.format("csv").option("header",false).option("delimiter",",").load("/datascience/audiences/crossdeviced/ar_brand_model_xd").select("_c1","_c4","_c5").toDF("device_id","brand","model").withColumn("device_id",upper(col("device_id")))
+xd.show(2)
+
+
+val homes =  spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/argentina_365d_home_1-10-2019-16h").withColumnRenamed("ad_id","device_id").select("device_id","avg_latitude","avg_longitude","freq").withColumn("device_id",upper(col("device_id")))
+homes.show(2)
+
+
+val cel_homes = xd.join(homes,Seq("device_id"))
+cel_homes.write.format("csv")    
+.option("header",true)    
+.option("delimiter","\t")    
+.mode(SaveMode.Overwrite)  
+.save("/datascience/misc/ar_cel_homes")
 
   }
 }
