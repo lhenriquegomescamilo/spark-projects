@@ -120,8 +120,15 @@ object UrlUtils {
           .groupBy("url")
           .agg(collect_list(col("segment")).as("segment"))
           .withColumn("segment", concat_ws(";", col("segment")))
-          
-    joint.write
+          .withColumn("url", lower(col("url")))
+          .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
+          .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
+          .withColumn("keyword", explode(col("url_keys")))
+          .filter(col("keyword").rlike("[a-z]{2,}"))
+          .groupBy("url","segment").agg(collect_list(col("keyword").as("url_keys"))
+
+    joint
+        .write
         .format("parquet")
         .mode(SaveMode.Overwrite)
         .save("/datascience/data_url_classifier/gt_new_taxo")
