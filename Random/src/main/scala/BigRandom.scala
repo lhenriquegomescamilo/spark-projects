@@ -3,6 +3,7 @@ import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.types._
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
