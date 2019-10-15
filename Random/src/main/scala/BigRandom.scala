@@ -57,11 +57,13 @@ def getDataEventQueue_27(
       SparkSession.builder.appName("BigRandom").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
     val query_27 = "country IN ('MX', 'BR') AND event_type = 'pv' AND array_contains(platforms, '27')"
-    
+    val nDays = 2
+    val since = 1
+
     getDataEventQueue_27(
       spark=spark,
       query_27=query_27,
-      nDays=2,
-      since=1)
+      nDays=nDays,
+      since=since)
   }
 }
