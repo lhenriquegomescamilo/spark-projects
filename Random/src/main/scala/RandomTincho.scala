@@ -213,6 +213,51 @@ object RandomTincho {
                     .save("/datascience/data_url_classifier/gt_new_taxo_tokenized")
  }
 
+ def get_matching_metrics(spark:SparkSession){
+  var cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'AR'")
+                      .select("ml_sh2")
+                      .distinct
+                      .count
+  println("Mails AR: %s".format(cant))
+
+
+  cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'BR'")
+                      .select("ml_sh2")
+                      .distinct
+                      .count
+  println("Mails BR: %s".format(cant))
+
+  cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'MX'")
+                      .select("ml_sh2")
+                      .distinct
+                      .count
+  println("Mails MX: %s".format(cant))
+
+  cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'CL'")
+                      .select("ml_sh2")
+                      .distinct
+                      .count
+  println("Mails CL: %s".format(cant))
+
+  cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'CO'")
+                      .select("ml_sh2")
+                      .distinct
+                      .count
+  println("Mails CO: %s".format(cant))
+
+  cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'PE'")
+                      .select("ml_sh2")
+                      .distinct
+                      .count
+  println("Mails PE: %s".format(cant))
+ }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -224,7 +269,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    test_tokenizer(spark)
+    get_matching_metrics(spark)
   }
 
 }
