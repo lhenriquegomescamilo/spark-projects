@@ -71,7 +71,7 @@ def getDataEventQueue(
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read
         .option("sep", "\t")
-        .option("header", false)
+        .option("header", "true")
         .format("csv")
         .load(hdfs_files: _*)
         .select("country", "device_id").distinct()
@@ -79,7 +79,7 @@ def getDataEventQueue(
         .drop()
         .filter(query)
         .write.format("csv")
-        .option("header",False)
+        .option("header","false")
         .option("delimiter","\t")
         .mode(SaveMode.Overwrite)
         .save("/datascience/misc/pv_mx_br.csv")
