@@ -201,6 +201,10 @@ object RandomTincho {
                     .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
                     .withColumn("keyword", explode(col("url_keys")))
                     .filter(col("keyword").rlike("[a-z]{2,}"))
+                    .withColumn("keyword",regexp_replace(col("keyword") ," ", "_"))
+                    .withColumn("keyword",regexp_replace(col("keyword") ,"\\(", ""))
+                    .withColumn("keyword",regexp_replace(col("keyword") ,"\\)", ""))
+                    .withColumn("keyword",regexp_replace(col("keyword") ,",", ""))
                     .groupBy("url","segment").agg(collect_list(col("keyword").as("keywords")))
                     .write
                     .format("parquet")
