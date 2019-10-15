@@ -14,8 +14,8 @@ object BigRandom {
 def getDataEventQueue_27(
       spark: SparkSession,
       query_27: String,
-      nDays: int,
-      since: int) = {
+      nDays: Integer,
+      since: Integer) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
