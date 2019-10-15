@@ -97,12 +97,12 @@ object GenerateDatasetsUrls {
     //     .partitionBy("country")
     //     .save("/datascience/data_url_classifier/gt")
 
-    // var gtDF = UrlUtils.get_gt_new_taxo(spark, ndays = ndays, since = since, country = country)
+    var gtDF = UrlUtils.get_gt_new_taxo(spark, ndays = ndays, since = since, country = country)
 
-    // gtDF.write
-    //      .format("parquet")
-    //      .mode(SaveMode.Overwrite)
-    //      .save("/datascience/data_url_classifier/gt_new_taxo_filtered")
+    gtDF.write
+         .format("parquet")
+         .mode(SaveMode.Overwrite)
+         .save("/datascience/data_url_classifier/gt_new_taxo_filtered")
 
     var gtDF = spark.read
                 .load("/datascience/data_url_classifier/gt_new_taxo_filtered")
