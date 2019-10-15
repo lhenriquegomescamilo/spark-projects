@@ -225,7 +225,7 @@ object RandomTincho {
                       .filter("country = 'AR'")
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
-                      .join(df_ar,Seq("email"),"inner")
+                      .join(df,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -242,7 +242,7 @@ object RandomTincho {
                       .filter("country = 'BR'")
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
-                      .join(df_ar,Seq("email"),"inner")
+                      .join(df,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -258,7 +258,7 @@ object RandomTincho {
                       .filter("country = 'MX'")
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
-                      .join(df_ar,Seq("email"),"inner")
+                      .join(df,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -275,7 +275,7 @@ object RandomTincho {
                       .filter("country = 'CL'")
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
-                      .join(df_ar,Seq("email"),"inner")
+                      .join(df,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -292,7 +292,7 @@ object RandomTincho {
                       .filter("country = 'CO'")
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
-                      .join(df_ar,Seq("email"),"inner")
+                      .join(df,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -308,7 +308,7 @@ object RandomTincho {
                       .filter("country = 'PE'")
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
-                      .join(df_ar,Seq("email"),"inner")
+                      .join(df,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
