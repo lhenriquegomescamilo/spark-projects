@@ -192,6 +192,21 @@ object RandomTincho {
          .save("/datascience/custom/segments_%s".format(filename.split("/").last.split("_").last))
    }
  }
+ def test_tokenizer(spark:SparkSession){
+
+    var gtDF = spark.read
+                    .load("/datascience/data_url_classifier/gt_new_taxo_filtered")
+                    .withColumn("url", lower(col("url")))
+                    .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
+                    .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
+                    .withColumn("keyword", explode(col("url_keys")))
+                    .filter(col("keyword").rlike("[a-z]{2,}"))
+                    .groupBy("url","segment").agg(collect_list(col("keyword").as("keywords")))
+                    .write
+                    .format("parquet")
+                    .mode(SaveMode.Overwrite)
+                    .save("/datascience/data_url_classifier/gt_new_taxo_tokenized")
+ }
 
   def main(args: Array[String]) {
      
@@ -204,7 +219,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_segments_pmi(spark,ndays=22,since=1)
+    test_tokenizer(spark)
   }
 
 }
