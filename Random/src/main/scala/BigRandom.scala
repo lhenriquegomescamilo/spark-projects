@@ -71,7 +71,7 @@ def getDataEventQueue(
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read
         .option("sep", "\t")
-        .option("header", "true")
+        .option("header", false)
         .format("csv")
         .load(hdfs_files: _*)
         .select("country", "device_id").distinct()
