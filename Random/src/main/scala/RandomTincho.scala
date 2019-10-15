@@ -207,7 +207,7 @@ object RandomTincho {
                     .withColumn("keyword",regexp_replace(col("keyword") ,",", ""))
                     .groupBy("url","segment").agg(collect_list(col("keyword").as("keywords")))
                     .write
-                    .format("parquet")
+                    .format("csv")
                     .mode(SaveMode.Overwrite)
                     .save("/datascience/data_url_classifier/gt_new_taxo_tokenized")
  }
