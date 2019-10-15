@@ -205,7 +205,8 @@ object RandomTincho {
                     .withColumn("keyword",regexp_replace(col("keyword") ,"\\(", ""))
                     .withColumn("keyword",regexp_replace(col("keyword") ,"\\)", ""))
                     .withColumn("keyword",regexp_replace(col("keyword") ,",", ""))
-                    .groupBy("url","segment").agg(concat_ws(";", col("keyword")).as("keywords"))
+                    .groupBy("url","segment").agg(collect_list(col("keyword").as("url_keys")))
+                    .withColumn("url_keys", concat_ws(";", col("url_keys")))
                     .write
                     .format("parquet")
                     .mode(SaveMode.Overwrite)
