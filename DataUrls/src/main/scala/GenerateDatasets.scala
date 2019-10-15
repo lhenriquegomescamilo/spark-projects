@@ -104,7 +104,7 @@ object GenerateDatasetsUrls {
          .mode(SaveMode.Overwrite)
          .save("/datascience/data_url_classifier/gt_new_taxo_filtered")
 
-    var gtDF = spark.read
+    gtDF = spark.read
                 .load("/datascience/data_url_classifier/gt_new_taxo_filtered")
     gtDF.cache()
     gtDF = broadcast(gtDF.select("url"))
