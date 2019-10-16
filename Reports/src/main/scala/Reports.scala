@@ -63,6 +63,32 @@ object Reports {
     df
   }
 
+//////////////////////////////////////////////////////////////
+
+  def getData_xd(
+      spark: SparkSession
+  ): DataFrame = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    val path = "/datascience/audiences/crossdeviced/taxo_gral_joint"
+
+
+    val df = spark.read
+          .option("sep", "\t")
+          .option("header", "false")
+          .format("csv")
+          .load(path)
+          .withColumnRenamed("_c1", "device_id")
+          .withColumnRenamed("_c2", "segment")
+          .select("device_id","segment")
+          .withColumn("segment", split(col("segment"), ","))
+          .withColumn("segment", explode(col("segment")))
+
+    df
+  }
+
 /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR MERGING DATA     //////////////////////
@@ -96,6 +122,26 @@ object Reports {
     df_grouped
   }
 
+//////////////////////////////////////////////////////////////
+
+  def getJoint_xd(
+      df: DataFrame,
+      country_df: DataFrame,
+      mapping_df: DataFrame
+  ): DataFrame = {
+
+    /** Joins df with country segment ids to get the country column for each device_id. */
+    val joint_1 = df.join(broadcast(country_df),Seq("segment")).select("device_id","country")
+
+    /** Joins previous df joint with original df to get all ("device_id","segment") tuples with their corresponding country column. */
+    val joint_2 = df.join(joint_1,Seq("device_id")).select("segment","device_id","country").withColumn("id_partner",lit("-1"))
+
+    /** Joins previous df with mapping of xd segments to its parent segment. */
+    val df_final = joint_2.join(broadcast(mapping_df),Seq("segment")).select("seg_id","device_id","country","id_partner")
+
+    df_final
+  }
+
   /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR SAVING DATA     //////////////////////
@@ -109,19 +155,20 @@ object Reports {
   **/
 
   def saveData(
-      data: DataFrame
+      data: DataFrame,
+      fileName: String
   ) = {
 
-    val dir = "/datascience/reports/gain/"
-    val format = "yyyy-MM-dd'T'HH-m"
-    val date_current = DateTime.now.toString(format)
-    val fileDate = dir + date_current
+  val dir = "/datascience/reports/gain/"
+  val format = "yyyy-MM-dd'T'HH-m"
+  val date_current = DateTime.now.toString(format)
+  val fileNameFinal = dir + fileName + "_" + date_current
 
     data
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
-      .save(fileDate)
+      .save(fileNameFinal)
   }
   
 
@@ -160,13 +207,52 @@ object Reports {
       df_taxo = df_taxo,
       df_data_triplets = df_data_triplets)  
   
-    // Here we store the audience applying the filters
+    /** Here we store the report */
+    val fileName = "base_report"
+
     saveData(
-      data = data
+      data = data,
+      fileName = fileName
     )
   
   }    
 
+  def getDataReport_xd(
+      spark: SparkSession) = {
+       
+    /** Read from "taxo_gral_joint" database */
+    val df =  getData_xd(
+      spark = spark
+    )
+
+    /** Read mapping to countries */
+    val country_codes = Map("AD" -> 579, "AE" -> 580, "AF" -> 581, "AG" -> 582, "AI" -> 583, "AL" -> 584, "AM" -> 585, "AO" -> 586, "AQ" -> 587, "AR" -> 588, "AS" -> 589, "AT" -> 590, "AU" -> 591, "AW" -> 592, "AX" -> 593, "AZ" -> 594, "BA" -> 595, "BB" -> 596, "BD" -> 597, "BE" -> 598, "BF" -> 599, "BG" -> 600, "BH" -> 601, "BI" -> 602, "BJ" -> 603, "BL" -> 604, "BM" -> 605, "BN" -> 606, "BO" -> 607, "BQ" -> 608, "BR" -> 609, "BS" -> 610, "BT" -> 611, "BV" -> 612, "BW" -> 613, "BY" -> 614, "BZ" -> 615, "CA" -> 616, "CC" -> 617, "CD" -> 618, "CF" -> 619, "CG" -> 620, "CH" -> 621, "CI" -> 622, "CK" -> 623, "CL" -> 624, "CM" -> 625, "CN" -> 626, "CO" -> 627, "CR" -> 628, "CU" -> 629, "CV" -> 630, "CW" -> 631, "CX" -> 632, "CY" -> 633, "CZ" -> 634, "DE" -> 635, "DJ" -> 636, "DK" -> 637, "DM" -> 638, "DO" -> 639, "DZ" -> 640, "EC" -> 641, "EE" -> 642, "EG" -> 643, "EH" -> 644, "ER" -> 645, "ES" -> 646, "ET" -> 647, "FI" -> 648, "FJ" -> 649, "FK" -> 650, "FM" -> 651, "FO" -> 652, "FR" -> 653, "GA" -> 654, "GB" -> 655, "GD" -> 656, "GE" -> 657, "GF" -> 658, "GG" -> 659, "GH" -> 660, "GI" -> 661, "GL" -> 662, "GM" -> 663, "GN" -> 664, "GP" -> 665, "GQ" -> 666, "GR" -> 667, "GS" -> 668, "GT" -> 669, "GU" -> 670, "GW" -> 671, "GY" -> 672, "HK" -> 673, "HM" -> 674, "HN" -> 675, "HR" -> 676, "HT" -> 677, "HU" -> 678, "ID" -> 679, "IE" -> 680, "IL" -> 681, "IM" -> 682, "IN" -> 683, "IO" -> 684, "IQ" -> 685, "IR" -> 686, "IS" -> 687, "IT" -> 688, "JE" -> 689, "JM" -> 690, "JO" -> 691, "JP" -> 692, "KE" -> 693, "KG" -> 694, "KH" -> 695, "KI" -> 696, "KM" -> 697, "KN" -> 698, "KP" -> 699, "KR" -> 700, "KW" -> 701, "KY" -> 702, "KZ" -> 703, "LA" -> 704, "LB" -> 705, "LC" -> 706, "LI" -> 707, "LK" -> 708, "LR" -> 709, "LS" -> 710, "LT" -> 711, "LU" -> 712, "LV" -> 713, "LY" -> 714, "MA" -> 715, "MC" -> 716, "MD" -> 717, "ME" -> 718, "MF" -> 719, "MG" -> 720, "MH" -> 721, "MK" -> 722, "ML" -> 723, "MM" -> 724, "MN" -> 725, "MO" -> 726, "MP" -> 727, "MQ" -> 728, "MR" -> 729, "MS" -> 730, "MT" -> 731, "MU" -> 732, "MV" -> 733, "MW" -> 734, "MX" -> 735, "MY" -> 736, "MZ" -> 737, "NA" -> 738, "NC" -> 739, "NE" -> 740, "NF" -> 741, "NG" -> 742, "NI" -> 743, "NL" -> 744, "NO" -> 745, "NP" -> 746, "NR" -> 747, "NU" -> 748, "NZ" -> 749, "OM" -> 750, "PA" -> 751, "PE" -> 752, "PF" -> 753, "PG" -> 754, "PH" -> 755, "PK" -> 756, "PL" -> 757, "PM" -> 758, "PN" -> 759, "PR" -> 760, "PS" -> 761, "PT" -> 762, "PW" -> 763, "PY" -> 764, "QA" -> 765, "RE" -> 766, "RO" -> 767, "RS" -> 768, "RU" -> 769, "RW" -> 770, "SA" -> 771, "SB" -> 772, "SC" -> 773, "SD" -> 774, "SE" -> 775, "SG" -> 776, "SH" -> 777, "SI" -> 778, "SJ" -> 779, "SK" -> 780, "SL" -> 781, "SM" -> 782, "SN" -> 783, "SO" -> 784, "SR" -> 785, "SS" -> 786, "ST" -> 787, "SV" -> 788, "SX" -> 789, "SY" -> 790, "SZ" -> 791, "TC" -> 792, "TD" -> 793, "TF" -> 794, "TG" -> 795, "TH" -> 796, "TJ" -> 797, "TK" -> 798, "TL" -> 799, "TM" -> 800, "TN" -> 801, "TO" -> 802, "TR" -> 803, "TT" -> 804, "TV" -> 805, "TW" -> 806, "TZ" -> 807, "UA" -> 808, "UG" -> 809, "UM" -> 810, "US" -> 811, "UY" -> 812, "UZ" -> 813, "VA" -> 814, "VC" -> 815, "VE" -> 816, "VG" -> 817, "VI" -> 818, "VN" -> 819, "VU" -> 820, "WF" -> 821, "WS" -> 822, "YE" -> 823, "YT" -> 824, "ZA" -> 825, "ZM" -> 826, "ZW" -> 827)
+    val country_df = country_codes.toSeq.toDF("country", "segment")
+
+    /** Read mapping of xd segments to their parents */
+    val mapping_df = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/data/metadata/xd_mapping_segments_exclusion.csv")
+      .withColumnRenamed("parentId", "seg_id")
+      .withColumnRenamed("segmentId", "segment")
+
+    /** Get final df */
+    val df_final = getJoint_xd(
+      df = df,
+      country_df = country_df,
+      mapping_df = mapping_df
+    )
+  
+    /** Here we store the report */
+    val fileName = "xd_report"
+
+    saveData(
+      data = data,
+      fileName = fileName
+    )
+  
+  }    
 
   type OptionMap = Map[Symbol, Int]
 
@@ -202,10 +288,14 @@ object Reports {
       .appName("Reports")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
-
+    
     getDataReport(
       spark = spark,
       nDays = nDays,
       since = since)
+
+    getDataReport_xd(
+      spark = spark)  
+    
   }
 }
