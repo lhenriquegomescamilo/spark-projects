@@ -216,12 +216,12 @@ object RandomTincho {
   def get_matching_metrics(spark:SparkSession){
 
     // Brazil2_101419_FINAL.csv -	dunnhumby/onboarding/GPA-BR.csv.gz
-    var partner = spark.read.format("csv").option("header","true")
+    var partner_br = spark.read.format("csv").option("header","true")
                         .load("/datascience/misc/Brazil2_101419_FINAL.csv")
                         .withColumnRenamed("email_sha256","email")
                         .withColumn("email",lower(col("email")))
                         .select("email")
-    partner.cache()
+    partner_br.cache()
 
     var compared = spark.read.format("csv").option("header","true")
                         .load("/datascience/misc/GPA-BR.csv.gz")
@@ -229,7 +229,7 @@ object RandomTincho {
                         .withColumn("email",lower(col("email")))
                         .select("email")
 
-    var cant = partner.join(compared,Seq("email"),"inner")
+    var cant = partner_br.join(compared,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -260,7 +260,7 @@ object RandomTincho {
                       .withColumn("email",lower(col("email")))
                       .select("email")
 
-    cant = partner.join(compared,Seq("email"),"inner")
+    cant = partner_br.join(compared,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -283,7 +283,7 @@ object RandomTincho {
                   .union(df6)
                   .withColumn("email",lower(col("email")))
 
-    cant = partner.join(compared,Seq("email"),"inner")
+    cant = partner_br.join(compared,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -292,12 +292,12 @@ object RandomTincho {
 
 
     // Colombia2_101419_FINAL.csv	dunnhumby/onboarding/Exito-CO.csv.gz
-    partner = spark.read.format("csv").option("header","true")
+    val partner_co = spark.read.format("csv").option("header","true")
                         .load("/datascience/misc/Colombia2_101419_FINAL.csv")
                         .withColumnRenamed("email_sha256","email")
                         .withColumn("email",lower(col("email")))
                         .select("email")
-    partner.cache()
+    partner_co.cache()
 
     compared = spark.read.format("csv").option("header","true")
                         .load("/datascience/misc/Exito-CO.csv.gz")
@@ -306,7 +306,7 @@ object RandomTincho {
                         .select("email")
                         .na.drop
 
-    cant = partner.join(compared,Seq("email"),"inner")
+    cant = partner_co.join(compared,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -322,7 +322,7 @@ object RandomTincho {
                       .withColumn("email",lower(col("email")))
                       .select("email")
 
-    cant = partner.join(compared,Seq("email"),"inner")
+    cant = partner_co.join(compared,Seq("email"),"inner")
                   .select("email")
                   .distinct
                   .count
@@ -330,12 +330,12 @@ object RandomTincho {
     println("Colombia2_101419_FINAL.csv -	Retargetly: %s".format(cant))
 
    // Argentina2_101419_FINAL.csv	Retargetly
-    partner = spark.read.format("csv").option("header","true")
+    val partner_ar = spark.read.format("csv").option("header","true")
                         .load("/datascience/misc/Argentina2_101419_FINAL.csv")
                         .withColumnRenamed("email_sha256","email")
                         .withColumn("email",lower(col("email")))
                         .select("email")
-    partner.cache()
+    partner_ar.cache()
 
     compared = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'AR'")
@@ -343,7 +343,7 @@ object RandomTincho {
                       .withColumnRenamed("ml_sh2","email")
                       .withColumn("email",lower(col("email")))
 
-    cant = partner.join(compared,Seq("email"),"inner")
+    cant = partner_ar.join(compared,Seq("email"),"inner")
                   .select("email")
                   .distinct
                   .count
@@ -351,13 +351,13 @@ object RandomTincho {
     println("Argentina2_101419_FINAL.csv	Retargetly: %s".format(cant))
 
     // Mexico2_101419_FINAL.csv -	Retargetly
-    partner = spark.read.format("csv")
+    val partner_mx = spark.read.format("csv")
                         .option("header","true")
                         .load("/datascience/misc/Mexico2_101419_FINAL.csv")
                         .select("email_sha256")
                         .withColumnRenamed("email_sha256","email")
                         .withColumn("email",lower(col("email")))
-    partner.cache()
+    partner_mx.cache()
 
     compared = spark.read.load("/datascience/pii_matching/pii_tuples/")
                         .filter("country = 'MX'")
@@ -365,7 +365,7 @@ object RandomTincho {
                         .withColumnRenamed("ml_sh2","email")
                         .withColumn("email",lower(col("email")))
 
-    cant = partner.join(compared,Seq("email"),"inner")
+    cant = partner_mx.join(compared,Seq("email"),"inner")
                   .select("email")
                   .distinct
                   .count
@@ -381,7 +381,7 @@ object RandomTincho {
     compared = df1.union(df2)
                   .withColumn("email",lower(col("email")))
 
-    cant = partner.join(compared,Seq("email"),"inner")
+    cant = partner_mx.join(compared,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -391,7 +391,7 @@ object RandomTincho {
 
 
   // Chile2_101419_FINAL.csv	Retargetly
-  partner = spark.read.format("csv")
+  val partner_cl = spark.read.format("csv")
                       .option("header","true")
                       .load("/datascience/misc/Chile2_101419_FINAL.csv")
                       .select("email_sha256")
@@ -403,7 +403,7 @@ object RandomTincho {
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
                       .withColumn("email",lower(col("email")))
-                      .join(partner,Seq("email"),"inner")
+                      .join(partner_cl,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
@@ -413,7 +413,7 @@ object RandomTincho {
 
 
   // Peru2_101419_FINAL.csv	Retargetly
-  partner = spark.read.format("csv")
+  val partner_pe = spark.read.format("csv")
                     .option("header","true")
                     .load("/datascience/misc/Peru2_101419_FINAL.csv")
                     .select("email_sha256")
@@ -425,7 +425,7 @@ object RandomTincho {
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
                       .withColumn("email",lower(col("email")))
-                      .join(partner,Seq("email"),"inner")
+                      .join(partner_pe,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
