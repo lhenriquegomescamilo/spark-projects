@@ -213,107 +213,224 @@ object RandomTincho {
                     .save("/datascience/data_url_classifier/gt_new_taxo_tokenized")
  }
 
- def get_matching_metrics(spark:SparkSession){
+  def get_matching_metrics(spark:SparkSession){
 
-  var df = spark.read.format("csv")
-                    .option("header","true")
-                    .load("/datascience/misc/Argentina2_101419_FINAL.csv")
-                    .select("email_sha256")
-                    .withColumnRenamed("email_sha256","email")
+    // Brazil2_101419_FINAL.csv -	dunnhumby/onboarding/GPA-BR.csv.gz
+    var partner = spark.read.format("csv").option("header","true")
+                        .load("/datascience/misc/Brazil2_101419_FINAL.csv")
+                        .withColumnRenamed("email_sha256","email")
+                        .withColumn("email",lower(col("email")))
+                        .select("email")
+    partner.cache()
 
-  var cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
-                      .filter("country = 'AR'")
-                      .select("ml_sh2")
-                      .withColumnRenamed("ml_sh2","email")
-                      .join(df,Seq("email"),"inner")
+    var compared = spark.read.format("csv").option("header","true")
+                        .load("/datascience/misc/GPA-BR.csv.gz")
+                        .withColumnRenamed("DS_EMAIL_LOWER","email")
+                        .withColumn("email",lower(col("email")))
+                        .select("email")
+
+    var cant = partner.join(compared,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
-  println("AR Join Retargetly: %s".format(cant))
+
+    println("Brazil2_101419_FINAL.csv -	dunnhumby/onboarding/GPA-BR.csv.gz: %s".format(cant))
+
+    // Brazil2_101419_FINAL.csv	- dunnhumby/onboarding/RD-BR.csv.gz
+    compared = spark.read.format("csv").option("header","true")
+                        .load("/datascience/misc/RD-BR.csv.gz")
+                        .withColumnRenamed("ds_email_lower","email")
+                        .withColumn("email",lower(col("email")))
+                        .select("email")
+                        .na.drop
+
+    cant = partner.join(compared,Seq("email"),"inner")
+                      .select("email")
+                      .distinct
+                      .count
+
+    println("Brazil2_101419_FINAL.csv	- dunnhumby/onboarding/RD-BR.csv.gz: %s".format(cant))
 
 
-  df = spark.read.format("csv")
-                    .option("header","true")
-                    .load("/datascience/misc/Brazil2_101419_FINAL.csv")
-                    .select("email_sha256")
-                    .withColumnRenamed("email_sha256","email")
-
-  cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
+    //Brazil2_101419_FINAL.csv	Retargetly
+    compared = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'BR'")
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
-                      .join(df,Seq("email"),"inner")
+                      .withColumn("email",lower(col("email")))
+                      .select("email")
+
+    cant = partner.join(compared,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
-  println("BR Join Retargetly: %s".format(cant))
 
-  df = spark.read.format("csv")
-                      .option("header","true")
-                      .load("/datascience/misc/Mexico2_101419_FINAL.csv")
-                      .select("email_sha256")
-                      .withColumnRenamed("email_sha256","email")
+    println("Brazil2_101419_FINAL.csv	Retargetly: %s".format(cant))
 
-  cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
-                      .filter("country = 'MX'")
+
+    //Brazil2_101419_FINAL.csv	acxiom/files/acxiom_BR_Partner_Universe_Extract_20190809.tsv.gz
+    var df1 = spark.read.format("csv").option("header","true").option("sep","\t").load("/datascience/misc/acxiom_BR_Partner_Universe_Extract_20190809.tsv.gz").select("email_addr_01").withColumnRenamed("email_addr_01","email")
+    var df2 = spark.read.format("csv").option("header","true").option("sep","\t").load("/datascience/misc/acxiom_BR_Partner_Universe_Extract_20190809.tsv.gz").select("email_addr_02").withColumnRenamed("email_addr_02","email")
+    var df3 = spark.read.format("csv").option("header","true").option("sep","\t").load("/datascience/misc/acxiom_BR_Partner_Universe_Extract_20190809.tsv.gz").select("email_addr_03").withColumnRenamed("email_addr_03","email")
+    var df4 = spark.read.format("csv").option("header","true").option("sep","\t").load("/datascience/misc/acxiom_BR_Partner_Universe_Extract_20190809.tsv.gz").select("email_addr_04").withColumnRenamed("email_addr_04","email")
+    var df5 = spark.read.format("csv").option("header","true").option("sep","\t").load("/datascience/misc/acxiom_BR_Partner_Universe_Extract_20190809.tsv.gz").select("email_addr_05").withColumnRenamed("email_addr_05","email")
+    var df6 = spark.read.format("csv").option("header","true").option("sep","\t").load("/datascience/misc/acxiom_BR_Partner_Universe_Extract_20190809.tsv.gz").select("email_addr_06").withColumnRenamed("email_addr_06","email")
+
+    compared = df1.union(df2)
+                  .union(df3)
+                  .union(df4)
+                  .union(df5)
+                  .union(df6)
+                  .withColumn("email",lower(col("email")))
+
+    cant = partner.join(compared,Seq("email"),"inner")
+                      .select("email")
+                      .distinct
+                      .count
+
+    println("Brazil2_101419_FINAL.csv	acxiom/files/acxiom_BR_Partner_Universe_Extract_20190809.tsv.gz: %s".format(cant))
+
+
+    // Colombia2_101419_FINAL.csv	dunnhumby/onboarding/Exito-CO.csv.gz
+    partner = spark.read.format("csv").option("header","true")
+                        .load("/datascience/misc/Colombia2_101419_FINAL.csv")
+                        .withColumnRenamed("email_sha256","email")
+                        .withColumn("email",lower(col("email")))
+                        .select("email")
+    partner.cache()
+
+    compared = spark.read.format("csv").option("header","true")
+                        .load("/datascience/misc/Exito-CO.csv.gz")
+                        .withColumnRenamed("distinct_correo","email")
+                        .withColumn("email",lower(col("email")))
+                        .select("email")
+                        .na.drop
+
+    cant = partner.join(compared,Seq("email"),"inner")
+                      .select("email")
+                      .distinct
+                      .count
+
+    println("Colombia2_101419_FINAL.csv -	dunnhumby/onboarding/Exito-CO.csv.gz: %s".format(cant))
+
+
+    // Colombia2_101419_FINAL.csv	Retargetly
+    compared = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'CO'")
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
-                      .join(df,Seq("email"),"inner")
+                      .withColumn("email",lower(col("email")))
+                      .select("email")
+
+    cant = partner.join(compared,Seq("email"),"inner")
+                  .select("email")
+                  .distinct
+                  .count
+
+    println("Colombia2_101419_FINAL.csv -	Retargetly: %s".format(cant))
+
+   // Argentina2_101419_FINAL.csv	Retargetly
+    partner = spark.read.format("csv").option("header","true")
+                        .load("/datascience/misc/Argentina2_101419_FINAL.csv")
+                        .withColumnRenamed("email_sha256","email")
+                        .withColumn("email",lower(col("email")))
+                        .select("email")
+    partner.cache()
+
+    compared = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'AR'")
+                      .select("ml_sh2")
+                      .withColumnRenamed("ml_sh2","email")
+                      .withColumn("email",lower(col("email")))
+
+    cant = partner.join(compared,Seq("email"),"inner")
+                  .select("email")
+                  .distinct
+                  .count
+
+    println("Argentina2_101419_FINAL.csv	Retargetly: %s".format(cant))
+
+    // Mexico2_101419_FINAL.csv -	Retargetly
+    partner = spark.read.format("csv")
+                        .option("header","true")
+                        .load("/datascience/misc/Mexico2_101419_FINAL.csv")
+                        .select("email_sha256")
+                        .withColumnRenamed("email_sha256","email")
+                        .withColumn("email",lower(col("email")))
+    partner.cache()
+
+    compared = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                        .filter("country = 'MX'")
+                        .select("ml_sh2")
+                        .withColumnRenamed("ml_sh2","email")
+                        .withColumn("email",lower(col("email")))
+
+    cant = partner.join(compared,Seq("email"),"inner")
+                  .select("email")
+                  .distinct
+                  .count
+                        
+    println("Mexico2_101419_FINAL.csv -	Retargetly: %s".format(cant))
+
+
+  // Mexico2_101419_FINAL.csv	acxiom/files/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz
+    df1 = spark.read.format("csv").option("header","true").option("sep","\t").load("/datascience/misc/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz").select("email1").withColumnRenamed("email1","email")
+    df2 = spark.read.format("csv").option("header","true").option("sep","\t").load("/datascience/misc/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz").select("email2").withColumnRenamed("email2","email")
+    
+
+    compared = df1.union(df2)
+                  .withColumn("email",lower(col("email")))
+
+    cant = partner.join(compared,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
-  println("MX Join Retargetly: %s".format(cant))
+
+    println("Mexico2_101419_FINAL.csv	acxiom/files/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz: %s".format(cant))
 
 
-  df = spark.read.format("csv")
+
+  // Chile2_101419_FINAL.csv	Retargetly
+  partner = spark.read.format("csv")
                       .option("header","true")
                       .load("/datascience/misc/Chile2_101419_FINAL.csv")
                       .select("email_sha256")
                       .withColumnRenamed("email_sha256","email")
+                      .withColumn("email",lower(col("email")))
 
   cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'CL'")
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
-                      .join(df,Seq("email"),"inner")
+                      .withColumn("email",lower(col("email")))
+                      .join(partner,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
-  println("CL Join Retargetly: %s".format(cant))
+
+  println("Chile2_101419_FINAL.csv	Retargetly: %s".format(cant))
 
 
-  df = spark.read.format("csv")
-                    .option("header","true")
-                    .load("/datascience/misc/Colombia2_101419_FINAL.csv")
-                    .select("email_sha256")
-                    .withColumnRenamed("email_sha256","email")
 
-  cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
-                      .filter("country = 'CO'")
-                      .select("ml_sh2")
-                      .withColumnRenamed("ml_sh2","email")
-                      .join(df,Seq("email"),"inner")
-                      .select("email")
-                      .distinct
-                      .count
-  println("CO Join Retargetly: %s".format(cant))
-  
-  df = spark.read.format("csv")
+  // Peru2_101419_FINAL.csv	Retargetly
+  partner = spark.read.format("csv")
                     .option("header","true")
                     .load("/datascience/misc/Peru2_101419_FINAL.csv")
                     .select("email_sha256")
                     .withColumnRenamed("email_sha256","email")
+                    .withColumn("email",lower(col("email")))
 
   cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'PE'")
                       .select("ml_sh2")
                       .withColumnRenamed("ml_sh2","email")
-                      .join(df,Seq("email"),"inner")
+                      .withColumn("email",lower(col("email")))
+                      .join(partner,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
 
-  println("PE Join Retargetly: %s".format(cant))
+  println("Peru2_101419_FINAL.csv	Retargetly: %s".format(cant))
 
  }
 
