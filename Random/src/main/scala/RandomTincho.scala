@@ -283,6 +283,8 @@ object RandomTincho {
                   .union(df6)
                   .withColumn("email",lower(col("email")))
 
+    println("acxiom/files/acxiom_BR_Partner_Universe_Extract_20190809.tsv.gz: %s".format(compared.select("email").distinct.count))
+
     cant = partner_br.join(compared,Seq("email"),"inner")
                       .select("email")
                       .distinct
@@ -380,6 +382,8 @@ object RandomTincho {
 
     compared = df1.union(df2)
                   .withColumn("email",lower(col("email")))
+
+    println("acxiom/files/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz: %s".format(compared.select("email").distinct.count))
 
     cant = partner_mx.join(compared,Seq("email"),"inner")
                       .select("email")
