@@ -11,7 +11,7 @@ import org.apache.spark.sql.{SaveMode, DataFrame}
   * to run quick fixes, or tests.
   */
 object BigRandom {
-/**
+
 def getDataEventQueue_27(
       spark: SparkSession,
       query_27: String,
@@ -48,7 +48,7 @@ def getDataEventQueue_27(
         .mode(SaveMode.Overwrite)
         .save("/datascience/misc/pv_platform27.csv")
   }
-**/
+
 
 def getDataEventQueue(
       spark: SparkSession,
@@ -93,25 +93,25 @@ def getDataEventQueue(
     val spark =
       SparkSession.builder.appName("BigRandom").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-    //val query_27 = "country IN ('MX', 'BR') AND event_type = 'pv' AND array_contains(platforms, '27')"
+    val query_27 = "country IN ('MX', 'BR') AND event_type = 'pv' AND array_contains(platforms, '27')"
  
-    val query = "country IN ('MX', 'BR') AND event_type = 'pv'"
+    //val query = "country IN ('MX', 'BR') AND event_type = 'pv'"
     
     val nDays = 2
     val since = 1
-
+    /**
      getDataEventQueue(
       spark=spark,
       query=query,
       nDays=nDays,
       since=since)
-
-    /**
+    **/
+    
     getDataEventQueue_27(
       spark=spark,
       query_27=query_27,
       nDays=nDays,
       since=since)
-    **/
+    
   }
 }
