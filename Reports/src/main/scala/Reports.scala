@@ -292,10 +292,10 @@ object Reports {
     /** Here we store the first report */
     val fileName1 = "xd_report"
 
-    saveData(
-      data = df_grouped,
-      fileName = fileName1
-    )
+    // saveData(
+    //   data = df_grouped,
+    //   fileName = fileName1
+    // )
 
     /**  Get number of devices per partner_id per segment per country */
     val df_grouped_country = getGroupedbyCountry(df_joint = df_joint)
@@ -345,10 +345,10 @@ object Reports {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
     
-    getDataReport(
-      spark = spark,
-      nDays = nDays,
-      since = since)
+    // getDataReport(
+    //   spark = spark,
+    //   nDays = nDays,
+    //   since = since)
 
     getDataReport_xd(
       spark = spark)  

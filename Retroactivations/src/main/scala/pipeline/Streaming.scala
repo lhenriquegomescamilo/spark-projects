@@ -58,7 +58,7 @@ object Streaming {
 
     // This is the list of countries that will be considered.
     val countries =
-      List("AR", "MX", "CL", "CO", "PE", "US", "BR", "UY", "EC", "BO")
+      List("AR", "MX", "CL", "CO", "PE", "US", "BR", "UY", "EC", "BO", "VE")
 
     // This is the list of event types that will be considered.
     val event_types = List(
