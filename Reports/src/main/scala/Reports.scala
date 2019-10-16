@@ -57,7 +57,7 @@ object Reports {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .select("id_partner","feature","device_id")
+      .select("id_partner","feature","device_id","country")
       .withColumnRenamed("feature", "seg_id")
 
     df
@@ -106,20 +106,16 @@ object Reports {
     * @return a DataFrame with "device_type", "device_id", "kws", being "kws" a list of keywords.
    **/
 
-  def getJointandGrouped(
+  def getJoint(
       df_taxo: DataFrame,
       df_data_triplets: DataFrame
   ): DataFrame = {
 
     val df_joint = df_data_triplets
       .join(broadcast(df_taxo), Seq("seg_id"))
-      .select("seg_id","id_partner", "device_id")
+      .select("seg_id","id_partner", "device_id","country")
       .dropDuplicates()
-
-    val df_grouped = df_joint
-      .groupBy("id_partner", "seg_id")
-      .count()
-    df_grouped
+    df_joint
   }
 
 //////////////////////////////////////////////////////////////
@@ -137,9 +133,31 @@ object Reports {
     val joint_2 = df.join(joint_1,Seq("device_id")).select("segment","device_id","country").withColumn("id_partner",lit("-1"))
 
     /** Joins previous df with mapping of xd segments to its parent segment. */
-    val df_final = joint_2.join(broadcast(mapping_df),Seq("segment")).select("seg_id","device_id","country","id_partner")
+    val joint_3 = joint_2.join(broadcast(mapping_df),Seq("segment")).select("seg_id","device_id","country","id_partner")
 
-    df_final
+    joint_3
+  }
+
+  def getGrouped(
+      df_joint: DataFrame
+  ): DataFrame = {
+
+    val df_grouped = df_joint
+      .groupBy("id_partner", "seg_id")
+      .count()
+      .withColumnRenamed("count", "device_unique")
+    df_grouped
+  }
+
+  def getGroupedbyCountry(
+      df_joint: DataFrame
+  ): DataFrame = {
+
+    val df_grouped_country = df_joint
+      .groupBy("id_partner","seg_id","country")
+      .count()
+      .withColumnRenamed("count", "device_unique")
+    df_grouped_country
   }
 
   /**
@@ -202,19 +220,32 @@ object Reports {
     val taxo_path = "/datascience/misc/standard_ids.csv"
     val df_taxo =  spark.read.format("csv").option("header", "true").load(taxo_path)
 
-    /**  Get number of devices per partner_id per segment */
-    val data = getJointandGrouped(
+    /**  Join data_triplets with taxo segments */
+    val df_joint = getJoint(
       df_taxo = df_taxo,
       df_data_triplets = df_data_triplets)  
-  
-    /** Here we store the report */
-    val fileName = "base_report"
+
+    /**  Get number of devices per partner_id per segment */
+    val df_grouped = getGrouped(df_joint = df_joint)
+
+    /** Here we store the first report */
+    val fileName1 = "base_report"
 
     saveData(
-      data = data,
-      fileName = fileName
+      data = df_grouped,
+      fileName = fileName1
     )
-  
+
+    /**  Get number of devices per partner_id per segment per country */
+    val df_grouped_country = getGroupedbyCountry(df_joint = df_joint)
+
+    /** Here we store the first report by country */
+    val fileName2 = "base_report_by_country"
+
+    saveData(
+      data = df_grouped_country,
+      fileName = fileName2
+    )
   }    
 
   def getDataReport_xd(
@@ -232,26 +263,49 @@ object Reports {
     val country_df = country_codes.toSeq.toDF("country", "segment")
 
     /** Read mapping of xd segments to their parents */
-    val mapping_df = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load("/data/metadata/xd_mapping_segments_exclusion.csv")
-      .withColumnRenamed("parentId", "seg_id")
-      .withColumnRenamed("segmentId", "segment")
+    val mapping1 = spark.read
+          .format("csv")
+          .option("header", "true")
+          .load("/data/metadata/xd_mapping_segments_exclusion.csv")
+          .withColumnRenamed("parentId", "seg_id")
+          .withColumnRenamed("segmentId", "segment")
 
-    /** Get final df */
-    val df_final = getJoint_xd(
+    val mapping2 = spark.read
+          .format("csv")
+          .option("header", "true")
+          .load("/data/metadata/xd_mapping_segments.csv")
+          .withColumnRenamed("parentId", "seg_id")
+          .withColumnRenamed("segmentId", "segment")
+
+    val mapping_df = mapping1.union(mapping2)
+
+    /** Get joint df */
+    val df_joint = getJoint_xd(
       df = df,
       country_df = country_df,
       mapping_df = mapping_df
     )
   
-    /** Here we store the report */
-    val fileName = "xd_report"
+    /**  Get number of devices per partner_id per segment */
+    val df_grouped = getGrouped(df_joint = df_joint)
+
+    /** Here we store the first report */
+    val fileName1 = "xd_report"
 
     saveData(
-      data = df_final,
-      fileName = fileName
+      data = df_grouped,
+      fileName = fileName1
+    )
+
+    /**  Get number of devices per partner_id per segment per country */
+    val df_grouped_country = getGroupedbyCountry(df_joint = df_joint)
+
+    /** Here we store the first report by country */
+    val fileName2 = "xd_report_by_country"
+
+    saveData(
+      data = df_grouped_country,
+      fileName = fileName2
     )
   
   }    
