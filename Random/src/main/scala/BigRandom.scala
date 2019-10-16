@@ -74,10 +74,10 @@ def getDataEventQueue(
         .option("header", "true")
         .format("csv")
         .load(hdfs_files: _*)
-        .na
-        .drop()
         .filter(query)
         .select("country", "device_id").distinct()
+        .na
+        .drop()        
         .write.format("csv")
         .option("header","false")
         .option("delimiter","\t")
