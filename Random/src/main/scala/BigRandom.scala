@@ -74,10 +74,10 @@ def getDataEventQueue(
         .option("header", "true")
         .format("csv")
         .load(hdfs_files: _*)
+        .filter(query)
         .select("country", "device_id").distinct()
         .na
-        .drop()
-        .filter(query)
+        .drop()        
         .write.format("csv")
         .option("header","false")
         .option("delimiter","\t")
@@ -93,25 +93,25 @@ def getDataEventQueue(
     val spark =
       SparkSession.builder.appName("BigRandom").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-    val query_27 = "country IN ('MX', 'BR') AND event_type = 'pv' AND array_contains(platforms, '27')"
+    //val query_27 = "country IN ('MX', 'BR') AND event_type = 'pv' AND array_contains(platforms, '27')"
  
-    //val query = "country IN ('MX', 'BR') AND event_type = 'pv'"
+    val query = "country IN ('MX', 'BR') AND event_type = 'pv'"
     
     val nDays = 2
     val since = 1
-    /**
+    
      getDataEventQueue(
       spark=spark,
       query=query,
       nDays=nDays,
       since=since)
-    **/
     
+    /**
     getDataEventQueue_27(
       spark=spark,
       query_27=query_27,
       nDays=nDays,
       since=since)
-    
+    **/
   }
 }
