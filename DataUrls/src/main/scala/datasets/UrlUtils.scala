@@ -125,9 +125,19 @@ object UrlUtils {
           .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
           .withColumn("keyword", explode(col("url_keys")))
           .filter(col("keyword").rlike("[a-z]{2,}"))
-          .groupBy("url","segment").agg(collect_list(col("keyword").as("url_keys")))
-
-    joint.write
+          .select("url","segment","keyword")
+          
+    // Save keywords from url
+    joint.select("url","keyword")
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/data_url_classifier/keywords_url")
+    
+    // Save GT
+    joint.select("url","segment")
+        .dropDuplicates()
+        .write
         .format("parquet")
         .mode(SaveMode.Overwrite)
         .save("/datascience/data_url_classifier/gt_new_taxo")
