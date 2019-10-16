@@ -214,48 +214,107 @@ object RandomTincho {
  }
 
  def get_matching_metrics(spark:SparkSession){
+
+  var df = spark.read.format("csv")
+                    .option("header","true")
+                    .load("/datascience/misc/Argentina2_101419_FINAL.csv")
+                    .select("email_sha256")
+                    .withColumnRenamed("email_sha256","email")
+
   var cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'AR'")
                       .select("ml_sh2")
+                      .withColumnRenamed("ml_sh2","email")
+                      .join(df,Seq("email"),"inner")
+                      .select("email")
                       .distinct
                       .count
-  println("Mails AR: %s".format(cant))
+  println("AR Join Retargetly: %s".format(cant))
 
+
+  df = spark.read.format("csv")
+                    .option("header","true")
+                    .load("/datascience/misc/Brazil2_101419_FINAL.csv")
+                    .select("email_sha256")
+                    .withColumnRenamed("email_sha256","email")
 
   cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'BR'")
                       .select("ml_sh2")
+                      .withColumnRenamed("ml_sh2","email")
+                      .join(df,Seq("email"),"inner")
+                      .select("email")
                       .distinct
                       .count
-  println("Mails BR: %s".format(cant))
+  println("BR Join Retargetly: %s".format(cant))
+
+  df = spark.read.format("csv")
+                      .option("header","true")
+                      .load("/datascience/misc/Mexico2_101419_FINAL.csv")
+                      .select("email_sha256")
+                      .withColumnRenamed("email_sha256","email")
 
   cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'MX'")
                       .select("ml_sh2")
+                      .withColumnRenamed("ml_sh2","email")
+                      .join(df,Seq("email"),"inner")
+                      .select("email")
                       .distinct
                       .count
-  println("Mails MX: %s".format(cant))
+  println("MX Join Retargetly: %s".format(cant))
+
+
+  df = spark.read.format("csv")
+                      .option("header","true")
+                      .load("/datascience/misc/Chile2_101419_FINAL.csv")
+                      .select("email_sha256")
+                      .withColumnRenamed("email_sha256","email")
 
   cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'CL'")
                       .select("ml_sh2")
+                      .withColumnRenamed("ml_sh2","email")
+                      .join(df,Seq("email"),"inner")
+                      .select("email")
                       .distinct
                       .count
-  println("Mails CL: %s".format(cant))
+  println("CL Join Retargetly: %s".format(cant))
+
+
+  df = spark.read.format("csv")
+                    .option("header","true")
+                    .load("/datascience/misc/Colombia2_101419_FINAL.csv")
+                    .select("email_sha256")
+                    .withColumnRenamed("email_sha256","email")
 
   cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'CO'")
                       .select("ml_sh2")
+                      .withColumnRenamed("ml_sh2","email")
+                      .join(df,Seq("email"),"inner")
+                      .select("email")
                       .distinct
                       .count
-  println("Mails CO: %s".format(cant))
+  println("CO Join Retargetly: %s".format(cant))
+  
+  df = spark.read.format("csv")
+                    .option("header","true")
+                    .load("/datascience/misc/Peru2_101419_FINAL.csv")
+                    .select("email_sha256")
+                    .withColumnRenamed("email_sha256","email")
 
   cant = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'PE'")
                       .select("ml_sh2")
+                      .withColumnRenamed("ml_sh2","email")
+                      .join(df,Seq("email"),"inner")
+                      .select("email")
                       .distinct
                       .count
-  println("Mails PE: %s".format(cant))
+
+  println("PE Join Retargetly: %s".format(cant))
+
  }
 
   def main(args: Array[String]) {
