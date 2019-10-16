@@ -244,7 +244,7 @@ object RandomTincho {
                         .select("email")
                         .na.drop
 
-    cant = partner.join(compared,Seq("email"),"inner")
+    cant = partner_br.join(compared,Seq("email"),"inner")
                       .select("email")
                       .distinct
                       .count
