@@ -459,7 +459,7 @@ object RandomTincho {
                   .withColumn("email",lower(col("email")))
                   .select("email").distinct.count
 
-    println("acxiom/files/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz: %s".format(cant)
+    println("acxiom/files/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz: %s".format(cant))
   }
 
 }
