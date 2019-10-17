@@ -1,6 +1,6 @@
 package main.scala.devicer
 import main.scala.crossdevicer.AudienceCrossDevicer
-import org.apache.spark.sql.SparkSession
+
 import org.apache.spark.sql.functions.{
   lit,
   length,
@@ -12,8 +12,7 @@ import org.apache.spark.sql.functions.{
 }
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.{SaveMode, DataFrame}
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.storage.StorageLevel
 import org.apache.log4j.{Level, Logger}
@@ -23,7 +22,6 @@ import org.apache.spark.sql.types.{
   StringType,
   IntegerType
 }
-import org.apache.spark.sql.Row
 
 /*
  * This object receives an audience and cross-device it using a cross-deviced index.
@@ -304,13 +302,24 @@ object GetAudience {
                 )
           )
           .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    // This is the list of columns to be allowed
+    val columns =
+      """device_id, id_partner, event_type, device_type, segments, first_party, all_segments, url, referer, 
+                         search_keyword, tags, track_code, campaign_name, campaign_id, site_id, time,
+                         placement_id, advertiser_name, advertiser_id, app_name, app_installed,
+                         version, country, activable, share_data"""
+        .replace("\n", "")
+        .replace(" ", "")
+        .split(",")
+
     val df =
       if (hdfs_files.length > 0)
         spark.read.option("basePath", path).parquet(hdfs_files: _*)
       else
         spark.createDataFrame(
-          spark.sparkContext.emptyRDD[Row],
-          StructType(Array(StructField("empty", StringType, true)))
+          spark.sparkContext.parallelize(Seq(Row(columns: _*))),
+          StructType(columns.map(c => StructField(c, StringType, true)).toArray)
         )
 
     df
