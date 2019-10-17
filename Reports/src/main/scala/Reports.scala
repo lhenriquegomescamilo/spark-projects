@@ -345,13 +345,13 @@ object Reports {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
     
-    // getDataReport(
-    //   spark = spark,
-    //   nDays = nDays,
-    //   since = since)
+     getDataReport(
+       spark = spark,
+       nDays = nDays,
+       since = since)
 
-    getDataReport_xd(
-      spark = spark)  
+    //getDataReport_xd(
+    //  spark = spark)  
     
   }
 }
