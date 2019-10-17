@@ -455,10 +455,11 @@ object RandomTincho {
     val df1 = spark.read.format("csv").option("header","true").option("sep","\t").load("/datascience/misc/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz").select("email1").withColumnRenamed("email1","email")
     val df2 = spark.read.format("csv").option("header","true").option("sep","\t").load("/datascience/misc/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz").select("email2").withColumnRenamed("email2","email")
 
-    val compared = df1.union(df2)
+    val cant = df1.union(df2)
                   .withColumn("email",lower(col("email")))
+                  .select("email").distinct.count
 
-    println("acxiom/files/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz: %s".format(compared.select("email").distinct.count))
+    println("acxiom/files/acxiom_MX_Partner_Universe_Extract_20190809.tsv.gz: %s".format(cant)
   }
 
 }
