@@ -7,32 +7,21 @@ import org.apache.spark.sql.functions._
 
 object TaringaIngester {
   def process_day(spark: SparkSession, day: String) {
-
-    val countries = List("AR", "MX", "CL", "CO")
-
-    for (c <- countries) {
-      spark.read
-        .load(
-          "/datascience/data_audiences_streaming/hour=%s*/country=%s"
-            .format(day, c)
-        )
-        .filter("url LIKE '%taringa%'") // country IN ('AR', 'CL', 'MX', 'CO') AND
-        .withColumn("day", lit(day))
-        .withColumn("all_segments", concat_ws(",", col("all_segments")))
-        .select("device_id", "all_segments", "url", "datetime", "day")
-        .write
-        .format("csv")
-        .option("header", "true")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/taringa_ingester/data_%s_%s".format(day, c))
-    }
-
+    spark.read.load("/datascience/data_partner_streaming/hour=%s*/id_partner=146".format(day))
+              .withColumn("day", lit(day))
+              .withColumn("all_segments", concat_ws(",", col("all_segments")))
+              .select("device_id", "all_segments", "url", "datetime", "day")
+              .write
+              .format("parquet")
+              .partitionBy("day", "country")
+              .mode(SaveMode.Overwrite)
+              .save("/datascience/taringa_ingester/")
   }
 
   def main(args: Array[String]) {
     /// Configuracion spark
     val spark = SparkSession.builder
-      .appName("Data GCBA Process")
+      .appName("Data from Taringa")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
 
