@@ -8,7 +8,7 @@ import org.apache.spark.sql.{SaveMode, DataFrame}
 
 object GenerateGTJson{
 
-  def generate_json_genre_ar(spark:SparkSession, conf:Configuration){
+  def generate_json_genre_ar(spark:SparkSession, conf:Configuration, current_month: String){
 
     var fs = FileSystem.get(conf)
     var os = fs.create(new Path("/datascience/devicer/priority/AR_genero_%s.json".format(current_month)))
@@ -21,7 +21,7 @@ object GenerateGTJson{
   }
 
 
-  def generate_json_age_ar(spark:SparkSession, conf:Configuration){
+  def generate_json_age_ar(spark:SparkSession, conf:Configuration, current_month: String){
 
     var fs = FileSystem.get(conf)
     var os = fs.create(new Path("/datascience/devicer/priority/AR_edad_%s.json".format(current_month)))
