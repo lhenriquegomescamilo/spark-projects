@@ -11,6 +11,7 @@ object TaringaIngester {
               .withColumn("day", lit(day))
               .withColumn("all_segments", concat_ws(",", col("all_segments")))
               .select("device_id", "all_segments", "url", "datetime", "day","country")
+              .filter("country = 'AR' or country = 'MX' or country = 'CL' or country = 'CO'")
               .write
               .format("parquet")
               .partitionBy("day", "country")
