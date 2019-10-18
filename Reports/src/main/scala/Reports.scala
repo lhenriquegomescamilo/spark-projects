@@ -120,6 +120,7 @@ object Reports {
 //////////////////////////////////////////////////////////////
 
   def getJoint_xd(
+      spark: SparkSession,
       df: DataFrame
   ): DataFrame = {
 
@@ -280,6 +281,7 @@ object Reports {
 
     /** Get joint df with countries and xd parent segments*/
     val df_joint = getJoint_xd(
+      spark = spark,
       df = df)
   
     /**  Get number of devices per partner_id per segment */
