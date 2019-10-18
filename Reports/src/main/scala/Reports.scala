@@ -74,10 +74,6 @@ object Reports {
 
     val path = "/datascience/audiences/crossdeviced/taxo_gral_joint"
 
-    val udfCast = udf(
-      (segments: Seq[String]) =>
-          segments.map(_.toString.toInt))
-
     val df = spark.read
           .option("sep", "\t")
           .option("header", "false")
@@ -87,7 +83,7 @@ object Reports {
           .withColumnRenamed("_c2", "segment")
           .select("device_id","segment")
           .withColumn("segment", split(col("segment"), ","))
-          .withColumn("segment",udfCast(col("segment")))   //cast each segment string to int (for mapping)
+          .withColumn("segment",col("segment").cast("array<int>"))  //cast each segment string to int (for mapping)
 
     df
   }
