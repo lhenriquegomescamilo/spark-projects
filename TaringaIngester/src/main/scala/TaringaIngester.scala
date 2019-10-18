@@ -10,7 +10,7 @@ object TaringaIngester {
     spark.read.load("/datascience/data_partner_streaming/hour=%s*/id_partner=146".format(day))
               .withColumn("day", lit(day))
               .withColumn("all_segments", concat_ws(",", col("all_segments")))
-              .select("device_id", "all_segments", "url", "datetime", "day")
+              .select("device_id", "all_segments", "url", "datetime", "day","country")
               .write
               .format("parquet")
               .partitionBy("day", "country")
