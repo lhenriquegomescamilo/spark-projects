@@ -24,6 +24,7 @@ object TaringaIngester {
     val spark = SparkSession.builder
       .appName("Data from Taringa")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.sources.partitionOverwriteMode","dynamic")
       .getOrCreate()
 
     /// Parseo de parametros
