@@ -10,8 +10,10 @@ object TaringaIngester {
   def process_day(spark: SparkSession, day: String) {
 
     val actual_hour = (LocalDateTime.now.getHour - 1).toString
-    spark.read.load("/datascience/data_partner_streaming/hour=%s%s/id_partner=146".format(day,actual_hour))
-              .withColumn("day", lit(day))
+    val date = day.concat(actual_hour)
+    
+    spark.read.load("/datascience/data_partner_streaming/hour=%s/id_partner=146".format(date))
+              .withColumn("day", lit(date))
               .withColumn("all_segments", concat_ws(",", col("all_segments")))
               .select("device_id", "all_segments", "url", "datetime", "day","country")
               .filter("country = 'AR' or country = 'MX' or country = 'CL' or country = 'CO'")
