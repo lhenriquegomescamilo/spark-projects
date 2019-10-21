@@ -17,7 +17,7 @@ object DatasetGA{
       country: String,
       joinType: String,
       name: String
-  ) {
+  ): DataFrame {
     // First we load the GA data from the last 60 days
     val sc = spark.sparkContext
     val conf = sc.hadoopConfiguration
