@@ -49,7 +49,7 @@ import org.datasyslab.geospark.formatMapper.GeoJsonReader
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object elMejorRandom {
+object geoDebugging {
   def get_tapad_home_cluster(spark:SparkSession){
 
 val code = spark.read.format("csv").option("header",true).option("delimiter","\t")
