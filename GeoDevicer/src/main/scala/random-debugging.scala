@@ -469,6 +469,7 @@ intersection.select("name","ad_id").groupBy("name").agg(countDistinct("ad_id") a
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/sample/brasi_users_in_city")
 
+val total = users.select("ad_id").distinct().count()
 
 users.groupBy("ad_id").agg(count("utc_timestamp") as "detections").withColumn("total",lit(total))
 .write.format("csv").option("header",true)
