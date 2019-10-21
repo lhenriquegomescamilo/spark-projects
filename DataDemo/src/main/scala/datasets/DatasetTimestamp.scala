@@ -13,7 +13,7 @@ object DatasetTimestamp{
   def getDatasetTimestamp(
       spark: SparkSession,
       ga: DataFrame,
-  ) = {
+  ): DataFrame = {
 
     val myUDF = udf(
               (weekday: String, hour: String) =>
@@ -39,6 +39,7 @@ object DatasetTimestamp{
                       "/datascience/data_demo/name=%s/country=%s/ga_timestamp"
                         .format(name, country)
                     )
+    dataset_timestamp
   }  
   def main(args: Array[String]) {
     /// Configuracion spark
