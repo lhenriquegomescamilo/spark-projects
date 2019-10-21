@@ -4,10 +4,13 @@ import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.functions._
+import java.time.LocalDateTime
 
 object TaringaIngester {
   def process_day(spark: SparkSession, day: String) {
-    spark.read.load("/datascience/data_partner_streaming/hour=%s*/id_partner=146".format(day))
+
+    val actual_hour = (LocalDateTime.now.getHour - 1).toString
+    spark.read.load("/datascience/data_partner_streaming/hour=%s%s/id_partner=146".format(day,actual_hour))
               .withColumn("day", lit(day))
               .withColumn("all_segments", concat_ws(",", col("all_segments")))
               .select("device_id", "all_segments", "url", "datetime", "day","country")
