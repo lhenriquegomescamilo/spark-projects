@@ -1,4 +1,5 @@
 package main.scala.datasets
+import main.scala.datasets.DatasetTimestamp
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
@@ -140,29 +141,8 @@ object DatasetGA{
                             )
 
     // Finally we obtain the data the is related to timestamps coming from GA
-    val myUDF = udf(
-      (weekday: String, hour: String) =>
-        if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
-        else "%s0".format(hour)
-    )
-    val res = joint
-                .withColumnRenamed("timestamp", "Time")
-                .withColumn("Hour", date_format(col("Time"), "HH"))
-                .withColumn("Weekday", date_format(col("Time"), "EEEE"))
-                .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
-                .groupBy("device_id", "wd")
-                .count()
-                .groupBy("device_id")
-                .pivot("wd")
-                .agg(sum("count"))
-                .orderBy(asc("device_id"))
-                .write
-                .format("parquet")
-                .mode(SaveMode.Overwrite)
-                .save(
-                  "/datascience/data_demo/name=%s/country=%s/ga_timestamp"
-                    .format(name, country)
-                )
+    val dataset_timestamp = DatasetTimestamp.getDatasetTimestamp(spark,joint)
+    
     probabilities_calculated
   }
 
