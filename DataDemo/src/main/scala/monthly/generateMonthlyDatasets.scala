@@ -25,6 +25,6 @@ object GenerateMonthlyDataset{
     val path_gt = if (args.length > 3) args(3).toString else "/datascience/devicer/processed/AR_xd-0_partner-_pipe-0_2019-04-09T18-18-41-066436_grouped/"
     
     val training = GenerateDataset.getTrainingData(spark, path_gt, country, training_name)
-    val expansion = GenerateDataset.getExpansionData(spark, path_gt, country, expansion_name)
+    //val expansion = GenerateDataset.getExpansionData(spark, path_gt, country, expansion_name)
   }
 }
