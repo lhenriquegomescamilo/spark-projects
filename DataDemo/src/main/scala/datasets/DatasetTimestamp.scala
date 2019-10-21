@@ -11,16 +11,16 @@ import org.apache.spark.sql.{SaveMode, DataFrame}
 
 object DatasetTimestamp{
   
-  def getDataAudiences(
+  def getDatasetTimestamp(
       spark: SparkSession,
-      ga: DataFrame,
+      ga: DataFrame
   ): DataFrame = {
 
     val myUDF = udf(
               (weekday: String, hour: String) =>
               if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
               else "%s0".format(hour)
-              )
+            )
 
     val dataset_timestamp = ga
                             .withColumnRenamed("timestamp", "Time")
