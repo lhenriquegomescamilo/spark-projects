@@ -17,7 +17,7 @@ object DatasetSegmentTriplets{
       joinType: String,
       name: String,
       ndays:Int = 30
-  ) = {
+  ): DataFrame = {
     
     // List of segments that will be considered. The rest of the records are going to be filtered out.
     val segments =
@@ -59,11 +59,11 @@ object DatasetSegmentTriplets{
         x =>
           spark.read
             .parquet("/datascience/data_triplets/segments/day=%s/country=%s/".format(x,country))
+            .select("device_id", "feature")
       )
-
+      
       val triplets = dfs.reduce((df1, df2) => df1.union(df2))
                         .filter(col("feature").isin(segments: _*))
-                        .select("device_id", "feature")
                         .distinct()
                         .groupBy("device_id")
                         .agg(collect_list(col("feature")).as("feature"))
