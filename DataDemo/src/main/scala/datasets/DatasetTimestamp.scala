@@ -13,7 +13,9 @@ object DatasetTimestamp{
   
   def getDatasetTimestamp(
       spark: SparkSession,
-      ga: DataFrame
+      ga: DataFrame,
+      name: String,
+      country: String
   ): DataFrame = {
 
     val myUDF = udf(
