@@ -7,10 +7,8 @@ import org.apache.spark.sql.functions._
 import java.time.LocalDateTime
 
 object TaringaIngester {
-  def process_day(spark: SparkSession, day: String) {
-
-    val actual_hour = (LocalDateTime.now.getHour - 1).toString
-    val date = day.concat(actual_hour)
+  def process_hour(spark: SparkSession, day: String, hour:String) {
+    val date = day.concat(hour)
     
     spark.read.load("/datascience/data_partner_streaming/hour=%s/id_partner=146".format(date))
               .withColumn("day", lit(date))
@@ -37,13 +35,10 @@ object TaringaIngester {
     val ndays = if (args.length > 1) args(1).toInt else 1
 
     val format = "YYYYMMdd"
-    val start = DateTime.now.minusDays(since + ndays)
-    val end = DateTime.now.minusDays(since)
+    val day = DateTime.now.toString(format)
+    // Process last hour
+    val hour = (LocalDateTime.now.getHour - 1).toString
 
-    val daysCount = Days.daysBetween(start, end).getDays()
-    val days =
-      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
-    days.map(day => process_day(spark, day))
+    process_hour(spark,day,hour)
   }
 }
