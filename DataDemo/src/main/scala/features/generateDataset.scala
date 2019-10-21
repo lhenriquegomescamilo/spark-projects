@@ -19,49 +19,6 @@ object GenerateDataset {
     *
     *
     */
-  /**
-    * This method returns a DataFrame with the data from the audiences data pipeline, for the interval
-    * of days specified. Basically, this method loads the given path as a base path, then it
-    * also loads the every DataFrame for the days specified, and merges them as a single
-    * DataFrame that will be returned.
-    *
-    * @param spark: Spark Session that will be used to load the data from HDFS.
-    * @param nDays: number of days that will be read.
-    * @param since: number of days ago from where the data is going to be read.
-    *
-    * @return a DataFrame with the information coming from the data read.
-  **/
-  def getDataAudiences(
-      spark: SparkSession,
-      country: String,
-      nDays: Int = 30,
-      since: Int = 1
-  ): DataFrame = {
-
-    /// Configuraciones de spark
-    val sc = spark.sparkContext
-    val conf = sc.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-
-    /// Obtenemos la data de los ultimos ndays
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(since)
-
-    val days =
-      (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_demo/data_urls/"
-    val dfs = days.map(day => path + "/day=%s/country=%s".format(day,country))
-                  .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-                  .map(x => spark.read
-                                .option("basePath", path)
-                                .parquet(x)
-                                .withColumn("day", lit(x.split("/").last.slice(4, 13)))
-    )
-
-    val df = dfs.reduce((df1, df2) => df1.union(df2))
-
-    df
-  }
 
   /**
    * This function constructs and returns a DataFrame where all the ground truth users are stored. It receives the 
