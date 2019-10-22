@@ -61,8 +61,6 @@ object DatasetKeywordsURL{
       val df = getDataAudiences(spark,country)
         .filter("event_type IN ('pv', 'batch')")
         .select("device_id", "url")
-        .distinct()
-
 
       val join = gtDF.join(df, Seq("device_id"), joinType )
                       .select("device_id", "url")
