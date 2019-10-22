@@ -10,6 +10,21 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
 
 object DatasetSegmentTriplets{
+  /**
+  * This method takes all the triplets with all the segments, for the users without ground truth in AR. Then it groups by the
+  * user and generates a list of the segments separated by ;.
+  *
+  * @param spark: Spark session that will be used to load the data.
+  * @param gtDF: dataframe where the ground truth users are stored. This dataframe must have a column called 'device_id' 
+  * and another called 'label'.
+  * @param country: country for which the triplets of data is going to be loaded.
+  * @param joinType: type of join that will be performed. It can be either 'inner' or 'left' or 'left_anti'.
+  * @param name: name for the folder where the dataset will be stored.
+  *
+  * It stores the data (tuples where the first column is the device_id and the second one is the list of segments separated by ';') in
+                        /datascience/data_demo/name={name}/{country}/triplets.
+  */
+
     def generateSegmentTriplets(
       spark: SparkSession,
       gtDF: DataFrame,
@@ -17,7 +32,7 @@ object DatasetSegmentTriplets{
       joinType: String,
       name: String,
       ndays:Int = 30
-  ): DataFrame = {
+  ) = {
     
     // List of segments that will be considered. The rest of the records are going to be filtered out.
     val segments =

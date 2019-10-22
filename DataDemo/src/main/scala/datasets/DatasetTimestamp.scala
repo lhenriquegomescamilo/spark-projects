@@ -16,7 +16,7 @@ object DatasetTimestamp{
       ga: DataFrame,
       name: String,
       country: String
-  ): DataFrame = {
+  ) = {
 
     val myUDF = udf(
               (weekday: String, hour: String) =>
