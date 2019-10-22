@@ -68,7 +68,7 @@ object DatasetKeywordsURL{
                                   .select("device_id", "url")
                                   
       // Join with GT and extract keywords from the url
-      var join = gtDF.join(df_processed, Seq("device_id"), joinType )
+      val join = gtDF.join(df_processed, Seq("device_id"), joinType )
                       .select("device_id", "url")
                       .distinct()
                       .withColumn("url", lower(col("url")))
@@ -86,10 +86,10 @@ object DatasetKeywordsURL{
             "/datascience/data_demo/name=%s/country=%s/keywords_processed_join".format(name, country)
           )
       
-      join = spark.read
-                  .load("/datascience/data_demo/name=%s/country=%s/keywords_processed_join".format(name, country))
+      val processed_join = spark.read
+                                .load("/datascience/data_demo/name=%s/country=%s/keywords_processed_join".format(name, country))
       
-      join.cache()
+      processed_join.cache()
 
       // Calculating top 5000 keywords
       val top_keywords = processed_join.groupBy("keyword")
