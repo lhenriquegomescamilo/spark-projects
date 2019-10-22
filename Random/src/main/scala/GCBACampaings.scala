@@ -58,7 +58,7 @@ object GCBACampaings {
     val start = DateTime.now.minusDays(1)
 
     val days =
-      (0 until 4).map(start.minusDays(_)).map(_.toString(format))
+      (0 until 5).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_partner_streaming"
     val dfs = days
       .flatMap(
@@ -84,7 +84,7 @@ object GCBACampaings {
       )
 
     /// Concatenamos los dataframes
-    val dataset = dfs.reduce((df1, df2) => df1.union(df2)).distinct()
+    val dataset = dfs.reduce((df1, df2) => df1.unionAll(df2))
 
     dataset.write
       .format("parquet")
