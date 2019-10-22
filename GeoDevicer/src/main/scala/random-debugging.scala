@@ -434,8 +434,9 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 //Brasil test
 //Levantamos los users
+val day = "06"
 val users = spark.read.format("csv").option("header",true)
-.load("/datascience/geo/sample/Safegraph/2019/10/*")
+.load("/datascience/geo/sample/Safegraph/2019/10/%s".format(day))
 users.createOrReplaceTempView("data")
 
 var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)),
@@ -467,7 +468,7 @@ intersection.select("name","ad_id").groupBy("name").agg(countDistinct("ad_id") a
 .write.format("csv").option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/sample/brasi_users_in_city")
+.save("/datascience/geo/sample/brasi_users_in_city_%s".format(day))
 
 val total = users.select("ad_id").distinct().count()
 
@@ -475,7 +476,7 @@ users.groupBy("ad_id").agg(count("utc_timestamp") as "detections").withColumn("t
 .write.format("csv").option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/sample/brasi_users_signals_total")
+.save("/datascience/geo/sample/brasi_users_signals_total_%s".format(day))
 
 
 
