@@ -89,7 +89,8 @@ object GCBACampaings {
     val dataset = dfs.reduce((df1, df2) => df1.unionAll(df2))
 
     dataset.write
-      .format("parquet")
+      .format("csv")
+      .option("sep", ";")
       .mode("overwrite")
       .save("/datascience/custom/gcba_campaigns_marcha")
   }
