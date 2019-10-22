@@ -96,6 +96,7 @@ object DatasetKeywordsURL{
                                         .withColumn("keyword", concat_ws(";", col("keyword")))
                                         .orderBy(asc("device_id"))
                                         .write
+                                        .mode(SaveMode.Overwrite)
                                         .format("parquet")
                                         .save(
                                           "/datascience/data_demo/name=%s/country=%s/keywords".format(name, country)
@@ -112,7 +113,7 @@ object DatasetKeywordsURL{
 
     val segments = spark.read.load("/datascience/data_demo/name=training_AR_genero_10/country=AR/segment_triplets/")
     getDatasetFromURLs(spark,segments,"AR","left","training_AR_genero_10")
-    
+
 
   }
 }
