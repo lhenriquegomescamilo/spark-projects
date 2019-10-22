@@ -70,10 +70,11 @@ object DatasetKeywordsURL{
         gtDF: DataFrame,
         country: String,
         joinType: String,
-        name: String  
+        name: String,
+        ndays:Int
     ) = {
       // Data from data urls
-      val df = getDataUrls(spark,country)
+      val df = getDataUrls(spark,country,ndays)
         .filter("event_type IN ('pv', 'batch')")
         .select("device_id", "url")
 
@@ -139,7 +140,7 @@ object DatasetKeywordsURL{
       .getOrCreate()
 
     val segments = spark.read.load("/datascience/data_demo/name=training_AR_genero_10/country=AR/segment_triplets/")
-    getDatasetFromURLs(spark,segments,"AR","left","training_AR_genero_10")
+    getDatasetFromURLs(spark,segments,"AR","left","training_AR_genero_10",30)
 
 
   }

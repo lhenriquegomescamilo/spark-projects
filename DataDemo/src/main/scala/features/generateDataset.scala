@@ -396,7 +396,7 @@ object GenerateDataset {
                         )
 
     // Finally we get the Url dataset (device_id, [url1;url2]) from the users that passed the join with the previous dataset
-    DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name)
+    DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name, 30)
   }
 
   def getTrainingData(spark: SparkSession, path: String, country: String, name:String) = {
@@ -436,7 +436,7 @@ object GenerateDataset {
                         )
 
     // Finally we get the keywords dataset (device_id, [kw1;kw2]) from the users that passed the join with the previous dataset
-    DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name)
+    DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name,30)
   }
 
   def main(args: Array[String]) {
