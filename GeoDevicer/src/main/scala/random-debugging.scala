@@ -224,191 +224,188 @@ def get_safegraph_data(
   }
 
 
-  /*
+  def get_safegraph_data_w_geocode(
+      spark: SparkSession,
+      nDays: String) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
 
-Funciones  para telecentro
-
-    val uas = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/misc/ua_w_segments_5d")  
     
-    uas.withColumn("segments",explode(split(col("segments"),","))).groupBy("brand","model","segments").agg(countDistinct("device_id"))
-    .write.format("csv")
-    .option("header",true)
-    .option("delimiter","\t")
-    .mode(SaveMode.Overwrite)
-    .save("/datascience/misc/ua_agg_segments_5d")
+     // Get the days to be loaded
+   // val format = "yyyy/MM/dd"
+   // val end = DateTime.now.minusDays(value_dictionary("since").toInt)
+    val days = (0 until nDays.toInt)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+     
 
+    // Now we obtain the list of hdfs files to be read
+    val path = "/data/geo/safegraph/"
+    val hdfs_files = days
+      .map(day => path+"%s/".format(day))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
+      .map(day => day+"*.gz")
+    
+    // Finally we read, filter by country, rename the columns and return the data
+    val df_safegraph = spark.read
+        .option("header", "true")
+        .csv(hdfs_files:_*)
+        .dropDuplicates("ad_id","latitude","longitude")
+        //.filter("country = '%s'".format(value_dictionary("country")))
+        .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
+        .withColumnRenamed("latitude", "latitude_user")
+        .withColumnRenamed("longitude", "longitude_user")
+        .withColumn("geocode",
+         ((abs(col("latitude_user").cast("float"))*10)
+          .cast("int")*10000)+(abs(
+          col("longitude_user").cast("float")*100
+        ).cast("int"))
+        )
+                         df_safegraph                     
 
-
-//Hay que matchear con los PII para obtener los hashes
-
-val telecentro_isp =  spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Test_ISP_to_push").withColumn("device_id",upper(col("device_id")))
-val pii = spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples/").withColumn("device_id",upper(col("device_id"))).filter("country = 'AR'").drop("device_type")
-
-//telecentro_isp.show(2)
-//pii.show(2)
-
-
-val telecentro_hash = telecentro_isp.join(pii,Seq("device_id"))
-
-     val ispMap = Map(
-      "120885"->"Arnet",
-       "120884"->"Speedy",
-        "120883" ->"Fibertel",
-          "120882"->"Telecentro")
-          
-          
-          val audienceUDF = udf((dev_type: String) => ispMap(dev_type))
-          
-telecentro_hash.withColumn("ISP_Name",audienceUDF(col("ISP"))).write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash") 
-
-
-    val hash_loaded = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash")
-
-hash_loaded.select("ml_sh2","mb_sh2","nid_sh2","ISP_Name").distinct().write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique") 
-
-
-
-spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Arnet'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Arnet") 
-
-spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Speedy'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Speedy") 
-
-spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Fibertel'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Fibertel") 
-
-spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/audiences/crossdeviced/Telecentro_Hash_Unique").filter("ISP_Name == 'Telecentro'").write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/audiences/crossdeviced/Telecentro_Hash_Telecentro") 
+    
   }
 
+  /**
+    * This method reads the user provided POI dataset, and renames the columns. The file provided must be correctly formatted as described below.
+    *
+    * @param spark: Spark session that will be used to load the data.
+    * @param value_dictionary: Map that contains all the necessary information to run the match. The following fields are required:
+    *        - max_radius: maximum distance allowed in the distance join.
+    *        - path_to_pois: path where the POIs are stored.
+    *
+    * @param return df_pois_final: dataframe created from the one provided by the user containing the POIS: contains the geocode and renamed columns.
+    */
+  def get_POI_coordinates(
+      spark: SparkSession,
+      value_dictionary: Map[String, String]
+  ) = {
 
-val HourFrom = 19
-val HourTo = 7
+    // Loading POIs. The format of the file is Name, Latitude, Longitude
+    val df_pois = spark.read
+      .option("header", "true")
+      .option("delimiter", ",")
+      .csv(value_dictionary("path_to_pois"))
 
-val raw = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/radios_argentina_2010_geodevicer_30d_argentina_30-8-2019-14h")
+    //creating geocodes,assigning radius and renaming columns
+    val df_pois_parsed = df_pois
+      .withColumn(
+        "geocode",
+        ((abs(col("latitude").cast("float")) * 10).cast("int") * 10000) + (abs(
+          col("longitude").cast("float") * 100
+        ).cast("int"))
+      )
+      .withColumnRenamed("latitude", "latitude_poi")
+      .withColumnRenamed("longitude", "longitude_poi")
 
- val geo_hour = raw.select("device_id","device_type", "latitude", "longitude","utc_timestamp","name").withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp")))).withColumn("Hour", date_format(col("Time"), "HH")).filter(col("Hour") >= HourFrom || col("Hour") <= HourTo)
-                                                                 
-                                                    
-val geo_counts = geo_hour.groupBy("device_id","device_type").agg(collect_list("name") as "radios_censales").withColumn("radios_censales", concat_ws(",", col("radios_censales")))
+    if (df_pois_parsed.columns.contains("radius")) {
+      val df_pois_final = df_pois_parsed
 
-  geo_counts.write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/geo/geo_processed/radios_argentina_2010_geodevicer_30d_argentina_30-8-2019-14h_agg") 
+      df_pois_final
+    } else {
+      val df_pois_final = df_pois_parsed.withColumn(
+        "radius",
+        lit(value_dictionary("max_radius").toInt)
+      )
+      df_pois_final
+    }
 
+  }
 
-// Esto es para el proceso de jcdaux
-val safegraph_data = get_safegraph_data(spark,"60","1","mexico")
-val all_audience_xd = spark.read.format("csv")
-    .load("/datascience/audiences/crossdeviced/all_audience_a_k_s_h_a_xd")
-    .select("_c1")
-    .withColumnRenamed("_c1","device_id")
-    .withColumn("device_id",upper(col("device_id")))
+  /**
+    * This method performs the vincenty distance calculation between the POIs and the Safegraph data for the selected country and days.
+    * To do this, we perform a join between both dataframes using the geocode. The resulting dataframe has a row where both the latitude and
+    * longitude of the user and the poi are present. Then using the vincenty formula, a distance is obtained. Finaly, we filter it by a minium distance.
+    *
+    * @param spark: Spark session that will be used to load the data.
+    * @param value_dictionary: Map that contains all the necessary information to run the match. The following fields are required:
+    *        - poi_output_file: path where the result is going to be stored.
+    *        - max_radius: maximum distance allowed in the distance join.
+    *        - nDays: number of days to be loaded from Safegraph data.
+    *        - since: number of days to be skipped in Safegraph data.
+    *        - country: country for which the Safegraph data is going to be extracted from.
+    *        - path_to_pois: path where the POIs are stored.
+    *
+    * @param return df_pois_final: dataframe created from the one provided by the user containing the POIS: contains the geocode and renamed columns.
+    */
+  def match_POI(spark: SparkSession, value_dictionary: Map[String, String]) = {
 
-val joined = all_audience_xd.join(safegraph_data,Seq("device_id"))
+    val df_users = get_safegraph_data(spark, value_dictionary)
+    val df_pois_final = get_POI_coordinates(spark, value_dictionary)
+    val columns = df_pois_final.columns.filter(!List("latitude_poi", "longitude_poi", "radius", "geocode").contains(_))
 
-joined.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph_60")
+    //joining datasets by geocode (added broadcast to force..broadcasting)
+    val joint = df_users
+      .join(broadcast(df_pois_final), Seq("geocode"))
 
+    // Using vincenty formula to calculate distance between user/device location and the POI.
+    joint.createOrReplaceTempView("joint")
+    val query =
+      """SELECT ad_id as device_id, 
+                id_type as device_type, 
+                utc_timestamp as timestamp, 
+                latitude_user,
+                longitude_user,
+                latitude_poi,
+                longitude_poi,
+                %s,
+                distance
+            FROM (
+              SELECT *,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude_user)) * COS(RADIANS(latitude_poi)) *
+              COS(RADIANS(longitude_user) - RADIANS(longitude_poi)) +
+              SIN(RADIANS(latitude_user)) * SIN(RADIANS(latitude_poi))))) as distance
+              FROM joint 
+            )
+            WHERE distance < radius""".format(columns.mkString(","))
 
-//tomo la audiencia de usuarios rankeados, madid y web
-val audience_ranked = spark.read.format("csv").option("header",true).option("delimiter",",")
-  .load("/datascience/geo/MX/JCDecaux/all_audience_ranked.csv")
-  .withColumn("device_id",upper(col("device_id")))
-  .select("device_id","audience","confidence")
+    // Storing result
+    val sqlDF = spark.sql(query)
 
-//levanto tabla de equivlencia
-val equivalence_table = spark.read.format("csv").load("/datascience/audiences/crossdeviced/all_audience_a_k_s_h_a_xd")
-.select("_c0","_c1").toDF("device_id","device_id_xd")
+    // We want information about the process
+    println(sqlDF.explain(extended = true))
 
-//uso la tabla de equivalencia del XD para quedarme con los XD, ojo, acá me quedo sólo con el XD
-val madid_w_category = equivalence_table.join(audience_ranked,Seq("device_id"))
-.orderBy(asc("confidence"))
-.drop("device_id")
-.withColumnRenamed("device_id_xd","device_id")
-.withColumn("device_id",upper(col("device_id")))
-.dropDuplicates("device_id")
+    val filtered =
+      sqlDF.write
+        .format("csv")
+        .option("sep", "\t")
+        .option("header", "true")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
+  }
 
-//levanto lo geo que había generado para esta audiencia los últimos 10 días. esto es todo méxico
-val the_people_100 = spark.read.format("csv").option("header",true)
-.option("delimiter","\t")
-.load("/datascience/geo/MX/JCDecaux/all_audience_xd_safegraph_100")
-.distinct()
+  type OptionMap = Map[Symbol, Any]
 
-//me quedo con los homes que estan en distrito federal
-val homes_in_df = spark.read.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.load("/datascience/geo/mexico_300d_home_6-9-2019-12h_w_NSE")
-.withColumn("ENT", substring(col("CVEGEO"), 1, 2)).filter("ENT == '09'")
-.withColumn("device_id",upper(col("ad_id"))).select("device_id")
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--path_geo_json" :: value :: tail =>
+        nextOption(map ++ Map('path_geo_json -> value.toString), tail)
+    }
+  }
 
-val the_people_in_CITY = homes_in_df.join(the_people_100,Seq("device_id"))
+  def main(args: Array[String]) {
+    // Parse the parameters
+    val options = nextOption(Map(), args.toList)
+    val path_geo_json =
+      if (options.contains('path_geo_json)) options('path_geo_json).toString
+      else ""
 
-val category_locations = the_people_in_CITY.join(madid_w_category,Seq("device_id"))
+    // Start Spark Session
+    val spark = SparkSession.builder
+      .appName("audience generator by keywords")
+      .getOrCreate()
 
+    val value_dictionary = Geodevicer.get_variables(spark, path_geo_json)
 
-category_locations.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/MX/JCDecaux/category_locations_100")
-
-
-*/
-
-
-/*
-println(geosparkConf)
-
-import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
-import org.datasyslab.geospark.enums.{FileDataSplitter, GridType, IndexType}
-import org.datasyslab.geospark.spatialOperator.{JoinQuery, KNNQuery, RangeQuery}
-
-
-// Ahora tenemos que unir homes con la clasificacion, y pasar esto por los homes de Argentina.
-//GEOJSON
-// Ahora tenemos que unir homes con la clasificacion, y pasar esto por los homes de Argentina.
-//GEOJSON
-val inputLocation = "/datascience/geo/polygons/AR/radio_censal/geo_json/radio_deshape.json"
-val allowTopologyInvalidGeometris = true // Optional
-val skipSyntaxInvalidGeometries = true // Optional
-val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
-var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
-rawSpatialDf.createOrReplaceTempView("poligonomagico")
-
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as RADIO,_c2 as provincia FROM poligonomagico""".stripMargin).drop("rddshape")
-
-
-
-val NSE_radius = spark.read.format("csv").option("header",true)
-.option("delimiter","\t")
-.load("/datascience/geo/polygons/AR/radio_censal/argentina_NSE_radius_TABLE")
-
-val spatial_NSE = spatialDf.join(NSE_radius.select("RADIO","audience"),Seq("RADIO"))
-
-//Este es el df completo
-spatial_NSE.createOrReplaceTempView("poligonomagico")
-
-
-//Ahora levantamos los usuarios:
-val homes_raw = spark.read.format("csv").option("delimiter","\t").option("header",true)
-.load("/datascience/geo/argentina_365d_home_1-10-2019-16h")
-.toDF("device_id","device_type","freq","geocode","latitude","longitude")
-.drop("geocode")
-
-
-//Aplicando geometría a los puntos
-
-homes_raw.createOrReplaceTempView("data")
-
-var safegraphDf = spark      .sql(""" SELECT device_id,device_type,ST_Point(CAST(data.longitude AS Decimal(24,20)),
-                                                             CAST(data.latitude AS Decimal(24,20))) 
-                                                             as pointshape
-              FROM data
-          """)
-
-safegraphDf.createOrReplaceTempView("data")
-*/
-
-
+    match_POI(spark, value_dictionary)
+  }
 
 
 
@@ -454,7 +451,8 @@ val skipSyntaxInvalidGeometries = true // Optional
 var spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation, allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
 //Es un rdd pero lo pasamos a SQL dataframe
-var rawSpatialDf = Adapter.toDf(spatialRDDpolygon,spark)
+var rawSpatialDf = Adapter.toDf(spatialRDDpolygon,spark).filter("_c1 != 'janeiro'")
+broadcast(rawSpatialDf)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
 var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name  FROM rawSpatialDf""".stripMargin)
@@ -470,6 +468,7 @@ intersection.select("name","ad_id").groupBy("name").agg(countDistinct("ad_id") a
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/sample/brasi_users_in_city_%s".format(day))
 
+/*
 val total = users.select("ad_id").distinct().count()
 
 users.groupBy("ad_id").agg(count("utc_timestamp") as "detections").withColumn("total",lit(total))
@@ -477,7 +476,7 @@ users.groupBy("ad_id").agg(count("utc_timestamp") as "detections").withColumn("t
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/sample/brasi_users_signals_total_%s".format(day))
-
+*/
 
 
   }
