@@ -88,6 +88,7 @@ object SegmentTriplets {
     val grouped_data = df
       .select("device_id", "feature", "country", "day", "id_partner")
       .distinct()
+      .withColumn("count", lit(1))
       // .groupBy("device_id", "feature", "country", "day", "id_partner")
       // .agg(sum("count").as("count"))
 
