@@ -554,22 +554,9 @@ object Item2Item {
   *   - scores: Contains prediction scores per devices 
   */
   def getTmpPathNames(metaParameters: Map[String, String]): Map[String, String] = {
-    val country = metaParameters("country")
-    val jobId = metaParameters("job_id")
-    val isOnDemand = jobId.length > 0
-    val scoresTmpPath = { 
-      if(isOnDemand)
-        "/datascience/data_lookalike/tmp/scores/jobId=%s/".format(jobId)
-      else
-       "/datascience/data_lookalike/tmp/scores/country=%s/".format(country)
-    }
-    val indexTmpPath = {
-      if(isOnDemand)
-        "/datascience/data_lookalike/tmp/indexed_devices/jobId=%s/".format(jobId)
-      else
-       "/datascience/data_lookalike/tmp/indexed_devices/country=%s/".format(country)
-    }
-
+    val outputName = metaParameters("output_name")
+    val scoresTmpPath = "/datascience/data_lookalike/tmp/scores/%s/".format(outputName)
+    val indexTmpPath = "/datascience/data_lookalike/tmp/indexed_devices/%s/".format(outputName)
 
     val pathTmpFiles: Map[String, String] = Map(
         "scores" -> scoresTmpPath,
@@ -590,7 +577,7 @@ object Item2Item {
     import spark.implicits._ 
     
     val isOnDemand = metaParameters("job_id").length > 0
-    val country = metaParameters("country")
+    val outputName = metaParameters("output_name")
 
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
     val dstSegmentIdMap = expandInput.map(m => 
@@ -607,7 +594,7 @@ object Item2Item {
                 .mkString(",") // toString
               )              
         )
-
+      
       // save
       spark.createDataFrame(dataExpansion)
         .toDF("device_id", "segments" )
@@ -617,7 +604,7 @@ object Item2Item {
         .option("header", "false")
         .mode(SaveMode.Overwrite)
         .save(
-        "/datascience/data_lookalike/expansion/country=%s/".format(country)
+        "/datascience/data_lookalike/expansion/%s/%s/".format(DateTime.now().toString("yyyyMMdd"), outputName)
         )
     }
     else{ // on demand expansion
@@ -633,7 +620,7 @@ object Item2Item {
               .map(segmentIdx => ("web", tup._1.toString, dstSegmentIdMap(segmentIdx))) // <device_type, device_id, segment>
             )   
       )
-      val filePath = "/datascience/data_lookalike/expansion/jobId=%s/".format(jobId)
+      val filePath = "/datascience/data_lookalike/expansion/%s/".format(outputName)
       // save
       spark.createDataFrame(dataExpansion)
         .toDF("device_type", "device_id", "segment")
@@ -824,6 +811,7 @@ object Item2Item {
     var partnerId = "119"
     var priority = "10"
     var country = ""
+    var outputName = ""
 
     for (line <- data) {
       jobId =
@@ -850,13 +838,26 @@ object Item2Item {
             .toString
             .length > 0) line("priority").toString
           else priority
-          
+      outputName =
+          if (line.contains("outputName") && Option(line("outputName"))
+            .getOrElse("")
+            .toString
+            .length > 0) line("outputName").toString
+          else outputName
+    }
+
+    if (outputName == ""){
+      if(jobId != "")
+        outputName = "jobId=%s".format(jobId)
+      else
+        outputName = "country=%s".format(country)
     }
     val map: Map[String, String] = Map(
         "job_id" -> jobId,
         "partner_id" -> partnerId,
         "country" -> country,
-        "priority" -> priority
+        "priority" -> priority,
+        "output_name" -> outputName
     )
     map
   }
