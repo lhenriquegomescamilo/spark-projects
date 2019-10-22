@@ -86,7 +86,8 @@ object DunnhumbyEnrichment {
   def getEnrichment(
       spark: SparkSession,
       crm_segments: String,
-      dateFrom: String
+      dateFrom: String,
+      campaingId: String
   ) {
     val data = getDataIdPartners(spark, List("831"), 30, 1, "streaming")
     val crm_files = crm_segments
@@ -97,7 +98,8 @@ object DunnhumbyEnrichment {
       .map("array_contains(all_segments, %s)".format(_))
       .mkString(" OR ")
 
-    val query = "array_contains(segments, 144633) AND (%s) AND (%s)".format(
+    val query = "array_contains(segments, %s) AND (%s) AND (%s)".format(
+      campaingId,
       crm_files,
       segments
     )
@@ -179,7 +181,10 @@ object DunnhumbyEnrichment {
         )
     )
 
-    val final_select = "advertiser_id,campaign_id,device_id,placement_id,time,browser,device_type,os,ml_sh2,nid_sh2".split(",").toList
+    val final_select =
+      "advertiser_id,campaign_id,device_id,placement_id,time,browser,device_type,os,ml_sh2,nid_sh2"
+        .split(",")
+        .toList
 
     joint
       .withColumn("browser", udfGetBrowser(col("all_segments")))
@@ -206,7 +211,8 @@ object DunnhumbyEnrichment {
     getEnrichment(
       spark,
       "161639,157799,157769,157747,156869,156865,148997,148995",
-      "20190901"
+      "20190901",
+      "144633"
     )
   }
 }
