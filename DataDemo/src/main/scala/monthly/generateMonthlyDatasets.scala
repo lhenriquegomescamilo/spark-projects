@@ -10,9 +10,14 @@ import org.apache.spark.sql.functions.broadcast
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
+import org.apache.log4j.{Level, Logger}
+
 
 object GenerateMonthlyDataset{
   def main(args: Array[String]) {
+    // Setting logger config
+    Logger.getRootLogger.setLevel(Level.WARN)
+
     val spark = SparkSession.builder
       .appName("Monthly Data Download")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
