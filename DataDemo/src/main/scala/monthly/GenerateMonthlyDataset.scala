@@ -1,5 +1,5 @@
 package main.scala.monthly
-import main.scala.features.GenerateDataset
+import main.scala.datasets.{UrlUtils, DatasetGA, DatasetKeywordsURL, DatasetSegmentTriplets}
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
