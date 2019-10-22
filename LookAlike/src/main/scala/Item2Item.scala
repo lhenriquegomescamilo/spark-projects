@@ -355,7 +355,8 @@ object Item2Item {
       // read all date files
       spark.read.load(path + "/day=*/country=%s/".format(country))
     }
-    df
+    // force count to 1 - if column doesn't exists, it creates it
+    df.withColumn("count", lit(1))
   }
 
 
