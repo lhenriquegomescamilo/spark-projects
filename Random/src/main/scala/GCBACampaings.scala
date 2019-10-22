@@ -88,7 +88,7 @@ object GCBACampaings {
 
     dataset.write
       .format("parquet")
-      .mode(SaveMode.Overwrite)
+      .mode("overwrite")
       .save("/datascience/custom/gcba_campaigns_marcha")
   }
 
