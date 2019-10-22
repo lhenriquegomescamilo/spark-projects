@@ -62,33 +62,34 @@ object DatasetKeywordsURL{
       val df = getDataAudiences(spark,country)
         .filter("event_type IN ('pv', 'batch')")
         .select("device_id", "url")
-        .processs
 
-      val join = gtDF.join(df, Seq("device_id"), joinType )
-                      .select("device_id", "url")
-
-      // Process the url and get the keywords from the path.
-      var processed_join = UrlUtils.processURL(join,"url")
+      // Remove qs and generic urls
+      val df_processed = UrlUtils.processURL(df,"url")
                                   .select("device_id", "url")
-                                  .distinct()
-                                  .withColumn("url", lower(col("url")))
-                                  .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
-                                  .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
-                                  .withColumn("keyword", explode(col("url_keys")))
-                                  .filter(col("keyword").rlike("[a-z]{2,}"))
-                                  .select("device_id","url","keyword")
+                                  
+      // Join with GT and extract keywords from the url
+      var join = gtDF.join(df_processed, Seq("device_id"), joinType )
+                      .select("device_id", "url")
+                      .distinct()
+                      .withColumn("url", lower(col("url")))
+                      .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
+                      .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
+                      .withColumn("keyword", explode(col("url_keys")))
+                      .filter(col("keyword").rlike("[a-z]{2,}"))
+                      .select("device_id","url","keyword")
       
       // Checkpoint to execute processed join and cache
-      processed_join.write
-                    .mode(SaveMode.Overwrite)
-                    .format("parquet")
-                    .save(
-                      "/datascience/data_demo/name=%s/country=%s/keywords_processed_join".format(name, country)
-                    )
-      processed_join = spark.read
-                            .load("/datascience/data_demo/name=%s/country=%s/keywords_processed_join".format(name, country))
+      join.write
+          .mode(SaveMode.Overwrite)
+          .format("parquet")
+          .save(
+            "/datascience/data_demo/name=%s/country=%s/keywords_processed_join".format(name, country)
+          )
       
-      processed_join.cache()
+      join = spark.read
+                  .load("/datascience/data_demo/name=%s/country=%s/keywords_processed_join".format(name, country))
+      
+      join.cache()
 
       // Calculating top 5000 keywords
       val top_keywords = processed_join.groupBy("keyword")
