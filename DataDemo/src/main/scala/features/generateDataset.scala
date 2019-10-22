@@ -402,9 +402,15 @@ object GenerateDataset {
   def getTrainingData(spark: SparkSession, path: String, country: String, name:String) = {
     // Loading the GT dataframe
     val gt = getGTDataFrame(spark,path)
+    gt.cache()
     
     // Generating the GA data by joining de data from GA and the GT dataframe (inner)
-    val ga = DatasetGA.getGARelatedData(spark, gt, country, "inner", name)
+    DatasetGA.getGARelatedData(spark, gt, country, "inner", name)
+    val ga = spark.read
+                  .load(
+                      "/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities"
+                      .format(name, country)
+                  )
     
     // Generating the GT dataframe (device_id, label) from the users that passed the inner join
     gt.join(ga,Seq("device_id"),"inner")
@@ -418,9 +424,14 @@ object GenerateDataset {
                   "/datascience/data_demo/name=%s/country=%s/gt".format(name, country)
                 )
     // Generating the triplets dataset by joining the triplets with the GA dataset previously generated to mantain the same users
-    val segments = DatasetSegmentTriplets.generateSegmentTriplets(spark, ga, country, "left", name)
+    DatasetSegmentTriplets.generateSegmentTriplets(spark, ga, country, "left", name)
+    val segments = spark.read
+                        .load(
+                          "/datascience/data_demo/name=%s/country=%s/segment_triplets"
+                            .format(name, country)
+                        )
 
-    // Finally we get the Url dataset (device_id, [url1;url2]) from the users that passed the join with the previous dataset
+    // Finally we get the keywords dataset (device_id, [kw1;kw2]) from the users that passed the join with the previous dataset
     DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name)
   }
 
