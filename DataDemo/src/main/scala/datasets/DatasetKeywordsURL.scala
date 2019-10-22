@@ -42,15 +42,10 @@ object DatasetKeywordsURL{
     val days =
       (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_demo/data_urls/"
-    val dfs = days.map(day => path + "/day=%s/country=%s".format(day,country))
+    val hdfs_files = days.map(day => path + "/day=%s/country=%s".format(day,country))
                   .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-                  .map(x => spark.read
-                                .option("basePath", path)
-                                .parquet(x)
-                                .withColumn("day", lit(x.split("/").last.slice(4, 13)))
-    )
 
-    val df = dfs.reduce((df1, df2) => df1.union(df2))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
     df
   }
