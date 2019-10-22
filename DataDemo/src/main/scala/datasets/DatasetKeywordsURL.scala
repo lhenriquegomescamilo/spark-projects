@@ -110,9 +110,9 @@ object DatasetKeywordsURL{
       .config("spark.sql.sources.partitionOverwriteMode","dynamic")
       .getOrCreate()
 
-    val ndays = if (args.length > 0) args(0).toInt else 30
-    val since = if (args.length > 1) args(1).toInt else 1
-
+    val segments = spark.read.load("/datascience/data_demo/name=training_AR_genero_10/country=AR/segment_triplets/")
+    getDatasetFromURLs(spark,segments,"AR","left","training_AR_genero_10")
+    
 
   }
 }
