@@ -81,11 +81,11 @@ object DatasetKeywordsURL{
       // Remove qs and generic urls
       val df_processed = UrlUtils.processURL(df,"url")
                                   .select("device_id", "url")
+                                  .distinct()
                                   
       // Join with GT and extract keywords from the url
       val join = gtDF.join(df_processed, Seq("device_id"), joinType )
                       .select("device_id", "url")
-                      .distinct()
                       .withColumn("url", lower(col("url")))
                       .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
                       .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
