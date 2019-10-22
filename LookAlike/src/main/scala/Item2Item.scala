@@ -125,9 +125,9 @@ object Item2Item {
     val nSegmentToExpand = expandInput.length
 
     if (isOnDemand)
-      println("LOOKALIKE LOG: JobId: " + metaInput("job_id") + " - Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
+      println("LOOKALIKE LOG: JobId: " + metaInput("job_id") + " - Country: " + country + " - nSegments: " + nSegmentToExpand.toString + " - Output: " +  metaInput("output_name"))
     else
-      println("LOOKALIKE LOG: Country: " + country + " - nSegments: " + nSegmentToExpand.toString)
+      println("LOOKALIKE LOG: Country: " + country + " - nSegments: " + nSegmentToExpand.toString + " - Output: " +  metaInput("output_name"))
 
     var nDaysData = if(nDays != -1 ) nDays else if (List("AR", "MX") contains country) 15 else 30
     
