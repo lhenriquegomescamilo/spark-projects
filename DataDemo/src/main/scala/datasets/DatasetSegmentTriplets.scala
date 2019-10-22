@@ -61,7 +61,7 @@ object DatasetSegmentTriplets{
             .parquet("/datascience/data_triplets/segments/day=%s/country=%s/".format(x,country))
             .select("device_id", "feature")
       )
-      
+
       val triplets = dfs.reduce((df1, df2) => df1.union(df2))
                         .filter(col("feature").isin(segments: _*))
                         .distinct()
@@ -82,7 +82,6 @@ object DatasetSegmentTriplets{
           )
       join
   }
-  
   
   def main(args: Array[String]) {
     /// Configuracion spark

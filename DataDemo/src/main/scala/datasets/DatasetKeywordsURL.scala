@@ -42,15 +42,10 @@ object DatasetKeywordsURL{
     val days =
       (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_demo/data_urls/"
-    val dfs = days.map(day => path + "/day=%s/country=%s".format(day,country))
+    val hdfs_files = days.map(day => path + "/day=%s/country=%s".format(day,country))
                   .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-                  .map(x => spark.read
-                                .option("basePath", path)
-                                .parquet(x)
-                                .withColumn("day", lit(x.split("/").last.slice(4, 13)))
-    )
 
-    val df = dfs.reduce((df1, df2) => df1.union(df2))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
     df
   }
@@ -66,8 +61,6 @@ object DatasetKeywordsURL{
       val df = getDataAudiences(spark,country)
         .filter("event_type IN ('pv', 'batch')")
         .select("device_id", "url")
-        .distinct()
-
 
       val join = gtDF.join(df, Seq("device_id"), joinType )
                       .select("device_id", "url")
@@ -96,6 +89,7 @@ object DatasetKeywordsURL{
                                         .withColumn("keyword", concat_ws(";", col("keyword")))
                                         .orderBy(asc("device_id"))
                                         .write
+                                        .mode(SaveMode.Overwrite)
                                         .format("parquet")
                                         .save(
                                           "/datascience/data_demo/name=%s/country=%s/keywords".format(name, country)
@@ -110,8 +104,8 @@ object DatasetKeywordsURL{
       .config("spark.sql.sources.partitionOverwriteMode","dynamic")
       .getOrCreate()
 
-    val ndays = if (args.length > 0) args(0).toInt else 30
-    val since = if (args.length > 1) args(1).toInt else 1
+    val segments = spark.read.load("/datascience/data_demo/name=training_AR_genero_10/country=AR/segment_triplets/")
+    getDatasetFromURLs(spark,segments,"AR","left","training_AR_genero_10")
 
 
   }
