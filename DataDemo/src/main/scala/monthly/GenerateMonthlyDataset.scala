@@ -39,7 +39,7 @@ object GenerateMonthlyDataset{
     users
   }
 
-  def getExpansionData(spark: SparkSession, path: String, country: String, name:String) = {
+  def getExpansionData(spark: SparkSession, path: String, country: String, name:String, ndays:Int) = {
     // Loading the GT dataframe
     val gt = getGTDataFrame(spark,path)
 
@@ -54,7 +54,7 @@ object GenerateMonthlyDataset{
                       )
     
     // Generating the triplets dataset by joining the triplets with the GA dataset previously generated to mantain the same users
-    DatasetSegmentTriplets.generateSegmentTriplets(spark, ga, country, "left", name)
+    DatasetSegmentTriplets.generateSegmentTriplets(spark, ga, country, "left", name, ndays)
     
     // Loading the triplets dataset previously generated
     val segments = spark.read
@@ -64,10 +64,10 @@ object GenerateMonthlyDataset{
                         )
 
     // Finally we get the Url dataset (device_id, [url1;url2]) from the users that passed the join with the previous dataset
-    DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name)
+    DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name, ndays)
   }
 
-  def getTrainingData(spark: SparkSession, path: String, country: String, name:String) = {
+  def getTrainingData(spark: SparkSession, path: String, country: String, name:String, ndays:Int) = {
     // Loading the GT dataframe
     val gt = getGTDataFrame(spark,path)
     gt.cache()
@@ -94,7 +94,7 @@ object GenerateMonthlyDataset{
                   "/datascience/data_demo/name=%s/country=%s/gt".format(name, country)
                 )
     // Generating the triplets dataset by joining the triplets with the GA dataset previously generated to mantain the same users
-    DatasetSegmentTriplets.generateSegmentTriplets(spark, ga, country, "left", name)
+    DatasetSegmentTriplets.generateSegmentTriplets(spark, ga, country, "left", name, ndays)
     
     // Loading the triplets dataset previously generated
     val segments = spark.read
@@ -104,7 +104,7 @@ object GenerateMonthlyDataset{
                         )
 
     // Finally we get the keywords dataset (device_id, [kw1;kw2]) from the users that passed the join with the previous dataset
-    DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name)
+    DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name, ndays)
   }
 
   def main(args: Array[String]) {
@@ -117,6 +117,7 @@ object GenerateMonthlyDataset{
       .getOrCreate()
 
     // Parameters
+    val ndays = if (args.length > 0) args(0).toInt else 30
     val current_month = DateTime.now().getMonthOfYear.toString
 
     // AR GENERO
@@ -124,31 +125,39 @@ object GenerateMonthlyDataset{
     var expansion_name = "expansion_AR_genero_%s".format(current_month)
     var country = "AR"
     var path_gt = "/datascience/devicer/processed/AR_genero_%s_grouped".format(current_month)
-    getTrainingData(spark, path_gt, country, training_name)
-    getExpansionData(spark, path_gt, country, expansion_name)
+    println("Generating Training AR Genero ...")
+    getTrainingData(spark, path_gt, country, training_name, ndays)
+    println("Generating Expansion AR Genero ...")
+    getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // AR EDAD
     training_name = "training_AR_edad_%s".format(current_month)
     expansion_name = "expansion_AR_edad_%s".format(current_month)
     country = "AR"
     path_gt = "/datascience/devicer/processed/AR_edad_%s_grouped".format(current_month)
-    getTrainingData(spark, path_gt, country, training_name)
-    getExpansionData(spark, path_gt, country, expansion_name)
+    println("Generating Training AR Edad ...")
+    getTrainingData(spark, path_gt, country, training_name, ndays)
+    println("Generating Expansion AR Edad ...")
+    getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // MX GENERO
-    training_name = "training_MX_genero_%s".format(current_month)
-    expansion_name = "expansion_MX_genero_%s".format(current_month)
+    training_name = "training_MX_genero_%s".format(current_month, ndays)
+    expansion_name = "expansion_MX_genero_%s".format(current_month, ndays)
     country = "MX"
     path_gt = "/datascience/devicer/processed/MX_genero_%s_grouped".format(current_month)
-    getTrainingData(spark, path_gt, country, training_name)
-    getExpansionData(spark, path_gt, country, expansion_name)
+    println("Generating Training MX Genero ...")
+    getTrainingData(spark, path_gt, country, training_name, ndays)
+    println("Generating Training MX Genero ...")
+    getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // MX EDAD
     training_name = "training_MX_edad_%s".format(current_month)
     expansion_name = "expansion_MX_edad_%s".format(current_month)
     country = "MX"
     path_gt = "/datascience/devicer/processed/MX_edad_%s_grouped".format(current_month)
-    getTrainingData(spark, path_gt, country, training_name)
-    getExpansionData(spark, path_gt, country, expansion_name)
+    println("Generating Training MX Edad ...")
+    getTrainingData(spark, path_gt, country, training_name, ndays)
+    println("Generating Training MX Edad ...")
+    getExpansionData(spark, path_gt, country, expansion_name, ndays)
   }
 }

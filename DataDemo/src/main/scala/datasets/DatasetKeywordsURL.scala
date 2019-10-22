@@ -70,10 +70,11 @@ object DatasetKeywordsURL{
         gtDF: DataFrame,
         country: String,
         joinType: String,
-        name: String  
+        name: String,
+        ndays:Int
     ) = {
       // Data from data urls
-      val df = getDataUrls(spark,country)
+      val df = getDataUrls(spark,country,ndays)
         .filter("event_type IN ('pv', 'batch')")
         .select("device_id", "url")
 
