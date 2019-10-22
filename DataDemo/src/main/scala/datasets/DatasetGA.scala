@@ -141,9 +141,8 @@ object DatasetGA{
                             )
 
     // Finally we obtain the data the is related to timestamps coming from GA
-    val dataset_timestamp = DatasetTimestamp.getDatasetTimestamp(spark,joint,name,country)
-    
-    probabilities_calculated
+    DatasetTimestamp.getDatasetTimestamp(spark,joint,name,country)
+
   }
 
   def main(args: Array[String]) {

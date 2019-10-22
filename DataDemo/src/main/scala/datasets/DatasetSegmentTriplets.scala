@@ -80,7 +80,6 @@ object DatasetSegmentTriplets{
             "/datascience/data_demo/name=%s/country=%s/segment_triplets"
               .format(name, country)
           )
-      join
   }
   
   def main(args: Array[String]) {
