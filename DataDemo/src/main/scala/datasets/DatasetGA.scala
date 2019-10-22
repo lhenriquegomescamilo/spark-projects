@@ -11,7 +11,27 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
 
 object DatasetGA{
+/**
+  * This method calculates all the datasets for the AR ground truth users, based only on Google Analytics (GA) data.
+  * It generates three datasets, each of which are sorted by device id:
+        1. ga_url_domains: this dataset has two columns: device id and url domains. The URL domains is a list of 
+        URL domains separated by ';'.
+        2. ga_dataset_probabilities: this dataset contains a device id along with a probability associated for every 
+        age category and gender category. These are the columns generated: device_id, MALE_PROB, FEMALE_PROB, AGE18_PROB, 
+        AGE25_PROB, AGE35_PROB, AGE45_PROB, AGE55_PROB, AGE65_PROB.            .select("device_id", "segments", "country",)
 
+        3. ga_timestamp: It contains the data related to the timestamps. It contains 48 columns where each column has the
+        following format: [hour][0 or 1]. The hour is the hour of the day extracted from the timestamp, and 0 if it is a
+        weekday and 1 if it is a weekend.
+  * 
+  * @param spark: Spark session object that will be used to load the data.
+  * @param gtDF: dataframe where the ground truth users are stored. This dataframe must have a column called 'device_id' 
+  * and another called 'label'.
+  * @param country: country for which the Google analytics data has to be downloaded.
+  * @param joinType: type of join that will be performed. It can be either 'inner' or 'left' or 'left_anti'.
+  * @param name: name for the folder where the dataset will be stored.
+  */
+  
   def getGARelatedData(
       spark: SparkSession,
       gtDF: DataFrame,

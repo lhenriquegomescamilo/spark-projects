@@ -13,7 +13,7 @@ import org.apache.log4j.{Level, Logger}
 object DatasetKeywordsURL{
 
   /**
-  * This method returns a DataFrame with the data from the audiences data pipeline, for the interval
+  * This method returns a DataFrame with the data from the data urls pipeline, for the interval
   * of days specified. Basically, this method loads the given path as a base path, then it
   * also loads the every DataFrame for the days specified, and merges them as a single
   * DataFrame that will be returned.
@@ -23,7 +23,7 @@ object DatasetKeywordsURL{
   * @param since: number of days ago from where the data is going to be read.
   *
   * @return a DataFrame with the information coming from the data read.
-**/
+  **/
   def getDataUrls(
       spark: SparkSession,
       country: String,
@@ -50,6 +50,20 @@ object DatasetKeywordsURL{
 
     df
   }
+
+  /**
+   * This function gets the data from the URLs. Basically it stores the list of URLs per device id separated by ';'.
+   * 
+   * @param spark: Spark session that will be used to load the data.
+   * @param gtDF: dataframe where the ground truth users are stored. This dataframe must have a column called 'device_id' 
+   * and another called 'label'.
+   * @param country: country for which the triplets of data is going to be loaded.
+   * @param joinType: type of join that will be performed. It can be either 'inner' or 'left' or 'left_anti'.
+   * @param name: name for the folder where the dataset will be stored.
+   * 
+   * It stores the data (tuples where the first column is the device_id and the second one is the list of urls separated by ';') in
+                          /datascience/data_demo/name={name}/{country}/triplets.
+  */
 
   def getDatasetFromURLs(
         spark: SparkSession,
