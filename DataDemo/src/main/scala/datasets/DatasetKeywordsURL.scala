@@ -83,18 +83,18 @@ object DatasetKeywordsURL{
           .mode(SaveMode.Overwrite)
           .format("parquet")
           .save(
-            "/datascience/data_demo/name=%s/country=%s/keywords_processed_join".format(name, country)
+            "/datascience/data_demo/name=%s/country=%s/keywords_tmp".format(name, country)
           )
       
       val processed_join = spark.read
-                                .load("/datascience/data_demo/name=%s/country=%s/keywords_processed_join".format(name, country))
+                                .load("/datascience/data_demo/name=%s/country=%s/keywords_tmp".format(name, country))
       
       processed_join.cache()
 
       // Calculating top 5000 keywords
       val top_keywords = processed_join.groupBy("keyword")
                                       .agg(count(col("url")).as("count"))
-                                      .orderBy(asc("count"))
+                                      .orderBy(desc("count"))
                                       .limit(5000) // Top 5000 keywords
 
       // Groupby device and concat the keywords                          
