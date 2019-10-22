@@ -24,7 +24,7 @@ object DatasetKeywordsURL{
   *
   * @return a DataFrame with the information coming from the data read.
 **/
-  def getDataAudiences(
+  def getDataUrls(
       spark: SparkSession,
       country: String,
       nDays: Int = 30,
@@ -59,7 +59,7 @@ object DatasetKeywordsURL{
         name: String  
     ) = {
       // Data from data urls
-      val df = getDataAudiences(spark,country)
+      val df = getDataUrls(spark,country)
         .filter("event_type IN ('pv', 'batch')")
         .select("device_id", "url")
 

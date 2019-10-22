@@ -17,7 +17,7 @@ object DatasetSegmentTriplets{
       joinType: String,
       name: String,
       ndays:Int = 30
-  ): DataFrame = {
+  ) = {
     
     // List of segments that will be considered. The rest of the records are going to be filtered out.
     val segments =
