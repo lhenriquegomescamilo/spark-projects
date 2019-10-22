@@ -771,25 +771,26 @@ object Item2Item {
     var expandInputs = List[Map[String, Any]]()
 
     for (line <- data) {
-      val segmentId = line("segmentId").toString
-      //val dstSegmentId = line("dstSegmentId").toString
-      
-      val dstSegmentId =
-          if (line.contains("dstSegmentId") && Option(line("dstSegmentId"))
-            .getOrElse("")
-            .toString
-            .length > 0) line("dstSegmentId").toString
-          else segmentId
-      
-      val size = line("size").toString.toInt
+      if (line.contains("segmentId")){
+        val segmentId = line("segmentId").toString
+        //val dstSegmentId = line("dstSegmentId").toString
+        
+        val dstSegmentId =
+            if (line.contains("dstSegmentId") && Option(line("dstSegmentId"))
+              .getOrElse("")
+              .toString
+              .length > 0) line("dstSegmentId").toString
+            else segmentId
+        
+        val size = line("size").toString.toInt
 
-      val actual_map: Map[String, Any] = Map(
-        "segment_id" -> segmentId,
-        "dst_segment_id" -> dstSegmentId,
-        "size" -> size
-      )
-
-      expandInputs = expandInputs ::: List(actual_map)
+        val actual_map: Map[String, Any] = Map(
+          "segment_id" -> segmentId,
+          "dst_segment_id" -> dstSegmentId,
+          "size" -> size
+        )
+        expandInputs = expandInputs ::: List(actual_map)
+      }
     }
     expandInputs
   }
