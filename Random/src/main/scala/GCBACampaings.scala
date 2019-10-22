@@ -45,7 +45,7 @@ object GCBACampaings {
     res
   }
 
-  def get_report_gcba(spark: SparkSession): DataFrame = {
+  def get_report_gcba(spark: SparkSession) = {
     val myUDF = udf((url: String) => processURL(url))
 
     /// Configuraciones de spark
@@ -54,11 +54,13 @@ object GCBACampaings {
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
     /// Obtenemos la data de los ultimos ndays
+    val nDays = 5
+    val from = 1
     val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(1)
+    val start = DateTime.now.minusDays(from)
 
     val days =
-      (0 until 4).map(start.minusDays(_)).map(_.toString(format))
+      (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_partner_streaming"
     val dfs = days
       .flatMap(
@@ -84,10 +86,11 @@ object GCBACampaings {
       )
 
     /// Concatenamos los dataframes
-    val dataset = dfs.reduce((df1, df2) => df1.union(df2)).distinct()
+    val dataset = dfs.reduce((df1, df2) => df1.unionAll(df2))
 
     dataset.write
-      .format("parquet")
+      .format("csv")
+      .option("sep", ";")
       .mode("overwrite")
       .save("/datascience/custom/gcba_campaigns_marcha")
   }
