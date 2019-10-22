@@ -331,7 +331,7 @@ object GenerateDataset {
       name: String  
   ) = {
     // Data from data urls
-    val df = DatasetKeywordsURL.getDataAudiences(spark,country)
+    val df = DatasetKeywordsURL.getDataUrls(spark,country)
       .filter("event_type IN ('pv', 'batch')")
       .select("device_id", "url")
       .distinct()
