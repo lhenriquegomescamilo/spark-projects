@@ -89,14 +89,9 @@ object DatasetKeywordsURL{
                                   .filter("keyword != 'html'")
                                   .select("device_id","url","keyword")
                                   .distinct()
-                                  
-      // Join with GT and extract keywords from the url
-      val join = gtDF.join(df_processed, Seq("device_id"), joinType )
-                      .select("device_id", "url","keyword")
-                      
-      
-      // Checkpoint to execute processed join and cache
-      join.write
+
+      // Checkpoint to execute url process and tokenization
+      df_processed.write
           .mode(SaveMode.Overwrite)
           .format("parquet")
           .save(
@@ -114,19 +109,32 @@ object DatasetKeywordsURL{
                                       .orderBy(desc("count"))
                                       .limit(5000) // Top 5000 keywords
 
-      // Groupby device and concat the keywords                          
-      val filtered_join = processed_join.join(broadcast(top_keywords),Seq("keyword"),"inner")
+
+      // Filter and get top keywords                          
+      val filtered_df = processed_join.join(broadcast(top_keywords),Seq("keyword"),"inner")
                                         .select("device_id","keyword")
                                         .groupBy("device_id")
                                         .agg(collect_list(col("keyword")).as("keyword"))
                                         .withColumn("keyword", concat_ws(";", col("keyword")))
-                                        .orderBy(asc("device_id"))
-                                        .write
-                                        .mode(SaveMode.Overwrite)
-                                        .format("parquet")
-                                        .save(
-                                          "/datascience/data_demo/name=%s/country=%s/keywords".format(name, country)
-                                        )
+                                        
+
+      // Join with GT and save
+      val join = gtDF.join(filtered_df, Seq("device_id"), joinType )
+                      .select("device_id","keyword")
+                      .orderBy(asc("device_id"))
+                      .write
+                      .mode(SaveMode.Overwrite)
+                      .format("parquet")
+                      .save(
+                        "/datascience/data_demo/name=%s/country=%s/keywords".format(name, country)
+                      )
+                      
+      
+
+
+
+
+
     }  
   
   def main(args: Array[String]) {
