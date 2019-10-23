@@ -149,10 +149,9 @@ object DatasetKeywordContent {
       .getOrCreate()
 
     // Parseo de parametros
-    val ndays = if (args.length > 0) args(0).toInt else 10
-    val since = if (args.length > 1) args(1).toInt else 1
-    val country = if (args.length > 2) args(2).toString else ""
-    val segments = List(129, 59, 61, 250, 396, 150, 26, 32, 247, 3013, 3017)
+    val ndays = 10
+    val since = 1
+    val country = "AR"
 
     val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR/")
     get_url_content(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", name = "dataset_keyword_content_training")
