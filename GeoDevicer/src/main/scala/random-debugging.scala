@@ -124,9 +124,9 @@ val joined = ua.join(segments,Seq("device_id"))
 
 def get_safegraph_data(
       spark: SparkSession,
-      country: String,
       nDays: String,
-      since: String
+      since: String,
+      country: String
     
   ) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
@@ -156,22 +156,10 @@ def get_safegraph_data(
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      .withColumn("latitude",col("latitude").cast("Double"))
+      .withColumn("longitude",col("longitude").cast("Double"))
       
-       df_safegraph.createOrReplaceTempView("data")
-    var safegraphDf = spark
-      .sql("""
-          SELECT ad_id,
-                  id_type,
-                  latitude,longitude,
-                  utc_timestamp,
-                  ST_Point(CAST(data.longitude AS Decimal(24,20)), 
-                                            CAST(data.latitude AS Decimal(24,20)), 
-                                            data.ad_id) AS pointshape
-              FROM data
-      """)
-
-
-                         safegraphDf                                   
+    df_safegraph                                
     
   }
 
@@ -450,19 +438,42 @@ rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 // Assign name and geometry columns to DataFrame
 var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
 
-val users = get_safegraph_data(spark,nDays,since,country)
+spatialDf.createOrReplaceTempView("poligonomagico")
 
-users.createOrReplaceTempView("data")
+spatialDf.show(5)
 
+val df_safegraph = get_safegraph_data(spark,nDays,since,country)
+
+df_safegraph.createOrReplaceTempView("data")
+
+var safegraphDf = spark
+      .sql("""
+          SELECT ad_id,
+                  id_type,
+                  latitude,longitude,
+                  utc_timestamp,
+                  ST_Point(CAST(data.longitude AS Decimal(24,20)), 
+                                            CAST(data.latitude AS Decimal(24,20)), 
+                                            data.ad_id) AS pointshape
+              FROM data
+      """)
+
+
+safegraphDf.createOrReplaceTempView("data")
+
+safegraphDf.show(2)
 
 val intersection = spark.sql(
-      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
+
+println ("miracaloco")
+intersection.show(5)
             
 intersection.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/sample_sql_join")
+.save("/datascience/geo/geo_processed/geo_join_%s_%s_%s".format(polygon_inputLocation,nDays,country))
 
 
 
@@ -488,9 +499,13 @@ GeoSparkSQLRegistrator.registerAll(spark)
 // Initialize the variables
 val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
-Logger.getRootLogger.setLevel(Level.WARN)
+//Logger.getRootLogger.setLevel(Level.WARN)
 
-match_users_to_polygons(spark,"/datascience/geo/POIs/natural_geodevicer.json","1","1","argentina")
+match_users_to_polygons(spark,
+  "/datascience/geo/POIs/natural_geodevicer.json",
+  "1",
+  "1",
+  "argentina")
 
   }
 }
