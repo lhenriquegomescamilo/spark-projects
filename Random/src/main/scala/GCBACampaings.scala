@@ -78,7 +78,7 @@ object GCBACampaings {
             .option("basePath", "/datascience/data_partner_streaming/")
             .parquet(x)
             .filter(
-              "event_type = 'tk' AND array_contains(segments, '180111') AND array_contains(segments, '180135')"
+              "event_type = 'tk' AND array_contains(segments, 180111) AND array_contains(segments, 180135)"
             )
             .select("url")
             .withColumn("values", myUDF(col("url")))
