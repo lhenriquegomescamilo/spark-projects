@@ -168,7 +168,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //Logger.getRootLogger.setLevel(Level.WARN)
 
 match_users_to_polygons(spark,
-  "/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
+  "/datascience/geo/POIs/natural_geodevicer.json",
   "10",
   "2",
   "argentina")
