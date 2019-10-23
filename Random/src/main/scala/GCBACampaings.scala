@@ -61,24 +61,27 @@ object GCBACampaings {
 
     val days =
       (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
+    days.foreach(println)
     val path = "/datascience/data_partner_streaming"
-    val dfs = days
+    val paths = days
       .flatMap(
         day =>
           (0 until 24).map(
             hour =>
-              path + "/hour=%s%02d/id_partner=349"
+              path + "/hour=%s%02d/"
                 .format(day, hour)
           )
       )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    days.foreach(println)
+    val dfs = paths
       .map(
         x =>
           spark.read
             .option("basePath", "/datascience/data_partner_streaming/")
             .parquet(x)
             .filter(
-              "event_type = 'tk' AND array_contains(segments, 180111) AND array_contains(segments, 180135)"
+              "id_partner IN (349, 1134) AND event_type = 'tk' AND (array_contains(segments, 180111) OR array_contains(segments, 180135))"
             )
             .select("url")
             .withColumn("values", myUDF(col("url")))
