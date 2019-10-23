@@ -85,22 +85,26 @@ object DunnhumbyEnrichment {
 
   def getEnrichment(
       spark: SparkSession,
-      crm_segments: String,
-      dateFrom: String,
-      campaingId: String
+      piiDateFrom: String,
+      campaingId: String,
+      crm_segments: String = "",
+      countries: String = ""
   ) {
-    val data = getDataIdPartners(spark, List("831"), 30, 1, "streaming")
-    val crm_files = crm_segments
+    val data = getDataIdPartners(spark, List("831"), 40, 1, "streaming")
+    val crm_files = if (crm_segments.size > 0) crm_segments
       .split(",")
       .map("array_contains(all_segments, %s)".format(_))
-      .mkString(" OR ")
+      .mkString(" OR ") else ""
     val segments = (560 to 576)
       .map("array_contains(all_segments, %s)".format(_))
       .mkString(" OR ")
 
-    val query = "array_contains(segments, %s) AND (%s) AND (%s)".format(
+    val query = if (crm_files.size > 0) "array_contains(segments, %s) AND (%s) AND (%s)".format(
       campaingId,
       crm_files,
+      segments
+    ) else "array_contains(segments, %s) AND (%s)".format(
+      campaingId,
       segments
     )
     val select =
@@ -111,8 +115,8 @@ object DunnhumbyEnrichment {
     val pii = spark.read
       .format("parquet")
       .load("/datascience/pii_matching/pii_tuples/")
-      .filter("day >= %s".format(dateFrom))
-      .filter("country in('BR')")
+      .filter("day >= %s".format(piiDateFrom))
+      .filter("country in (%s)".format(countries))
       .groupBy("device_id")
       .agg(
         collect_list(col("ml_sh2")) as "ml_sh2",
@@ -210,9 +214,10 @@ object DunnhumbyEnrichment {
 
     getEnrichment(
       spark,
-      "161639,157799,157769,157747,156869,156865,148997,148995",
-      "20190901",
-      "144633"
+      "20190916",
+      "144633",
+      "",
+      "'BR'"
     )
   }
 }
