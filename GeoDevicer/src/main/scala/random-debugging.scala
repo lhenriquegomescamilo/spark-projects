@@ -468,7 +468,7 @@ println ("miracaloco")
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection.write.format("csv")
+intersection.dropDuplicates().write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
@@ -503,7 +503,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //Logger.getRootLogger.setLevel(Level.WARN)
 
 match_users_to_polygons(spark,
-  "/datascience/geo/POIs/natural_geodevicer.json",
+  "/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
   "10",
   "2",
   "argentina")
