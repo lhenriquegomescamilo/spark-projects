@@ -445,23 +445,20 @@ spatialDf.show(5)
 val df_safegraph = get_safegraph_data(spark,nDays,since,country)
 
 df_safegraph.createOrReplaceTempView("data")
+df_safegraph.show(2)
 
-var safegraphDf = spark
-      .sql("""
-          SELECT ad_id,
-                  id_type,
-                  latitude,longitude,
-                  utc_timestamp,
-                  ST_Point(CAST(data.longitude AS Decimal(24,20)), 
-                                            CAST(data.latitude AS Decimal(24,20)), 
-                                            data.ad_id) AS pointshape
+var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)),
+                                                             CAST(data.latitude AS Decimal(24,20))) 
+                                                             as pointshape
               FROM data
-      """)
+          """)
 
 
 safegraphDf.createOrReplaceTempView("data")
 
 safegraphDf.show(2)
+
+
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
