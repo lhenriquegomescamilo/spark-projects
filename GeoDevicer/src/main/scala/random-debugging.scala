@@ -157,21 +157,7 @@ def get_safegraph_data(
       .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
       
-       df_safegraph.createOrReplaceTempView("data")
-    var safegraphDf = spark
-      .sql("""
-          SELECT ad_id,
-                  id_type,
-                  latitude,longitude,
-                  utc_timestamp,
-                  ST_Point(CAST(data.longitude AS Decimal(24,20)), 
-                                            CAST(data.latitude AS Decimal(24,20)), 
-                                            data.ad_id) AS pointshape
-              FROM data
-      """)
-
-
-                         safegraphDf                                   
+    df_safegraph                                
     
   }
 
@@ -454,12 +440,26 @@ spatialDf.createOrReplaceTempView("poligonomagico")
 
 spatialDf.show(5)
 
-val users = get_safegraph_data(spark,nDays,since,country)
+val df_safegraph = get_safegraph_data(spark,nDays,since,country)
+
+df_safegraph.createOrReplaceTempView("data")
+
+var safegraphDf = spark
+      .sql("""
+          SELECT ad_id,
+                  id_type,
+                  latitude,longitude,
+                  utc_timestamp,
+                  ST_Point(CAST(data.longitude AS Decimal(24,20)), 
+                                            CAST(data.latitude AS Decimal(24,20)), 
+                                            data.ad_id) AS pointshape
+              FROM data
+      """)
 
 
-users.createOrReplaceTempView("data")
+safegraphDf.createOrReplaceTempView("data")
 
-users.show(5)
+safegraphDf.show(2)
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
@@ -497,7 +497,7 @@ GeoSparkSQLRegistrator.registerAll(spark)
 // Initialize the variables
 val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
-Logger.getRootLogger.setLevel(Level.WARN)
+//Logger.getRootLogger.setLevel(Level.WARN)
 
 match_users_to_polygons(spark,
   "/datascience/geo/POIs/natural_geodevicer.json",
