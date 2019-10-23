@@ -459,7 +459,7 @@ users.createOrReplaceTempView("data")
 
 
 val intersection = spark.sql(
-      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
             
 intersection.write.format("csv")
 .option("header",true)
