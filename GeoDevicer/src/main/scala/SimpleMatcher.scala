@@ -38,7 +38,7 @@ import org.datasyslab.geospark.formatMapper.GeoJsonReader
 
 
 
-object PolygonMatcherNew {
+object SimpleMatcher {
 
 def get_safegraph_data(
       spark: SparkSession,
