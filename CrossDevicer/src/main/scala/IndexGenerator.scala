@@ -90,7 +90,7 @@ object IndexGenerator {
 
     val sharethisIndex = data
       .filter("device_type = 'sht'")
-      .join("device")
+      .join(sharethisMap, Seq("device"))
       .withColumn("device", explode(col("device_id")))
       .select("tapad_id", "device", "device_type")
 
