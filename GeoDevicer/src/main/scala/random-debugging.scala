@@ -124,9 +124,9 @@ val joined = ua.join(segments,Seq("device_id"))
 
 def get_safegraph_data(
       spark: SparkSession,
-      country: Integer,
-      nDays: Integer,
-      since: Integer
+      country: String,
+      nDays: String,
+      since: String
     
   ) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
@@ -432,7 +432,7 @@ def match_users_to_polygons (spark: SparkSession,
       polygon_inputLocation: String,
       nDays: String,
       since: String,
-      country: Integer) {
+      country: String) {
 
 
 
@@ -441,7 +441,7 @@ val inputLocation = polygon_inputLocation
 
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
-val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,llowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
 //Transform the polygon to DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
