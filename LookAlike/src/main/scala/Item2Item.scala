@@ -113,8 +113,8 @@ object Item2Item {
 
     println("LOOKALIKE LOG: Input File: " + filePath)
     // Read input from file
-    val expandInput = readSegmentsToExpand(spark, filePath)
     val metaInput = readMetaParameters(spark, filePath)
+    val expandInput = readSegmentsToExpand(spark, filePath)
 
     val isOnDemand = metaInput("job_id").length > 0
     val country = metaInput("country")
@@ -771,10 +771,8 @@ object Item2Item {
     var expandInputs = List[Map[String, Any]]()
 
     for (line <- data) {
-      if (line.contains("segmentId")){
-        val segmentId = line("segmentId").toString
-        //val dstSegmentId = line("dstSegmentId").toString
-        
+      if (line.contains("segmentId") & line("segmentId") != null){
+        val segmentId = line("segmentId").toString        
         val dstSegmentId =
             if (line.contains("dstSegmentId") && Option(line("dstSegmentId"))
               .getOrElse("")
