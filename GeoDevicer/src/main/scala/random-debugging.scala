@@ -445,7 +445,7 @@ spatialDf.show(5)
 val df_safegraph = get_safegraph_data(spark,nDays,since,country)
 
 df_safegraph.createOrReplaceTempView("data")
-df_safegraph.show(2)
+//df_safegraph.show(2)
 
 var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)),
                                                              CAST(data.latitude AS Decimal(24,20))) 
@@ -456,7 +456,7 @@ var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude 
 
 safegraphDf.createOrReplaceTempView("data")
 
-safegraphDf.show(2)
+//safegraphDf.show(2)
 
 
 
@@ -464,15 +464,15 @@ val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
 
 println ("miracaloco")
-intersection.show(5)
+//intersection.show(5)
 
-val output_name = (polygon_inputLocation.split("/").last).split(".json")   
+val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
 intersection.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/geo_join_%s_%s_%s".format(
+.save("/datascience/geo/geo_processed/%s_%s_%s_sjoin_polygon".format(
   output_name,
   nDays,country))
 
@@ -504,8 +504,8 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 match_users_to_polygons(spark,
   "/datascience/geo/POIs/natural_geodevicer.json",
-  "5",
-  "1",
+  "10",
+  "2",
   "argentina")
 
   }
