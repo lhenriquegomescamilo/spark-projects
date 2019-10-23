@@ -54,8 +54,8 @@ object GCBACampaings {
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
     /// Obtenemos la data de los ultimos ndays
-    val nDays = 5
-    val from = 1
+    val nDays = 4
+    val from = 2
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(from)
 
@@ -78,7 +78,7 @@ object GCBACampaings {
             .option("basePath", "/datascience/data_partner_streaming/")
             .parquet(x)
             .filter(
-              "event_type = 'tk' AND array_contains(segments, '180111') AND array_contains(segments, '180135')"
+              "event_type = 'tk' AND array_contains(segments, 180111) AND array_contains(segments, 180135)"
             )
             .select("url")
             .withColumn("values", myUDF(col("url")))
