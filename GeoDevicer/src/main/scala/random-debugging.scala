@@ -452,20 +452,26 @@ var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_
 
 spatialDf.createOrReplaceTempView("poligonomagico")
 
+spatialDf.show(5)
+
 val users = get_safegraph_data(spark,nDays,since,country)
 
 
 users.createOrReplaceTempView("data")
 
+users.show(5)
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
+
+println ("miracaloco")
+intersection.show(5)
             
 intersection.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/sample_sql_join")
+.save("/datascience/geo/geo_processed/geo_join_%s_%s_%s".format(polygon_inputLocation,nDays,country))
 
 
 
