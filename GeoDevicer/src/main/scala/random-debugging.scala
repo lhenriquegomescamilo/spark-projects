@@ -465,12 +465,16 @@ val intersection = spark.sql(
 
 println ("miracaloco")
 intersection.show(5)
-            
+
+val output_name = (polygon_inputLocation.split("/").last).split(".json")   
+
 intersection.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/geo_join_%s_%s_%s".format(polygon_inputLocation,nDays,country))
+.save("/datascience/geo/geo_processed/geo_join_%s_%s_%s".format(
+  output_name,
+  nDays,country))
 
 
 
@@ -500,7 +504,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 match_users_to_polygons(spark,
   "/datascience/geo/POIs/natural_geodevicer.json",
-  "1",
+  "5",
   "1",
   "argentina")
 
