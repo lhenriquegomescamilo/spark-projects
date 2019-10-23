@@ -106,7 +106,7 @@ var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_
 
 spatialDf.createOrReplaceTempView("poligonomagico")
 
-spatialDf.show(5)
+//spatialDf.show(5)
 
 val df_safegraph = get_safegraph_data(spark,nDays,since,country)
 
@@ -141,7 +141,8 @@ intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/geo_processed/%s_%s_%s_sjoin_polygon".format(
   output_name,
-  nDays,country))
+  nDays,
+  country))
 
 }
 
@@ -168,10 +169,15 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //Logger.getRootLogger.setLevel(Level.WARN)
 
 match_users_to_polygons(spark,
-  "/datascience/geo/POIs/natural_geodevicer.json",
-  "10",
+  "/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
+  "9",
   "2",
   "argentina")
+/*spark: SparkSession,
+      nDays: String,
+      since: String,
+      country: String
+      */
 
   }
 }
