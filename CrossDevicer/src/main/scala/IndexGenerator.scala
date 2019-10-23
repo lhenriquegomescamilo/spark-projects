@@ -72,6 +72,7 @@ object IndexGenerator {
       .format("parquet")
       .load("/datascience/sharethis/estid_map/")
       .withColumnRenamed("estid", "device")
+      .withColumn("device", upper("device"))
 
     val data = spark.read
       .format("csv")
@@ -90,9 +91,11 @@ object IndexGenerator {
 
     val sharethisIndex = data
       .filter("device_type = 'sht'")
+      .withColumn("device", upper("device"))
       .join(sharethisMap, Seq("device"), "inner")
       .withColumn("device_id", explode(col("device_id")))
-
+      .drop("device")
+      .withColumnRenamed("device_id", "device")
       .select("tapad_id", "device", "device_type")
 
     val nonSharethisIndex = data
