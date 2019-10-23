@@ -98,6 +98,11 @@ object IndexGenerator {
       .withColumnRenamed("device_id", "device")
       .select("tapad_id", "device", "device_type")
 
+    sharethisIndex.write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/match_sharethis")
+
     val nonSharethisIndex = data
       .filter("device_type != 'sht'")
 
