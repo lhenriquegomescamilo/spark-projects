@@ -64,8 +64,15 @@ object IndexGenerator {
       (device_type: String) =>
         if (device_type == "RTG") "coo"
         else if (device_type.toLowerCase.contains("android")) "and"
+        else if (device_type == "SHT") "sht"
         else "ios"
     )
+
+    val sharethisMap = spark.read
+      .format("parquet")
+      .load("/datascience/sharethis/estid_map/")
+      .withColumnRenamed("estid", "device")
+
     val data = spark.read
       .format("csv")
       .option("sep", ";")
@@ -79,8 +86,21 @@ object IndexGenerator {
       .withColumn("device_type", mapUDF(col("device_type")))
       .select("tapad_id", "device", "device_type")
 
+    data.cache()
+
+    val sharethisIndex = data
+      .filter("device_type = 'sht'")
+      .join("device")
+      .withColumn("device", explode(col("device_id")))
+      .select("tapad_id", "device", "device_type")
+
+    val nonSharethisIndex = data
+      .filter("device_type != 'sht'")
+
+    val fullIndex = sharethisIndex.unionAll(nonSharethisIndex)
+
     // Then we perform a self-join based on the tapad_id
-    val index = data
+    val index = fullIndex
       .withColumnRenamed("device", "index")
       .withColumnRenamed("device_type", "index_type")
       .join(data, Seq("tapad_id"))
