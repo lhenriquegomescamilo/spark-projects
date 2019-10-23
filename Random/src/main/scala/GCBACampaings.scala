@@ -54,8 +54,8 @@ object GCBACampaings {
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
     /// Obtenemos la data de los ultimos ndays
-    val nDays = 5
-    val from = 1
+    val nDays = 4
+    val from = 2
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(from)
 
