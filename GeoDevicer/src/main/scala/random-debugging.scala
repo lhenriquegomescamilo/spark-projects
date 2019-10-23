@@ -156,6 +156,8 @@ def get_safegraph_data(
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      .withColumn("latitude",col("latitude").cast("Double"))
+      .withColumn("longitude",col("longitude").cast("Double"))
       
     df_safegraph                                
     
