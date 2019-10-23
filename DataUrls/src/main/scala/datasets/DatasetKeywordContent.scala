@@ -119,7 +119,7 @@ object DatasetKeywordContent {
                                 .dropDuplicates()
 
     // Extracting keywords from path and add them to the dataset
-    val keywords_path = joint.select("url")
+    val keywords_path = keywords_content.select("url")
                               .withColumn("url", lower(col("url")))
                               .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
                               .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
