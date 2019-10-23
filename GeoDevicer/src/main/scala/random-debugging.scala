@@ -18,12 +18,6 @@ import com.vividsolutions.jts.geom.{
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.apache.spark.storage.StorageLevel
 
-import org.apache.spark.sql.SparkSession
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.joda.time.DateTime
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.SaveMode
-import org.apache.log4j.{Level, Logger}
 
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, Point, GeometryFactory}
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
@@ -130,76 +124,26 @@ val joined = ua.join(segments,Seq("device_id"))
 
 def get_safegraph_data(
       spark: SparkSession,
+      country: String,
       nDays: String,
-      since: String,
-      country: String
-     
-  ) = {
-    // First we obtain the configuration to be allowed to watch if a file exists or not
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-   
-    // Get the days to be loaded
-    val format = "yyMMdd"
-    val end = DateTime.now.minusDays(since.toInt)
-    val days = (0 until nDays.toInt)
-      .map(end.minusDays(_))
-      .map(_.toString(format))
-      
-
-    // Now we obtain the list of hdfs files to be read
-    val path = "/datascience/geo/safegraph_pipeline/"
-    val hdfs_files = days
-      .map(day => path +  "day=0%s/country=%s/".format(day,country))
-      .filter(
-        path => fs.exists(new org.apache.hadoop.fs.Path(path))
-      )
-      .map(day => day + "*.snappy.parquet")
-
-
-    // Finally we read, filter by country, rename the columns and return the data
-    val df_safegraph = spark.read
-      .option("header", "true")
-      .parquet(hdfs_files: _*)
-      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
-      .withColumnRenamed("ad_id","device_id")
-      .withColumnRenamed("id_type","device_type")
-      .withColumn("device_id",upper(col("device_id")))
-      .withColumn("latitude",col("latitude").cast("Double"))
-      .withColumn("longitude",col("longitude").cast("Double"))
-
-      //.dropDuplicates("ad_id", "latitude", "longitude")
-
-     df_safegraph                    
+      since: String
     
-  }
-
-
-  def get_safegraph_SAMPLE_data(
-      spark: SparkSession,
-      nDays: String,
-      since: String,
-      country: String
-     
   ) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
-   
-    // Get the days to be loaded
-    val format = "yyMMdd"
+   // Get the days to be loaded
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since.toInt)
     val days = (0 until nDays.toInt)
       .map(end.minusDays(_))
       .map(_.toString(format))
-      
 
     // Now we obtain the list of hdfs files to be read
-    val path = "/datascience/geo/safegraph_pipeline/"
+    val path = "/datascience/geo/safegraph/"
     val hdfs_files = days
-      .map(day => path +  "day=0%s/country=%s/".format(day,country))
+      .map(day => path +  "day=%s/country=%s/".format(day,country))
       .filter(
         path => fs.exists(new org.apache.hadoop.fs.Path(path))
       )
@@ -210,16 +154,24 @@ def get_safegraph_data(
     val df_safegraph = spark.read
       .option("header", "true")
       .parquet(hdfs_files: _*)
+      .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
-      .withColumnRenamed("ad_id","device_id")
-      .withColumnRenamed("id_type","device_type")
-      .withColumn("device_id",upper(col("device_id")))
-      .withColumn("latitude",col("latitude").cast("Double"))
-      .withColumn("longitude",col("longitude").cast("Double"))
+      
+       df_safegraph.createOrReplaceTempView("data")
+    var safegraphDf = spark
+      .sql("""
+          SELECT ad_id,
+                  id_type,
+                  latitude,longitude,
+                  utc_timestamp,
+                  ST_Point(CAST(data.longitude AS Decimal(24,20)), 
+                                            CAST(data.latitude AS Decimal(24,20)), 
+                                            data.ad_id) AS pointshape
+              FROM data
+      """)
 
-      //.dropDuplicates("ad_id", "latitude", "longitude")
 
-     df_safegraph                    
+                         safegraphDf                                   
     
   }
 
@@ -408,15 +360,8 @@ var safegraphDf = spark      .sql(""" SELECT device_id,device_type,ST_Point(CAST
 safegraphDf.createOrReplaceTempView("data")
 */
 
-
-
-
-
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-   
+/*
+Esto de había Usado para lo de Brasil y ciudades de Brasil, SampleDataSafegraph. Rompe
 
 val spark = SparkSession.builder()
 .config("spark.sql.files.ignoreCorruptFiles", "true")
@@ -481,6 +426,71 @@ users.groupBy("ad_id").agg(count("utc_timestamp") as "detections").withColumn("t
 .save("/datascience/geo/sample/brasi_users_signals_total_%s".format(day))
 */
 
+*/
+
+def match_users_to_polygons (spark: SparkSession,
+      polygon_inputLocation: String,
+      nDays: String,
+      since: String,
+      country: String) {
+
+
+
+//Load the polygon
+val inputLocation = polygon_inputLocation
+
+val allowTopologyInvalidGeometris = true // Optional
+val skipSyntaxInvalidGeometries = true // Optional
+val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+
+//Transform the polygon to DF
+var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
+rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
+
+// Assign name and geometry columns to DataFrame
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
+
+val users = get_safegraph_data(spark,nDays,since,country)
+
+users.createOrReplaceTempView("data")
+
+
+val intersection = spark.sql(
+      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+            
+intersection.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/sample_sql_join")
+
+
+
+}
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+   
+   val spark = SparkSession.builder()
+.config("spark.sql.files.ignoreCorruptFiles", "true")
+ .config("spark.serializer", classOf[KryoSerializer].getName)
+ .config("spark.kryo.registrator", classOf[GeoSparkKryoRegistrator].getName)
+      .config("geospark.global.index","true")
+       .config("geospark.join.gridtype", "kdbtree")
+       .config("geospark.join.spatitionside","left")
+       .appName("myGeoSparkSQLdemo").getOrCreate()
+     
+GeoSparkSQLRegistrator.registerAll(spark)
+
+// Initialize the variables
+val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
+
+Logger.getRootLogger.setLevel(Level.WARN)
+
+match_users_to_polygons(spark,"/datascience/geo/POIs/natural_geodevicer.json","1","1","argentina")
 
   }
 }
