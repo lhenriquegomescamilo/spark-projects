@@ -90,8 +90,9 @@ object IndexGenerator {
 
     val sharethisIndex = data
       .filter("device_type = 'sht'")
-      .join(sharethisMap, Seq("device"))
-      .withColumn("device", explode(col("device_id")))
+      .join(sharethisMap, Seq("device"), "inner")
+      .withColumn("device_id", explode(col("device_id")))
+
       .select("tapad_id", "device", "device_type")
 
     val nonSharethisIndex = data
@@ -103,7 +104,7 @@ object IndexGenerator {
     val index = fullIndex
       .withColumnRenamed("device", "index")
       .withColumnRenamed("device_type", "index_type")
-      .join(data, Seq("tapad_id"))
+      .join(fullIndex, Seq("tapad_id"))
       .na
       .fill("")
       .select("index", "index_type", "device", "device_type")

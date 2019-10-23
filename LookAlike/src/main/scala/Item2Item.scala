@@ -605,7 +605,7 @@ object Item2Item {
         .option("header", "false")
         .mode(SaveMode.Overwrite)
         .save(
-        "/datascience/data_lookalike/expansion/%s/%s/".format(DateTime.now().toString("yyyyMMdd"), outputName)
+        "/datascience/data_lookalike/expansion/day=%s/%s/".format(DateTime.now().toString("yyyyMMdd"), outputName)
         )
     }
     else{ // on demand expansion
@@ -621,7 +621,7 @@ object Item2Item {
               .map(segmentIdx => ("web", tup._1.toString, dstSegmentIdMap(segmentIdx))) // <device_type, device_id, segment>
             )   
       )
-      val filePath = "/datascience/data_lookalike/expansion/%s/".format(outputName)
+      val filePath = "/datascience/data_lookalike/expansion/ondemand/%s/".format(outputName)
       // save
       spark.createDataFrame(dataExpansion)
         .toDF("device_type", "device_id", "segment")
