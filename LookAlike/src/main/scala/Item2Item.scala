@@ -113,8 +113,8 @@ object Item2Item {
 
     println("LOOKALIKE LOG: Input File: " + filePath)
     // Read input from file
-    val expandInput = readSegmentsToExpand(spark, filePath)
     val metaInput = readMetaParameters(spark, filePath)
+    val expandInput = readSegmentsToExpand(spark, filePath)
 
     val isOnDemand = metaInput("job_id").length > 0
     val country = metaInput("country")
@@ -605,7 +605,7 @@ object Item2Item {
         .option("header", "false")
         .mode(SaveMode.Overwrite)
         .save(
-        "/datascience/data_lookalike/expansion/%s/%s/".format(DateTime.now().toString("yyyyMMdd"), outputName)
+        "/datascience/data_lookalike/expansion/day=%s/%s/".format(DateTime.now().toString("yyyyMMdd"), outputName)
         )
     }
     else{ // on demand expansion
@@ -621,7 +621,7 @@ object Item2Item {
               .map(segmentIdx => ("web", tup._1.toString, dstSegmentIdMap(segmentIdx))) // <device_type, device_id, segment>
             )   
       )
-      val filePath = "/datascience/data_lookalike/expansion/%s/".format(outputName)
+      val filePath = "/datascience/data_lookalike/expansion/ondemand/%s/".format(outputName)
       // save
       spark.createDataFrame(dataExpansion)
         .toDF("device_type", "device_id", "segment")
@@ -771,10 +771,8 @@ object Item2Item {
     var expandInputs = List[Map[String, Any]]()
 
     for (line <- data) {
-      if (line.contains("segmentId")){
-        val segmentId = line("segmentId").toString
-        //val dstSegmentId = line("dstSegmentId").toString
-        
+      if (line.contains("segmentId") & line("segmentId") != null){
+        val segmentId = line("segmentId").toString        
         val dstSegmentId =
             if (line.contains("dstSegmentId") && Option(line("dstSegmentId"))
               .getOrElse("")
