@@ -450,6 +450,8 @@ rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 // Assign name and geometry columns to DataFrame
 var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
 
+spatialDf.createOrReplaceTempView("poligonomagico")
+
 val users = get_safegraph_data(spark,nDays,since,country)
 
 
