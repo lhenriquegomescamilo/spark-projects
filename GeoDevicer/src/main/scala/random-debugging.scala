@@ -124,9 +124,9 @@ val joined = ua.join(segments,Seq("device_id"))
 
 def get_safegraph_data(
       spark: SparkSession,
-      country: String,
       nDays: String,
-      since: String
+      since: String,
+      country: String
     
   ) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
@@ -452,6 +452,7 @@ var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_
 
 val users = get_safegraph_data(spark,nDays,since,country)
 
+
 users.createOrReplaceTempView("data")
 
 
@@ -490,7 +491,11 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 Logger.getRootLogger.setLevel(Level.WARN)
 
-match_users_to_polygons(spark,"/datascience/geo/POIs/natural_geodevicer.json","1","1","argentina")
+match_users_to_polygons(spark,
+  "/datascience/geo/POIs/natural_geodevicer.json",
+  "1",
+  "1",
+  "argentina")
 
   }
 }
