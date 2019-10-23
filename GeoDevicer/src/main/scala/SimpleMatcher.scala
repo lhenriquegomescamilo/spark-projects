@@ -170,7 +170,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 match_users_to_polygons(spark,
   "/datascience/geo/POIs/buildings.json",
-  "3",
+  "10",
   "2",
   "argentina")
 /*spark: SparkSession,
