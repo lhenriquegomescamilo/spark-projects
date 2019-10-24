@@ -76,7 +76,6 @@ def get_safegraph_data(
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
       .withColumn("latitude",col("latitude").cast("Double"))
       .withColumn("longitude",col("longitude").cast("Double"))
-      .filter("geo_hash!='gcba'")
       
     df_safegraph                                
     
@@ -93,7 +92,6 @@ def match_users_to_polygons (spark: SparkSession,
 
 //Load the polygon
 val inputLocation = polygon_inputLocation
-
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
@@ -107,12 +105,9 @@ var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_
 
 spatialDf.createOrReplaceTempView("poligonomagico")
 
-//spatialDf.show(5)
 
 val df_safegraph = get_safegraph_data(spark,nDays,since,country)
-
 df_safegraph.createOrReplaceTempView("data")
-//df_safegraph.show(2)
 
 var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)),
                                                              CAST(data.latitude AS Decimal(24,20))) 
@@ -120,18 +115,14 @@ var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude 
               FROM data
           """)
 
-
 safegraphDf.createOrReplaceTempView("data")
-
-//safegraphDf.show(2)
-
 
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
 
-println ("miracaloco")
-//intersection.show(5)
+intersection.explain(extended=true)
+
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
@@ -169,9 +160,11 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 //Logger.getRootLogger.setLevel(Level.WARN)
 
+//"/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
+//
 match_users_to_polygons(spark,
-  "/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
-  "60",
+  "datascience/geo/POIs/natural_geodevicer.json",
+  "5",
   "2",
   "argentina")
 /*spark: SparkSession,
