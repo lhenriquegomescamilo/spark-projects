@@ -76,6 +76,7 @@ def get_safegraph_data(
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
       .withColumn("latitude",col("latitude").cast("Double"))
       .withColumn("longitude",col("longitude").cast("Double"))
+      .filter("geo_hash!='gcba'")
       
     df_safegraph                                
     
