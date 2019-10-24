@@ -264,7 +264,7 @@ object GetDataForAudience {
       triplets.cache()
 
       for (s <- segs) {
-        val bySeg = zipWithIndex(
+        val bySeg = dfZipWithIndex(
           triplets
             .filter("segment = %s".format(s))
         )
