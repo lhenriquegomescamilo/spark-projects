@@ -287,6 +287,7 @@ object Item2Item {
     println("LOOKALIKE LOG: Model training")
     val data_triplets = getDataTriplets(spark, country, nDays)
                         .filter($"feature" =!= segmentId)
+                        .select("device_id", "feature", "count")
       
     val data_test = spark.read.load("/datascience/custom/lookalike_ids")
                      .select("device_id", "feature")
