@@ -116,6 +116,7 @@ safegraphDf.createOrReplaceTempView("data")
 //We transform the DF to an RDD
 var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
 
+println (spatialRDDusers.rawSpatialRDD.take(10))
 
 //We validate the geometries
 spatialRDDpolygon.analyze()
