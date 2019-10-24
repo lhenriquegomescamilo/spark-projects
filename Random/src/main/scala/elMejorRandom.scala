@@ -439,22 +439,19 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
 //Geo Data
+val pois = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/geo_processed/points_10d_argentina_22-10-2019-13h_aggregated").select("name","device_id","frequency").groupBy("device_id","name").agg(sum("frequency") as "frequency").select("device_id","name","frequency").withColumn("name",lower(col("name"))).groupBy("device_id","name").agg(sum("frequency") as "frequency")
+
+// Resultados de poligonos
+
+val natural = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/geo_processed/natural_geodevicer_10_argentina_sjoin_polygon").withColumnRenamed("ad_id","device_id").select("device_id","name","frequency")
 
 
-val xd = spark.read.format("csv").option("header",false).option("delimiter",",").load("/datascience/audiences/crossdeviced/ar_brand_model_xd").select("_c1","_c4","_c5").toDF("device_id","brand","model").withColumn("device_id",upper(col("device_id")))
-xd.show(2)
+val buildings = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/geo_processed/buildings_3_argentina_sjoin_polygon").withColumnRenamed("ad_id","device_id").select("device_id","name","frequency")
 
 
-val homes =  spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/argentina_365d_home_1-10-2019-16h").withColumnRenamed("ad_id","device_id").select("device_id","avg_latitude","avg_longitude","freq").withColumn("device_id",upper(col("device_id")))
-homes.show(2)
+geo_all.select("name").distinct().count()
 
-
-val cel_homes = xd.join(homes,Seq("device_id"))
-cel_homes.write.format("csv")    
-.option("header",true)    
-.option("delimiter","\t")    
-.mode(SaveMode.Overwrite)  
-.save("/datascience/misc/ar_cel_homes")
+geo_all.groupBy("device_id").pivot("name").agg(first("frequency")).na.fill(0).write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/geo/geo_processed/points_polygons_matrix_geo_job")
 
   }
 }
