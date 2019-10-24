@@ -95,7 +95,7 @@ object DatasetKeywordsURL{
       // Checkpoint to execute url process and tokenization
       df_processed.write
           .mode(SaveMode.Overwrite)
-          .format(format_type)
+          .format("parquet")
           .save(
             "/datascience/data_demo/name=%s/country=%s/keywords_tmp".format(name, country)
           )
@@ -130,14 +130,7 @@ object DatasetKeywordsURL{
                       .save(
                         "/datascience/data_demo/name=%s/country=%s/keywords".format(name, country)
                       )
-                      
-      
-
-
-
-
-
-    }  
+    }
   
   def main(args: Array[String]) {
 
@@ -151,9 +144,12 @@ object DatasetKeywordsURL{
       .config("spark.sql.sources.partitionOverwriteMode","dynamic")
       .getOrCreate()
 
-    val segments = spark.read.load("/datascience/data_demo/name=training_AR_genero_10/country=AR/segment_triplets/")
-    getDatasetFromURLs(spark,segments,"AR","left","training_AR_genero_10",30,"parquet")
-
-
+    val segments = spark.read
+                    .format(format_type)
+                    .load(
+                      "/datascience/data_demo/name=%s/country=%s/segment_triplets"
+                        .format(name, country)
+                    ).withColumnRenamed("_c0","device_id")
+    getDatasetFromURLs(spark,segments,"AR","left","expansion_AR_genero_10",30,"csv")
   }
 }
