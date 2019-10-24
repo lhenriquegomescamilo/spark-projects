@@ -108,7 +108,7 @@ object GenerateMonthlyDataset{
     val segments = spark.read
                         .load(
                           "/datascience/data_demo/name=%s/country=%s/segment_triplets"
-                            .format(name, country, )
+                            .format(name, country)
                         )
 
     // Finally we get the keywords dataset (device_id, [kw1;kw2]) from the users that passed the join with the previous dataset
@@ -134,7 +134,7 @@ object GenerateMonthlyDataset{
     var country = "AR"
     var path_gt = "/datascience/devicer/processed/AR_genero_%s_grouped".format(current_month)
     println("Generating Training AR Genero ...")
-    //getTrainingData(spark, path_gt, country, training_name, ndays)
+    getTrainingData(spark, path_gt, country, training_name, ndays)
     println("Generating Expansion AR Genero ...")
     getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
