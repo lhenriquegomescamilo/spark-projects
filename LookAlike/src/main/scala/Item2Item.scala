@@ -268,8 +268,9 @@ object Item2Item {
 
     println("LOOKALIKE LOG: Test file: " + filePath)
     val metaInput: Map[String, String] = Map("country" -> country,
-                                             "output_name": "test_%s".format(segmentId),
-                                             "job_id": "")
+                                             "output_name" -> "test_%s".format(segmentId),
+                                             "job_id" -> "",
+                                             "parter_id" -> "")
     var expandInput: List[Map[String, Any]] = List(Map("segment_id" -> segmentId,
                                                        "dst_segment_id" -> segmentId,
                                                        "size" -> size))
