@@ -126,8 +126,7 @@ object DatasetKeywordContent {
                     .save("/datascience/data_url_classifier/keywords_content_tmp")
 
     keywords_content = spark.read
-                            .load
-                            .save("/datascience/data_url_classifier/keywords_content_tmp")
+                            .load("/datascience/data_url_classifier/keywords_content_tmp")
 
     keywords_content.cache()
 
