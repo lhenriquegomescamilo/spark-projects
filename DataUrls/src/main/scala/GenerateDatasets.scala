@@ -62,7 +62,7 @@ object GenerateDatasetsUrls {
 
   def generate_training_datasets(spark:SparkSession,ndays:Int,since:Int,country:String,data_urls: DataFrame,ndays_dataset:Int, gt_calculated:String){
     
-    var gtDF : DataFrame = DataFrame()
+    var gtDF = ""
 
     if (Set("1", "true", "True").contains(gt_calculated)) {
       // Defining segments for GT
