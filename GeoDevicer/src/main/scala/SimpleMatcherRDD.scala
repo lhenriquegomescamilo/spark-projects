@@ -114,7 +114,9 @@ var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude 
           """)
 safegraphDf.createOrReplaceTempView("data")
 //We transform the DF to an RDD
+println ("holahola")
 var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
+
 
 println (spatialRDDusers.rawSpatialRDD.take(10))
 
@@ -175,6 +177,8 @@ intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
        .appName("myGeoSparkSQLdemo").getOrCreate()
      
 GeoSparkSQLRegistrator.registerAll(spark)
+
+    Logger.getRootLogger.setLevel(Level.WARN)
 
 // Initialize the variables
 val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
