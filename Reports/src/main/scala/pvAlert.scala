@@ -83,6 +83,7 @@ object pvAlert {
         )
 
     def getFinalDF(
+        spark: SparkSession,
         df: DataFrame
     ): DataFrame = {
 
@@ -155,6 +156,7 @@ object pvAlert {
 
     /** Transform df to its final form */
     val df_final = getFinalDF(
+      spark = spark,
       df = df)  
 
     /** Store df*/
