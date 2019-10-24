@@ -66,6 +66,7 @@ object pvAlert {
         .option("basePath", path)
         .parquet(hdfs_files: _*)
         .select("id_partner","url")
+        .na.drop()
 
         df
     }
@@ -99,6 +100,7 @@ object pvAlert {
     
         val df_final = df
                     .withColumn("url_domain", callUDF("parse_url", $"url", lit("HOST")))
+                    .na.drop()
                     .withColumn("url_domain",udfCleanUrl(col("url_domain")))
                     .select("url_domain","id_partner")
                     .groupBy("url_domain","id_partner").count()
