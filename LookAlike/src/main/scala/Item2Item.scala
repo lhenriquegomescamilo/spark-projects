@@ -189,13 +189,13 @@ object Item2Item {
   /*
   * Run a test to get precision and recall metrics for the first kth expansions in a country of all standard segments.
   */
-  def runTest(spark: SparkSession,
-              country: String,
-              nDays: Int = -1,
-              simMatrixHits: String = "binary",
-              simThreshold: Double = 0.05,
-              predMatrixHits: String = "binary",
-              k: Int = 1000) {
+  def runTestTaxo(spark: SparkSession,
+                  country: String,
+                  nDays: Int = -1,
+                  simMatrixHits: String = "binary",
+                  simThreshold: Double = 0.05,
+                  predMatrixHits: String = "binary",
+                  k: Int = 1000) {
     import spark.implicits._
     val expandInput = getSegmentsToTest(k)
     val metaInput: Map[String, String] = Map("country" -> country, "job_id" -> "", "partner_id" -> "")
@@ -251,6 +251,97 @@ object Item2Item {
             predMatrixHits,
             true)
     
+  }
+
+  /*
+  * It generates an expansion from a splited audience in train/test.
+  */
+  def runTestOnDemmand(spark: SparkSession,
+                       country: String,
+                       segmentId: String,
+                       nDays: Int = -1,
+                       simMatrixHits: String = "binary",
+                       simThreshold: Double = 0.05,
+                       predMatrixHits: String = "binary",
+                       size: Int = 1000) {
+    import spark.implicits._
+
+    println("LOOKALIKE LOG: Test file: " + filePath)
+    val metaInput: Map[String, String] = Map("country" -> country,
+                                             "output_name": "test_%s".format(segmentId),
+                                             "job_id": "")
+    var expandInput: List[Map[String, Any]] = List(Map("segment_id" -> segmentId,
+                                                       "dst_segment_id" -> segmentId,
+                                                       "size" -> size))
+    
+    val country = metaInput("country")
+
+    val baseFeatureSegments = getBaseFeatureSegments()
+    val extraFeatureSegments = getExtraFeatureSegments()
+
+    val nSegmentToExpand = expandInput.length
+
+    println("LOOKALIKE LOG: Test Ondemand  - Country: " + country + " - nSegments: " + nSegmentToExpand.toString + " - Output: " +  metaInput("output_name"))
+
+    var nDaysData = if(nDays != -1 ) nDays else if (List("AR", "MX") contains country) 15 else 30
+    
+    // Read data
+    println("LOOKALIKE LOG: Model training")
+    val data_triplets = getDataTriplets(spark, country, nDays)
+                        .filter($"feature" =!= segmentId)
+      
+    val data_test = spark.read.load("/datascience/custom/lookalike_ids")
+                     .select("device_id", "feature")
+                     .filter($"feature" === segmentId)
+                     .withColumn("count", lit(1))
+
+    val data = data_triplets.union(data_test)
+
+    // Create segment index
+    var segments = expandInput.map(row=> row("segment_id").toString) // First: segments to expand
+    segments ++= baseFeatureSegments.toSet.diff(segments.toSet).toList // Then: segments used as features
+    segments ++= extraFeatureSegments.toSet.diff(segments.toSet).toList 
+
+    val segmentToIndex = segments.zipWithIndex.toMap
+    val dfSegmentIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
+
+    val baseSegmentsIdx = baseFeatureSegments.map(seg => segmentToIndex(seg))
+
+    // Data aggregation
+    val dataTriples = data
+      .groupBy("device_id", "feature")
+      .agg(sum("count").cast("int").as("count"))
+
+    val usersSegmentsData = dataTriples
+      .filter(col("feature").isin(segments: _*))   // segment filtering
+      .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
+      .select("device_id", "segment_idx", "count")
+      .rdd
+      .map(row => (row(0), (row(1), row(2))))
+      .groupByKey()  // group by device_id
+      .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
+
+    // Generate similarities matrix
+    val simMatrix: Matrix = {
+      if(!existsTmpFiles(spark, metaInput)("scores"))
+        getSimilarities(spark,
+          usersSegmentsData,
+          segments.size,
+          nSegmentToExpand,
+          simThreshold,
+          simMatrixHits)
+      else
+        null
+      }
+
+    println("LOOKALIKE LOG: Expansion")
+    expand(spark,
+           usersSegmentsData,
+           expandInput,
+           segmentToIndex,
+           metaInput,
+           simMatrix,
+           predMatrixHits)  
   }
 
   /**
@@ -960,12 +1051,14 @@ object Item2Item {
         nextOption(map ++ Map('predHits -> value), tail)
       case "--filePath" :: value :: tail =>
         nextOption(map ++ Map('filePath -> value), tail)
-       case "--test" :: value :: tail =>
+      case "--test" :: value :: tail =>
         nextOption(map ++ Map('test -> value), tail)
       case "--testCountry" :: value :: tail =>
         nextOption(map ++ Map('testCountry -> value), tail)
       case "--testSize" :: value :: tail =>
         nextOption(map ++ Map('testSize -> value), tail)
+      case "--testSegmentId" :: value :: tail =>
+        nextOption(map ++ Map('testSegmentId -> value), tail)
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value), tail)
       case "--simThreshold" :: value :: tail =>
@@ -1000,12 +1093,18 @@ object Item2Item {
       if (options.contains('testCountry)) options('testCountry) else "PE"
     val testSize =
       if (options.contains('testSize)) options('testSize).toInt else 1000
+    val testSegmentId =
+      if (options.contains('testSegmentId)) options('testSegmentId) else ""
     val nDays =
       if (options.contains('nDays)) options('nDays).toInt else -1
     val simThreshold =
       if (options.contains('simThreshold)) options('simThreshold).toDouble else 0.05
-    if(isTest)
-      runTest(spark, testCountry, nDays, simHits, simThreshold, predHits, testSize)
+    if(isTest){
+      if(testSegmentId.length > 0)
+        runTestOnDemmand(spark, testCountry, testSegmentId, nDays, simHits, simThreshold, predHits, testSize)
+      else
+        runTestTaxo(spark, testCountry, nDays, simHits, simThreshold, predHits, testSize)
+    }
     else if(filePath.length > 0)
       runExpand(spark, filePath, nDays, simHits, simThreshold, predHits)
     else
