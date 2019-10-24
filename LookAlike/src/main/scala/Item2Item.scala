@@ -269,12 +269,10 @@ object Item2Item {
     val metaInput: Map[String, String] = Map("country" -> country,
                                              "output_name" -> "test_%s".format(segmentId),
                                              "job_id" -> "",
-                                             "parter_id" -> "")
+                                             "partner_id" -> "")
     var expandInput: List[Map[String, Any]] = List(Map("segment_id" -> segmentId,
                                                        "dst_segment_id" -> segmentId,
                                                        "size" -> size))
-    
-    val country = metaInput("country")
 
     val baseFeatureSegments = getBaseFeatureSegments()
     val extraFeatureSegments = getExtraFeatureSegments()
