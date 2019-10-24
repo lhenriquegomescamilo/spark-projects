@@ -88,25 +88,37 @@ object DunnhumbyEnrichment {
       piiDateFrom: String,
       campaingId: String,
       crm_segments: String = "",
-      countries: String = ""
+      countries: String = "",
+      dateRange: String = ""
   ) {
-    val data = getDataIdPartners(spark, List("831"), 40, 1, "streaming")
-    val crm_files = if (crm_segments.size > 0) crm_segments
-      .split(",")
-      .map("array_contains(all_segments, %s)".format(_))
-      .mkString(" OR ") else ""
+    val data =
+      if (dateRange.size > 0)
+        getDataIdPartners(spark, List("831"), 40, 1, "streaming")
+          .filter(dateRange)
+          else getDataIdPartners(spark, List("831"), 40, 1, "streaming")
+          val crm_files =
+      if (crm_segments.size > 0)
+        crm_segments
+          .split(",")
+          .map("array_contains(all_segments, %s)".format(_))
+          .mkString(" OR ")
+      else ""
     val segments = (560 to 576)
       .map("array_contains(all_segments, %s)".format(_))
       .mkString(" OR ")
 
-    val query = if (crm_files.size > 0) "array_contains(segments, %s) AND (%s) AND (%s)".format(
-      campaingId,
-      crm_files,
-      segments
-    ) else "array_contains(segments, %s) AND (%s)".format(
-      campaingId,
-      segments
-    )
+    val query =
+      if (crm_files.size > 0)
+        "array_contains(segments, %s) AND (%s) AND (%s)".format(
+          campaingId,
+          crm_files,
+          segments
+        )
+      else
+        "array_contains(segments, %s) AND (%s)".format(
+          campaingId,
+          segments
+        )
     val select =
       "time,all_segments,campaign_id,device_id,placement_id,advertiser_id"
         .split(",")
@@ -217,7 +229,8 @@ object DunnhumbyEnrichment {
       "20190916",
       "144633",
       "",
-      "'BR'"
+      "'BR'",
+      "datetime >= '2019-09-16 00:00:00' AND datetime <= '2019-10-16 00:00:00'"
     )
   }
 }

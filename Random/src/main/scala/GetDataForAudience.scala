@@ -29,7 +29,9 @@ import org.apache.spark.ml.classification.{
   GBTClassificationModel,
   GBTClassifier
 }
-import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.apache.spark.sql.Row
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -215,37 +217,29 @@ object GetDataForAudience {
     *
     *
     */
-  def zipWithIndex(
+  def dfZipWithIndex(
       df: DataFrame,
-      offset: Long = 1,
-      indexName: String = "id"
+      offset: Int = 1,
+      colName: String = "id",
+      inFront: Boolean = true
   ): DataFrame = {
-    val dfWithPartitionId = df
-      .withColumn("partition_id", spark_partition_id())
-      .withColumn("inc_id", monotonically_increasing_id())
-
-    val partitionOffsets = dfWithPartitionId
-      .groupBy("partition_id")
-      .agg(count(lit(1)) as "cnt", first("inc_id") as "inc_id")
-      .orderBy("partition_id")
-      .select(
-        sum("cnt").over(Window.orderBy("partition_id")) - col("cnt") - col(
-          "inc_id"
-        ) + lit(offset) as "cnt"
+    df.sqlContext.createDataFrame(
+      df.rdd.zipWithIndex.map(
+        ln =>
+          Row.fromSeq(
+            (if (inFront) Seq(ln._2 + offset) else Seq())
+              ++ ln._1.toSeq ++
+              (if (inFront) Seq() else Seq(ln._2 + offset))
+          )
+      ),
+      StructType(
+        (if (inFront) Array(StructField(colName, LongType, false))
+         else Array[StructField]())
+          ++ df.schema.fields ++
+          (if (inFront) Array[StructField]()
+           else Array(StructField(colName, LongType, false)))
       )
-      .collect()
-      .map(_.getLong(0))
-      .toArray
-
-    dfWithPartitionId
-      .withColumn(
-        "partition_offset",
-        udf((partitionId: Int) => partitionOffsets(partitionId), LongType)(
-          col("partition_id")
-        )
-      )
-      .withColumn(indexName, col("partition_offset") + col("inc_id"))
-      .drop("partition_id", "partition_offset", "inc_id")
+    )
   }
 
   def getDataLookAlike(spark: SparkSession) = {
@@ -270,7 +264,7 @@ object GetDataForAudience {
       triplets.cache()
 
       for (s <- segs) {
-        val bySeg = zipWithIndex(
+        val bySeg = dfZipWithIndex(
           triplets
             .filter("segment = %s".format(s))
         )
