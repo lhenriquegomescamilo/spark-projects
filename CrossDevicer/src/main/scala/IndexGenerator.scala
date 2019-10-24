@@ -98,7 +98,10 @@ object IndexGenerator {
       .withColumnRenamed("device_id", "device")
       .select("tapad_id", "device", "device_type")
 
-    sharethisIndex.write
+    data
+      .filter("device_type = 'sht'")
+      .withColumn("device", upper(col("device")))
+      .write
       .format("parquet")
       .mode("overwrite")
       .save("/datascience/custom/match_sharethis")
