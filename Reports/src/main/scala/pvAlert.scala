@@ -83,7 +83,7 @@ object pvAlert {
         )
 
     def getFinalDF(
-        df: DataFrame,
+        df: DataFrame
     ): DataFrame = {
 
         val df_final = df
