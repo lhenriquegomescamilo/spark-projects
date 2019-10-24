@@ -15,8 +15,9 @@ object DatasetTimestamp{
       spark: SparkSession,
       ga: DataFrame,
       name: String,
-      country: String
-  ): DataFrame = {
+      country: String,
+      format_type:String
+  ) = {
 
     val myUDF = udf(
               (weekday: String, hour: String) =>
@@ -36,7 +37,7 @@ object DatasetTimestamp{
                             .agg(sum("count"))
                             .orderBy(asc("device_id"))
     dataset_timestamp.write
-                    .format("parquet")
+                    .format(format_type)
                     .mode(SaveMode.Overwrite)
                     .save(
                       "/datascience/data_demo/name=%s/country=%s/ga_timestamp"

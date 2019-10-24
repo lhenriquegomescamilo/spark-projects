@@ -24,6 +24,7 @@ object GenerateDatasetsUrls {
     untagged_df.cache()
 
     // Then we download each dataset making an inner join with the untagged urls
+    println("Generating dataset keyword content expansion")
     val data_keywords_content = DatasetKeywordContent.get_url_content(spark,
                                                       country = country,
                                                       since = since,
@@ -32,7 +33,7 @@ object GenerateDatasetsUrls {
                                                       joinType = "inner",
                                                       name = "dataset_keyword_content_expansion")
 
-
+    println("Generating dataset timestamp expansion")
     val data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
                                                       country = country,
                                                       since = since,
@@ -41,7 +42,7 @@ object GenerateDatasetsUrls {
                                                       joinType = "inner",
                                                       df_urls = data_urls,
                                                       name = "dataset_timestamp_expansion")
-
+    println("Generating dataset user agent expansion")
     val data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
                                                     ndays_dataset,
                                                     since,
@@ -49,7 +50,7 @@ object GenerateDatasetsUrls {
                                                     untagged_df,
                                                     "inner",
                                                     name = "dataset_user_agent_expansion")
-
+    println("Generating dataset segments expansion")
     val data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
                                                     ndays_dataset,
                                                     since,
@@ -59,88 +60,98 @@ object GenerateDatasetsUrls {
                                                     name = "dataset_segments_branded_expansion")
   }
 
-  def generate_training_datasets(spark:SparkSession,ndays:Int,since:Int,country:String,data_urls: DataFrame,ndays_dataset:Int){
-    // Defining segments for GT
-    val segments = List(26,   32,   36,   59,   61,   82,   85,   92,  104,  118,  129,
-                        131,  141,  144,  145,  147,  149,  150,  152,  154,  155,  158,
-                        160,  165,  166,  177,  178,  210,  213,  218,  224,  225,  226,
-                        230,  245,  247,  250,  264,  265,  270,  275,  276,  302,  305,
-                        311,  313,  314,  315,  316,  317,  318,  322,  323,  325,  326,
-                        2635, 2636, 2660, 2719, 2743, 3010, 3011, 3012, 3013, 3014, 3015,
-                        3016, 3017, 3018, 3019, 3020, 3021, 3022, 3055, 3076, 3077, 3086,
-                        3087, 3913, 4097)     
-
-    // Filtering data from url to get GT segments from ndays
-    // val format = "yyyyMMdd"
-    // val start = DateTime.now.minusDays(ndays).toString(format).toInt
-
-    // var gtDF = data_urls.withColumn("date",date_format(col("time"), format))
-    //                     .withColumn("date",col("date").cast(IntegerType))
-    //                     .filter("date > %s".format(start))
-    //                     .select("url", "segments")
-    //                     .withColumn("segments", explode(col("segments")))
-    //                     .filter(
-    //                       col("segments")
-    //                         .isin(segments: _*)
-    //                     ).distinct()
+  def generate_training_datasets(spark:SparkSession,ndays:Int,since:Int,country:String,data_urls: DataFrame,ndays_dataset:Int, gt_calculated:String){
     
-    // gtDF.cache()
+    var gtDF : DataFrame  = null
 
-    // // Saving GT dataframe grouped by url and list of segments
-    // gtDF.groupBy("url")
-    //     .agg(collect_list(col("segments")).as("segments"))
-    //     .withColumn("segments", concat_ws(";", col("segments")))
-    //     .withColumn("country",lit(country))
-    //     .write
-    //     .format("parquet")
-    //     .mode(SaveMode.Overwrite)
-    //     .partitionBy("country")
-    //     .save("/datascience/data_url_classifier/gt")
+    if (Set("1", "true", "True").contains(gt_calculated)) {
+      // Defining segments for GT
+      val segments = List(26,   32,   36,   59,   61,   82,   85,   92,  104,  118,  129,
+                          131,  141,  144,  145,  147,  149,  150,  152,  154,  155,  158,
+                          160,  165,  166,  177,  178,  210,  213,  218,  224,  225,  226,
+                          230,  245,  247,  250,  264,  265,  270,  275,  276,  302,  305,
+                          311,  313,  314,  315,  316,  317,  318,  322,  323,  325,  326,
+                          2635, 2636, 2660, 2719, 2743, 3010, 3011, 3012, 3013, 3014, 3015,
+                          3016, 3017, 3018, 3019, 3020, 3021, 3022, 3055, 3076, 3077, 3086,
+                          3087, 3913, 4097)     
 
-    var gtDF = UrlUtils.get_gt_new_taxo(spark, ndays = ndays, since = since, country = country)
+      // Filtering data from url to get GT segments from ndays
+      val format = "yyyyMMdd"
+      val start = DateTime.now.minusDays(ndays).toString(format).toInt
 
-    // gtDF.write
-    //      .format("parquet")
-    //      .mode(SaveMode.Overwrite)
-    //      .save("/datascience/data_url_classifier/gt_new_taxo_filtered")
+      // Get GT from taxo standard
+      val gt_taxo_standard = data_urls.withColumn("date",date_format(col("time"), format))
+                                      .withColumn("date",col("date").cast(IntegerType))
+                                      .filter("date > %s".format(start))
+                                      .select("url", "segments")
+                                      .withColumn("segments", explode(col("segments")))
+                                      .filter(
+                                        col("segments")
+                                          .isin(segments: _*)
+                                      ).distinct()
+      
+      // Get GT from new taxo
+      UrlUtils.get_gt_new_taxo(spark, ndays = ndays, since = since, country = country)
+      val gt_new_taxo = spark.read
+                              .load("/datascience/data_url_classifier/gt_new_taxo_queries")
+                              .select("url","segments")
 
-    // gtDF = spark.read
-    //             .load("/datascience/data_url_classifier/gt_new_taxo_filtered")
-    // gtDF.cache()
-    // gtDF = broadcast(gtDF.select("url"))
+      // Union of new taxo and standard dataframes
+      gtDF = gt_taxo_standard.union(gt_new_taxo)
+      gtDF.cache()
 
-    // var data_keywords_content = DatasetKeywordContent.get_url_content(spark,
-    //                                                      country = country,
-    //                                                      since = since,
-    //                                                      ndays = ndays_dataset,
-    //                                                     gtDF = gtDF,
-    //                                                     joinType = "inner",
-    //                                                     name = "dataset_keyword_content_new_taxo_training")
+      // // Saving GT dataframe grouped by url and list of segments
+      gtDF.groupBy("url")
+          .agg(collect_list(col("segments")).as("segments"))
+          .withColumn("segments", concat_ws(";", col("segments")))
+          .withColumn("country",lit(country))
+          .write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .partitionBy("country")
+          .save("/datascience/data_url_classifier/gt")
+      
+    } else {
+      gtDF = spark.read
+                  .load("/datascience/data_url_classifier/gt/country=%s".format(country))
 
-    // var data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
-    //                                                     country = country,
-    //                                                     since = since,
-    //                                                     ndays = ndays_dataset,
-    //                                                     gtDF = gtDF,
-    //                                                     joinType = "inner",
-    //                                                     df_urls = data_urls,
-    //                                                     name = "dataset_timestamp_new_taxo_training")
+    }
 
-    // var data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
-    //                                                   ndays_dataset,
-    //                                                   since,
-    //                                                   country,
-    //                                                   gtDF,
-    //                                                   "inner",
-    //                                                   name = "dataset_user_agent_new_taxo_training")
+    gtDF = broadcast(gtDF.select("url"))
 
-    // var data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
-    //                                                   ndays_dataset,
-    //                                                   since,
-    //                                                   country,
-    //                                                   gtDF,
-    //                                                   "inner",
-    //                                                   name = "dataset_segments_branded_new_taxo_training")
+    println("Generating dataset keyword content training")
+    var data_keywords_content = DatasetKeywordContent.get_url_content(spark,
+                                                         country = country,
+                                                         since = since,
+                                                         ndays = ndays_dataset,
+                                                        gtDF = gtDF,
+                                                        joinType = "inner",
+                                                        name = "dataset_keyword_content_training")
+    println("Generating dataset timestamp training")
+    var data_timestamp = DatasetTimestamp.get_url_timestamp(spark,
+                                                        country = country,
+                                                        since = since,
+                                                        ndays = ndays_dataset,
+                                                        gtDF = gtDF,
+                                                        joinType = "inner",
+                                                        df_urls = data_urls,
+                                                        name = "dataset_timestamp_training")
+    println("Generating dataset user agent training")
+    var data_user_agent = DatasetUserAgent.get_url_user_agent(spark,
+                                                      ndays_dataset,
+                                                      since,
+                                                      country,
+                                                      gtDF,
+                                                      "inner",
+                                                      name = "dataset_user_agent_training")
+    println("Generating dataset segments training")
+    var data_segments_branded = DatasetSegmentsBranded.get_segment_branded(spark,
+                                                      ndays_dataset,
+                                                      since,
+                                                      country,
+                                                      gtDF,
+                                                      "inner",
+                                                      name = "dataset_segments_branded_training")
 
   }
 
@@ -188,9 +199,11 @@ type OptionMap = Map[Symbol, String]
     
     val data_urls = UrlUtils.get_data_urls(spark, ndays_dataset, since, country)
 
+    val gt_calculated = "0"
+
     // Training datasets
     if (Set("1", "true", "True").contains(train)) {
-      generate_training_datasets(spark,ndays,since,country,data_urls,ndays_dataset)
+      generate_training_datasets(spark,ndays,since,country,data_urls,ndays_dataset,gt_calculated)
     }
 
     // Expansion datasets

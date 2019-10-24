@@ -98,12 +98,12 @@ object UrlUtils {
 
       // Filter selected keywords dataframe using query with array contains
       selected_keywords.filter(query)
-                        .withColumn("segment",lit(segment))
-                        .select("url","segment")
+                        .withColumn("segments",lit(segment))
+                        .select("url","segments")
                         .write
                         .format("parquet")
                         .mode("append")
-                        .save("/datascience/data_url_classifier/GT_new_taxo_queries")
+                        .save("/datascience/data_url_classifier/gt_new_taxo_queries")
 
       // Filter data_urls dataframe using query with array url LIKE                        
       // data_urls.filter(query_url_like)
@@ -113,36 +113,8 @@ object UrlUtils {
       //             .format("parquet")
       //             .mode("append")
       //             .save("/datascience/data_url_classifier/GT_new_taxo_queries")
+    
     }
-
-    // Groupby by url and concatenating segments with ;
-    val joint = spark.read.load("/datascience/data_url_classifier/GT_new_taxo_queries")
-          .groupBy("url")
-          .agg(collect_list(col("segment")).as("segment"))
-          .withColumn("segment", concat_ws(";", col("segment")))
-          .withColumn("url", lower(col("url")))
-          .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
-          .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
-          .withColumn("keyword", explode(col("url_keys")))
-          .filter(col("keyword").rlike("[a-z]{2,}"))
-          .select("url","segment","keyword")
-          
-    // Save keywords from url
-    joint.select("url","keyword")
-        .write
-        .format("parquet")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/data_url_classifier/keywords_url")
-    
-    // Save GT
-    joint.select("url","segment")
-        .dropDuplicates()
-        .write
-        .format("parquet")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/data_url_classifier/gt_new_taxo")
-    
-    joint
   }
 
   def processURL(dfURL: DataFrame, field: String = "url"): DataFrame = {
