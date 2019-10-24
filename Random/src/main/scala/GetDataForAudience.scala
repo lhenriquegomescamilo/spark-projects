@@ -93,7 +93,16 @@ object GetDataForAudience {
       val hdfs_files = days
         .map(day => path + "/day=%s/country=%s".format(day, country))
         .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+      val dfs = hdfs_files.map(
+        f =>
+          spark.read
+            .parquet(f)
+            .select("device_id", "feature")
+            .withColumn("count", lit(1))
+            .withColumnRenamed("feature", "segment")
+      )
+      dfs.reduce((df1, df2) => df1.unionAll(df2))
     } else {
       // read all date files
       spark.read.load(path + "/day=*/country=%s/".format(country))
@@ -161,7 +170,7 @@ object GetDataForAudience {
       .save("/datascience/custom/votaciones_2019_segments")
   }
 
-/**
+  /**
     *
     *
     *
@@ -172,26 +181,84 @@ object GetDataForAudience {
     *
     *
     */
-    def getDataMaids(spark: SparkSession) = {
-      val data_segments = getDataTriplets(spark, "MX")
-      
-      val maids =
-        spark.read
-          .format("csv")
-          .option("sep", ",")
-          .option("header", "true")
-          .load("/datascience/misc/maids_mcdonalds.csv")
-          .withColumnRenamed("maid", "device_id")
-  
-      val joint = data_segments
-        .join(broadcast(maids), Seq("device_id"))
+  def getDataMaids(spark: SparkSession) = {
+    val data_segments = getDataTriplets(spark, "MX")
 
-      joint.write
-        .format("parquet")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/misc/maids_mcdonalds_segments")
+    val maids =
+      spark.read
+        .format("csv")
+        .option("sep", ",")
+        .option("header", "true")
+        .load("/datascience/misc/maids_mcdonalds.csv")
+        .withColumnRenamed("maid", "device_id")
+
+    val joint = data_segments
+      .join(broadcast(maids), Seq("device_id"))
+
+    joint.write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/maids_mcdonalds_segments")
+  }
+
+  /**
+    *
+    *
+    *
+    *
+    *
+    *            DATA PARA TEST DE LOOK-ALIKE
+    *
+    *
+    *
+    *
+    *
+    */
+  def getDataLookAlike(spark: SparkSession) = {
+    val segments_AR =
+      List(76208, 98279, 87910, 76203, 75805, 87909, 76209, 76205, 76286)
+    val segments_BR = List(148995, 162433, 148997)
+    val segments_CL = List(142083)
+    val segments_MX = List(157067)
+
+    val countries = Map(
+      "AR" -> segments_AR,
+      "BR" -> segments_BR,
+      "CL" -> segments_CL,
+      "MX" -> segments_MX
+    )
+
+    for ((c, segs) <- countries) {
+      val triplets = getDataTriplets(spark, nDays = 60, country = c)
+        .withColumn("country", lit(c))
+        .filter(col("segment").isin(segs))
+      triplets.cache()
+
+      for (s <- segs) {
+        val bySeg = triplets
+          .filter("segment = %s".format(s))
+          .withColumn("id", monotonicallyIncreasingId)
+        bySeg.cache()
+        val count = bySeg.count()
+
+        val train = bySeg.filter("id < %s".format(count * .7))
+        val test = bySeg
+          .filter("id >= %s".format(count * .7))
+          .withColumn("segment", -col("segment"))
+
+        train
+          .unionAll(test)
+          .drop("id")
+          .write
+          .format("parquet")
+          .mode("append")
+          .save("/datascience/custom/lookalike_device_ids/")
+        bySeg.unpersist()
+      }
+      triplets.unpersist()
     }
 
+  }
 
   /**
     *
@@ -267,7 +334,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataMaids(spark = spark)
+    getDataLookAlike(spark = spark)
 
   }
 }
