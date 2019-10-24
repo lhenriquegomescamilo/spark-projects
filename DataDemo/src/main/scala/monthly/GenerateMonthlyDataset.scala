@@ -136,7 +136,7 @@ object GenerateMonthlyDataset{
     println("Generating Training AR Genero ...")
     //getTrainingData(spark, path_gt, country, training_name, ndays)
     println("Generating Expansion AR Genero ...")
-    getExpansionData(spark, path_gt, country, expansion_name, ndays)
+    //getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // AR EDAD
     training_name = "training_AR_edad_%s".format(current_month)
