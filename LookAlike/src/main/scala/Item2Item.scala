@@ -266,7 +266,6 @@ object Item2Item {
                        size: Int = 1000) {
     import spark.implicits._
 
-    println("LOOKALIKE LOG: Test file: " + filePath)
     val metaInput: Map[String, String] = Map("country" -> country,
                                              "output_name" -> "test_%s".format(segmentId),
                                              "job_id" -> "",
