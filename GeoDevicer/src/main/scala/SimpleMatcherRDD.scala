@@ -29,6 +29,9 @@ import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 
+import org.datasyslab.geospark.enums.{FileDataSplitter, GridType, IndexType}
+import org.datasyslab.geospark.spatialOperator.{JoinQuery, KNNQuery, RangeQuery}
+
 
 import org.datasyslab.geospark.utils.GeoSparkConf
 
@@ -38,7 +41,7 @@ import org.datasyslab.geospark.formatMapper.GeoJsonReader
 
 
 
-object SimpleMatcher {
+object SimpleMatcherRDD {
 
 def get_safegraph_data(
       spark: SparkSession,
@@ -91,33 +94,54 @@ def match_users_to_polygons (spark: SparkSession,
 
 
 
-//Load the polygon
+//Load the polygon as RDD
 val inputLocation = polygon_inputLocation
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
-val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
-
-//Transform the polygon to DF
-var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
-rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
-
-// Assign name and geometry columns to DataFrame
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
-
-spatialDf.createOrReplaceTempView("poligonomagico")
+val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
 
+
+//Load the users
 val df_safegraph = get_safegraph_data(spark,nDays,since,country)
 df_safegraph.createOrReplaceTempView("data")
 
-var safegraphDf = spark .sql("""SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry
+var safegraphDf = spark .sql("""SELECT ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry,ad_id
               FROM data  """)
+safegraphDf.createOrReplaceTempView("data")   
 
-safegraphDf.createOrReplaceTempView("data")
+println("antes del TO RDD")
+
+var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
+
+println("despues del TO RDD")
 
 
-val intersection = spark.sql(
-      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
+println (spatialRDDusers.rawSpatialRDD.take(10))
+
+//We validate the geometries
+spatialRDDpolygon.analyze()
+spatialRDDusers.analyze()
+
+
+//We perform the sptial join
+  //setting variables
+val joinQueryPartitioningType = GridType.KDBTREE
+val numPartitions = 20
+
+spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
+spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+
+val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD esto es muy importante, si no no joinea bien
+val usingIndex = true
+val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
+
+val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
+
+
+
+//we transform it to a DF to save it
+var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
 
 intersection.explain(extended=true)
 
@@ -153,6 +177,8 @@ intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
      
 GeoSparkSQLRegistrator.registerAll(spark)
 
+    Logger.getRootLogger.setLevel(Level.WARN)
+
 // Initialize the variables
 val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
@@ -161,9 +187,9 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //"/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
 //
 match_users_to_polygons(spark,
-  "/datascience/geo/POIs/barrios.geojson",
+  "/datascience/geo/POIs/natural_geodevicer.json",
+  "1",
   "10",
-  "3",
   "argentina")
 /*spark: SparkSession,
       nDays: String,

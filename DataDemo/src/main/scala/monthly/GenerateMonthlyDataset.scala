@@ -55,7 +55,7 @@ object GenerateMonthlyDataset{
                   .load(
                     "/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities"
                     .format(name, country)
-                  )
+                  ).withColumnRenamed("_c0","device_id")
     
     // Generating the triplets dataset by joining the triplets with the GA dataset previously generated to mantain the same users
     DatasetSegmentTriplets.generateSegmentTriplets(spark, ga, country, "left", name, ndays, format_type)
@@ -66,7 +66,7 @@ object GenerateMonthlyDataset{
                         .load(
                           "/datascience/data_demo/name=%s/country=%s/segment_triplets"
                             .format(name, country)
-                        )
+                        ).withColumnRenamed("_c0","device_id")
 
     // Finally we get the Url dataset (device_id, [url1;url2]) from the users that passed the join with the previous dataset
     DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name, ndays, format_type)
@@ -134,9 +134,9 @@ object GenerateMonthlyDataset{
     var country = "AR"
     var path_gt = "/datascience/devicer/processed/AR_genero_%s_grouped".format(current_month)
     println("Generating Training AR Genero ...")
-    getTrainingData(spark, path_gt, country, training_name, ndays)
+    //getTrainingData(spark, path_gt, country, training_name, ndays)
     println("Generating Expansion AR Genero ...")
-    getExpansionData(spark, path_gt, country, expansion_name, ndays)
+    //getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // AR EDAD
     training_name = "training_AR_edad_%s".format(current_month)
