@@ -37,7 +37,7 @@ object DatasetGA{
       gtDF: DataFrame,
       country: String,
       joinType: String,
-      name: String
+      name: String,
       format_type: String
   ) = {
     // First we load the GA data from the last 60 days
