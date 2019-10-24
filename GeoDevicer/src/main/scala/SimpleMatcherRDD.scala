@@ -38,7 +38,7 @@ import org.datasyslab.geospark.formatMapper.GeoJsonReader
 
 
 
-object SimpleMatcher {
+object SimpleMatcherRDD {
 
 def get_safegraph_data(
       spark: SparkSession,
@@ -91,39 +91,53 @@ def match_users_to_polygons (spark: SparkSession,
 
 
 
-//Load the polygon
+//Load the polygon as RDD
 val inputLocation = polygon_inputLocation
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
-//Transform the polygon to DF
-var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
-rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
-
-// Assign name and geometry columns to DataFrame
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
-
-spatialDf.createOrReplaceTempView("poligonomagico")
 
 
+//Load the users
 val df_safegraph = get_safegraph_data(spark,nDays,since,country)
 df_safegraph.createOrReplaceTempView("data")
 
+//assign the geometry
 var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)),
                                                              CAST(data.latitude AS Decimal(24,20))) 
                                                              as pointshape
               FROM data
           """)
-
 safegraphDf.createOrReplaceTempView("data")
+//We transform the DF to an RDD
+var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
 
 
-val intersection = spark.sql(
-      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
+//We validate the geometries
+println("POLyGON",spatialRDDpolygon.analyze())
+println("USERS",spatialRDDusers.analyze())
 
-intersection.explain(extended=true)
 
+//We perform the sptial join
+  //setting variables
+val joinQueryPartitioningType = GridType.KDBTREE
+val numPartitions = 20
+
+spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
+spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+
+val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD esto es muy importante, si no no joinea bien
+val usingIndex = true
+val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
+
+val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
+
+result.explain(extended=true)
+
+
+//we transform it to a DF to save it
+var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
@@ -164,8 +178,8 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //"/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
 //
 match_users_to_polygons(spark,
-  "/datascience/geo/POIs/barrios.geojson",
-  "10",
+  "/datascience/geo/POIs/natural_geodevicer.json",
+  "5",
   "3",
   "argentina")
 /*spark: SparkSession,
