@@ -29,6 +29,9 @@ import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 
+import org.datasyslab.geospark.enums.{FileDataSplitter, GridType, IndexType}
+import org.datasyslab.geospark.spatialOperator.{JoinQuery, KNNQuery, RangeQuery}
+
 
 import org.datasyslab.geospark.utils.GeoSparkConf
 
@@ -95,7 +98,7 @@ def match_users_to_polygons (spark: SparkSession,
 val inputLocation = polygon_inputLocation
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
-val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
 
 
@@ -115,8 +118,8 @@ var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
 
 
 //We validate the geometries
-println("POLyGON",spatialRDDpolygon.analyze())
-println("USERS",spatialRDDusers.analyze())
+spatialRDDpolygon.analyze()
+spatialRDDusers.analyze()
 
 
 //We perform the sptial join
