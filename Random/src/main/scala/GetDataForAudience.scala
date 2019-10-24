@@ -216,10 +216,10 @@ object GetDataForAudience {
     */
   def getDataLookAlike(spark: SparkSession) = {
     val segments_AR =
-      List(76208, 98279, 87910, 76203, 75805, 87909, 76209, 76205, 76286)
-    val segments_BR = List(148995, 162433, 148997)
-    val segments_CL = List(142083)
-    val segments_MX = List(157067)
+      List(76208, 98279, 87910, 76203, 75805, 87909, 76209, 76205, 76286).toArray
+    val segments_BR = List(148995, 162433, 148997).toArray
+    val segments_CL = List(142083).toArray
+    val segments_MX = List(157067).toArray
 
     val countries = Map(
       "AR" -> segments_AR,
