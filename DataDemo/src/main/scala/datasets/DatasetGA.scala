@@ -37,7 +37,8 @@ object DatasetGA{
       gtDF: DataFrame,
       country: String,
       joinType: String,
-      name: String
+      name: String,
+      format_type: String
   ) = {
     // First we load the GA data from the last 60 days
     val sc = spark.sparkContext
@@ -82,7 +83,7 @@ object DatasetGA{
       .withColumn("url", concat_ws(";", col("url")))
       .orderBy(asc("device_id"))
       .write
-      .format("parquet")
+      .format(format_type)
       .mode(SaveMode.Overwrite)
       .save(
         "/datascience/data_demo/name=%s/country=%s/ga_url_domains"
@@ -153,7 +154,7 @@ object DatasetGA{
                                     .drop("TOTAL_GENDER","TOTAL_AGE")
                                     .orderBy(asc("device_id"))
     probabilities_calculated.write
-                            .format("parquet")
+                            .format(format_type)
                             .mode(SaveMode.Overwrite)
                             .save(
                                 "/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities"
@@ -161,7 +162,7 @@ object DatasetGA{
                             )
 
     // Finally we obtain the data the is related to timestamps coming from GA
-    DatasetTimestamp.getDatasetTimestamp(spark,joint,name,country)
+    DatasetTimestamp.getDatasetTimestamp(spark,joint,name,country,format_type)
 
   }
 
