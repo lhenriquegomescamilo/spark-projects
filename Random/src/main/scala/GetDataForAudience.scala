@@ -214,9 +214,43 @@ object GetDataForAudience {
     *
     *
     */
+  def zipWithIndex(
+      df: DataFrame,
+      offset: Long = 1,
+      indexName: String = "id"
+  ): DataFrame = {
+    val dfWithPartitionId = df
+      .withColumn("partition_id", spark_partition_id())
+      .withColumn("inc_id", monotonically_increasing_id())
+
+    val partitionOffsets = dfWithPartitionId
+      .groupBy("partition_id")
+      .agg(count(lit(1)) as "cnt", first("inc_id") as "inc_id")
+      .orderBy("partition_id")
+      .select(
+        sum("cnt").over(Window.orderBy("partition_id")) - col("cnt") - col(
+          "inc_id"
+        ) + lit(offset) as "cnt"
+      )
+      .collect()
+      .map(_.getLong(0))
+      .toArray
+
+    dfWithPartitionId
+      .withColumn(
+        "partition_offset",
+        udf((partitionId: Int) => partitionOffsets(partitionId), LongType)(
+          col("partition_id")
+        )
+      )
+      .withColumn(indexName, col("partition_offset") + col("inc_id"))
+      .drop("partition_id", "partition_offset", "inc_id")
+  }
+
   def getDataLookAlike(spark: SparkSession) = {
     val segments_AR =
-      List(76208, 98279, 87910, 76203, 75805, 87909, 76209, 76205, 76286).toArray
+      List(76208, 98279, 87910, 76203, 75805, 87909, 76209, 76205,
+        76286).toArray
     val segments_BR = List(148995, 162433, 148997).toArray
     val segments_CL = List(142083).toArray
     val segments_MX = List(157067).toArray
@@ -235,9 +269,10 @@ object GetDataForAudience {
       triplets.cache()
 
       for (s <- segs) {
-        val bySeg = triplets
-          .filter("segment = %s".format(s))
-          .withColumn("id", monotonicallyIncreasingId)
+        val bySeg = zipWithIndex(
+          triplets
+            .filter("segment = %s".format(s))
+        )
         bySeg.cache()
         val count = bySeg.count()
 
@@ -249,10 +284,11 @@ object GetDataForAudience {
         train
           .unionAll(test)
           .drop("id")
+          .withColumnRenamed("segment", "feature")
           .write
           .format("parquet")
           .mode("append")
-          .save("/datascience/custom/lookalike_device_ids/")
+          .save("/datascience/custom/lookalike_ids/")
         bySeg.unpersist()
       }
       triplets.unpersist()

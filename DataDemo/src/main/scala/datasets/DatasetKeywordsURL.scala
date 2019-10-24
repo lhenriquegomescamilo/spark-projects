@@ -71,8 +71,10 @@ object DatasetKeywordsURL{
         country: String,
         joinType: String,
         name: String,
-        ndays:Int
+        ndays:Int,
+        format_type:String
     ) = {
+      
       // Data from data urls
       val df = getDataUrls(spark,country,ndays)
         .filter("event_type IN ('pv', 'batch')")
@@ -93,7 +95,7 @@ object DatasetKeywordsURL{
       // Checkpoint to execute url process and tokenization
       df_processed.write
           .mode(SaveMode.Overwrite)
-          .format("parquet")
+          .format(format_type)
           .save(
             "/datascience/data_demo/name=%s/country=%s/keywords_tmp".format(name, country)
           )
@@ -124,7 +126,7 @@ object DatasetKeywordsURL{
                       .orderBy(asc("device_id"))
                       .write
                       .mode(SaveMode.Overwrite)
-                      .format("parquet")
+                      .format(format_type)
                       .save(
                         "/datascience/data_demo/name=%s/country=%s/keywords".format(name, country)
                       )
