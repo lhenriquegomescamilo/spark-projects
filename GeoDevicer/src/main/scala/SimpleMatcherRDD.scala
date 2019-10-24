@@ -106,16 +106,15 @@ val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inpu
 val df_safegraph = get_safegraph_data(spark,nDays,since,country)
 df_safegraph.createOrReplaceTempView("data")
 
-//assign the geometry
-var safegraphDf = spark      .sql(""" SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)),
-                                                             CAST(data.latitude AS Decimal(24,20))) 
-                                                             as pointshape
-              FROM data
-          """)
-safegraphDf.createOrReplaceTempView("data")
-//We transform the DF to an RDD
-println ("holahola")
+var safegraphDf = spark .sql("""SELECT ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry,ad_id
+              FROM data  """)
+safegraphDf.createOrReplaceTempView("data")   
+
+println("antes del TO RDD")
+
 var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
+
+println("despues del TO RDD")
 
 
 println (spatialRDDusers.rawSpatialRDD.take(10))
