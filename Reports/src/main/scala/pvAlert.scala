@@ -86,6 +86,8 @@ object pvAlert {
         df: DataFrame
     ): DataFrame = {
 
+        import spark.implicits._
+    
         val df_final = df
                     .withColumn("url_domain", callUDF("parse_url", $"url", lit("HOST")))
                     .withColumn("url_domain",udfCleanUrl(col("url_domain")))
