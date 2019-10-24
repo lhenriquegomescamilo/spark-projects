@@ -4,6 +4,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.apache.hadoop.fs._
+import java.net.URLDecoder
 
 object IndexGenerator {
 
@@ -89,8 +90,10 @@ object IndexGenerator {
 
     data.cache()
 
+    val decodingUDF = udf((estid: String) => URLDecoder.decode(estid))
     val sharethisIndex = data
       .filter("device_type = 'sht'")
+      .withColumn("device", decodingUDF(col("device")))
       .withColumn("device", upper(col("device")))
       .join(sharethisMap, Seq("device"), "inner")
       .withColumn("device_id", explode(col("device_id")))
