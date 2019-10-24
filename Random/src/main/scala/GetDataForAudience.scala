@@ -29,6 +29,7 @@ import org.apache.spark.ml.classification.{
   GBTClassificationModel,
   GBTClassifier
 }
+import org.apache.spark.sql.expressions.Window
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
