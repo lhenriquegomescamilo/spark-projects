@@ -199,7 +199,7 @@ type OptionMap = Map[Symbol, String]
     
     val data_urls = UrlUtils.get_data_urls(spark, ndays_dataset, since, country)
 
-    val gt_calculated = "1"
+    val gt_calculated = "0"
 
     // Training datasets
     if (Set("1", "true", "True").contains(train)) {
