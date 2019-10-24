@@ -136,11 +136,13 @@ val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 
-result.explain(extended=true)
 
 
 //we transform it to a DF to save it
 var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
+
+intersection.explain(extended=true)
+
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
