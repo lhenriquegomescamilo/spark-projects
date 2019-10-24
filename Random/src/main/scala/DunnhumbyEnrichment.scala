@@ -268,7 +268,7 @@ object DunnhumbyEnrichment {
       "144633",
       "",
       "'BR'",
-      "datetime >= '2019-09-16 00:00:00' AND datetime <= '2019-10-16 00:00:00'"
+      "country = 'BR' AND datetime >= '2019-09-16 00:00:00' AND datetime <= '2019-10-16 00:00:00'"
     )
   }
 }
