@@ -108,7 +108,7 @@ object GenerateMonthlyDataset{
     val segments = spark.read
                         .load(
                           "/datascience/data_demo/name=%s/country=%s/segment_triplets"
-                            .format(name, country, )
+                            .format(name, country)
                         )
 
     // Finally we get the keywords dataset (device_id, [kw1;kw2]) from the users that passed the join with the previous dataset
