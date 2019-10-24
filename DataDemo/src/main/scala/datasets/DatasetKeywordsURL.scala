@@ -147,7 +147,7 @@ object DatasetKeywordsURL{
     val segments = spark.read
                     .format(format_type)
                     .load(
-                      "/datascience/data_demo/name=%s/country=%s/segment_triplets"
+                      "/datascience/data_demo/name=expansion_AR_genero_10/country=AR/segment_triplets"
                         .format(name, country)
                     ).withColumnRenamed("_c0","device_id")
     getDatasetFromURLs(spark,segments,"AR","left","expansion_AR_genero_10",30,"csv")
