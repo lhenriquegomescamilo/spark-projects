@@ -448,9 +448,10 @@ val natural = spark.read.format("csv").option("header",true).option("delimiter",
 
 val buildings = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/geo_processed/buildings_3_argentina_sjoin_polygon").withColumnRenamed("ad_id","device_id").select("device_id","name","frequency")
 
+//Juntamos todo
+val geo_all = List(pois,natural,buildings).reduce(_.unionByName (_))
 
-geo_all.select("name").distinct().count()
-
+//Guardamos
 geo_all.groupBy("device_id").pivot("name").agg(first("frequency")).na.fill(0).write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/geo/geo_processed/points_polygons_matrix_geo_job")
 
   }
