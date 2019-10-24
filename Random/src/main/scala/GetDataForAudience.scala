@@ -231,7 +231,7 @@ object GetDataForAudience {
     for ((c, segs) <- countries) {
       val triplets = getDataTriplets(spark, nDays = 60, country = c)
         .withColumn("country", lit(c))
-        .filter(col("segment").isin(segs))
+        .filter(col("segment").isin(segs: _*))
       triplets.cache()
 
       for (s <- segs) {
