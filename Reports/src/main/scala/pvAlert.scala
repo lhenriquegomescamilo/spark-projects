@@ -126,10 +126,9 @@ object pvAlert {
   ) = {
 
     val dir = "/datascience/reports/alerts/pv/"
-    val format = "yyyy-MM-dd'T'HH-m"
-    val date_current = DateTime.now.toString(format)
-    val fileName = "pvData"
-    val fileNameFinal = dir + fileName + "_" + date_current
+    val format = "yyyy-MM-dd"
+    val date_current = DateTime.now.minusDays(1)
+    val fileNameFinal = dir + date_current
 
         data
         .write
