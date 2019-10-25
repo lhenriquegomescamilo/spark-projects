@@ -438,7 +438,7 @@ object RandomTincho {
 
  }
  
- def keywords_embeddings(spark){
+ def keywords_embeddings(spark:SparkSession){
    val word_embeddings = spark.read
                               .format("csv")
                               .option("header","true")
