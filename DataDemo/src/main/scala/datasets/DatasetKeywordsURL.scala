@@ -149,6 +149,6 @@ object DatasetKeywordsURL{
                     .load(
                       "/datascience/data_demo/name=expansion_MX_genero_10/country=MX/segment_triplets"
                     ).withColumnRenamed("_c0","device_id")
-    getDatasetFromURLs(spark,segments,"AR","left","expansion_MX_genero_10",30,"csv")
+    getDatasetFromURLs(spark,segments,"MX","left","expansion_MX_genero_10",30,"csv")
   }
 }
