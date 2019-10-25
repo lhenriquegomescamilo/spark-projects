@@ -100,7 +100,6 @@ val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
-spatialRDDpolygon.persist()
 
 
 //Load the users
@@ -141,15 +140,14 @@ val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, 
 */
 //Manera B
 //Acá persistimos en memoria el poligono 
-spatialRDDpolygon.spatialPartitioning(GridType.KDBTREE,50);
-spatialRDDpolygon.buildIndex(IndexType.KDBTREE, true);
+spatialRDDpolygon.spatialPartitioning(GridType.QUADTREE,10);
+spatialRDDpolygon.buildIndex(IndexType.QUADTREE, true);
 spatialRDDpolygon.indexedRDD.persist(StorageLevel.MEMORY_ONLY);
 spatialRDDpolygon.spatialPartitionedRDD.persist(StorageLevel.MEMORY_ONLY)
 spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, true, true);
 
-//we transform it to a DF to save it
-var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
+var rawSpatialDf = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
 
 intersection.explain(extended=true)
 
@@ -198,7 +196,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //
 match_users_to_polygons(spark,
   "/datascience/geo/POIs/natural_geodevicer.json",
-  "60",
+  "30",
   "1",
   "argentina")
 /*spark: SparkSession,
