@@ -145,7 +145,7 @@ spatialRDDpolygon.spatialPartitioning(GridType.QUADTREE,100);
 spatialRDDpolygon.buildIndex(IndexType.QUADTREE, true);
 spatialRDDpolygon.indexedRDD.persist(StorageLevel.MEMORY_ONLY);
 spatialRDDpolygon.spatialPartitionedRDD.persist(StorageLevel.MEMORY_ONLY)
-spatialRDDusers.spatialPartitioning(GridType.QUADTREE,200)
+spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, true, true);
 
 var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
