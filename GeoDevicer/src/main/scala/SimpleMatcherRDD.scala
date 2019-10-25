@@ -110,20 +110,19 @@ var safegraphDf = spark .sql("""SELECT ST_Point(CAST(data.longitude AS Decimal(2
               FROM data  """)
 safegraphDf.createOrReplaceTempView("data")   
 
-println("antes del TO RDD")
+
 
 var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
 
-println("despues del TO RDD")
 
-
-println (spatialRDDusers.rawSpatialRDD.take(10))
 
 //We validate the geometries
 spatialRDDpolygon.analyze()
 spatialRDDusers.analyze()
 
-
+//Acá va a empezar lo que usaba. Voy a cambiar por una manera B
+//Manera A
+/*
 //We perform the sptial join
   //setting variables
 val joinQueryPartitioningType = GridType.KDBTREE
@@ -137,10 +136,17 @@ val usingIndex = true
 val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
 
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
+// Fin the Manera A
+*/
+//Manera B
+//Acá persistimos en memoria el poligono 
+spatialRDDpolygon.spatialPartitioning(GridType.QUADTREE,10);
+spatialRDDpolygon.buildIndex(IndexType.QUADTREE, true);
+spatialRDDpolygon.indexedRDD.persist(StorageLevel.MEMORY_ONLY);
+spatialRDDpolygon.spatialPartitionedRDD.persist(StorageLevel.MEMORY_ONLY)
+spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, true, true);
 
-
-
-//we transform it to a DF to save it
 var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
 
 intersection.explain(extended=true)
@@ -166,6 +172,8 @@ intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
   /*****************************************************/
   def main(args: Array[String]) {
    
+
+  
    val spark = SparkSession.builder()
 .config("spark.sql.files.ignoreCorruptFiles", "true")
  .config("spark.serializer", classOf[KryoSerializer].getName)
@@ -188,8 +196,8 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //
 match_users_to_polygons(spark,
   "/datascience/geo/POIs/natural_geodevicer.json",
+  "30",
   "1",
-  "10",
   "argentina")
 /*spark: SparkSession,
       nDays: String,
