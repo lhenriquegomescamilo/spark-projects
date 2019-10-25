@@ -464,11 +464,12 @@ object RandomTincho {
       df = df.withColumn(i.toString, col(i.toString)*col("count"))
     } 
 
-    df.drop("count")
-      .groupBy("url","word")
+    df.drop("count","word")
+      .groupBy("url")
       .mean()
       .write
       .format("csv")
+      .option("header","true")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_url_classifier/dataset_keyword_embedding_multiplied")
  }
