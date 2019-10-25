@@ -148,9 +148,7 @@ spatialRDDusers.spatialPartitionedRDD.persist(StorageLevel.MEMORY_ONLY)
 spatialRDDpolygon.spatialPartitioning(spatialRDDusers.getPartitioner)
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, true, true);
 
-var rawSpatialDf = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
-
-intersection.explain(extended=true)
+var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
 
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
