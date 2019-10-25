@@ -122,12 +122,13 @@ object pvAlert {
   **/
 
   def saveData(
-      data: DataFrame
+      data: DataFrame,
+      since: Integer
   ) = {
 
     val dir = "/datascience/reports/alerts/pv/"
     val format = "yyyy-MM-dd"
-    val date_current = DateTime.now.minusDays(1)
+    val date_current = DateTime.now.minusDays(since)
     val fileNameFinal = dir + date_current
 
         data
@@ -170,7 +171,8 @@ object pvAlert {
 
     /** Store df*/
     saveData(
-      data = df_final
+      data = df_final,
+      since = since
     )
     }    
 
