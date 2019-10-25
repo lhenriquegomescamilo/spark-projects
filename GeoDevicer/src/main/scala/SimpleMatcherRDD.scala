@@ -141,8 +141,8 @@ val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, 
 
 //Manera B
 //Acá persistimos en memoria el poligono 
-spatialRDDusers.spatialPartitioning(GridType.QUADTREE,100);
-spatialRDDusers.buildIndex(IndexType.QUADTREE, true);
+spatialRDDusers.spatialPartitioning(GridType.RTREE,200);
+spatialRDDusers.buildIndex(IndexType.RTREE, true);
 spatialRDDusers.indexedRDD.persist(StorageLevel.MEMORY_ONLY);
 spatialRDDusers.spatialPartitionedRDD.persist(StorageLevel.MEMORY_ONLY)
 spatialRDDpolygon.spatialPartitioning(spatialRDDusers.getPartitioner)
@@ -153,7 +153,7 @@ var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
+intersection.dropDuplicates()//.groupBy("name", "ad_id").agg(count("name") as "frequency")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
@@ -195,7 +195,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //
 match_users_to_polygons(spark,
   "/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
-  "60",
+  "63",
   "1",
   "argentina")
 /*spark: SparkSession,
