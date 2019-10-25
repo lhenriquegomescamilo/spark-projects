@@ -464,7 +464,12 @@ object RandomTincho {
       df = df.withColumn(i.toString, col(i.toString)*col("count"))
     } 
 
-    df.write.format("parquet").save("/datascience/data_url_classifier/dataset_keyword_embedding_multiplied")
+    df.groupBy("url","word")
+      .mean()
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_url_classifier/dataset_keyword_embedding_multiplied")
  }
 
   def main(args: Array[String]) {
