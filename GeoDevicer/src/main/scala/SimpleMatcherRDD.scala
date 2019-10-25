@@ -138,13 +138,14 @@ val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
 // Fin the Manera A
 */
+
 //Manera B
 //Acá persistimos en memoria el poligono 
-spatialRDDpolygon.spatialPartitioning(GridType.QUADTREE,10);
+spatialRDDpolygon.spatialPartitioning(GridType.QUADTREE,100);
 spatialRDDpolygon.buildIndex(IndexType.QUADTREE, true);
 spatialRDDpolygon.indexedRDD.persist(StorageLevel.MEMORY_ONLY);
 spatialRDDpolygon.spatialPartitionedRDD.persist(StorageLevel.MEMORY_ONLY)
-spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+spatialRDDusers.spatialPartitioning(GridType.QUADTREE,200)
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, true, true);
 
 var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
