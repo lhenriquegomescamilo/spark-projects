@@ -481,7 +481,10 @@ val typeMap2 = Map(
       "unkown" -> "unkown") 
 val mapUDF2 = udf((dev_type: String) => typeMap2(dev_type))
 
-val to_xd = devuelta_format.join(llave,Seq("id")).join(enviado.select("ad_id","id_type"),Seq("ad_id")).drop("id").select("id_type","ad_id","audience").withColumn("id_type",mapUDF2("id_type"))
+val to_xd = devuelta_format.join(llave,Seq("id"))
+.join(enviado.select("ad_id","id_type"),Seq("ad_id"))
+.drop("id")
+.select("id_type","ad_id","audience").withColumn("id_type",mapUDF2(col("id_type")))
 
 
 to_xd
