@@ -477,7 +477,7 @@ val devuelta_format = devuelta.na.fill("").withColumn("geonse",split(col("geonse
 
 val typeMap2 = Map(
       "aaid" -> "android",
-      "ios" -> "ios",
+      "idfa" -> "ios",
       "unkown" -> "unkown") 
 val mapUDF2 = udf((dev_type: String) => typeMap2(dev_type))
 
