@@ -237,7 +237,7 @@ object OrganicSegments {
       .withColumn("segment", concat(col("prefix"), col("segment")))
       // Keep the largest date per segment, per device_id
       .withColumn("rn", row_number().over(w))
-      .filter(col("rn") == 1)
+      .filter("rn = 1")
       .select("device_id", "segment", "day")
       // Get list of segments per device
       .groupBy("device_id")
