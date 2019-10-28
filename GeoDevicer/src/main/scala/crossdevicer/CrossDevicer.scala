@@ -95,7 +95,7 @@ object CrossDevicer {
     cross_deviced_agg.explain(extended = true)
 
     // Finally, we store the result obtained.
-    val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(
+    val output_path = "/datascience/geo/crossdeviced/%s_xd".format(
       value_dictionary("poi_output_file")
     )
     cross_deviced_agg.write

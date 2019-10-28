@@ -218,7 +218,7 @@ object POICrossDevicerJson {
         .option("sep", "\t")
         .option("header", "true")
         .mode(SaveMode.Overwrite)
-        .save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
+        .save("/datascience/geo/raw_output/%s".format(value_dictionary("poi_output_file")))
   }
 
   type OptionMap = Map[Symbol, Any]
