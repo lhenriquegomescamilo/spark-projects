@@ -65,6 +65,7 @@ object pvAlert {
         val df = spark.read
         .option("basePath", path)
         .parquet(hdfs_files: _*)
+        .filter("event_type = 'pv'")
         .select("id_partner","url")
         .na.drop()
 
