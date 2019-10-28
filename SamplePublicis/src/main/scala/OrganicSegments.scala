@@ -97,6 +97,15 @@ object OrganicSegments {
 
     /// Once we have the list of days, we can load it into memory
     val dfs = days.reverse
+      .filter(
+        day =>
+          fs.exists(
+            new org.apache.hadoop.fs.Path(
+              "/datascience/data_lookalike/expansion/day=%s/country=MX/"
+                .format(day)
+            )
+          )
+      )
       .map(
         x =>
           spark.read
@@ -232,7 +241,7 @@ object OrganicSegments {
     )
 
     val userSegments = df
-      // Filter out the segments that are not part of the Publicis taxonomy
+    // Filter out the segments that are not part of the Publicis taxonomy
       .filter(col("segment").isin(taxo_general_b.value: _*))
       .withColumn("segment", concat(col("prefix"), col("segment")))
       // Keep the largest date per segment, per device_id
