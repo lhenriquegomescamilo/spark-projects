@@ -234,7 +234,7 @@ object PolygonMatcher {
       .option("sep", "\t")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/%s".format(value_dictionary("poi_output_file")))
+      .save("/datascience/geo/raw_output/%s".format(value_dictionary("poi_output_file")))
       
     }
 
@@ -283,7 +283,7 @@ object PolygonMatcher {
     // Now we remove the file if it exists already
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     val outPutPath =
-      "/datascience/geo/%s".format(value_dictionary("poi_output_file"))
+      "/datascience/geo/raw_output/%s".format(value_dictionary("poi_output_file"))
     if (fs.exists(new Path(outPutPath)))
       fs.delete(new Path(outPutPath), true)
 
