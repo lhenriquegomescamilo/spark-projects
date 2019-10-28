@@ -200,7 +200,7 @@ object pvAlert {
     // Parse the parameters
     val options = nextOption(Map(), Args.toList)
     val nDays = if (options.contains('nDays)) options('nDays) else 1
-    val since = if (options.contains('from)) options('from) else 1
+    val since = if (options.contains('since)) options('since) else 1
 
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
