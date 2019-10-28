@@ -101,7 +101,7 @@ object OrganicSegments {
         day =>
           fs.exists(
             new org.apache.hadoop.fs.Path(
-              "/datascience/data_triplets/segments/day=%s*".format(day)
+              "/datascience/data_triplets/segments/day=%".format(day)
             )
           )
       )
@@ -109,7 +109,7 @@ object OrganicSegments {
         x =>
           spark.read
             .option("basePath", "/datascience/data_triplets/segments/")
-            .parquet("/datascience/data_triplets/segments/day=%s*".format(x))
+            .parquet("/datascience/data_triplets/segments/day=%s".format(x))
             .filter("country = 'MX'")
             .withColumn("day", lit(x))
             .withColumnRenamed("feature", "segment")
