@@ -226,8 +226,9 @@ object OrganicSegments {
     val taxo_general_b = sc.broadcast(taxo_general)
 
     // This window will be used to keep the largest day per segment, per device_id
+    val columns = List("device_id", "segment")
     val w =
-      Window.partitionBy("device_id", "segment").orderBy(col("day").desc())
+      Window.partitionBy(columns.head, columns.tail: _*).orderBy(col("day").desc())
 
     // This function constructs the map that will be then stored as json
     val udfMap = udf(
