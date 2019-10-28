@@ -488,7 +488,7 @@ val to_xd = devuelta_format.join(llave,Seq("id"))
 
 
 to_xd
-.write
+.write.format("csv")    
 .option("header",true)    
 .option("delimiter","\t")    
 .mode(SaveMode.Overwrite)  
