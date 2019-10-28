@@ -444,7 +444,10 @@ val count_miss = geo
 .withColumn("day", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("day", date_format(col("day"), "YYYYMMdd"))
 
-val summary 
+val summary = count_miss.groupBy("day")
+              .agg(count("ad_id") as "total_gcba",sum("compare") as "errors")
+
+
 }
 
  /*****************************************************/
@@ -453,12 +456,6 @@ val summary
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-= count_miss.groupBy("day")
-              .agg(count("ad_id") as "total_gcba",sum("compare") as "errors")
-
-
-
 
 val typeMap = Map(
       "ABC1" -> "35360",
