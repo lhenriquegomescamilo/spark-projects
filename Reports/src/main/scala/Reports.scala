@@ -197,13 +197,13 @@ object Reports {
 
   def saveData(
       data: DataFrame,
-      fileName: String
+      subdir: String
   ) = {
 
   val dir = "/datascience/reports/gain/"
-  val format = "yyyy-MM-dd'T'HH-m"
+  val format = "yyyy-MM"
   val date_current = DateTime.now.toString(format)
-  val fileNameFinal = dir + fileName + "_" + date_current
+  val fileNameFinal = dir + subdir + "/" + date_current
 
     data
       .write
@@ -252,22 +252,22 @@ object Reports {
     val df_grouped = getGrouped(df_joint = df_joint)
 
     /** Here we store the first report */
-    val fileName1 = "base_report"
+    val subdir1 = "base_report"
 
     saveData(
       data = df_grouped,
-      fileName = fileName1
+      subdir = subdir1
     )
 
     /**  Get number of devices per partner_id per segment per country */
     val df_grouped_country = getGroupedbyCountry(df_joint = df_joint)
 
     /** Here we store the first report by country */
-    val fileName2 = "base_report_by_country"
+    val subdir2 = "base_report_by_country"
 
     saveData(
       data = df_grouped_country,
-      fileName = fileName2
+      subdir = subdir2
     )
   }    
 
@@ -288,22 +288,22 @@ object Reports {
     val df_grouped = getGrouped(df_joint = df_joint)
 
     /** Here we store the first report */
-    val fileName1 = "xd_report"
+    val subdir1 = "xd_report"
 
-    // saveData(
-    //   data = df_grouped,
-    //   fileName = fileName1
-    // )
+     saveData(
+       data = df_grouped,
+       subdir = subdir1
+     )
 
     /**  Get number of devices per partner_id per segment per country */
     val df_grouped_country = getGroupedbyCountry(df_joint = df_joint)
 
     /** Here we store the first report by country */
-    val fileName2 = "xd_report_by_country"
+    val subdir2 = "xd_report_by_country"
 
     saveData(
       data = df_grouped_country,
-      fileName = fileName2
+      subdir = subdir2
     )
   
   }    
@@ -331,8 +331,8 @@ object Reports {
 
     // Parse the parameters
     val options = nextOption(Map(), Args.toList)
-    val nDays = if (options.contains('nDays)) options('nDays) else 7
-    val since = if (options.contains('from)) options('from) else 1
+    val nDays = if (options.contains('nDays)) options('nDays) else 30
+    val since = if (options.contains('since)) options('since) else 1
 
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)

@@ -108,7 +108,7 @@ object DatasetKeywordContent {
       .drop("url")
 
     // Smart join between data GT (<url, segments>) and urls with content_keywords
-    val keywords_content = urls.join(URLkeys, Seq("composite_key"),joinType)
+    var keywords_content = urls.join(URLkeys, Seq("composite_key"),joinType)
                                 .drop("composite_key")
                                 .withColumn("content_keys", explode(col("content_keys")))
                                 .withColumn("country", lit(country))
@@ -117,6 +117,18 @@ object DatasetKeywordContent {
                                 .agg(sum("count").as("count"))
                                 .select("url","content_keys","country","count")
                                 .dropDuplicates()
+
+    // Checkpoint
+    keywords_content.write
+                    .format("parquet")
+                    .mode(SaveMode.Overwrite)
+                    .partitionBy("country")
+                    .save("/datascience/data_url_classifier/keywords_content_tmp")
+
+    keywords_content = spark.read
+                            .load("/datascience/data_url_classifier/keywords_content_tmp")
+
+    keywords_content.cache()
 
     // Extracting keywords from path and add them to the dataset
     val keywords_path = keywords_content.select("url")

@@ -54,6 +54,7 @@ object DatasetSegmentsBranded {
           spark.read
             .option("basePath", path)
             .parquet(x)
+            .select("device_id","feature","count")
       )
 
     val segments = dfs.reduce((df1, df2) => df1.union(df2))

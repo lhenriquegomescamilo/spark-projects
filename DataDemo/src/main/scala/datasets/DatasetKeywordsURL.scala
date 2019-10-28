@@ -71,8 +71,10 @@ object DatasetKeywordsURL{
         country: String,
         joinType: String,
         name: String,
-        ndays:Int
+        ndays:Int,
+        format_type:String
     ) = {
+      
       // Data from data urls
       val df = getDataUrls(spark,country,ndays)
         .filter("event_type IN ('pv', 'batch')")
@@ -124,18 +126,11 @@ object DatasetKeywordsURL{
                       .orderBy(asc("device_id"))
                       .write
                       .mode(SaveMode.Overwrite)
-                      .format("parquet")
+                      .format(format_type)
                       .save(
                         "/datascience/data_demo/name=%s/country=%s/keywords".format(name, country)
                       )
-                      
-      
-
-
-
-
-
-    }  
+    }
   
   def main(args: Array[String]) {
 
@@ -149,9 +144,11 @@ object DatasetKeywordsURL{
       .config("spark.sql.sources.partitionOverwriteMode","dynamic")
       .getOrCreate()
 
-    val segments = spark.read.load("/datascience/data_demo/name=training_AR_genero_10/country=AR/segment_triplets/")
-    getDatasetFromURLs(spark,segments,"AR","left","training_AR_genero_10",30)
-
-
+    val segments = spark.read
+                    .format("csv")
+                    .load(
+                      "/datascience/data_demo/name=expansion_MX_genero_10/country=MX/segment_triplets"
+                    ).withColumnRenamed("_c0","device_id")
+    getDatasetFromURLs(spark,segments,"MX","left","expansion_MX_genero_10",30,"csv")
   }
 }

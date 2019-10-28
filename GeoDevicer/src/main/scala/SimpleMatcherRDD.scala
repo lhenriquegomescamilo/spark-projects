@@ -29,6 +29,9 @@ import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 
+import org.datasyslab.geospark.enums.{FileDataSplitter, GridType, IndexType}
+import org.datasyslab.geospark.spatialOperator.{JoinQuery, KNNQuery, RangeQuery}
+
 
 import org.datasyslab.geospark.utils.GeoSparkConf
 
@@ -38,7 +41,7 @@ import org.datasyslab.geospark.formatMapper.GeoJsonReader
 
 
 
-object SimpleMatcher {
+object SimpleMatcherRDD {
 
 def get_safegraph_data(
       spark: SparkSession,
@@ -91,40 +94,66 @@ def match_users_to_polygons (spark: SparkSession,
 
 
 
-//Load the polygon
+//Load the polygon as RDD
 val inputLocation = polygon_inputLocation
 val allowTopologyInvalidGeometris = true // Optional
 val skipSyntaxInvalidGeometries = true // Optional
-val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
-
-//Transform the polygon to DF
-var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
-rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
-
-// Assign name and geometry columns to DataFrame
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
-
-spatialDf.createOrReplaceTempView("poligonomagico")
+val spatialRDDpolygon = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
 
+
+//Load the users
 val df_safegraph = get_safegraph_data(spark,nDays,since,country)
 df_safegraph.createOrReplaceTempView("data")
 
-var safegraphDf = spark .sql("""SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry
+var safegraphDf = spark .sql("""SELECT ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry,ad_id
               FROM data  """)
+safegraphDf.createOrReplaceTempView("data")   
 
-safegraphDf.createOrReplaceTempView("data")
 
 
-val intersection = spark.sql(
-      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
+var spatialRDDusers = Adapter.toSpatialRdd(safegraphDf, "data")
 
-intersection.explain(extended=true)
+
+
+//We validate the geometries
+spatialRDDpolygon.analyze()
+spatialRDDusers.analyze()
+
+//Acá va a empezar lo que usaba. Voy a cambiar por una manera B
+//Manera A
+/*
+//We perform the sptial join
+  //setting variables
+val joinQueryPartitioningType = GridType.KDBTREE
+val numPartitions = 20
+
+spatialRDDpolygon.spatialPartitioning(joinQueryPartitioningType,numPartitions)
+spatialRDDusers.spatialPartitioning(spatialRDDpolygon.getPartitioner)
+
+val considerBoundaryIntersection = true // Only return gemeotries fully covered by each query window in queryWindowRDD esto es muy importante, si no no joinea bien
+val usingIndex = true
+val buildOnSpatialPartitionedRDD = true // Set to TRUE only if run join query
+
+val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, usingIndex, considerBoundaryIntersection)
+// Fin the Manera A
+*/
+
+//Manera B
+//Acá persistimos en memoria el poligono 
+spatialRDDusers.spatialPartitioning(GridType.RTREE,200);
+spatialRDDusers.buildIndex(IndexType.RTREE, true);
+spatialRDDusers.indexedRDD.persist(StorageLevel.MEMORY_ONLY);
+spatialRDDusers.spatialPartitionedRDD.persist(StorageLevel.MEMORY_ONLY)
+spatialRDDpolygon.spatialPartitioning(spatialRDDusers.getPartitioner)
+val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, true, true);
+
+var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
 
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
+intersection.dropDuplicates()//.groupBy("name", "ad_id").agg(count("name") as "frequency")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
@@ -142,6 +171,8 @@ intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
   /*****************************************************/
   def main(args: Array[String]) {
    
+
+  
    val spark = SparkSession.builder()
 .config("spark.sql.files.ignoreCorruptFiles", "true")
  .config("spark.serializer", classOf[KryoSerializer].getName)
@@ -153,17 +184,19 @@ intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
      
 GeoSparkSQLRegistrator.registerAll(spark)
 
+    Logger.getRootLogger.setLevel(Level.WARN)
+
 // Initialize the variables
 val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 //Logger.getRootLogger.setLevel(Level.WARN)
-
+//"/datascience/geo/POIs/natural_geodevicer.json",
 //"/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
 //
 match_users_to_polygons(spark,
-  "/datascience/geo/POIs/barrios.geojson",
-  "10",
-  "3",
+  "/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
+  "63",
+  "1",
   "argentina")
 /*spark: SparkSession,
       nDays: String,

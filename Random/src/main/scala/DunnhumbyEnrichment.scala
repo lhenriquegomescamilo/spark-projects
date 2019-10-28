@@ -83,30 +83,80 @@ object DunnhumbyEnrichment {
     df
   }
 
+  /**
+    * This method returns a DataFrame with the data from the audiences data pipeline, for the interval
+    * of days specified. Basically, this method loads the given path as a base path, then it
+    * also loads the every DataFrame for the days specified, and merges them as a single
+    * DataFrame that will be returned.
+    *
+    * @param spark: Spark Session that will be used to load the data from HDFS.
+    * @param nDays: number of days that will be read.
+    * @param since: number of days ago from where the data is going to be read.
+    *
+    * @return a DataFrame with the information coming from the data read.
+  **/
+  def getDataAudiences(
+      spark: SparkSession,
+      nDays: Int = 30,
+      since: Int = 1
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences_streaming/"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/hour=%s*".format(day))
+    // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    fs.close()
+
+    df
+  }
+
   def getEnrichment(
       spark: SparkSession,
       piiDateFrom: String,
       campaingId: String,
       crm_segments: String = "",
-      countries: String = ""
+      countries: String = "",
+      dateRange: String = ""
   ) {
-    val data = getDataIdPartners(spark, List("831"), 40, 1, "streaming")
-    val crm_files = if (crm_segments.size > 0) crm_segments
-      .split(",")
-      .map("array_contains(all_segments, %s)".format(_))
-      .mkString(" OR ") else ""
+    // val data =
+      // if (dateRange.size > 0)
+      //   getDataIdPartners(spark, List("831"), 40, 1, "streaming")
+      //     .filter(dateRange)
+      // else getDataIdPartners(spark, List("831"), 40, 1, "streaming")
+    val data = getDataAudiences(spark, 12, 28).filter(dateRange)
+    val crm_files =
+      if (crm_segments.size > 0)
+        crm_segments
+          .split(",")
+          .map("array_contains(all_segments, %s)".format(_))
+          .mkString(" OR ")
+      else ""
     val segments = (560 to 576)
       .map("array_contains(all_segments, %s)".format(_))
       .mkString(" OR ")
 
-    val query = if (crm_files.size > 0) "array_contains(segments, %s) AND (%s) AND (%s)".format(
-      campaingId,
-      crm_files,
-      segments
-    ) else "array_contains(segments, %s) AND (%s)".format(
-      campaingId,
-      segments
-    )
+    val query =
+      if (crm_files.size > 0)
+        "array_contains(segments, %s) AND (%s) AND (%s)".format(
+          campaingId,
+          crm_files,
+          segments
+        )
+      else
+        "array_contains(segments, %s) AND (%s)".format(
+          campaingId,
+          segments
+        )
     val select =
       "time,all_segments,campaign_id,device_id,placement_id,advertiser_id"
         .split(",")
@@ -217,7 +267,8 @@ object DunnhumbyEnrichment {
       "20190916",
       "144633",
       "",
-      "'BR'"
+      "'BR'",
+      "country = 'BR' AND datetime >= '2019-09-16 00:00:00' AND datetime <= '2019-10-16 00:00:00'"
     )
   }
 }

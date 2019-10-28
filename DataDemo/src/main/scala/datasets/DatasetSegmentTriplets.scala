@@ -31,7 +31,8 @@ object DatasetSegmentTriplets{
       country: String,
       joinType: String,
       name: String,
-      ndays:Int = 30
+      ndays:Int = 30,
+      format_type:String
   ) = {
     
     // List of segments that will be considered. The rest of the records are going to be filtered out.
@@ -89,7 +90,7 @@ object DatasetSegmentTriplets{
                       .select("device_id","feature")
                       .orderBy(asc("device_id"))
       join.write
-          .format("parquet")
+          .format(format_type)
           .mode(SaveMode.Overwrite)
           .save(
             "/datascience/data_demo/name=%s/country=%s/segment_triplets"

@@ -60,52 +60,62 @@ object GenerateDatasetsUrls {
                                                     name = "dataset_segments_branded_expansion")
   }
 
-  def generate_training_datasets(spark:SparkSession,ndays:Int,since:Int,country:String,data_urls: DataFrame,ndays_dataset:Int){
-    // Defining segments for GT
-    val segments = List(26,   32,   36,   59,   61,   82,   85,   92,  104,  118,  129,
-                        131,  141,  144,  145,  147,  149,  150,  152,  154,  155,  158,
-                        160,  165,  166,  177,  178,  210,  213,  218,  224,  225,  226,
-                        230,  245,  247,  250,  264,  265,  270,  275,  276,  302,  305,
-                        311,  313,  314,  315,  316,  317,  318,  322,  323,  325,  326,
-                        2635, 2636, 2660, 2719, 2743, 3010, 3011, 3012, 3013, 3014, 3015,
-                        3016, 3017, 3018, 3019, 3020, 3021, 3022, 3055, 3076, 3077, 3086,
-                        3087, 3913, 4097)     
-
-    // Filtering data from url to get GT segments from ndays
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(ndays).toString(format).toInt
-
-    // Get GT from taxo standard
-    val gt_taxo_standard = data_urls.withColumn("date",date_format(col("time"), format))
-                                    .withColumn("date",col("date").cast(IntegerType))
-                                    .filter("date > %s".format(start))
-                                    .select("url", "segments")
-                                    .withColumn("segments", explode(col("segments")))
-                                    .filter(
-                                      col("segments")
-                                        .isin(segments: _*)
-                                    ).distinct()
+  def generate_training_datasets(spark:SparkSession,ndays:Int,since:Int,country:String,data_urls: DataFrame,ndays_dataset:Int, gt_calculated:String){
     
-    // Get GT from new taxo
-    UrlUtils.get_gt_new_taxo(spark, ndays = ndays, since = since, country = country)
-    val gt_new_taxo = spark.read
-                            .load("/datascience/data_url_classifier/gt_new_taxo_queries")
-                            .select("url","segments")
+    var gtDF : DataFrame  = null
 
-    // Union of new taxo and standard dataframes
-    var gtDF = gt_taxo_standard.union(gt_new_taxo)
-    gtDF.cache()
+    if (Set("1", "true", "True").contains(gt_calculated)) {
+      // Defining segments for GT
+      val segments = List(26,   32,   36,   59,   61,   82,   85,   92,  104,  118,  129,
+                          131,  141,  144,  145,  147,  149,  150,  152,  154,  155,  158,
+                          160,  165,  166,  177,  178,  210,  213,  218,  224,  225,  226,
+                          230,  245,  247,  250,  264,  265,  270,  275,  276,  302,  305,
+                          311,  313,  314,  315,  316,  317,  318,  322,  323,  325,  326,
+                          2635, 2636, 2660, 2719, 2743, 3010, 3011, 3012, 3013, 3014, 3015,
+                          3016, 3017, 3018, 3019, 3020, 3021, 3022, 3055, 3076, 3077, 3086,
+                          3087, 3913, 4097)     
 
-    // // Saving GT dataframe grouped by url and list of segments
-    gtDF.groupBy("url")
-        .agg(collect_list(col("segments")).as("segments"))
-        .withColumn("segments", concat_ws(";", col("segments")))
-        .withColumn("country",lit(country))
-        .write
-        .format("parquet")
-        .mode(SaveMode.Overwrite)
-        .partitionBy("country")
-        .save("/datascience/data_url_classifier/gt")
+      // Filtering data from url to get GT segments from ndays
+      val format = "yyyyMMdd"
+      val start = DateTime.now.minusDays(ndays).toString(format).toInt
+
+      // Get GT from taxo standard
+      val gt_taxo_standard = data_urls.withColumn("date",date_format(col("time"), format))
+                                      .withColumn("date",col("date").cast(IntegerType))
+                                      .filter("date > %s".format(start))
+                                      .select("url", "segments")
+                                      .withColumn("segments", explode(col("segments")))
+                                      .filter(
+                                        col("segments")
+                                          .isin(segments: _*)
+                                      ).distinct()
+      
+      // Get GT from new taxo
+      UrlUtils.get_gt_new_taxo(spark, ndays = ndays, since = since, country = country)
+      val gt_new_taxo = spark.read
+                              .load("/datascience/data_url_classifier/gt_new_taxo_queries")
+                              .select("url","segments")
+
+      // Union of new taxo and standard dataframes
+      gtDF = gt_taxo_standard.union(gt_new_taxo)
+      gtDF.cache()
+
+      // // Saving GT dataframe grouped by url and list of segments
+      gtDF.groupBy("url")
+          .agg(collect_list(col("segments")).as("segments"))
+          .withColumn("segments", concat_ws(";", col("segments")))
+          .withColumn("country",lit(country))
+          .write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .partitionBy("country")
+          .save("/datascience/data_url_classifier/gt")
+      
+    } else {
+      gtDF = spark.read
+                  .load("/datascience/data_url_classifier/gt/country=%s".format(country))
+
+    }
 
     gtDF = broadcast(gtDF.select("url"))
 
@@ -189,9 +199,11 @@ type OptionMap = Map[Symbol, String]
     
     val data_urls = UrlUtils.get_data_urls(spark, ndays_dataset, since, country)
 
+    val gt_calculated = "0"
+
     // Training datasets
     if (Set("1", "true", "True").contains(train)) {
-      generate_training_datasets(spark,ndays,since,country,data_urls,ndays_dataset)
+      generate_training_datasets(spark,ndays,since,country,data_urls,ndays_dataset,gt_calculated)
     }
 
     // Expansion datasets
