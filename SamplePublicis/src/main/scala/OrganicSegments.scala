@@ -199,7 +199,7 @@ object OrganicSegments {
       getSegmentsData(spark, ndays, from).withColumn("prefix", lit(""))
     val modelledData =
       getModelledData(spark, ndays, from).withColumn("prefix", lit("m_"))
-    val df = organicData.append(modelledData)
+    val df = organicData.unionAll(modelledData)
 
     // Now we load and format the taxonomy
     val taxo_general = spark.read
@@ -214,11 +214,12 @@ object OrganicSegments {
       .toArray
 
     // Given the fact that this is a very small list, we can broadcast it
+    val sc = spark.sparkContext
     val taxo_general_b = sc.broadcast(taxo_general)
 
     // This window will be used to keep the largest day per segment, per device_id
     val w =
-      Window().partitionBy("device_id", "segment").orderBy(col("day").desc())
+      Window.partitionBy("device_id", "segment").orderBy(col("day").desc())
 
     // This function constructs the map that will be then stored as json
     val udfMap = udf(
