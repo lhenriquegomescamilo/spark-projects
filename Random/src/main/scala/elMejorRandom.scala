@@ -454,6 +454,7 @@ val summary = count_miss.groupBy("day")
               .agg(count("ad_id") as "total_gcba",sum("compare") as "errors")
 
 summary
+.write
 .option("header",true)    
 .option("delimiter","\t")    
 .mode(SaveMode.Overwrite)  
