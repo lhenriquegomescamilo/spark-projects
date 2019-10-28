@@ -439,20 +439,27 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
 //Geo Data
-val pois = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/geo_processed/points_10d_argentina_22-10-2019-13h_aggregated").select("name","device_id","frequency").groupBy("device_id","name").agg(sum("frequency") as "frequency").select("device_id","name","frequency").withColumn("name",lower(col("name"))).groupBy("device_id","name").agg(sum("frequency") as "frequency")
-
-// Resultados de poligonos
-
-val natural = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/geo_processed/natural_geodevicer_10_argentina_sjoin_polygon").withColumnRenamed("ad_id","device_id").select("device_id","name","frequency")
 
 
-val buildings = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/geo_processed/buildings_3_argentina_sjoin_polygon").withColumnRenamed("ad_id","device_id").select("device_id","name","frequency")
+val geo = spark.read.format("parquet").option("sep","\t").option("header",true)
+.load("/datascience/geo/safegraph/day=*/country=argentina/").filter("geo_hash == 'gcba'")
 
-//Juntamos todo
-val geo_all = List(pois,natural,buildings).reduce(_.unionByName (_))
+val count_miss = geo
+.withColumn("compare",when(col("latitude")===col("longitude"),1)
+  .otherwise(0))
+.withColumn("day", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("day", date_format(col("day"), "YYYYMMdd"))
 
-//Guardamos
-geo_all.groupBy("device_id").pivot("name").agg(first("frequency")).na.fill(0).write.format("csv").option("header",true).option("delimiter","\t").mode(SaveMode.Overwrite).save("/datascience/geo/geo_processed/points_polygons_matrix_geo_job")
+val summary = count_miss.groupBy("day")
+              .agg(count("ad_id") as "total_gcba",sum("compare") as "errors")
+
+summary
+.write
+.option("header",true)    
+.option("delimiter","\t")    
+.mode(SaveMode.Overwrite)  
+.save("/datascience/misc/count_gcba_errors_in_pipeline")
+
 
   }
 }
