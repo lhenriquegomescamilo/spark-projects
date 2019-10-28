@@ -128,7 +128,7 @@ object pvAlert {
 
     val dir = "/datascience/reports/alerts/pv/"
     val format = "yyyy-MM-dd"
-    val date_current = DateTime.now.minusDays(since)
+    val date_current = DateTime.now.minusDays(since).toString(format)
     val fileNameFinal = dir + date_current
 
         data
