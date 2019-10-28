@@ -101,7 +101,7 @@ object OrganicSegments {
         day =>
           fs.exists(
             new org.apache.hadoop.fs.Path(
-              "/datascience/data_triplets/segments/day=%".format(day)
+              "/datascience/data_triplets/segments/day=%s".format(day)
             )
           )
       )
