@@ -144,7 +144,7 @@ object GenerateMonthlyDataset{
     country = "AR"
     path_gt = "/datascience/devicer/processed/AR_edad_%s_grouped".format(current_month)
     println("Generating Training AR Edad ...")
-    getTrainingData(spark, path_gt, country, training_name, ndays)
+    //getTrainingData(spark, path_gt, country, training_name, ndays)
     println("Generating Expansion AR Edad ...")
     getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
@@ -154,9 +154,9 @@ object GenerateMonthlyDataset{
     country = "MX"
     path_gt = "/datascience/devicer/processed/MX_genero_%s_grouped".format(current_month)
     println("Generating Training MX Genero ...")
-    getTrainingData(spark, path_gt, country, training_name, ndays)
+    //getTrainingData(spark, path_gt, country, training_name, ndays)
     println("Generating Expansion MX Genero ...")
-    getExpansionData(spark, path_gt, country, expansion_name, ndays)
+    //getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // MX EDAD
     // training_name = "training_MX_edad_%s".format(current_month)
