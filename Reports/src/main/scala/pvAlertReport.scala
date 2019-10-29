@@ -42,10 +42,12 @@ object pvAlertReport {
         median_thr: Integer
     ): DataFrame = {
 
-        import sqlContext.implicits._
-
         val conf = spark.sparkContext.hadoopConfiguration
         val fs = FileSystem.get(conf)
+        
+        val sc = spark.sparkContext
+        val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+        import sqlContext.implicits._
 
         // Get the days to be loaded.
         val from = since + 1    //+1 because it loads nDays before yesterday
