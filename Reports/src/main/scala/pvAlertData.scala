@@ -15,7 +15,7 @@ import org.apache.hadoop.conf.Configuration
 /**
   * The idea of this script is to get data for pv ingestion alert. 
   */
-object pvAlert {
+object pvAlertData {
 
   /**
     *
