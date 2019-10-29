@@ -326,8 +326,9 @@ object OrganicSegments {
 
     /// Parseo de parametros
     val ndays = if (args.length > 0) args(0).toInt else 30
+    val from = if (args.length > 1) args(1).toInt else 1
 
-    generate_organic(spark, ndays, "full", ndays)
+    generate_organic(spark, ndays, "full", from)
 
   }
 }
