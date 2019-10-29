@@ -104,7 +104,7 @@ object UpdateSafeGraphData {
       gcba_df
         .withColumn("Lat/Lon", split(col("Lat/Lon"), ","))
         .withColumn("latitude", col("Lat/Lon").getItem(0).cast("double"))
-        .withColumn("longitude", col("Lat/Lon").getItem(0).cast("double"))
+        .withColumn("longitude", col("Lat/Lon").getItem(1).cast("double"))
         .withColumn("country", lit("argentina"))
         .withColumn("id_type", lit("maid"))
         .withColumn("geo_hash", lit("gcba"))
