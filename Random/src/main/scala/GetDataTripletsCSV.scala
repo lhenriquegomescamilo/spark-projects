@@ -16,14 +16,13 @@ object GetDataTripletsCSV {
       spark: SparkSession,
       country: String,
       nDays: Int = -1,
-      path: String = "/datascience/data_triplets/segments/",
       from: Int = 1
   ): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
-    val df = if (nDays > 0) {
+    val df: DataFrame = if (nDays > 0) {
       // read files from dates
       val format = "yyyyMMdd"
       val endDate = DateTime.now.minusDays(from)
@@ -63,6 +62,8 @@ object GetDataTripletsCSV {
     3589,3590,3591,3592,3593,3594,3595,3596,3597,3598,3599,3600,3730,3731,3732,3733,3779,3782,3843,3844,3913,3914,3915,4097,
     5025,5310,5311,35360,35361,35362,35363"""
         .replace("\n", "")
+        .replace("\t", "")
+        .replace(" ", "")
         .split(",")
         .map(_.toInt)
         .toSeq
@@ -70,7 +71,7 @@ object GetDataTripletsCSV {
     val countries = List("MX", "AR", "CL", "BR")
 
     for (country <- countries) {
-      val triplets = getDataTriplets(spark, country, nDays, from = from)
+      val triplets = getDataTriplets(spark, country, nDays, from)
       triplets
         .filter(col("feature").isin(segments: _*))
         .select("device_id", "feature")
