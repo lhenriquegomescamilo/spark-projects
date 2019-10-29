@@ -6,7 +6,7 @@ import org.joda.time.DateTime
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.SparkSession
 
-object FromEventqueuePIIMonth {
+object GetPiiMonth {
 
   /**
     * Given a particular day, this method downloads the data from the eventqueue to build a PII table. Basically, it takes the following columns:
@@ -55,8 +55,8 @@ object FromEventqueuePIIMonth {
     val data = spark.read
         .format("parquet")
         .load("/datascience/pii_matching/pii_tuples/")
-        //.filter("day >= 20190919")
         .filter("country in('AR', 'CL', 'PE')")
+
     // Then we separate the data acording to the PII type
     var mails = data
       .filter("ml_sh2 is not null")
@@ -83,40 +83,12 @@ object FromEventqueuePIIMonth {
         .unionAll(dnis)
         .unionAll(mobs)
         .orderBy("country")
-    // We group the data and get the list of pii for each device_id with the correspondant id_partner and timestamp in a tuple.
-    //var grouped = total
-    //  .groupBy("device_id", "country", "pii", "pii_type")
-    //  .agg(
-    //    collect_list("id_partner").as("id_partner"),
-    //    collect_list("day").as("days"),
-    //    collect_list("device_type").as("device_type")
-    //  )
-    // Then we sort the tuples and we keep the one with the smallest timestamp.
-    //val udfSort = udf(
-    //  (id_partner: Seq[String], days: Seq[String]) => (id_partner zip days).sortBy(_._2).toList(0)
-    //)
-    //val df_final = grouped
-    //  .withColumn("result", udfSort(col("id_partner"), col("days")))
-    //  .withColumn("id_partner", col("result").getItem("_1"))
-    //  .withColumn("days", col("result").getItem("_2"))
-    //  .select("device_id", "country", "pii", "pii_type", "id_partner", "days")
+        
     total.createOrReplaceTempView("raw_pii")
     val fin = spark.table("raw_pii").cache
-    // We save the generated file
-    //total.write
-    //  .format("parquet")
-    //  .partitionBy("country")
-    //  .mode(SaveMode.Overwrite)
-    // .save("/datascience/pii_matching/temp/")
-
-    // Load files again 
-    //val fls = spark.read
-    //  .format("parquet")
-    //  .load("/datascience/pii_matching/temp/")
     
     val dt = DateTime.now.toString("yyyyMMdd")
 
-    //fls.repartition(1).write
     fin.repartition(1).write
       .format("csv")
       .partitionBy("country")
@@ -151,15 +123,9 @@ object FromEventqueuePIIMonth {
         .appName("Get Pii from Eventqueue")
         .getOrCreate()
 
-    // Here we obtain the list of days to be downloaded
-    // val nDays = 1
-    // val from = 1
-    val format = "yyyy/MM/dd"
+        val format = "yyyy/MM/dd"
     val end = DateTime.now.minusDays(from)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-
-    // Now we effectively download the data day by day
-    //days.map(day => getPII(spark, day))
 
     procesPII(spark)
   }
