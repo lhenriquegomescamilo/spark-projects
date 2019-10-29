@@ -65,6 +65,7 @@ object pvAlert {
         val df = spark.read
         .option("basePath", path)
         .parquet(hdfs_files: _*)
+        .filter("event_type = 'pv'")
         .select("id_partner","url")
         .na.drop()
 
@@ -128,7 +129,7 @@ object pvAlert {
 
     val dir = "/datascience/reports/alerts/pv/"
     val format = "yyyy-MM-dd"
-    val date_current = DateTime.now.minusDays(since)
+    val date_current = DateTime.now.minusDays(since).toString(format)
     val fileNameFinal = dir + date_current
 
         data
@@ -200,7 +201,7 @@ object pvAlert {
     // Parse the parameters
     val options = nextOption(Map(), Args.toList)
     val nDays = if (options.contains('nDays)) options('nDays) else 1
-    val since = if (options.contains('from)) options('from) else 1
+    val since = if (options.contains('since)) options('since) else 1
 
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
