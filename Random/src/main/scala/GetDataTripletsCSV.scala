@@ -94,7 +94,7 @@ object GetDataTripletsCSV {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataLookAlike(spark = spark)
+    getDataTriplets(spark, 30, 2)
 
   }
 }
