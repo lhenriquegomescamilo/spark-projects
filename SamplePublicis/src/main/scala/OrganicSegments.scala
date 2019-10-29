@@ -117,7 +117,20 @@ object OrganicSegments {
             .na
             .drop()
       )
-    val df = dfs.reduce((df1, df2) => df1.union(df2))
+    val df = if (dfs.length > 0) {
+      dfs.reduce((df1, df2) => df1.union(df2))
+    } else {
+      spark.createDataFrame(
+        spark.sparkContext.parallelize(Seq(Row("-", "-", 0))),
+        StructType(
+          Array(
+            StructField("device_id", StringType, true),
+            StructField("day", StringType, true),
+            StructField("segment", StringType, true)
+          )
+        )
+      )
+    }
 
     df
   }
@@ -182,7 +195,20 @@ object OrganicSegments {
             .na
             .drop()
       )
-    val df = dfs.reduce((df1, df2) => df1.union(df2))
+    val df = if (dfs.length > 0) {
+      dfs.reduce((df1, df2) => df1.union(df2))
+    } else {
+      spark.createDataFrame(
+        spark.sparkContext.parallelize(Seq(Row("-", "-", 0))),
+        StructType(
+          Array(
+            StructField("device_id", StringType, true),
+            StructField("day", StringType, true),
+            StructField("segment", StringType, true)
+          )
+        )
+      )
+    }
 
     val mapping_xp = spark.read
       .format("csv")
@@ -228,7 +254,9 @@ object OrganicSegments {
     // This window will be used to keep the largest day per segment, per device_id
     val columns = List("device_id", "segment")
     val w =
-      Window.partitionBy(columns.head, columns.tail: _*).orderBy(col("day").desc())
+      Window
+        .partitionBy(columns.head, columns.tail: _*)
+        .orderBy(col("day").desc())
 
     // This function constructs the map that will be then stored as json
     val udfMap = udf(
