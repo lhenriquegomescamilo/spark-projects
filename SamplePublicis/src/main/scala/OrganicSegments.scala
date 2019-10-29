@@ -270,8 +270,9 @@ object OrganicSegments {
     )
 
     val userSegments = df
-    // Filter out the segments that are not part of the Publicis taxonomy
+      // Filter out the segments that are not part of the Publicis taxonomy
       .filter(col("segment").isin(taxo_general_b.value: _*))
+      .withColumn("segment", col("segment").cast("string"))
       .withColumn("segment", concat(col("prefix"), col("segment")))
       // Keep the largest date per segment, per device_id
       .withColumn("rn", row_number().over(w))
