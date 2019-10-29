@@ -50,7 +50,7 @@ object pvAlertReport {
         val format = "yyyy-MM-dd"
         val end = DateTime.now.minusDays(from)
         val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-        val path = "/datascience/reports/alerts/pv"
+        val path = "/datascience/reports/alerts/pv/data"
 
         // Now we obtain the list of hdfs folders to be read
         val hdfs_files = days.map(day => path + "/%s/".format(day))
@@ -93,7 +93,7 @@ object pvAlertReport {
         val format = "yyyy-MM-dd"
         val end = DateTime.now.minusDays(since)
         val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-        val path = "/datascience/reports/alerts/pv"
+        val path = "/datascience/reports/alerts/pv/data"
 
         // Now we obtain the list of hdfs folders to be read
         val hdfs_files = days.map(day => path + "/%s/".format(day))
@@ -150,7 +150,7 @@ object pvAlertReport {
       since: Integer
   ) = {
 
-    val dir = "/datascience/reports/alerts/pv_alerted/"
+    val dir = "/datascience/reports/alerts/pv/alerted/"
     val format = "yyyy-MM-dd"
     val date_current = DateTime.now.minusDays(since).toString(format)
     val fileNameFinal = dir + date_current
