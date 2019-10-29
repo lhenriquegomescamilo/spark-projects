@@ -127,7 +127,7 @@ object OrganicSegments {
           Array(
             StructField("device_id", StringType, true),
             StructField("day", StringType, true),
-            StructField("segment", StringType, true)
+            StructField("segment", IntegerType, true)
           )
         )
       )
@@ -205,7 +205,7 @@ object OrganicSegments {
           Array(
             StructField("device_id", StringType, true),
             StructField("day", StringType, true),
-            StructField("segment", StringType, true)
+            StructField("segment", IntegerType, true)
           )
         )
       )
