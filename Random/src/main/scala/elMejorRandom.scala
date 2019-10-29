@@ -431,14 +431,8 @@ theNSE_old.groupBy("feature").agg(countDistinct("device_id") as "unique_devices"
 .save("/datascience/misc/equifax_count_AR_old")
 }
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-//Geo Data
+def metrics_geo_gcba ( spark: SparkSession) {
+  //Geo Data
 
 
 val geo = spark.read.format("parquet").option("sep","\t").option("header",true)
@@ -453,12 +447,52 @@ val count_miss = geo
 val summary = count_miss.groupBy("day")
               .agg(count("ad_id") as "total_gcba",sum("compare") as "errors")
 
-summary
-.write
+
+}
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+val typeMap = Map(
+      "ABC1" -> "35360",
+      "C2" -> "35361",
+      "C3" -> "35362",
+      "D1" -> "35362",
+      "D2" -> "35362",
+      "E" -> "35363") 
+val mapUDF = udf((dev_type: String) => typeMap(dev_type))
+
+val llave = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/Equifax/argentina_365d_home_1-10-2019-16h_hashed_key")
+val enviado = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/Equifax/argentina_365d_home_1-10-2019-16h")
+val devuelta = spark.read.format("csv").option("header",true).load("/datascience/geo/Equifax/cookies_geo_base_201910_enriquecidas.csv").withColumn("geonse",mapUDF(col("geonse")))
+
+
+def addValue = udf( (firstcolumn: Seq[String],secondcolumn: Seq[String])=> firstcolumn ++ secondcolumn)
+
+val devuelta_format = devuelta.na.fill("").withColumn("geonse",split(col("geonse")," ")).withColumn("audience",split(col("id_aud"),";")).withColumn("audience",addValue(col("geonse"),col("audience"))).withColumn("audience",concat_ws(",",col("audience"))).select("id","audience")
+
+val typeMap2 = Map(
+      "aaid" -> "android",
+      "idfa" -> "ios",
+      "unknown" -> "unknown") 
+val mapUDF2 = udf((dev_type: String) => typeMap2(dev_type))
+
+val to_xd = devuelta_format.join(llave,Seq("id"))
+.join(enviado.select("ad_id","id_type"),Seq("ad_id"))
+.drop("id")
+.select("id_type","ad_id","audience").withColumn("id_type",mapUDF2(col("id_type")))
+
+
+to_xd
+.write.format("csv")    
 .option("header",true)    
 .option("delimiter","\t")    
 .mode(SaveMode.Overwrite)  
-.save("/datascience/misc/count_gcba_errors_in_pipeline")
+.save("/datascience/geo/Equifax/argentina_365d_home_1-10-2019-16h_to_xd")
 
 
   }
