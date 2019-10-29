@@ -18,7 +18,7 @@ object GetDataTripletsCSV {
       nDays: Int = -1,
       path: String = "/datascience/data_triplets/segments/",
       from: Int = 1
-  ) = {
+  ): DataFrame = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
