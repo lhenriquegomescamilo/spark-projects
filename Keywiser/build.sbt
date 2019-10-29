@@ -1,4 +1,4 @@
-name := "Content Keywords"
+name := "Keywiser"
 
 version := "1.0"
 
