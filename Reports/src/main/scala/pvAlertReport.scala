@@ -30,7 +30,7 @@ object pvAlertReport {
     * @param spark: Spark Session that will be used to load the data from HDFS.
     * @param nDays: number of days that will be read.
     * @param since: number of days ago from where the data is going to be read.  
-    * @param mean_thr: threshold to consider a domain relevant for a partner. Default 1000.  
+    * @param median_thr: threshold to consider a domain relevant for a partner. Default 1000.  
     *
     * @return a DataFrame with the information coming from the read data. Columns: "id_partner","domain","average"
    **/
@@ -39,7 +39,7 @@ object pvAlertReport {
         spark: SparkSession,
         nDays: Integer,
         since: Integer,
-        mean_thr: Integer
+        median_thr: Integer
     ): DataFrame = {
 
         val conf = spark.sparkContext.hadoopConfiguration
@@ -60,11 +60,11 @@ object pvAlertReport {
             .option("basePath", path)
             .parquet(hdfs_files: _*)
             .groupBy("id_partner", "url_domain")
-            .agg(sum(col("count")) as "average")
-            .withColumn("average", col("average")/nDays)
-            .filter(col("average") >= lit(mean_thr))
+        df.createOrReplaceTempView("df")
+        val df_median = spark.sql("select url_domain,id_partner, percentile_approx(count, 0.5) as median from df group by url_domain,id_partner")
+                        .filter(col("median") >= lit(median_thr))
 
-        df
+        df_median
     }
 
     /**
@@ -115,7 +115,7 @@ object pvAlertReport {
    /**
     * This method merges data from current day to alert (asked with since) with data obtained from previous nDays.
     *
-    * @param df_mean: DataFrame with average count for domains for id_partner, of nDays.
+    * @param df_median: DataFrame with median count for domains for id_partner, of nDays.
     * @param df_current: DataFrame with count from current day.
     *
     * @return a DataFrame with alerted partners. Columns "url_domain", "id_partner", "count","average".
@@ -123,10 +123,10 @@ object pvAlertReport {
 
     def getJoint(
         df_current: DataFrame,
-        df_mean: DataFrame        
+        df_median: DataFrame        
     ): DataFrame = {
    
-        val df = df_current.join(df_mean,Seq("id_partner","url_domain"),"left")
+        val df = df_current.join(df_median,Seq("id_partner","url_domain"),"left")
                  .na.drop()
                  
             df
@@ -171,7 +171,7 @@ object pvAlertReport {
     * Given ndays and since, this file gives alerted domains for any relevant partner.
     *
     * @param spark: Spark session that will be used to read the data from HDFS.
-    * @param ndays: number of days to query and calculate mean of counts for each domain for each partner.
+    * @param ndays: number of days to query and calculate median of counts for each domain for each partner.
     * @param since: number of days since to query. (ndays will be "since + 1" days)
     *
     * As a result this method stores the file in /datascience/reports/alerts/pv_alerted
@@ -181,16 +181,16 @@ object pvAlertReport {
       spark: SparkSession,
       nDays: Integer,
       since: Integer,
-      mean_thr: Integer,
+      median_thr: Integer,
       low_thr: Integer
       ) = {
        
     /** Read from "pvData_pipeline" database */
-    val df_mean = getDataPV_average(
+    val df_median = getDataPV_average(
         spark = spark,
         nDays = nDays,
         since = since,
-        mean_thr = mean_thr)
+        median_thr = median_thr)
 
     val df_current = getDataPV_current(
         spark = spark,
@@ -200,7 +200,7 @@ object pvAlertReport {
     /** Transform df to its final form */
     val df = getJoint(
       df_current = df_current,
-      df_mean= df_mean)  
+      df_median= df_median)  
 
     /** Store df*/
     saveData(
@@ -222,8 +222,8 @@ object pvAlertReport {
         nextOption(map ++ Map('nDays -> value.toInt), tail)
       case "--since" :: value :: tail =>
         nextOption(map ++ Map('since -> value.toInt), tail)
-      case "--mean_thr" :: value :: tail =>
-        nextOption(map ++ Map('mean_thr -> value.toInt), tail)
+      case "--median_thr" :: value :: tail =>
+        nextOption(map ++ Map('median_thr -> value.toInt), tail)
       case "--low_thr" :: value :: tail =>
         nextOption(map ++ Map('low_thr -> value.toInt), tail)    
     }
@@ -236,9 +236,9 @@ object pvAlertReport {
 
     // Parse the parameters
     val options = nextOption(Map(), Args.toList)
-    val nDays = if (options.contains('nDays)) options('nDays) else 90
+    val nDays = if (options.contains('nDays)) options('nDays) else 30
     val since = if (options.contains('since)) options('since) else 1
-    val mean_thr = if (options.contains('mean_thr)) options('mean_thr) else 1000
+    val median_thr = if (options.contains('median_thr)) options('median_thr) else 1500
     val low_thr = if (options.contains('low_thr)) options('low_thr) else 800
 
     // Setting logger config
@@ -254,7 +254,7 @@ object pvAlertReport {
        spark = spark,
        nDays = nDays,
        since = since,
-       mean_thr = mean_thr,
+       median_thr = median_thr,
        low_thr = low_thr)    
   }
 }
