@@ -44,7 +44,7 @@ object pvAlertReport {
 
         val conf = spark.sparkContext.hadoopConfiguration
         val fs = FileSystem.get(conf)
-        
+
         val sc = spark.sparkContext
         val sqlContext = new org.apache.spark.sql.SQLContext(sc)
         import sqlContext.implicits._
@@ -63,7 +63,7 @@ object pvAlertReport {
         val df = spark.read
             .option("basePath", path)
             .parquet(hdfs_files: _*)
-            .groupBy("id_partner", "url_domain")
+            
         df.createOrReplaceTempView("df")
         val df_median = spark.sql("select url_domain,id_partner, percentile_approx(count, 0.5) as median from df group by url_domain,id_partner")
                         .filter(col("median") >= lit(median_thr))
