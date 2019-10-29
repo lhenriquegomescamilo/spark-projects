@@ -4,7 +4,7 @@ source /home/rely/.bashrc
 
 /home/rely/spark/bin/spark-submit\
   --master yarn\
-  --class "main.scala.FromEventqueuePII"\
+  --class "main.scala.GetPii"\
   --deploy-mode cluster\
   --driver-memory 8g\
   --executor-memory 9g\
