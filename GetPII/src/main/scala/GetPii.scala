@@ -6,7 +6,7 @@ import org.joda.time.DateTime
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs._
 
-object FromEventqueuePII {
+object GetPii {
 
   /**
     * Given a particular day, this method downloads the data from the eventqueue to build a PII table. Basically, it takes the following columns:
