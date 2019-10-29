@@ -74,7 +74,7 @@ object GetDataTripletsCSV {
     for (country <- countries) {
       val triplets = getDataTriplets(spark, country, nDays, from)
       triplets
-        .filter(col("feature").isin(segments: _*))
+        .filter(col("segment").isin(segments: _*))
         .select("device_id", "segment")
         .distinct()
         .write
