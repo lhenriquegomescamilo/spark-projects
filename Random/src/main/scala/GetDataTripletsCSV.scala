@@ -21,6 +21,7 @@ object GetDataTripletsCSV {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
+    val path = "/datascience/data_triplets/segments/"
 
     val df: DataFrame = if (nDays > 0) {
       // read files from dates
@@ -49,7 +50,7 @@ object GetDataTripletsCSV {
     df
   }
 
-  def getDataTriplets(spark: SparkSession, nDays: Int, from: Int) = {
+  def getDataTripletsCSV(spark: SparkSession, nDays: Int, from: Int) = {
     val segments =
       """2,3,4,5,6,7,8,9,26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
     247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
@@ -95,7 +96,7 @@ object GetDataTripletsCSV {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataTriplets(spark, 30, 2)
+    getDataTripletsCSV(spark, 30, 2)
 
   }
 }
