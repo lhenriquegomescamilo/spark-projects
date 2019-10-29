@@ -42,6 +42,8 @@ object pvAlertReport {
         median_thr: Integer
     ): DataFrame = {
 
+        import sqlContext.implicits._
+
         val conf = spark.sparkContext.hadoopConfiguration
         val fs = FileSystem.get(conf)
 
