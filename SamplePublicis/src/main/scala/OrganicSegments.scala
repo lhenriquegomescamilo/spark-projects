@@ -257,7 +257,7 @@ object OrganicSegments {
     val w =
       Window
         .partitionBy(columns.head, columns.tail: _*)
-        .orderBy(col("day").desc())
+        .orderBy(col("day").desc)
 
     // This function constructs the map that will be then stored as json
     val udfMap = udf(
