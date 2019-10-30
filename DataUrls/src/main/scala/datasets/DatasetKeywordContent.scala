@@ -32,7 +32,7 @@ object DatasetKeywordContent {
       spark: SparkSession,
       ndays: Int,
       since: Int
-  ): DataFrame = {
+  ) = {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     /// Leemos la data de keywords de ndays hacia atras
@@ -115,14 +115,13 @@ object DatasetKeywordContent {
                                 .withColumn("count", lit(1))
                                 .groupBy("url", "content_keys","country")
                                 .agg(sum("count").as("count"))
-                                .select("url","content_keys","country","count")
+                                .select("url","content_keys","count")
                                 .dropDuplicates()
 
     // Checkpoint
     keywords_content.write
                     .format("parquet")
                     .mode(SaveMode.Overwrite)
-                    .partitionBy("country")
                     .save("/datascience/data_url_classifier/keywords_content_tmp")
 
     keywords_content = spark.read
@@ -139,17 +138,15 @@ object DatasetKeywordContent {
                               .filter(col("content_keys").rlike("[a-z]{2,}"))
                               .withColumn("country", lit(country))
                               .withColumn("count", lit(1))
-                              .select("url","content_keys","country","count")
+                              .select("url","content_keys","count")
 
-    val keywords_union = keywords_content.union(keywords_path)
+    val keywords_union = keywords_content.union(keywords_path).withColumn("country",lit(country))
                               
     keywords_union.write
                   .format("parquet")
                   .mode(SaveMode.Overwrite)
                   .partitionBy("country")
                   .save("/datascience/data_url_classifier/%s".format(name))
-
-    keywords_union
   }
 
   def main(args: Array[String]) {
