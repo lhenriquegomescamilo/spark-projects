@@ -275,6 +275,16 @@ object IpgMaids {
   def gzipOutput(spark: SparkSession) = {
     spark.read
       .format("csv")
+      .load("/datascience/custom/IPG_maids/")
+      .write
+      .format("csv")
+      .option("sep", ",")
+      .option("compression", "gzip")
+      .mode("overwrite")
+      .save("/datascience/custom/IPG_maids_gz")
+
+    spark.read
+      .format("csv")
       .option("sep", "\t")
       .load("/datascience/custom/IPG_maids_enriched")
       .select("_c1", "_c2")
@@ -296,8 +306,8 @@ object IpgMaids {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // getDataAcxiom(spark)
-    getDataSegments(spark)
-    getSegmentsPerMaid(spark)
+    // getDataSegments(spark)
+    // getSegmentsPerMaid(spark)
     gzipOutput(spark)
 
   }
