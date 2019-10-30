@@ -200,7 +200,7 @@ object IpgMaids {
     val dataIpgXd =
       spark.read
         .format("parquet")
-        .load("/datascience/audiences/crossdeviced/IPG_maids_xd") // columns are ['index', 'device_id']
+        .load("/datascience/custom/IPG_maids_xd") // columns are ['index', 'device_id']
 
     val segments = spark.read
       .format("csv")
@@ -295,7 +295,7 @@ object IpgMaids {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataAcxiom(spark)
+    // getDataAcxiom(spark)
     getDataSegments(spark)
     getSegmentsPerMaid(spark)
     gzipOutput(spark)
