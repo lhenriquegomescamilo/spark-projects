@@ -101,7 +101,7 @@ object DatasetKeywordContent {
     val URLkeys = (0 until replicationFactor)
       .map(
         i =>
-          getKeywordsByURL(spark, 10, since)
+          getKeywordsByURL(spark, ndays, since)
             .withColumn("composite_key", concat(col("url"), lit("@"), lit(i)))
       )
       .reduce((df1, df2) => df1.unionAll(df2))
@@ -162,7 +162,7 @@ object DatasetKeywordContent {
 
     // Parseo de parametros
     val ndays = 10
-    val since = 1
+    val since = 7
     val country = "AR"
 
     val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR/")
