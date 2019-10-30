@@ -452,14 +452,17 @@ object RandomTincho {
                             .load("/datascience/data_url_classifier/dataset_keyword_content_training/country=AR/")
                             .withColumn("content_keys",myUDF(col("content_keys")))
                             .withColumnRenamed("content_keys","word")
+                            .withColumn("word",lower(col("word")))
 
-    //var join = dataset_kws.join(word_embeddings,Seq("word"),"inner")
-    //                      .write
-    //                      .format("parquet")
-    //                      .save("/datascience/data_url_classifier/dataset_keyword_embedding")
+    var join = dataset_kws.join(word_embeddings,Seq("word"),"inner")
+                         .write
+                         .format("parquet")
+                         .mode(SaveMode.Overwrite)
+                         .save("/datascience/data_url_classifier/dataset_keyword_embedding_chkpt")
 
-    var df = spark.read.format("parquet").load("/datascience/data_url_classifier/dataset_keyword_embedding")
+    var df = spark.read.format("parquet").load("/datascience/data_url_classifier/dataset_keyword_embedding_chkpt")
     df.cache()
+    
     for (i <- 1 to 300){
       df = df.withColumn(i.toString, col(i.toString)*col("count"))
     } 
@@ -471,7 +474,7 @@ object RandomTincho {
       .format("csv")
       .option("header","true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_url_classifier/dataset_keyword_embedding_multiplied")
+      .save("/datascience/data_url_classifier/dataset_keyword_embedding")
  }
 
   def main(args: Array[String]) {
