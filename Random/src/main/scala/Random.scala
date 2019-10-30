@@ -5259,8 +5259,9 @@ def get_report_gcba_1134(spark:SparkSession){
     Logger.getRootLogger.setLevel(Level.WARN)
     
     //get_ISP_directtv(spark = spark, nDays = 30, since = 1)
+    println(spark.read.format("json").load("/datascience/data_publicis/memb/full/dt=20191019").count())
+    println(spark.read.format("json").load("/datascience/data_publicis/memb2/full/dt=20191019").count())
 
-    get_report_gcba_1134(spark) 
   }
 
 }
