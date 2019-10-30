@@ -394,7 +394,7 @@ def userAggregateFromPolygon(
         .option("header", "true")
         .option("sep", "\t")
         .load(
-        "/datascience/audiences/crossdeviced/%s_xd"
+        "/datascience/geo/crossdeviced/%s_xd"
           .format(value_dictionary("poi_output_file"))
         ).filter("device_type == 'web'")
 
