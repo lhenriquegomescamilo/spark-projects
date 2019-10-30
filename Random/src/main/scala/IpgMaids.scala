@@ -124,7 +124,23 @@ object IpgMaids {
         .drop("device_type")
         .distinct()
 
-    dataBase
+    val xdIndex = spark.read
+      .format("parquet")
+      .load("/datascience/crossdevice/double_index/")
+
+    val dataXD = xdIndex
+      .filter("device_type IN ('and', 'ios')")
+      .select("device")
+      .withColumnRenamed("device", "device_id")
+      .distinct()
+
+    val all_ids = dataBase
+      .unionAll(dataXD)
+      .distinct()
+
+    all_ids.cache()
+
+    all_ids
       .withColumn("salt", encriptador(col("device_id")))
       .repartition(300)
       .write
@@ -132,6 +148,20 @@ object IpgMaids {
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/IPG_maids")
 
+    all_ids
+      .join(
+        xdIndex
+          .filter("index_type IN ('and', 'ios') AND device_type = 'coo'")
+          .withColumnRenamed("index", "device_id"),
+        Seq("device_id")
+      )
+      .withColumnRenamed("device_id", "index")
+      .withColumnRenamed("device", "device_id")
+      .select("index", "device_id")
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/IPG_maids_xd")
   }
 
   def getDataTriplets(
@@ -163,18 +193,14 @@ object IpgMaids {
   }
 
   def getDataSegments(spark: SparkSession) = {
-    val data_triplets =
-      getDataTriplets(spark, "MX").select("device_id", "feature")
     val dataIpg = spark.read
       .format("csv")
       .load("/datascience/custom/IPG_maids")
-      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c0", "device_id") // columns are ['_c0' (device_id), '_c1' (salted)]
     val dataIpgXd =
       spark.read
-        .format("csv")
-        .load("/datascience/audiences/crossdeviced/IPG_maids_xd")
-        .withColumnRenamed("_c1", "device_id")
-        .select("_c0", "device_id")
+        .format("parquet")
+        .load("/datascience/audiences/crossdeviced/IPG_maids_xd") // columns are ['index', 'device_id']
 
     val segments = spark.read
       .format("csv")
@@ -183,45 +209,51 @@ object IpgMaids {
       .withColumnRenamed("ID", "feature")
       .withColumn("feature", col("feature").cast("int"))
       .select("feature")
+    val data_triplets =
+      getDataTriplets(spark, "MX")
+        .select("device_id", "feature")
+        .join(broadcast(segments), Seq("feature"))
+        .select("device_id", "feature")
+        .withColumnRenamed("feature", "segment")
+
+    data_triplets.cache()
 
     dataIpg
       .join(
-        data_triplets.join(broadcast(segments), Seq("feature")),
+        data_triplets,
         Seq("device_id")
       )
-      .repartition(300)
+      .select("device_id", "segment")
       .write
-      .format("csv")
+      .format("parquet")
       .mode("overwrite")
       .save("/datascience/custom/IPG_maids_segments")
-    // dataIpgXd
-    //   .join(
-    //     data_triplets.join(broadcast(segments), Seq("feature")),
-    //     Seq("device_id")
-    //   )
-    //   .repartition(300)
-    //   .write
-    //   .format("csv")
-    //   .mode("overwrite")
-    //   .save("/datascience/custom/IPG_maids_xd_segments")
+
+    dataIpgXd
+      .join(
+        data_triplets,
+        Seq("device_id")
+      )
+      .select("index", "segment")
+      .withColumnRenamed("index", "device_id")
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/IPG_maids_xd_segments")
+
+    data_triplets.unpersist()
   }
 
   def getSegmentsPerMaid(spark: SparkSession) = {
     val segmentsForMaids =
       spark.read
-        .format("csv")
+        .format("parquet")
         .load("/datascience/custom/IPG_maids_segments")
-        .withColumnRenamed("_c0", "device_id")
-        .withColumnRenamed("_c2", "segment")
-        .select("device_id", "segment")
 
     val segmentsForCookies =
       spark.read
-        .format("csv")
+        .format("parquet")
         .load("/datascience/custom/IPG_maids_xd_segments")
-        .withColumnRenamed("_c1", "device_id")
-        .withColumnRenamed("_c2", "segment")
-        .select("device_id", "segment")
 
     val segmentsForAll = segmentsForCookies.unionAll(segmentsForMaids)
 
@@ -263,7 +295,9 @@ object IpgMaids {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    //getDataAcxiom(spark)
+    getDataAcxiom(spark)
+    getDataSegments(spark)
+    getSegmentsPerMaid(spark)
     gzipOutput(spark)
 
   }
