@@ -1,18 +1,6 @@
 package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions.{
-  explode,
-  desc,
-  lit,
-  size,
-  concat,
-  col,
-  concat_ws,
-  collect_list,
-  udf,
-  broadcast,
-  sha2
-}
+import org.apache.spark.sql.functions._
 import org.apache.hadoop.fs._
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.Path
@@ -63,7 +51,8 @@ object generateSample {
         .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
 
     println("\n\nPUBLICIS LOG: " + pathToJson + "\n\n")
-    generateOrganic.generate_organic(spark, ndays, runType, from)
+    // generateOrganic.generate_organic(spark, ndays, runType, from)
+    OrganicSegments.generate_organic(spark, ndays, runType, from)
     generateCrossDevice.generate_organic_xd(spark, pathToJson, runType, from)
   }
 }
