@@ -161,7 +161,7 @@ object DatasetKeywordContent {
       .getOrCreate()
 
     // Parseo de parametros
-    val ndays = 30
+    val ndays = 60
     val since = 7
     val country = "AR"
 
