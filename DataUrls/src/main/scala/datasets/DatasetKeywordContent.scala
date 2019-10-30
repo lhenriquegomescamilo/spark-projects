@@ -32,7 +32,7 @@ object DatasetKeywordContent {
       spark: SparkSession,
       ndays: Int,
       since: Int
-  ) = {
+  ): DataFrame = {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     /// Leemos la data de keywords de ndays hacia atras
@@ -81,7 +81,7 @@ object DatasetKeywordContent {
       gtDF: DataFrame,
       joinType:String,
       name:String
-  ): DataFrame =  {
+  ) =  {
 
     // We add the composite key to the gt data in order to do an improved join
     val urls = gtDF.withColumn(
