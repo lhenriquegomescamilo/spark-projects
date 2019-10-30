@@ -287,7 +287,7 @@ object OrganicSegments {
       .select("rtgtly_uid", "segids")
 
     // Last step is to store the data in the format required (.tsv.bz)
-    val pathToJson = "hdfs://rely-hdfs/datascience/data_publicis/memb2/%s/dt=%s"
+    val pathToJson = "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
       .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
 
     userSegments.write
