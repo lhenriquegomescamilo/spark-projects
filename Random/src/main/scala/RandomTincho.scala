@@ -515,7 +515,14 @@ object RandomTincho {
 
   // Now we obtain the list of hdfs folders to be read
   val hdfs_files = days
-    .map(day => path + "/hour=%s*/id_partner=1134".format(day))
+    .flatMap(
+      day =>
+        (0 until 24).map(
+          hour =>
+            path + "/hour=%s%02d/id_partner=1134"
+              .format(day, hour)
+        )
+    )
     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
   val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
