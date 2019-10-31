@@ -545,11 +545,11 @@ domain_country
 
 val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","5","2","MX")
 
-segments_country = segments.groupBy("feature").agg(countDistinct("device_id") as "unique_users_country")
+val segments_country = segments.groupBy("feature").agg(countDistinct("device_id") as "unique_users_country")
 
 println("unique_devices_in_segments",segments.select("device_id").distinct().count())
 
-segments
+segments_country
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
