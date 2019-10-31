@@ -450,13 +450,7 @@ val summary = count_miss.groupBy("day")
 
 }
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
+def reconstruct_equifax( spark: SparkSession) {
 val typeMap = Map(
       "ABC1" -> "35360",
       "C2" -> "35361",
@@ -493,7 +487,76 @@ to_xd
 .option("delimiter","\t")    
 .mode(SaveMode.Overwrite)  
 .save("/datascience/geo/Equifax/argentina_365d_home_1-10-2019-16h_to_xd")
+}
 
 
-  }
+
+def get_mex_data( spark: SparkSession) 
+{
+  val w_seg_users = spark.read.format("csv")
+  .option("header",true)
+  .option("delimiter",",")
+  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_30-10-2019-15h_output_path_users_data")
+
+val pois = spark.read.format("csv")
+  .option("header",true)
+  .load("/datascience/geo/POIs/mex_alcohol.csv")
+  .select("type","common_name","osm_id")
+
+val named = w_seg_users.join(pois,Seq("osm_id"))
+
+val url = spark.read.format("parquet").option("header",true).option("delimiter","\t")
+          .load("/datascience/data_triplets/urls/country=MX")
+
+val domain = url.withColumn("domain",split(col("url"),"/")(0)).drop("url")
+
+val domain_users = named.join(domain,Seq("device_id")).groupBy("domain","type").agg(countDistinct("device_id") as "unique_device")
+
+domain_users
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_user_domain")}
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+val url = spark.read.format("parquet").option("header",true).option("delimiter","\t")
+          .load("/datascience/data_triplets/urls/country=MX")
+
+val domain = url.withColumn("domain",split(col("url"),"/")(0)).drop("url")
+
+val domain_country= domain.groupBy("domain").agg(countDistinct("device_id") as "unique_device")
+
+println("unique_devices_in_url",url.select("device_id").distinct().count())
+
+domain_country
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_country_domain")
+
+
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","5","2","MX")
+
+val segments_country = segments.groupBy("feature").agg(countDistinct("device_id") as "unique_users_country")
+
+println("unique_devices_in_segments",segments.select("device_id").distinct().count())
+
+segments_country
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_country_segments")
+
+}
+
+  
 }
