@@ -5337,7 +5337,7 @@ user_granularity.write
       .option("header", true)
       .option("delimiter", "\t")
       .load("/datascience/data_triplets/urls/country=MX")
-    val domain = url.withColumn("domain", split(col("url"), "/")(0)).drop("url")
+    val domain = url.withColumn("domain", split(col("url"), "/")(0))
     val domain_users = named
       .join(domain, Seq("device_id"))
       .groupBy("url", "type")
