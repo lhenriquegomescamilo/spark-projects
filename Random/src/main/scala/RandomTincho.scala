@@ -528,7 +528,7 @@ object RandomTincho {
   val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
                 .filter("event_type = 'tk'")
                 .select("url")
-                .distinct()
+                .withColumn("url",myUDF(col("url")))
 
   df.write.format("parquet")
           .mode(SaveMode.Overwrite)
