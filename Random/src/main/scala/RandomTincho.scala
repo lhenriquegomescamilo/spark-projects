@@ -498,7 +498,8 @@ object RandomTincho {
   res
 }
 
- def get_report_gcba_1134(spark:SparkSession){
+ def get_report_gcba_1134(spark:SparkSession, ndays: Int){
+   
   val myUDF = udf((url: String) => processURL(url))
 
   /// Configuraciones de spark
@@ -506,36 +507,23 @@ object RandomTincho {
   val conf = sc.hadoopConfiguration
   val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-  /// Obtenemos la data de los ultimos ndays
+  // Get the days to be loaded
   val format = "yyyyMMdd"
-  val start = DateTime.now.minusDays(1)
-
-  val days =
-    (0 until 45).map(start.minusDays(_)).map(_.toString(format))
+  val end = DateTime.now.minusDays(since)
+  val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
   val path = "/datascience/data_partner_streaming"
-  val dfs = days
-    .flatMap(
-      day =>
-        (0 until 24).map(
-          hour =>
-            path + "/hour=%s%02d/id_partner=1134"
-              .format(day, hour)
-        )
-    )
+
+  // Now we obtain the list of hdfs folders to be read
+  val hdfs_files = days
+    .map(day => path + "/hour=%s*/id_partner=1134".format(day))
     .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    .map(
-      x =>
-        spark.read
-          .option("basePath", "/datascience/data_partner_streaming/")
-          .parquet(x)
-          .filter("event_type = 'tk'")
-          .select("url")
-    )
 
-  /// Concatenamos los dataframes
-  val dataset = dfs.reduce((df1, df2) => df1.union(df2)).distinct()
+  val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+                .filter("event_type = 'tk'")
+                .select("url")
+                .distinct()
 
-  dataset.write.format("parquet")
+  df.write.format("parquet")
           .mode(SaveMode.Overwrite)
           .save("/datascience/custom/1134_octubre")
 
