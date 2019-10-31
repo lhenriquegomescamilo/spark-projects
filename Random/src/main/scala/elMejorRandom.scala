@@ -501,7 +501,7 @@ val w_seg_users = spark.read.format("csv")
   .option("header",true)
   .option("delimiter",",")
   .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_30-10-2019-15h_output_path_users_data")
-
+/*
 val pois = spark.read.format("csv")
   .option("header",true)
   .load("/datascience/geo/POIs/mex_alcohol.csv")
@@ -509,15 +509,22 @@ val pois = spark.read.format("csv")
 
 
 val named = w_seg_users.join(pois,Seq("osm_id"))
+*/
 
 
-named.groupBy("type","feature")
-.agg(countDistinct("device_id") as "unique_devices")
+val url = spark.read.format("parquet").option("header",true).option("delimiter","\t")
+          .load("/datascience/data_triplets/urls/country=MX")
+
+val domain = url.withColumn("domain",split(col("url"),"/")(0)).drop("url")
+
+val domain_users = w_seg_users.join(domain,Seq("device_id"))
+
+domain_users
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_30-10-2019-15h_grouped")
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_user_domain")
 
 
 
