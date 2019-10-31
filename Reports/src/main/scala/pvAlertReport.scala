@@ -25,17 +25,17 @@ object pvAlertReport {
    /**
     * This method returns a DataFrame with the data from the "pvAlertData" pipeline, for the interval
     * of days specified. Basically, it loads every DataFrame for the days specified, and merges them as a single
-    * DataFrame that will be returned. It returns pv events for each id_partner and each url_domain, calculating average count.
+    * DataFrame that will be returned. It returns pv events for each id_partner and each url_domain, calculating median count.
     *
     * @param spark: Spark Session that will be used to load the data from HDFS.
     * @param nDays: number of days that will be read.
     * @param since: number of days ago from where the data is going to be read.  
     * @param median_thr: threshold to consider a domain relevant for a partner. Default 1000.  
     *
-    * @return a DataFrame with the information coming from the read data. Columns: "id_partner","domain","average"
+    * @return a DataFrame with the information coming from the read data. Columns: "id_partner","domain","median"
    **/
 
-    def getDataPV_average(
+    def getDataPV_median(
         spark: SparkSession,
         nDays: Integer,
         since: Integer,
@@ -69,14 +69,14 @@ object pvAlertReport {
 
     /**
     * This method returns a DataFrame with the data from the "pvAlertData" pipeline for the current day, specified with the since parameter.
-    * It returns pv events for each id_partner and each url_domain, calculating average count.
+    * It returns pv events for each id_partner and each url_domain and count.
     *
     * @param spark: Spark Session that will be used to load the data from HDFS.
     * @param nDays: number of days that will be read.
     * @param since: number of days ago from where the data is going to be read.  
-    * @param low_thr: threshold to consider a domain a movite for alert. Default 800.
+    * @param low_thr: lower bound threshold which determines if domain is alerted . Default 800.
     *
-    * @return a DataFrame with the information coming from the read data. Columns: "id_partner","domain","average"
+    * @return a DataFrame with the information coming from the read data. Columns: "id_partner","domain","count"
    **/   
 
    def getDataPV_current(
@@ -186,7 +186,7 @@ object pvAlertReport {
       ) = {
        
     /** Read from "pvData_pipeline" database */
-    val df_median = getDataPV_average(
+    val df_median = getDataPV_median(
         spark = spark,
         nDays = nDays,
         since = since,
