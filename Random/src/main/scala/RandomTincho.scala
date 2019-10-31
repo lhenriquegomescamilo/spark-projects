@@ -499,7 +499,7 @@ object RandomTincho {
 }
 
  def get_report_gcba_1134(spark:SparkSession, ndays: Int){
-   
+
   val myUDF = udf((url: String) => processURL(url))
 
   /// Configuraciones de spark
@@ -540,7 +540,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_report_gcba_1134(spark)
+    get_report_gcba_1134(spark,45)
   }
 
 }
