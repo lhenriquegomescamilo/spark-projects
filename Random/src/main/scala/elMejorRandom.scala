@@ -501,21 +501,6 @@ val w_seg_users = spark.read.format("csv")
   .option("header",true)
   .option("delimiter",",")
   .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_30-10-2019-15h_output_path_users_data")
-/*
-val pois = spark.read.format("csv")
-  .option("header",true)
-  .load("/datascience/geo/POIs/mex_alcohol.csv")
-  .select("type","common_name","osm_id")
-
-
-val named = w_seg_users.join(pois,Seq("osm_id"))
-*/
-
-
-val w_seg_users = spark.read.format("csv")
-  .option("header",true)
-  .option("delimiter",",")
-  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_30-10-2019-15h_output_path_users_data")
 
 val pois = spark.read.format("csv")
   .option("header",true)
