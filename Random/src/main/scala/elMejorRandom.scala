@@ -517,7 +517,7 @@ val url = spark.read.format("parquet").option("header",true).option("delimiter",
 
 val domain = url.withColumn("domain",split(col("url"),"/")(0)).drop("url")
 
-val domain_users = w_seg_users.join(domain,Seq("device_id"))
+val domain_users =  w_seg_users.join(domain,Seq("device_id")).groupBy("domain").agg(countDistinct("device_id") as "unique_device")
 
 domain_users
 .write.format("csv")
