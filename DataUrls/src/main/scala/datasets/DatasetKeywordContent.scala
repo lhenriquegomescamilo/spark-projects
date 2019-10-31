@@ -81,7 +81,7 @@ object DatasetKeywordContent {
       gtDF: DataFrame,
       joinType:String,
       name:String
-  ): DataFrame =  {
+  ) =  {
 
     // We add the composite key to the gt data in order to do an improved join
     val urls = gtDF.withColumn(
@@ -101,7 +101,7 @@ object DatasetKeywordContent {
     val URLkeys = (0 until replicationFactor)
       .map(
         i =>
-          getKeywordsByURL(spark, 10, since)
+          getKeywordsByURL(spark, ndays, since)
             .withColumn("composite_key", concat(col("url"), lit("@"), lit(i)))
       )
       .reduce((df1, df2) => df1.unionAll(df2))
@@ -115,14 +115,13 @@ object DatasetKeywordContent {
                                 .withColumn("count", lit(1))
                                 .groupBy("url", "content_keys","country")
                                 .agg(sum("count").as("count"))
-                                .select("url","content_keys","country","count")
+                                .select("url","content_keys","count")
                                 .dropDuplicates()
 
     // Checkpoint
     keywords_content.write
                     .format("parquet")
                     .mode(SaveMode.Overwrite)
-                    .partitionBy("country")
                     .save("/datascience/data_url_classifier/keywords_content_tmp")
 
     keywords_content = spark.read
@@ -131,7 +130,7 @@ object DatasetKeywordContent {
     keywords_content.cache()
 
     // Extracting keywords from path and add them to the dataset
-    val keywords_path = keywords_content.select("url")
+    val keywords_path = gtDF.select("url")
                               .withColumn("url", lower(col("url")))
                               .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
                               .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
@@ -139,17 +138,15 @@ object DatasetKeywordContent {
                               .filter(col("content_keys").rlike("[a-z]{2,}"))
                               .withColumn("country", lit(country))
                               .withColumn("count", lit(1))
-                              .select("url","content_keys","country","count")
+                              .select("url","content_keys","count")
 
-    val keywords_union = keywords_content.union(keywords_path)
+    val keywords_union = keywords_content.union(keywords_path).withColumn("country",lit(country))
                               
     keywords_union.write
                   .format("parquet")
                   .mode(SaveMode.Overwrite)
                   .partitionBy("country")
                   .save("/datascience/data_url_classifier/%s".format(name))
-
-    keywords_union
   }
 
   def main(args: Array[String]) {
@@ -161,8 +158,8 @@ object DatasetKeywordContent {
       .getOrCreate()
 
     // Parseo de parametros
-    val ndays = 10
-    val since = 1
+    val ndays = 30
+    val since = 7
     val country = "AR"
 
     val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR/")

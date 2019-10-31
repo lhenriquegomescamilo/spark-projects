@@ -246,12 +246,16 @@ object generateOrganic {
   def main(args: Array[String]) {
     /// Configuracion spark
     val spark =
-      SparkSession.builder.appName("Generate Organic Data").getOrCreate()
+      SparkSession.builder
+        .appName("Generate Organic Data")
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
+        .getOrCreate()
 
     /// Parseo de parametros
     val ndays = if (args.length > 0) args(0).toInt else 30
+    val from = if (args.length > 1) args(1).toInt else 1
 
-    generate_organic(spark, ndays)
+    generate_organic(spark, ndays, "full", from)
 
   }
 }

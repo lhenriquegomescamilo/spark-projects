@@ -1,10 +1,10 @@
 spark-submit\
-  --class "main.scala.Random"\
+  --class "main.scala.BigRandom"\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\
-  --executor-memory 9g\
-  --num-executors 12\
+  --executor-memory 8g\
+  --num-executors 10\
   --executor-cores 3\
   --queue spark\
   --conf spark.yarn.maxAppAttempts=1\

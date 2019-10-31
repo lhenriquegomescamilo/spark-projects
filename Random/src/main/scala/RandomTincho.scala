@@ -452,14 +452,18 @@ object RandomTincho {
                             .load("/datascience/data_url_classifier/dataset_keyword_content_training/country=AR/")
                             .withColumn("content_keys",myUDF(col("content_keys")))
                             .withColumnRenamed("content_keys","word")
+                            .withColumn("word",lower(col("word")))
 
-    //var join = dataset_kws.join(word_embeddings,Seq("word"),"inner")
-    //                      .write
-    //                      .format("parquet")
-    //                      .save("/datascience/data_url_classifier/dataset_keyword_embedding")
+    // Checkpoint
+    var join = dataset_kws.join(word_embeddings,Seq("word"),"inner")
+                         .write
+                         .format("parquet")
+                         .mode(SaveMode.Overwrite)
+                         .save("/datascience/data_url_classifier/dataset_keyword_embedding_chkpt")
 
-    var df = spark.read.format("parquet").load("/datascience/data_url_classifier/dataset_keyword_embedding")
+    var df = spark.read.format("parquet").load("/datascience/data_url_classifier/dataset_keyword_embedding_chkpt")
     df.cache()
+    
     for (i <- 1 to 300){
       df = df.withColumn(i.toString, col(i.toString)*col("count"))
     } 
@@ -471,8 +475,66 @@ object RandomTincho {
       .format("csv")
       .option("header","true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_url_classifier/dataset_keyword_embedding_multiplied")
+      .save("/datascience/data_url_classifier/dataset_keyword_embedding")
  }
+
+ def processURL(url: String): String = {
+  val columns = List("r_mobile", "r_mobile_type", "r_app_name", "r_campaign", "r_lat_long", "id_campaign")
+  var res = ""
+
+  try {
+    if (url.toString.contains("?")){
+      val params = url.split("\\?", -1)(1).split("&").map(p => p.split("=", -1)).map(p => (p(0), p(1))).toMap
+
+      if (params.contains("r_mobile") && params("r_mobile").length>0 && !params("r_mobile").contains("[")){
+          res = columns.map(col => if (params.contains(col)) params(col) else "").mkString(",")
+      }
+    }
+  } 
+  catch {
+    case _: Throwable => println("Error")
+  }
+
+  res
+}
+
+ def get_report_gcba_1134(spark:SparkSession, ndays: Int, since:Int){
+
+  val myUDF = udf((url: String) => processURL(url))
+
+  /// Configuraciones de spark
+  val sc = spark.sparkContext
+  val conf = sc.hadoopConfiguration
+  val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+  // Get the days to be loaded
+  val format = "yyyyMMdd"
+  val end = DateTime.now.minusDays(since)
+  val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
+  val path = "/datascience/data_partner_streaming"
+
+  // Now we obtain the list of hdfs folders to be read
+  val hdfs_files = days
+    .flatMap(
+      day =>
+        (0 until 24).map(
+          hour =>
+            path + "/hour=%s%02d/id_partner=1134"
+              .format(day, hour)
+        )
+    )
+    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+  val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+                .filter("event_type = 'tk'")
+                .select("url")
+                .withColumn("url",myUDF(col("url")))
+
+  df.write.format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/1134_octubre")
+
+}
 
   def main(args: Array[String]) {
      
@@ -485,7 +547,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    keywords_embeddings(spark)
+    get_report_gcba_1134(spark,45,7)
   }
 
 }

@@ -138,7 +138,7 @@ def POIAggregate_w_xd(
                   .option("header",true)
                   .option("sep", "\t")
                   .load(
-        "/datascience/audiences/crossdeviced/%s_xd"
+        "/datascience/geo/crossdeviced/%s_xd"
           .format(value_dictionary("poi_output_file")))
 
   val audienceByCode = xd_result.withColumn(value_dictionary("poi_column_name"),explode(split(col(value_dictionary("poi_column_name")),",")))
@@ -322,7 +322,8 @@ def userAggregateFromPolygon(
           .format(value_dictionary("poi_output_file"))
         ).filter("device_type == 'web'")
 
-
+       
+                              
         val joint = data.select("device_id",value_dictionary("audience_column_name"))
                               .join(segments, Seq("device_id"))
                               .withColumn("all_segments", explode(col("all_segments")))
@@ -339,6 +340,8 @@ def userAggregateFromPolygon(
                     .option("header", "true")
                     .mode(SaveMode.Overwrite)
                     .save(output_path_segments)
+
+      
              
              /*                 
         val total_by_poi = data.groupBy(value_dictionary("poi_column_name"))
@@ -383,7 +386,7 @@ def userAggregateFromPolygon(
         .option("header", "true")
         .option("sep", "\t")
         .load(
-        "/datascience/audiences/crossdeviced/%s_xd"
+        "/datascience/geo/crossdeviced/%s_xd"
           .format(value_dictionary("poi_output_file"))
         ).filter("device_type == 'web'")
 
@@ -402,6 +405,18 @@ def userAggregateFromPolygon(
                     .option("header", "true")
                     .mode(SaveMode.Overwrite)
                     .save(output_path_segments)
+
+
+      val output_path_horrible_users = "/datascience/geo/geo_processed/%s_output_path_users_data"
+                                                            .format(value_dictionary("poi_output_file"))
+
+      val joint_users_for_analysis = data.select("device_id",value_dictionary("audience_column_name"))
+                              .join(segments, Seq("device_id"))
+
+      joint_users_for_analysis.write.format("csv")
+                    .option("header", "true")
+                    .mode(SaveMode.Overwrite)
+                    .save(output_path_horrible_users)
                 
                      
   }
