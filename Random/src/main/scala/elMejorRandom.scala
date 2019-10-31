@@ -532,8 +532,11 @@ val raw_data_full =  spark.read.format("csv")
   .option("header",true)
   .option("delimiter","\t")
   .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_named_poi_feature")
+
+
+val chupi = List ("103928","103929","103928","166","103929","103930","103931","4776","85","103966","103967","5298")
   
-val alcohol_user = raw_data_full.filter("feature == 166")
+val alcohol_user = raw_data_full.filter(col("feature").isin(chupi:_*))
 val count_alcohol = alcohol_user.groupBy("type","common_name").agg(countDistinct("device_id") as "uniques")
   
 val no_birra = raw_data_full
@@ -541,6 +544,8 @@ val no_birra = raw_data_full
    
 val count_no_birra = no_birra.groupBy("type","common_name").agg(countDistinct("device_id") as "uniques")
 
+println("con_alcohol",alcohol_user.select("device_id").distinct().count())
+println("sin_alcohol",no_birra.select("device_id").distinct().count())
 
 count_alcohol
 .write.format("csv")
