@@ -533,6 +533,8 @@ val domain = url.withColumn("domain",split(col("url"),"/")(0)).drop("url")
 
 val domain_country= domain.groupBy("domain").agg(countDistinct("device_id") as "unique_device")
 
+println("unique_devices_in_url",url.select("device_id").distinct().count())
+
 domain_country
 .write.format("csv")
 .option("header",true)
@@ -542,7 +544,10 @@ domain_country
 
 
 val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","5","2","MX")
-.groupBy("feature").agg(countDistinct("device_id") as "unique_users_country")
+
+segments_country = segments.groupBy("feature").agg(countDistinct("device_id") as "unique_users_country")
+
+println("unique_devices_in_segments",segments.select("device_id").distinct().count())
 
 segments
 .write.format("csv")
