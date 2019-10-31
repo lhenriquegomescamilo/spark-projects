@@ -5360,7 +5360,7 @@ user_granularity.write
       .withColumn("content_keys", explode(col("url_keys")))
       .filter(col("content_keys").rlike("[a-z]{2,}"))
       .groupBy("content_keys", "type")
-      .agg(sum("count") as "count")
+      .agg(sum("unique_device") as "count")
       .write
       .format("csv")
       .option("header", true)
@@ -5379,7 +5379,7 @@ user_granularity.write
       .withColumn("content_keys", explode(col("url_keys")))
       .filter(col("content_keys").rlike("[a-z]{2,}"))
       .groupBy("content_keys")
-      .agg(sum("count") as "count")
+      .count()
       .write
       .format("csv")
       .option("header", true)
