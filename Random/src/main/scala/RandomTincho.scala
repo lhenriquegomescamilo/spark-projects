@@ -498,7 +498,7 @@ object RandomTincho {
   res
 }
 
- def get_report_gcba_1134(spark:SparkSession, ndays: Int){
+ def get_report_gcba_1134(spark:SparkSession, ndays: Int, since:Int){
 
   val myUDF = udf((url: String) => processURL(url))
 
@@ -540,7 +540,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_report_gcba_1134(spark,45)
+    get_report_gcba_1134(spark,45,7)
   }
 
 }
