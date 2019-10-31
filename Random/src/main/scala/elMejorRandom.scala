@@ -526,35 +526,34 @@ domain_users
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-val url = spark.read.format("parquet").option("header",true).option("delimiter","\t")
-          .load("/datascience/data_triplets/urls/country=MX")
 
-val domain = url.withColumn("domain",split(col("url"),"/")(0)).drop("url")
 
-val domain_country= domain.groupBy("domain").agg(countDistinct("device_id") as "unique_device")
+val raw_data_full =  spark.read.format("csv")
+  .option("header",true)
+  .option("delimiter","\t")
+  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_named_poi_feature")
+  
+val alcohol_user = raw_data_full.filter("feature == 166")
+val count_alcohol = alcohol_user.groupBy("type","common_name").agg(countDistinct("device_id") as "uniques")
+  
+val no_birra = raw_data_full
+   .join(alcohol_user.select("device_id"), Seq("device_id"),"left_anti")
+   
+val count_no_birra = no_birra.groupBy("type","common_name").agg(countDistinct("device_id") as "uniques")
 
-println("unique_devices_in_url",url.select("device_id").distinct().count())
 
-domain_country
+count_alcohol
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_country_domain")
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_birra")
 
-
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","5","2","MX")
-
-val segments_country = segments.groupBy("feature").agg(countDistinct("device_id") as "unique_users_country")
-
-println("unique_devices_in_segments",segments.select("device_id").distinct().count())
-
-segments_country
-.write.format("csv")
+count_no_birra.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_country_segments")
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_no_birra")
 
 }
 
