@@ -454,6 +454,7 @@ object RandomTincho {
                             .withColumnRenamed("content_keys","word")
                             .withColumn("word",lower(col("word")))
 
+    // Checkpoint
     var join = dataset_kws.join(word_embeddings,Seq("word"),"inner")
                          .write
                          .format("parquet")
@@ -477,6 +478,69 @@ object RandomTincho {
       .save("/datascience/data_url_classifier/dataset_keyword_embedding")
  }
 
+ def processURL(url: String): String = {
+  val columns = List("r_mobile", "r_mobile_type", "r_app_name", "r_campaign", "r_lat_long", "id_campaign")
+  var res = ""
+
+  try {
+    if (url.toString.contains("?")){
+      val params = url.split("\\?", -1)(1).split("&").map(p => p.split("=", -1)).map(p => (p(0), p(1))).toMap
+
+      if (params.contains("r_mobile") && params("r_mobile").length>0 && !params("r_mobile").contains("[")){
+          res = columns.map(col => if (params.contains(col)) params(col) else "").mkString(",")
+      }
+    }
+  } 
+  catch {
+    case _: Throwable => println("Error")
+  }
+
+  res
+}
+
+ def get_report_gcba_1134(spark:SparkSession){
+  val myUDF = udf((url: String) => processURL(url))
+
+  /// Configuraciones de spark
+  val sc = spark.sparkContext
+  val conf = sc.hadoopConfiguration
+  val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+  /// Obtenemos la data de los ultimos ndays
+  val format = "yyyyMMdd"
+  val start = DateTime.now.minusDays(1)
+
+  val days =
+    (0 until 45).map(start.minusDays(_)).map(_.toString(format))
+  val path = "/datascience/data_partner_streaming"
+  val dfs = days
+    .flatMap(
+      day =>
+        (0 until 24).map(
+          hour =>
+            path + "/hour=%s%02d/id_partner=1134"
+              .format(day, hour)
+        )
+    )
+    .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    .map(
+      x =>
+        spark.read
+          .option("basePath", "/datascience/data_partner_streaming/")
+          .parquet(x)
+          .filter("event_type = 'tk'")
+          .select("url")
+    )
+
+  /// Concatenamos los dataframes
+  val dataset = dfs.reduce((df1, df2) => df1.union(df2)).distinct()
+
+  dataset.write.format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/1134_octubre")
+
+}
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -488,7 +552,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    keywords_embeddings(spark)
+    get_report_gcba_1134(spark)
   }
 
 }
