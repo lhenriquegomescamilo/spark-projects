@@ -512,12 +512,24 @@ val named = w_seg_users.join(pois,Seq("osm_id"))
 */
 
 
+val w_seg_users = spark.read.format("csv")
+  .option("header",true)
+  .option("delimiter",",")
+  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_30-10-2019-15h_output_path_users_data")
+
+val pois = spark.read.format("csv")
+  .option("header",true)
+  .load("/datascience/geo/POIs/mex_alcohol.csv")
+  .select("type","common_name","osm_id")
+
+val named = w_seg_users.join(pois,Seq("osm_id"))
+
 val url = spark.read.format("parquet").option("header",true).option("delimiter","\t")
           .load("/datascience/data_triplets/urls/country=MX")
 
 val domain = url.withColumn("domain",split(col("url"),"/")(0)).drop("url")
 
-val domain_users =  w_seg_users.join(domain,Seq("device_id")).groupBy("domain").agg(countDistinct("device_id") as "unique_device")
+val domain_users = named.join(domain,Seq("device_id")).groupBy("domain","type").agg(countDistinct("device_id") as "unique_device")
 
 domain_users
 .write.format("csv")
