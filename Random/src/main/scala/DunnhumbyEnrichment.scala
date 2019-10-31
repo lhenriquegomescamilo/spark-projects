@@ -120,6 +120,9 @@ object DunnhumbyEnrichment {
     df
   }
 
+  /**
+   * 
+  */
   def getEnrichment(
       spark: SparkSession,
       piiDateFrom: String,
@@ -162,6 +165,8 @@ object DunnhumbyEnrichment {
         .split(",")
         .toList
 
+    val removeDuplicates = udf( (piis: Seq[String]) => piis.distinct.toSeq )
+
     val pii = spark.read
       .format("parquet")
       .load("/datascience/pii_matching/pii_tuples/")
@@ -172,6 +177,8 @@ object DunnhumbyEnrichment {
         collect_list(col("ml_sh2")) as "ml_sh2",
         collect_list(col("nid_sh2")) as "nid_sh2"
       )
+      .withColumn("ml_sh2", removeDuplicates(col("ml_sh2")))
+      .withColumn("nid_sh2", removeDuplicates(col("nid_sh2")))
       .withColumn("ml_sh2", concat_ws(",", col("ml_sh2")))
       .withColumn("nid_sh2", concat_ws(",", col("nid_sh2")))
 

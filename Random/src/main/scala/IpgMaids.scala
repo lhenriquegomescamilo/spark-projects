@@ -305,9 +305,9 @@ object IpgMaids {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    // getDataAcxiom(spark)
-    // getDataSegments(spark)
-    // getSegmentsPerMaid(spark)
+    getDataAcxiom(spark)
+    getDataSegments(spark)
+    getSegmentsPerMaid(spark)
     gzipOutput(spark)
 
   }
