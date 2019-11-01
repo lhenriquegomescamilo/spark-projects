@@ -560,26 +560,34 @@ count_no_birra.write.format("csv")
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
 
-
+//Usuarios que fueron a un strip club. Esta es la web cookie
     val raw_data_full =  spark.read.format("csv")
   .option("header",true)
   .option("delimiter","\t")
   .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_named_poi_feature")
-  
-  val raw_xd = spark.read.format("csv")
+
+val strip_users = raw_data_full.filter("type == 'stripclub'").dropDuplicates("device_id")
+
+val raw_xd = spark.read.format("csv")
   .option("header",false)
   .option("delimiter",",")
-  .load("/datascience/audiences/crossdeviced/mex_alcohol_60d_mexico_30-10-2019-15h_aggregated_xd")
-  .select("_c1","_c2","_c3","_c9","_c10").filter("_c2 == 'coo'").drop("_c2").toDF("device_id","osm_id","freq","validUser")
-
+  .load("/datascience/audiences/crossdeviced/mex_alcohol_60d_mexico_30-10-2019-15h_aggregated_xd").select("_c0","_c1").distinct().toDF("madid","device_id")
   
-  val raw_data_full_frequency = raw_xd.join(raw_data_full,Seq("device_id","osm_id"))
+val filter_strip_users = strip_users.join(raw_xd,Seq("device_id")).withColumn("madid",upper(col("madid")))
+  
+val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/raw_output/mex_alcohol_60d_mexico_30-10-2019-12h")
+.withColumnRenamed("device_id","madid")
+.withColumn("madid",upper(col("madid")))
 
-raw_data_full_frequency.write.format("csv")
+
+
+
+filter_strip_users.join(raw,Seq("madid")).write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_frequency")
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_strip_club")
 
 }
 
