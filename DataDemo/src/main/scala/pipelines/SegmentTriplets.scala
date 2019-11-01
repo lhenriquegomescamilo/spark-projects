@@ -99,12 +99,14 @@ object SegmentTriplets {
         "segments",
         "country",
         "event_type",
-        "id_partner"
+        "id_partner",
+        "datetime"
       )
       .withColumn("segments", explode(col("segments")))
       .withColumnRenamed("segments", "feature")
       .withColumn("count", lit(1))
-      .withColumn("hour", date_format(col("datetime"), "yyyyMMddHH"))
+      .withColumn("day", date_format(col("datetime"), "yyyyMMdd"))
+      .drop("datetime")
 
     val grouped_data = df
       .select("device_id", "feature", "country", "day", "id_partner")
