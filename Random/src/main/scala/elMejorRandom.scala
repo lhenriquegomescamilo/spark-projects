@@ -590,6 +590,10 @@ filter_strip_users.join(raw,Seq("madid")).write.format("csv")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_strip_club")
 */
+
+  val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
+  .load("/datascience/geo/raw_output/mex_alcohol_60d_mexico_30-10-2019-12h")
+  .withColumnRenamed("device_id","madid").withColumn("madid",upper(col("madid")))
 val freq_high = spark.read.format("csv")
   .option("header",true)
   .option("delimiter","\t")
