@@ -493,6 +493,7 @@ to_xd
 
 def get_mex_data( spark: SparkSession) 
 {
+/*
   val w_seg_users = spark.read.format("csv")
   .option("header",true)
   .option("delimiter",",")
@@ -517,7 +518,39 @@ domain_users
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_user_domain")}
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_user_domain")
+
+
+  val raw_data_full_frequency = raw_xd.join(raw_data_full,Seq("device_id","osm_id"))
+
+val chupi = List ("103928","103929","103928","166","103929","103930","103931","4776","85","103966","103967","5298")
+  
+val alcohol_user = raw_data_full.filter(col("feature").isin(chupi:_*))
+val count_alcohol = alcohol_user.groupBy("type").agg(countDistinct("device_id") as "uniques")
+  
+val no_birra = raw_data_full
+   .join(alcohol_user.select("device_id"), Seq("device_id"),"left_anti")
+   
+val count_no_birra = no_birra.groupBy("type").agg(countDistinct("device_id") as "uniques")
+
+//println("con_alcohol",alcohol_user.select("device_id").distinct().count())
+//println("sin_alcohol",no_birra.select("device_id").distinct().count())
+
+count_alcohol
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_birra_type")
+
+count_no_birra.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_no_birra_type")
+
+*/
+}
 
  /*****************************************************/
   /******************     MAIN     *********************/
@@ -526,35 +559,27 @@ domain_users
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-val url = spark.read.format("parquet").option("header",true).option("delimiter","\t")
-          .load("/datascience/data_triplets/urls/country=MX")
 
-val domain = url.withColumn("domain",split(col("url"),"/")(0)).drop("url")
 
-val domain_country= domain.groupBy("domain").agg(countDistinct("device_id") as "unique_device")
+    val raw_data_full =  spark.read.format("csv")
+  .option("header",true)
+  .option("delimiter","\t")
+  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_named_poi_feature")
+  
+  val raw_xd = spark.read.format("csv")
+  .option("header",false)
+  .option("delimiter",",")
+  .load("/datascience/audiences/crossdeviced/mex_alcohol_60d_mexico_30-10-2019-15h_aggregated_xd")
+  .select("_c1","_c2","_c3","_c9","_c10").filter("_c2 == 'coo'").drop("_c2").toDF("device_id","osm_id","freq","validUser")
 
-println("unique_devices_in_url",url.select("device_id").distinct().count())
+  
+  val raw_data_full_frequency = raw_xd.join(raw_data_full,Seq("device_id","osm_id"))
 
-domain_country
-.write.format("csv")
+raw_data_full_frequency.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_country_domain")
-
-
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","5","2","MX")
-
-val segments_country = segments.groupBy("feature").agg(countDistinct("device_id") as "unique_users_country")
-
-println("unique_devices_in_segments",segments.select("device_id").distinct().count())
-
-segments_country
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_country_segments")
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_frequency")
 
 }
 
