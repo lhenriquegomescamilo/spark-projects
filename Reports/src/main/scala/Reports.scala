@@ -202,7 +202,7 @@ object Reports {
 
   val dir = "/datascience/reports/gain/"
   val format = "yyyy-MM"
-  val date_current = DateTime.now.toString(format)
+  val date_current = DateTime.now.minusDays(1).toString(format)
   val fileNameFinal = dir + subdir + "/" + date_current
 
     data
