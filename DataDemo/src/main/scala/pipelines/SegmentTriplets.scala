@@ -62,6 +62,8 @@ object SegmentTriplets {
           )
       )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    files.foreach(println)
+    println(start)
     val dfs = files
       .map(
         x =>
