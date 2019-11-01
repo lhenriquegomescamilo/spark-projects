@@ -11,9 +11,9 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.{Level, Logger}
 
 /**
-  * The idea of this script is to generate earnings Report. 
+  * The idea of this script is to generate volumes by platform Report. 
   */
-object earningsReport {
+object platformsReport {
 
   /**
     *
