@@ -253,7 +253,8 @@ val HourTo = 7
 
 val raw = spark.read.format("csv").option("delimiter","\t").option("header",true).load("/datascience/geo/radios_argentina_2010_geodevicer_30d_argentina_30-8-2019-14h")
 
- val geo_hour = raw.select("device_id","device_type", "latitude", "longitude","utc_timestamp","name").withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp")))).withColumn("Hour", date_format(col("Time"), "HH")).filter(col("Hour") >= HourFrom || col("Hour") <= HourTo)
+ val geo_hour = raw.select("device_id","device_type", "latitude", "longitude","utc_timestamp","name").withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+ .withColumn("Hour", date_format(col("Time"), "HH")).filter(col("Hour") >= HourFrom || col("Hour") <= HourTo)
                                                                  
                                                     
 val geo_counts = geo_hour.groupBy("device_id","device_type").agg(collect_list("name") as "radios_censales").withColumn("radios_censales", concat_ws(",", col("radios_censales")))
@@ -560,26 +561,64 @@ count_no_birra.write.format("csv")
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
 
-
+//Usuarios que fueron a un strip club. Esta es la web cookie
+/*
     val raw_data_full =  spark.read.format("csv")
   .option("header",true)
   .option("delimiter","\t")
   .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_named_poi_feature")
-  
-  val raw_xd = spark.read.format("csv")
+
+val strip_users = raw_data_full.filter("type == 'stripclub'").dropDuplicates("device_id")
+
+val raw_xd = spark.read.format("csv")
   .option("header",false)
   .option("delimiter",",")
-  .load("/datascience/audiences/crossdeviced/mex_alcohol_60d_mexico_30-10-2019-15h_aggregated_xd")
-  .select("_c1","_c2","_c3","_c9","_c10").filter("_c2 == 'coo'").drop("_c2").toDF("device_id","osm_id","freq","validUser")
-
+  .load("/datascience/audiences/crossdeviced/mex_alcohol_60d_mexico_30-10-2019-15h_aggregated_xd").select("_c0","_c1").distinct().toDF("madid","device_id")
   
-  val raw_data_full_frequency = raw_xd.join(raw_data_full,Seq("device_id","osm_id"))
+val filter_strip_users = strip_users.join(raw_xd,Seq("device_id","osm_id", "common_name", "type")).withColumn("madid",upper(col("madid")))
 
-raw_data_full_frequency.write.format("csv")
+val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/raw_output/mex_alcohol_60d_mexico_30-10-2019-12h")
+.withColumnRenamed("device_id","madid")
+.withColumn("madid",upper(col("madid")))
+
+
+
+filter_strip_users.join(raw,Seq("madid")).write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_frequency")
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_strip_club")
+*/
+
+  val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
+  .load("/datascience/geo/raw_output/mex_alcohol_60d_mexico_30-10-2019-12h")
+  .withColumnRenamed("device_id","madid").withColumn("madid",upper(col("madid")))
+  
+val freq_high = spark.read.format("csv")
+  .option("header",true)
+  .option("delimiter","\t")
+  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_frequency")  .filter(col("freq") >= 20 || col("validUser") == true)
+  .groupBy("feature").agg(countDistinct("device_id" )as "uniques")
+  
+val freq_low = spark.read.format("csv")
+  .option("header",true)
+  .option("delimiter","\t")
+  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_frequency")  .filter(col("freq") < 20 || col("validUser") == false)
+  .groupBy("feature").agg(countDistinct("device_id" ) as "uniques")
+  
+freq_high.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_freq_high")
+
+freq_low.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_freq_low")
+
 
 }
 

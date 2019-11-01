@@ -193,9 +193,10 @@ object Streaming {
         .awaitTermination()
     } else {
       
-      filtered.createOrReplaceTempView("temp_data_5")
+      // filtered.createOrReplaceTempView("temp_data_5")
 
-      spark.table("temp_data_5").orderBy(asc("country"), asc("device_id"))
+      // spark.table("temp_data_5").orderBy(asc("country"), asc("device_id"))
+      filtered
         .write
         .mode("append")
         .format("parquet")
