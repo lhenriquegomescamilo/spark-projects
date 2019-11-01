@@ -13,9 +13,9 @@ import org.joda.time.DateTime
 import org.apache.hadoop.conf.Configuration
 
 /**
-  * The idea of this script is to generate reports. 
+  * The idea of this script is to generate earnings Report. 
   */
-object Reports {
+object earningsReport {
 
   /**
     *
@@ -339,7 +339,7 @@ object Reports {
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
-      .appName("Reports")
+      .appName("EarningsReport")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
     
