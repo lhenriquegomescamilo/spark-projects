@@ -69,7 +69,6 @@ object DataUrls{
                   .filter("url is not null AND event_type IN ('pv', 'batch')")
                   .withColumn("day", lit(DateTime.now.toString(format)))
                   .select("device_id", "url", "referer", "event_type","country","day","segments","time")
-      )
 
       
     df.write
