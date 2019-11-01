@@ -562,7 +562,7 @@ count_no_birra.write.format("csv")
 
 
 //Usuarios que fueron a un strip club. Esta es la web cookie
- //Usuarios que fueron a un strip club. Esta es la web cookie
+/*
     val raw_data_full =  spark.read.format("csv")
   .option("header",true)
   .option("delimiter","\t")
@@ -589,7 +589,30 @@ filter_strip_users.join(raw,Seq("madid")).write.format("csv")
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_strip_club")
+*/
+val freq_high = spark.read.format("csv")
+  .option("header",true)
+  .option("delimiter","\t")
+  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_frequency")  .filter(col("freq") >= 20 || col("validUser") == true)
+  .groupBy("feature").agg(countDistinct("device_id" )as "uniques")
+  
+val freq_low = spark.read.format("csv")
+  .option("header",true)
+  .option("delimiter","\t")
+  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_frequency")  .filter(col("freq") < 20 || col("validUser") == false)
+  .groupBy("feature").agg(countDistinct("device_id" ) as "uniques")
+  
+freq_high.join(raw,Seq("madid")).write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_freq_high")
 
+freq_low.join(raw,Seq("madid")).write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_freq_low")
 
 
 }
