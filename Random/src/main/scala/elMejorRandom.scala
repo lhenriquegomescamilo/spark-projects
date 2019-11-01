@@ -493,6 +493,7 @@ to_xd
 
 def get_mex_data( spark: SparkSession) 
 {
+/*
   val w_seg_users = spark.read.format("csv")
   .option("header",true)
   .option("delimiter",",")
@@ -518,7 +519,6 @@ domain_users
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_user_domain")
-
 
 
   val raw_data_full_frequency = raw_xd.join(raw_data_full,Seq("device_id","osm_id"))
@@ -548,6 +548,8 @@ count_no_birra.write.format("csv")
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_no_birra_type")
+
+*/
 }
 
  /*****************************************************/
