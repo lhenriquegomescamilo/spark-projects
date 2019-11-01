@@ -62,18 +62,15 @@ object DataUrls{
           )
       )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      .map(
-        x =>
-          spark.read
-            .option("basePath", "/datascience/data_audiences_streaming/")
-            .parquet(x)
-            .filter("url is not null AND event_type IN ('pv', 'batch')")
-            .withColumn("day", lit(x.split("/").last.slice(5, 13)))
-            .select("device_id", "url", "referer", "event_type","country","day","segments","time")
+      
+    val df = spark.read
+                  .option("basePath", "/datascience/data_audiences_streaming/")
+                  .parquet(dfs: _*)
+                  .filter("url is not null AND event_type IN ('pv', 'batch')")
+                  .withColumn("day", lit(DateTime.now.toString(format)))
+                  .select("device_id", "url", "referer", "event_type","country","day","segments","time")
       )
 
-    /// Concatenamos los dataframes
-    val df = dfs.reduce((df1, df2) => df1.union(df2)).distinct()
       
     df.write
       .format("parquet")
@@ -90,11 +87,10 @@ object DataUrls{
       .config("spark.sql.sources.partitionOverwriteMode","dynamic")
       .getOrCreate()
 
-    val ndays = if (args.length > 0) args(0).toInt else 30
+    val ndays = if (args.length > 0) args(0).toInt else 1
     val since = if (args.length > 1) args(1).toInt else 1
 
-    for(day <- since to since+ndays){
-      generate_data_urls(spark, 1, day)
-    }
+    generate_data_urls(spark, ndays, since)
+    
   }
 }
