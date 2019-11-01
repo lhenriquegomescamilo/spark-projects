@@ -517,22 +517,11 @@ domain_users
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_user_domain")}
-
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_user_domain")
 
 
 
-val raw_data_full =  spark.read.format("csv")
-  .option("header",true)
-  .option("delimiter","\t")
-  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_named_poi_feature")
-
+  val raw_data_full_frequency = raw_xd.join(raw_data_full,Seq("device_id","osm_id"))
 
 val chupi = List ("103928","103929","103928","166","103929","103930","103931","4776","85","103966","103967","5298")
   
@@ -559,6 +548,36 @@ count_no_birra.write.format("csv")
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_no_birra_type")
+}
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+
+
+    val raw_data_full =  spark.read.format("csv")
+  .option("header",true)
+  .option("delimiter","\t")
+  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_named_poi_feature")
+  
+  val raw_xd = spark.read.format("csv")
+  .option("header",false)
+  .option("delimiter",",")
+  .load("/datascience/audiences/crossdeviced/mex_alcohol_60d_mexico_30-10-2019-15h_aggregated_xd")
+  .select("_c1","_c2","_c3","_c9","_c10").filter("_c2 == 'coo'").drop("_c2").toDF("device_id","osm_id","freq","validUser")
+
+  
+  val raw_data_full_frequency = raw_xd.join(raw_data_full,Seq("device_id","osm_id"))
+
+raw_data_full_frequency.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_frequency")
 
 }
 
