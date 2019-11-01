@@ -52,7 +52,7 @@ object SegmentTriplets {
     val days =
       (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_audiences_streaming"
-    val dfs = days
+    val files = days
       .flatMap(
         day =>
           (0 until 24).map(
@@ -62,6 +62,7 @@ object SegmentTriplets {
           )
       )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val dfs = files
       .map(
         x =>
           spark.read
