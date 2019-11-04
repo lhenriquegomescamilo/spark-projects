@@ -104,7 +104,7 @@ object platformsData {
   val dir = "/datascience/reports/platforms/data/"
   val fileNameFinal = dir + date_current
 
-    data
+    df
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
