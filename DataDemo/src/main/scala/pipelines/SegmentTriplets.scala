@@ -62,36 +62,58 @@ object SegmentTriplets {
           )
       )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val dfs = files
-      .map(
-        x =>
-          spark.read
-            .option("basePath", "/datascience/data_audiences_streaming/")
-            .parquet(x)
-            .filter(
-              "event_type IN ('batch', 'data', 'tk', 'pv', 'retroactive')"
-            )
-            .select(
-              "device_id",
-              "segments",
-              "country",
-              "event_type",
-              "id_partner"
-            )
-            .withColumn("segments", explode(col("segments")))
-            .withColumn("day", lit(x.split("/").last.slice(5, 13)))
-            .withColumnRenamed("segments", "feature")
-            .withColumn("count", lit(1))
-      )
+    files.foreach(println)
+    println(start)
+    // val dfs = files
+    //   .map(
+    //     x =>
+    //       spark.read
+    //         .option("basePath", "/datascience/data_audiences_streaming/")
+    //         .parquet(x)
+    //         .filter(
+    //           "event_type IN ('batch', 'data', 'tk', 'pv', 'retroactive')"
+    //         )
+    //         .select(
+    //           "device_id",
+    //           "segments",
+    //           "country",
+    //           "event_type",
+    //           "id_partner"
+    //         )
+    //         .withColumn("segments", explode(col("segments")))
+    //         .withColumn("day", lit(x.split("/").last.slice(5, 13)))
+    //         .withColumnRenamed("segments", "feature")
+    //         .withColumn("count", lit(1))
+    //   )
 
-    val df = dfs.reduce((df1, df2) => df1.union(df2))
+    // val df = dfs.reduce((df1, df2) => df1.union(df2))
+
+    val df = spark.read
+      .option("basePath", "/datascience/data_audiences_streaming/")
+      .parquet(files: _*)
+      .filter(
+        "event_type IN ('batch', 'data', 'tk', 'pv', 'retroactive')"
+      )
+      .select(
+        "device_id",
+        "segments",
+        "country",
+        "event_type",
+        "id_partner",
+        "datetime"
+      )
+      .withColumn("segments", explode(col("segments")))
+      .withColumnRenamed("segments", "feature")
+      .withColumn("count", lit(1))
+      .withColumn("day", date_format(col("datetime"), "yyyyMMdd"))
+      .drop("datetime")
 
     val grouped_data = df
       .select("device_id", "feature", "country", "day", "id_partner")
       .distinct()
       .withColumn("count", lit(1))
-      // .groupBy("device_id", "feature", "country", "day", "id_partner")
-      // .agg(sum("count").as("count"))
+    // .groupBy("device_id", "feature", "country", "day", "id_partner")
+    // .agg(sum("count").as("count"))
 
     grouped_data
       .orderBy("device_id")

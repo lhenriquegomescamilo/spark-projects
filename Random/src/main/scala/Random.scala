@@ -5318,74 +5318,32 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    // val w_seg_users = spark.read
-    //   .format("csv")
-    //   .option("header", true)
-    //   .option("delimiter", ",")
-    //   .load(
-    //     "/datascience/geo/geo_processed/mex_alcohol_60d_mexico_30-10-2019-15h_output_path_users_data"
-    //   )
-    // val pois = spark.read
-    //   .format("csv")
-    //   .option("header", true)
-    //   .load("/datascience/geo/POIs/mex_alcohol.csv")
-    //   .select("type", "common_name", "osm_id")
-    // val named = w_seg_users.join(pois, Seq("osm_id"))
+    for (date <- List(
+           "/data/eventqueue/2019/01/30/",
+           "/data/eventqueue/2019/01/31/",
+           "/data/eventqueue/2019/02/01/",
+           "/data/eventqueue/2019/02/02/"
+         )) {
+      val data = spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .option("header", "true")
+        .load(date)
+        .select("segments", "device_id", "device_type")
 
-    // val url = spark.read
-    //   .format("parquet")
-    //   .option("header", true)
-    //   .option("delimiter", "\t")
-    //   .load("/datascience/data_triplets/urls/country=MX")
-    // val domain = url.withColumn("domain", split(col("url"), "/")(0))
-    // val domain_users = named
-    //   .join(domain, Seq("device_id"))
-    //   .groupBy("url", "type")
-    //   .agg(countDistinct("device_id") as "unique_device")
-    // domain_users.write
-    //   .format("csv")
-    //   .option("header", true)
-    //   .option("delimiter", "\t")
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_user_url")
+      data.cache()
 
-    spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_user_url")
-      .withColumn("url", lower(col("url")))
-      .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
-      .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
-      .withColumn("content_keys", explode(col("url_keys")))
-      .filter(col("content_keys").rlike("[a-z]{2,}"))
-      .groupBy("content_keys", "type")
-      .agg(sum("unique_device") as "count")
-      .write
-      .format("csv")
-      .option("header", true)
-      .option("delimiter", "\t")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_user_keys")
-
-    val url = spark.read
-      .format("parquet")
-      .option("header", true)
-      .option("delimiter", "\t")
-      .load("/datascience/data_triplets/urls/country=MX")
-      .withColumn("url", lower(col("url")))
-      .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
-      .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
-      .withColumn("content_keys", explode(col("url_keys")))
-      .filter(col("content_keys").rlike("[a-z]{2,}"))
-      .groupBy("content_keys")
-      .count()
-      .write
-      .format("csv")
-      .option("header", true)
-      .option("delimiter", "\t")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_country_keys")
+      for (i <- List("73750", "73751", "73752", "73753")) {
+        data
+          .filter("segments LIKE '%" + i + "%'")
+          .withColumn("seg", lit(i))
+          .select("device_type", "device_id", "seg")
+          .write
+          .format("csv")
+          .option("sep", "\t")
+          .mode("append")
+          .save("/datascience/custom/geo_tmp_%s".format(i))
+      }
+    }
   }
-
 }
