@@ -5322,7 +5322,7 @@ user_granularity.write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .load("/data/eventqueue/2019/02/01/")
+      .load("/data/eventqueue/2019/02/02/")
       .select("segments", "device_id", "country", "device_type")
 
     data.cache()
@@ -5335,7 +5335,7 @@ user_granularity.write
         .write
         .format("csv")
         .option("sep", "\t")
-        .mode("overwrite")
+        .mode("append")
         .save("/datascience/custom/geo_tmp_%s".format(i))
     }
   }
