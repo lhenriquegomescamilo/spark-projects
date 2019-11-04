@@ -195,7 +195,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //
 match_users_to_polygons(spark,
   "/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
-  "63",
+  "30",
   "1",
   "argentina")
 /*spark: SparkSession,

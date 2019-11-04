@@ -162,7 +162,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //
 match_users_to_polygons(spark,
   "/datascience/geo/POIs/barrios.geojson",
-  "10",
+  "30",
   "3",
   "argentina")
 /*spark: SparkSession,
