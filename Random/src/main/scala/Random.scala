@@ -5318,25 +5318,32 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val data = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .load("/data/eventqueue/2019/02/01/")
-      .select("segments", "device_id", "country", "device_type")
-
-    data.cache()
-
-    for (i <- List("73750", "73751", "73752", "73753")) {
-      data
-        .filter("segments LIKE '%" + i +"%'")
-        .withColumn("seg", lit(i))
-        .select("device_type", "device_id", "seg")
-        .write
+    for (date <- List(
+           "/data/eventqueue/2019/01/30/",
+           "/data/eventqueue/2019/01/31/",
+           "/data/eventqueue/2019/02/01/",
+           "/data/eventqueue/2019/02/02/"
+         )) {
+      val data = spark.read
         .format("csv")
         .option("sep", "\t")
-        .mode("append")
-        .save("/datascience/custom/geo_tmp_%s".format(i))
+        .option("header", "true")
+        .load(date)
+        .select("segments", "device_id", "device_type")
+
+      data.cache()
+
+      for (i <- List("73750", "73751", "73752", "73753")) {
+        data
+          .filter("segments LIKE '%" + i + "%'")
+          .withColumn("seg", lit(i))
+          .select("device_type", "device_id", "seg")
+          .write
+          .format("csv")
+          .option("sep", "\t")
+          .mode("append")
+          .save("/datascience/custom/geo_tmp_%s".format(i))
+      }
     }
   }
 }
