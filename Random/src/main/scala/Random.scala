@@ -5336,7 +5336,7 @@ user_granularity.write
         .format("csv")
         .option("sep", "\t")
         .mode("overwrite")
-        .save("/datascience/custom/geo_tmp_%i".format(i))
+        .save("/datascience/custom/geo_tmp_%s".format(i))
     }
   }
 }
