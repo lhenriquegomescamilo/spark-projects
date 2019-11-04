@@ -63,6 +63,12 @@ object platformsData {
     * @return a DataFrame with "platform", "segment", "user_unique".
    **/
 
+  //udf to process platform columns
+  val udfPlatform = udf( (d2: String, d10: String, d11: String, d13: String, d14: String)
+                        => Map("d2" -> d2, "d10" -> d10, "d11" -> d11, "d13" -> d13, "d14" -> d14)
+                        .filter(t => t._2 != null && t._2.length>0)
+                        .map(t => t._1).toSeq ) 
+
   def transformDF(
       data: DataFrame
   ): DataFrame = {
