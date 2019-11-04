@@ -33,7 +33,7 @@ object platformsData {
 
   def getDayEventQueue(
       spark: SparkSession,
-      date_current: Integer
+      date_current: String
   ): DataFrame = {
 
     val columns = "device_id,third_party,d2,d10,d11,d13,d14".split(",").toList
@@ -128,7 +128,7 @@ object platformsData {
     /**Get current date */
     val format = "yyyy/MM/dd/"
     val date_current = DateTime.now.minusDays(since).toString(format)
-    println("STREAMING LOGGER:\n\tDay: %s".format(day))
+    println("STREAMING LOGGER:\n\tDay: %s".format(date_current))
    
     /** Read from "eventqueue" database */
     val data = getDayEventQueue(spark = spark,
