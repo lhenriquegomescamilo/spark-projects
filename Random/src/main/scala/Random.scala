@@ -5329,7 +5329,7 @@ user_granularity.write
 
     for (i <- List("73750", "73751", "73752", "73753")) {
       data
-        .filter("country = 'AR' AND segments LIKE '%" + i"%'")
+        .filter("country = 'AR' AND segments LIKE '%" + i +"%'")
         .withColumn("seg", lit(i))
         .select("device_type", "device_id", "seg")
         .write
