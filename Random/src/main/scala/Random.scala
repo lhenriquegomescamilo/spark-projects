@@ -5322,14 +5322,14 @@ user_granularity.write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .load("/data/eventqueue/2019/02/02/")
+      .load("/data/eventqueue/2019/02/01/")
       .select("segments", "device_id", "country", "device_type")
 
     data.cache()
 
     for (i <- List("73750", "73751", "73752", "73753")) {
       data
-        .filter("country = 'AR' AND segments LIKE '%" + i +"%'")
+        .filter("segments LIKE '%" + i +"%'")
         .withColumn("seg", lit(i))
         .select("device_type", "device_id", "seg")
         .write
