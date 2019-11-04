@@ -1,16 +1,16 @@
-package main.scala
-import org.apache.spark.sql.{SparkSession, Row, SaveMode}
+package main.scala.keywiser
+import main.scala.crossdevicer.AudienceCrossDevicer
+
+import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.sql.functions._
-import org.joda.time.{Days, DateTime}
-import org.joda.time.format.DateTimeFormat
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Encoders, SparkSession}
-import org.joda.time.Days
-import org.joda.time.DateTime
+
+import org.joda.time.{Days, DateTime}
+
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.conf.Configuration
+
+import org.apache.log4j.{Level, Logger}
 
 /**
   * The idea of this script is to generate audiences based on keywords obtained from url content. 
@@ -90,7 +90,8 @@ object Keywiser {
     */
   def generateMetaFile(
       file_name: String,
-      queries: List[Map[String, Any]]
+      queries: List[Map[String, Any]],
+      xd: String
   ) {
     println("KEYWISER LOG:\n\tPushing the audience to the ingester")
 
@@ -113,11 +114,16 @@ object Keywiser {
     val description = queries(0)("description")
     var file_name_final =
       if (queries.length > 1) file_name + "_grouped" else file_name
-
-    // Now we calculate the path of the file according to the properties.
-    val file_path = "/datascience/keywiser/processed/"
     
-
+   // Now we calculate the path of the file according to the properties.
+    var file_path = ""
+    if (Set("1", "true", "True").contains(xd)) {
+      file_path = "/datascience/audiences/crossdeviced/"
+      file_name_final = file_name_final + "_xd"
+    } else {
+      file_path = "/datascience/keywiser/processed/"
+    }
+   
     // Then we generate the content for the json file.
     val json_content = """{"filePath":"%s%s", "priority":%s, "as_view":%s, "pipeline":"%s", "queue":"%s", "jobId":%s, "description":"%s"}"""
       .format(
@@ -354,7 +360,20 @@ object Keywiser {
               .toString
               .length > 0) query("jobId")
         else ""
-       
+
+      val xd =
+        if (query.contains("xd") && Option(query("xd"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("xd")
+        else false
+ 
+      val xdFilter =
+        if (query.contains("xdFilter") && Option(query("xdFilter"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("xdFilter")
+        else "device_type IN ('coo', 'and', 'ios')"
 
       val actual_map: Map[String, Any] = Map(
         "filter" -> filter,
@@ -370,7 +389,9 @@ object Keywiser {
         "stemming" -> stemming,
         "description" -> description,
         "jobid" -> jobid,
-        "country" -> country
+        "country" -> country,
+        "xd" -> xd,
+        "xdFilter" -> xdFilter        
       )
 
       queries = queries ::: List(actual_map)
@@ -516,10 +537,10 @@ object Keywiser {
       val push = queries(0)("push").toString
       val stemming = queries(0)("stemming").toString.toInt
       val description = queries(0)("description").toString
+      val xd = queries(0)("xd").toString
 
       println(
-        "KEYWISER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s"
-        //"KEYWISER LOG: Parameters obtained for file %s:\n\tpartner_id: %s\n\tsince: %d\n\tnDays: %d\n\tCommon filter: %s\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tXD: %s"
+        "KEYWISER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s\n\txd: %s"
           .format(
             file,
             country,
@@ -529,7 +550,8 @@ object Keywiser {
             queries.length,
             push,
             stemming,
-            description
+            description,
+            xd
           )
       )
     
@@ -598,6 +620,21 @@ object Keywiser {
         }
       }        
 
+      // We cross device the audience if the parameter is set.
+      if (!failed && Set("1", "true", "True").contains(xd)) {
+        println(
+          "LOGGER: the audience will be cross-deviced. XD parameter value: %s"
+            .format(xd)
+        )
+        val object_xd = AudienceCrossDevicer.cross_device(
+          spark,
+          "/datascience/keywiser/processed/" + file_name,
+          queries(0)("xdFilter").toString,
+          "\t",
+          "_c1"
+        )
+      }
+
       // If everything worked out ok, then move file from the folder /datascience/keywiser/in_progress/ to /datascience/keywiser/done/
       srcPath = new Path(actual_path)
       val destFolder =
@@ -608,7 +645,7 @@ object Keywiser {
 
       // If push parameter is true, we generate a file with the metadata.
       if (!failed && Set("1", "true", "True").contains(push)) {
-        generateMetaFile(file_name, queries)
+        generateMetaFile(file_name, queries, xd)
       }
     }
     //hdfs.close()
