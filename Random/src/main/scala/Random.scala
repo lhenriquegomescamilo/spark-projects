@@ -5322,7 +5322,7 @@ user_granularity.write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .load("/data/eventqueue/2019/01/30/")
+      .load("/data/eventqueue/2019/01/31/")
       .select("segments", "device_id", "country", "device_type")
 
     data.cache()
