@@ -118,7 +118,7 @@ object platformsData {
       .format("parquet")
       .partitionBy("day")
       .mode(SaveMode.Overwrite)
-      .save(fileNameFinal)
+      .save(dir)
   }
   
 
