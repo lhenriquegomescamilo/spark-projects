@@ -45,6 +45,7 @@ object platformsData {
         .load("/data/eventqueue/%s".format(date_current))
         .select(columns.head, columns.tail: _*) // Here we select the columns to work with
         .filter("event_type != 'sync'") // filter sync, internal event
+        .filter($"d2".isNotNull || $"d10".isNotNull || $"d11".isNotNull || $"d13".isNotNull || $"d14".isNotNull) //get only relevant platforms
 
     df
   }
