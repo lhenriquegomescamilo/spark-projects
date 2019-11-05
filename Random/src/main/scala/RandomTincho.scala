@@ -176,7 +176,7 @@ object RandomTincho {
          spark.read
            .option("basePath", "/datascience/data_triplets/segments/")
            .parquet(x)
-           .select("device_id","feature","count")
+           .select("device_id","feature")
      )
 
    var data = dfs.reduce((df1, df2) => df1.union(df2))
@@ -186,7 +186,7 @@ object RandomTincho {
                                          .withColumnRenamed("_c0","device_id")
 
      data.join(broadcast(cookies),Seq("device_id"))
-         .select("device_id","feature","count")
+         .select("device_id","feature")
          .dropDuplicates()
          .write.format("parquet")
          .mode(SaveMode.Overwrite)
