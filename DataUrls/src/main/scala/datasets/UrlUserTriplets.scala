@@ -30,21 +30,24 @@ object UrlUserTriplets {
   def generate_triplets(spark: SparkSession, nDays: Int, from: Int) = {
     // Load the data from data_urls pipeline
     val data_urls = getDataUrls(spark, nDays, from)
-      .select("device_id", "url", "country")
+      .select("device_id", "url", "country", "referer")
+      .withColumn("url", array(col("url"), col("referer")))
+      .drop("referer")
+      .withColumn("url", explode(col("url")))
       .distinct()
 
-    val data_referer = getDataUrls(spark, nDays, from)
-      .select("device_id", "referer", "country")
-      .withColumnRenamed("referer", "url")
-      .distinct()
+    // val data_referer = getDataUrls(spark, nDays, from)
+    //   .select("device_id", "referer", "country")
+    //   .withColumnRenamed("referer", "url")
+    //   .distinct()
 
     // Now we process the URLs the data
     val processed = UrlUtils
       .processURL(data_urls, field = "url")
-      .unionAll(
-        UrlUtils
-          .processURL(data_referer, field = "url")
-      )
+      // .unionAll(
+      //   UrlUtils
+      //     .processURL(data_referer, field = "url")
+      // )
 
     // Then we add the domain as a new URL for each user
     val withDomain = processed
@@ -59,8 +62,7 @@ object UrlUserTriplets {
       .distinct()
 
     // Finally we save the data
-    withDomain
-      .write
+    withDomain.write
       .format("parquet")
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
@@ -94,6 +96,28 @@ object UrlUserTriplets {
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_triplets/urls/device_index/")
+
+    val url_idx = spark.read
+      .format("parquet")
+      .load("/datascience/data_triplets/urls/url_index/")
+
+    val device_idx = spark.read
+      .format("parquet")
+      .load("/datascience/data_triplets/urls/device_index/")
+
+    val data = spark.read
+      .format("parquet")
+      .load("/datascience/data_triplets/urls/raw/")
+
+    data
+      .join(device_idx, Seq("device_id"))
+      .join(url_idx, Seq("url"))
+      .select("device_idx", "url_idx", "country")
+      .write
+      .format("parquet")
+      .partitionBy("country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_triplets/urls/indexed/")
   }
 
   type OptionMap = Map[Symbol, Int]
