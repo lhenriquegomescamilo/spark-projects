@@ -136,6 +136,7 @@ object UrlUserTriplets {
     val url_idx = spark.read
       .format("parquet")
       .load("/datascience/data_triplets/urls/url_index/")
+      .drop("country")
 
     val device_idx = spark.read
       .format("parquet")
