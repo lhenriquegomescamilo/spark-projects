@@ -546,7 +546,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_selected_keywords(spark)
+    get_segments_pmi(spark, ndays = 30, since = 1)
   }
 
 }
