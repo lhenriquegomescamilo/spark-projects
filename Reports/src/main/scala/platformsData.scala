@@ -75,8 +75,10 @@ object platformsData {
   ): DataFrame = {
 
     val df = data
-        .withColumn("platforms", udfPlatform(col("d2"), col("d10"), col("d11"), col("d13"), col("d14")))
+        //.withColumn("platforms", udfPlatform(col("d2"), col("d10"), col("d11"), col("d13"), col("d14")))
+        .withColumn("platforms", array(col("d2"), col("d10"), col("d11"), col("d13"), col("d14")))
         .withColumn("platform", explode(col("platforms")))
+        .filter("platform IS NOT NULL")
         .withColumn("segments", split(col("third_party"), "\u0001"))
         .withColumn("segment", explode(col("segments")))
         .select("device_id","segment","platform")
