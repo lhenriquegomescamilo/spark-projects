@@ -75,7 +75,7 @@ object UrlUserTriplets {
       .count()
       .filter("count >= 2")
       .withColumn("url_idx", monotonicallyIncreasingId)
-      .select("url_idx", "url")
+      .select("url_idx", "url", "country")
       .write
       .format("parquet")
       .partitionBy("country")
@@ -88,7 +88,7 @@ object UrlUserTriplets {
       .select("country", "device_id")
       .distinct()
       .withColumn("device_idx", monotonicallyIncreasingId)
-      .select("device_idx", "device_id")
+      .select("device_idx", "device_id", "country")
       .write
       .format("parquet")
       .partitionBy("country")
