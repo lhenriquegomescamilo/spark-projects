@@ -41,18 +41,58 @@ object UrlUserTriplets {
       .distinct()
 
     val data_referer = getDataUrls(spark, nDays, from)
-      .select("device_id", "url", "referer")
+      .select("device_id", "referer", "country")
       .withColumnRenamed("referer", "url")
       .distinct()
 
     // Now we save the data
-    UrlUtils
+    val processed = UrlUtils
       .processURL(data_urls, field = "url")
+      .unionAll(
+        UrlUtils
+          .processURL(data_referer, field = "url")
+      )
+      .withColumn(
+        "domain",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+      .withColumn("domain", regexp_replace(col("domain"), "/.*", ""))
+      .withColumn("url", array(col("url", "domain")))
+      .withColumn("url", explode(col("url")))
+      .select("device_id", "url", "country")
+      .distinct()
       .write
       .format("parquet")
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_triplets/urls/")
+      .save("/datascience/data_triplets/urls/raw/")
+  }
+
+  def get_indexes(spark: SparkSession) = {
+    spark.read
+      .format("parquet")
+      .load("/datascience/data_triplets/urls/raw/")
+      .groupBy("country", "url")
+      .count()
+      .filter("count >= 2")
+      .withColumn("url_idx", monotonicallyIncreasingId)
+      .select("url_idx", "url")
+      .format("parquet")
+      .partitionBy("country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_triplets/urls/url_index/")
+
+    spark.read
+      .format("parquet")
+      .load("/datascience/data_triplets/urls/raw/")
+      .select("country", "device_id")
+      .distinct()
+      .withColumn("device_idx", monotonicallyIncreasingId)
+      .select("device_idx", "device_id")
+      .format("parquet")
+      .partitionBy("country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_triplets/urls/device_index/")
   }
 
   type OptionMap = Map[Symbol, Int]
@@ -85,5 +125,6 @@ object UrlUserTriplets {
       .getOrCreate()
 
     generate_triplets(spark, nDays, from)
+    get_indexes(spark)
   }
 }
