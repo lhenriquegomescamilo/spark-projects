@@ -113,8 +113,10 @@ object platformsData {
   val fileNameFinal = dir + date_current
 
     df
+      .withColumn("day", lit(date_current.replace("/", "")))
       .write
       .format("parquet")
+      .partitionBy("day")
       .mode(SaveMode.Overwrite)
       .save(fileNameFinal)
   }
@@ -187,6 +189,7 @@ object platformsData {
     val spark = SparkSession.builder
       .appName("PlatformsData")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.sources.partitionOverwriteMode","dynamic")
       .getOrCreate()
     
      getDataPlatforms(
