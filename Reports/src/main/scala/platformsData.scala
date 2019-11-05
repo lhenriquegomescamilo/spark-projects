@@ -76,9 +76,14 @@ object platformsData {
 
     val df = data
         //.withColumn("platforms", udfPlatform(col("d2"), col("d10"), col("d11"), col("d13"), col("d14")))
+        .withColumn("d2", when(col("d2").isNotNull, "d2").otherwise(""))
+        .withColumn("d10", when(col("d10").isNotNull, "d10").otherwise(""))
+        .withColumn("d11", when(col("d11").isNotNull, "d11").otherwise(""))
+        .withColumn("d13", when(col("d13").isNotNull, "d13").otherwise(""))
+        .withColumn("d14", when(col("d14").isNotNull, "d14").otherwise(""))
         .withColumn("platforms", array(col("d2"), col("d10"), col("d11"), col("d13"), col("d14")))
         .withColumn("platform", explode(col("platforms")))
-        .filter("platform IS NOT NULL")
+        .filter("platform IS NOT NULL AND length(platform)>0")
         .withColumn("segments", split(col("third_party"), "\u0001"))
         .withColumn("segment", explode(col("segments")))
         .select("device_id","segment","platform")
