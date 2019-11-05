@@ -1,13 +1,6 @@
 package main.scala.datasets
 
-import main.scala.datasets.{
-  DatasetKeywordContent,
-  DatasetReferer,
-  DatasetTimestamp,
-  DatasetUserAgent,
-  DatasetSegmentsBranded,
-  UrlUtils
-}
+import main.scala.datasets.UrlUtils
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
 import org.apache.spark.sql.{SaveMode, DataFrame, SparkSession}
@@ -45,22 +38,28 @@ object UrlUserTriplets {
       .withColumnRenamed("referer", "url")
       .distinct()
 
-    // Now we save the data
+    // Now we process the URLs the data
     val processed = UrlUtils
       .processURL(data_urls, field = "url")
       .unionAll(
         UrlUtils
           .processURL(data_referer, field = "url")
       )
+
+    // Then we add the domain as a new URL for each user
+    val withDomain = processed
       .withColumn(
         "domain",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
       )
       .withColumn("domain", regexp_replace(col("domain"), "/.*", ""))
-      .withColumn("url", array(col("url", "domain")))
+      .withColumn("url", array(col("url"), col("domain")))
       .withColumn("url", explode(col("url")))
       .select("device_id", "url", "country")
       .distinct()
+
+    // Finally we save the data
+    withDomain
       .write
       .format("parquet")
       .partitionBy("country")
