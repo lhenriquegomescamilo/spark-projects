@@ -2,8 +2,9 @@ package main.scala.datasets
 
 import main.scala.datasets.UrlUtils
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
 import org.joda.time.{Days, DateTime}
-import org.apache.spark.sql.{SaveMode, DataFrame, SparkSession}
+import org.apache.spark.sql.{SaveMode, DataFrame, SparkSession, Row}
 
 object UrlUserTriplets {
 
