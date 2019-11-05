@@ -176,6 +176,7 @@ object RandomTincho {
          spark.read
            .option("basePath", "/datascience/data_triplets/segments/")
            .parquet(x)
+           .select("device_id","feature","count")
      )
 
    var data = dfs.reduce((df1, df2) => df1.union(df2))
