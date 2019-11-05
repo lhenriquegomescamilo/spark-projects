@@ -123,7 +123,7 @@ object UrlUserTriplets {
         .select("country", "device_id")
         .distinct(),
       offset = 0,
-      colName = "url_idx"
+      colName = "device_idx"
     ).select("device_idx", "device_id", "country")
       .write
       .format("parquet")
