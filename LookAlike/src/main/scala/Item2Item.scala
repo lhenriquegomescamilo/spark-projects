@@ -138,7 +138,7 @@ object Item2Item {
     println("LOOKALIKE LOG: Model training")
 
     val data = {
-      if (nDaysDataSegment <= nDaysData){
+      if (nDaysDataSegment <= nDaysData)
         getDataTriplets(spark, country, nDaysData) 
       else
         getDataTriplets(spark, country, nDaysData)
@@ -218,7 +218,7 @@ object Item2Item {
 
     // 1) Read the data
     val data = {
-      if (nDaysDataSegment <= nDaysData){
+      if (nDaysDataSegment <= nDaysData)
         getDataTriplets(spark, country, nDaysData) 
       else
         getDataTriplets(spark, country, nDaysData)
