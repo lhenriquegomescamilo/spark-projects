@@ -458,7 +458,7 @@ object Item2Item {
     val hdfs_files = days
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*).select("device_id", "feature")
     // force count to 1 - if column doesn't exists, it creates it
     df.withColumn("count", lit(1))
   }
