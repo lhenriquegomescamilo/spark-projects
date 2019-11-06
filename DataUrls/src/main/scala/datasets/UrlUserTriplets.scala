@@ -5,6 +5,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.joda.time.{Days, DateTime}
 import org.apache.spark.sql.{SaveMode, DataFrame, SparkSession, Row}
+import org.apache.spark.sql.expressions.Window
 
 object UrlUserTriplets {
 
