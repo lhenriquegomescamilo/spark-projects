@@ -231,7 +231,7 @@ match_users_to_polygons(spark,
 
 match_sample_to_polygons(spark,
   "/datascience/geo/startapp/2019*",
-  "/datascience/geo/POIs/barrios.geojson",
+  "/datascience/geo/POIs/aud_havas_nov_19.json",
     "CO")
 /*spark: SparkSession,
       nDays: String,
