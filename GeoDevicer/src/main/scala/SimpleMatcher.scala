@@ -167,7 +167,7 @@ val df_safegraph = spark.read.format("csv")
                   .option("delimiter","\t")
                   .load(data_path) //"/datascience/geo/startapp/2019*"
                   .toDF("ad_id","timestamp","country","latitude","longitude","some")
-                  .filter(col("country")==country)
+                  .filter(col("country")===country)
 
 df_safegraph.createOrReplaceTempView("data")
 
@@ -190,9 +190,8 @@ intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/%s_%s_%s_sjoin_polygon".format(
+.save("/datascience/geo/geo_processed/%s_%s_sjoin_polygon".format(
   output_name,
-  nDays,
   country))
 
 }
@@ -233,7 +232,7 @@ match_users_to_polygons(spark,
 match_sample_to_polygons(spark,
   "/datascience/geo/startapp/2019*",
   "/datascience/geo/POIs/barrios.geojson",
-    "argentina")
+    "CO")
 /*spark: SparkSession,
       nDays: String,
       since: String,
