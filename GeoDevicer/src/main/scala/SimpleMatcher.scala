@@ -82,7 +82,6 @@ def get_safegraph_data(
     
   }
 
-
 def match_users_to_polygons (spark: SparkSession,
       polygon_inputLocation: String,
       nDays: String,
@@ -137,6 +136,68 @@ intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
 }
 
 
+def match_sample_to_polygons (spark: SparkSession,
+      data_path: String,
+      polygon_inputLocation: String,
+      country: String) 
+      //nDays: String,
+      //since: String,
+      {
+
+
+
+//Load the polygon
+val inputLocation = polygon_inputLocation
+val allowTopologyInvalidGeometris = true // Optional
+val skipSyntaxInvalidGeometries = true // Optional
+val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
+
+//Transform the polygon to DF
+var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
+rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
+
+// Assign name and geometry columns to DataFrame
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
+
+spatialDf.createOrReplaceTempView("poligonomagico")
+
+
+val df_safegraph = spark.read.format("csv")
+                  .option("header",false)
+                  .option("delimiter","\t")
+                  .load(data_path) //"/datascience/geo/startapp/2019*"
+                  .toDF("ad_id","timestamp","country","latitude","longitude","some")
+                  .filter(col("country")==country)
+
+df_safegraph.createOrReplaceTempView("data")
+
+var safegraphDf = spark .sql("""SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry
+              FROM data  """)
+
+safegraphDf.createOrReplaceTempView("data")
+
+
+val intersection = spark.sql(
+      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
+
+intersection.explain(extended=true)
+
+
+val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
+
+intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/%s_%s_%s_sjoin_polygon".format(
+  output_name,
+  nDays,
+  country))
+
+}
+
+
  /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -160,11 +221,19 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 
 //"/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
 //
+/*
 match_users_to_polygons(spark,
   "/datascience/geo/POIs/barrios.geojson",
   "30",
   "3",
   "argentina")
+
+*/
+
+match_sample_to_polygons(spark,
+  "/datascience/geo/startapp/2019*",
+  "/datascience/geo/POIs/barrios.geojson",
+    "argentina")
 /*spark: SparkSession,
       nDays: String,
       since: String,
