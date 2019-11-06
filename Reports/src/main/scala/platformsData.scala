@@ -82,12 +82,13 @@ object platformsData {
         .withColumn("d13", when(col("d13").isNotNull, "d13").otherwise(""))
         .withColumn("d14", when(col("d14").isNotNull, "d14").otherwise(""))
         .withColumn("platforms", array(col("d2"), col("d10"), col("d11"), col("d13"), col("d14")))
-        .withColumn("platform", explode(col("platforms")))
-        .filter("platform IS NOT NULL AND length(platform)>0")
+        // .withColumn("platform", explode(col("platforms")))
+        // .filter("platform IS NOT NULL AND length(platform)>0")
         .withColumn("segments", split(col("third_party"), "\u0001"))
-        .withColumn("segment", explode(col("segments")))
-        .select("device_id","segment","platform")
-        .groupBy("platform", "segment").agg(countDistinct("device_id") as "user_unique")
+        // .withColumn("segment", explode(col("segments")))
+        // .select("device_id","segment","platform")
+        // .groupBy("platform", "segment").agg(countDistinct("device_id") as "user_unique")
+        .select("device_id", "segments", "d2", "d10", "d11", "d13", "d14")
     df
   }
 
