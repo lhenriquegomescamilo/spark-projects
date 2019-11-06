@@ -140,16 +140,16 @@ object UrlUserTriplets {
     val url_idx = spark.read
       .format("parquet")
       .load("/datascience/data_triplets/urls/url_index/")
-      .drop("country")
+      // .drop("country")
 
     val device_idx = spark.read
       .format("parquet")
       .load("/datascience/data_triplets/urls/device_index/")
-      .drop("country")
+      // .drop("country")
 
     raw_data
-      .join(device_idx, Seq("device_id"))
-      .join(url_idx, Seq("url"))
+      .join(device_idx, Seq("device_id", "country"))
+      .join(url_idx, Seq("url", "country"))
       .select("device_idx", "url_idx", "country")
       .write
       .format("parquet")
@@ -187,7 +187,7 @@ object UrlUserTriplets {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    generate_triplets(spark, nDays, from)
+    // generate_triplets(spark, nDays, from)
     get_indexes(spark)
   }
 }
