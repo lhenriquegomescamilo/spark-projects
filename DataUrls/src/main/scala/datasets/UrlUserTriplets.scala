@@ -186,7 +186,7 @@ object UrlUserTriplets {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    // generate_triplets(spark, nDays, from)
+    generate_triplets(spark, nDays, from)
     get_indexes(spark)
   }
 }
