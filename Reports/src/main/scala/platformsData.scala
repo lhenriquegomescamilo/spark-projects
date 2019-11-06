@@ -11,7 +11,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.{Level, Logger}
 
 /**
-  * The idea of this script is to generate days of volumes by platform for platform Report. 
+  * The idea of this script is to generate days of volumes by platform for platform Report.
   */
 object platformsData {
 
@@ -20,42 +20,45 @@ object platformsData {
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR LOADING DATA     //////////////////////
     *
     */
-   /**
+  /**
     * This method returns a DataFrame with the data from the "eventqueue" pipeline, for the day specified.
-    * A DataFrame that will be returned. 
+    * A DataFrame that will be returned.
     *
     * @param spark: Spark Session that will be used to load the data from HDFS.
     * @param nDays: number of days that will be read.
-    * @param since: number of days ago from where the data is going to be read.  
+    * @param since: number of days ago from where the data is going to be read.
     *
     * @return a DataFrame with the information coming from the read data. Columns: "device_id","third_party" and several platforms.
    **/
-
   def getDayEventQueue(
       spark: SparkSession,
       date_current: String
   ): DataFrame = {
 
     val columns = "device_id,third_party,d2,d10,d11,d13,d14".split(",").toList
-    
+
     val df = spark.read
-        .option("sep", "\t")
-        .option("header", "true")
-        .format("csv")
-        .load("/data/eventqueue/%s".format(date_current))
-        .select(columns.head, columns.tail: _*) // Here we select the columns to work with
-        .filter("event_type != 'sync'") // filter sync, internal event
-        .filter(col("d2").isNotNull || col("d10").isNotNull || col("d11").isNotNull || col("d13").isNotNull || col("d14").isNotNull) //get only relevant platforms
+      .option("sep", "\t")
+      .option("header", "true")
+      .format("csv")
+      .load("/data/eventqueue/%s".format(date_current))
+      .select(columns.head, columns.tail: _*) // Here we select the columns to work with
+      .filter("event_type != 'sync'") // filter sync, internal event
+      .filter(
+        col("d2").isNotNull || col("d10").isNotNull || col("d11").isNotNull || col(
+          "d13"
+        ).isNotNull || col("d14").isNotNull
+      ) //get only relevant platforms
 
     df
   }
 
-/**
+  /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR TRANSFORMING DATA     //////////////////////
     *
     */
-   /**
+  /**
     * This method transform data from the eventqueue, getting the unique users per platform per segment.
     * Returns a dataframe.
     *
@@ -63,35 +66,38 @@ object platformsData {
     *
     * @return a DataFrame with "platform", "segment", "user_unique".
    **/
-
   //udf to process platform columns
-  val udfPlatform = udf( (d2: String, d10: String, d11: String, d13: String, d14: String)
-                        => Map("d2" -> d2, "d10" -> d10, "d11" -> d11, "d13" -> d13, "d14" -> d14)
-                        .filter(t => t._2 != null && t._2.length>0)
-                        .map(t => t._1).toSeq ) 
+  val udfPlatform = udf(
+    (d2: String, d10: String, d11: String, d13: String, d14: String) =>
+      Map("d2" -> d2, "d10" -> d10, "d11" -> d11, "d13" -> d13, "d14" -> d14)
+        .filter(t => t._2 != null && t._2.length > 0)
+        .map(t => t._1)
+        .toSeq
+  )
 
   def transformDF(
       data: DataFrame
   ): DataFrame = {
 
     val df = data
-        //.withColumn("platforms", udfPlatform(col("d2"), col("d10"), col("d11"), col("d13"), col("d14")))
-        .withColumn("d2", when(col("d2").isNotNull, "d2").otherwise(""))
-        .withColumn("d10", when(col("d10").isNotNull, "d10").otherwise(""))
-        .withColumn("d11", when(col("d11").isNotNull, "d11").otherwise(""))
-        .withColumn("d13", when(col("d13").isNotNull, "d13").otherwise(""))
-        .withColumn("d14", when(col("d14").isNotNull, "d14").otherwise(""))
-        .withColumn("platforms", array(col("d2"), col("d10"), col("d11"), col("d13"), col("d14")))
-        // .withColumn("platform", explode(col("platforms")))
-        // .filter("platform IS NOT NULL AND length(platform)>0")
-        .withColumn("segments", split(col("third_party"), "\u0001"))
-        // .withColumn("segment", explode(col("segments")))
-        // .select("device_id","segment","platform")
-        // .groupBy("platform", "segment").agg(countDistinct("device_id") as "user_unique")
-        .select("device_id", "segments", "d2", "d10", "d11", "d13", "d14")
+      .withColumn("d2", when(col("d2").isNotNull, "d2").otherwise(""))
+      .withColumn("d10", when(col("d10").isNotNull, "d10").otherwise(""))
+      .withColumn("d11", when(col("d11").isNotNull, "d11").otherwise(""))
+      .withColumn("d13", when(col("d13").isNotNull, "d13").otherwise(""))
+      .withColumn("d14", when(col("d14").isNotNull, "d14").otherwise(""))
+      .withColumn(
+        "platforms",
+        array(col("d2"), col("d10"), col("d11"), col("d13"), col("d14"))
+      )
+      .withColumn("segments", split(col("third_party"), "\u0001"))
+      .withColumn("platform", explode(col("platforms")))
+      // .filter("platform IS NOT NULL AND length(platform)>0")
+      .withColumn("segment", explode(col("segments")))
+      // .select("device_id","segment","platform")
+      // .groupBy("platform", "segment").agg(countDistinct("device_id") as "user_unique")
+      .select("device_id", "segment", "platform")
     df
   }
-
 
   /**
     *
@@ -104,26 +110,23 @@ object platformsData {
     * @param data: DataFrame that will be saved.
     *
   **/
-
   def saveData(
       df: DataFrame,
       date_current: String
   ) = {
 
-  val dir = "/datascience/reports/platforms/data/"
-  val fileNameFinal = dir + date_current
+    val dir = "/datascience/reports/platforms/data/"
+    val fileNameFinal = dir + date_current
 
-    df
-      .withColumn("day", lit(date_current.replace("/", "")))
+    df.withColumn("day", lit(date_current.replace("/", "")))
       .write
       .format("parquet")
       .partitionBy("day")
       .mode(SaveMode.Overwrite)
       .save(dir)
   }
-  
 
-/**
+  /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     MAIN METHOD     //////////////////////
     *
@@ -137,28 +140,23 @@ object platformsData {
     *
     * As a result this method stores the file in /datascience/reports/gain/file_name_currentdate.csv.
   **/
- 
-  def getDataPlatforms(
-      spark: SparkSession,
-      since: Integer) = {
-       
+  def getDataPlatforms(spark: SparkSession, since: Integer) = {
+
     /**Get current date */
     val format = "yyyy/MM/dd/"
     val date_current = DateTime.now.minusDays(since).toString(format)
     println("STREAMING LOGGER:\n\tDay: %s".format(date_current))
-   
+
     /** Read from "eventqueue" database */
-    val data = getDayEventQueue(spark = spark,
-                              date_current = date_current)
+    val data = getDayEventQueue(spark = spark, date_current = date_current)
 
     /**  Transform data */
     val df = transformDF(data = data)
 
     /** Store df */
-    saveData(df = df,
-             date_current = date_current)
-  
-  }    
+    saveData(df = df, date_current = date_current)
+
+  }
 
   type OptionMap = Map[Symbol, Int]
 
@@ -172,7 +170,7 @@ object platformsData {
       case "--since" :: value :: tail =>
         nextOption(map ++ Map('since -> value.toInt), tail)
     }
-  }    
+  }
 
   /*****************************************************/
   /******************     MAIN     *********************/
@@ -190,12 +188,10 @@ object platformsData {
     val spark = SparkSession.builder
       .appName("PlatformsData")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
-      .config("spark.sql.sources.partitionOverwriteMode","dynamic")
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
-    
-     getDataPlatforms(
-       spark = spark,
-       since = since)
-    
+
+    getDataPlatforms(spark = spark, since = since)
+
   }
 }
