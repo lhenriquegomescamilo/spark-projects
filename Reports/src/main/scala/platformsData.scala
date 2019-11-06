@@ -90,12 +90,11 @@ object platformsData {
         array(col("d2"), col("d10"), col("d11"), col("d13"), col("d14"))
       )
       .withColumn("segments", split(col("third_party"), "\u0001"))
-      .withColumn("platform", explode(col("platforms")))
+      // .withColumn("platform", explode(col("platforms")))
       // .filter("platform IS NOT NULL AND length(platform)>0")
       .withColumn("segment", explode(col("segments")))
-      // .select("device_id","segment","platform")
       // .groupBy("platform", "segment").agg(countDistinct("device_id") as "user_unique")
-      .select("device_id", "segment", "platform")
+      .select("device_id", "segment", "platforms")
     df
   }
 
