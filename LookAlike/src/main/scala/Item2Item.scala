@@ -218,11 +218,11 @@ object Item2Item {
 
     // 1) Read the data
     val data = {
-      if (nDaysDataSegment <= nDaysData)
-        getDataTriplets(spark, country, nDaysData) 
+      if (nDaysSegment <= nDays)
+        getDataTriplets(spark, country, nDays) 
       else
-        getDataTriplets(spark, country, nDaysData)
-        .union(getDataTripletsSegmentsToExpand(spark, segmentsToExpand, country, nDaysDataSegment - nDaysData, nDaysData))
+        getDataTriplets(spark, country, nDays)
+        .union(getDataTripletsSegmentsToExpand(spark, segmentsToExpand, country, nDaysSegment - nDays, nDays))
     }
 
     // Create segment index
