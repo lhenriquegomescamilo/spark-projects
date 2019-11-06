@@ -44,6 +44,7 @@ object Item2Item {
   */
   def processPendingJobs(spark: SparkSession,
                          nDays: Int = -1,
+                         nDaysSegment: Int = 0,
                          simMatrixHits: String = "binary",
                          simThreshold: Double = 0.05,
                          predMatrixHits: String = "binary") {
@@ -84,7 +85,7 @@ object Item2Item {
       fs.rename(new Path(fileToProcess), new Path(fileInProcess))
 
       try {
-        runExpand(spark, fileInProcess, nDays, simMatrixHits, simThreshold, predMatrixHits)
+        runExpand(spark, fileInProcess, nDays, nDaysSegment, simMatrixHits, simThreshold, predMatrixHits)
       } catch {
         case e: Throwable => {
           var errorMessage = e.toString()
@@ -106,6 +107,7 @@ object Item2Item {
   def runExpand(spark: SparkSession,
                 filePath: String,
                 nDays: Int = -1,
+                nDaysDataSegment: Int = 0,
                 simMatrixHits: String = "binary",
                 simThreshold: Double = 0.05,
                 predMatrixHits: String = "binary") {
@@ -115,6 +117,7 @@ object Item2Item {
     // Read input from file
     val metaInput = readMetaParameters(spark, filePath)
     val expandInput = readSegmentsToExpand(spark, filePath)
+    val segmentsToExpand = expandInput.map(row=> row("segment_id").toString)
 
     val isOnDemand = metaInput("job_id").length > 0
     val country = metaInput("country")
@@ -134,10 +137,16 @@ object Item2Item {
     // Read data
     println("LOOKALIKE LOG: Model training")
 
-    val data = getDataTriplets(spark, country, nDaysData)
-
+    val data = {
+      if (nDaysDataSegment <= nDaysData){
+        getDataTriplets(spark, country, nDaysData) 
+      else
+        getDataTriplets(spark, country, nDaysData)
+        .union(getDataTripletsSegmentsToExpand(spark, segmentsToExpand, country, nDaysDataSegment - nDaysData, nDaysData))
+    }
+    
     // Create segment index
-    var segments = expandInput.map(row=> row("segment_id").toString) // First: segments to expand
+    var segments = segmentsToExpand // First: segments to expand
     segments ++= baseFeatureSegments.toSet.diff(segments.toSet).toList // Then: segments used as features
     segments ++= extraFeatureSegments.toSet.diff(segments.toSet).toList 
 
@@ -192,6 +201,7 @@ object Item2Item {
   def runTestTaxo(spark: SparkSession,
                   country: String,
                   nDays: Int = -1,
+                  nDaysSegment: Int = 0,
                   simMatrixHits: String = "binary",
                   simThreshold: Double = 0.05,
                   predMatrixHits: String = "binary",
@@ -204,11 +214,19 @@ object Item2Item {
     val baseFeatureSegments = getBaseFeatureSegments()
     val extraFeatureSegments = getExtraFeatureSegments()
 
+    val segmentsToExpand = expandInput.map(row=> row("segment_id").toString)
+
     // 1) Read the data
-    val data = getDataTriplets(spark, country, nDays)
+    val data = {
+      if (nDaysDataSegment <= nDaysData){
+        getDataTriplets(spark, country, nDaysData) 
+      else
+        getDataTriplets(spark, country, nDaysData)
+        .union(getDataTripletsSegmentsToExpand(spark, segmentsToExpand, country, nDaysDataSegment - nDaysData, nDaysData))
+    }
 
     // Create segment index
-    var segments = expandInput.map(row=> row("segment_id").toString) // First: segments to expand
+    var segments = segmentsToExpand // First: segments to expand
     segments ++= baseFeatureSegments.toSet.diff(segments.toSet).toList // Then: segments used as features
     segments ++= extraFeatureSegments.toSet.diff(segments.toSet).toList 
 
@@ -260,6 +278,7 @@ object Item2Item {
                        country: String,
                        segmentId: String,
                        nDays: Int = -1,
+                       nDaysSegment: Int = 0,
                        simMatrixHits: String = "binary",
                        simThreshold: Double = 0.05,
                        predMatrixHits: String = "binary",
@@ -424,31 +443,42 @@ object Item2Item {
   def getDataTriplets(
       spark: SparkSession,
       country: String,
-      nDays: Int = -1,
+      nDays: Int = 30,
+      from: Int = 1,
       path: String = "/datascience/data_triplets/segments/") = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
-    val df = if(nDays > 0){
-      // read files from dates
-      val format = "yyyyMMdd"
-      val endDate = DateTime.now
-      val days = (0 to nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
-      // Now we obtain the list of hdfs folders to be read
-      val hdfs_files = days
-        .map(day => path + "/day=%s/country=%s".format(day, country))
-        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      spark.read.option("basePath", path).parquet(hdfs_files: _*)
-    }
-    else{
-      // read all date files
-      spark.read.load(path + "/day=*/country=%s/".format(country))
-    }
+    // read files from dates
+    val format = "yyyyMMdd"
+    val endDate = DateTime.now.minusDays(from)
+    val days = (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     // force count to 1 - if column doesn't exists, it creates it
     df.withColumn("count", lit(1))
   }
 
+
+  /*
+  * It reads data triplets for the segments to expand.
+  * It allows loading devices with the segments to expand using more historical data.
+  */
+  def getDataTripletsSegmentsToExpand(
+      spark: SparkSession,
+      segments: List[String], 
+      country: String,
+      nDays: Int = 30,
+      from: Int = 1,
+      path: String = "/datascience/data_triplets/segments/") = {
+
+    val df =  getDataTriplets(spark, country, nDays, from, path)
+    df.filter(col("feature").isin(segments: _*))
+  }
 
   /**
   * For each segment, it calculates a score value for all users and generates the expansion.
@@ -1060,6 +1090,8 @@ object Item2Item {
         nextOption(map ++ Map('testSegmentId -> value), tail)
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value), tail)
+      case "--nDaysSegment" :: value :: tail =>
+        nextOption(map ++ Map('nDaysSegment -> value), tail)
       case "--simThreshold" :: value :: tail =>
         nextOption(map ++ Map('simThreshold -> value), tail)
     }
@@ -1096,17 +1128,19 @@ object Item2Item {
       if (options.contains('testSegmentId)) options('testSegmentId) else ""
     val nDays =
       if (options.contains('nDays)) options('nDays).toInt else -1
+    val nDaysSegment =
+      if (options.contains('nDaysSegment)) options('nDaysSegment).toInt else 0
     val simThreshold =
       if (options.contains('simThreshold)) options('simThreshold).toDouble else 0.05
     if(isTest){
       if(testSegmentId.length > 0)
-        runTestOnDemmand(spark, testCountry, testSegmentId, nDays, simHits, simThreshold, predHits, testSize)
+        runTestOnDemmand(spark, testCountry, testSegmentId, nDays, nDaysSegment, simHits, simThreshold, predHits, testSize)
       else
-        runTestTaxo(spark, testCountry, nDays, simHits, simThreshold, predHits, testSize)
+        runTestTaxo(spark, testCountry, nDays, nDaysSegment, simHits, simThreshold, predHits, testSize)
     }
     else if(filePath.length > 0)
-      runExpand(spark, filePath, nDays, simHits, simThreshold, predHits)
+      runExpand(spark, filePath, nDays, nDaysSegment, simHits, simThreshold, predHits)
     else
-      processPendingJobs(spark, nDays, simHits, simThreshold, predHits)
+      processPendingJobs(spark, nDays, nDaysSegment, simHits, simThreshold, predHits)
   }
 }
