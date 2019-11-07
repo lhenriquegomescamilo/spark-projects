@@ -519,7 +519,7 @@ def get_segments_from_triplets_from_xd(
                               //.agg(count(col("device_id")) as "unique_count")  
 
       val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
-                                                            .format(path_w_cookies)
+                                                            .format(path_w_cookies.split("/").last)
 
        joint.write.format("csv")
                     .option("header", "true")
