@@ -3,6 +3,7 @@ import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.log4j.{Level, Logger}
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -495,13 +496,13 @@ def get_segments_from_triplets_from_xd(
       path_w_cookies: String
   ) = {
 
-        val segments_raw = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","CO")
+        val segments_raw = getDataPipeline(spark,"/datascience/data_triplets/segments/","10","1","CO")
                         
 
         val segments = segments_raw.groupBy("device_id","feature").agg(sum("count") as "count_in_days")
                         .withColumn("device_id",upper(col("device_id")))
                        
-            
+            segments.show(5)
 
         val data = spark.read
         .format("csv")
@@ -514,12 +515,13 @@ def get_segments_from_triplets_from_xd(
         .toDF("device_id")
         .withColumn("device_id",upper(col("device_id")))
 
+        data.show(5)
 
-        val joint = data   .join(segments, Seq("device_id"))
-                              //.agg(count(col("device_id")) as "unique_count")  
+        val joint = data.join(segments, Seq("device_id"))
+            
+            joint.show(5)                  //.agg(count(col("device_id")) as "unique_count")  
 
-      val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
-                                                            .format(path_w_cookies)
+      val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments".format(path_w_cookies.split("/").last)
 
        joint.write.format("csv")
                     .option("header", "true")
@@ -599,6 +601,8 @@ count_no_birra.write.format("csv")
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
 
 get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd" )
 
