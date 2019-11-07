@@ -422,8 +422,9 @@ object earningsReportNew {
 
 
     /**  Get number of devices per partner_id per segment per country */
-    val df_count_country = getCountbyCountry(spark = spark,
-                                             df = df)
+    val df_count_country = getCountbyCountry(spark = spark, df = df)
+        .withColumn("date", lit(date_current))
+        .select("date","id_partner","segment","country","device_unique")                
 
     /** Here we store the first report */
     val savepath = saveData(data = df_count_country,
@@ -432,8 +433,9 @@ object earningsReportNew {
 
 
    /**  Get number of devices per partner_id per segment */
-    val df_count= getCount(spark = spark,
-                           df = df)
+    val df_count= getCount(spark = spark, df = df)
+        .withColumn("date", lit(date_current))
+        .select("date","id_partner","segment","country","device_unique") 
 
     /** Here we store the second report by appending to the previous one */
     appendData(data = df_count,
@@ -471,7 +473,9 @@ object earningsReportNew {
     }                  
     
     val df_xd = spark.read.parquet(savepath_xd)
-      .select("id_partner","segment","country","device_unique")                  
+      .withColumn("date", lit(date_current)) 
+      .select("date","id_partner","segment","country","device_unique")
+
     
     appendData(data = df_xd,
                savepath = savepath)  
