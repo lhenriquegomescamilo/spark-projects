@@ -505,8 +505,8 @@ def get_segments_from_triplets_from_xd(
 
         val data = spark.read
         .format("csv")
-        .option("header", "true")
-        .option("sep", "\t")
+        .option("header", "false") // OJO ACA SI QUERES CAMBIAR EL CODIGO
+        .option("sep", ",")
         .load(path_w_cookies)//.filter("device_type == 'web'")
         .select("_c1","_c2")
         .filter("_c2 == 'coo'")

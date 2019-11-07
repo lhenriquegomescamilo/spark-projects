@@ -29,7 +29,7 @@ object earningsReportNew {
     * @param nDays: number of days that will be read.
     * @param since: number of days ago from where the data is going to be read.  
     *
-    * @return a DataFrame with the information coming from the read data. Columns: "seg_id","id_partner" and "device_id"
+    * @return a DataFrame with the information coming from the read data. Columns: "segment","id_partner" and "device_id"
    **/
 
   def getDataTriplets(
@@ -56,7 +56,7 @@ object earningsReportNew {
       .option("basePath", path)
       .parquet(hdfs_files: _*)
       .select("id_partner","feature","device_id","country","day")
-      .withColumnRenamed("feature", "seg_id")
+      .withColumnRenamed("feature", "segment")
 
     df
   }
@@ -119,12 +119,12 @@ object earningsReportNew {
    /**
     * This method is a filter that keeps only general taxo segments.
     * It joins "general taxonomy segment values" with data from the "data_triplets" pipeline,
-    * obtaining "id_partner","seg_id", "device_id" and "country", values for general taxo segments.
+    * obtaining "id_partner","segment", "device_id" and "country", values for general taxo segments.
     *
     * @param spark: Spark Session that will be used to load the data from HDFS.
     * @param db: DataFrame obtained from data_triplets pipeline.
     *
-    * @return a DataFrame with "device_id", "seg_id", "id_partner", "country","day".
+    * @return a DataFrame with "device_id", "segment", "id_partner", "country","day".
    **/
 
   def getJoint(
@@ -134,22 +134,25 @@ object earningsReportNew {
 
     /** Read standard taxonomy segment_ids */
     val taxo_path = "/datascience/misc/standard_ids.csv"
-    val df_taxo =  spark.read.format("csv").option("header", "true").load(taxo_path)
+    val df_taxo =  spark.read.format("csv")
+        .option("header", "true")
+        .load(taxo_path)
+        .withColumnRenamed("seg_id", "segment")
 
     val df = db
-      .join(broadcast(df_taxo), Seq("seg_id"))
-      .select("seg_id","id_partner", "device_id","country","day")
+      .join(broadcast(df_taxo), Seq("segment"))
+      .select("segment","id_partner", "device_id","country","day")
       //.dropDuplicates()
     df
   }
 
  /**
     * This method joins crossdeviced segments with their mappings, add countries by mapping certain segments,
-    * obtaining "seg_id", "device_id" and "country" values. "id_partner" set to -1 by default.
+    * obtaining "segment", "device_id" and "country" values. "id_partner" set to -1 by default.
     *
     * @param df: DataFrame obtained from audiences/crossdeviced/taxo_gral_joint
     *
-    * @return a DataFrame with "device_id", "seg_id", "id_partner", "country"
+    * @return a DataFrame with "device_id", "segment", "id_partner", "country"
    **/
 
   def getJoint_xd(
@@ -200,14 +203,14 @@ object earningsReportNew {
     *
     */
      /**
-    * This method first partitions by "seg_id and "country", orders by "day"
+    * This method first partitions by "segment and "country", orders by "day"
     * and gets only the last partner that added a given segment for a given country.
-    * After that it groups by "id_partner" and "seg_id" and "country" and counts,
+    * After that it groups by "id_partner" and "segment" and "country" and counts,
     * obtaining the number of devices per partner per segment per country.
     *
     * @param df: DataFrame obtained from data_tripĺets, with segments from general taxonomy.
     *
-    * @return a DataFrame with "seg_id","id_partner","device_unique", "country"
+    * @return a DataFrame with "segment","id_partner","device_unique", "country"
    **/
 
 
@@ -216,7 +219,7 @@ object earningsReportNew {
   ): DataFrame = {
 
     val df_grouped_country = dfy
-      .groupBy("id_partner","seg_id","country")
+      .groupBy("id_partner","segment","country")
       .count()
       .withColumnRenamed("count", "device_unique")
     df_grouped_country
@@ -230,7 +233,7 @@ object earningsReportNew {
     import org.apache.spark.sql.expressions.Window
     import spark.implicits._
 
-    val window = Window.partitionBy($"seg_id",$"country").orderBy($"day".desc)  
+    val window = Window.partitionBy($"segment",$"country").orderBy($"day".desc)  
 
     val dfy = df
       .withColumn("rn", row_number.over(window)).where($"rn" === 1).drop("rn")
@@ -241,15 +244,15 @@ object earningsReportNew {
   }
 
    /**
-    * This method first partitions by "seg_id", orders by "day"
+    * This method first partitions by "segment", orders by "day"
     * and gets only the last partner that added a given segment.
-    * After that it groups by "id_partner" and "seg_id" and counts,
+    * After that it groups by "id_partner" and "segment" and counts,
     * obtaining the number of devices per partner per segment.
     * Adds a ficticious column "country" with value "NN" to append this report to the other report with countries.
     *
     * @param df: DataFrame obtained from data_tripĺets, with segments from general taxonomy.
     *
-    * @return a DataFrame with "seg_id","id_partner","device_unique", "country" (NN)
+    * @return a DataFrame with "segment","id_partner","device_unique", "country" (NN)
    **/
 
    def getGrouped(
@@ -257,7 +260,7 @@ object earningsReportNew {
   ): DataFrame = {
 
     val df_grouped = dfy
-      .groupBy("id_partner", "seg_id")
+      .groupBy("id_partner", "segment")
       .count()
       .withColumnRenamed("count", "device_unique")
       .withColumn("country", lit("NN"))
@@ -272,7 +275,7 @@ object earningsReportNew {
     import org.apache.spark.sql.expressions.Window
     import spark.implicits._
 
-    val window = Window.partitionBy($"seg_id").orderBy($"day".desc)
+    val window = Window.partitionBy($"segment").orderBy($"day".desc)
 
     val dfy = df
       .withColumn("rn", row_number.over(window)).where($"rn" === 1).drop("rn")
