@@ -507,7 +507,7 @@ def get_segments_from_triplets_from_xd(
         .format("csv")
         .option("header", "true")
         .option("sep", "\t")
-        .load()//.filter("device_type == 'web'")
+        .load(path_w_cookies)//.filter("device_type == 'web'")
         .select("_c1","_c2")
         .filter("_c2 == 'coo'")
         .drop("_c2")
