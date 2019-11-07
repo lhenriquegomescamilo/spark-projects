@@ -2,6 +2,7 @@ package main.scala
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.expressions.Window
 
 import org.joda.time.{Days, DateTime}
 
@@ -61,31 +62,6 @@ object earningsReportNew {
     df
   }
 
-  def saveRelevantDevicesDF(
-      spark: SparkSession,
-      nDays: Integer,
-      since: Integer,
-      date_current: String
-  ): String = {
-
-    /** Read from "data_triplets" database and get relevant devices */
-    val df_nDays = getDataTriplets(spark, nDays, since)
-    val df1 = getDataTriplets(spark, 1, since)
-    val users = df1.select("device_id").distinct()
-
-    val df = df_nDays.join(users, Seq("device_id"), "inner")
-
-    /** Here we store the relevant devices join */
-    val subdir_temp = "temp"
-
-    val savepath = saveData(
-                            data = df,
-                            subdir = subdir_temp,
-                            date_current = date_current)
-    savepath
-
-    }    
-
 //////////////////////////////////////////////////////////////
 
   def getData_xd(
@@ -122,14 +98,14 @@ object earningsReportNew {
     * obtaining "id_partner","segment", "device_id" and "country", values for general taxo segments.
     *
     * @param spark: Spark Session that will be used to load the data from HDFS.
-    * @param db: DataFrame obtained from data_triplets pipeline.
+    * @param df: DataFrame obtained from data_triplets pipeline.
     *
     * @return a DataFrame with "device_id", "segment", "id_partner", "country","day".
    **/
 
   def getJoint(
       spark: SparkSession,
-      db: DataFrame
+      df: DataFrame
   ): DataFrame = {
 
     /** Read standard taxonomy segment_ids */
@@ -139,12 +115,57 @@ object earningsReportNew {
         .load(taxo_path)
         .withColumnRenamed("seg_id", "segment")
 
-    val df = db
+    val db = df
       .join(broadcast(df_taxo), Seq("segment"))
       .select("segment","id_partner", "device_id","country","day")
       //.dropDuplicates()
-    df
+    db
   }
+
+     /**
+    * This method is a filter that keeps only devices from last day and general taxonomy segments.
+    *
+    * @param spark: Spark session that will be used to read the data from HDFS.
+    * @param ndays: number of days to query.
+    * @param since: number of days since to query.
+    * @param date_current: date for filename. 
+    *
+    * @return a DataFrame with "device_id", "segment", "id_partner", "country","day".
+   **/
+
+  def saveRelevantDevicesDF(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer,
+      date_current: String
+  ): String = {
+
+    /** Read from "data_triplets" database and get relevant devices */
+    val df_nDays = getDataTriplets(spark, nDays, since)
+    val df1 = getDataTriplets(spark, 1, since)
+
+    /**  Join data_triplets with taxo segments */
+    val df_nDays_taxo = getJoint(spark = spark,
+                                 df = df_nDays)  
+
+    val df1_taxo = getJoint(spark = spark,
+                            df = df1)  
+
+    /**  Get only users that appeared last day */    
+    val users = df1_taxo.select("device_id").distinct()
+
+    val df = df_nDays_taxo.join(users, Seq("device_id"), "inner")
+
+    /** Here we store the relevant devices join */
+    val subdir_temp = "temp"
+
+    val savepath = saveData(
+                            data = db,
+                            subdir = subdir_temp,
+                            date_current = date_current)
+    savepath
+
+    }    
 
  /**
     * This method joins crossdeviced segments with their mappings, add countries by mapping certain segments,
@@ -230,13 +251,10 @@ object earningsReportNew {
       spark: SparkSession
   ): DataFrame = {
 
-    import org.apache.spark.sql.expressions.Window
-    import spark.implicits._
-
-    val window = Window.partitionBy($"segment",$"country").orderBy($"day".desc)  
+    val window = Window.partitionBy(col("segment"),col("device_id"),col("country")).orderBy(col("day").desc)  
 
     val dfy = df
-      .withColumn("rn", row_number.over(window)).where($"rn" === 1).drop("rn")
+      .withColumn("rn", row_number.over(window)).where(col("rn") === 1).drop("rn")
     
     val data = getGroupedbyCountry(dfy = dfy)
 
@@ -272,13 +290,10 @@ object earningsReportNew {
       spark: SparkSession
   ): DataFrame = {
 
-    import org.apache.spark.sql.expressions.Window
-    import spark.implicits._
-
-    val window = Window.partitionBy($"segment").orderBy($"day".desc)
+    val window = Window.partitionBy(col("segment"),col("device_id")).orderBy(col("day").desc)
 
     val dfy = df
-      .withColumn("rn", row_number.over(window)).where($"rn" === 1).drop("rn")
+      .withColumn("rn", row_number.over(window)).where(col("rn") === 1).drop("rn")
 
     val data = getGrouped(dfy = dfy)
       
@@ -403,31 +418,28 @@ object earningsReportNew {
     val date_now = DateTime.now
     val date_since = date_now.minusDays(since)
     val date_current = date_since.toString("yyyy-MM-dd")  
-
-    val savepath_db = saveRelevantDevicesDF(
+      
+    val savepath_df = saveRelevantDevicesDF(
                                         spark = spark,
                                         nDays = nDays,
                                         since = since,
                                         date_current = date_current)
-    val db = spark.read
-      .parquet(savepath_db)
-
-    /**  Join data_triplets with taxo segments */
-    val df = getJoint(spark = spark,
-                      db = db)  
-
-    df.cache()
-
-
+    
+    val df = spark.read.parquet(savepath_df)
+    
     /**  Get number of devices per partner_id per segment per country */
     val df_count_country = getCountbyCountry(spark = spark, df = df)
         .withColumn("date", lit(date_current))
-        .select("date","id_partner","segment","country","device_unique")                
+        .select("date","id_partner","segment","country","device_unique")     
+
+    //saveparquet partitionbydate also for xd              
 
     /** Here we store the first report */
     val savepath = saveData(data = df_count_country,
                             subdir = "done",
                             date_current = date_current)
+
+                            
 
 
    /**  Get number of devices per partner_id per segment */
@@ -435,17 +447,9 @@ object earningsReportNew {
         .withColumn("date", lit(date_current))
         .select("date","id_partner","segment","country","device_unique") 
 
-    //             TEST /////////
-    saveData(data = df_count,
-                    subdir = "test",
-                    date_current = date_current)   
-
-    /** Here we store the second report by appending to the previous one 
+    /** Here we store the second report by appending to the previous one */
     appendData(data = df_count,
                savepath = savepath)
-
-
-    df.unpersist()
 
     
     /** XD SEGMENTS **/
@@ -483,8 +487,7 @@ object earningsReportNew {
     appendData(data = df_xd,
                savepath = savepath)  
 
-  */             
-    
+
   }    
 
 
