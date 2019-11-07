@@ -233,7 +233,7 @@ object earningsReportNew {
     import org.apache.spark.sql.expressions.Window
     import spark.implicits._
 
-    val window = Window.partitionBy($"segment",$"country").orderBy($"day".desc)  
+    val window = Window.partitionBy($"segment",$"device_id",$"country").orderBy($"day".desc)  
 
     val dfy = df
       .withColumn("rn", row_number.over(window)).where($"rn" === 1).drop("rn")
@@ -275,7 +275,7 @@ object earningsReportNew {
     import org.apache.spark.sql.expressions.Window
     import spark.implicits._
 
-    val window = Window.partitionBy($"segment").orderBy($"day".desc)
+    val window = Window.partitionBy($"segment",$"device_id").orderBy($"day".desc)
 
     val dfy = df
       .withColumn("rn", row_number.over(window)).where($"rn" === 1).drop("rn")
@@ -403,7 +403,7 @@ object earningsReportNew {
     val date_now = DateTime.now
     val date_since = date_now.minusDays(since)
     val date_current = date_since.toString("yyyy-MM-dd")  
-
+    /**  
     val savepath_db = saveRelevantDevicesDF(
                                         spark = spark,
                                         nDays = nDays,
@@ -411,6 +411,10 @@ object earningsReportNew {
                                         date_current = date_current)
     val db = spark.read
       .parquet(savepath_db)
+    */
+
+    val db = spark.read
+      .parquet("/datascience/reports/earnings/temp/2019-11-06")
 
     /**  Join data_triplets with taxo segments */
     val df = getJoint(spark = spark,
