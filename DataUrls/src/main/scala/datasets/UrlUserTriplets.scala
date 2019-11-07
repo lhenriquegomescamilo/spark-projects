@@ -5,6 +5,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.joda.time.{Days, DateTime}
 import org.apache.spark.sql.{SaveMode, DataFrame, SparkSession, Row}
+import org.apache.spark.sql.expressions.Window
 
 object UrlUserTriplets {
 
@@ -48,6 +49,10 @@ object UrlUserTriplets {
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
       )
       .withColumn("domain", regexp_replace(col("domain"), "/.*", ""))
+      // add an identifier for each of the two columns
+      .withColumn("domain", concat(lit("dom@"), col("domain")))
+      .withColumn("url", concat(lit("url@"), col("url")))
+      // merge the two columns into a single column named as 'url''
       .withColumn("url", array(col("url"), col("domain")))
       .withColumn("url", explode(col("url")))
       .select("device_id", "url", "country")
@@ -103,14 +108,14 @@ object UrlUserTriplets {
       .load("/datascience/data_triplets/urls/raw/")
 
     // Obtain an id for every URL. Here we filter out those URLs that have only one person visiting it.
-    dfZipWithIndex(
-      raw_data
-        .groupBy("country", "url")
-        .count()
-        .filter("count >= 2"),
-      offset = 0,
-      colName = "url_idx"
-    ).select("url_idx", "url", "country")
+    val windowUrl = Window.partitionBy("country").orderBy(col("url"))
+    raw_data
+      .groupBy("country", "url")
+      .count()
+      .filter("count >= 2")
+      .withColumn("url_idx", row_number().over(windowUrl))
+      .withColumn("url_idx", col("url_idx") - 1) // Indexing to 0
+      .select("url_idx", "url", "country")
       .write
       .format("parquet")
       .partitionBy("country")
@@ -118,34 +123,33 @@ object UrlUserTriplets {
       .save("/datascience/data_triplets/urls/url_index/")
 
     // Get the index for the devices
-    dfZipWithIndex(
-      raw_data
-        .select("country", "device_id")
-        .distinct(),
-      offset = 0,
-      colName = "device_idx"
-    ).select("device_idx", "device_id", "country")
+    val windowUser = Window.partitionBy("country").orderBy(col("device_id"))
+    raw_data
+      .select("country", "device_id")
+      .distinct()
+      .withColumn("device_idx", row_number().over(windowUser))
+      .withColumn("device_idx", col("device_idx") - 1) // Indexing to 0
+      .select("device_idx", "device_id", "country")
       .write
       .format("parquet")
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_triplets/urls/device_index/")
 
-
     // Finally we use the indexes to store triplets partitioned by country
     val url_idx = spark.read
       .format("parquet")
       .load("/datascience/data_triplets/urls/url_index/")
-      .drop("country")
+      // .drop("country")
 
     val device_idx = spark.read
       .format("parquet")
       .load("/datascience/data_triplets/urls/device_index/")
-      .drop("country")
+      // .drop("country")
 
     raw_data
-      .join(device_idx, Seq("device_id"))
-      .join(url_idx, Seq("url"))
+      .join(device_idx, Seq("device_id", "country"))
+      .join(url_idx, Seq("url", "country"))
       .select("device_idx", "url_idx", "country")
       .write
       .format("parquet")
