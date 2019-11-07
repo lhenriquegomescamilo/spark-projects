@@ -239,7 +239,6 @@ object earningsReportNew {
       .withColumn("rn", row_number.over(window)).where($"rn" === 1).drop("rn")
     
     val data = getGroupedbyCountry(dfy = dfy)
-      .select("id_partner","segment","country","device_unique")
 
     data
   }
@@ -282,7 +281,6 @@ object earningsReportNew {
       .withColumn("rn", row_number.over(window)).where($"rn" === 1).drop("rn")
 
     val data = getGrouped(dfy = dfy)
-      .select("id_partner","segment","country","device_unique")
       
     data
   }
