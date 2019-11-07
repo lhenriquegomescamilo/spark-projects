@@ -426,7 +426,7 @@ object earningsReportNew {
 
     /** Here we store the first report */
     val savepath = saveData(data = df_count_country,
-                            subdir = "done",
+                            subdir = "test1",
                             date_current = date_current)
 
 
@@ -437,7 +437,7 @@ object earningsReportNew {
 
     //             TEST ////////////
     saveData(data = df_count,
-                    subdir = "test",
+                    subdir = "test2",
                     date_current = date_current)   
 
     /** Here we store the second report by appending to the previous one 
