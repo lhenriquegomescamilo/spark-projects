@@ -142,13 +142,18 @@ object earningsReportNew {
     /** Read from "data_triplets" database and get relevant devices */
     val df_nDays = getDataTriplets(spark, nDays, since)
     val df1 = getDataTriplets(spark, 1, since)
-    val users = df1.select("device_id").distinct()
-
-    val df = df_nDays.join(users, Seq("device_id"), "inner")
 
     /**  Join data_triplets with taxo segments */
-    val db = getJoint(spark = spark,
-                      df = df)  
+    val df_nDays_taxo = getJoint(spark = spark,
+                                 df = df_nDays)  
+
+    val df1_taxo = getJoint(spark = spark,
+                            df = df1)  
+
+    /**  Get only users that appeared last day */    
+    val users = df1_taxo.select("device_id").distinct()
+
+    val df = df_nDays_taxo.join(users, Seq("device_id"), "inner")
 
     /** Here we store the relevant devices join */
     val subdir_temp = "temp"
@@ -432,7 +437,9 @@ object earningsReportNew {
     /**  Get number of devices per partner_id per segment per country */
     val df_count_country = getCountbyCountry(spark = spark, df = df)
         .withColumn("date", lit(date_current))
-        .select("date","id_partner","segment","country","device_unique")                
+        .select("date","id_partner","segment","country","device_unique")     
+
+    //partitionbydate               
 
     /** Here we store the first report */
     val savepath = saveData(data = df_count_country,
