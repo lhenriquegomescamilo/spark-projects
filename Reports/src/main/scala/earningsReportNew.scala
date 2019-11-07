@@ -440,17 +440,19 @@ object earningsReportNew {
     
     /** XD SEGMENTS **/
 
-    val day_current = date_since.toString("dd")
 
+    var savepath_xd : String = ""
+
+    val day_current = date_since.toString("dd")
     /** If it's the first day of the month, xd segments distribution is calculated again. */
     if (("01").contains(day_current)) {
-      val savepath_xd =getDataReport_xd(spark = spark,
-                                        date_current = date_current)
+      savepath_xd =getDataReport_xd(spark = spark,
+                                     date_current = date_current)
                                                     }
     else {
       val date_previous = date_now.minusMonths(1).toString("yyyy-MM-01")
       val dir = "/datascience/reports/earnings/xd/"
-      val savepath_xd = dir + date_previous
+      savepath_xd = dir + date_previous
 
       val conf = spark.sparkContext.hadoopConfiguration
       val fs = FileSystem.get(conf)
