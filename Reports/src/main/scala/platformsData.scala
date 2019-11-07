@@ -76,6 +76,7 @@ object platformsData {
   )
 
   def transformDF(
+      spark: SparkSession,
       data: DataFrame
   ): DataFrame = {
     def getIntRepresentation =
@@ -187,7 +188,7 @@ object platformsData {
     val data = getDayEventQueue(spark = spark, date_current = date_current)
 
     /**  Transform data */
-    val df = transformDF(data = data)
+    val df = transformDF(spark, data = data)
 
     /** Store df */
     saveData(df = df, date_current = date_current)
