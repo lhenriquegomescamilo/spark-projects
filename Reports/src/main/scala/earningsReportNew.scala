@@ -2,6 +2,7 @@ package main.scala
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.expressions.Window
 
 import org.joda.time.{Days, DateTime}
 
@@ -250,13 +251,10 @@ object earningsReportNew {
       spark: SparkSession
   ): DataFrame = {
 
-    import org.apache.spark.sql.expressions.Window
-    import spark.implicits._
-
-    val window = Window.partitionBy($"segment",$"device_id",$"country").orderBy($"day".desc)  
+    val window = Window.partitionBy(col("segment"),col("device_id"),col("country")).orderBy(col("day").desc)  
 
     val dfy = df
-      .withColumn("rn", row_number.over(window)).where($"rn" === 1).drop("rn")
+      .withColumn("rn", row_number.over(window)).where(col("rn") === 1).drop("rn")
     
     val data = getGroupedbyCountry(dfy = dfy)
 
@@ -292,13 +290,10 @@ object earningsReportNew {
       spark: SparkSession
   ): DataFrame = {
 
-    import org.apache.spark.sql.expressions.Window
-    import spark.implicits._
-
-    val window = Window.partitionBy($"segment",$"device_id").orderBy($"day".desc)
+    val window = Window.partitionBy(col("segment"),col("device_id")).orderBy(col("day").desc)
 
     val dfy = df
-      .withColumn("rn", row_number.over(window)).where($"rn" === 1).drop("rn")
+      .withColumn("rn", row_number.over(window)).where(col("rn") === 1).drop("rn")
 
     val data = getGrouped(dfy = dfy)
       
