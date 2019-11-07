@@ -490,6 +490,44 @@ to_xd
 .save("/datascience/geo/Equifax/argentina_365d_home_1-10-2019-16h_to_xd")
 }
 
+def get_segments_from_triplets_from_xd(
+      spark: SparkSession,
+      path_w_cookies: String
+  ) = {
+
+        val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","CO").
+                        .groupBy("device_id","feature").agg(sum("count") as "count_in_days")
+                        .withColumn("device_id",upper(col("device_id")))
+                       
+            
+
+        val data = spark.read
+        .format("csv")
+        .option("header", "true")
+        .option("sep", "\t")
+        .load()//.filter("device_type == 'web'")
+        .select("_c1","_c2")
+        .filter("_c2 == 'coo'")
+        .drop("_c2")
+        .toDF("device_id")
+        .withColumn("device_id",upper(col("device_id")))
+
+
+        val joint = data   .join(segments, Seq("device_id"))
+                              //.agg(count(col("device_id")) as "unique_count")  
+
+      val output_path_segments = "/datascience/geo/geo_processed/%s_w_segments"
+                                                            .format(path_w_cookies)
+
+       joint.write.format("csv")
+                    .option("header", "true")
+                    .mode(SaveMode.Overwrite)
+                    .save(output_path_segments)
+
+                
+                     
+  }
+
 
 
 def get_mex_data( spark: SparkSession) 
@@ -560,65 +598,7 @@ count_no_birra.write.format("csv")
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-
-//Usuarios que fueron a un strip club. Esta es la web cookie
-/*
-    val raw_data_full =  spark.read.format("csv")
-  .option("header",true)
-  .option("delimiter","\t")
-  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_named_poi_feature")
-
-val strip_users = raw_data_full.filter("type == 'stripclub'").dropDuplicates("device_id")
-
-val raw_xd = spark.read.format("csv")
-  .option("header",false)
-  .option("delimiter",",")
-  .load("/datascience/audiences/crossdeviced/mex_alcohol_60d_mexico_30-10-2019-15h_aggregated_xd").select("_c0","_c1").distinct().toDF("madid","device_id")
-  
-val filter_strip_users = strip_users.join(raw_xd,Seq("device_id","osm_id", "common_name", "type")).withColumn("madid",upper(col("madid")))
-
-val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/raw_output/mex_alcohol_60d_mexico_30-10-2019-12h")
-.withColumnRenamed("device_id","madid")
-.withColumn("madid",upper(col("madid")))
-
-
-
-filter_strip_users.join(raw,Seq("madid")).write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_strip_club")
-*/
-
-  val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
-  .load("/datascience/geo/raw_output/mex_alcohol_60d_mexico_30-10-2019-12h")
-  .withColumnRenamed("device_id","madid").withColumn("madid",upper(col("madid")))
-  
-val freq_high = spark.read.format("csv")
-  .option("header",true)
-  .option("delimiter","\t")
-  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_frequency")  .filter(col("freq") >= 20 || col("validUser") == true)
-  .groupBy("feature").agg(countDistinct("device_id" )as "uniques")
-  
-val freq_low = spark.read.format("csv")
-  .option("header",true)
-  .option("delimiter","\t")
-  .load("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_frequency")  .filter(col("freq") < 20 || col("validUser") == false)
-  .groupBy("feature").agg(countDistinct("device_id" ) as "uniques")
-  
-freq_high.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_freq_high")
-
-freq_low.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_freq_low")
-
+get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd")
 
 }
 
