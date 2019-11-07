@@ -427,19 +427,19 @@ object earningsReportNew {
     
     val df = spark.read.parquet(savepath_df)
     
-    df.cache()
-
     /**  Get number of devices per partner_id per segment per country */
     val df_count_country = getCountbyCountry(spark = spark, df = df)
         .withColumn("date", lit(date_current))
         .select("date","id_partner","segment","country","device_unique")     
 
-    //partitionbydate               
+    //saveparquet partitionbydate also for xd              
 
     /** Here we store the first report */
     val savepath = saveData(data = df_count_country,
                             subdir = "done",
                             date_current = date_current)
+
+                            
 
 
    /**  Get number of devices per partner_id per segment */
@@ -450,9 +450,6 @@ object earningsReportNew {
     /** Here we store the second report by appending to the previous one */
     appendData(data = df_count,
                savepath = savepath)
-
-
-    df.unpersist()
 
     
     /** XD SEGMENTS **/
