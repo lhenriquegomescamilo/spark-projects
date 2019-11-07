@@ -496,7 +496,7 @@ def get_segments_from_triplets_from_xd(
       path_w_cookies: String
   ) = {
 
-        val segments_raw = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","1","CO")
+        val segments_raw = getDataPipeline(spark,"/datascience/data_triplets/segments/","10","1","CO")
                         
 
         val segments = segments_raw.groupBy("device_id","feature").agg(sum("count") as "count_in_days")
