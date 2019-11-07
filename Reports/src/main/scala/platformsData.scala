@@ -126,6 +126,7 @@ object platformsData {
       .select("device_id", "segments")
       .withColumn("segment", explode(col("segments")))
       .select("device_id", "segment")
+      .distinct()
 
     val joint = users.join(segments, Seq("device_id"), "inner")
 
