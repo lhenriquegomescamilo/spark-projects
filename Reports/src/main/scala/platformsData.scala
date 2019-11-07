@@ -41,7 +41,7 @@ object platformsData {
       .option("sep", "\t")
       .option("header", "true")
       .format("csv")
-      .load("/data/eventqueue/%s".format(date_current))
+      .load("/data/eventqueue/%s/00*.tsv.gz".format(date_current))
       .select(columns.head, columns.tail: _*) // Here we select the columns to work with
       .filter("event_type != 'sync'") // filter sync, internal event
       .filter(
@@ -78,8 +78,19 @@ object platformsData {
   def transformDF(
       data: DataFrame
   ): DataFrame = {
-    // def getIntRepresentation = udf((array: Seq[Integer])=> array.zipWithIndex.map(t => t._1*Math.pow(2, t._2)).reduce((n1, n2) => n1+n2).toInt )
-    def getIntRepresentation = udf((array: Seq[Integer])=> array.map(_.toString).mkString("") )
+    def getIntRepresentation =
+      udf(
+        (array: Seq[Integer]) =>
+          array.zipWithIndex
+            .map(t => t._1 * Math.pow(2, t._2))
+            .reduce((n1, n2) => n1 + n2)
+            .toInt
+      )
+    // def getIntRepresentation =
+    //   udf((array: Seq[Integer]) => array.map(_.toString).mkString(""))
+
+    def getAllPlatforms =
+      udf((array: Seq[Integer]) => array.reduce((i1, i2) => i1 | i2))
 
     val df = data
       .withColumn("d2", when(col("d2").isNotNull, 1).otherwise(0))
@@ -94,7 +105,11 @@ object platformsData {
       .withColumn("platforms", getIntRepresentation(col("platforms")))
       .withColumn("segments", split(col("third_party"), "\u0001"))
       .withColumn("segments", col("segments").cast("array<int>"))
-      .select("device_id", "segments", "platforms")
+      .withColumn("segment", explode(col("segments")))
+      .groupBy("device_id", "segment")
+      .agg(collect_list(col("platforms")) as "platforms")
+      .withColumn("plaforms", getAllPlatforms(col("platforms")))
+      .select("device_id", "segment", "platforms")
     df
   }
 
