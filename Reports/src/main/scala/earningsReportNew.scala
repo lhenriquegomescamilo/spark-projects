@@ -435,7 +435,7 @@ object earningsReportNew {
         .withColumn("date", lit(date_current))
         .select("date","id_partner","segment","country","device_unique") 
 
-    //             TEST /////////
+    //             TEST ////////////
     saveData(data = df_count,
                     subdir = "test",
                     date_current = date_current)   
