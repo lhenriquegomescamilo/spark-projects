@@ -446,20 +446,28 @@ object earningsReportNew {
     if (("01").contains(day_current)) {
       val savepath_xd =getDataReport_xd(spark = spark,
                                         date_current = date_current)
-
-      val df_xd = spark.read.parquet(savepath_xd)
-
-      appendData(data = df_xd,
-                  savepath = savepath)
                                                     }
     else {
       val date_previous = date_now.minusMonths(1).toString("yyyy-MM-01")
       val dir = "/datascience/reports/earnings/xd/"
       val savepath_xd = dir + date_previous
-      val df_xd = spark.read.parquet(savepath_xd)
-      appendData(data = df_xd,
-                  savepath = savepath)
-    }
+
+      val conf = spark.sparkContext.hadoopConfiguration
+      val fs = FileSystem.get(conf)
+
+      if (!(fs.exists(new org.apache.hadoop.fs.Path(savepath_xd)))) {   
+        
+        getDataReport_xd(spark = spark,
+                          date_current = date_previous)
+      }
+
+    }                  
+    
+    val df_xd = spark.read.parquet(savepath_xd)                  
+    
+    appendData(data = df_xd,
+               savepath = savepath)  
+    
 
   }    
 
