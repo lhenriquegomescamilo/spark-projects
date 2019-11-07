@@ -145,10 +145,10 @@ object earningsReportNew {
     val df1 = getDataTriplets(spark, 1, since)
 
     /**  Join data_triplets with taxo segments */
-    val df_nDays_taxo = getJoint(spark = spark,
+    val df_nDays_taxo: DataFrame = getJoint(spark = spark,
                                  df = df_nDays)  
 
-    val df1_taxo = getJoint(spark = spark,
+    val df1_taxo: DataFrame = getJoint(spark = spark,
                             df = df1)  
 
     /**  Get only users that appeared last day */    
@@ -160,7 +160,7 @@ object earningsReportNew {
     val subdir_temp = "temp"
 
     val savepath = saveData(
-                            data = db,
+                            data = df,//db,
                             subdir = subdir_temp,
                             date_current = date_current)
     savepath
