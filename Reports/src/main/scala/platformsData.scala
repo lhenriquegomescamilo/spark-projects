@@ -41,7 +41,7 @@ object platformsData {
       .option("sep", "\t")
       .option("header", "true")
       .format("csv")
-      .load("/data/eventqueue/%s/00*.tsv.gz".format(date_current))
+      .load("/data/eventqueue/%s".format(date_current))
       .select(columns.head, columns.tail: _*) // Here we select the columns to work with
       .filter("event_type != 'sync'") // filter sync, internal event
       .filter(
@@ -106,10 +106,6 @@ object platformsData {
       .withColumn("platforms", getIntRepresentation(col("platforms")))
       .withColumn("segments", split(col("third_party"), "\u0001"))
       .withColumn("segments", col("segments").cast("array<int>"))
-      // .withColumn("segment", explode(col("segments")))
-      // .groupBy("device_id", "segment")
-      // .agg(collect_list(col("platforms")) as "platforms")
-      // .withColumn("plaforms", getAllPlatforms(col("platforms")))
       .select("device_id", "segments", "platforms")
 
     df.write
@@ -123,7 +119,7 @@ object platformsData {
     val users = temp_data
       .groupBy("device_id")
       .agg(collect_list(col("platforms")) as "platforms")
-      .withColumn("plaforms", getAllPlatforms(col("platforms")))
+      .withColumn("platforms", getAllPlatforms(col("platforms")))
       .select("device_id", "platforms")
 
     val segments = temp_data
