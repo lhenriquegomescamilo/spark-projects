@@ -359,7 +359,7 @@ object earningsReportNew {
       val df_grouped_country = getGroupedbyCountry(dfy = df_xd)
 
       /** Here we store the first report */
-      val savepath = saveData(data = df_grouped_country,
+      val savepath_xd = saveData(data = df_grouped_country,
                               subdir = "xd",
                               date_current = date_current)
     
@@ -368,9 +368,11 @@ object earningsReportNew {
 
       /** Here we store the second report by appending to the previous one */
       appendData(data = df_grouped,
-                savepath = savepath)
+                savepath = savepath_xd)
 
       df_xd.unpersist()
+
+      savepath_xd
     
     }    
 
@@ -395,8 +397,9 @@ object earningsReportNew {
       nDays: Integer,
       since: Integer) = {
 
-    val date = DateTime.now.minusDays(since)
-    val date_current = date.toString("yyyy-MM-dd")  
+    val date_now = DateTime.now
+    val date_since = date_now.minusDays(since)
+    val date_current = date_since.toString("yyyy-MM-dd")  
 
     val savepath_db = saveRelevantDevicesDF(
                                         spark = spark,
@@ -437,17 +440,26 @@ object earningsReportNew {
     
     /** XD SEGMENTS **/
 
-    val day_current = date.toString("dd")
+    val day_current = date_since.toString("dd")
 
     /** If it's the first day of the month, xd segments distribution is calculated again. */
     if (("01").contains(day_current)) {
-      getDataReport_xd(spark = spark,
-                      date_current = date_current)
+      val savepath_xd =getDataReport_xd(spark = spark,
+                                        date_current = date_current)
+
+      val df_xd = spark.read.parquet(savepath_xd)
+
+      appendData(data = df_xd,
+                  savepath = savepath)
                                                     }
-
-    /** Load xd last found files. */
-
-
+    else {
+      val date_previous = date_now.minusMonths(1).toString("yyyy-MM-01")
+      val dir = "/datascience/reports/earnings/xd/"
+      val savepath_xd = dir + date_previous
+      val df_xd = spark.read.parquet(savepath_xd)
+      appendData(data = df_xd,
+                  savepath = savepath)
+    }
 
   }    
 
