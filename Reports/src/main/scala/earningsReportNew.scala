@@ -192,7 +192,7 @@ object earningsReportNew {
                   .withColumn("country",udfMap_countries(col("segment")))
                   .na.drop()
                   .withColumn("segment",udfMap_segs(col("segment")))
-                  .withColumn("id_partner",lit("-1"))
+                  .withColumn("id_partner",lit(-1))
                   .withColumn("segment", explode(col("segment")))
      df_joint
   }
@@ -435,7 +435,12 @@ object earningsReportNew {
         .withColumn("date", lit(date_current))
         .select("date","id_partner","segment","country","device_unique") 
 
-    /** Here we store the second report by appending to the previous one */
+    //             TEST /////////
+    saveData(data = df_count,
+                    subdir = "test",
+                    date_current = date_current)   
+
+    /** Here we store the second report by appending to the previous one 
     appendData(data = df_count,
                savepath = savepath)
 
@@ -477,11 +482,11 @@ object earningsReportNew {
     
     appendData(data = df_xd,
                savepath = savepath)  
-    
 
+  */             
+    
   }    
 
- 
 
   type OptionMap = Map[Symbol, Int]
 
