@@ -121,10 +121,14 @@ object UrlUserTriplets {
       .partitionBy("country")
       .mode(SaveMode.Overwrite)
       .save("/datascience/data_triplets/urls/url_index/")
+    val url_idx = spark.read
+      .format("parquet")
+      .load("/datascience/data_triplets/urls/url_index/")
 
     // Get the index for the devices
     val windowUser = Window.partitionBy("country").orderBy(col("device_id"))
     raw_data
+      .join(url_idx.select("url", "country"), Seq("url", "country"))
       .select("country", "device_id")
       .distinct()
       .withColumn("device_idx", row_number().over(windowUser))
@@ -137,15 +141,11 @@ object UrlUserTriplets {
       .save("/datascience/data_triplets/urls/device_index/")
 
     // Finally we use the indexes to store triplets partitioned by country
-    val url_idx = spark.read
-      .format("parquet")
-      .load("/datascience/data_triplets/urls/url_index/")
-      // .drop("country")
 
     val device_idx = spark.read
       .format("parquet")
       .load("/datascience/data_triplets/urls/device_index/")
-      // .drop("country")
+    // .drop("country")
 
     raw_data
       .join(device_idx, Seq("device_id", "country"))
