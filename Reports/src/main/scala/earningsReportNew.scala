@@ -73,7 +73,7 @@ object earningsReport {
     val df1 = getDataTriplets(spark, 1, since)
     val users = df1.select("device_id").distinct()
 
-    val df = df60.join(users, Seq("device_id"), "inner")
+    val df = df_nDays.join(users, Seq("device_id"), "inner")
 
     /** Here we store the relevant devices join */
     val subdir_temp = "temp"
@@ -440,7 +440,7 @@ object earningsReport {
     val day_current = date.toString("dd")
 
     /** If it's the first day of the month, xd segments distribution is calculated again. */
-    if (("01").contains(day)) {
+    if (("01").contains(day_current)) {
       getDataReport_xd(spark = spark,
                       date_current = date_current)
                                                     }
