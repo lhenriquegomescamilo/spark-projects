@@ -495,8 +495,10 @@ def get_segments_from_triplets_from_xd(
       path_w_cookies: String
   ) = {
 
-        val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","CO").
-                        .groupBy("device_id","feature").agg(sum("count") as "count_in_days")
+        val segments_raw = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","CO")
+                        
+
+        val segments = segments_raw.groupBy("device_id","feature").agg(sum("count") as "count_in_days")
                         .withColumn("device_id",upper(col("device_id")))
                        
             
@@ -598,7 +600,7 @@ count_no_birra.write.format("csv")
     val spark =
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd")
+get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd" )
 
 }
 
