@@ -78,23 +78,23 @@ object platformsData {
   def transformDF(
       data: DataFrame
   ): DataFrame = {
+    // def getIntRepresentation = udf((array: Seq[Integer])=> array.zipWithIndex.map(t => t._1*Math.pow(2, t._2)).reduce((n1, n2) => n1+n2).toInt )
+    def getIntRepresentation = udf((array: Seq[Integer])=> array.map(_.toString).mkString("") )
 
     val df = data
-      .withColumn("d2", when(col("d2").isNotNull, "d2").otherwise(""))
-      .withColumn("d10", when(col("d10").isNotNull, "d10").otherwise(""))
-      .withColumn("d11", when(col("d11").isNotNull, "d11").otherwise(""))
-      .withColumn("d13", when(col("d13").isNotNull, "d13").otherwise(""))
-      .withColumn("d14", when(col("d14").isNotNull, "d14").otherwise(""))
+      .withColumn("d2", when(col("d2").isNotNull, 1).otherwise(0))
+      .withColumn("d10", when(col("d10").isNotNull, 1).otherwise(0))
+      .withColumn("d11", when(col("d11").isNotNull, 1).otherwise(0))
+      .withColumn("d13", when(col("d13").isNotNull, 1).otherwise(0))
+      .withColumn("d14", when(col("d14").isNotNull, 1).otherwise(0))
       .withColumn(
         "platforms",
         array(col("d2"), col("d10"), col("d11"), col("d13"), col("d14"))
       )
+      .withColumn("platforms", getIntRepresentation(col("platforms")))
       .withColumn("segments", split(col("third_party"), "\u0001"))
-      // .withColumn("platform", explode(col("platforms")))
-      // .filter("platform IS NOT NULL AND length(platform)>0")
-      .withColumn("segment", explode(col("segments")))
-      // .groupBy("platform", "segment").agg(countDistinct("device_id") as "user_unique")
-      .select("device_id", "segment", "platforms")
+      .withColumn("segments", col("segments").cast("array<int>"))
+      .select("device_id", "segments", "platforms")
     df
   }
 

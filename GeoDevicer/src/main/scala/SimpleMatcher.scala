@@ -166,7 +166,7 @@ val df_safegraph = spark.read.format("csv")
                   .option("header",false)
                   .option("delimiter","\t")
                   .load(data_path) //"/datascience/geo/startapp/2019*"
-                  .toDF("ad_id","timestamp","country","latitude","longitude","some")
+                  .toDF("ad_id","timestamp","country","longitude","latitude","some")
                   .filter(col("country")===country)
 
 df_safegraph.createOrReplaceTempView("data")
