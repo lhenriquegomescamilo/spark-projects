@@ -76,6 +76,7 @@ object platformsData {
   )
 
   def transformDF(
+      spark: SparkSession,
       data: DataFrame
   ): DataFrame = {
     def getIntRepresentation =
@@ -90,7 +91,7 @@ object platformsData {
     //   udf((array: Seq[Integer]) => array.map(_.toString).mkString(""))
 
     def getAllPlatforms =
-      udf((array: Seq[Integer]) => array.reduce((i1, i2) => i1 | i2))
+      udf( (array: Seq[Integer]) => array.reduce((i1, i2) => i1 | i2).toInt )
 
     val df = data
       .withColumn("d2", when(col("d2").isNotNull, 1).otherwise(0))
@@ -105,12 +106,34 @@ object platformsData {
       .withColumn("platforms", getIntRepresentation(col("platforms")))
       .withColumn("segments", split(col("third_party"), "\u0001"))
       .withColumn("segments", col("segments").cast("array<int>"))
-      .withColumn("segment", explode(col("segments")))
-      .groupBy("device_id", "segment")
+      // .withColumn("segment", explode(col("segments")))
+      // .groupBy("device_id", "segment")
+      // .agg(collect_list(col("platforms")) as "platforms")
+      // .withColumn("plaforms", getAllPlatforms(col("platforms")))
+      .select("device_id", "segments", "platforms")
+
+    df.write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/reports/platforms/tmp/")
+
+    val temp_data =
+      spark.read.format("parquet").load("/datascience/reports/platforms/tmp/")
+
+    val users = temp_data
+      .groupBy("device_id")
       .agg(collect_list(col("platforms")) as "platforms")
       .withColumn("plaforms", getAllPlatforms(col("platforms")))
-      .select("device_id", "segment", "platforms")
-    df
+      .select("device_id", "platforms")
+
+    val segments = temp_data
+      .select("device_id", "segments")
+      .withColumn("segment", explode(col("segments")))
+      .select("device_id", "segment")
+
+    val joint = users.join(segments, Seq("device_id"), "inner")
+
+    joint
   }
 
   /**
@@ -165,7 +188,7 @@ object platformsData {
     val data = getDayEventQueue(spark = spark, date_current = date_current)
 
     /**  Transform data */
-    val df = transformDF(data = data)
+    val df = transformDF(spark, data = data)
 
     /** Store df */
     saveData(df = df, date_current = date_current)
