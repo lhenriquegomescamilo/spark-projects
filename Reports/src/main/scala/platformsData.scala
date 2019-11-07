@@ -123,7 +123,7 @@ object platformsData {
     //   .select("device_id", "platforms")
 
     val segments = temp_data
-      .select("device_id", "segments")
+      .select("device_id", "segments", "platforms")
       .withColumn("segment", explode(col("segments")))
       .select("device_id", "segment", "platforms")
       .dropDuplicates("device_id", "segment")
