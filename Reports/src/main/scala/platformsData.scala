@@ -117,16 +117,16 @@ object platformsData {
       .mode("overwrite")
       .save("/datascience/reports/platforms/tmp/")
 
-    val data =
+    val temp_data =
       spark.read.format("parquet").load("/datascience/reports/platforms/tmp/")
 
-    val users = data
+    val users = temp_data
       .groupBy("device_id")
       .agg(collect_list(col("platforms")) as "platforms")
       .withColumn("plaforms", getAllPlatforms(col("platforms")))
       .select("device_id", "platforms")
 
-    val segments = data
+    val segments = temp_data
       .select("device_id", "segments")
       .withColumn("segment", explode(col("segments")))
       .select("device_id", "segment")
