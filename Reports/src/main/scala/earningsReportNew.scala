@@ -64,7 +64,7 @@ object earningsReport {
   def saveRelevantDevicesDF(
       spark: SparkSession,
       nDays: Integer,
-      since: Integer
+      since: Integer,
       date_current: String
   ): String = {
 
