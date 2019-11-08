@@ -64,20 +64,20 @@ object earningsReportNew {
 
 //////////////////////////////////////////////////////////////
 
-  def getDataTemp(
+  def getData(
       spark: SparkSession,
       nDays: Integer,
-      since: Integer
+      date_current: String,
+      path: String
   ): DataFrame = {
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
+    val formatter = DateTimeFormat.forPattern("yyyyMMdd")
+    val end = DateTime.parse(date_current, formatter)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/reports/earnings/temp"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
@@ -272,8 +272,8 @@ object earningsReportNew {
       .groupBy("id_partner","segment","country")
       .count()
       .withColumnRenamed("count", "device_unique")
-      .withColumn("date", lit(date_current))
-      .select("date","id_partner","segment","country","device_unique") 
+      .withColumn("day", lit(date_current))
+      .select("day","id_partner","segment","country","device_unique") 
 
   df_grouped_country
   }
@@ -316,8 +316,8 @@ object earningsReportNew {
       .groupBy("id_partner", "segment")
       .agg(sum("device_unique"))
       .withColumn("country", lit("NN"))
-      .withColumn("date", lit(date_current))
-      .select("date","id_partner","segment","country","device_unique") 
+      .withColumn("day", lit(date_current))
+      .select("day","id_partner","segment","country","device_unique") 
 
     df_total
   }
@@ -344,7 +344,7 @@ object earningsReportNew {
     data
       .write
       .format("parquet")
-      .partitionBy("date")
+      .partitionBy("day")
       .mode(SaveMode.Overwrite)
       .save(path)
   }
@@ -395,26 +395,26 @@ object earningsReportNew {
       val dir = "/datascience/reports/earnings/"
 
       /** Here we store the first report */
-      val savepath1 = dir + "xd_country/"
+      val savepath1 = dir + "xd_country"
 
       saveData(data = df_grouped_country,
-              path = savepath1)
+               path = savepath1)
 
       /**  Get number of devices per partner_id per segment */
-      val df1 = spark.read.parquet(savepath1 + date_current)
+      val df1 = getData(spark = spark,
+                        nDays = 1,
+                        date_current = date_current,
+                        path = savepath1)
 
       val df_totals= getTotals(df = df1,
                                date_current)
 
       /** Here we store the second report */
-      val savepath2 = dir + "xd/"
+      val savepath2 = dir + "xd"
 
       saveData(data = df_totals,
               path = savepath2)            
 
-      val savepath_xd = savepath2 + date_current
-    
-      savepath_xd
     }    
 
 /**
@@ -440,37 +440,41 @@ object earningsReportNew {
 
     val date_now = DateTime.now
     val date_since = date_now.minusDays(since)
-    val date_current = date_since.toString("yyyy-MM-dd")  
+    val date_current = date_since.toString("yyyyMMdd")  
       
     saveRelevantDevicesDF(spark = spark,
                           nDays = nDays,
                           since = since)
 
-    val df = getDataTemp(spark = spark,
-                         nDays = nDays,
-                         since = since)
+    val dir = "/datascience/reports/earnings/"
+
+    val df = getData(spark = spark,
+                     nDays = nDays,
+                     date_current = date_current,
+                     path = dir + "temp")
     
     /**  Get number of devices per partner_id per segment per country */
     val df_count_country = getCountbyCountry(spark = spark,
                                              df = df,
                                              date_current)                                         
-    
-    val dir = "/datascience/reports/earnings/"
 
     /** Here we store the first report */
-    val savepath1 = dir + "base_country/"
+    val savepath1 = dir + "base_country"
 
     saveData(data = df_count_country,
              path = savepath1)
 
     /**  Get number of devices per partner_id per segment */
-    val df1 = spark.read.parquet(savepath1 + date_current)
+    val df1 = getData(spark = spark,
+                      nDays = 1,
+                      date_current = date_current,
+                      path = savepath1)
 
     val df_totals= getTotals(df = df1,
                              date_current)
 
     /** Here we store the second report */
-    val savepath2 = dir + "base/"
+    val savepath2 = dir + "base"
 
     saveData(data = df_totals,
              path = savepath2)
@@ -483,8 +487,8 @@ object earningsReportNew {
     val day_current = date_since.toString("dd")
     /** If it's the first day of the month, xd segments distribution is calculated again. */
     if (("01").contains(day_current)) {
-      savepath_xd = getDataReport_xd(spark = spark,
-                                     date_current = date_current)
+      getDataReport_xd(spark = spark,
+                       date_current = date_current)
                                                     }
     else {
       val date_previous = date_now.minusMonths(1).toString("yyyy-MM-01")
