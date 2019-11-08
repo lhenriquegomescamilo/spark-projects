@@ -311,9 +311,8 @@ object earningsReportNew {
 
     val df_total = df
       .groupBy("id_partner", "segment")
-      .agg(sum("device_unique"))
+      .agg(sum(col("device_unique")) as "device_unique")
       .withColumn("country", lit("NN"))
-      .withColumn("day", lit(date_current))
       .select("day","id_partner","segment","country","device_unique") 
 
     df_total
