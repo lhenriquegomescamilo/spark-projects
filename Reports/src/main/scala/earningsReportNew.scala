@@ -74,7 +74,7 @@ object earningsReportNew {
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val format = "yyyy-MM-dd"
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
     val path = "/datascience/reports/earnings/temp"
