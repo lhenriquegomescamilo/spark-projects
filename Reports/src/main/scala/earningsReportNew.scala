@@ -488,7 +488,7 @@ object earningsReportNew {
                        date_current = date_current)
                                                     }
     else {
-      val date_previous = date_now.minusMonths(1).toString("day=yyyyMM01")
+      val date_previous = date_now.minusMonths(1).toString("yyyyMM01")
       val path = dir + "xd/"
       savepath_xd = dir + date_previous
 
