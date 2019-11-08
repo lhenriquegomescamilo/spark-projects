@@ -339,7 +339,7 @@ object earningsReportNew {
   def saveData(
       data: DataFrame,
       path: String
-  ): String = {
+  ) = {
 
     data
       .write
@@ -403,9 +403,8 @@ object earningsReportNew {
       /**  Get number of devices per partner_id per segment */
       val df1 = spark.read.parquet(savepath1 + date_current)
 
-      val df_totals= getTotals(spark = spark,
-                              df = df1,
-                              date_current)
+      val df_totals= getTotals(df = df1,
+                               date_current)
 
       /** Here we store the second report */
       val savepath2 = dir + "xd/"
@@ -467,8 +466,7 @@ object earningsReportNew {
     /**  Get number of devices per partner_id per segment */
     val df1 = spark.read.parquet(savepath1 + date_current)
 
-    val df_totals= getTotals(spark = spark,
-                             df = df1,
+    val df_totals= getTotals(df = df1,
                              date_current)
 
     /** Here we store the second report */
