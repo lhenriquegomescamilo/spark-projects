@@ -5,6 +5,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.expressions.Window
 
 import org.joda.time.{Days, DateTime}
+import org.joda.time.format.DateTimeFormat
 
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.conf.Configuration
@@ -75,7 +76,8 @@ object earningsReportNew {
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val formatter = DateTimeFormat.forPattern("yyyyMMdd")
+    val format = "yyyyMMdd"
+    val formatter = DateTimeFormat.forPattern(format)
     val end = DateTime.parse(date_current, formatter)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
