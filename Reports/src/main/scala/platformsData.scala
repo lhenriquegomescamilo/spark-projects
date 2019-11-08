@@ -127,6 +127,7 @@ object platformsData {
       .withColumn("segment", explode(col("segments")))
       .select("device_id", "segment", "platforms")
       .dropDuplicates("device_id", "segment")
+      .orderBy("segment")
 
     // val joint = users.join(segments, Seq("device_id"), "inner")
 
