@@ -313,6 +313,7 @@ object earningsReportNew {
       .groupBy("id_partner", "segment")
       .agg(sum(col("device_unique")) as "device_unique")
       .withColumn("country", lit("NN"))
+      .withColumn("day", lit(date_current))
       .select("day","id_partner","segment","country","device_unique") 
 
     df_total
