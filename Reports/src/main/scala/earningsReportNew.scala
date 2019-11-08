@@ -89,7 +89,6 @@ object earningsReportNew {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .select("segment","id_partner", "device_id","country","day")
 
     df
   }
@@ -188,13 +187,9 @@ object earningsReportNew {
     val df = df_nDays_taxo.join(users, Seq("device_id"), "inner")
 
     /** Here we store the relevant devices join */
-    
-    df
-      .write
-      .format("parquet")
-      .partitionBy("day")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/reports/earnings/temp/")        
+    saveData(data = df,
+             path = "/datascience/reports/earnings/temp/")
+     
     }    
 
  /**
@@ -493,7 +488,7 @@ object earningsReportNew {
                        date_current = date_current)
                                                     }
     else {
-      val date_previous = date_now.minusMonths(1).toString("yyyy-MM-01")
+      val date_previous = date_now.minusMonths(1).toString("day=yyyyMM01")
       val path = dir + "xd/"
       savepath_xd = dir + date_previous
 
