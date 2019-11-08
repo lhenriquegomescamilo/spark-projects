@@ -116,22 +116,24 @@ object platformsData {
     val temp_data =
       spark.read.format("parquet").load("/datascience/reports/platforms/tmp/")
 
-    // val users = temp_data
-    //   .groupBy("device_id")
-    //   .agg(collect_list(col("platforms")) as "platforms")
-    //   .withColumn("platforms", getAllPlatforms(col("platforms")))
-    //   .select("device_id", "platforms")
+    val users = temp_data
+      .groupBy("device_id")
+      .agg(collect_list(col("platforms")) as "platforms")
+      .withColumn("platforms", getAllPlatforms(col("platforms")))
+      .select("device_id", "platforms")
 
     val segments = temp_data
       .select("device_id", "segments", "platforms")
       .withColumn("segment", explode(col("segments")))
-      .select("device_id", "segment", "platforms")
-      .dropDuplicates("device_id", "segment")
-      .orderBy("segment")
+      .select("device_id", "segment")
+      .distinct()//, "platforms")
+      // .dropDuplicates("device_id", "segment")
+      
+      val joint = users.join(segments, Seq("device_id"), "inner")
+      // .orderBy("segment")
 
-    // val joint = users.join(segments, Seq("device_id"), "inner")
-
-    segments
+    // segments
+    joint
   }
 
   /**
