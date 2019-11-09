@@ -676,7 +676,8 @@ object CrossDevicer {
       "and" -> "android",
       "ios" -> "ios",
       "con" -> "TV",
-      "dra" -> "drawbridge"
+      "dra" -> "drawbridge",
+      "sht" -> "web"
     )
     val mapUDF = udf((dev_type: String) => typeMap(dev_type))
 
