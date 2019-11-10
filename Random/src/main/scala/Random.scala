@@ -5322,7 +5322,7 @@ user_granularity.write
     spark.read
       .format("parquet")
       .load("/datascience/pii_matching/pii_tuples/")
-      .filter("ml_sh2 IS NOT NULL")
+      .filter("country IN ('AR', 'MX') AND ml_sh2 IS NOT NULL")
       .select("device_id", "ml_sh2", "country")
       .distinct()
       .groupBy("ml_sh2", "country")
@@ -5335,7 +5335,7 @@ user_granularity.write
     spark.read
       .format("parquet")
       .load("/datascience/pii_matching/pii_tuples/")
-      .filter("nid_sh2 IS NOT NULL")
+      .filter("country IN ('AR', 'MX') AND nid_sh2 IS NOT NULL")
       .select("device_id", "nid_sh2", "country")
       .distinct()
       .groupBy("nid_sh2", "country")
@@ -5348,10 +5348,10 @@ user_granularity.write
     spark.read
       .format("parquet")
       .load("/datascience/pii_matching/pii_tuples/")
-      .filter("mob_sh2 IS NOT NULL")
-      .select("device_id", "mob_sh2", "country")
+      .filter("country IN ('AR', 'MX') AND mb_sh2 IS NOT NULL")
+      .select("device_id", "mb_sh2", "country")
       .distinct()
-      .groupBy("mob_sh2", "country")
+      .groupBy("mb_sh2", "country")
       .count()
       .groupBy("country")
       .agg(avg(col("count")) as "ratio")
