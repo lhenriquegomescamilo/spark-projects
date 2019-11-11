@@ -25,37 +25,14 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.types.{
+ StructType,
+ StructField,
+ StringType,
+ IntegerType
+}
 
 object RandomTincho {
-
-  def get_data_urls(
-      spark: SparkSession,
-      ndays: Int,
-      since: Int,
-      country: String
-  ): DataFrame = {
-    /// Configuraciones de spark
-    val sc = spark.sparkContext
-    val conf = sc.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-
-    /// Obtenemos la data de los ultimos ndays
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(since)
-
-    val days =
-      (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_demo/data_urls/"
-    val hdfs_files = days
-      .map(day => path + "/day=%s/country=%s".format(day, country))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-
-    val urls = spark.read
-                    .option("basePath", path)
-                    .parquet(hdfs_files: _*)
-                    .select("url")
-    urls
-  }
 
   def get_selected_keywords(
       spark: SparkSession,
