@@ -106,14 +106,33 @@ var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_
 spatialDf.createOrReplaceTempView("poligonomagico")
 
 
+//if we want to use safegraph uncomment this
+/*
+//here we load from safegraph
 val df_safegraph = get_safegraph_data(spark,nDays,since,country)
 df_safegraph.createOrReplaceTempView("data")
 
-var safegraphDf = spark .sql("""SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry
+//here we parse it
+var safegraphDf = spark .sql("""SELECT ad_id,id_type,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry
               FROM data  """)
 
 safegraphDf.createOrReplaceTempView("data")
 
+*/
+//if we want to use a specific dataframe with geodata, use this:
+val df_safegraph = spark.read.format("csv").option("header",false).option("delimiter","\t")
+                        .load("/datascience/geo/mexico_200d_home_29-10-2019-10h")
+                        .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
+df_safegraph.createOrReplaceTempView("data")
+
+//here we parse it
+var safegraphDf = spark .sql("""SELECT ad_id,id_type,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry
+              FROM data  """)
+
+safegraphDf.createOrReplaceTempView("data")
+
+
+//performing the join
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
@@ -227,17 +246,22 @@ match_users_to_polygons(spark,
   "3",
   "argentina")
 
-*/
 
 match_sample_to_polygons(spark,
   "/datascience/geo/startapp/2019*",
   "/datascience/geo/POIs/aud_havas_nov_19.json",
     "CO")
+
+
+*/
 /*spark: SparkSession,
       nDays: String,
       since: String,
       country: String
       */
+
+
+      match_users_to_polygons(spark,"/datascience/geo/POIs/Municipios_Mex.json",1,1,"mexico")
 
   }
 }
