@@ -439,7 +439,7 @@ object RandomTincho {
 
  }
  
- def keywords_embeddings(spark:SparkSession){
+ def keywords_embeddings(spark:SparkSession, keyword_path:String){
    val word_embeddings = spark.read
                               .format("csv")
                               .option("header","true")
@@ -450,7 +450,7 @@ object RandomTincho {
     val myUDF = udf((keyword: String) => if (isAllDigits(keyword)) "DIGITO" else keyword)
 
     val dataset_kws = spark.read
-                            .load("/datascience/data_url_classifier/dataset_keyword_content_training/country=AR/")
+                            .load(keyword_path)
                             .withColumn("content_keys",myUDF(col("content_keys")))
                             .withColumnRenamed("content_keys","word")
                             .withColumn("word",lower(col("word")))
@@ -476,7 +476,7 @@ object RandomTincho {
       .format("csv")
       .option("header","true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_url_classifier/dataset_keyword_embedding")
+      .save("/datascience/data_url_classifier/dataset_keyword_embedding_contextual")
  }
 
  def processURL(url: String): String = {
@@ -547,7 +547,8 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_segments_pmi(spark, ndays = 30, since = 1)
+    val keyword_path = "/datascience/data_url_classifier/dataset_keyword_content_contextual" 
+    keywords_embeddings(spark, keyword_path)
   }
 
 }
