@@ -649,7 +649,9 @@ object RandomTincho {
                                 .load("/datascience/custom/scrapped_urls.csv")
                                 .select("url")
 
-    val joint = data_urls.join(urls_contextual,Seq("url"),"inner").select("url","segments")
+    val urls_contextual_processed = processURL(urls_contextual)
+
+    val joint = data_urls.join(urls_contextual_processed,Seq("url"),"inner").select("url","segments")
 
     joint.groupBy("url")
           .agg(collect_list(col("segments")).as("segments"))
