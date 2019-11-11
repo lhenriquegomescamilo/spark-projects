@@ -83,7 +83,7 @@ object DatasetTimestamp {
       .getOrCreate()
 
     // Parseo de parametros
-    val ndays =  10
+    val ndays =  30
     val since =  1
     val country = "AR"
     val ndays_dataset = 30
