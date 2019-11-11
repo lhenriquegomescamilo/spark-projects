@@ -89,17 +89,21 @@ object DatasetTimestamp {
     val ndays_dataset = 30
 
     val data_urls = UrlUtils.get_data_urls(spark, ndays, since, country)
-    val untagged_df = UrlUtils.get_data_untagged(spark,ndays,since,country)
+    val gtDF = spark.read
+                          .format("csv")
+                          .option("header","true")
+                          .load("/datascience/custom/scrapped_urls.csv")
+                          .select("url")
 
     get_url_timestamp(
       spark,
       country = country,
       since = since,
       ndays = ndays_dataset,
-      gtDF = untagged_df,
+      gtDF = gtDF,
       joinType = "inner",
       df_urls = data_urls,
-      name = "dataset_timestamp_expansion"
+      name = "dataset_timestamp_contextual"
     )
   }
 }
