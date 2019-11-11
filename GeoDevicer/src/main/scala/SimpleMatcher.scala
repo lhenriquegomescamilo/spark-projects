@@ -126,7 +126,7 @@ val df_safegraph = spark.read.format("csv").option("header",false).option("delim
 df_safegraph.createOrReplaceTempView("data")
 
 //here we parse it
-var safegraphDf = spark .sql("""SELECT ad_id,id_type,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as geometry
+var safegraphDf = spark .sql("""SELECT ad_id,id_type,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
               FROM data  """)
 
 safegraphDf.createOrReplaceTempView("data")
