@@ -490,7 +490,7 @@ object earningsReportNew {
     else {
       val date_previous = date_now.minusMonths(1).toString("yyyyMM01")
       val path = dir + "xd/day="
-      savepath_xd = dir + date_previous
+      savepath_xd = path + date_previous
 
       val conf = spark.sparkContext.hadoopConfiguration
       val fs = FileSystem.get(conf)
