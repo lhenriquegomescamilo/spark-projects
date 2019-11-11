@@ -261,7 +261,7 @@ match_sample_to_polygons(spark,
       */
 
 
-      match_users_to_polygons(spark,"/datascience/geo/POIs/Municipios_Mex.json",1,1,"mexico")
+      match_users_to_polygons(spark,"/datascience/geo/POIs/Municipios_Mex.json","1","1","mexico")
 
   }
 }
