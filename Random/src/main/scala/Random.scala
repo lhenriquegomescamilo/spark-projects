@@ -5320,68 +5320,36 @@ user_granularity.write
 
     val data = spark.read
       .format("csv")
-      .option("sep", ";")
+      .option("sep", "\t")
+      .option("header", "false")
       .load(
-        "/data/crossdevice/2019-10-13/"
+        "/data/geo/startapp/20191111/startapp_location_2019111114_v_soda_node0001.tsv.gz"
       )
+      .withColumn(
+        "day",
+        regexp_replace(split(col("_c6"), " ").getItem(0), "-", "")
+      )
+      .withColumnRenamed("_c0", "ad_id")
+      .withColumnRenamed("_c1", "id_type")
+      .withColumnRenamed("_c2", "country")
+      .withColumnRenamed("_c3", "latitude")
+      .withColumnRenamed("_c4", "longitude")
+      .withColumnRenamed("_c5", "horizontal_accuracy")
+      .withColumnRenamed("_c5", "utc_timestamp")
+      .withColumn("geo_hash", lit("startapp"))
+      .withColumn("latitude", col("latitude").cast("double"))
+      .withColumn("longitude", col("longitude").cast("double"))
+      .withColumn(
+        "horizontal_accuracy",
+        col("horizontal_accuracy").cast("float")
+      )
+      .withColumn("time", unix_timestamp(col("_c6")))
 
-    data
-      .withColumn("_c2", split(col("_c2"), "\t"))
-      .withColumn("_c2", explode(col("_c2")))
-      .withColumn("_c2", split(col("_c2"), "=").getItem(0))
-      .select("_c1", "_c2")
-      .groupBy("_c1", "_c2")
-      .count()
-      .groupBy("_c2")
-      .agg(avg(col("count")))
-      .show()
-    // println("Mail ratio by country")
-    // spark.read
-    //   .format("parquet")
-    //   .load("/datascience/pii_matching/pii_tuples/")
-    //   .filter("country IN ('AR', 'MX') AND ml_sh2 IS NOT NULL")
-    //   .select("device_id", "ml_sh2", "country")
-    //   .distinct()
-    //   .groupBy("ml_sh2", "country")
-    //   .count()
-    //   .groupBy("country")
-    //   .agg(avg(col("count")) as "ratio")
-    //   .show()
+    data.write
+      .format("parquet")
+      .partitionBy("day", "country")
+      .mode("append")
+      .save("/data/geo/startapp/parquet/")
 
-    // println("NID ratio by country")
-    // spark.read
-    //   .format("parquet")
-    //   .load("/datascience/pii_matching/pii_tuples/")
-    //   .filter("country IN ('AR', 'MX') AND nid_sh2 IS NOT NULL")
-    //   .select("device_id", "nid_sh2", "country")
-    //   .distinct()
-    //   .groupBy("nid_sh2", "country")
-    //   .count()
-    //   .groupBy("country")
-    //   .agg(avg(col("count")) as "ratio")
-    //   .show()
-
-    // println("Mobile ratio by country")
-    // spark.read
-    //   .format("parquet")
-    //   .load("/datascience/pii_matching/pii_tuples/")
-    //   .filter("country IN ('AR', 'MX') AND mb_sh2 IS NOT NULL")
-    //   .select("device_id", "mb_sh2", "country")
-    //   .distinct()
-    //   .groupBy("mb_sh2", "country")
-    //   .count()
-    //   .groupBy("country")
-    //   .agg(avg(col("count")) as "ratio")
-    //   .show()
-
-    // println("Device Type ratio by country - Tapad")
-    // spark.read
-    //   .format("parquet")
-    //   .load("/datascience/crossdevice/double_index_individual")
-    //   .groupBy("index", "index_type")
-    //   .count()
-    //   .groupBy("index_type")
-    //   .agg(avg(col("count")))
-    //   .show()
   }
 }
