@@ -5348,8 +5348,8 @@ user_granularity.write
     data.write
       .format("parquet")
       .partitionBy("day", "country")
-      .mode("overwrite")
-      .save("/data/geo/startapp/")
+      .mode("append")
+      .save("/data/geo/startapp/parquet/")
 
   }
 }
