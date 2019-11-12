@@ -123,6 +123,7 @@ safegraphDf.createOrReplaceTempView("data")
 val df_safegraph = spark.read.format("csv").option("header",false).option("delimiter","\t")
                         .load("/datascience/geo/mexico_200d_home_29-10-2019-10h/")
                         .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
+                        .filter("freq>2")
 df_safegraph.createOrReplaceTempView("data")
 
 //here we parse it
