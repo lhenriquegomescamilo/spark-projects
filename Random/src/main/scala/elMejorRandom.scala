@@ -646,7 +646,7 @@ val data = spark.read
       )
       .withColumn(
         "day",
-        regexp_replace(split(col("_c6"), " ").getItem(0), "-", "")
+        regexp_replace(split(col("timestamp"), " ").getItem(0), "-", "")
       )
       .withColumn("geo_hash", lit("startapp"))
       .withColumn("latitude", col("latitude").cast("double"))
