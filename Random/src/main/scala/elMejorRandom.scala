@@ -542,10 +542,10 @@ val geo = spark.read.format("csv")
 .toDF("device_id","device_type","country","latitude","longitude","algo","timestamp")
 
 println ("Devices by country")
-geo.groupBy("country").agg(countDistinct("device_id") as "unique users",count("device_id") as "detections")
+geo.groupBy("country").agg(countDistinct("device_id") as "unique users",count("device_id") as "detections").show()
 
-println ("Min,Max Date")
-geo.agg(min("timestamp"), max("timestamp")).show()
+//println ("Min,Max Date")
+//geo.agg(min("timestamp"), max("timestamp")).show()
 
 
 
