@@ -248,7 +248,7 @@ object platformsReport {
     val df_temp = transformDF(spark, data = data)
     .withColumn("day", lit(date_current))
 
-    val temp_path = dir + temp
+    val temp_path = dir + "temp"
     saveData(df = df_temp,
              path = temp_path)    
 
@@ -261,7 +261,7 @@ object platformsReport {
      .withColumn("day", lit(date_current))
 
     val path_report = dir + "done"
-    saveData(df = df1
+    saveData(df = df1,
              path = path_report)
 
     /** Get report per country per platform per segment */
