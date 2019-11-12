@@ -529,7 +529,7 @@ object earningsReportNew {
 
     // Parse the parameters
     val options = nextOption(Map(), Args.toList)
-    val nDays = if (options.contains('nDays)) options('nDays) else 60
+    val nDays = if (options.contains('nDays)) options('nDays) else 45
     val since = if (options.contains('since)) options('since) else 1
 
     // Setting logger config
