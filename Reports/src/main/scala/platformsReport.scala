@@ -13,7 +13,7 @@ import org.apache.log4j.{Level, Logger}
 /**
   * The idea of this script is to generate days of volumes by platform for platform Report.
   */
-object platformsData {
+object platformsReport {
 
   /**
     *
