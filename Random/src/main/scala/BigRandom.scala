@@ -53,7 +53,41 @@ def getUsersCustom(
       .mode(SaveMode.Overwrite)
       .save(fileNameFinal)
   }
-  
+
+ def checkNulls(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer
+  ) = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .select("id_partner","day")
+      .filter("id_partner is null").select("day").distinct()
+      .write.format("csv")
+      .option("header",true)
+      .option("delimiter","\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/checknulls.csv")
+
+  }
+
+
 def getDataEventQueue_27(
       spark: SparkSession,
       query_27: String,
@@ -132,19 +166,25 @@ def getDataEventQueue(
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("BigRandom").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+    val spark = SparkSession.builder
+    .appName("BigRandom")
+    .config("spark.sql.files.ignoreCorruptFiles", "true")
+    .getOrCreate()
 
-    val nDays = 30
+    val nDays = 60
     val since = 1
 
-    getUsersCustom(spark=spark,
+    checkNulls(spark=spark,
+                nDays=nDays,
+                since=since)
+
+    /**getUsersCustom(spark=spark,
                    nDays=nDays,
                    since=since)
 
-    //val query_27 = "country IN ('MX', 'BR') AND event_type = 'pv' AND array_contains(platforms, '27')"
+    val query_27 = "country IN ('MX', 'BR') AND event_type = 'pv' AND array_contains(platforms, '27')"
  
-    /**
+    
     val query = "country IN ('MX', 'BR') AND event_type = 'pv'"
     val nDays = 2
     val since = 1

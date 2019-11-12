@@ -162,7 +162,10 @@ object DatasetKeywordContent {
     val since = 7
     val country = "AR"
 
-    val gtDF = spark.read.load("/datascience/data_url_classifier/gt/country=AR/")
-    get_url_content(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", name = "dataset_keyword_content_training")
+
+    val urls = spark.read.format("csv").option("header","true").load("/datascience/custom/scrapped_urls.csv").select("url")
+    val gtDF = UrlUtils.processURL(urls)
+    
+    get_url_content(spark, country = country, since = since, ndays = ndays, gtDF = gtDF, joinType = "inner", name = "dataset_keyword_content_contextual")
   }
 }
