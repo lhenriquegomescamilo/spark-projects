@@ -5323,13 +5323,33 @@ user_granularity.write
       .option("sep", "\t")
       .option("header", "false")
       .load(
-        "/data/geo/startapp/20191111/startapp_location_2019111114_v_soda_node00*.tsv.gz"
+        "/data/geo/startapp/20191111/startapp_location_2019111114_v_soda_node0001.tsv.gz"
       )
-      .repartition(50)
-    
-    data.cache()
+      .withColumn(
+        "day",
+        regexp_replace(split(col("_c6"), " ").getItem(0), "-", "")
+      )
+      .withColumnRenamed("_c0", "ad_id")
+      .withColumnRenamed("_c1", "id_type")
+      .withColumnRenamed("_c2", "country")
+      .withColumnRenamed("_c3", "latitude")
+      .withColumnRenamed("_c4", "longitude")
+      .withColumnRenamed("_c5", "horizontal_accuracy")
+      .withColumnRenamed("_c5", "utc_timestamp")
+      .withColumn("geo_hash", lit("startapp"))
+      .withColumn("latitude", col("latitude").cast("double"))
+      .withColumn("longitude", col("longitude").cast("double"))
+      .withColumn(
+        "horizontal_accuracy",
+        col("horizontal_accuracy").cast("float")
+      )
+      .withColumn("time", unix_timestamp(col("_c6")))
 
-    data.groupBy("_c2").count().show()
-    data.select("_c0", "_c2").distinct().groupBy("_c2").count().show()
+    data.write
+      .format("parquet")
+      .partitionBy("day", "country")
+      .mode("overwrite")
+      .save("/data/geo/startapp/")
+
   }
 }
