@@ -5320,68 +5320,13 @@ user_granularity.write
 
     val data = spark.read
       .format("csv")
-      .option("sep", ";")
+      .option("sep", "\t")
+      .option("header", "false")
       .load(
-        "/data/crossdevice/2019-10-13/"
+        "/data/geo/startapp/20191111/startapp_location_2019111114_v_soda_node00*.tsv.gz"
       )
 
-    data
-      .withColumn("_c2", split(col("_c2"), "\t"))
-      .withColumn("_c2", explode(col("_c2")))
-      .withColumn("_c2", split(col("_c2"), "=").getItem(0))
-      .select("_c1", "_c2")
-      .groupBy("_c1", "_c2")
-      .count()
-      .groupBy("_c2")
-      .agg(avg(col("count")))
-      .show()
-    // println("Mail ratio by country")
-    // spark.read
-    //   .format("parquet")
-    //   .load("/datascience/pii_matching/pii_tuples/")
-    //   .filter("country IN ('AR', 'MX') AND ml_sh2 IS NOT NULL")
-    //   .select("device_id", "ml_sh2", "country")
-    //   .distinct()
-    //   .groupBy("ml_sh2", "country")
-    //   .count()
-    //   .groupBy("country")
-    //   .agg(avg(col("count")) as "ratio")
-    //   .show()
-
-    // println("NID ratio by country")
-    // spark.read
-    //   .format("parquet")
-    //   .load("/datascience/pii_matching/pii_tuples/")
-    //   .filter("country IN ('AR', 'MX') AND nid_sh2 IS NOT NULL")
-    //   .select("device_id", "nid_sh2", "country")
-    //   .distinct()
-    //   .groupBy("nid_sh2", "country")
-    //   .count()
-    //   .groupBy("country")
-    //   .agg(avg(col("count")) as "ratio")
-    //   .show()
-
-    // println("Mobile ratio by country")
-    // spark.read
-    //   .format("parquet")
-    //   .load("/datascience/pii_matching/pii_tuples/")
-    //   .filter("country IN ('AR', 'MX') AND mb_sh2 IS NOT NULL")
-    //   .select("device_id", "mb_sh2", "country")
-    //   .distinct()
-    //   .groupBy("mb_sh2", "country")
-    //   .count()
-    //   .groupBy("country")
-    //   .agg(avg(col("count")) as "ratio")
-    //   .show()
-
-    // println("Device Type ratio by country - Tapad")
-    // spark.read
-    //   .format("parquet")
-    //   .load("/datascience/crossdevice/double_index_individual")
-    //   .groupBy("index", "index_type")
-    //   .count()
-    //   .groupBy("index_type")
-    //   .agg(avg(col("count")))
-    //   .show()
+    data.groupBy("_c2").count().show()
+    data.select("_c0", "_c2").distinct().groupBy("_c2").count().show()
   }
 }
