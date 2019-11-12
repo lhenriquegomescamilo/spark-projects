@@ -218,7 +218,7 @@ object platformsReport {
     .withColumn("day", lit(date_current))
 
     /** Store df */
-    val dir = "/datascience/reports/earnings/"
+    val dir = "/datascience/reports/platforms/"
     val path = dir + "done"
 
     saveData(df = df,
@@ -226,6 +226,54 @@ object platformsReport {
 
 
   }
+
+  def getReportPlatformsCountry(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer) = {
+
+    val dir = "/datascience/reports/platforms/"
+
+    /**Get current date */
+    val format = "yyyyMMdd/"
+    val date_current = DateTime.now.minusDays(since).toString(format)
+    println("STREAMING LOGGER:\n\tDay: %s".format(date_current))
+
+    /** Read from "platforms/data" */
+    val data = getPlatformsData(spark = spark,
+                                nDays = nDays,
+                                since = since)
+
+    /**  Transform data and save to temp */
+    val df_temp = transformDF(spark, data = data)
+    .withColumn("day", lit(date_current))
+
+    val temp_path = dir + temp
+    saveData(df = df_temp,
+             path = temp_path)    
+
+    /**  Load transformed data */
+    val df = spark.read
+          .parquet(temp_path + "/day=" + date_current )             
+    
+    /** Get report per platform per segment */
+    val df1 = getVolumesPlatform(spark, data = df)
+     .withColumn("day", lit(date_current))
+
+    val path_report = dir + "done"
+    saveData(df = df1
+             path = path_report)
+
+    /** Get report per country per platform per segment */
+    val df2 = getVolumesPlatformCountry(spark, data = df)
+    .withColumn("day", lit(date_current))
+    
+    val path_report_country = dir + "done_country"
+    saveData(df = df2,
+             path = path_report_country)
+
+
+  }  
 
   type OptionMap = Map[Symbol, Int]
 
