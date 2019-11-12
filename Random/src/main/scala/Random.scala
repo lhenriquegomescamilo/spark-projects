@@ -5318,38 +5318,36 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    val files = """/datascience/audiences/crossdeviced/reckit_177511_xd/
+/datascience/audiences/crossdeviced/reckit_177509_xd/
+/datascience/audiences/crossdeviced/reckit_177501_xd/
+/datascience/audiences/crossdeviced/reckit_177499_xd/
+/datascience/audiences/crossdeviced/reckit_177497_xd/
+/datascience/audiences/crossdeviced/reckit_177495_xd/
+/datascience/audiences/crossdeviced/reckit_177479_xd/
+/datascience/audiences/crossdeviced/reckit_177003_xd/""".split("\n")
+
     val data = spark.read
       .format("csv")
       .option("sep", "\t")
-      .option("header", "false")
-      .load(
-        "/data/geo/startapp/20191111/startapp_location_2019111114_v_soda_node0001.tsv.gz"
-      )
-      .withColumn(
-        "day",
-        regexp_replace(split(col("_c6"), " ").getItem(0), "-", "")
-      )
-      .withColumnRenamed("_c0", "ad_id")
-      .withColumnRenamed("_c1", "id_type")
-      .withColumnRenamed("_c2", "country")
-      .withColumnRenamed("_c3", "latitude")
-      .withColumnRenamed("_c4", "longitude")
-      .withColumnRenamed("_c5", "horizontal_accuracy")
-      .withColumnRenamed("_c5", "utc_timestamp")
-      .withColumn("geo_hash", lit("startapp"))
-      .withColumn("latitude", col("latitude").cast("double"))
-      .withColumn("longitude", col("longitude").cast("double"))
-      .withColumn(
-        "horizontal_accuracy",
-        col("horizontal_accuracy").cast("float")
-      )
-      .withColumn("time", unix_timestamp(col("_c6")))
+      .load(files: _*)
+      .filter("_c0 = 'web'")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "segment")
+      .select("device_id", "segment")
 
-    data.write
+    val piis = spark.read
       .format("parquet")
-      .partitionBy("day", "country")
-      .mode("append")
-      .save("/data/geo/startapp/parquet/")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country = 'AR' and (ml_sh2 IS NOT NULL OR mb_sh2 IS NOT NULL)")
+      .select("device_id", "ml_sh2", "mb_sh2")
 
+    piis
+      .join(data, Seq("device_id"))
+      .select("device_id", "segment", "ml_sh2", "mb_sh2")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/piis_die")
   }
 }
