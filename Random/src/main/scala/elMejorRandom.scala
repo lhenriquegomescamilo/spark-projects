@@ -532,6 +532,29 @@ def get_segments_from_triplets_from_xd(
                      
   }
 
+def startapp_geo_metrics (spark: SparkSession) {
+
+
+val geo = spark.read.format("csv")
+.option("header",false)
+.option("delimiter","\t")
+.load("/data/geo/startapp/20191111")
+.toDF("device_id","device_type","country","latitude","longitude","algo","timestamp")
+
+println ("Devices by country")
+geo.groupBy("country").agg(countDistinct("device_id") as "unique users",count("device_id") as "detections")
+
+println ("Min,Max Date")
+geo.agg(min("timestamp"), max("timestamp")).show()
+
+
+
+
+}
+
+
+
+
 
 
 def get_mex_data( spark: SparkSession) 
@@ -604,7 +627,8 @@ count_no_birra.write.format("csv")
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd" )
+//get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd" )
+startapp_geo_metrics(spark)
 
 }
 
