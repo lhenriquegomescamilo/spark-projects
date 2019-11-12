@@ -556,7 +556,6 @@ geo.groupBy("country").agg(countDistinct("device_id") as "unique users",count("d
 
 
 
-
 def get_mex_data( spark: SparkSession) 
 {
 /*
@@ -628,7 +627,53 @@ count_no_birra.write.format("csv")
     Logger.getRootLogger.setLevel(Level.WARN)
 
 //get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd" )
-startapp_geo_metrics(spark)
+//startapp_geo_metrics(spark)
+
+
+val data = spark.read
+      .format("csv")
+      .option("header", false)
+      .option("delimiter", "\t")
+      .load("/data/geo/startapp/20191111")
+      .toDF(
+        "ad_id",
+        "id_type",
+        "country",
+        "latitude",
+        "longitude",
+        "horizontal_accuracy",
+        "timestamp"
+      )
+      .withColumn(
+        "day",
+        regexp_replace(split(col("_c6"), " ").getItem(0), "-", "")
+      )
+      .withColumn("geo_hash", lit("startapp"))
+      .withColumn("latitude", col("latitude").cast("double"))
+      .withColumn("longitude", col("longitude").cast("double"))
+      .withColumn(
+        "horizontal_accuracy",
+        col("horizontal_accuracy").cast("float")
+      )
+      .withColumn("utc_timestamp", unix_timestamp(col("timestamp")))
+      .select(
+        "utc_timestamp",
+        "ad_id",
+        "id_type",
+        "geo_hash",
+        "latitude",
+        "longitude",
+        "horizontal_accuracy",
+        "country",
+        "day"
+      )
+
+    data.write
+      .format("parquet")
+      .partitionBy("day", "country")
+      .mode("append")
+      .save("/data/geo/startapp/parquet/")
+
 
 }
 
