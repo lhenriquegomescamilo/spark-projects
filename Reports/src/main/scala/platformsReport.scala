@@ -219,7 +219,7 @@ object platformsData {
 
     /** Store df */
     val dir = "/datascience/reports/earnings/"
-    val path = dir + done
+    val path = dir + "done"
 
     saveData(df = df,
              path = path)
