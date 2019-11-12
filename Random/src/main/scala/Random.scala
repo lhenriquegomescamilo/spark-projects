@@ -5325,6 +5325,9 @@ user_granularity.write
       .load(
         "/data/geo/startapp/20191111/startapp_location_2019111114_v_soda_node00*.tsv.gz"
       )
+      .repartition(50)
+    
+    data.cache()
 
     data.groupBy("_c2").count().show()
     data.select("_c0", "_c2").distinct().groupBy("_c2").count().show()
