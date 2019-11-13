@@ -58,8 +58,8 @@ object Keywiser {
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
     val to_select =
-      if (stemming == 1) List("stemmed_keys", "device_id")
-      else List("content_keys", "device_id")
+      if (stemming == 1) List("stemmed_keys", "device_id","domain")
+      else List("content_keys", "device_id","domain")
 
     val columnName = to_select(0).toString
 
@@ -164,7 +164,7 @@ object Keywiser {
     * Also adds "device_type" as "web". 
     *
     * @param df_keys: DataFrame obtained from json queries.
-    * @param df_data_keywords: DataFrame obtained from getDataKeywords().
+    * @param df: DataFrame with data from getDataKeywords(). Filtered by domains if asked.
     * @param verbose: if true prints are logged.
     *
     * @return a DataFrame with "device_type", "device_id", "kws", being "kws" a list of keywords.
@@ -172,13 +172,13 @@ object Keywiser {
 
   def getJointKeys(
       df_keys: DataFrame,
-      df_data_keywords: DataFrame,
+      df: DataFrame,
       verbose: Boolean
   ): DataFrame = {
 
-    val df_joint = df_data_keywords
+    val df_joint = df
       .join(broadcast(df_keys), Seq("content_keywords"))
-      .select("content_keywords", "device_id")
+      .select("content_keywords", "device_id","domain")
       .dropDuplicates()
 
     /**
@@ -191,9 +191,9 @@ object Keywiser {
     */   
     val df_grouped = df_joint
       .groupBy("device_id")
-      .agg(collect_list("content_keywords").as("kws"))
+      .agg(collect_list("content_keywords").as("kws"),collect_list("domain").as("domains_list"))
       .withColumn("device_type", lit("web"))
-      .select("device_type", "device_id", "kws")
+      .select("device_type", "device_id", "kws","domains_list")
     df_grouped
   }
 
@@ -299,6 +299,12 @@ object Keywiser {
               .toString
               .length > 0) query("country")
         else ""
+      val domain_filter =
+        if (query.contains("domain_filter") && Option(query("domain_filter"))
+              .getOrElse("")
+              .toString
+              .length > 0) query("domain_filter")
+        else ""             
       val since =
         if (query.contains("since") && Option(query("since"))
               .getOrElse("")
@@ -379,6 +385,8 @@ object Keywiser {
         "filter" -> filter,
         "segment_id" -> segmentId,
         "keywords" -> keywords,
+        "country" -> country,
+        "domain_filter" -> domain_filter,        
         "since" -> since,
         "ndays" -> nDays,
         "push" -> push,
@@ -389,7 +397,6 @@ object Keywiser {
         "stemming" -> stemming,
         "description" -> description,
         "jobid" -> jobid,
-        "country" -> country,
         "xd" -> xd,
         "xdFilter" -> xdFilter        
       )
@@ -524,13 +531,11 @@ object Keywiser {
       destPath = new Path("/datascience/keywiser/in_progress/")
       hdfs.rename(srcPath, destPath)
       actual_path = "/datascience/keywiser/in_progress/%s".format(file)
-      
-      // Filename to save audiences with.
-      var file_name = file.replace(".json", "")
 
       // Here we obtain parameters that are supposed to be equal for every query in the file
       val country = queries(0)("country").toString
       val keywords = queries(0)("keywords").toString
+      val domain_filter = queries(0)("domain_filter").toString
       val since = queries(0)("since").toString.toInt
       val nDays = queries(0)("ndays").toString.toInt
       val pipeline = queries(0)("pipeline").toString.toInt
@@ -540,10 +545,11 @@ object Keywiser {
       val xd = queries(0)("xd").toString
 
       println(
-        "KEYWISER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s\n\txd: %s"
+        "KEYWISER LOG: Parameters obtained for file %s:\n\tcountry: %s\n\tdomain_filter: %s\n\tsince: %d\n\tnDays: %d\n\tPipeline: %d\n\tNumber of queries: %d\n\tPush: %s\n\tStemming: %s\n\tDescription: %s\n\txd: %s"
           .format(
             file,
             country,
+            domain_filter,
             since,
             nDays,
             pipeline,
@@ -584,16 +590,21 @@ object Keywiser {
           }
         **/
 
+        /** Apply domain_filter (or not) */
+        val df = if (domain_filter.length != 0) {
+                  df.filter(domain_filter)   
+                  } else { data_keywords }
+            
         import spark.implicits._
         
         /** Format all keywords from queries to join */
         val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
         val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
 
-        /**  Match all keywords with data_keywords */
+        /**  Match all keywords used in all queries with the data */
         val data = getJointKeys(
           df_keys = df_keys,
-          df_data_keywords = df_data_keywords,
+          df = df,
           verbose = verbose)
 
         /**
@@ -612,6 +623,7 @@ object Keywiser {
           data = data,
           file_name = file_name
         )
+        
     
       } catch {
         case e: Exception => {
