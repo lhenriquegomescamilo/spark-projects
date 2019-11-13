@@ -446,7 +446,9 @@ object RandomTincho {
       df = df.withColumn(i.toString, col(i.toString)*col("count"))
     } 
 
-    df.drop("count","word")
+    val df_preprocessed = processURL(df)
+
+    df_preprocessed.drop("count","word")
       .groupBy("url")
       .mean()
       .write
@@ -456,7 +458,7 @@ object RandomTincho {
       .save("/datascience/data_url_classifier/dataset_path_title_embedding_contextual")
  }
 
- def processURL(url: String): String = {
+ def processURL_qs(url: String): String = {
   val columns = List("r_mobile", "r_mobile_type", "r_app_name", "r_campaign", "r_lat_long", "id_campaign")
   var res = ""
 
@@ -478,7 +480,7 @@ object RandomTincho {
 
  def get_report_gcba_1134(spark:SparkSession, ndays: Int, since:Int){
 
-  val myUDF = udf((url: String) => processURL(url))
+  val myUDF = udf((url: String) => processURL_qs(url))
 
   /// Configuraciones de spark
   val sc = spark.sparkContext
