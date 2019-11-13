@@ -676,6 +676,44 @@ object RandomTincho {
 
   }
 
+  def get_dataset_contextual(spark:SparkSession){
+
+    val title_kws = spark.read.format("csv")
+                              .option("sep","\t")
+                              .load("/datascience/custom/article_results_full.csv")
+                              .withColumnRenamed("_c0","url")
+                              .withColumnRenamed("_c2","title")
+                              .filter("title is not null")
+                              .select("url","title")
+                              .withColumn("title", split(col("title"), " "))
+                              .withColumn("keywords", explode(col("title")))
+                              .filter(col("keywords").rlike("[a-z]{2,}"))
+                              .select("url","keywords")
+                              .withColumn("count",lit(1))
+
+    val path_kws = spark.read.format("csv")
+                              .option("sep","\t")
+                              .load("/datascience/custom/article_results_full.csv")
+                              .withColumnRenamed("_c0","url")
+                              .select("url")
+                              .withColumn("url", lower(col("url")))
+                              .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
+                              .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
+                              .withColumn("keywords", explode(col("url_keys")))
+                              .filter(col("keywords").rlike("[a-z]{2,}"))
+                              .select("url","keywords")
+                              .withColumn("count", lit(1))
+
+    
+
+    title_kws.union(path_kws).write
+                            .format("parquet")
+                            .mode(SaveMode.Overwrite)
+                            .save("/datascience/custom/kws_path_title_contextual")
+
+
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -687,7 +725,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_gt_contextual(spark)
+    get_dataset_contextual(spark)
   }
 
 }
