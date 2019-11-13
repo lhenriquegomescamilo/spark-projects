@@ -5322,7 +5322,7 @@ user_granularity.write
 
     data
       .groupBy("country", "day")
-      .agg(countDistinct(col("device_id")), count("device_id"))
+      .agg(countDistinct(col("ad_id")), count("ad_id"))
       .show()
   }
 }
