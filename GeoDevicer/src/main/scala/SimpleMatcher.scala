@@ -121,7 +121,7 @@ safegraphDf.createOrReplaceTempView("data")
 */
 //if we want to use a specific dataframe with geodata, use this:
 val df_safegraph = spark.read.format("csv").option("header",false).option("delimiter","\t")
-                        .load("/datascience/geo/mexico_200d_home_29-10-2019-10h/")
+                        .load("/datascience/geo/mexico_200d_home_29-10-2019-10h/part-00173-2dd28870-3252-45d4-95a9-0dc0c91c4454-c000.csv")
                         .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
                         .filter("freq>2")
 df_safegraph.createOrReplaceTempView("data")
@@ -262,7 +262,11 @@ match_sample_to_polygons(spark,
       */
 
 
-      match_users_to_polygons(spark,"/datascience/geo/POIs/Municipios_Mex.json","1","1","mexico")
+      match_users_to_polygons(spark,
+        "/datascience/geo/POIs/MEX_NSE_INEGI.json",
+        "1",
+        "1",
+        "mexico")
 
   }
 }
