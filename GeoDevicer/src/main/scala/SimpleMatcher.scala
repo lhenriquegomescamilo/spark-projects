@@ -143,7 +143,7 @@ intersection.explain(extended=true)
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
+intersection.groupBy("ad_id","id_type","name").agg(count("name") as "frequency")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
