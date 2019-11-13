@@ -627,7 +627,28 @@ count_no_birra.write.format("csv")
     Logger.getRootLogger.setLevel(Level.WARN)
 
 //get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd" )
-startapp_geo_metrics(spark)
+//Radios censales:
+val radios = spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/geo/geo_processed/radios_argentina_2010_geodevicer_60_argentina_sjoin_polygon")
+.select("name","ad_id")
+.withColumnRenamed("ad_id","device_id")
+.withColumnRenamed("name","radio")
+
+val deagg_points = spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/geo/geo_processed/points_Complete_30d_argentina_4-11-2019-16h_aggregated")
+.select("osm_id","device_id")
+
+deagg_points
+.join(radios,Seq("device_id"))
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/geo_users_interactions_radius_pois")
 
 
 
