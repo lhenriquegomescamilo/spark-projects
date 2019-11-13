@@ -110,6 +110,8 @@ object platformsReport {
         data: DataFrame
     ): DataFrame = {
 
+        import spark.implicits._
+
         val mapping_path = "/datascience/misc/mappingpl.csv"
         val mapping = spark.read.format("csv").option("header", "true").load(mapping_path)
         .withColumn("platforms", split(col("platforms"), ","))
