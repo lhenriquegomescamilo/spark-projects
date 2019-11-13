@@ -428,8 +428,8 @@ object RandomTincho {
 
     val dataset_kws = spark.read
                             .load(keyword_path)
-                            .withColumn("content_keys",myUDF(col("content_keys")))
-                            .withColumnRenamed("content_keys","word")
+                            .withColumn("keywords",myUDF(col("keywords")))
+                            .withColumnRenamed("keywords","word")
                             .withColumn("word",lower(col("word")))
 
     // Checkpoint
@@ -446,17 +446,19 @@ object RandomTincho {
       df = df.withColumn(i.toString, col(i.toString)*col("count"))
     } 
 
-    df.drop("count","word")
+    val df_preprocessed = processURL(df)
+
+    df_preprocessed.drop("count","word")
       .groupBy("url")
       .mean()
       .write
       .format("csv")
       .option("header","true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_url_classifier/dataset_keyword_embedding_contextual")
+      .save("/datascience/data_url_classifier/dataset_path_title_embedding_contextual")
  }
 
- def processURL(url: String): String = {
+ def processURL_qs(url: String): String = {
   val columns = List("r_mobile", "r_mobile_type", "r_app_name", "r_campaign", "r_lat_long", "id_campaign")
   var res = ""
 
@@ -478,7 +480,7 @@ object RandomTincho {
 
  def get_report_gcba_1134(spark:SparkSession, ndays: Int, since:Int){
 
-  val myUDF = udf((url: String) => processURL(url))
+  val myUDF = udf((url: String) => processURL_qs(url))
 
   /// Configuraciones de spark
   val sc = spark.sparkContext
@@ -676,6 +678,44 @@ object RandomTincho {
 
   }
 
+  def get_dataset_contextual(spark:SparkSession){
+
+    val title_kws = spark.read.format("csv")
+                              .option("sep","\t")
+                              .load("/datascience/custom/article_results_full.csv")
+                              .withColumnRenamed("_c0","url")
+                              .withColumnRenamed("_c2","title")
+                              .filter("title is not null")
+                              .select("url","title")
+                              .withColumn("title", split(col("title"), " "))
+                              .withColumn("keywords", explode(col("title")))
+                              .filter(col("keywords").rlike("[a-z]{2,}"))
+                              .select("url","keywords")
+                              .withColumn("count",lit(1))
+
+    val path_kws = spark.read.format("csv")
+                              .option("sep","\t")
+                              .load("/datascience/custom/article_results_full.csv")
+                              .withColumnRenamed("_c0","url")
+                              .select("url")
+                              .withColumn("url", lower(col("url")))
+                              .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
+                              .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
+                              .withColumn("keywords", explode(col("url_keys")))
+                              .filter(col("keywords").rlike("[a-z]{2,}"))
+                              .select("url","keywords")
+                              .withColumn("count", lit(1))
+
+    
+
+    title_kws.union(path_kws).write
+                            .format("parquet")
+                            .mode(SaveMode.Overwrite)
+                            .save("/datascience/custom/kws_path_title_contextual")
+
+
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -687,7 +727,8 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_gt_contextual(spark)
+    keywords_embeddings(spark,"/datascience/custom/kws_path_title_contextual")
+    
   }
 
 }
