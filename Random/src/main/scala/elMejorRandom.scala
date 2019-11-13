@@ -643,6 +643,7 @@ val deagg_points = spark.read.format("csv")
 .select("osm_id","device_id")
 
 deagg_points
+.dropDuplicates()
 .join(radios,Seq("device_id"))
 .write.format("csv")
 .option("header",true)
