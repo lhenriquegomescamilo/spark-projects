@@ -136,7 +136,8 @@ safegraphDf.createOrReplaceTempView("data")
 //performing the join
 
 val intersection = spark.sql(
-      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
+      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+.select("ad_id","name","id_type")
 
 intersection.explain(extended=true)
 
