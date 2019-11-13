@@ -542,7 +542,9 @@ val geo = spark.read.format("csv")
 
 
 println ("Devices by country")
-geo.groupBy("country").agg(countDistinct("device_id") as "unique users",count("device_id") as "detections").show()
+geo.groupBy("country")
+.agg(countDistinct("device_id") as "unique users",count("device_id") as "detections")
+.show()
 
 //println ("Min,Max Date")
 //geo.agg(min("timestamp"), max("timestamp")).show()
@@ -635,12 +637,14 @@ val radios = spark.read.format("csv")
 .select("name","ad_id")
 .withColumnRenamed("ad_id","device_id")
 .withColumnRenamed("name","radio")
+.distinct()
 
 val deagg_points = spark.read.format("csv")
 .option("delimiter","\t")
 .option("header",true)
 .load("/datascience/geo/geo_processed/points_Complete_30d_argentina_4-11-2019-16h_aggregated")
 .select("osm_id","device_id")
+.distinct()
 
 deagg_points
 .write.format("csv")
