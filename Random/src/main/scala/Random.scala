@@ -5318,9 +5318,18 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val data = spark.read.format("parquet").load("/datascience/geo/safegraph/")
+    val safegraph = spark.read.format("parquet").load("/datascience/geo/safegraph/")
 
-    data
+    safegraph
+      .filter("day >= '20191001' AND day <= '20191030'")
+      .groupBy("country")
+      .agg(countDistinct(col("ad_id")), count("ad_id"))
+      .collect()
+      .foreach(println)
+
+    val startapp = spark.read.format("parquet").load("/data/geo/startapp/parquet/")
+
+    startapp
       .filter("day >= '20191001' AND day <= '20191030'")
       .groupBy("country", "day")
       .agg(countDistinct(col("ad_id")), count("ad_id"))
