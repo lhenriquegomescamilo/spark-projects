@@ -532,6 +532,9 @@ object Keywiser {
       hdfs.rename(srcPath, destPath)
       actual_path = "/datascience/keywiser/in_progress/%s".format(file)
 
+      // Filename to save audiences with.
+      var file_name = file.replace(".json", "")      
+
       // Here we obtain parameters that are supposed to be equal for every query in the file
       val country = queries(0)("country").toString
       val keywords = queries(0)("keywords").toString
