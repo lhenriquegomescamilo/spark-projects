@@ -428,8 +428,8 @@ object RandomTincho {
 
     val dataset_kws = spark.read
                             .load(keyword_path)
-                            .withColumn("content_keys",myUDF(col("content_keys")))
-                            .withColumnRenamed("content_keys","word")
+                            .withColumn("keywords",myUDF(col("keywords")))
+                            .withColumnRenamed("keywords","word")
                             .withColumn("word",lower(col("word")))
 
     // Checkpoint
@@ -453,7 +453,7 @@ object RandomTincho {
       .format("csv")
       .option("header","true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/data_url_classifier/dataset_keyword_embedding_contextual")
+      .save("/datascience/data_url_classifier/dataset_path_title_embedding_contextual")
  }
 
  def processURL(url: String): String = {
@@ -725,7 +725,8 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_dataset_contextual(spark)
+    keywords_embeddings(spark,"/datascience/custom/kws_path_title_contextual")
+    
   }
 
 }
