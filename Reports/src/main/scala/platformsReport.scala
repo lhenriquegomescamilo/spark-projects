@@ -226,7 +226,7 @@ object platformsReport {
       since: Integer) = {
 
     /**Get current date */
-    val format = "yyyyMMdd/"
+    val format = "yyyyMMdd"
     val date_current = DateTime.now.minusDays(since).toString(format)
     println("STREAMING LOGGER:\n\tDay: %s".format(date_current))
 
@@ -257,7 +257,7 @@ object platformsReport {
     val dir = "/datascience/reports/platforms/"
 
     /**Get current date */
-    val format = "yyyyMMdd/"
+    val format = "yyyyMMdd"
     val date_current = DateTime.now.minusDays(since).toString(format)
     println("STREAMING LOGGER:\n\tDay: %s".format(date_current))
 
