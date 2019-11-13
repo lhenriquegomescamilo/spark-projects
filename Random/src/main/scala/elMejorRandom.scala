@@ -544,7 +544,11 @@ val geo = spark.read.format("csv")
 println ("Devices by country")
 geo.groupBy("country")
 .agg(countDistinct("device_id") as "unique users",count("device_id") as "detections")
-.show()
+.write.format("csv")
+.option("header",false)
+.option("delimiter",",")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/startapp_geo_metrics")
 
 //println ("Min,Max Date")
 //geo.agg(min("timestamp"), max("timestamp")).show()
@@ -630,36 +634,7 @@ count_no_birra.write.format("csv")
 
 //get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd" )
 //Radios censales:
-val radios = spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/geo_processed/radios_argentina_2010_geodevicer_60_argentina_sjoin_polygon")
-.select("name","ad_id")
-.withColumnRenamed("ad_id","device_id")
-.withColumnRenamed("name","radio")
-.distinct()
-
-val deagg_points = spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/geo_processed/points_Complete_30d_argentina_4-11-2019-16h_aggregated")
-.select("osm_id","device_id")
-.distinct()
-
-deagg_points
-.write.format("csv")
-.option("header",false)
-.option("delimiter",",")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/geo_users_interactions_pois")
-
-radios
-.write.format("csv")
-.option("header",false)
-.option("delimiter",",")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/geo_users_interactions_radius")
-
+startapp_geo_metrics(spark)
 
 
 
