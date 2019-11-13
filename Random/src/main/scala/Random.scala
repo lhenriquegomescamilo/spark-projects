@@ -5324,6 +5324,7 @@ user_granularity.write
       .filter("day >= '20191001' & day <= '20191030'")
       .groupBy("country", "day")
       .agg(countDistinct(col("ad_id")), count("ad_id"))
-      .show()
+      .collect()
+      .foreach(println)
   }
 }
