@@ -643,13 +643,18 @@ val deagg_points = spark.read.format("csv")
 .select("osm_id","device_id")
 
 deagg_points
-.dropDuplicates()
-.join(radios,Seq("device_id"))
 .write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
+.option("header",false)
+.option("delimiter",",")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/geo_users_interactions_radius_pois")
+.save("/datascience/geo/geo_processed/geo_users_interactions_pois")
+
+radios
+.write.format("csv")
+.option("header",false)
+.option("delimiter",",")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/geo_users_interactions_radius")
 
 
 
