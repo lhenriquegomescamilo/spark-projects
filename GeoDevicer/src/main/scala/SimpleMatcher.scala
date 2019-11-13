@@ -136,14 +136,15 @@ safegraphDf.createOrReplaceTempView("data")
 //performing the join
 
 val intersection = spark.sql(
-      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
+      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+.select("ad_id","name","id_type")
 
 intersection.explain(extended=true)
 
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
+intersection.groupBy("ad_id","id_type","name").agg(count("name") as "frequency")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
@@ -262,7 +263,11 @@ match_sample_to_polygons(spark,
       */
 
 
-      match_users_to_polygons(spark,"/datascience/geo/POIs/Municipios_Mex.json","1","1","mexico")
+      match_users_to_polygons(spark,
+        "/datascience/geo/POIs/MEX_NSE_INEGI.json",
+        "1",
+        "1",
+        "mexico")
 
   }
 }
