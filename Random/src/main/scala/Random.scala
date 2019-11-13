@@ -5321,7 +5321,7 @@ user_granularity.write
     val data = spark.read.format("parquet").load("/datascience/geo/safegraph/")
 
     data
-      .filter("day >= '20191001' & day <= '20191030'")
+      .filter("day >= 20191001 & day <= 20191030")
       .groupBy("country", "day")
       .agg(countDistinct(col("ad_id")), count("ad_id"))
       .collect()
