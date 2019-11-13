@@ -594,7 +594,7 @@ object Keywiser {
         **/
 
         /** Apply domain_filter (or not) */
-        val df = if (domain_filter.length != 0) {
+        val df : DataFrame = if (domain_filter.length != 0) {
                   df.filter(domain_filter)   
                   } else { data_keywords }
             
