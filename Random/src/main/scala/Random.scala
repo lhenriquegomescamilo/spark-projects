@@ -5318,46 +5318,11 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-//     val files = """/datascience/audiences/crossdeviced/reckit_177511_xd/
-// /datascience/audiences/crossdeviced/reckit_177509_xd/
-// /datascience/audiences/crossdeviced/reckit_177501_xd/
-// /datascience/audiences/crossdeviced/reckit_177499_xd/
-// /datascience/audiences/crossdeviced/reckit_177497_xd/
-// /datascience/audiences/crossdeviced/reckit_177495_xd/
-// /datascience/audiences/crossdeviced/reckit_177479_xd/
-// /datascience/audiences/crossdeviced/reckit_177003_xd/""".split("\n")
+    val data = spark.read.format("parquet").load("/data/geo/startapp/parquet/")
 
-//     val data = spark.read
-//       .format("csv")
-//       .option("sep", "\t")
-//       .load(files: _*)
-//       .filter("_c0 = 'web'")
-//       .withColumnRenamed("_c1", "device_id")
-//       .withColumnRenamed("_c2", "segment")
-//       .select("device_id", "segment")
-
-//     val piis = spark.read
-//       .format("parquet")
-//       .load("/datascience/pii_matching/pii_tuples/")
-//       .filter("country = 'AR' and (ml_sh2 IS NOT NULL OR mb_sh2 IS NOT NULL)")
-//       .select("device_id", "ml_sh2", "mb_sh2")
-
-//     piis
-//       .join(data, Seq("device_id"))
-//       .select("device_id", "segment", "ml_sh2", "mb_sh2")
-      // .write
-      // .format("csv")
-      // .option("sep", "\t")
-      // .save("/datascience/custom/piis_die")
-    spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .load("/datascience/custom/piis_die/")
-      .select("_c1", "_c2", "_c3")
-      .distinct()
-      .write
-      .format("csv")
-      .option("sep", "\t")
-      .save("/datascience/custom/piis_die2")
+    data
+      .groupBy("country", "day")
+      .agg(countDistinct(col("device_id")), count("device_id"))
+      .show()
   }
 }
