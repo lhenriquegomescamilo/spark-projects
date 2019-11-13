@@ -105,17 +105,17 @@ object platformsReport {
         }
     */ 
 
-    val mapping_path = "/datascience/misc/mappingpl.csv"
-    val mapping = spark.read.format("csv").option("header", "true").load(mapping_path)
-    .withColumn("platforms", split(col("platforms"), ","))
-    .select(col("decimal").cast("int"), col("platforms")).as[(Int, List[String])].collect.toMap
-
-    def udfMap = udf((n: Int) => (mapping.get(n) ))
-
     def getVolumesPlatformFast(
         spark: SparkSession,
         data: DataFrame
     ): DataFrame = {
+
+        val mapping_path = "/datascience/misc/mappingpl.csv"
+        val mapping = spark.read.format("csv").option("header", "true").load(mapping_path)
+        .withColumn("platforms", split(col("platforms"), ","))
+        .select(col("decimal").cast("int"), col("platforms")).as[(Int, List[String])].collect.toMap
+
+        def udfMap = udf((n: Int) => (mapping.get(n) ))      
 
         val df = data
             .withColumn("platforms",udfMap(col("platforms")))
