@@ -650,26 +650,24 @@ val sample =  List(chile,colo,pr).reduce(_.unionByName (_))
 
 
 sample
-.groupBy("country","ad_id").agg(count("ad_id") as "detections")
-.groupBy("country","detections").agg(count("ad_id") as "frequency")
+.groupBy("country","id_type","ad_id").agg(count("ad_id") as "detections")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/startapp_frequency_dispersion")
-
+.save("/datascience/geo/geo_processed/startapp_frequency_dispersion_deagg")
+//.groupBy("country","detections").agg(count("ad_id") as "frequency")
 
 val safe = spark.read.format("csv").option("header",true).option("delimiter",",").load("/data/geo/safegraph/2019/11/10/")
 
 safe
-.groupBy("country","ad_id").agg(count("ad_id") as "detections")
-.groupBy("country","detections").agg(count("ad_id") as "frequency")
+.groupBy("country","id_type","ad_id").agg(count("ad_id") as "detections")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/safegraph_frequency_dispersion")
-
+.save("/datascience/geo/geo_processed/safegraph_frequency_dispersion_deagg")
+//.groupBy("country","detections").agg(count("ad_id") as "frequency")
 
 
 }
