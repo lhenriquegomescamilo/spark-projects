@@ -191,9 +191,9 @@ object Keywiser {
     */   
     val df_grouped = df_joint
       .groupBy("device_id")
-      .agg(collect_list("content_keywords").as("kws"),collect_list("domain").as("domains_list"))
+      .agg(collect_list("content_keywords").as("kws"),collect_list("domain").as("domain"))
       .withColumn("device_type", lit("web"))
-      .select("device_type", "device_id", "kws","domains_list")
+      .select("device_type", "device_id", "kws","domain")
     df_grouped
   }
 
