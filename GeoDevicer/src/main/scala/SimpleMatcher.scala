@@ -264,7 +264,7 @@ match_sample_to_polygons(spark,
 
 
       match_users_to_polygons(spark,
-        "/datascience/geo/POIs/MEX_NSE_INEGI.json",
+        "/datascience/geo/POIs/Coordenadas_Chedraui_Poly.json",
         "1",
         "1",
         "mexico")
