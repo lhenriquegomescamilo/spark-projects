@@ -652,7 +652,7 @@ val sample =  List(chile,colo,pr).reduce(_.unionByName (_))
 sample
 .groupBy("country","ad_id").agg(count("ad_id") as "detections")
 .groupBy("country","detections").agg(count("ad_id") as "frequency")
-write.format("csv")
+.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
@@ -664,7 +664,7 @@ val safe = spark.read.format("csv").option("header",true).option("delimiter",","
 safe
 .groupBy("country","ad_id").agg(count("ad_id") as "detections")
 .groupBy("country","detections").agg(count("ad_id") as "frequency")
-write.format("csv")
+.write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
