@@ -596,7 +596,7 @@ object Keywiser {
         /** Apply domain_filter (or not) */
         val df : DataFrame = if (domain_filter.length != 0) {
                   df.filter(domain_filter)   
-                  } else { data_keywords }
+                  } else { df_data_keywords }
             
         import spark.implicits._
         
