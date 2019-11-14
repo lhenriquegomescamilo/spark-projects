@@ -634,7 +634,41 @@ count_no_birra.write.format("csv")
 
 //get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd" )
 //Radios censales:
-startapp_geo_metrics(spark)
+val chile = spark.read.format("parquet").option("header",true).option("delimiter","\t")
+.load("/data/geo/startapp/parquet/day=20191110/country=CL/").select("ad_id","id_type")
+.withColumn("country",lit("CL"))
+
+val colo = spark.read.format("parquet").option("header",true).option("delimiter","\t")
+.load("/data/geo/startapp/parquet/day=20191110/country=CO/").select("ad_id","id_type")
+.withColumn("country",lit("CO"))
+
+val pr = spark.read.format("parquet").option("header",true).option("delimiter","\t")
+.load("/data/geo/startapp/parquet/day=20191110/country=PR/").select("ad_id","id_type")
+.withColumn("country",lit("PR"))
+
+val sample =  List(chile,colo,pr).reduce(_.unionByName (_))
+
+
+sample
+.groupBy("country","ad_id").agg(count("ad_id") as "detections")
+.groupBy("country","detections").agg(count("ad_id") as "frequency")
+write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/startapp_frequency_dispersion")
+
+
+val safe = spark.read.format("csv").option("header",true).option("delimiter",",").load("/data/geo/safegraph/2019/11/10/")
+
+safe
+.groupBy("country","ad_id").agg(count("ad_id") as "detections")
+.groupBy("country","detections").agg(count("ad_id") as "frequency")
+write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/safegraph_frequency_dispersion")
 
 
 
