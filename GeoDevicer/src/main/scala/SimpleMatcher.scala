@@ -144,7 +144,7 @@ intersection.explain(extended=true)
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection.groupBy("ad_id","id_type","audience")
+intersection
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
