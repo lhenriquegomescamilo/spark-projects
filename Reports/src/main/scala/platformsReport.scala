@@ -129,8 +129,9 @@ object platformsReport {
     val df = data
       .withColumn("platforms", udfMap(col("platforms")))
       .withColumn("platform", explode(col("platforms")))
-      .groupBy("platform", "segment")
+      .select("platform", "segment")
       .distinct()
+      .groupBy("platform", "segment")
       .count()
       .select("platform", "segment", "count")
     df
