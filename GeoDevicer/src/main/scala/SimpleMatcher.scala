@@ -137,14 +137,14 @@ safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-.select("ad_id","name","id_type")
+.select("ad_id","audience","id_type")
 
 intersection.explain(extended=true)
 
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection.groupBy("ad_id","id_type","name").agg(count("name") as "frequency")
+intersection.groupBy("ad_id","id_type","audience")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
