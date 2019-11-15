@@ -2,11 +2,11 @@ package  main.scala.nseassignation
 
 import main.scala.NSEFromHomes
 
+
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types._
 import org.apache.spark.sql.SaveMode
 import org.apache.log4j.{Level, Logger}
 
@@ -20,10 +20,23 @@ import com.vividsolutions.jts.geom.{
 import org.datasyslab.geospark.spatialRDD.SpatialRDD
 import org.apache.spark.storage.StorageLevel
 
+
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, Point, GeometryFactory}
+import org.datasyslab.geospark.spatialRDD.SpatialRDD
+import org.apache.spark.storage.StorageLevel
+
 import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
 import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
-import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
+import org.apache.spark.sql.types.{DataType, StructType}
+import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
+
+
+import org.datasyslab.geospark.utils.GeoSparkConf
+
+
+import org.datasyslab.geospark.formatMapper.GeoJsonReader
+
 
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -58,76 +71,56 @@ object NSEAssignation {
 
 		safegraphDf
   }
+///////////////////////////////////
 
-  def getPolygons(spark: SparkSession, value_dictionary: Map[String, String]) = {
-   
-				// Levantamos el polígono. Le aplicamos la geometría y lo unimos con los nombres...porque json y geospark
-				val geojson_path_formated =      value_dictionary("path_to_polygons")
-				//acá levantamos el geojson, nos quedamos con los nombres y el id
-				
-        val names = spark.read.json(geojson_path_formated).withColumn("rowId1", monotonically_increasing_id())
-				//acá volvemos a levantar el json, pero nos quedamos con la geometría
+def nse_join (spark: SparkSession,
+     value_dictionary: Map[String, String]) {
 
-				var polygonJsonDfFormated = spark.read      .format("csv")      .option("sep", "\t")      
-        .option("header", "false")      .load(geojson_path_formated)
-				      
+//Load the polygon
+val inputLocation = value_dictionary("path_to_polygons")
+val allowTopologyInvalidGeometris = true // Optional
+val skipSyntaxInvalidGeometries = true // Optional
+val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
-				//le asignamos la geometría a lo que cargamos recién      
-				polygonJsonDfFormated.createOrReplaceTempView("polygontable")
-				var polygonDf = spark.sql("select ST_GeomFromGeoJSON(polygontable._c0) as myshape from polygontable"    ).withColumn("rowId1", monotonically_increasing_id())
+//Transform the polygon to DF
+var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
+rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
-				//unimos ambas en un solo dataframe
-        //mexico
-				val ageb_nse = names.join(polygonDf,Seq("rowId1"))
-        .drop("rowId1").withColumn("GEOID",col("properties.GEOID"))
-        .withColumn("audience",col("properties.audience"))
-        .withColumn("NSE",col("properties.NSE"))
+// Assign name and geometry columns to DataFrame
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
 
-        //argentina
-
-				//ageb_nse.createOrReplaceTempView("ageb_nse_polygons")
-
-				ageb_nse
-  }
+spatialDf.createOrReplaceTempView("poligonomagico")
 
 
-  def nse_join(spark: SparkSession,value_dictionary: Map[String, String]) = {
-    val polygonGDf = getPolygons(spark,value_dictionary)
-    val homesGDF = get_processed_homes(spark,value_dictionary)
+//Here we get the modeled homes
+val df_safegraph = get_processed_homes(spark,value_dictionary)
 
-    polygonGDf.createOrReplaceTempView("ageb_nse_polygons")
-    homesGDF.createOrReplaceTempView("user_homes")
+df_safegraph.createOrReplaceTempView("data")
 
-   
+//here we parse it
+var safegraphDf = spark .sql("""SELECT ad_id,id_type,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
+              FROM data  """)
 
-    //hacemos el join propiamente dicho
+safegraphDf.createOrReplaceTempView("data")
+
+
+//performing the join
 
 val intersection = spark.sql(
-      """SELECT  user_homes.ad_id,
-      			user_homes.id_type,
-      			user_homes.freq, 
-      			user_homes.pointshape,
-      			ageb_nse_polygons.myshape,
-            ageb_nse_polygons.audience,
-      			ageb_nse_polygons.NSE,
-      			ageb_nse_polygons.GEOID
-                
-                FROM user_homes, ageb_nse_polygons
-                WHERE ST_Contains(ageb_nse_polygons.myshape, user_homes.pointshape)""")
-							.drop("pointshape","myshape")
-                   
-               
-//intersection.drop("pointshape","myshape").write      .format("csv")      .option("sep", "\t")      .option("header", "true")      .mode(SaveMode.Overwrite)      .save("/datascience/geo/testPolygonsMX")                 
+      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+.select("ad_id","audience","id_type")
 
 
-    intersection.write
+
+ intersection.write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save("/datascience/geo/%s_w_NSE".format(value_dictionary("output_file")))
-      
-  }
+
+}
+
 
  type OptionMap = Map[Symbol, Any]
  /**
@@ -164,7 +157,7 @@ val intersection = spark.sql(
       .appName("match_POI_geospark")
       .getOrCreate()
 
-  val value_dictionary = NSEFromHomes.get_variables(spark, path_geo_json)
+    val value_dictionary = NSEFromHomes.get_variables(spark, path_geo_json)
 
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
