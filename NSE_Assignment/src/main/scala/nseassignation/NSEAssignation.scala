@@ -54,22 +54,8 @@ object NSEAssignation {
 					.toDF("ad_id","id_type","freq","geocode","latitude","longitude")
 
 		//Aplicando geometría a los puntos
+    homes
 
-		homes.createOrReplaceTempView("data")
-
-		var safegraphDf = spark      .sql("""             
-			SELECT ad_id,id_type,freq,ST_Point(CAST(data.longitude AS Decimal(24,20)), 
-		                                            CAST(data.latitude AS Decimal(24,20)), 
-		                                            data.ad_id,
-		                                            data.id_type,
-		                                            data.freq) AS pointshape
-		              FROM data
-		          """)
-		          
-		//safegraphDf.createOrReplaceTempView("user_homes")
-
-
-		safegraphDf
   }
 ///////////////////////////////////
 
@@ -94,6 +80,20 @@ spatialDf.show(5)
 
 //Here we get the modeled homes
 val df_safegraph = get_processed_homes(spark,value_dictionary)
+
+df_safegraph.createOrReplaceTempView("data")
+
+var safegraphDf = spark      .sql("""             
+      SELECT ad_id,id_type,freq,ST_Point(CAST(data.longitude AS Decimal(24,20)), 
+                                                CAST(data.latitude AS Decimal(24,20)), 
+                                                data.ad_id,
+                                                data.id_type,
+                                                data.freq) AS pointshape
+                  FROM data
+              """)
+              
+    //safegraphDf.createOrReplaceTempView("user_homes")
+
 
 df_safegraph.createOrReplaceTempView("data")
 df_safegraph.show(5)
