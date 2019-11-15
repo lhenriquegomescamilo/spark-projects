@@ -90,12 +90,13 @@ rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
 
 spatialDf.createOrReplaceTempView("poligonomagico")
-
+spatialDf.show(5)
 
 //Here we get the modeled homes
 val df_safegraph = get_processed_homes(spark,value_dictionary)
 
 df_safegraph.createOrReplaceTempView("data")
+df_safegraph.show(5)
 
 
 //performing the join
@@ -104,7 +105,7 @@ val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
 .drop("pointshape","myshape")
 
-
+intersection.show(5)
 
  intersection.write
       .format("csv")
