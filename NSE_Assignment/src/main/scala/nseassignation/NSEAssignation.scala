@@ -49,14 +49,30 @@ object NSEAssignation {
      // First we get the audience. Also, we transform the device id to be upper case.
  		//cargamos los homes
 		val homes = spark.read.format("csv")
-					.option("delimiter","\t")
-					.load(("/datascience/geo/%s".format(value_dictionary("output_file"))))
-					.toDF("ad_id","id_type","freq","geocode","latitude","longitude")
+          .option("delimiter","\t")
+          .load(("/datascience/geo/%s".format(value_dictionary("output_file"))))
+          .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
           .withColumn("latitude",col("latitude").cast("Double"))
           .withColumn("longitude",col("longitude").cast("Double"))
+          .filter("geo_hash != 'gcba'")
 
-		//Aplicando geometría a los puntos
-    homes
+    //Aplicando geometría a los puntos
+
+    homes.createOrReplaceTempView("data")
+
+    var safegraphDf = spark      .sql("""             
+      SELECT *,ST_Point(CAST(data.longitude AS Decimal(24,20)), 
+                                                CAST(data.latitude AS Decimal(24,20)), 
+                                                data.ad_id,
+                                                data.id_type,
+                                                data.freq) AS pointshape
+                  FROM data
+              """)
+              
+    //safegraphDf.createOrReplaceTempView("user_homes")
+
+
+    safegraphDf
 
   }
 ///////////////////////////////////
@@ -81,26 +97,9 @@ spatialDf.createOrReplaceTempView("poligonomagico")
 spatialDf.show(5)
 
 //Here we get the modeled homes
-val df_safegraph = get_processed_homes(spark,value_dictionary)
-
-df_safegraph.createOrReplaceTempView("data")
-df_safegraph.show(5)
-
-var safegraphDf = spark      .sql("""             
-      SELECT *,ST_Point(CAST(data.longitude AS Decimal(24,20)), 
-                                                CAST(data.latitude AS Decimal(24,20)), 
-                                                data.ad_id,
-                                                data.id_type,
-                                                data.freq) AS pointshape
-                  FROM data
-              """)
-              
-    //safegraphDf.createOrReplaceTempView("user_homes")
-
+val safegraphDf = get_processed_homes(spark,value_dictionary)
 
 safegraphDf.createOrReplaceTempView("data")
-safegraphDf.show(5)
-
 
 //performing the join
 
