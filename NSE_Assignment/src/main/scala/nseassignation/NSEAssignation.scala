@@ -87,7 +87,7 @@ var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
 // Assign name and geometry columns to DataFrame
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
+var spatialDf = spark.sql("""       select *,ST_GeomFromWKT(geometry) as myshape FROM rawSpatialDf""".stripMargin)
 
 spatialDf.createOrReplaceTempView("poligonomagico")
 spatialDf.show(5)
