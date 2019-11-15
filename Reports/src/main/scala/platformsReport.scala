@@ -50,6 +50,9 @@ object platformsReport {
       .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
+    println("INFO: FILES TO BE READ")
+    hdfs_files.foreach(println)
+
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
@@ -113,6 +116,8 @@ object platformsReport {
 
     import spark.implicits._
 
+    println("INFO: GETTING VOLUMES")
+
     val mapping_path = "/datascience/misc/mappingpl.csv"
     val mapping = spark.read
       .format("csv")
@@ -124,7 +129,11 @@ object platformsReport {
       .collect
       .toMap
 
-    def udfMap = udf((n: Int) => (mapping.get(n)))
+    val mapping_b = spark.sparkContext.broadcast(mapping)
+
+    def udfMap = udf((n: Int) => (mapping_b.value.get(n)))
+
+    println("INFO: MAPPING OBTAINED AND BROADCASTED")
 
     val df = data
       .withColumn("platforms", udfMap(col("platforms")))
@@ -134,6 +143,7 @@ object platformsReport {
       .groupBy("platform", "segment")
       .count()
       .select("platform", "segment", "count")
+    
     df
   }
 
@@ -458,6 +468,7 @@ object platformsReport {
       path: String
   ) = {
 
+    println("INFO: SAVING THE DATA")
     df.write
       .format("parquet")
       .partitionBy("day")
@@ -488,7 +499,7 @@ object platformsReport {
     /**Get current date */
     val format = "yyyyMMdd"
     val date_current = DateTime.now.minusDays(since).toString(format)
-    println("STREAMING LOGGER:\n\tDay: %s".format(date_current))
+    println("INFO:\n\tDay: %s".format(date_current))
 
     /** Read from "platforms/data" */
     val data = getPlatformsData(spark = spark, nDays = nDays, since = since)
