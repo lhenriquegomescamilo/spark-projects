@@ -97,18 +97,12 @@ val df_safegraph = get_processed_homes(spark,value_dictionary)
 
 df_safegraph.createOrReplaceTempView("data")
 
-//here we parse it
-var safegraphDf = spark .sql("""SELECT ad_id,id_type,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
-              FROM data  """)
-
-safegraphDf.createOrReplaceTempView("data")
-
 
 //performing the join
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-.select("ad_id","audience","id_type")
+.drop("pointshape","myshape")
 
 
 
