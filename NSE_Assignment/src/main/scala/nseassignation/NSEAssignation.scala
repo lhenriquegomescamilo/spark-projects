@@ -95,8 +95,8 @@ var safegraphDf = spark      .sql("""
     //safegraphDf.createOrReplaceTempView("user_homes")
 
 
-df_safegraph.createOrReplaceTempView("data")
-df_safegraph.show(5)
+safegraphDf.createOrReplaceTempView("data")
+safegraphDf.show(5)
 
 
 //performing the join
