@@ -35,7 +35,11 @@ object platformsData {
       date_current: String
   ): DataFrame = {
 
-    val columns = "device_id,third_party,d2,d10,d11,d13,d14".split(",").toList
+    val columns = "device_id,third_party,d2,d10,d11,d13,d14,country,device_type"
+      .split(",")
+      .toList
+    val countries =
+      "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
 
     val df = spark.read
       .option("sep", "\t")
@@ -47,8 +51,18 @@ object platformsData {
       .filter(
         col("d2").isNotNull || col("d10").isNotNull || col("d11").isNotNull || col(
           "d13"
-        ).isNotNull || col("d14").isNotNull
+        ).isNotNull || col("d14").isNotNull && col("country")
+          .isin(countries: _*)
       ) //get only relevant platforms
+      .withColumn(
+        "device_type",
+        udf(
+          (dev_type: String) =>
+            if (dev_type == "web") 0
+            else if (dev_type == "android") 1
+            else 2
+        )
+      )
 
     df
   }
@@ -91,7 +105,7 @@ object platformsData {
     //   udf((array: Seq[Integer]) => array.map(_.toString).mkString(""))
 
     def getAllPlatforms =
-      udf( (array: Seq[Integer]) => array.reduce((i1, i2) => i1 | i2).toInt )
+      udf((array: Seq[Integer]) => array.reduce((i1, i2) => i1 | i2).toInt)
 
     val df = data
       .withColumn("d2", when(col("d2").isNotNull, 1).otherwise(0))
@@ -106,7 +120,7 @@ object platformsData {
       .withColumn("platforms", getIntRepresentation(col("platforms")))
       .withColumn("segments", split(col("third_party"), "\u0001"))
       .withColumn("segments", col("segments").cast("array<int>"))
-      .select("device_id", "segments", "platforms", "country")
+      .select("device_id", "segments", "platforms", "country", "device_type")
 
     df.write
       .format("parquet")
@@ -126,11 +140,11 @@ object platformsData {
       .select("device_id", "segments", "platforms", "country")
       .withColumn("segment", explode(col("segments")))
       .select("device_id", "segment", "country")
-      .distinct()//, "platforms")
-      // .dropDuplicates("device_id", "segment")
-      
-      val joint = users.join(segments, Seq("device_id"), "inner")
-      // .orderBy("segment")
+      .distinct() //, "platforms")
+    // .dropDuplicates("device_id", "segment")
+
+    val joint = users.join(segments, Seq("device_id"), "inner")
+    // .orderBy("segment")
 
     // segments
     joint
