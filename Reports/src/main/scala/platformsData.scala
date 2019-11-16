@@ -40,6 +40,12 @@ object platformsData {
       .toList
     val countries =
       "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
+    val devUDF = udf(
+      (dev_type: String) =>
+        if (dev_type == "web") 0
+        else if (dev_type == "android") 1
+        else 2
+    )
 
     val df = spark.read
       .option("sep", "\t")
@@ -56,12 +62,7 @@ object platformsData {
       ) //get only relevant platforms
       .withColumn(
         "device_type",
-        udf(
-          (dev_type: String) =>
-            if (dev_type == "web") 0
-            else if (dev_type == "android") 1
-            else 2
-        )(col("device_type"))
+        devUDF(col("device_type"))
       )
 
     df
