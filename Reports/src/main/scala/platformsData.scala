@@ -61,7 +61,7 @@ object platformsData {
             if (dev_type == "web") 0
             else if (dev_type == "android") 1
             else 2
-        )
+        )(col("device_type"))
       )
 
     df
@@ -139,7 +139,7 @@ object platformsData {
     val segments = temp_data
       .select("device_id", "segments", "platforms", "country")
       .withColumn("segment", explode(col("segments")))
-      .select("device_id", "segment", "country")
+      .select("device_id", "segment", "country", "device_type")
       .distinct() //, "platforms")
     // .dropDuplicates("device_id", "segment")
 
