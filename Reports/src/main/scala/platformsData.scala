@@ -106,7 +106,7 @@ object platformsData {
       .withColumn("platforms", getIntRepresentation(col("platforms")))
       .withColumn("segments", split(col("third_party"), "\u0001"))
       .withColumn("segments", col("segments").cast("array<int>"))
-      .select("device_id", "segments", "platforms")
+      .select("device_id", "segments", "platforms", "country")
 
     df.write
       .format("parquet")
@@ -123,9 +123,9 @@ object platformsData {
       .select("device_id", "platforms")
 
     val segments = temp_data
-      .select("device_id", "segments", "platforms")
+      .select("device_id", "segments", "platforms", "country")
       .withColumn("segment", explode(col("segments")))
-      .select("device_id", "segment")
+      .select("device_id", "segment", "country")
       .distinct()//, "platforms")
       // .dropDuplicates("device_id", "segment")
       
@@ -158,7 +158,7 @@ object platformsData {
     df.withColumn("day", lit(date_current.replace("/", "")))
       .write
       .format("parquet")
-      .partitionBy("day")
+      .partitionBy("day", "country")
       .mode(SaveMode.Overwrite)
       .save(dir)
   }
