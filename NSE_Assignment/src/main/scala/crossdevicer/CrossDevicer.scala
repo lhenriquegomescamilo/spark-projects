@@ -107,7 +107,7 @@ object CrossDevicer {
     //cross_deviced_.explain(extended = true)
 
     // Finally, we store the result obtained.
-    val output_path = "/datascience/audiences/NSEHomes/%s_xd".format(value_dictionary("output_file")
+    val output_path = "/datascience/geo/NSEHomes/%s_xd".format(value_dictionary("output_file")
     )
     cross_deviced.write
       .format("csv")
