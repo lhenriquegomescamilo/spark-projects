@@ -129,33 +129,33 @@ object GenerateMonthlyDataset{
     val current_month = DateTime.now().getMonthOfYear.toString
 
     // AR GENERO
-    var training_name = "training_AR_genero_%s".format(current_month)
-    var expansion_name = "expansion_AR_genero_%s".format(current_month)
-    var country = "AR"
-    var path_gt = "/datascience/devicer/processed/AR_genero_%s_grouped".format(current_month)
-    println("Generating Training AR Genero ...")
+    //var training_name = "training_AR_genero_%s".format(current_month)
+    //var expansion_name = "expansion_AR_genero_%s".format(current_month)
+    //var country = "AR"
+    //var path_gt = "/datascience/devicer/processed/AR_genero_%s_grouped".format(current_month)
+    //println("Generating Training AR Genero ...")
     //getTrainingData(spark, path_gt, country, training_name, ndays)
-    println("Generating Expansion AR Genero ...")
+    //println("Generating Expansion AR Genero ...")
     //getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // AR EDAD
-    training_name = "training_AR_edad_%s".format(current_month)
-    expansion_name = "expansion_AR_edad_%s".format(current_month)
-    country = "AR"
-    path_gt = "/datascience/devicer/processed/AR_edad_%s_grouped".format(current_month)
-    println("Generating Training AR Edad ...")
+    //training_name = "training_AR_edad_%s".format(current_month)
+    //expansion_name = "expansion_AR_edad_%s".format(current_month)
+    //country = "AR"
+    //path_gt = "/datascience/devicer/processed/AR_edad_%s_grouped".format(current_month)
+    //println("Generating Training AR Edad ...")
     //getTrainingData(spark, path_gt, country, training_name, ndays)
-    println("Generating Expansion AR Edad ...")
-    getExpansionData(spark, path_gt, country, expansion_name, ndays)
+    //println("Generating Expansion AR Edad ...")
+    //getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // MX GENERO
-    training_name = "training_MX_genero_%s".format(current_month, ndays)
-    expansion_name = "expansion_MX_genero_%s".format(current_month, ndays)
-    country = "MX"
-    path_gt = "/datascience/devicer/processed/MX_genero_%s_grouped".format(current_month)
-    println("Generating Training MX Genero ...")
+    //training_name = "training_MX_genero_%s".format(current_month, ndays)
+    //expansion_name = "expansion_MX_genero_%s".format(current_month, ndays)
+    //country = "MX"
+    //path_gt = "/datascience/devicer/processed/MX_genero_%s_grouped".format(current_month)
+    //println("Generating Training MX Genero ...")
     //getTrainingData(spark, path_gt, country, training_name, ndays)
-    println("Generating Expansion MX Genero ...")
+    //println("Generating Expansion MX Genero ...")
     //getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // MX EDAD
@@ -167,5 +167,25 @@ object GenerateMonthlyDataset{
     // getTrainingData(spark, path_gt, country, training_name, ndays)
     // println("Generating Expansion MX Edad ...")
     // getExpansionData(spark, path_gt, country, expansion_name, ndays)
+
+    // BR GENERO
+    var training_name = "training_BR_genero_%s".format(current_month)
+    var expansion_name = "expansion_BR_genero_%s".format(current_month)
+    var country = "BR"
+    var path_gt = "/datascience/devicer/processed/AR_genero_%s_grouped".format(current_month)
+    println("Generating Training BR Genero ...")
+    getTrainingData(spark, path_gt, country, training_name, ndays)
+    println("Generating Expansion BR Genero ...")
+    getExpansionData(spark, path_gt, country, expansion_name, ndays)
+
+    // BR EDAD
+    training_name = "training_BR_edad_%s".format(current_month)
+    expansion_name = "expansion_BR_edad_%s".format(current_month)
+    country = "BR"
+    path_gt = "/datascience/devicer/processed/AR_edad_%s_grouped".format(current_month)
+    println("Generating Training BR Edad ...")
+    getTrainingData(spark, path_gt, country, training_name, ndays)
+    println("Generating Expansion BR Edad ...")
+    getExpansionData(spark, path_gt, country, expansion_name, ndays)
   }
 }
