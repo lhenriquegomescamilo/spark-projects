@@ -89,7 +89,8 @@ val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocati
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
 .withColumnRenamed("_c1","GEOID")
 .withColumnRenamed("_c2","NSE")
-.withColumnRenamed("_c3","audience")
+.withColumnRenamed("_c3","estate")
+.withColumnRenamed("_c4","audience")
 .repartition(30)
 
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")

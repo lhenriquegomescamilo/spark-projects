@@ -56,7 +56,7 @@ object platformsReport {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .select("device_id", "platforms", "segment", "day")
+      .select("device_id", "platforms", "segment", "device_type", "country", "day")
 
     df
   }

@@ -154,7 +154,7 @@ object earningsReportNew {
   }
 
      /**
-    * This method is a filter that keeps only devices from last day and general taxonomy segments.
+    * This method is a filter that keeps only devices from last day.
     *
     * @param spark: Spark session that will be used to read the data from HDFS.
     * @param ndays: number of days to query.
@@ -174,17 +174,9 @@ object earningsReportNew {
     val df_nDays = getDataTriplets(spark, nDays, since)
     val df1 = getDataTriplets(spark, 1, since)
 
-    /**  Join data_triplets with taxo segments */
-    val df_nDays_taxo: DataFrame = getJoint(spark = spark,
-                                 df = df_nDays)  
-
-    val df1_taxo: DataFrame = getJoint(spark = spark,
-                            df = df1)  
-
     /**  Get only users that appeared last day */    
-    val users = df1_taxo.select("device_id").distinct()
-
-    val df = df_nDays_taxo.join(users, Seq("device_id"), "inner")
+    val users = df1.select("device_id").distinct()
+    val df = df_nDays.join(users, Seq("device_id"), "inner")
 
     /** Here we store the relevant devices join */
     saveData(data = df,
@@ -254,7 +246,7 @@ object earningsReportNew {
     * After that it groups by "id_partner" and "segment" and "country" and counts,
     * obtaining the number of devices per partner per segment per country.
     *
-    * @param df: DataFrame obtained from data_tripĺets, with segments from general taxonomy.
+    * @param df: DataFrame obtained from data_tripĺets.
     *
     * @return a DataFrame with "segment","id_partner","device_unique", "country"
    **/
@@ -299,7 +291,7 @@ object earningsReportNew {
     * obtaining the number of devices per partner per segment.
     * Adds a ficticious column "country" with value "NN" to append this report to the other report with countries.
     *
-    * @param df: DataFrame obtained from data_tripĺets, with segments from general taxonomy.
+    * @param df: DataFrame obtained from data_tripĺets.
     *
     * @return a DataFrame with "segment","id_partner","device_unique", "country" (NN)
    **/
@@ -537,7 +529,7 @@ object earningsReportNew {
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
-      .appName("EarningsReport")
+      .appName("EarningsReportDaily")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")      
       .getOrCreate()
