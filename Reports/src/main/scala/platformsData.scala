@@ -55,9 +55,9 @@ object platformsData {
       .select(columns.head, columns.tail: _*) // Here we select the columns to work with
       .filter("event_type != 'sync'") // filter sync, internal event
       .filter(
-        col("d2").isNotNull || col("d10").isNotNull || col("d11").isNotNull || col(
+        (col("d2").isNotNull || col("d10").isNotNull || col("d11").isNotNull || col(
           "d13"
-        ).isNotNull || col("d14").isNotNull && col("country")
+        ).isNotNull || col("d14").isNotNull) && col("country")
           .isin(countries: _*)
       ) //get only relevant platforms
       .withColumn(
@@ -151,6 +151,34 @@ object platformsData {
     joint
   }
 
+ /**
+    * This method gets volumes for taxonomy segments.
+    * It groups platformsData by country, segment and device_type and counts devices.
+    *
+    * @param spark: Spark Session that will be used to load the data from HDFS.
+    * @param df: DataFrame obtained from platforms/data.
+    *
+    * @return a DataFrame with volumes for each country, segment, device_type tuple.
+   **/
+
+  def getDailyVolumes(
+      spark: SparkSession,
+      date_current: String
+  ): DataFrame = {
+
+    val day = date_current.replace("/", "")
+    val base_path = "/datascience/reports/platforms/data"
+    val path = base_path + "/day=" + day
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(path)
+      .select("device_id", "platforms", "segment", "device_type", "country")
+      .groupBy("country", "segment","device_type")
+      .count()
+    df
+  }  
+
   /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR SAVING DATA     //////////////////////
@@ -162,12 +190,13 @@ object platformsData {
     * @param data: DataFrame that will be saved.
     *
   **/
+ 
   def saveData(
       df: DataFrame,
+      dir: String,
       date_current: String
   ) = {
 
-    val dir = "/datascience/reports/platforms/data/"
     val fileNameFinal = dir + date_current
 
     df.withColumn("day", lit(date_current.replace("/", "")))
@@ -176,7 +205,7 @@ object platformsData {
       .partitionBy("day", "country")
       .mode(SaveMode.Overwrite)
       .save(dir)
-  }
+  } 
 
   /**
     *
@@ -190,7 +219,7 @@ object platformsData {
     * @param ndays: number of days to query.
     * @param since: number of days since to query.
     *
-    * As a result this method stores the file in /datascience/reports/gain/file_name_currentdate.csv.
+    * As a result this method stores the file in /datascience/reports/platforms/data/day=yyyyMMdd
   **/
   def getDataPlatforms(spark: SparkSession, since: Integer) = {
 
@@ -206,7 +235,15 @@ object platformsData {
     val df = transformDF(spark, data = data)
 
     /** Store df */
-    saveData(df = df, date_current = date_current)
+    val dir1 = "/datascience/reports/platforms/data/"
+    saveData(df = df, dir = dir1, date_current = date_current)
+
+    /** Volumes Report */
+    val df_volumes = getDailyVolumes(spark, date_current = date_current)
+
+    /** Store df */
+    val dir2 = "/datascience/reports/volumes/data/"
+    saveData(df = df_volumes, dir = dir2, date_current = date_current)
 
   }
 
