@@ -32,7 +32,7 @@ object CrossDevicer {
       .format("csv")
       .option("sep", sep)
       .option("header", header)
-      .load("/datascience/geo/%s_w_NSE".format(value_dictionary("output_file")))
+      .load("/datascience/geo/NSEHomes/%s_w_NSE".format(value_dictionary("output_file")))
       .withColumn("ad_id", upper(col("ad_id")))
       .withColumnRenamed("ad_id","device_id")
       .withColumnRenamed("id_type","device_type")
@@ -107,7 +107,7 @@ object CrossDevicer {
     //cross_deviced_.explain(extended = true)
 
     // Finally, we store the result obtained.
-    val output_path = "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("output_file")
+    val output_path = "/datascience/geo/NSEHomes/%s_xd".format(value_dictionary("output_file")
     )
     cross_deviced.write
       .format("csv")
