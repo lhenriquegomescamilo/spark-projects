@@ -50,13 +50,13 @@ object NSEAssignation {
  		//cargamos los homes
 		val homes = spark.read.format("csv")
           .option("delimiter","\t")
-          .load(("/datascience/geo/%s".format(value_dictionary("output_file"))))
+          .load(("/datascience/geo/NSEHomes/%s".format(value_dictionary("output_file"))))
           .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
           .withColumn("latitude",col("latitude").cast("Double"))
           .withColumn("longitude",col("longitude").cast("Double"))
     
     println("esto es pre procesamiento") 
-    homes.show(5)
+    //homes.show(5)
     //Aplicando geometría a los puntos
 
     homes.createOrReplaceTempView("data")
@@ -69,7 +69,7 @@ object NSEAssignation {
               
     //safegraphDf.createOrReplaceTempView("user_homes")
     println("esto es después de asignar geometría") 
-    safegraphDf.show(5)
+    //safegraphDf.show(5)
 
     safegraphDf
 
@@ -98,13 +98,13 @@ rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 var spatialDf = spark.sql("""       select *,ST_GeomFromWKT(geometry) as myshape FROM rawSpatialDf""".stripMargin)
 
 spatialDf.createOrReplaceTempView("poligonomagico")
-spatialDf.show(5)
+//spatialDf.show(5)
 
 //Here we get the modeled homes
 val safegraphDf = get_processed_homes(spark,value_dictionary)
 println("esto es cuando traigo la función") 
 
-safegraphDf.show(5)
+//safegraphDf.show(5)
 
 safegraphDf.createOrReplaceTempView("data")
 
@@ -122,7 +122,7 @@ intersection.show(5)
       .option("sep", "\t")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/%s_w_NSE".format(value_dictionary("output_file")))
+      .save("/datascience/geo/NSEHomes/%s_w_NSE".format(value_dictionary("output_file")))
 
 }
 
