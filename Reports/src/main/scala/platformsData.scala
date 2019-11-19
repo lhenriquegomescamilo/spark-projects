@@ -55,9 +55,9 @@ object platformsData {
       .select(columns.head, columns.tail: _*) // Here we select the columns to work with
       .filter("event_type != 'sync'") // filter sync, internal event
       .filter(
-        col("d2").isNotNull || col("d10").isNotNull || col("d11").isNotNull || col(
+        (col("d2").isNotNull || col("d10").isNotNull || col("d11").isNotNull || col(
           "d13"
-        ).isNotNull || col("d14").isNotNull && col("country")
+        ).isNotNull || col("d14").isNotNull) && col("country")
           .isin(countries: _*)
       ) //get only relevant platforms
       .withColumn(
