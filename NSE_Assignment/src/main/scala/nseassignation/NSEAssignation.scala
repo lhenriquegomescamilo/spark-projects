@@ -86,7 +86,12 @@ val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
 //Transform the polygon to DF
-var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
+var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
+.withColumnRenamed("_c1","GEOID")
+.withColumnRenamed("_c2","NSE")
+.withColumnRenamed("_c3","audience")
+.repartition(30)
+
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
 // Assign name and geometry columns to DataFrame
@@ -111,7 +116,8 @@ val intersection = spark.sql(
 
 intersection.show(5)
 
- intersection.write
+ intersection.drop("geometry","latitude","longitude","geocode")
+      .write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
