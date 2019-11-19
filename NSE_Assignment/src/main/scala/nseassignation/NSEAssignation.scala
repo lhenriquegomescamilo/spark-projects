@@ -61,14 +61,11 @@ object NSEAssignation {
 
     homes.createOrReplaceTempView("data")
 
-    var safegraphDf = spark      .sql("""             
-      SELECT *,ST_Point(CAST(data.longitude AS Decimal(24,20)), 
-                                                CAST(data.latitude AS Decimal(24,20)), 
-                                                data.ad_id,
-                                                data.id_type,
-                                                data.freq) AS pointshape
-                  FROM data
-              """)
+    var safegraphDf = spark      .sql(""" SELECT *,ST_Point(CAST(data.longitude AS Decimal(24,20)),
+                                                             CAST(data.latitude AS Decimal(24,20))) 
+                                                             as pointshape
+              FROM data
+          """)
               
     //safegraphDf.createOrReplaceTempView("user_homes")
     println("esto es después de asignar geometría") 
