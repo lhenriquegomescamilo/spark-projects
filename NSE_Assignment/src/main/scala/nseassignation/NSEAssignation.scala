@@ -54,8 +54,9 @@ object NSEAssignation {
           .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
           .withColumn("latitude",col("latitude").cast("Double"))
           .withColumn("longitude",col("longitude").cast("Double"))
-          
-
+    
+    println("esto es pre procesamiento") 
+    homes.show(5)
     //Aplicando geometría a los puntos
 
     homes.createOrReplaceTempView("data")
@@ -70,7 +71,8 @@ object NSEAssignation {
               """)
               
     //safegraphDf.createOrReplaceTempView("user_homes")
-
+    println("esto es después de asignar geometría") 
+    safegraphDf.show(5)
 
     safegraphDf
 
@@ -98,6 +100,9 @@ spatialDf.show(5)
 
 //Here we get the modeled homes
 val safegraphDf = get_processed_homes(spark,value_dictionary)
+println("esto es cuando traigo la función") 
+
+safegraphDf.show(5)
 
 safegraphDf.createOrReplaceTempView("data")
 
