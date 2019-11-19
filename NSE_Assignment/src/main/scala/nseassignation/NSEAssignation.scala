@@ -54,7 +54,7 @@ object NSEAssignation {
           .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
           .withColumn("latitude",col("latitude").cast("Double"))
           .withColumn("longitude",col("longitude").cast("Double"))
-          .filter("geo_hash != 'gcba'")
+          
 
     //Aplicando geometría a los puntos
 
