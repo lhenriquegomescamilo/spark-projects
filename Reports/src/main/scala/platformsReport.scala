@@ -56,7 +56,7 @@ object platformsReport {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .select("device_id", "platforms", "segment", "day")
+      .select("device_id", "platforms", "segment", "device_type", "country", "day")
 
     df
   }
@@ -109,6 +109,7 @@ object platformsReport {
         df
         }
     */
+    
   def getVolumesPlatformFast(
       spark: SparkSession,
       data: DataFrame
@@ -452,6 +453,35 @@ object platformsReport {
     df
   }
 
+ /**
+    * This method is a filter that keeps only general taxonomy segments.
+    * It joins "general taxonomy segment values" from metabase with current dataframe.
+    *
+    * @param spark: Spark Session that will be used to load the data from HDFS.
+    * @param df: DataFrame obtained from platforms/data.
+    *
+    * @return a DataFrame filtered by general taxo segments.
+   **/
+
+  def getJoint(
+      spark: SparkSession,
+      db: DataFrame
+  ): DataFrame = {
+
+    /** Read standard taxonomy segment_ids */
+    val taxo_path = "/datascience/misc/taxo_gral.csv"
+    val df_taxo =  spark.read.format("csv")
+        .option("header", "true")
+        .load(taxo_path)
+        .withColumnRenamed("seg_id", "segment")
+
+    val df = db
+      .join(broadcast(df_taxo), Seq("segment"))
+      .select("device_id", "platforms", "segment", "day")
+      //.dropDuplicates()
+    df
+  }
+
   /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR SAVING DATA     //////////////////////
@@ -502,7 +532,10 @@ object platformsReport {
     println("INFO:\n\tDay: %s".format(date_current))
 
     /** Read from "platforms/data" */
-    val data = getPlatformsData(spark = spark, nDays = nDays, since = since)
+    val db = getPlatformsData(spark = spark, nDays = nDays, since = since)
+
+    /** Keep general taxonomy segments */    
+    val data =  getJoint(spark, db = db)
 
     /**  Transform data */
     val df = getVolumesPlatformFast(spark, data = data)
