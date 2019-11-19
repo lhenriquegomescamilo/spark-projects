@@ -68,7 +68,7 @@ object DataGoogleAnalytics {
           spark.read
             .option("basePath", "/datascience/data_audiences_streaming/")
             .parquet(x)
-            .filter("country = 'AR' or country = 'MX'") // We only get AR and MX users because we only have GA data for those countries
+            .filter("country = 'BR' and url is not null and event_type in ('batch','pv','data')") // We only get AR and MX users because we only have GA data for those countries
             .withColumn("day", lit(x.split("/").last.slice(5, 13)))
             .withColumnRenamed("time", "timestamp")
             .select("device_id", "url", "day", "country", "timestamp")
