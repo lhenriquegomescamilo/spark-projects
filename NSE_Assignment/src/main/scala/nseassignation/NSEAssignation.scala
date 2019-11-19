@@ -50,27 +50,26 @@ object NSEAssignation {
  		//cargamos los homes
 		val homes = spark.read.format("csv")
           .option("delimiter","\t")
-          .load(("/datascience/geo/%s".format(value_dictionary("output_file"))))
+          .load(("/datascience/geo/NSEHomes/%s".format(value_dictionary("output_file"))))
           .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
           .withColumn("latitude",col("latitude").cast("Double"))
           .withColumn("longitude",col("longitude").cast("Double"))
-          .filter("geo_hash != 'gcba'")
-
+    
+    println("esto es pre procesamiento") 
+    //homes.show(5)
     //Aplicando geometría a los puntos
 
     homes.createOrReplaceTempView("data")
 
-    var safegraphDf = spark      .sql("""             
-      SELECT *,ST_Point(CAST(data.longitude AS Decimal(24,20)), 
-                                                CAST(data.latitude AS Decimal(24,20)), 
-                                                data.ad_id,
-                                                data.id_type,
-                                                data.freq) AS pointshape
-                  FROM data
-              """)
+    var safegraphDf = spark      .sql(""" SELECT *,ST_Point(CAST(data.longitude AS Decimal(24,20)),
+                                                             CAST(data.latitude AS Decimal(24,20))) 
+                                                             as pointshape
+              FROM data
+          """)
               
     //safegraphDf.createOrReplaceTempView("user_homes")
-
+    println("esto es después de asignar geometría") 
+    //safegraphDf.show(5)
 
     safegraphDf
 
@@ -87,17 +86,25 @@ val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
 //Transform the polygon to DF
-var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
+var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
+.withColumnRenamed("_c1","GEOID")
+.withColumnRenamed("_c2","NSE")
+.withColumnRenamed("_c3","audience")
+.repartition(30)
+
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
 // Assign name and geometry columns to DataFrame
 var spatialDf = spark.sql("""       select *,ST_GeomFromWKT(geometry) as myshape FROM rawSpatialDf""".stripMargin)
 
 spatialDf.createOrReplaceTempView("poligonomagico")
-spatialDf.show(5)
+//spatialDf.show(5)
 
 //Here we get the modeled homes
 val safegraphDf = get_processed_homes(spark,value_dictionary)
+println("esto es cuando traigo la función") 
+
+//safegraphDf.show(5)
 
 safegraphDf.createOrReplaceTempView("data")
 
@@ -109,12 +116,13 @@ val intersection = spark.sql(
 
 intersection.show(5)
 
- intersection.write
+ intersection.drop("geometry","latitude","longitude","geocode")
+      .write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/%s_w_NSE".format(value_dictionary("output_file")))
+      .save("/datascience/geo/NSEHomes/%s_w_NSE".format(value_dictionary("output_file")))
 
 }
 
