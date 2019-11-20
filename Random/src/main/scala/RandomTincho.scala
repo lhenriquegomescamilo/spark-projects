@@ -818,7 +818,7 @@ object RandomTincho {
 
   }
 
-  def get_urls_for_ingester(spark){
+  def get_urls_for_ingester(spark:SparkSession){
     
     val df = spark.read.load("/datascience/data_demo/data_urls/day=20191110").groupBy("url").count.sort(desc("count")).limit(1000000)
     val df_processed = processURLHTTP(df).select("url")
