@@ -13,7 +13,7 @@ import org.apache.log4j.{Level, Logger}
 /**
   * The idea of this script is to generate days of volumes by platform for platform Report.
   */
-object platformsReport {
+object volumesReport {
 
   /**
     *
@@ -180,7 +180,7 @@ object platformsReport {
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
-      .appName("volumesReport")
+      .appName("VolumesReport")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
