@@ -78,41 +78,47 @@ object GenerateMonthlyDataset{
 
     // Loading the GT dataframe
     val gt = getGTDataFrame(spark,path)
+    
+    gt.orderBy(asc("device_id"))
+      .write.mode(SaveMode.Overwrite)
+      .format("parquet")
+      .save("/datascience/data_demo/name=%s/country=%s/gt".format(name, country))
+    
     gt.cache()
     
     // Generating the GA data by joining de data from GA and the GT dataframe (inner)
     DatasetGA.getGARelatedData(spark, gt, country, "inner", name, format_type)
     
     // Loading the GA dataset previously generated
-    val ga = spark.read
-                  .load(
-                      "/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities"
-                      .format(name, country)
-                  )
+    // val ga = spark.read
+    //               .load(
+    //                   "/datascience/data_demo/name=%s/country=%s/ga_dataset_probabilities"
+    //                   .format(name, country)
+    //               )
     
     // Generating the GT dataframe (device_id, label) from the users that passed the inner join
-    gt.join(ga,Seq("device_id"),"inner")
-                .select("device_id", "label")
-                .distinct()
-                .orderBy(asc("device_id"))
-                .write
-                .mode(SaveMode.Overwrite)
-                .format("parquet")
-                .save(
-                  "/datascience/data_demo/name=%s/country=%s/gt".format(name, country)
-                )
+    // gt.join(ga,Seq("device_id"),"inner")
+    //             .select("device_id", "label")
+    //             .distinct()
+    //             .orderBy(asc("device_id"))
+    //             .write
+    //             .mode(SaveMode.Overwrite)
+    //             .format("parquet")
+    //             .save(
+    //               "/datascience/data_demo/name=%s/country=%s/gt".format(name, country)
+    //             )
     // Generating the triplets dataset by joining the triplets with the GA dataset previously generated to mantain the same users
-    DatasetSegmentTriplets.generateSegmentTriplets(spark, ga, country, "left", name, ndays, format_type)
+    DatasetSegmentTriplets.generateSegmentTriplets(spark, gt, country, "inner", name, ndays, format_type)
     
     // Loading the triplets dataset previously generated
-    val segments = spark.read
-                        .load(
-                          "/datascience/data_demo/name=%s/country=%s/segment_triplets"
-                            .format(name, country)
-                        )
+    // val segments = spark.read
+    //                     .load(
+    //                       "/datascience/data_demo/name=%s/country=%s/segment_triplets"
+    //                         .format(name, country)
+    //                     )
 
     // Finally we get the keywords dataset (device_id, [kw1;kw2]) from the users that passed the join with the previous dataset
-    DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name, ndays, format_type)
+    DatasetKeywordsURL.getDatasetFromURLs(spark, gt, country, "inner", name, ndays, format_type)
   }
 
   def main(args: Array[String]) {

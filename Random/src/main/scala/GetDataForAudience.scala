@@ -344,7 +344,7 @@ object GetDataForAudience {
       .option("header", "true")
       .load("/datascience/custom/havas_411_no_overlap.csv")
       .withColumnRenamed("user", "device_id")
-      .repartition(10)
+      .repartition(50) 
 
     val taxonomy = spark.read
       .format("csv")
