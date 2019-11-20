@@ -821,9 +821,9 @@ object RandomTincho {
   def get_urls_for_ingester(spark:SparkSession){
     
     val df = spark.read.load("/datascience/data_demo/data_urls/day=20191110").groupBy("url").count.sort(desc("count")).limit(500000)
-    val df_processed = processURLHTTP(df)
+    //val df_processed = processURLHTTP(df)
     
-    df_processed.select("url").write
+    df.select("url").write
                 .format("parquet")
                 .mode(SaveMode.Overwrite)
                 .save("/datascience/url_ingester/top_urls")
