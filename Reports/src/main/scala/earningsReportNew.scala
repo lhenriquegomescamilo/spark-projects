@@ -430,6 +430,8 @@ object earningsReportNew {
     val date_now = DateTime.now
     val date_since = date_now.minusDays(since)
     val date_current = date_since.toString("yyyyMMdd")  
+
+    println("INFO:\n\tDay: %s".format(date_current))
       
     saveRelevantDevicesDF(spark = spark,
                           nDays = nDays,
