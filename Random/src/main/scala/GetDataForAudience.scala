@@ -342,7 +342,7 @@ object GetDataForAudience {
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .load("/datascience/custom/havas_411_no_overlap.csv")
+      .load("/datascience/custom/havas_411_overlap.csv")
       .withColumnRenamed("user", "device_id")
       .repartition(50)
 
@@ -386,7 +386,7 @@ object GetDataForAudience {
       .write
       .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/havas_411_no_overlap_segments")
+      .save("/datascience/custom/havas_411_overlap_segments")
 
   }
 
