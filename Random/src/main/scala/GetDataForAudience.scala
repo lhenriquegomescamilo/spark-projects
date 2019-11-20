@@ -327,6 +327,50 @@ object GetDataForAudience {
   /**
     *
     *
+    *
+    *
+    *
+    *              PEDIDO HAVAS
+    *
+    *
+    *
+    *
+    *
+    */
+  def getDataSegmentsHavas(spark: SparkSession) = {
+    val data_audiences = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load("/datascience/custom/havas_411_no_overlap.csv")
+      .withColumnRenamed("user", "device_id")
+      .repartition(10)
+
+    val taxonomy = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/data_publicis/taxonomy_publicis.csv")
+      .select("Segment Id")
+      .collect()
+      .map(row => row(0))
+      .toSet
+
+    val data_segments = getDataTriplets(spark, country = "MX", nDays = 40)
+      .filter(col("feature").isin(taxonomy))
+
+    data_audiences
+      .join(data_segments, Seq("device_id"))
+      .select("device_id", "feature", "label")
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .save("/datascience/custom/havas_411_no_overlap_segments")
+
+  }
+
+  /**
+    *
+    *
     *            AMEX SEGMENTS
     *
     *
@@ -365,7 +409,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataLookAlike(spark = spark)
+    getDataSegmentsHavas(spark = spark)
 
   }
 }
