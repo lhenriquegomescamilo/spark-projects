@@ -356,7 +356,7 @@ object GetDataForAudience {
       .toSet
 
     val data_segments = getDataTriplets(spark, country = "MX", nDays = 40)
-      .filter(col("feature").isin(taxonomy))
+      .filter(col("feature").isin(taxonomy: _*))
 
     data_audiences
       .join(data_segments, Seq("device_id"))
