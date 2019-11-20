@@ -151,33 +151,6 @@ object platformsData {
     joint
   }
 
- /**
-    * This method gets volumes for taxonomy segments.
-    * It groups platformsData by country, segment and device_type and counts devices.
-    *
-    * @param spark: Spark Session that will be used to load the data from HDFS.
-    * @param df: DataFrame obtained from platforms/data.
-    *
-    * @return a DataFrame with volumes for each country, segment, device_type tuple.
-   **/
-
-  def getDailyVolumes(
-      spark: SparkSession,
-      date_current: String
-  ): DataFrame = {
-
-    val day = date_current.replace("/", "")
-    val base_path = "/datascience/reports/platforms/data"
-    val path = base_path + "/day=" + day
-
-    val df = spark.read
-      .option("basePath", path)
-      .parquet(path)
-      .select("device_id", "platforms", "segment", "device_type", "country")
-      .groupBy("country", "segment","device_type")
-      .count()
-    df
-  }  
 
   /**
     *
@@ -185,7 +158,7 @@ object platformsData {
     *
     */
   /**
-    * This method saves the data generated to /datascience/reports/gain/, the filename is the current date.
+    * This method saves the data generated to /datascience/reports/platforms/data/, the filename is the current date.
     *
     * @param data: DataFrame that will be saved.
     *
@@ -193,11 +166,10 @@ object platformsData {
  
   def saveData(
       df: DataFrame,
-      dir: String,
       date_current: String
   ) = {
 
-    val fileNameFinal = dir + date_current
+    val dir = "/datascience/reports/platforms/data/"
 
     df.withColumn("day", lit(date_current.replace("/", "")))
       .write
@@ -235,15 +207,7 @@ object platformsData {
     val df = transformDF(spark, data = data)
 
     /** Store df */
-    val dir1 = "/datascience/reports/platforms/data/"
-    saveData(df = df, dir = dir1, date_current = date_current)
-
-    /** Volumes Report */
-    val df_volumes = getDailyVolumes(spark, date_current = date_current)
-
-    /** Store df */
-    val dir2 = "/datascience/reports/volumes/data/"
-    saveData(df = df_volumes, dir = dir2, date_current = date_current)
+    saveData(df = df, date_current = date_current)
 
   }
 
