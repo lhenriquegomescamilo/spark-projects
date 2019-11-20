@@ -727,8 +727,8 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    keywords_embeddings(spark,"/datascience/custom/kws_path_title_contextual")
-    
+    //keywords_embeddings(spark,"/datascience/custom/kws_path_title_contextual")
+    get_gt_contextual(spark)
   }
 
 }
