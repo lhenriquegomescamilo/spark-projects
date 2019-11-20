@@ -13,7 +13,7 @@ import org.apache.log4j.{Level, Logger}
 /**
   * The idea of this script is to generate earnings Report. 
   */
-object earningsReport {
+object earningsReportMonthly {
 
   /**
     *
@@ -160,10 +160,10 @@ object earningsReport {
   }
 
   def getGrouped(
-      df_joint: DataFrame
+      df: DataFrame
   ): DataFrame = {
 
-    val df_grouped = df_joint
+    val df_grouped = df
       .groupBy("id_partner", "seg_id")
       .count()
       .withColumnRenamed("count", "device_unique")
@@ -171,10 +171,10 @@ object earningsReport {
   }
 
   def getGroupedbyCountry(
-      df_joint: DataFrame
+      df: DataFrame
   ): DataFrame = {
 
-    val df_grouped_country = df_joint
+    val df_grouped_country = df
       .groupBy("id_partner","seg_id","country")
       .count()
       .withColumnRenamed("count", "device_unique")
@@ -231,23 +231,14 @@ object earningsReport {
       since: Integer) = {
        
     /** Read from "data_triplets" database */
-    val df_data_triplets = getDataTriplets(
+    val df = getDataTriplets(
       spark = spark,
       nDays = nDays,
       since = since
     )
 
-    /** Read standard taxonomy segment_ids */
-    val taxo_path = "/datascience/misc/standard_ids.csv"
-    val df_taxo =  spark.read.format("csv").option("header", "true").load(taxo_path)
-
-    /**  Join data_triplets with taxo segments */
-    val df_joint = getJoint(
-      df_taxo = df_taxo,
-      df_data_triplets = df_data_triplets)  
-
     /**  Get number of devices per partner_id per segment */
-    val df_grouped = getGrouped(df_joint = df_joint)
+    val df_grouped = getGrouped(df = df)
 
     /** Here we store the first report */
     val subdir1 = "base_report"
@@ -258,7 +249,7 @@ object earningsReport {
     )
 
     /**  Get number of devices per partner_id per segment per country */
-    val df_grouped_country = getGroupedbyCountry(df_joint = df_joint)
+    val df_grouped_country = getGroupedbyCountry(df = df)
 
     /** Here we store the first report by country */
     val subdir2 = "base_report_by_country"
@@ -337,17 +328,17 @@ object earningsReport {
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
-      .appName("EarningsReport")
+      .appName("EarningsReportMonthly")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
     
-     getDataReport(
+    getDataReport(
        spark = spark,
        nDays = nDays,
        since = since)
 
-    //getDataReport_xd(
-    //  spark = spark)  
+    getDataReport_xd(
+      spark = spark)  
     
   }
 }
