@@ -15,7 +15,7 @@ import org.apache.log4j.{Level, Logger}
 /**
   * The idea of this script is to generate earnings Report. 
   */
-object earningsReportNew {
+object earningsReportDaily {
 
   /**
     *
