@@ -822,12 +822,24 @@ object RandomTincho {
     
     val replicationFactor = 8
 
-    val df = spark.read.load("/datascience/data_demo/data_urls/day=20191110")
-                  .withColumn("rand",least(floor(rand() * replicationFactor),lit(replicationFactor - 1)))
-                  .groupBy("url","rand").count
-                  .drop("rand","count")
-                  .groupBy("url").count
-                  .sort(desc("count")).limit(1000000)
+    val df = spark.read.load("/datascience/data_demo/data_urls/day=20191110").withColumn(
+                  "composite_key",
+      concat(
+        col("url"),
+        lit("@"),
+        // This last part is a random integer ranging from 0 to replicationFactor
+        least(
+          floor(rand() * replicationFactor),
+          lit(replicationFactor - 1) // just to avoid unlikely edge case
+        )
+      )
+    ).groupBy("composite_key")
+      .count
+      .withColumn("url", split(col("composite_key"), "@")(0))
+      .groupBy("url")
+      .agg(sum(col("count")).as("count"))
+      .sort(desc("count"))
+      .limit(1000000)
     
     df.write.format("parquet")
                 .mode(SaveMode.Overwrite)
