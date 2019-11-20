@@ -353,7 +353,7 @@ object GetDataForAudience {
       .select("Segment Id")
       .collect()
       .map(row => row(0))
-      .toSet
+      .toSeq
 
     val data_segments = getDataTriplets(spark, country = "MX", nDays = 40)
       .filter(col("feature").isin(taxonomy: _*))
