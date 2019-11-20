@@ -343,7 +343,7 @@ object GetDataForAudience {
       .option("sep", "\t")
       .option("header", "true")
       .load("/datascience/custom/havas_411_no_overlap.csv")
-      .withColumn("user", "device_id")
+      .withColumnRenamed("user", "device_id")
       .repartition(10)
 
     val taxonomy = spark.read
