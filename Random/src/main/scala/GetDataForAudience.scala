@@ -356,11 +356,11 @@ object GetDataForAudience {
       .toSeq
 
     val data_segments = getDataTriplets(spark, country = "MX", nDays = 40)
-      .filter(col("feature").isin(taxonomy: _*))
+      .filter(col("segment").isin(taxonomy: _*))
 
     data_audiences
       .join(data_segments, Seq("device_id"))
-      .select("device_id", "feature", "label")
+      .select("device_id", "segment", "label")
       .write
       .format("csv")
       .mode("overwrite")
