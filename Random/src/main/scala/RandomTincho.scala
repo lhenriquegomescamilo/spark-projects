@@ -826,7 +826,7 @@ object RandomTincho {
                   .withColumn("rand",least(floor(rand() * replicationFactor),lit(replicationFactor - 1)))
                   .groupBy("url","rand").count
                   .drop("rand","count")
-                  .groupby("url").count
+                  .groupBy("url").count
                   .sort(desc("count")).limit(1000000)
     
     df.write.format("parquet")
