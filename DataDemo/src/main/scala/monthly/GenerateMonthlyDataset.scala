@@ -172,7 +172,7 @@ object GenerateMonthlyDataset{
     var training_name = "training_BR_genero_%s".format(current_month)
     var expansion_name = "expansion_BR_genero_%s".format(current_month)
     var country = "BR"
-    var path_gt = "/datascience/devicer/processed/AR_genero_%s_grouped".format(current_month)
+    var path_gt = "/datascience/custom/gt_br_transunion_gender"
     println("Generating Training BR Genero ...")
     getTrainingData(spark, path_gt, country, training_name, ndays)
     println("Generating Expansion BR Genero ...")
@@ -182,7 +182,7 @@ object GenerateMonthlyDataset{
     training_name = "training_BR_edad_%s".format(current_month)
     expansion_name = "expansion_BR_edad_%s".format(current_month)
     country = "BR"
-    path_gt = "/datascience/devicer/processed/AR_edad_%s_grouped".format(current_month)
+    path_gt = "/datascience/custom/gt_br_transunion_age"
     println("Generating Training BR Edad ...")
     getTrainingData(spark, path_gt, country, training_name, ndays)
     println("Generating Expansion BR Edad ...")
