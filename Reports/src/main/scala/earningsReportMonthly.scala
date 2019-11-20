@@ -274,7 +274,7 @@ object earningsReportMonthly {
       df = df)
   
     /**  Get number of devices per partner_id per segment */
-    val df_grouped = getGrouped(df_joint = df_joint)
+    val df_grouped = getGrouped(df = df_joint)
 
     /** Here we store the first report */
     val subdir1 = "xd_report"
@@ -285,7 +285,7 @@ object earningsReportMonthly {
      )
 
     /**  Get number of devices per partner_id per segment per country */
-    val df_grouped_country = getGroupedbyCountry(df_joint = df_joint)
+    val df_grouped_country = getGroupedbyCountry(df = df_joint)
 
     /** Here we store the first report by country */
     val subdir2 = "xd_report_by_country"
