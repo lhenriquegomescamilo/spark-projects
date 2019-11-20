@@ -820,12 +820,18 @@ object RandomTincho {
 
   def get_urls_for_ingester(spark:SparkSession){
     
-    val df = spark.read.load("/datascience/data_demo/data_urls/day=20191110").groupBy("url").count.sort(desc("count")).limit(1000000)
+    val replicationFactor = 8
+
+    val df = spark.read.load("/datascience/data_demo/data_urls/day=20191110")
+                  .withColumn("rand",least(floor(rand() * replicationFactor),lit(replicationFactor - 1)))
+                  .groupBy("url","rand").count
+                  .drop("rand","count")
+                  .groupBy("url").count
+                  .sort(desc("count")).limit(1000000)
     
-    df.write
-      .format("parquet")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/url_ingester/top_urls_chkpt")
+    df.write.format("parquet")
+                .mode(SaveMode.Overwrite)
+                .save("/datascience/url_ingester/top_urls_chkpt")
 
     val df_processed = processURLHTTP(spark.read.load("/datascience/url_ingester/top_urls_chkpt"))
     
