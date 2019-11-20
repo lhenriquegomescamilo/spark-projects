@@ -652,7 +652,7 @@ object RandomTincho {
                     104431,104432,104433,104434,104435,104608,104609,104610,104611,104612,
                     104613,104614,104615,104616,104617,104618,104619,104620,104621,104622)     
     
-    val data_urls = get_data_urls(spark, ndays = 30, since = 1, country = "AR")
+    val data_urls = get_data_urls(spark, ndays = 60, since = 1, country = "AR")
                               .select("url", "segments")
                               .withColumn("segments", explode(col("segments")))
                               .filter(
