@@ -8,7 +8,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.types._
 
-object GetAudience {
+object Reporter {
 
   /**
     * This method returns a DataFrame with the data from the partner data pipeline, for the interval
