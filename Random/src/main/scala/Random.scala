@@ -5318,50 +5318,62 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    (2 to 3)
-      .map(
-        segment =>
-          (
-            segment,
-            spark.read
-              .format("csv")
-              .option("sep", "\t")
-              .load(
-                "/datascience/devicer/processed/%s_transunion/".format(segment)
-              )
-          )
-      )
-      .map(t => t._2.withColumn("_c2", lit(t._1)))
-      .reduce((df1, df2) => df1.unionAll(df2))
-      .groupBy("_c0", "_c1")
-      .agg(collect_list("_c2") as "_c2")
-      .withColumn("_c2", concat_ws(",", col("_c2")))
-      .write
-      .format("csv")
-      .option("sep", "\t")
-      .save("/datascience/custom/gt_br_transunion_gender")
+    // (2 to 3)
+    //   .map(
+    //     segment =>
+    //       (
+    //         segment,
+    //         spark.read
+    //           .format("csv")
+    //           .option("sep", "\t")
+    //           .load(
+    //             "/datascience/devicer/processed/%s_transunion/".format(segment)
+    //           )
+    //       )
+    //   )
+    //   .map(t => t._2.withColumn("_c2", lit(t._1)))
+    //   .reduce((df1, df2) => df1.unionAll(df2))
+    //   .groupBy("_c0", "_c1")
+    //   .agg(collect_list("_c2") as "_c2")
+    //   .withColumn("_c2", concat_ws(",", col("_c2")))
+    //   .write
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .save("/datascience/custom/gt_br_transunion_gender")
 
-      (4 to 9)
-      .map(
-        segment =>
-          (
-            segment,
-            spark.read
-              .format("csv")
-              .option("sep", "\t")
-              .load(
-                "/datascience/devicer/processed/%s_transunion/".format(segment)
-              )
-          )
-      )
-      .map(t => t._2.withColumn("_c2", lit(t._1)))
-      .reduce((df1, df2) => df1.unionAll(df2))
-      .groupBy("_c0", "_c1")
-      .agg(collect_list("_c2") as "_c2")
-      .withColumn("_c2", concat_ws(",", col("_c2")))
+    //   (4 to 9)
+    //   .map(
+    //     segment =>
+    //       (
+    //         segment,
+    //         spark.read
+    //           .format("csv")
+    //           .option("sep", "\t")
+    //           .load(
+    //             "/datascience/devicer/processed/%s_transunion/".format(segment)
+    //           )
+    //       )
+    //   )
+    //   .map(t => t._2.withColumn("_c2", lit(t._1)))
+    //   .reduce((df1, df2) => df1.unionAll(df2))
+    //   .groupBy("_c0", "_c1")
+    //   .agg(collect_list("_c2") as "_c2")
+    //   .withColumn("_c2", concat_ws(",", col("_c2")))
+    // .write
+    // .format("csv")
+    // .option("sep", "\t")
+    // .save("/datascience/custom/gt_br_transunion_age")
+
+    val data = spark.read
+      .format("csv")
+      .load("/datascience/custom/havas_411_overlap_segments") //("device_id", "segment", "label")
+
+    data
+      .groupBy("device_id", "segment", "label")
+      .count()
       .write
       .format("csv")
-      .option("sep", "\t")
-      .save("/datascience/custom/gt_br_transunion_age")
+      .option("sep", ",")
+      .save("/datascience/custom/havas_411_overlap_segments_grouped")
   }
 }
