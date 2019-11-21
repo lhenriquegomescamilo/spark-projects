@@ -171,12 +171,12 @@ object earningsReportDaily {
   ) = {
 
     /** Read from "data_triplets" database and get relevant devices */
-    val df_nDays = getDataTriplets(spark, nDays, since)
+    val df_nDays = getDataTriplets(spark, nDays, since).filter("id_partner NOT IN (1, 119)")
     val df1 = getDataTriplets(spark, 1, since)
 
     /**  Get only users that appeared last day */    
     val users = df1.select("device_id").distinct()
-    val df = df_nDays.join(users, Seq("device_id"), "inner")
+    val df = df_nDays.dropDuplicates("device_id", "segment", "id_partner").join(users, Seq("device_id"), "inner")
 
     /** Here we store the relevant devices join */
     saveData(data = df,
