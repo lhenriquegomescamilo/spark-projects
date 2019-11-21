@@ -853,7 +853,7 @@ object RandomTincho {
                   .groupBy("url","country")
                   .agg(sum(col("count")).as("count"))
                   .sort(desc("count"))
-                  .limit(500000)
+                  .limit(1000000)
         
     df_processed.select("url","country").write
                 .format("parquet")
