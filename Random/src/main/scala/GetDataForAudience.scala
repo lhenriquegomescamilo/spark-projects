@@ -342,7 +342,7 @@ object GetDataForAudience {
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .load("/datascience/custom/havas_411_overlap.csv")
+      .load("/datascience/custom/havas_411_with_overlap.csv")
       .withColumnRenamed("user", "device_id")
       .repartition(50)
 
