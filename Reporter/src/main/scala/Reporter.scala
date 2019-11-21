@@ -110,6 +110,7 @@ object Reporter {
       .write
       .format("csv")
       .option("sep", ",")
+      .mode("append")
       .save("/datascience/reporter/processed/test")
   }
 
@@ -124,7 +125,7 @@ object Reporter {
       .getOrCreate()
 
     val testMap = Map(
-      "query" -> "id_partner = 146 AND (array_contains(first_party, 1453) OR array_contains(first_party, 4309)) AND (hour >= '2019102300' AND hour <= '2019112023')",
+      "query" -> "id_partner = 146 AND (array_contains(first_party, 2749) OR array_contains(first_party, 11289)) AND (hour >= '2019102300' AND hour <= '2019112023')",
       "datasource" -> "2,3,129,61,59,26,32,250,430",
       "split" -> "0",
       "segments" -> "1453,4309"
