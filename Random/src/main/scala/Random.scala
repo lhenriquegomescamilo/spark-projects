@@ -5369,7 +5369,7 @@ user_granularity.write
       .load("/datascience/custom/havas_411_overlap_segments") //("device_id", "segment", "label")
 
     data
-      .groupBy("device_id", "segment", "label")
+      .groupBy("_c0", "_c1", "_c2")
       .count()
       .write
       .format("csv")
