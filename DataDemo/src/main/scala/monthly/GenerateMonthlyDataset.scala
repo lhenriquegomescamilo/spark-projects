@@ -77,11 +77,11 @@ object GenerateMonthlyDataset{
     val format_type = "parquet"
 
     // Loading the GT dataframe
-    val gt = getGTDataFrame(spark,path)
+    val gt = getGTDataFrame(spark,path) 
     gt.cache()
     
     // Generating the GA data by joining de data from GA and the GT dataframe (inner)
-    DatasetGA.getGARelatedData(spark, gt, country, "inner", name, format_type)
+    DatasetGA.getGARelatedData(spark, gt, country, "left", name, format_type)
     
     // Loading the GA dataset previously generated
     val ga = spark.read
@@ -102,7 +102,7 @@ object GenerateMonthlyDataset{
                   "/datascience/data_demo/name=%s/country=%s/gt".format(name, country)
                 )
     // Generating the triplets dataset by joining the triplets with the GA dataset previously generated to mantain the same users
-    DatasetSegmentTriplets.generateSegmentTriplets(spark, ga, country, "left", name, ndays, format_type)
+    DatasetSegmentTriplets.generateSegmentTriplets(spark, gt, country, "left", name, ndays, format_type)
     
     // Loading the triplets dataset previously generated
     val segments = spark.read
@@ -112,7 +112,7 @@ object GenerateMonthlyDataset{
                         )
 
     // Finally we get the keywords dataset (device_id, [kw1;kw2]) from the users that passed the join with the previous dataset
-    DatasetKeywordsURL.getDatasetFromURLs(spark, segments, country, "left", name, ndays, format_type)
+    DatasetKeywordsURL.getDatasetFromURLs(spark, gt, country, "left", name, ndays, format_type)
   }
 
   def main(args: Array[String]) {
@@ -134,9 +134,9 @@ object GenerateMonthlyDataset{
     var country = "AR"
     var path_gt = "/datascience/devicer/processed/AR_genero_%s_grouped".format(current_month)
     println("Generating Training AR Genero ...")
-    //getTrainingData(spark, path_gt, country, training_name, ndays)
+    getTrainingData(spark, path_gt, country, training_name, ndays)
     println("Generating Expansion AR Genero ...")
-    //getExpansionData(spark, path_gt, country, expansion_name, ndays)
+    getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // AR EDAD
     training_name = "training_AR_edad_%s".format(current_month)
@@ -144,7 +144,7 @@ object GenerateMonthlyDataset{
     country = "AR"
     path_gt = "/datascience/devicer/processed/AR_edad_%s_grouped".format(current_month)
     println("Generating Training AR Edad ...")
-    //getTrainingData(spark, path_gt, country, training_name, ndays)
+    getTrainingData(spark, path_gt, country, training_name, ndays)
     println("Generating Expansion AR Edad ...")
     getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
@@ -154,9 +154,9 @@ object GenerateMonthlyDataset{
     country = "MX"
     path_gt = "/datascience/devicer/processed/MX_genero_%s_grouped".format(current_month)
     println("Generating Training MX Genero ...")
-    //getTrainingData(spark, path_gt, country, training_name, ndays)
+    getTrainingData(spark, path_gt, country, training_name, ndays)
     println("Generating Expansion MX Genero ...")
-    //getExpansionData(spark, path_gt, country, expansion_name, ndays)
+    getExpansionData(spark, path_gt, country, expansion_name, ndays)
 
     // MX EDAD
     // training_name = "training_MX_edad_%s".format(current_month)
@@ -166,6 +166,26 @@ object GenerateMonthlyDataset{
     // println("Generating Training MX Edad ...")
     // getTrainingData(spark, path_gt, country, training_name, ndays)
     // println("Generating Expansion MX Edad ...")
+    // getExpansionData(spark, path_gt, country, expansion_name, ndays)
+
+    // BR GENERO
+    // var training_name = "training_BR_genero_%s".format(current_month)
+    // var expansion_name = "expansion_BR_genero_%s".format(current_month)
+    // var country = "BR"
+    // var path_gt = "/datascience/custom/gt_br_transunion_gender"
+    // println("Generating Training BR Genero ...")
+    // getTrainingData(spark, path_gt, country, training_name, ndays)
+    // println("Generating Expansion BR Genero ...")
+    // getExpansionData(spark, path_gt, country, expansion_name, ndays)
+
+    // // BR EDAD
+    // training_name = "training_BR_edad_%s".format(current_month)
+    // expansion_name = "expansion_BR_edad_%s".format(current_month)
+    // country = "BR"
+    // path_gt = "/datascience/custom/gt_br_transunion_age"
+    // println("Generating Training BR Edad ...")
+    // getTrainingData(spark, path_gt, country, training_name, ndays)
+    // println("Generating Expansion BR Edad ...")
     // getExpansionData(spark, path_gt, country, expansion_name, ndays)
   }
 }

@@ -78,11 +78,23 @@ object Item2Item {
       var filename = file._1
       var fileToProcess = pathToProcess + filename
       var fileInProcess = pathInProcess + filename
-      var fileFailed = pathFailed + filename
       var fileDone = pathDone + filename
+      var fileFailed = pathFailed + filename
       var processError = false
+    
+      var hadoopPathInProcess = new Path(fileInProcess)
+      var hadoopPathToProcess = new Path(fileToProcess)
+      var hadoopPathDone= new Path(fileDone)
+      var hadoopPathFailed = new Path(fileFailed)
 
-      fs.rename(new Path(fileToProcess), new Path(fileInProcess))
+      if(fs.exists(hadoopPathInProcess)
+        fs.delete(hadoopPathInProcess, false)
+      if(fs.exists(hadoopPathDone))
+        fs.delete(hadoopPathDone, false)
+      if(fs.exists(hadoopPathFailed))
+        fs.delete(hadoopPathFailed, false)
+
+      fs.rename(hadoopPathToProcess, hadoopPathInProcess)
 
       try {
         runExpand(spark, fileInProcess, nDays, nDaysSegment, simMatrixHits, simThreshold, predMatrixHits)
@@ -94,9 +106,9 @@ object Item2Item {
       }
     }
     if (!processError)
-      fs.rename(new Path(fileInProcess), new Path(fileDone))
+      fs.rename(hadoopPathInProcess, hadoopPathDone)
     else
-      fs.rename(new Path(fileInProcess), new Path(fileFailed))
+      fs.rename(hadoopPathInProcess, hadoopPathFailed)
     }
   }
 

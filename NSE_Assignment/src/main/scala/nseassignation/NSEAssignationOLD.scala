@@ -1,3 +1,4 @@
+/*
 package  main.scala.nseassignation
 
 import main.scala.NSEFromHomes
@@ -178,3 +179,4 @@ val intersection = spark.sql(
     }
 //
 }
+*/

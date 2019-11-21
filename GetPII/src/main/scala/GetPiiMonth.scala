@@ -55,7 +55,7 @@ object GetPiiMonth {
     val data = spark.read
         .format("parquet")
         .load("/datascience/pii_matching/pii_tuples/")
-        .filter("country in('AR', 'CL', 'PE')")
+        .filter("country in('AR', 'CL', 'PE', 'MX')")
 
     // Then we separate the data acording to the PII type
     var mails = data

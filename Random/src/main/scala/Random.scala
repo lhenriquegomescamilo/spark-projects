@@ -5318,22 +5318,75 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val safegraph = spark.read.format("parquet").load("/datascience/geo/safegraph/")
+    // (2 to 3)
+    //   .map(
+    //     segment =>
+    //       (
+    //         segment,
+    //         spark.read
+    //           .format("csv")
+    //           .option("sep", "\t")
+    //           .load(
+    //             "/datascience/devicer/processed/%s_transunion/".format(segment)
+    //           )
+    //       )
+    //   )
+    //   .map(t => t._2.withColumn("_c2", lit(t._1)))
+    //   .reduce((df1, df2) => df1.unionAll(df2))
+    //   .groupBy("_c0", "_c1")
+    //   .agg(collect_list("_c2") as "_c2")
+    //   .withColumn("_c2", concat_ws(",", col("_c2")))
+    //   .write
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .save("/datascience/custom/gt_br_transunion_gender")
 
-    safegraph
-      .filter("day >= '20191001' AND day <= '20191030'")
-      .groupBy("country")
-      .agg(countDistinct(col("ad_id")), count("ad_id"))
-      .collect()
-      .foreach(println)
+    //   (4 to 9)
+    //   .map(
+    //     segment =>
+    //       (
+    //         segment,
+    //         spark.read
+    //           .format("csv")
+    //           .option("sep", "\t")
+    //           .load(
+    //             "/datascience/devicer/processed/%s_transunion/".format(segment)
+    //           )
+    //       )
+    //   )
+    //   .map(t => t._2.withColumn("_c2", lit(t._1)))
+    //   .reduce((df1, df2) => df1.unionAll(df2))
+    //   .groupBy("_c0", "_c1")
+    //   .agg(collect_list("_c2") as "_c2")
+    //   .withColumn("_c2", concat_ws(",", col("_c2")))
+    // .write
+    // .format("csv")
+    // .option("sep", "\t")
+    // .save("/datascience/custom/gt_br_transunion_age")
 
-    val startapp = spark.read.format("parquet").load("/data/geo/startapp/parquet/")
+    val data_audiences = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load("/datascience/custom/havas_411_no_overlap.csv")
+      .withColumnRenamed("user", "device_id")
+      .repartition(50)
 
-    startapp
-      .filter("day >= '20191001' AND day <= '20191030'")
-      .groupBy("country", "day")
-      .agg(countDistinct(col("ad_id")), count("ad_id"))
-      .collect()
-      .foreach(println)
+    val nse = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/geo/NSEHomes/mexico_200d_home_20-11-2019-9h_push")
+      .filter("_c0 = 'web'")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumn("nse", split(col("_c2"), ",")(0))
+
+    nse
+      .join(data_audiences, Seq("device_id"))
+      .groupBy("label", "nse")
+      .count()
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .save("/datascience/custom/havas_nse")
   }
 }
