@@ -5364,16 +5364,29 @@ user_granularity.write
     // .option("sep", "\t")
     // .save("/datascience/custom/gt_br_transunion_age")
 
-    val data = spark.read
+    val data_audiences = spark.read
       .format("csv")
-      .load("/datascience/custom/havas_411_overlap_segments") //("device_id", "segment", "label")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load("/datascience/custom/havas_411_no_overlap.csv")
+      .withColumnRenamed("user", "device_id")
+      .repartition(50)
 
-    data
-      .groupBy("_c0", "_c1", "_c2")
+    val nse = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/geo/NSEHomes/mexico_200d_home_20-11-2019-9h_push")
+      .filter("_c0 = 'web'")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumn("nse", split(col("_c2"), ",")(0))
+
+    nse
+      .join(data_audiences, Seq("device_id"))
+      .groupBy("label", "nse")
       .count()
       .write
       .format("csv")
-      .option("sep", ",")
-      .save("/datascience/custom/havas_411_overlap_segments_grouped")
+      .mode("overwrite")
+      .save("/datascience/custom/havas_nse")
   }
 }
