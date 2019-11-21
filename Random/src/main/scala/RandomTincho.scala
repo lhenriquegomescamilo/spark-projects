@@ -826,7 +826,7 @@ object RandomTincho {
     
     val replicationFactor = 8
 
-    val df = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/country=AR/").select("url"))
+    val df = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","country"))
 
     // df.write.format("parquet")
     //             .mode(SaveMode.Overwrite)
@@ -837,6 +837,8 @@ object RandomTincho {
                   concat(
                     col("url"),
                     lit("@"),
+                    col("country"),
+                    lit("@"),
                     // This last part is a random integer ranging from 0 to replicationFactor
                     least(
                       floor(rand() * replicationFactor),
@@ -845,16 +847,19 @@ object RandomTincho {
                   )
                 ).groupBy("composite_key")
                   .count
-                  .withColumn("url", split(col("composite_key"), "@")(0))
-                  .groupBy("url")
+                  .withColumn("split", split(col("composite_key"), "@"))
+                  .withColumn("url",col("split")(0))
+                  .withColumn("country",col("split")(1))
+                  .groupBy("url","country")
                   .agg(sum(col("count")).as("count"))
                   .sort(desc("count"))
                   .limit(500000)
         
-    df_processed.select("url").write
+    df_processed.select("url","country").write
                 .format("parquet")
                 .mode(SaveMode.Overwrite)
-                .save("/datascience/url_ingester/top_urls")
+                .partitionBy("country")
+                .save("/datascience/url_ingester/to_scrap")
 
   }
 
