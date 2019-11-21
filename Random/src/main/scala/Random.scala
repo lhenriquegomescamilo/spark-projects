@@ -5378,7 +5378,7 @@ user_granularity.write
       .load("/datascience/geo/NSEHomes/mexico_200d_home_20-11-2019-9h_push")
       .filter("_c0 = 'web'")
       .withColumnRenamed("_c1", "device_id")
-      .withColumn("nse", split(col("_c2", ","))(0))
+      .withColumn("nse", split(col("_c2"), ",")(0))
 
     nse
       .join(data_audiences, Seq("device_id"))
