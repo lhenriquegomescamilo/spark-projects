@@ -835,7 +835,7 @@ object RandomTincho {
     val df_processed = df .withColumn(
                   "composite_key",
                   concat(
-                    col("url"),s
+                    col("url"),
                     lit("@"),
                     col("country"),
                     lit("@"),
