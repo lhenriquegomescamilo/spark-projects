@@ -684,6 +684,10 @@ object RandomTincho {
         field,
         regexp_replace(col(field), "(\\?|#).*", "")
       )
+      .withColumn(
+        field,
+        regexp_replace(col(field), "@", "")
+      )
       .drop("domain")
       .withColumn(field,lower(col(field)))
   }
@@ -827,10 +831,6 @@ object RandomTincho {
     val replicationFactor = 8
 
     val df = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","country"))
-
-    // df.write.format("parquet")
-    //             .mode(SaveMode.Overwrite)
-    //             .save("/datascience/url_ingester/top_urls_chkpt")
 
     val df_processed = df .withColumn(
                   "composite_key",
