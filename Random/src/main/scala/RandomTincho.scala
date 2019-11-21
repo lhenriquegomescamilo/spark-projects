@@ -684,10 +684,6 @@ object RandomTincho {
         field,
         regexp_replace(col(field), "(\\?|#).*", "")
       )
-      .withColumn(
-        field,
-        regexp_replace(col(field), "@", "")
-      )
       .drop("domain")
       .withColumn(field,lower(col(field)))
   }
@@ -855,7 +851,7 @@ object RandomTincho {
                   .sort(desc("count"))
                   .limit(1000000)
         
-    df_processed.select("url","country").write
+    df_processed.select("url","country","count").write
                 .format("parquet")
                 .mode(SaveMode.Overwrite)
                 .partitionBy("country")
