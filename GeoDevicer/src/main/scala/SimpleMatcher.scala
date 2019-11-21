@@ -183,12 +183,10 @@ var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_
 spatialDf.createOrReplaceTempView("poligonomagico")
 
 
-val df_safegraph = spark.read.format("csv")
-                  .option("header",false)
-                  .option("delimiter","\t")
+val df_safegraph = spark.read.format("parquet")
                   .load(data_path) //"/datascience/geo/startapp/2019*"
-                  .toDF("ad_id","timestamp","country","longitude","latitude","some")
-                  .filter(col("country")===country)
+                //.toDF("ad_id","timestamp","country","longitude","latitude","some")
+                 
 
 df_safegraph.createOrReplaceTempView("data")
 
@@ -263,11 +261,10 @@ match_sample_to_polygons(spark,
       */
 
 
-      match_users_to_polygons(spark,
-        "/datascience/geo/POIs/MEX_NSE_INEGI.json",
-        "1",
-        "1",
-        "mexico")
+      match_sample_to_polygons(spark,
+        "/data/geo/startapp/parquet/day=*/country=CO",
+        "/datascience/geo/POIs/Centro_Comercial_Mayorca_Mega_Plaza.json",
+        "colombia")
 
   }
 }
