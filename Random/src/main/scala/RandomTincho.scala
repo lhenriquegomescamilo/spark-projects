@@ -678,6 +678,10 @@ object RandomTincho {
     filtered_retargetly
       .withColumn(
         field,
+        regexp_replace(col(field), "://(.\\.)*", "://")
+      )
+      .withColumn(
+        field,
         regexp_replace(col(field), "(\\?|#).*", "")
       )
       .drop("domain")
@@ -822,31 +826,31 @@ object RandomTincho {
     
     val replicationFactor = 8
 
-    val df = spark.read.load("/datascience/data_demo/data_urls/day=20191110").withColumn(
-                  "composite_key",
-      concat(
-        col("url"),
-        lit("@"),
-        // This last part is a random integer ranging from 0 to replicationFactor
-        least(
-          floor(rand() * replicationFactor),
-          lit(replicationFactor - 1) // just to avoid unlikely edge case
-        )
-      )
-    ).groupBy("composite_key")
-      .count
-      .withColumn("url", split(col("composite_key"), "@")(0))
-      .groupBy("url")
-      .agg(sum(col("count")).as("count"))
-      .sort(desc("count"))
-      .limit(1000000)
-    
-    df.write.format("parquet")
-                .mode(SaveMode.Overwrite)
-                .save("/datascience/url_ingester/top_urls_chkpt")
+    val df = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/country=AR/").select("url"))
 
-    val df_processed = processURLHTTP(spark.read.load("/datascience/url_ingester/top_urls_chkpt"))
-    
+    // df.write.format("parquet")
+    //             .mode(SaveMode.Overwrite)
+    //             .save("/datascience/url_ingester/top_urls_chkpt")
+
+    val df_processed = df .withColumn(
+                  "composite_key",
+                  concat(
+                    col("url"),
+                    lit("@"),
+                    // This last part is a random integer ranging from 0 to replicationFactor
+                    least(
+                      floor(rand() * replicationFactor),
+                      lit(replicationFactor - 1) // just to avoid unlikely edge case
+                    )
+                  )
+                ).groupBy("composite_key")
+                  .count
+                  .withColumn("url", split(col("composite_key"), "@")(0))
+                  .groupBy("url")
+                  .agg(sum(col("count")).as("count"))
+                  .sort(desc("count"))
+                  .limit(500000)
+        
     df_processed.select("url").write
                 .format("parquet")
                 .mode(SaveMode.Overwrite)
