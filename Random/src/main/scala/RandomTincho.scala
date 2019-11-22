@@ -808,9 +808,8 @@ object RandomTincho {
                               .withColumn("count",lit(1))
 
     val path_kws = spark.read.format("csv")
-                              .option("sep","\t")
-                              .load("/datascience/custom/article_results_full.csv")
-                              .withColumnRenamed("_c0","url")
+                              .option("header","true")
+                              .load(scrapped_path)
                               .select("url")
                               .withColumn("url", lower(col("url")))
                               .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
