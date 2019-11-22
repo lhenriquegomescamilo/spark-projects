@@ -157,6 +157,9 @@ object UrlIngester {
       )
       .drop("domain")
       .withColumn(field,lower(col(field)))
+      .withColumn(
+        field,
+        regexp_replace(col(field), "@", "")
   }  
 
   /**
