@@ -167,7 +167,7 @@ object UrlIngester {
     * @return a DataFrame with processed urls, country and count.
    **/
 
-   def transformDF(df: DataFrame, urls_limit: Integer, replicationFactor: Integer = 8): DataFrame = {
+   def transformDF(df: DataFrame, urls_limit: Integer, date_current: String, replicationFactor: Integer = 8): DataFrame = {
 
     val df_processed = df.withColumn(
                   "composite_key",
@@ -192,7 +192,8 @@ object UrlIngester {
                   .sort(desc("count"))
                   .limit(urls_limit)
 
-    df_processed.select("url","country","count")
+    df_processed.withColumn("day", lit(date_current))
+                .select("url","country","count","day")
 
    }              
 
@@ -252,7 +253,7 @@ object UrlIngester {
     val df = processURLHTTP(db)
 
     /** Process Data */    
-    val df_processed = transformDF(df = df, urls_limit = urls_limit)
+    val df_processed = transformDF(df = df, urls_limit = urls_limit, date_current = date_current)
 
     /** Here we store the data */
     val savepath = "/datascience/url_ingester/data"
