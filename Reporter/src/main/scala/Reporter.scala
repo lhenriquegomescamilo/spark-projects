@@ -66,7 +66,8 @@ object Reporter {
 
     // In this part we process the dataset so that we have all the segments per device,
     // the totals and filter to only keep the relevant segments
-    val datasetWithSegments = dataset
+    val datasetWithSegments = dataset.na
+      .drop()
       .withColumn("all_segments", addTotalIdUDF(col("all_segments")))
       .withColumn("segment", explode(col("all_segments")))
       .filter(col("segment").isin(segments: _*))
