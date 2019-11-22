@@ -832,7 +832,8 @@ object RandomTincho {
   }
 
   def get_urls_for_ingester(spark:SparkSession){
-    
+
+    val ac    
     val replicationFactor = 8
 
     val df = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","country"))
@@ -880,14 +881,16 @@ object RandomTincho {
         .getOrCreate()
     
     
-    get_dataset_contextual(spark,scrapped_path = "/datascience/custom/urls_scrapped_AR.csv")
+    //get_dataset_contextual(spark,scrapped_path = "/datascience/custom/urls_scrapped_AR.csv")
 
-    // val df1 = spark.read.format("csv").option("header","true").load("/datascience/custom/urls_scrapped_AR.csv").select("url")
-    // val df2 = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","segments"))
+    val df1 = spark.read.format("csv").option("header","true").load("/datascience/custom/urls_scrapped_AR.csv").select("url")
+    val df2 = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","segments"))
 
-    // df1.join(df2,Seq("url"),"inner").select("url","segments").write.format("parquet")
-    //             .mode(SaveMode.Overwrite)
-    //             .save("/datascience/url_ingester/gt_contextual")
+    val joint = processURL(df1.join(df2,Seq("url"),"inner").select("url","segments"))
+    
+    joint.write.format("parquet")
+                .mode(SaveMode.Overwrite)
+                .save("/datascience/url_ingester/gt_contextual")
   }
 
 }
