@@ -312,6 +312,8 @@ object GetAudience {
         .replace("\n", "")
         .replace(" ", "")
         .split(",")
+    val arrays =
+      "tags app_installed segments first_party all_segments".split(" ").toSeq
 
     val df =
       if (hdfs_files.length > 0)
@@ -319,7 +321,16 @@ object GetAudience {
       else
         spark.createDataFrame(
           spark.sparkContext.parallelize(Seq(Row(columns: _*))),
-          StructType(columns.map(c => StructField(c, StringType, true)).toArray)
+          StructType(
+            columns
+              .map(
+                c =>
+                  if (arrays.contains(c))
+                    StructField(c, ArrayType(StringType), true)
+                  else StructField(c, StringType, true)
+              )
+              .toArray
+          )
         )
 
     df
