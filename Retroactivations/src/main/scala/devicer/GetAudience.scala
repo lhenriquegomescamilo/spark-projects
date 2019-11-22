@@ -20,7 +20,8 @@ import org.apache.spark.sql.types.{
   StructType,
   StructField,
   StringType,
-  IntegerType
+  IntegerType,
+  ArrayType
 }
 
 /*
