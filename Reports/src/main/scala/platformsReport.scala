@@ -563,9 +563,9 @@ object platformsReport {
       .withColumn("day", lit(date_current))
 
     /** Store df */
-    val dir = "/datascience/reports/volumes/"
-    val path = dir + "done"
-    saveData(df = dv, path = path)
+    val dirv = "/datascience/reports/volumes/"
+    val pathv = dirv + "done"
+    saveData(df = dv, path = pathv)
     
   }
 
