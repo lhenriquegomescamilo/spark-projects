@@ -832,8 +832,7 @@ object RandomTincho {
   }
 
   def get_urls_for_ingester(spark:SparkSession){
-
-    val ac    
+   
     val replicationFactor = 8
 
     val df = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","country"))
