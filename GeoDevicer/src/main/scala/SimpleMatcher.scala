@@ -137,14 +137,14 @@ safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-.select("ad_id","audience","id_type")
+.drop("pointshape","myshape")
 
 intersection.explain(extended=true)
 
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection
+intersection.groupBy("ad_id","id_type","name").agg(count("name") as "frequency")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
@@ -183,30 +183,30 @@ var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_
 spatialDf.createOrReplaceTempView("poligonomagico")
 
 
-val df_safegraph = spark.read.format("csv")
-                  .option("header",false)
-                  .option("delimiter","\t")
-                  .load(data_path) //"/datascience/geo/startapp/2019*"
-                  .toDF("ad_id","timestamp","country","longitude","latitude","some")
-                  .filter(col("country")===country)
+val df_safegraph = spark.read.format("parquet")
+                  .load(data_path) 
+                  .withColumn("latitude",col("latitude").cast("Double"))
+                  .withColumn("longitude",col("longitude").cast("Double"))//"/datascience/geo/startapp/2019*"
+                //.toDF("ad_id","timestamp","country","longitude","latitude","some")
+                 
 
 df_safegraph.createOrReplaceTempView("data")
 
-var safegraphDf = spark .sql("""SELECT ad_id,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
+var safegraphDf = spark .sql("""SELECT *,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
               FROM data  """)
 
 safegraphDf.createOrReplaceTempView("data")
-
+df_safegraph.show(2)
 
 val intersection = spark.sql(
-      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
+      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+.select("ad_id","id_type","name")
 
-intersection.explain(extended=true)
-
+intersection.show(2)
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection.groupBy("name", "ad_id").agg(count("name") as "frequency")
+intersection.groupBy("name", "ad_id","id_type").agg(count("name") as "frequency")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
@@ -263,11 +263,10 @@ match_sample_to_polygons(spark,
       */
 
 
-      match_users_to_polygons(spark,
-        "/datascience/geo/POIs/Coordenadas_Chedraui_Poly.json",
-        "1",
-        "1",
-        "mexico")
+      match_sample_to_polygons(spark,
+        "/data/geo/startapp/parquet/day=*/country=CO",
+        "/datascience/geo/POIs/Centro_Comercial_Mayorca_Mega_Plaza.json",
+        "colombia")
 
   }
 }

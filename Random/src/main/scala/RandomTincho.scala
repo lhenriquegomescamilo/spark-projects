@@ -678,6 +678,10 @@ object RandomTincho {
     filtered_retargetly
       .withColumn(
         field,
+        regexp_replace(col(field), "://(.\\.)*", "://")
+      )
+      .withColumn(
+        field,
         regexp_replace(col(field), "(\\?|#).*", "")
       )
       .drop("domain")
@@ -820,19 +824,38 @@ object RandomTincho {
 
   def get_urls_for_ingester(spark:SparkSession){
     
-    val df = spark.read.load("/datascience/data_demo/data_urls/day=20191110").groupBy("url").count.sort(desc("count")).limit(1000000)
-    
-    df.write
-      .format("parquet")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/url_ingester/top_urls_chkpt")
+    val replicationFactor = 8
 
-    val df_processed = processURLHTTP(spark.read.load("/datascience/url_ingester/top_urls_chkpt"))
-    
-    df_processed.select("url").write
+    val df = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","country"))
+
+    val df_processed = df .withColumn(
+                  "composite_key",
+                  concat(
+                    col("url"),
+                    lit("@"),
+                    col("country"),
+                    lit("@"),
+                    // This last part is a random integer ranging from 0 to replicationFactor
+                    least(
+                      floor(rand() * replicationFactor),
+                      lit(replicationFactor - 1) // just to avoid unlikely edge case
+                    )
+                  )
+                ).groupBy("composite_key")
+                  .count
+                  .withColumn("split", split(col("composite_key"), "@"))
+                  .withColumn("url",col("split")(0))
+                  .withColumn("country",col("split")(1))
+                  .groupBy("url","country")
+                  .agg(sum(col("count")).as("count"))
+                  .sort(desc("count"))
+                  .limit(500000)
+        
+    df_processed.select("url","country","count").write
                 .format("parquet")
                 .mode(SaveMode.Overwrite)
-                .save("/datascience/url_ingester/top_urls")
+                .partitionBy("country")
+                .save("/datascience/url_ingester/to_scrap")
 
   }
 
