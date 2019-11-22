@@ -798,9 +798,8 @@ object RandomTincho {
 
     val title_kws = spark.read.format("csv")
                               .option("sep","\t")
+                              .option("header","true")
                               .load(scrapped_path)
-                              .withColumnRenamed("_c0","url")
-                              .withColumnRenamed("_c2","title")
                               .filter("title is not null")
                               .select("url","title")
                               .withColumn("title", split(col("title"), " "))
