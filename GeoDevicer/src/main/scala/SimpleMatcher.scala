@@ -178,35 +178,45 @@ var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
 // Assign name and geometry columns to DataFrame
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin).drop("rddshape")
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as polygon_name FROM rawSpatialDf""".stripMargin)
+.drop("rddshape")
 
 spatialDf.createOrReplaceTempView("poligonomagico")
-
+spatialDf.show(2)
 
 val df_safegraph = spark.read.format("parquet")
                   .load(data_path) 
                   .withColumn("latitude",col("latitude").cast("Double"))
-                  .withColumn("longitude",col("longitude").cast("Double"))//"/datascience/geo/startapp/2019*"
+                  .withColumn("longitude",col("longitude").cast("Double"))
+                  .na.drop()//"/datascience/geo/startapp/2019*"
                 //.toDF("ad_id","timestamp","country","longitude","latitude","some")
                  
 
 df_safegraph.createOrReplaceTempView("data")
 
-var safegraphDf = spark .sql("""SELECT *,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
-              FROM data  """)
+var safegraphDf = spark      .sql(""" SELECT *,ST_Point(CAST(data.longitude AS Decimal(24,20)),
+                                                             CAST(data.latitude AS Decimal(24,20))) 
+                                                             as pointshape
+              FROM data
+          """)
 
 safegraphDf.createOrReplaceTempView("data")
-df_safegraph.show(2)
+//safegraphDf.show(2)
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-.select("ad_id","id_type","name")
+.select("ad_id","id_type","polygon_name")
 
-intersection.show(2)
+            
+//intersection.show(5)
+
+//intersection.show(2)
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection.groupBy("name", "ad_id","id_type").agg(count("name") as "frequency")
+intersection
+.groupBy("polygon_name", "ad_id","id_type")
+.agg(count("polygon_name") as "frequency")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
@@ -264,8 +274,8 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/data/geo/startapp/parquet/day=*/country=CO",
-        "/datascience/geo/POIs/Centro_Comercial_Mayorca_Mega_Plaza.json",
+        "/data/geo/startapp/parquet/*/country=CO/",
+        "/datascience/geo/POIs/Centro_Comercial_Mayorca_Mega_Plaza_Radial.json",
         "colombia")
 
   }
