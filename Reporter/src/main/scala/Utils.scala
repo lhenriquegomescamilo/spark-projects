@@ -93,8 +93,8 @@ object Utils {
       "split segmentsFilter userEmail reportId report_subtype JobId partnerId type priority desc queue"
         .split(" ")
         .toList
-    val jsonMap = fields
-      .map(field => (field, jsonContent(field)))
+    val jsonMap: Map[String, String] = fields
+      .map(field => (field, jsonContent(field).toString))
       .toMap + ("filepath" -> "/datascience/reporter/processed/" + file_name)
 
     // Obtain the content out of the map
