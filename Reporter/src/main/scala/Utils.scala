@@ -107,7 +107,7 @@ object Utils {
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
     val os = fs.create(
-      new Path("/datascience/ingester/ready/%s.meta".format(file_name))
+      new Path("/datascience/reporter/ready/%s.meta".format(file_name))
     )
     os.write(json_content.getBytes)
     os.close()
