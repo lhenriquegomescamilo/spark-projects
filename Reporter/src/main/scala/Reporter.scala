@@ -1,6 +1,5 @@
 package main.scala
 
-import main.scala.Utils
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -126,13 +125,15 @@ object Reporter {
 
     try {
       // Getting the data out of the file
-      val jsonContent = Utils.getQueriesFromFile(
+      val jsonContents = Utils.getQueriesFromFile(
         spark,
         "/datascience/reporter/in_progress/" + fileName
       )
 
-      // Then we export the report
-      getQueryReport(spark, jsonContent, fileName.replace(".json", ""))
+      for (jsonContent <- jsonContents) {
+        // Then we export the report
+        getQueryReport(spark, jsonContent, fileName.replace(".json", ""))
+      }
 
       // Finally we move the file to done
       Utils.moveFile("in_progress/", "done/", fileName)
@@ -143,6 +144,7 @@ object Reporter {
         Utils.moveFile("in_progress/", "errors/", fileName)
       }
     }
+
   }
 
   def main(args: Array[String]) {
