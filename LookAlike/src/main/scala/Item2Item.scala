@@ -801,9 +801,12 @@ object Item2Item {
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
-    val os = fs.create(
-      new Path("/datascience/ingester/ready/lal_%s.meta".format(jobId))
-    )
+
+    var hadoopPath = new Path("/datascience/ingester/ready/lal_%s.meta".format(jobId)
+    if(fs.exists(hadoopPath)
+      fs.delete(hadoopPath, false)
+
+    val os = fs.create(hadoopPath)
     os.write(json_content.getBytes)
     os.close()
   }
