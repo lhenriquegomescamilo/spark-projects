@@ -871,7 +871,14 @@ object RandomTincho {
         .getOrCreate()
     
     //keywords_embeddings(spark,"/datascience/custom/kws_path_title_contextual")
-    get_urls_for_ingester(spark)
+    //get_urls_for_ingester(spark)
+
+    val df1 = spark.read.format("csv").option("header","true").load("/datascience/custom/urls_scrapped_AR.csv").select("url")
+    val df2 = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","segments"))
+
+    df1.join(df2,Seq("url"),"inner").select("url","segments").write.format("parquet")
+                .mode(SaveMode.Overwrite)
+                .save("/datascience/url_ingester/gt_contextual")
   }
 
 }
