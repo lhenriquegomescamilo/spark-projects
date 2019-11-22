@@ -4,6 +4,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
 import org.joda.time.{Days, DateTime}
+import org.joda.time.format.DateTimeFormat
 
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.conf.Configuration
@@ -85,6 +86,36 @@ object earningsReportMonthly {
 
     df
   }
+//////////////////////////////////////////////////////////////
+
+  def getData(
+      spark: SparkSession,
+      nDays: Integer,
+      date_current: String,
+      path: String
+  ): DataFrame = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val formatter = DateTimeFormat.forPattern(format)
+    val end = DateTime.parse(date_current, formatter)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+
+    df
+  }
+
 
 /**
     *
@@ -159,25 +190,32 @@ object earningsReportMonthly {
      df_joint
   }
 
-  def getGrouped(
-      df: DataFrame
+  def getTotals(
+      df: DataFrame,
+      date_current: String
   ): DataFrame = {
 
-    val df_grouped = df
-      .groupBy("id_partner", "seg_id")
-      .count()
-      .withColumnRenamed("count", "device_unique")
-    df_grouped
+    val df_total = df
+      .groupBy("id_partner", "segment")
+      .agg(sum(col("device_unique")) as "device_unique")
+      .withColumn("country", lit("NN"))
+      .withColumn("day", lit(date_current))
+      .select("day", "id_partner", "segment", "country", "device_unique")
+
+    df_total
   }
 
   def getGroupedbyCountry(
-      df: DataFrame
+      df: DataFrame,
+      date_current: String      
   ): DataFrame = {
 
     val df_grouped_country = df
       .groupBy("id_partner","seg_id","country")
       .count()
       .withColumnRenamed("count", "device_unique")
+      .withColumn("day", lit(date_current)) 
+      .select("day", "id_partner", "segment", "country", "device_unique")   
     df_grouped_country
   }
 
@@ -187,115 +225,152 @@ object earningsReportMonthly {
     *
     */
   /**
-    * This method saves the data generated to /datascience/reports/gain/, the filename is the current date.
+    * This method saves to /datascience/reports/earnings/, the filename is the current date.
     *
     * @param data: DataFrame that will be saved.
+    * @param path: path to save to.
     *
   **/
-
   def saveData(
       data: DataFrame,
-      subdir: String
+      path: String
   ) = {
 
-  val dir = "/datascience/reports/gain/"
-  val format = "yyyy-MM"
-  val date_current = DateTime.now.minusDays(1).toString(format)
-  val fileNameFinal = dir + subdir + "/" + date_current
-
-    data
-      .write
+    data.write
       .format("parquet")
+      .partitionBy("day")
       .mode(SaveMode.Overwrite)
-      .save(fileNameFinal)
+      .save(path)
+  }
+
+  /**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\     XD REPORT     //////////////////////
+    *
+    */
+
+  def getDataReport_xd(
+      spark: SparkSession,
+      date_current: String) = {
+       
+  /** Read from "taxo_gral_joint" database */
+    val dfx = getData_xd(spark = spark)
+
+    /** Get joint df with countries and xd parent segments*/
+    val df_xd = getJoint_xd(spark = spark, df = dfx)
+
+    /**  Get number of devices per partner_id per segment per country */
+    val df_grouped_country =
+      getGroupedbyCountry(df = df_xd, date_current = date_current)
+
+    val dir = "/datascience/reports/monthly_earnings/"
+
+    /** Here we store the first report */
+    val savepath1 = dir + "xd_country"
+
+    saveData(data = df_grouped_country, path = savepath1)
+
+    /**  Get number of devices per partner_id per segment */
+    val df1 = getData(
+      spark = spark,
+      nDays = 1,
+      date_current = date_current,
+      path = savepath1
+    )
+
+    val df_totals = getTotals(df = df1, date_current)
+
+    /** Here we store the second report */
+    val savepath2 = dir + "xd"
+
+    saveData(data = df_totals, path = savepath2)
+
   }
   
 
-/**
+ /**
     *
-    *         \\\\\\\\\\\\\\\\\\\\\     MAIN METHOD     //////////////////////
+    *         \\\\\\\\\\\\\\\\\\\\\     MAIN METHOD/REPORT     //////////////////////
     *
     */
   /**
-    * Given ndays, since and a filename, this file gives the number of devices per partner per segment.
+    * Given ndays, since, returns a report of number of device ids per partner per segment (with and without country).
+    * For regular segments and xd segments.
     *
     * @param spark: Spark session that will be used to read the data from HDFS.
     * @param ndays: number of days to query.
     * @param since: number of days since to query.
     *
-    * As a result this method stores the file in /datascience/reports/gain/file_name_currentdate.csv.
+    * As a result this method stores files in /datascience/reports/monthly_earnings/ partitioned by day
   **/
+
   def getDataReport(
       spark: SparkSession,
       nDays: Integer,
       since: Integer) = {
-       
+
+    val date_now = DateTime.now
+    val date_since = date_now.minusDays(since)
+    val date_current = date_since.toString("yyyyMMdd")
+
+    println("INFO:\n\tDay: %s".format(date_current))
+
     /** Read from "data_triplets" database */
     val df = getDataTriplets(
       spark = spark,
       nDays = nDays,
       since = since
-    )
+    ).filter("id_partner NOT IN (1, 119)")
 
-    /**  Get number of devices per partner_id per segment */
-    val df_grouped = getGrouped(df = df)
+     /**  Get number of devices per partner_id per segment per country */
+    val df_grouped_country = getGroupedbyCountry(df = df, date_current = date_current)
+
+    val dir = "/datascience/reports/monthly_earnings/"
 
     /** Here we store the first report */
-    val subdir1 = "base_report"
+    val savepath1 = dir + "base_country"
 
-    saveData(
-      data = df_grouped,
-      subdir = subdir1
-    )
+    saveData(data = df_grouped_country, path = savepath1)   
 
-    /**  Get number of devices per partner_id per segment per country */
-    val df_grouped_country = getGroupedbyCountry(df = df)
-
-    /** Here we store the first report by country */
-    val subdir2 = "base_report_by_country"
-
-    saveData(
-      data = df_grouped_country,
-      subdir = subdir2
-    )
-  }    
-
-  def getDataReport_xd(
-      spark: SparkSession) = {
-       
-    /** Read from "taxo_gral_joint" database */
-    val df =  getData_xd(
-      spark = spark
-    )
-
-    /** Get joint df with countries and xd parent segments*/
-    val df_joint = getJoint_xd(
+    /**  Get number of devices per partner_id per segment */
+    val df1 = getData(
       spark = spark,
-      df = df)
-  
-    /**  Get number of devices per partner_id per segment */
-    val df_grouped = getGrouped(df = df_joint)
-
-    /** Here we store the first report */
-    val subdir1 = "xd_report"
-
-     saveData(
-       data = df_grouped,
-       subdir = subdir1
-     )
-
-    /**  Get number of devices per partner_id per segment per country */
-    val df_grouped_country = getGroupedbyCountry(df = df_joint)
-
-    /** Here we store the first report by country */
-    val subdir2 = "xd_report_by_country"
-
-    saveData(
-      data = df_grouped_country,
-      subdir = subdir2
+      nDays = 1,
+      date_current = date_current,
+      path = savepath1
     )
-  
-  }    
+
+    val df_totals = getTotals(df = df1, date_current)
+
+    /** Here we store the second report */
+    val savepath2 = dir + "base"
+
+    saveData(data = df_totals, path = savepath2)
+
+    /** XD SEGMENTS **/
+    var savepath_xd: String = ""
+
+    val day_current = date_since.toString("dd")
+
+    /** If it's the first day of the month, xd segments distribution is calculated again. */
+    if (("01").contains(day_current)) {
+      getDataReport_xd(spark = spark, date_current = date_current)
+    } else {
+      val date_previous = date_now.toString("yyyyMM01")
+      val path = dir + "xd/day="
+      savepath_xd = path + date_previous
+
+      val conf = spark.sparkContext.hadoopConfiguration
+      val fs = FileSystem.get(conf)
+
+      if (!(fs.exists(new org.apache.hadoop.fs.Path(savepath_xd)))) {
+
+        getDataReport_xd(spark = spark, date_current = date_previous)
+      }
+
+    }    
+
+  }   
 
   type OptionMap = Map[Symbol, Int]
 
@@ -330,15 +405,13 @@ object earningsReportMonthly {
     val spark = SparkSession.builder
       .appName("EarningsReportMonthly")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")      
       .getOrCreate()
     
     getDataReport(
        spark = spark,
        nDays = nDays,
        since = since)
-
-    getDataReport_xd(
-      spark = spark)  
     
   }
 }

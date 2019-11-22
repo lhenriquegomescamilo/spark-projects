@@ -519,7 +519,6 @@ object earningsReportDaily {
   }
 
   def getCountbyCountry(
-      spark: SparkSession,
       df: DataFrame,
       date_current: String
   ): DataFrame = {
@@ -573,8 +572,8 @@ object earningsReportDaily {
     * This method saves to /datascience/reports/earnings/, the filename is the current date.
     *
     * @param data: DataFrame that will be saved.
-    * @param subdir: Subdir of root dir to save to.
-    * @param date_current: date for filename.
+    * @param data: DataFrame that will be saved.
+    * @param path: path to save to.
     *
   **/
   def saveData(
@@ -659,13 +658,13 @@ object earningsReportDaily {
     */
   /**
     * Given ndays, since, returns a report of number of device ids per partner per segment (with and without country).
-    * For general taxonomy segments and xd segments.
+    * For regular segments and xd segments.
     *
     * @param spark: Spark session that will be used to read the data from HDFS.
     * @param ndays: number of days to query.
     * @param since: number of days since to query.
     *
-    * As a result this method stores the file in /datascience/reports/gain/file_name_currentdate.csv.
+    * As a result this method stores files in /datascience/reports/earnings/ partitioned by day
   **/
   def getDataReport(spark: SparkSession, nDays: Integer, since: Integer) = {
 
@@ -688,7 +687,7 @@ object earningsReportDaily {
 
     /**  Get number of devices per partner_id per segment per country */
     val df_count_country =
-      getCountbyCountry(spark = spark, df = df, date_current)
+      getCountbyCountry(df = df, date_current)
 
     /** Here we store the first report */
     val savepath1 = dir + "base_country"
