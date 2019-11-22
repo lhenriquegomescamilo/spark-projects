@@ -286,7 +286,6 @@ object earningsReportMonthly {
 
   }
   
-  }
 
  /**
     *
