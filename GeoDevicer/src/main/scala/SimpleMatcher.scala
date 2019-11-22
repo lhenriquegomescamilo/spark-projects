@@ -137,7 +137,7 @@ safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-.select("ad_id","name","id_type")
+.drop("pointshape","myshape")
 
 intersection.explain(extended=true)
 
@@ -184,7 +184,9 @@ spatialDf.createOrReplaceTempView("poligonomagico")
 
 
 val df_safegraph = spark.read.format("parquet")
-                  .load(data_path) //"/datascience/geo/startapp/2019*"
+                  .load(data_path) 
+                  .withColumn("latitude",col("latitude").cast("Double"))
+                  .withColumn("longitude",col("longitude").cast("Double"))//"/datascience/geo/startapp/2019*"
                 //.toDF("ad_id","timestamp","country","longitude","latitude","some")
                  
 
@@ -197,10 +199,11 @@ safegraphDf.createOrReplaceTempView("data")
 df_safegraph.show(2)
 
 val intersection = spark.sql(
-      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","id_type","name")
-
+      """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+.select("ad_id","id_type","name")
 
 intersection.show(2)
+
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
 intersection.groupBy("name", "ad_id","id_type").agg(count("name") as "frequency")
