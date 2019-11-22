@@ -99,7 +99,7 @@ object Utils {
 
     // Obtain the content out of the map
     val json_content = "{" + jsonMap
-      .map((key, value) => """"%s": "%s"""".format(key, value))
+      .map(t => """"%s": "%s"""".format(t._1, t._2))
       .mkString(", ") + "}" //scala.util.parsing.json.JSONObject(jsonMap)
 
     // Finally we store the json.
