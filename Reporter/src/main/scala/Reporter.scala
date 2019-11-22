@@ -140,9 +140,10 @@ object Reporter {
 
       // Finally we move the file to done and generate the meta file if it is required
       Utils.moveFile("in_progress/", "done/", fileName)
-      if (jsonContents(0)("push") == "true") {
-        Utils.generateMetaFile(fileName.replace(".json", ""), jsonContents(0))
-      }
+      Utils.generateMetaFile(fileName.replace(".json", ""), jsonContents(0))
+      // if (jsonContents(0)("push") == "true") {
+      //   Utils.generateMetaFile(fileName.replace(".json", ""), jsonContents(0))
+      // }
     } catch {
       case e: Exception => {
         // In case it fails
