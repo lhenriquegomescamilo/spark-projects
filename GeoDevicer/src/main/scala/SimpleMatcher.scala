@@ -275,7 +275,7 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/data/geo/startapp/parquet/*/country=CO/",
+        "/data/geo/startapp/parquet/day=20191110/country=CO/part-00008-1aaca7b7-0b0c-439e-8e16-4372dd695016.c000.snappy.parquet",
         "/datascience/geo/POIs/Centro_Comercial_Mayorca_Mega_Plaza_Radial.json",
         "colombia")
 
