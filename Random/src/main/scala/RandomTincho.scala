@@ -805,7 +805,7 @@ object RandomTincho {
                               .select("url","title")
                               .withColumn("title", split(col("title"), " "))
                               .withColumn("keywords", explode(col("title")))
-                              .filter(col("keywords").isNotIn(stopwords: _*))
+                              .filter(!col("keywords").isin(stopwords: _*))
                               .select("url","keywords")
                               .withColumn("count",lit(1))
 
@@ -819,7 +819,7 @@ object RandomTincho {
                               .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
                               .withColumn("keywords", explode(col("url_keys")))
                               .filter(col("keywords").rlike("[a-z]{2,}"))
-                              .filter(col("keywords").isNotIn(stopwords: _*))
+                              .filter(!col("keywords").isin(stopwords: _*))
                               .select("url","keywords")
                               .withColumn("count", lit(1))
 
