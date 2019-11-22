@@ -1,5 +1,6 @@
 package main.scala
 
+import main.scala.Utils
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -81,8 +82,11 @@ object Reporter {
   }
 
   //TODO agregar documentation
-  def getQueryReport(spark: SparkSession, jsonContent: Map[String, String]) = {
-    // TODO Agregar try y Catch
+  def getQueryReport(
+      spark: SparkSession,
+      jsonContent: Map[String, String],
+      name: String
+  ) = {
     // First of all we read all the parameters that are of interest
     val query = jsonContent("query")
     val segments = jsonContent("datasource").split(",").map(_.toInt).toSeq :+ 0
@@ -94,7 +98,7 @@ object Reporter {
     val overlap = getOverlap(spark, dataset, segments)
 
     // If there is a split, then we have to add the field firstParty as a column
-    val report = if (split == "1") {
+    val report = if (split == "1" || split == "true") {
       overlap
         .withColumn("first_party", lit(firstParty))
         .select("first_party", "segment", "count", "device_unique")
@@ -110,8 +114,35 @@ object Reporter {
       .write
       .format("csv")
       .option("sep", ",")
+      .option("header", "true")
       .mode("append")
-      .save("/datascience/reporter/processed/test")
+      .save("/datascience/reporter/processed/%s".format(name))
+  }
+
+  // TODO add documentation
+  def processFile(spark: SparkSession, fileName: String) = {
+    // Moving the file to the folder in_progress
+    Utils.moveFile("to_process/", "in_progress/", fileName)
+
+    try {
+      // Getting the data out of the file
+      val jsonContent = Utils.getQueriesFromFile(
+        spark,
+        "/datascience/reporter/in_progress/" + fileName
+      )
+
+      // Then we export the report
+      getQueryReport(spark, jsonContent, fileName.replace(".json", ""))
+
+      // Finally we move the file to done
+      Utils.moveFile("in_progress/", "done/", fileName)
+    } catch {
+      case e: Exception => {
+        // In case it fails
+        e.printStackTrace()
+        Utils.moveFile("in_progress/", "errors/", fileName)
+      }
+    }
   }
 
   def main(args: Array[String]) {
@@ -124,33 +155,10 @@ object Reporter {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
 
-    val testMap = Map(
-      "query" -> "id_partner = 328 AND (array_contains(first_party, 8372) OR array_contains(first_party, 5019)) AND (hour >= 2019102300 AND hour <= 2019112123)",
-      "datasource" -> List(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
-      104, 118, 129, 131, 141, 144, 145, 147, 149, 150, 152, 154, 155, 158, 160,
-      165, 166, 177, 178, 210, 213, 218, 224, 225, 226, 230, 245, 247, 250, 264,
-      265, 270, 275, 276, 302, 305, 311, 313, 314, 315, 316, 317, 318, 322, 323,
-      325, 326, 352, 353, 354, 356, 357, 358, 359, 363, 366, 367, 374, 377, 378,
-      379, 380, 384, 385, 386, 389, 395, 396, 397, 398, 399, 401, 402, 403, 404,
-      405, 409, 410, 411, 412, 413, 418, 420, 421, 422, 429, 430, 432, 433, 434,
-      440, 441, 446, 447, 450, 451, 453, 454, 456, 457, 458, 459, 460, 462, 463,
-      464, 465, 467, 895, 898, 899, 909, 912, 914, 915, 916, 917, 919, 920, 922,
-      923, 928, 929, 930, 931, 932, 933, 934, 935, 937, 938, 939, 940, 942, 947,
-      948, 949, 950, 951, 952, 953, 955, 956, 957, 1005, 1116, 1159, 1160, 1166,
-      2623, 2635, 2636, 2660, 2719, 2720, 2721, 2722, 2723, 2724, 2725, 2726,
-      2727, 2733, 2734, 2735, 2736, 2737, 2743, 3010, 3011, 3012, 3013, 3014,
-      3015, 3016, 3017, 3018, 3019, 3020, 3021, 3022, 3023, 3024, 3025, 3026,
-      3027, 3028, 3029, 3030, 3031, 3032, 3033, 3034, 3035, 3036, 3037, 3038,
-      3039, 3040, 3041, 3055, 3076, 3077, 3084, 3085, 3086, 3087, 3302, 3303,
-      3308, 3309, 3310, 3388, 3389, 3418, 3420, 3421, 3422, 3423, 3470, 3472,
-      3473, 3564, 3565, 3566, 3567, 3568, 3569, 3570, 3571, 3572, 3573, 3574,
-      3575, 3576, 3577, 3578, 3579, 3580, 3581, 3582, 3583, 3584, 3585, 3586,
-      3587, 3588, 3589, 3590, 3591, 3592, 3593, 3594, 3595, 3596, 3597, 3598,
-      3599, 3600, 3779, 3782, 3913, 3914, 3915, 4097).mkString(","),
-      "split" -> "1",
-      "segments" -> "8372"
-    )
+    // Get the json files to be processed
+    path = "/datascience/reporter/to_process"
+    val files = Utils.getQueryFiles(spark, path)
 
-    getQueryReport(spark, testMap)
+    files.foreach(file => processFile(spark, file))
   }
 }
