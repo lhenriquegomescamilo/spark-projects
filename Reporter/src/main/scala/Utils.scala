@@ -93,7 +93,9 @@ object Utils {
       "split segmentsFilter userEmail reportId report_subtype JobId partnerId type priority desc queue"
         .split(" ")
         .toList
-    val jsonMap = fields.map(field => jsonContent(field)) + ("filepath" -> "/datascience/reporter/processed/" + file_name)
+    val jsonMap = fields
+      .map(field => (field, jsonContent(field)))
+      .toMap + ("filepath" -> "/datascience/reporter/processed/" + file_name)
 
     // Obtain the content out of the map
     val json_content = scala.util.parsing.json.JSONObject(jsonMap)
