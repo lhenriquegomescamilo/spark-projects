@@ -187,19 +187,17 @@ val df_safegraph = spark.read.format("parquet")
                   .load(data_path) //"/datascience/geo/startapp/2019*"
                 //.toDF("ad_id","timestamp","country","longitude","latitude","some")
                  
-
+df_safegraph.show(2)
 df_safegraph.createOrReplaceTempView("data")
 
-var safegraphDf = spark .sql("""SELECT ad_id,id_type,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
+var safegraphDf = spark .sql("""SELECT *,ST_Point(CAST(data.longitude AS Decimal(24,20)), CAST(data.latitude AS Decimal(24,20))) as pointshape
               FROM data  """)
 
 safegraphDf.createOrReplaceTempView("data")
-
+df_safegraph.show(2)
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""").select("ad_id","name")
-
-intersection.explain(extended=true)
 
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
