@@ -98,7 +98,9 @@ object Utils {
       .toMap + ("filepath" -> ("/datascience/reporter/processed/" + file_name))
 
     // Obtain the content out of the map
-    val json_content = scala.util.parsing.json.JSONObject(jsonMap)
+    val json_content = "{" + jsonMap
+      .map((key, value) => """"%s": "%s"""".format(key, value))
+      .mkString(", ") + "}" //scala.util.parsing.json.JSONObject(jsonMap)
 
     // Finally we store the json.
     val conf = new Configuration()
