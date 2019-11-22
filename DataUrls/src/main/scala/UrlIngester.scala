@@ -283,8 +283,6 @@ object UrlIngester {
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(Args: Array[String]) {
-
-    urls_limit
     // Parse the parameters
     val options = nextOption(Map(), Args.toList)
     val nDays = if (options.contains('nDays)) options('nDays) else 1
