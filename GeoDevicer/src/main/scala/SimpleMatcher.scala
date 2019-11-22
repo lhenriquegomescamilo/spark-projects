@@ -213,7 +213,9 @@ intersection.show(5)
 
 val output_name = (polygon_inputLocation.split("/").last).split(".json") (0).toString
 
-intersection.groupBy("polygon_name", "ad_id","id_type").agg(count("polygon_name") as "frequency")
+intersection
+.groupBy("polygon_name", "ad_id","id_type")
+.agg(count("polygon_name") as "frequency")
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
@@ -271,7 +273,7 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/data/geo/startapp/parquet/day=20191102/country=CO/part-00008-faca0824-b9c8-455b-84be-b3d4414273f3.c000.snappy.parquet",
+        "/data/geo/startapp/parquet/day=20191102/country=CO/",
         "/datascience/geo/POIs/Centro_Comercial_Mayorca_Mega_Plaza.json",
         "colombia")
 
