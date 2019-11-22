@@ -95,7 +95,7 @@ object Utils {
         .toList
     val jsonMap: Map[String, String] = fields
       .map(field => (field, jsonContent(field).toString))
-      .toMap + ("filepath" -> "/datascience/reporter/processed/" + file_name)
+      .toMap + ("filepath" -> ("/datascience/reporter/processed/" + file_name))
 
     // Obtain the content out of the map
     val json_content = scala.util.parsing.json.JSONObject(jsonMap)
