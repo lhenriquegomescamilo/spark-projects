@@ -204,6 +204,7 @@ safegraphDf.show(2)
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+.select("ad_id","polygon_name")
 
             
 intersection.show(5)
@@ -270,7 +271,7 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/data/geo/startapp/parquet/day=*/country=CO",
+        "/data/geo/startapp/parquet/day=20191102/country=CO/part-00008-faca0824-b9c8-455b-84be-b3d4414273f3.c000.snappy.parquet",
         "/datascience/geo/POIs/Centro_Comercial_Mayorca_Mega_Plaza.json",
         "colombia")
 
