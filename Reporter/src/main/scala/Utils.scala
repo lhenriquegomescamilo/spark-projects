@@ -79,8 +79,33 @@ object Utils {
     val hdfs = FileSystem.get(hadoopConf)
 
     // Move the files from one folder to another one
-    val srcPath = new Path("/datascience/reporter/"+actual_path+fileName)
-    val destPath = new Path("/datascience/reporter/"+dest_path)
+    val srcPath = new Path("/datascience/reporter/" + actual_path + fileName)
+    val destPath = new Path("/datascience/reporter/" + dest_path)
     hdfs.rename(srcPath, destPath)
+  }
+
+  def generateMetaFile(
+      file_name: String,
+      jsonContent: Map[String, String]
+  ) {
+    // First of all we create a new map with all the information
+    val fields =
+      "split segmentsFilter userEmail reportId report_subtype JobId partnerId type priority desc queue"
+        .split(" ")
+        .toList
+    val jsonMap = fields.map(field => jsonContent(field)) + ("filepath" -> "/datascience/reporter/processed/" + file_name)
+
+    // Obtain the content out of the map
+    val json_content = scala.util.parsing.json.JSONObject(jsonMap)
+
+    // Finally we store the json.
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    val fs = FileSystem.get(conf)
+    val os = fs.create(
+      new Path("/datascience/ingester/ready/%s.meta".format(file_name))
+    )
+    os.write(json_content.getBytes)
+    os.close()
   }
 }

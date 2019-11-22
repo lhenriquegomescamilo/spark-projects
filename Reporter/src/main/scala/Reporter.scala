@@ -60,7 +60,9 @@ object Reporter {
   ): DataFrame = {
     // This function is used to add a ficticious segment that will serve
     // as the total per id partner
-    val addTotalIdUDF = udf((segments: Seq[Int]) => Option(segments).getOrElse(Seq(-1)) :+ 0)
+    val addTotalIdUDF = udf(
+      (segments: Seq[Int]) => Option(segments).getOrElse(Seq(-1)) :+ 0
+    )
 
     // In this part we process the dataset so that we have all the segments per device,
     // the totals and filter to only keep the relevant segments
@@ -135,8 +137,11 @@ object Reporter {
         getQueryReport(spark, jsonContent, fileName.replace(".json", ""))
       }
 
-      // Finally we move the file to done
+      // Finally we move the file to done and generate the meta file if it is required
       Utils.moveFile("in_progress/", "done/", fileName)
+      if (jsonContents(0)("push") == "true") {
+        Utils.generateMetaFile(fileName.replace(".json", ""), jsonContents(0))
+      }
     } catch {
       case e: Exception => {
         // In case it fails
