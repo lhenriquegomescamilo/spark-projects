@@ -176,7 +176,7 @@ object earningsReportDaily {
     /**  Get only users that appeared last day */
     val users = df1.select("device_id").distinct()
     val df = df_nDays
-      .dropDuplicates("device_id", "segment", "id_partner")
+      //.dropDuplicates("device_id", "segment", "id_partner")
       .join(users, Seq("device_id"), "inner")
 
     /** Here we store the relevant devices join */
