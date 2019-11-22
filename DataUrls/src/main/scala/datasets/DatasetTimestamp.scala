@@ -93,7 +93,7 @@ object DatasetTimestamp {
     val urls = spark.read
                           .format("csv")
                           .option("header","true")
-                          .load("/datascience/custom/scrapped_urls.csv")
+                          .load("/datascience/custom/urls_scrapped_AR.csv")
                           .select("url")
 
     val gtDF = UrlUtils.processURL(urls)
