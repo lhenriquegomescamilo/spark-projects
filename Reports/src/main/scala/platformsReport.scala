@@ -482,6 +482,17 @@ object platformsReport {
     df
   }
 
+  def transformDF_VolumesReport(
+      db: DataFrame
+  ): DataFrame = {
+
+    val df = db
+      .groupBy("segment", "country","device_type")
+      .count()
+      .distinct()
+    df
+  }  
+
   /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR SAVING DATA     //////////////////////
@@ -520,7 +531,7 @@ object platformsReport {
     *
     * As a result this method stores the file in /datascience/reports/gain/file_name_currentdate.csv.
   **/
-  def getReportPlatformsFast(
+  def getReports(
       spark: SparkSession,
       nDays: Integer,
       since: Integer
@@ -537,7 +548,7 @@ object platformsReport {
     /** Keep general taxonomy segments */    
     val data =  getJoint(spark, db = db)
 
-    /**  Transform data */
+    /**  Transform data for Platforms Report */
     val df = getVolumesPlatformFast(spark, data = data)
       .withColumn("day", lit(date_current))
 
@@ -547,6 +558,15 @@ object platformsReport {
 
     saveData(df = df, path = path)
 
+    /**  Transform data for Volumes Report */
+    val dv = transformDF_VolumesReport(db=db) 
+      .withColumn("day", lit(date_current))
+
+    /** Store df */
+    val dirv = "/datascience/reports/volumes/"
+    val pathv = dirv + "done"
+    saveData(df = dv, path = pathv)
+    
   }
 
   def getReportPlatformsCountry(
@@ -628,7 +648,7 @@ object platformsReport {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    getReportPlatformsFast(spark = spark, nDays = nDays, since = since)
+    getReports(spark = spark, nDays = nDays, since = since)
 
   }
 }
