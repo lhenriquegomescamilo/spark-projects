@@ -405,6 +405,7 @@ object earningsReportMonthly {
     val spark = SparkSession.builder
       .appName("EarningsReportMonthly")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")      
       .getOrCreate()
     
     getDataReport(
