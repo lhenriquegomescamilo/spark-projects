@@ -187,7 +187,8 @@ spatialDf.show(2)
 val df_safegraph = spark.read.format("parquet")
                   .load(data_path) 
                   .withColumn("latitude",col("latitude").cast("Double"))
-                  .withColumn("longitude",col("longitude").cast("Double"))//"/datascience/geo/startapp/2019*"
+                  .withColumn("longitude",col("longitude").cast("Double"))
+                  .na.drop()//"/datascience/geo/startapp/2019*"
                 //.toDF("ad_id","timestamp","country","longitude","latitude","some")
                  
 
@@ -200,14 +201,14 @@ var safegraphDf = spark      .sql(""" SELECT *,ST_Point(CAST(data.longitude AS D
           """)
 
 safegraphDf.createOrReplaceTempView("data")
-safegraphDf.show(2)
+//safegraphDf.show(2)
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
 .select("ad_id","id_type","polygon_name")
 
             
-intersection.show(5)
+//intersection.show(5)
 
 //intersection.show(2)
 
