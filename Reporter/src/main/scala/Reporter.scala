@@ -156,7 +156,7 @@ object Reporter {
       .getOrCreate()
 
     // Get the json files to be processed
-    path = "/datascience/reporter/to_process"
+    val path = "/datascience/reporter/to_process"
     val files = Utils.getQueryFiles(spark, path)
 
     files.foreach(file => processFile(spark, file))

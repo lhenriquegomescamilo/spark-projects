@@ -2,12 +2,13 @@ package main.scala
 
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
 
 object Utils {
   def getQueriesFromFile(
       spark: SparkSession,
       file: String
-  ): List[Map[String, Any]] = {
+  ): List[Map[String, String]] = {
     // First of all we obtain all the data from the file
     val df = spark.sqlContext.read.json(file)
     val columns = df.columns
@@ -40,7 +41,7 @@ object Utils {
 
     for (query <- data) {
       val actual_map = defaultValues.keys
-        .map(key => (key, query.getOrElse(k, defaultValues(k))))
+        .map(key => (key, query.getOrElse(key, defaultValues(key)).toString))
         .toMap
 
       queries = queries ::: List(actual_map)
@@ -78,8 +79,8 @@ object Utils {
     val hdfs = FileSystem.get(hadoopConf)
 
     // Move the files from one folder to another one
-    srcPath = new Path("/datascience/reporter/"+actual_path+fileName)
-    destPath = new Path("/datascience/reporter/"+dest_path)
+    val srcPath = new Path("/datascience/reporter/"+actual_path+fileName)
+    val destPath = new Path("/datascience/reporter/"+dest_path)
     hdfs.rename(srcPath, destPath)
   }
 }
