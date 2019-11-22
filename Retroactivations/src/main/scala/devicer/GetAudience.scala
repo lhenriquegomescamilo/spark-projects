@@ -314,7 +314,8 @@ object GetAudience {
         .replace(" ", "")
         .split(",")
     val arrays =
-      "tags app_installed segments first_party all_segments".split(" ").toSeq
+      "tags app_installed"
+    val arrays_int = "segments first_party all_segments".split(" ").toSeq
 
     val df =
       if (hdfs_files.length > 0)
@@ -328,6 +329,8 @@ object GetAudience {
                 c =>
                   if (arrays.contains(c))
                     StructField(c, ArrayType(StringType), true)
+                  else if (arrays_int.contains(c))
+                    StructField(c, ArrayType(IntegerType), true)
                   else StructField(c, StringType, true)
               )
               .toArray
