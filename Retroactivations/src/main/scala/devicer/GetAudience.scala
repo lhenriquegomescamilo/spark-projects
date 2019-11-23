@@ -320,8 +320,8 @@ object GetAudience {
     val df =
       if (hdfs_files.length > 0)
         spark.read.option("basePath", path).parquet(hdfs_files: _*)
-      else
-        spark.createDataFrame(
+      else {
+        val empty = spark.createDataFrame(
           spark.sparkContext.parallelize(Seq(Row(columns: _*))),
           StructType(
             columns
@@ -336,6 +336,12 @@ object GetAudience {
               .toArray
           )
         )
+
+        arrays_int
+          .foldLeft(empty)(
+            (df, c) => df.withColumn(c, col(c).cast("array<int>"))
+          )
+      }
 
     df
   }
