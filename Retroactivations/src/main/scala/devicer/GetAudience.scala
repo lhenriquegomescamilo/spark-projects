@@ -322,7 +322,20 @@ object GetAudience {
         spark.read.option("basePath", path).parquet(hdfs_files: _*)
       else {
         val empty = spark.createDataFrame(
-          spark.sparkContext.parallelize(Seq(Row(columns: _*))),
+          spark.sparkContext.parallelize(
+            Seq(
+              Row(
+                columns
+                  .map(
+                    c =>
+                      if (arrays.contains(c)) Array("0")
+                      else if (arrays_int.contains(c)) Array(0)
+                      else "."
+                  )
+                  .toSeq: _*
+              )
+            )
+          ),
           StructType(
             columns
               .map(
