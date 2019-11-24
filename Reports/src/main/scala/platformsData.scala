@@ -140,16 +140,16 @@ object platformsData {
     //   .mode("overwrite")
     //   .save("/datascience/reports/platforms/tmp/")
 
-    val temp_data =
-      spark.read.format("parquet").load("/datascience/reports/platforms/tmp/")
+    // val temp_data =
+    //   spark.read.format("parquet").load("/datascience/reports/platforms/tmp/")
 
-    val users = temp_data
-      .groupBy("device_id")
-      .agg(collect_list(col("platforms")) as "platforms")
-      .withColumn("platforms", getAllPlatforms(col("platforms")))
-      .select("device_id", "platforms")
+    // val users = temp_data
+    //   .groupBy("device_id")
+    //   .agg(collect_list(col("platforms")) as "platforms")
+    //   .withColumn("platforms", getAllPlatforms(col("platforms")))
+    //   .select("device_id", "platforms")
 
-    val segments = data//temp_data
+    val segments = df//temp_data
       .select("device_id", "segments", "platforms", "country", "device_type")
       .withColumn("segment", explode(col("segments")))
       .filter("segment < 580 AND segment > 830")
