@@ -40,6 +40,19 @@ object platformsData {
       .toList
     val countries =
       "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
+
+    // This is the list of event types that will be considered.
+    val event_types = List(
+      "tk",
+      "pv",
+      "data",
+      "batch",
+      "xp",
+      "retroactive",
+      "xd",
+      "xd_xp"
+    )
+
     val devUDF = udf(
       (dev_type: String) =>
         if (dev_type == "web") 0
@@ -58,7 +71,7 @@ object platformsData {
         ((col("d2").isNotNull || col("d10").isNotNull || col("d11").isNotNull || col(
           "d13"
         ).isNotNull || col("d14").isNotNull)) && col("country")
-          .isin(countries: _*)
+          .isin(countries: _*) && col("event_type").isin(event_types: _*)
       ) //get only relevant platforms
       .withColumn(
         "device_type",
@@ -140,9 +153,12 @@ object platformsData {
     val segments = temp_data
       .select("device_id", "segments", "platforms", "country", "device_type")
       .withColumn("segment", explode(col("segments")))
-      .dropDuplicates("device_id", "segment", "country", "device_type")
+      .dropDuplicates("device_id", "segment", "country")
       .orderBy("device_id")
-      // .distinct() //, "platforms")
+
+    println("LOGGER: EXECUTION PLAN")
+    segments.explain()
+    // .distinct() //, "platforms")
     // .dropDuplicates("device_id", "segment")
 
     // val joint = users.join(segments, Seq("device_id"), "inner")
@@ -150,7 +166,6 @@ object platformsData {
 
     segments
   }
-
 
   /**
     *
@@ -163,7 +178,6 @@ object platformsData {
     * @param data: DataFrame that will be saved.
     *
   **/
- 
   def saveData(
       df: DataFrame,
       date_current: String
@@ -177,7 +191,7 @@ object platformsData {
       .partitionBy("day", "country")
       .mode(SaveMode.Overwrite)
       .save(dir)
-  } 
+  }
 
   /**
     *
