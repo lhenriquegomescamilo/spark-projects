@@ -152,7 +152,8 @@ object platformsData {
     val segments = data//temp_data
       .select("device_id", "segments", "platforms", "country", "device_type")
       .withColumn("segment", explode(col("segments")))
-      .dropDuplicates("device_id", "segment", "country")
+      .filter("segment < 580 AND segment > 830")
+      .dropDuplicates("device_id", "segment")//, "country")
       .orderBy("device_id")
 
     println("LOGGER: EXECUTION PLAN")
