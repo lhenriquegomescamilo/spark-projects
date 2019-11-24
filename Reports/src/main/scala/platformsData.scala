@@ -66,7 +66,6 @@ object platformsData {
       .format("csv")
       .load("/data/eventqueue/%s".format(date_current))
       .select(columns.head, columns.tail: _*) // Here we select the columns to work with
-      .filter("event_type != 'sync'") // filter sync, internal event
       .filter(
         ((col("d2").isNotNull || col("d10").isNotNull || col("d11").isNotNull || col(
           "d13"
@@ -136,10 +135,10 @@ object platformsData {
       .withColumn("segments", col("segments").cast("array<int>"))
       .select("device_id", "segments", "platforms", "country", "device_type")
 
-    df.write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/reports/platforms/tmp/")
+    // df.write
+    //   .format("parquet")
+    //   .mode("overwrite")
+    //   .save("/datascience/reports/platforms/tmp/")
 
     val temp_data =
       spark.read.format("parquet").load("/datascience/reports/platforms/tmp/")
@@ -150,7 +149,7 @@ object platformsData {
       .withColumn("platforms", getAllPlatforms(col("platforms")))
       .select("device_id", "platforms")
 
-    val segments = temp_data
+    val segments = data//temp_data
       .select("device_id", "segments", "platforms", "country", "device_type")
       .withColumn("segment", explode(col("segments")))
       .dropDuplicates("device_id", "segment", "country")
