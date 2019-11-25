@@ -276,7 +276,7 @@ match_sample_to_polygons(spark,
 
       match_sample_to_polygons(spark,
         "/data/geo/startapp/parquet/day=*/country=CL/",
-        "Universidad_de_los_Andes.json",
+        "/datascience/geo/POIs/Universidad_de_los_Andes.json",
         "chile")
 
   }
