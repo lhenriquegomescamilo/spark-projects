@@ -90,7 +90,7 @@ object Utils {
   ) {
     // First of all we create a new map with all the information
     val fields =
-      "split segmentsFilter userEmail reportId report_subtype jobId partnerId type priority desc queue"
+      "split segmentsFilter userEmail reportId report_subtype jobId partnerId type priority description queue"
         .split(" ")
         .toList
     val jsonMap: Map[String, String] = fields
