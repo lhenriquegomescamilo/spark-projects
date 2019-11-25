@@ -275,9 +275,9 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/data/geo/startapp/parquet/day=*/country=CO/",
-        "/datascience/geo/POIs/Centro_Comercial_Mayorca_Mega_Plaza_Radial_Grid.json",
-        "colombia")
+        "/data/geo/startapp/parquet/day=*/country=CL/",
+        "Universidad_de_los_Andes.json",
+        "chile")
 
   }
 }
