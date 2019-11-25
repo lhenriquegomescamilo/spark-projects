@@ -87,7 +87,7 @@ object Item2Item {
       var hadoopPathDone= new Path(fileDone)
       var hadoopPathFailed = new Path(fileFailed)
 
-      if(fs.exists(hadoopPathInProcess)
+      if(fs.exists(hadoopPathInProcess))
         fs.delete(hadoopPathInProcess, false)
       if(fs.exists(hadoopPathDone))
         fs.delete(hadoopPathDone, false)
@@ -803,7 +803,7 @@ object Item2Item {
     val fs = FileSystem.get(conf)
 
     var hadoopPath = new Path("/datascience/ingester/ready/lal_%s.meta".format(jobId)
-    if(fs.exists(hadoopPath)
+    if(fs.exists(hadoopPath))
       fs.delete(hadoopPath, false)
 
     val os = fs.create(hadoopPath)
