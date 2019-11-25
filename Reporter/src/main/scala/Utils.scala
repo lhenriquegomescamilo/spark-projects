@@ -102,6 +102,9 @@ object Utils {
       .map(t => """"%s": "%s"""".format(t._1, t._2))
       .mkString(", ") + "}" //scala.util.parsing.json.JSONObject(jsonMap)
 
+    println("LOG: meta content")
+    println(json_content)
+
     // Finally we store the json.
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")

@@ -123,10 +123,12 @@ object Reporter {
 
   // TODO add documentation
   def processFile(spark: SparkSession, fileName: String) = {
+    println("LOG: Processing File..")
     // Moving the file to the folder in_progress
     Utils.moveFile("to_process/", "in_progress/", fileName)
 
     try {
+      println("LOG: Reading File..")
       // Getting the data out of the file
       val jsonContents = Utils.getQueriesFromFile(
         spark,
@@ -134,11 +136,15 @@ object Reporter {
       )
 
       for (jsonContent <- jsonContents) {
+        println("LOG: Processing the following query:")
+        jsonContent.foreach(t => println("\t%s -> %s".format(t._1, t._2)))
         // Then we export the report
         getQueryReport(spark, jsonContent, fileName.replace(".json", ""))
+        println("LOG: Report finished..")
       }
 
       // Finally we move the file to done and generate the meta file if it is required
+      println("Generating .meta File..")
       Utils.moveFile("in_progress/", "done/", fileName)
       Utils.generateMetaFile(fileName.replace(".json", ""), jsonContents(0))
       // if (jsonContents(0)("push") == "true") {
