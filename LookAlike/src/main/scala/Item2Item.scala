@@ -802,7 +802,7 @@ object Item2Item {
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
 
-    var hadoopPath = new Path("/datascience/ingester/ready/lal_%s.meta".format(jobId)
+    var hadoopPath = new Path("/datascience/ingester/ready/lal_%s.meta".format(jobId))
     if(fs.exists(hadoopPath))
       fs.delete(hadoopPath, false)
 
