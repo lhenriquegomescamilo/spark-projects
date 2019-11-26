@@ -90,14 +90,20 @@ object platformsReport {
 
     println("INFO: GETTING VOLUMES")
 
-    val mapping_path = "/datascience/misc/mappingpl.csv"
+    val getVec =
+          udf(
+            (n: String) =>
+            (n.map(lines=>(lines+"").toInt))
+            )
+
+    val mapping_path = "/datascience/misc/mappingpl_2.csv"
     val mapping = spark.read
       .format("csv")
       .option("header", "true")
       .load(mapping_path)
-      .withColumn("platforms", split(col("platforms"), ","))
+      .withColumn("platforms", getVec(col("platforms")))
       .select(col("decimal").cast("int"), col("platforms"))
-      .as[(Int, List[String])]
+      .as[(Int, List[Int])]
       .collect
       .toMap
 
