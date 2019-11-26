@@ -634,6 +634,7 @@ count_no_birra.write.format("csv")
 
 //get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd" )
 //Radios censales:
+/*
 val chile = spark.read.format("parquet").option("header",true).option("delimiter","\t")
 .load("/data/geo/startapp/parquet/day=20191110/country=CL/").select("ad_id","id_type")
 .withColumn("country",lit("CL"))
@@ -668,7 +669,59 @@ safe
 .mode(SaveMode.Overwrite)
 .save("/datascience/geo/geo_processed/safegraph_frequency_dispersion_deagg")
 //.groupBy("country","detections").agg(count("ad_id") as "frequency")
+*/
 
+val nDays = 30
+val since = 15
+      
+val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+   // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+
+    // Now we obtain the list of hdfs files to be read
+    val path = "/datascience/geo/safegraph/"
+    val hdfs_files = days
+      .map(day => path +  "day=%s/".format(day))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
+      .map(day => day + "*/*.snappy.parquet")
+
+
+    // Finally we read, filter by country, rename the columns and return the data
+    val onemonth_safegraph = spark.read
+      .option("header", "true")
+      .parquet(hdfs_files: _*)
+      .dropDuplicates("ad_id", "latitude", "longitude")
+      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      .withColumn("latitude",col("latitude").cast("Double"))
+      .withColumn("longitude",col("longitude").cast("Double"))
+      .filter("geo_hash != 'gcba'")
+
+
+onemonth_safegraph
+.groupBy("country").agg(count("ad_id") as "detections", countDistinct("ad_id") as "unique_users")
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/onemonth_safegraph")
+
+val onemonth_startapp =  spark.read.format("parquet").option("header",false).option("delimiter","\t").load("/data/geo/startapp/parquet/")
+
+onemonth_startapp
+.groupBy("country").agg(count("ad_id") as "detections", countDistinct("ad_id") as "unique_users")
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/onemonth_startapp")
 
 }
 
