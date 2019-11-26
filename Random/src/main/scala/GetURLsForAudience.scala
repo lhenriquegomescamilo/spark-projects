@@ -160,8 +160,8 @@ object GetURLsForAudience {
       .option("sep", "\t")
       .format("csv")
       .load(path)
-      .withColumn("_c1", "device_id")
-      .withColumn("_c2", "ids")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "ids")
       .drop("_c0")
 
     val urls =
