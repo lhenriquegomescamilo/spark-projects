@@ -696,13 +696,8 @@ val conf = spark.sparkContext.hadoopConfiguration
     // Finally we read, filter by country, rename the columns and return the data
     val onemonth_safegraph = spark.read
       .option("header", "true")
-      .parquet(hdfs_files: _*)
-      .dropDuplicates("ad_id", "latitude", "longitude")
-      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
-      .withColumn("latitude",col("latitude").cast("Double"))
-      .withColumn("longitude",col("longitude").cast("Double"))
-      .filter("geo_hash != 'gcba'")
-
+      .csv(hdfs_files: _*)
+      
 
 onemonth_safegraph
 .groupBy("country").agg(count("ad_id") as "detections", countDistinct("ad_id") as "unique_users")
