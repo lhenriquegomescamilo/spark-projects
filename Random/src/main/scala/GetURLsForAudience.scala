@@ -158,7 +158,8 @@ object GetURLsForAudience {
   def getURLForAudience(spark: SparkSession, path: String, country: String) = {
     val audience = spark.read
       .option("sep", "\t")
-      .format(path)
+      .format("csv")
+      .load(path)
       .withColumn("_c1", "device_id")
       .withColumn("_c2", "ids")
       .drop("_c0")
