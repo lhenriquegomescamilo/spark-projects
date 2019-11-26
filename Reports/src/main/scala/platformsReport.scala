@@ -56,7 +56,14 @@ object platformsReport {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .select("device_id", "platforms", "segment", "device_type", "country", "day")
+      .select(
+        "device_id",
+        "platforms",
+        "segment",
+        "device_type",
+        "country",
+        "day"
+      )
 
     df
   }
@@ -74,7 +81,6 @@ object platformsReport {
     *
     * @return a DataFrame.
    **/
-
   def getVolumesPlatform(
       spark: SparkSession,
       data: DataFrame
@@ -103,17 +109,31 @@ object platformsReport {
 
     val df = data
       .withColumn("platforms", udfMap(col("platforms")))
-      //.withColumn("platform", explode(col("platforms")))
-      //.select("platform", "segment", "device_id")
-      //.distinct()
-      //.groupBy("platform", "segment")
-      //.count()
-      //.select("platform", "segment", "count")
-    //df.explain()
+      .withColumn("d2", col("platforms")(0))
+      .withColumn("d10", col("platforms")(1))
+      .withColumn("d11", col("platforms")(2))
+      .withColumn("d13", col("platforms")(3))
+      .withColumn("d14", col("platforms")(4))
+      .dropDuplicates("device_id")
+      .groupBy("segment", "country", "device_type")
+      .agg(
+        sum("d2") as "d2",
+        sum("d10") as "d10",
+        sum("d11") as "d11",
+        sum("d13") as "d13",
+        sum("d14") as "d14"
+      )
+    //.withColumn("platform", explode(col("platforms")))
+    //.select("platform", "segment", "device_id")
+    //.distinct()
+    //.groupBy("platform", "segment")
+    //.count()
+    //.select("platform", "segment", "count")
+    df.explain()
     df
   }
 
- /**
+  /**
     * This method is a filter that keeps only general taxonomy segments.
     * It joins "general taxonomy segment values" from metabase with current dataframe.
     *
@@ -122,23 +142,28 @@ object platformsReport {
     *
     * @return a DataFrame filtered by general taxo segments.
    **/
-
   def filter_df(
       spark: SparkSession,
       db: DataFrame
   ): DataFrame = {
 
     /** Read standard taxonomy segment_ids */
-
-    val countries = "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
+    val countries =
+      "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
     val taxo_path = "/datascience/misc/taxo_gral.csv"
-    val taxo_segs =  spark.read.format("csv")
-        .option("header", "true")
-        .load(taxo_path)
-        .select("seg_id").collect().map(_(0)).toList
+    val taxo_segs = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load(taxo_path)
+      .select("seg_id")
+      .collect()
+      .map(_(0))
+      .toList
 
     val df = db
-      .filter(col("country").isin(countries: _*) && col("segment").isin(taxo_segs: _*))       
+      .filter(
+        col("country").isin(countries: _*) && col("segment").isin(taxo_segs: _*)
+      )
     df
   }
 
@@ -194,8 +219,8 @@ object platformsReport {
     /** Read from "platforms/data" */
     val db = getPlatformsData(spark = spark, nDays = nDays, since = since)
 
-    /** Keep general taxonomy segments */    
-    val data =  filter_df(spark, db = db)
+    /** Keep general taxonomy segments */
+    val data = filter_df(spark, db = db)
 
     /**  Transform data for Platforms Report */
     val df = getVolumesPlatform(spark, data = data)
@@ -206,7 +231,7 @@ object platformsReport {
     val path = dir + "done"
 
     saveData(df = df, path = path)
-    
+
   }
 
   type OptionMap = Map[Symbol, Int]
