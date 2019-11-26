@@ -679,8 +679,8 @@ val conf = spark.sparkContext.hadoopConfiguration
 
    // Get the days to be loaded
     val format = "yyyy/MM/dd"
-    val end = DateTime.now.minusDays(value_dictionary("since").toInt)
-    val days = (0 until value_dictionary("nDays").toInt)
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt)
       .map(end.minusDays(_))
       .map(_.toString(format))
       .filter(x => !(x contains "2019/05/27"))
