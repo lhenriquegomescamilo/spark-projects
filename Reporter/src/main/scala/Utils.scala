@@ -89,8 +89,11 @@ object Utils {
       jsonContent: Map[String, String]
   ) {
     // First of all we create a new map with all the information
+    val int_fields = "priority reportId partnerId split jobId"
+      .split(" ")
+      .toList
     val fields =
-      "split segmentsFilter userEmail reportId report_subtype jobId partnerId type priority description queue"
+      "split segmentsFilter userEmail reportId report_subtype jobId partnerId priority description queue"
         .split(" ")
         .toList
     val jsonMap: Map[String, String] = fields
@@ -99,7 +102,14 @@ object Utils {
 
     // Obtain the content out of the map
     val json_content = "{" + jsonMap
-      .map(t => """"%s": "%s"""".format(t._1, t._2))
+      .map(
+        t =>
+          """"%s": %s""".format(
+            t._1,
+            if (int_fields.contains(t._1)) t._2
+            else "\"" + t._2 + "\""
+          )
+      )
       .mkString(", ") + "}" //scala.util.parsing.json.JSONObject(jsonMap)
 
     println("LOG: meta content")

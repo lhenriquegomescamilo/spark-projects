@@ -330,30 +330,21 @@ object GetDataForAudience {
     *
     *
     *
-    *              PEDIDO HAVAS
+    *              PEDIDO segmentos para audiencia
     *
     *
     *
     *
     *
     */
-  def getDataSegmentsHavas(spark: SparkSession) = {
+  def getDataSegmentsForAudience(spark: SparkSession) = {
     val data_audiences = spark.read
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .load("/datascience/custom/havas_411_with_overlap.csv")
-      .withColumnRenamed("user", "device_id")
-      .repartition(50)
-
-    // val taxonomy = spark.read
-    //   .format("csv")
-    //   .option("header", "true")
-    //   .load("/datascience/data_publicis/taxonomy_publicis.csv")
-    //   .select("Segment Id")
-    //   .collect()
-    //   .map(row => row(0))
-    //   .toSeq
+      .load(
+        "/datascience/geo/crossdeviced/jcdecaux_test_4_points_90d_mexico_25-11-2019-16h_xd"
+      )
 
     val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
       104, 118, 129, 131, 141, 144, 145, 147, 149, 150, 152, 154, 155, 158, 160,
@@ -375,18 +366,19 @@ object GetDataForAudience {
       3473, 3564, 3565, 3566, 3567, 3568, 3569, 3570, 3571, 3572, 3573, 3574,
       3575, 3576, 3577, 3578, 3579, 3580, 3581, 3582, 3583, 3584, 3585, 3586,
       3587, 3588, 3589, 3590, 3591, 3592, 3593, 3594, 3595, 3596, 3597, 3598,
-      3599, 3600, 3779, 3782, 3913, 3914, 3915, 4097)
+      3599, 3600, 3779, 3782, 3913, 3914, 3915, 4097, 104014, 104015, 104016,
+      104017, 104018, 104019)
 
-    val data_segments = getDataTriplets(spark, country = "MX", nDays = 30)
+    val data_segments = getDataTriplets(spark, country = "MX", nDays = 60)
       .filter(col("segment").isin(taxonomy: _*))
+      .select("device_id", "segment")
 
     data_audiences
       .join(data_segments, Seq("device_id"))
-      .select("device_id", "segment", "label")
       .write
       .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/havas_411_overlap_segments")
+      .save("/datascience/custom/jcdecaux_with_segments")
 
   }
 
@@ -431,7 +423,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataSegmentsHavas(spark = spark)
+    getDataSegmentsForAudience(spark = spark)
 
   }
 }
