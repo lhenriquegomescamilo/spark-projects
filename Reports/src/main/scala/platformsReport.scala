@@ -155,7 +155,9 @@ object platformsReport {
 
     /** Read standard taxonomy segment_ids */
     val countries =
-      "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
+      "AR".split(",").toList    
+    //val countries =
+    //  "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
     val taxo_path = "/datascience/misc/taxo_gral.csv"
     val taxo_segs = spark.read
       .format("csv")
