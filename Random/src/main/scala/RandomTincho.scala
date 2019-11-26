@@ -807,6 +807,14 @@ object RandomTincho {
                               .select("url","keywords")
                               .withColumn("count",lit(1))
 
+    title_kws.write.format("parquet")
+                    .mode(SaveMode.Overwrite)
+                    .save("/datascience/custom/kws_title_contextual")
+
+    keywords_embeddings(spark,
+                        kws_path = "/datascience/custom/kws_title_contextual",
+                        embeddings_path = "/datascience/data_url_classifier/embeddings_title_contextual")
+
     val path_kws = spark.read.format("csv")
                               .option("header","true")
                               .load(scrapped_path)
@@ -819,15 +827,24 @@ object RandomTincho {
                               .filter(!col("keywords").isin(stopwords: _*))
                               .select("url","keywords")
                               .withColumn("count", lit(1))
-
-    title_kws.union(path_kws).write
-                            .format("parquet")
-                            .mode(SaveMode.Overwrite)
-                            .save("/datascience/custom/kws_path_title_contextual")
+    
+    path_kws.write.format("parquet")
+                .mode(SaveMode.Overwrite)
+                .save("/datascience/custom/kws_path_contextual")
 
     keywords_embeddings(spark,
-                        kws_path = "/datascience/custom/kws_path_title_contextual",
-                        embeddings_path = "/datascience/data_url_classifier/embeddings_path_title_contextual")
+                        kws_path = "/datascience/custom/kws_path_contextual",
+                        embeddings_path = "/datascience/data_url_classifier/embeddings_path_contextual")
+
+
+    // title_kws.union(path_kws).write
+    //                         .format("parquet")
+    //                         .mode(SaveMode.Overwrite)
+    //                         .save("/datascience/custom/kws_path_title_contextual")
+
+    // keywords_embeddings(spark,
+    //                     kws_path = "/datascience/custom/kws_path_title_contextual",
+    //                     embeddings_path = "/datascience/data_url_classifier/embeddings_path_title_contextual")
 
   }
 
@@ -880,16 +897,16 @@ object RandomTincho {
         .getOrCreate()
     
     
-    //get_dataset_contextual(spark,scrapped_path = "/datascience/custom/urls_scrapped_AR.csv")
+    get_dataset_contextual(spark,scrapped_path = "/datascience/custom/urls_scrapped_AR.csv")
 
-    val df1 = spark.read.format("csv").option("header","true").load("/datascience/custom/urls_scrapped_AR.csv").select("url")
-    val df2 = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","segments"))
+    // val df1 = spark.read.format("csv").option("header","true").load("/datascience/custom/urls_scrapped_AR.csv").select("url")
+    // val df2 = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","segments"))
 
-    val joint = processURL(df1.join(df2,Seq("url"),"inner").select("url","segments"))
+    // val joint = processURL(df1.join(df2,Seq("url"),"inner").select("url","segments"))
     
-    joint.write.format("parquet")
-                .mode(SaveMode.Overwrite)
-                .save("/datascience/url_ingester/gt_contextual")
+    // joint.write.format("parquet")
+    //             .mode(SaveMode.Overwrite)
+    //             .save("/datascience/url_ingester/gt_contextual")
   }
 
 }
