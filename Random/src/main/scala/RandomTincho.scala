@@ -446,16 +446,21 @@ object RandomTincho {
       df = df.withColumn(i.toString, col(i.toString)*col("count"))
     } 
 
-    val df_preprocessed = processURL(df)
+    var df_preprocessed = processURL(df)
 
     df_preprocessed.drop("count","word")
       .groupBy("url")
-      .mean()
-      .write
-      .format("csv")
-      .option("header","true")
-      .mode(SaveMode.Overwrite)
-      .save(embeddings_path)
+      .sum()
+
+    for (i <- 1 to 300){
+      df_preprocessed = df_preprocessed.withColumn("sum(%s)".format(i.toString), col(i.toString)/col("sum(count)"))
+    } 
+
+    df_preprocessed.write
+                  .format("csv")
+                  .option("header","true")
+                  .mode(SaveMode.Overwrite)
+                  .save(embeddings_path)
  }
 
  def processURL_qs(url: String): String = {
@@ -837,14 +842,14 @@ object RandomTincho {
                         embeddings_path = "/datascience/data_url_classifier/embeddings_path_contextual")
 
 
-    // title_kws.union(path_kws).write
-    //                         .format("parquet")
-    //                         .mode(SaveMode.Overwrite)
-    //                         .save("/datascience/custom/kws_path_title_contextual")
+    title_kws.union(path_kws).write
+                            .format("parquet")
+                            .mode(SaveMode.Overwrite)
+                            .save("/datascience/custom/kws_path_title_contextual")
 
-    // keywords_embeddings(spark,
-    //                     kws_path = "/datascience/custom/kws_path_title_contextual",
-    //                     embeddings_path = "/datascience/data_url_classifier/embeddings_path_title_contextual")
+    keywords_embeddings(spark,
+                        kws_path = "/datascience/custom/kws_path_title_contextual",
+                        embeddings_path = "/datascience/data_url_classifier/embeddings_path_title_contextual")
 
   }
 
