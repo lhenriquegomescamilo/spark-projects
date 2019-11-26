@@ -446,11 +446,9 @@ object RandomTincho {
       df = df.withColumn(i.toString, col(i.toString)*col("count"))
     } 
 
-    var df_preprocessed = processURL(df)
-
-    df_preprocessed.drop("count","word")
-      .groupBy("url")
-      .sum()
+    var df_preprocessed = processURL(df).drop("word")
+                                        .groupBy("url")
+                                        .sum()
 
     for (i <- 1 to 300){
       df_preprocessed = df_preprocessed.withColumn("sum(%s)".format(i.toString), col(i.toString)/col("sum(count)"))
