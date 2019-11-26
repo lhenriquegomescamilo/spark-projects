@@ -451,8 +451,8 @@ object RandomTincho {
                                         .sum()
 
     for (i <- 1 to 300){
-      df_preprocessed = df_preprocessed.withColumn("sum(%s)".format(i.toString), col(i.toString)/col("sum(count)"))
-    } 
+      df_preprocessed = df_preprocessed.withColumn("sum(%s)".format(i.toString), col("sum(%s)".format(i.toString))/col("sum(count)"))
+    }
 
     df_preprocessed.write
                   .format("csv")
