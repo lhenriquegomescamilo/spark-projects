@@ -5,6 +5,10 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 
 object Utils {
+  /**
+   * Given a file, it returns a Map with all the fields that the json has, and 
+   * if a field is not present, it gives a default value.
+  */
   def getQueriesFromFile(
       spark: SparkSession,
       file: String
@@ -49,6 +53,9 @@ object Utils {
     queries
   }
 
+  /**
+   * This function returns the list of json files to be processed.
+  */
   def getQueryFiles(spark: SparkSession, pathToProcess: String) = {
     // First we get the list of files to be processed
     val conf = spark.sparkContext.hadoopConfiguration
@@ -73,6 +80,9 @@ object Utils {
     filesReadyOrdered.map(x => x._1)
   }
 
+  /**
+   * This function is used to move a file from a folder to another one.
+  */
   def moveFile(actual_path: String, dest_path: String, fileName: String) {
     // HDFS configuration to be able to move files
     val hadoopConf = new Configuration()
@@ -84,6 +94,10 @@ object Utils {
     hdfs.rename(srcPath, destPath)
   }
 
+  /**
+   * This function is used to create a Meta file with all the necessary
+   * parameters for later ingestion.
+  */
   def generateMetaFile(
       file_name: String,
       jsonContent: Map[String, String]
@@ -120,7 +134,7 @@ object Utils {
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
     val os = fs.create(
-      new Path("/datascience/reporter/ready/%s.meta".format(file_name))
+      new Path("/datascience/ingester/ready/%s.meta".format(file_name))
     )
     os.write(json_content.getBytes)
     os.close()
