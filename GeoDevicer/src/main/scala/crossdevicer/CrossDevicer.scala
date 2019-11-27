@@ -86,6 +86,8 @@ object CrossDevicer {
       .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))
 
+      cross_deviced.show(5)
+
       val cross_deviced_agg = cross_deviced.groupBy(colNames.filter(y => y.toString !=  value_dictionary("poi_column_name").toString):_*) // ,"validUser","frequency"
       .agg(collect_set(value_dictionary("poi_column_name")) as value_dictionary("poi_column_name"))
       .withColumn(value_dictionary("poi_column_name"), concat_ws(",", col(value_dictionary("poi_column_name"))))
