@@ -851,6 +851,79 @@ object RandomTincho {
 
   }
 
+  def get_dataset_contextual_augmented(spark:SparkSession, scrapped_path:String){
+
+    val udfLength = udf((xs: Seq[String]) => xs.toList.length * 95/100)
+    val udfRandom = udf((xs: Seq[String], n: Int ) => Random.shuffle(xs.toList).take(n))
+
+    val stopwords = List("a","aca","ahi","al","algo","alguna","alguno","algunos","algunas","alla","ambos","ante",
+                          "antes","aquel","aquella","aquello","aqui","arriba","asi","atras","aun","aunque","bien",
+                          "cada","casi","como","con","cual","cuales","cualquier","cualquiera","cuan","cuando","cuanto",
+                          "cuanta","de","del","demas","desde","donde","el","ella","ello","ellos","ellas","en","eres",
+                          "esa","ese","eso","esos","esas","esta","este","etc","hasta","la","los","las","me","mi","mia",
+                          "mientras","muy","nosotras","nosotros","nuestra","nuestro","nuestras","nuestros","otra","otro",
+                          "para","pero","pues","que","si","siempre","siendo","sin","sino","sobre","sr","sra","sres","sta",
+                          "su","sus","te","tu","tus","un","una","usted","ustedes","vosotras","vosotros","vuestra","vuestro",
+                          "vuestras","vuestros","y","ya","yo")
+
+    val title_kws = spark.read.format("csv")
+                              .option("header","true")
+                              .load(scrapped_path)
+                              .filter("title is not null")
+                              .select("url","title")
+                              .withColumn("title", split(col("title"), " "))
+                              .withColumn("n",udfLength(col("title")))
+                              .withColumn("title",udfRandom(col("title"),col("n")))
+                              .withColumn("title", split(col("title"), " "))
+                              .withColumn("keywords", explode(col("title")))
+                              .filter(!col("keywords").isin(stopwords: _*))
+                              .select("url","keywords")
+                              .withColumn("count",lit(1))
+
+    title_kws.write.format("parquet")
+                    .mode(SaveMode.Overwrite)
+                    .save("/datascience/custom/kws_title_augmented_contextual")
+
+    keywords_embeddings(spark,
+                        kws_path = "/datascience/custom/kws_title_augmented_contextual",
+                        embeddings_path = "/datascience/data_url_classifier/embeddings_title_augmented_contextual")
+
+    val path_kws = spark.read.format("csv")
+                              .option("header","true")
+                              .load(scrapped_path)
+                              .select("url")
+                              .withColumn("url", lower(col("url")))
+                              .withColumn("url_path", regexp_replace(col("url"), """^[^/]*/""", ""))
+                              .withColumn("url_keys", split(col("url_path"), "[^a-z0-9]"))
+                              .withColumn("n",udfLength(col("url_keys")))
+                              .withColumn("url_keys",udfRandom(col("url_keys"),col("n")))
+                              .withColumn("keywords", explode(col("url_keys")))
+                              .filter(col("keywords").rlike("[a-z]{2,}"))
+                              .filter(!col("keywords").isin(stopwords: _*))
+                              .select("url","keywords")
+                              .withColumn("count", lit(1))
+    
+    path_kws.write.format("parquet")
+                .mode(SaveMode.Overwrite)
+                .save("/datascience/custom/kws_path_augmented_contextual")
+
+    keywords_embeddings(spark,
+                        kws_path = "/datascience/custom/kws_path_augmented_contextual",
+                        embeddings_path = "/datascience/data_url_classifier/embeddings_path_augmented_contextual")
+
+
+    title_kws.union(path_kws).write
+                            .format("parquet")
+                            .mode(SaveMode.Overwrite)
+                            .save("/datascience/custom/kws_path_title_augmented_contextual")
+
+    keywords_embeddings(spark,
+                        kws_path = "/datascience/custom/kws_path_title_contextual",
+                        embeddings_path = "/datascience/data_url_classifier/embeddings_path_title_augmented_contextual")
+
+  }
+
+
   def get_urls_for_ingester(spark:SparkSession){
    
     val replicationFactor = 8
@@ -900,7 +973,7 @@ object RandomTincho {
         .getOrCreate()
     
     
-    get_dataset_contextual(spark,scrapped_path = "/datascience/custom/urls_scrapped_AR.csv")
+    get_dataset_contextual_augmented(spark,scrapped_path = "/datascience/custom/urls_scrapped_AR.csv")
 
     // val df1 = spark.read.format("csv").option("header","true").load("/datascience/custom/urls_scrapped_AR.csv").select("url")
     // val df2 = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","segments"))
