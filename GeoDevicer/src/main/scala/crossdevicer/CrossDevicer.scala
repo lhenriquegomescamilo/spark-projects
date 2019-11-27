@@ -82,10 +82,9 @@ object CrossDevicer {
             "right_outer")      
       .withColumn("device_id", coalesce(col("device"), col("device_id")))      
       .withColumn("device_type",coalesce(col("device_type_db"), col("device_type")))
+      .drop(col("device"))
+      .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))
-      .withColumn("device_type", mapUDF(col("device_type")))
-      //.drop(col("device"))
-      //.drop(col("device_type_db"))
 
       cross_deviced.show(5)
 
