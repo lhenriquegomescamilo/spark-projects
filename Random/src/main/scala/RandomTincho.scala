@@ -31,7 +31,7 @@ import org.apache.spark.sql.types.{
  StringType,
  IntegerType
 }
-import scala.util.Random
+import scala.util.Random.shuffle
 
 object RandomTincho {
 
@@ -855,7 +855,7 @@ object RandomTincho {
   def get_dataset_contextual_augmented(spark:SparkSession, scrapped_path:String){
 
     val udfLength = udf((xs: Seq[String]) => xs.toList.length * 95/100)
-    val udfRandom = udf((xs: Seq[String], n: Int ) => Random.shuffle(xs.toList).take(n))
+    val udfRandom = udf((xs: Seq[String], n: Int ) => shuffle(xs.toList).take(n))
 
     val stopwords = List("a","aca","ahi","al","algo","alguna","alguno","algunos","algunas","alla","ambos","ante",
                           "antes","aquel","aquella","aquello","aqui","arriba","asi","atras","aun","aunque","bien",
