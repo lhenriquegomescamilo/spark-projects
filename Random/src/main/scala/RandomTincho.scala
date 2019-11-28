@@ -792,7 +792,7 @@ object RandomTincho {
 
     val stopwords = List("a","aca","ahi","al","algo","alla","ante",
                           "antes","aquel","aqui","arriba","asi","atras","aun","aunque","bien",
-                          "cada","casi","como","con","cual","cuales","cuan","cuando",
+                          "cada","casi","como","con","cual","cuales","cuan","cuando"
                           ,"de","del","demas","desde","donde","en","eres",
                           ,"etc","hasta","me",
                           "mientras","muy","otra","otro",
@@ -994,7 +994,7 @@ object RandomTincho {
         .getOrCreate()
     
     get_keywords_for_equifax(spark)
-    
+
     //get_dataset_contextual(spark,scrapped_path = "/datascience/custom/urls_scrapped_AR.csv")
 
     // val df1 = spark.read.format("csv").option("header","true").load("/datascience/custom/urls_scrapped_AR.csv").select("url")
