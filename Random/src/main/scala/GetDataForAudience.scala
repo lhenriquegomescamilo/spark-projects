@@ -445,7 +445,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataSegmentsForAudience(spark = spark)
+    getAllDataSegmentsForAudience(spark = spark)
 
   }
 }
