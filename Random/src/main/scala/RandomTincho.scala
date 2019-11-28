@@ -793,7 +793,7 @@ object RandomTincho {
     val stopwords = List("a","aca","ahi","al","algo","alla","ante",
                           "antes","aquel","aqui","arriba","asi","atras","aun","aunque","bien",
                           "cada","casi","como","con","cual","cuales","cuan","cuando"
-                          ,"de","del","demas","desde","donde","en","eres",
+                          ,"de","del","demas","desde","donde","en","eres"
                           ,"etc","hasta","me",
                           "mientras","muy","otra","otro",
                           "para","pero","pues","que","si","siempre","siendo","sin","sino","sobre",
