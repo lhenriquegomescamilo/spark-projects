@@ -971,10 +971,16 @@ object RandomTincho {
     val keywords_nov = spark.read
                             .load("/datascience/data_keywords/day=201911*/country=AR/")
                             .select("device_id","content_keys")
+                            .groupBy("device_id")
+                            .agg(collect_list(col("content_keys")).as("keywords"))
+                            .withColumn("keywords", concat_ws(";", col("keywords")))
 
     val keywords_oct = spark.read
                             .load("/datascience/data_keywords/day=201910*/country=AR/")
                             .select("device_id","content_keys")
+                            .groupBy("device_id")
+                            .agg(collect_list(col("content_keys")).as("keywords"))
+                            .withColumn("keywords", concat_ws(";", col("keywords")))
 
     nids.join(keywords_nov,Seq("device_id"),"inner").write.format("csv").save("/datascience/custom/kws_equifax_november")
 
