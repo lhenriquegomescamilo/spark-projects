@@ -343,7 +343,7 @@ object GetDataForAudience {
       .option("sep", "\t")
       .option("header", "true")
       .load(
-        "/datascience/geo/crossdeviced/jcdecaux_test_4_points_90d_mexico_25-11-2019-16h_xd"
+        "/datascience/geo/crossdeviced/jcdecaux_test_4_points_120d_mexico_28-11-2019-10h_xd"
       )
 
     val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
