@@ -982,9 +982,15 @@ object RandomTincho {
                             .agg(collect_list(col("content_keys")).as("keywords"))
                             .withColumn("keywords", concat_ws(";", col("keywords")))
 
-    nids.join(keywords_nov,Seq("device_id"),"inner").write.format("csv").save("/datascience/custom/kws_equifax_november")
+    nids.join(keywords_nov,Seq("device_id"),"inner").write
+                                                    .format("csv")
+                                                    .mode(SaveMode.Overwrite)
+                                                    .save("/datascience/custom/kws_equifax_november")
 
-    nids.join(keywords_oct,Seq("device_id"),"inner").write.format("csv").save("/datascience/custom/kws_equifax_october")
+    nids.join(keywords_oct,Seq("device_id"),"inner").write
+                                                    .format("csv")
+                                                    .mode(SaveMode.Overwrite)
+                                                    .save("/datascience/custom/kws_equifax_october")
 
   }
 
