@@ -382,6 +382,28 @@ object GetDataForAudience {
 
   }
 
+
+  def getAllDataSegmentsForAudience(spark: SparkSession) = {
+    val data_audiences = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load(
+        "/datascience/geo/crossdeviced/jcdecaux_test_4_points_120d_mexico_28-11-2019-10h_xd"
+      )
+
+       val data_segments = getDataTriplets(spark, country = "MX", nDays = 60)
+      .select("device_id", "segment")
+
+    data_audiences
+      .join(data_segments, Seq("device_id"))
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .save("/datascience/custom/jcdecaux_with_all_segments")
+
+  }
+
   /**
     *
     *
