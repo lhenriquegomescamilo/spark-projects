@@ -254,6 +254,8 @@ object UrlIngester {
             .mode(SaveMode.Overwrite)
             .save(temppath)    
 
+    import spark.implicits._
+    
     df.cache()
 
     /** Process and store the Data for each country */  
