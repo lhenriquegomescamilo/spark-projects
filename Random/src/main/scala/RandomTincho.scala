@@ -967,6 +967,8 @@ object RandomTincho {
     val nids = spark.read.load("/datascience/pii_matching/pii_tuples/day=20191*/")
                           .filter("country = 'AR' and nid_sh2 is not null")
                           .select("device_id","nid_sh2")
+                          .drop_duplicates()
+    nids.cache()
 
     val keywords_nov = spark.read
                             .load("/datascience/data_keywords/day=201911*/country=AR/")
