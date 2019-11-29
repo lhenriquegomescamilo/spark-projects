@@ -249,13 +249,12 @@ object UrlIngester {
 
     /** Preprocess URLS and checkpoint */    
     val df = processURLHTTP(db)
-            .write
-            .format("parquet")
-            .mode(SaveMode.Overwrite)
-            .save(temppath)    
+            
+    df.write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save(temppath)    
 
-    import spark.implicits._
-    
     df.cache()
 
     /** Process and store the Data for each country */  
