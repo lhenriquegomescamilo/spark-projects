@@ -790,15 +790,14 @@ object RandomTincho {
 
   def get_dataset_contextual(spark:SparkSession, scrapped_path:String){
 
-    val stopwords = List("a","aca","ahi","al","algo","alguna","alguno","algunos","algunas","alla","ambos","ante",
-                          "antes","aquel","aquella","aquello","aqui","arriba","asi","atras","aun","aunque","bien",
-                          "cada","casi","como","con","cual","cuales","cualquier","cualquiera","cuan","cuando","cuanto",
-                          "cuanta","de","del","demas","desde","donde","el","ella","ello","ellos","ellas","en","eres",
-                          "esa","ese","eso","esos","esas","esta","este","etc","hasta","la","los","las","me","mi","mia",
-                          "mientras","muy","nosotras","nosotros","nuestra","nuestro","nuestras","nuestros","otra","otro",
-                          "para","pero","pues","que","si","siempre","siendo","sin","sino","sobre","sr","sra","sres","sta",
-                          "su","sus","te","tu","tus","un","una","usted","ustedes","vosotras","vosotros","vuestra","vuestro",
-                          "vuestras","vuestros","y","ya","yo")
+    val stopwords = List("a","aca","ahi","al","algo","alla","ante",
+                          "antes","aquel","aqui","arriba","asi","atras","aun","aunque","bien",
+                          "cada","casi","como","con","cual","cuales","cuan","cuando"
+                          ,"de","del","demas","desde","donde","en","eres"
+                          ,"etc","hasta","me",
+                          "mientras","muy","otra","otro",
+                          "para","pero","pues","que","si","siempre","siendo","sin","sino","sobre",
+                          "su","sus","te","tu","tus","y","ya","yo")
 
     val title_kws = spark.read.format("csv")
                               .option("header","true")
@@ -962,6 +961,91 @@ object RandomTincho {
 
   }
 
+
+  def get_keywords_for_equifax(spark:SparkSession){
+    
+     val replicationFactor = 8
+
+    val nids = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                          .filter("country = 'AR' and nid_sh2 is not null")
+                          .select("device_id","nid_sh2")
+                          .distinct()
+    nids.cache()
+
+     val keywords_nov = spark.read
+                             .load("/datascience/data_keywords/day=201911*/country=AR/")
+                             .select("device_id","content_keys")
+                             .distinct()
+                            //  .withColumn(
+                            //       "composite_key",
+                            //       concat(
+                            //         col("device_id"),
+                            //         lit("@"),
+                            //         col("content_keys"),
+                            //         lit("@"),
+                            //         // This last part is a random integer ranging from 0 to replicationFactor
+                            //         least(
+                            //           floor(rand() * replicationFactor),
+                            //           lit(replicationFactor - 1) // just to avoid unlikely edge case
+                            //         )
+                            //       )
+                            // ).groupBy("composite_key")
+                            //   .count
+                            //   .withColumn("split", split(col("composite_key"), "@"))
+                            //   .withColumn("device_id",col("split")(0))
+                            //   .withColumn("content_keys",col("split")(1))
+                            // .groupBy("device_id")
+                            // .agg(collect_list(col("content_keys")).as("keywords"))
+                            // .withColumn("keywords", concat_ws(";", col("keywords")))
+
+    val keywords_oct = spark.read
+                            .load("/datascience/data_keywords/day=201910*/country=AR/")
+                            .select("device_id","content_keys")
+                            .distinct()
+                            //  .withColumn(
+                            //       "composite_key",
+                            //       concat(
+                            //         col("device_id"),
+                            //         lit("@"),
+                            //         col("content_keys"),
+                            //         lit("@"),
+                            //         // This last part is a random integer ranging from 0 to replicationFactor
+                            //         least(
+                            //           floor(rand() * replicationFactor),
+                            //           lit(replicationFactor - 1) // just to avoid unlikely edge case
+                            //         )
+                            //       )
+                            // ).groupBy("composite_key")
+                            //   .count
+                            //   .withColumn("split", split(col("composite_key"), "@"))
+                            //   .withColumn("device_id",col("split")(0))
+                            //   .withColumn("content_keys",col("split")(1))
+                            // .groupBy("device_id")
+                            // .agg(collect_list(col("content_keys")).as("keywords"))
+                            // .withColumn("keywords", concat_ws(";", col("keywords")))
+
+     nids.join(keywords_nov,Seq("device_id"),"inner").select("nid_sh2","content_keys") 
+                                                    .groupBy("nid_sh2")
+                                                    .agg(collect_list(col("content_keys")).as("keywords"))
+                                                    .withColumn("keywords", concat_ws(";", col("keywords")))
+                                                    .select("nid_sh2","keywords")
+                                                    .write
+                                                    .format("parquet")
+                                                    .mode(SaveMode.Overwrite)
+                                                    .save("/datascience/custom/kws_equifax_november")
+
+    nids.join(keywords_oct,Seq("device_id"),"inner").select("nid_sh2","content_keys") 
+                                                    .groupBy("nid_sh2")
+                                                    .agg(collect_list(col("content_keys")).as("keywords"))
+                                                    .withColumn("keywords", concat_ws(";", col("keywords")))
+                                                    .select("nid_sh2","keywords")
+                                                    .write
+                                                    .format("parquet")
+                                                    .mode(SaveMode.Overwrite)
+                                                    .save("/datascience/custom/kws_equifax_october")
+
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -973,8 +1057,9 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    
-    get_dataset_contextual_augmented(spark,scrapped_path = "/datascience/custom/urls_scrapped_AR.csv")
+    get_keywords_for_equifax(spark)
+
+    //get_dataset_contextual(spark,scrapped_path = "/datascience/custom/urls_scrapped_AR.csv")
 
     // val df1 = spark.read.format("csv").option("header","true").load("/datascience/custom/urls_scrapped_AR.csv").select("url")
     // val df2 = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","segments"))
