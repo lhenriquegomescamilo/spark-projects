@@ -54,20 +54,20 @@ object Reporter {
   }
 
   /**
-   * This function calculates the overlap between a set of users and a set of segments.
-   * That is, it checks how many of such users have any of the given segments.
-   * It returns a DataFrame with these stats (count and device_unique).
-   * 
-   * - spark: SparkSession that will be used to load and store the data.
-   * - dataset: dataset with all the users that have matched the query and that 
-   * will be overlaped with the list of segments.
-   * - segments: list of segments to be used for the report.
-   * 
-   * It returns a dataframe with three columns:
-   *  - segment that has matched.
-   *  - device_unique
-   *  - count
-  */
+    * This function calculates the overlap between a set of users and a set of segments.
+    * That is, it checks how many of such users have any of the given segments.
+    * It returns a DataFrame with these stats (count and device_unique).
+    *
+    * - spark: SparkSession that will be used to load and store the data.
+    * - dataset: dataset with all the users that have matched the query and that
+    * will be overlaped with the list of segments.
+    * - segments: list of segments to be used for the report.
+    *
+    * It returns a dataframe with three columns:
+    *  - segment that has matched.
+    *  - device_unique
+    *  - count
+    */
   def getOverlap(
       spark: SparkSession,
       dataset: DataFrame,
@@ -81,7 +81,9 @@ object Reporter {
 
     // In this part we process the dataset so that we have all the segments per device,
     // the totals and filter to only keep the relevant segments
-    val datasetWithSegments = dataset.na
+    val datasetWithSegments = dataset
+      .select("device_id", "all_segments")
+      .na
       .drop()
       .withColumn("all_segments", addTotalIdUDF(col("all_segments")))
       .withColumn("segment", explode(col("all_segments")))
@@ -99,19 +101,19 @@ object Reporter {
   }
 
   /**
-   * Given a query and other parameters in a dictionary, this function downloads the
-   * corresponding users (those that match with the given filter). After getting them,
-   * it checks how many of them have the set of segments given in the dictionary. Finally,
-   * it generates the 'overlap' report where it gives the count and device_unique for 
-   * each segment.
-   * 
-   * - spark: Spark Session that will be used to read and store data in HDFS.
-   * - jsonContent: map with all the parameters necessary to run the query. At least it
-   * should contain the following fields: query, datasource, segments, split.
-   * - name: file name that will be used to name the report as well.
-   * 
-   * It stores the overlap report in /datascience/reporter/processed/name.
-  */
+    * Given a query and other parameters in a dictionary, this function downloads the
+    * corresponding users (those that match with the given filter). After getting them,
+    * it checks how many of them have the set of segments given in the dictionary. Finally,
+    * it generates the 'overlap' report where it gives the count and device_unique for
+    * each segment.
+    *
+    * - spark: Spark Session that will be used to read and store data in HDFS.
+    * - jsonContent: map with all the parameters necessary to run the query. At least it
+    * should contain the following fields: query, datasource, segments, split.
+    * - name: file name that will be used to name the report as well.
+    *
+    * It stores the overlap report in /datascience/reporter/processed/name.
+    */
   def getQueryReport(
       spark: SparkSession,
       jsonContent: Map[String, String],
@@ -150,16 +152,16 @@ object Reporter {
   }
 
   /**
-   * This function takes as input a json file with one or more queries to be run.
-   * It iterates over all of them, and for each one it generates the corresponding
-   * report and meta file (if specified).
-   * 
-   * - spark: Spark Session that will be used to load and store the data in HDFS.
-   * - fileName: file's name to be processed.
-   * 
-   * As a result it stores the result in /datascience/reporter/processed/fileName and
-   * leaves the meta file in /datascience/ingester/ready/
-  */
+    * This function takes as input a json file with one or more queries to be run.
+    * It iterates over all of them, and for each one it generates the corresponding
+    * report and meta file (if specified).
+    *
+    * - spark: Spark Session that will be used to load and store the data in HDFS.
+    * - fileName: file's name to be processed.
+    *
+    * As a result it stores the result in /datascience/reporter/processed/fileName and
+    * leaves the meta file in /datascience/ingester/ready/
+    */
   def processFile(spark: SparkSession, fileName: String) = {
     println("LOG: Processing File..")
     // Moving the file to the folder in_progress
