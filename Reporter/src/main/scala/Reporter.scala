@@ -120,7 +120,8 @@ object Reporter {
       name: String
   ) = {
     // First of all we read all the parameters that are of interest
-    val query = jsonContent("query")
+    val interval = jsonContent("interval").split(",").toSeq
+    val query = "(%s) AND (hour >= %s AND hour <= %s)".format(jsonContent("query"), interval(0), interval(1))
     val segments = jsonContent("datasource").split(",").map(_.toInt).toSeq :+ 0
     val firstParty = jsonContent("segments")
     val split = jsonContent("split")
