@@ -60,6 +60,36 @@ object UrlIngester {
     df
   }  
 
+//////////////////////////////////////////////////////////////
+
+  def getData(
+      spark: SparkSession,
+      nDays: Integer,
+      date_current: String,
+      path: String
+  ): DataFrame = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val formatter = DateTimeFormat.forPattern(format)
+    val end = DateTime.parse(date_current, formatter)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+
+    df
+  }  
+
   /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR TRANSFORMING DATA     //////////////////////
@@ -162,45 +192,7 @@ object UrlIngester {
         regexp_replace(col(field), "@", "_")
       )    
   }  
-
-  /**
-    * This method processes dataframe obtaining urls with count.
-    *
-    * @param df: DataFrame with urls and country.
-    *
-    * @return a DataFrame with processed urls, country and count.
-   **/
-
-   def transformDF(df: DataFrame, urls_limit: Integer, date_current: String, replicationFactor: Integer = 8): DataFrame = {
-
-    val df_processed = df.withColumn(
-                  "composite_key",
-                  concat(
-                    col("url"),
-                    lit("@"),
-                    col("country"),
-                    lit("@"),
-                    // This last part is a random integer ranging from 0 to replicationFactor
-                    least(
-                      floor(rand() * replicationFactor),
-                      lit(replicationFactor - 1) // just to avoid unlikely edge case
-                    )
-                  )
-                ).groupBy("composite_key")
-                  .count
-                  .withColumn("split", split(col("composite_key"), "@"))
-                  .withColumn("url",col("split")(0))
-                  .withColumn("country",col("split")(1))
-                  .groupBy("url","country")
-                  .agg(sum(col("count")).as("count"))
-                  .sort(desc("count"))
-                  .limit(urls_limit)
-
-    df_processed.withColumn("day", lit(date_current))
-                .select("url","country","count","day")
-
-   }              
-
+              
   /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR SAVING DATA     //////////////////////
@@ -253,16 +245,55 @@ object UrlIngester {
     /**  Load data */    
     val db = getDataUrls(spark = spark, nDays = nDays, since = since)    
     
-    /** Preprocess URLS */    
+    val temppath = "/datascience/url_ingester/db_tmp"
+
+    /** Preprocess URLS and checkpoint */    
     val df = processURLHTTP(db)
+            
+    df.write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save(temppath)    
 
-    /** Process Data */    
-    val df_processed = transformDF(df = df, urls_limit = urls_limit, date_current = date_current)
+    df.cache()
 
-    /** Here we store the data */
+    /** Process and store the Data for each country */  
+    val countries = "AR,BO,BR,CL,CO,EC,MX,PE,US,UY,VE".split(",").toList
+
     val savepath = "/datascience/url_ingester/data"
 
-    saveData(data = df_processed, path = savepath)        
+    val replicationFactor = 8
+
+    for (country <- countries) {
+          df.filter("country = '%s'".format(country))
+            .withColumn(
+                    "composite_key",
+                    concat(
+                      col("url"),
+                      lit("@"),
+                      // This last part is a random integer ranging from 0 to replicationFactor
+                      least(
+                        floor(rand() * replicationFactor),
+                        lit(replicationFactor - 1) // just to avoid unlikely edge case
+                      )
+                    )
+                  ).groupBy("composite_key")
+                   .count
+                   .withColumn("split", split(col("composite_key"), "@"))
+                   .withColumn("url",col("split")(0))
+                   .groupBy("url")
+                   .agg(sum(col("count")).as("count"))
+                   .sort(desc("count"))
+                   .limit(urls_limit)
+                   .withColumn("country",lit(country))
+                   .withColumn("day", lit(date_current))
+                   .select("url","country","count","day")
+                   .write
+                   .format("parquet")
+                   .partitionBy("day","country")
+                   .mode(SaveMode.Overwrite)
+                   .save(savepath)                  
+        }
 
   }
 
