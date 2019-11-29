@@ -53,6 +53,8 @@ object Reporter {
           )
       )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    
+    hdfs_files.foreach(println(_))
 
     // Load the data
     val path =
