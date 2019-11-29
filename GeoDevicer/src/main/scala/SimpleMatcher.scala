@@ -275,9 +275,9 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/data/geo/startapp/parquet/day=*/country=CL/",
-        "/datascience/geo/POIs/Universidad_de_los_Andes.json",
-        "chile")
+        "/data/geo/startapp/parquet/day=*/country=CO/",
+        "/datascience/geo/POIs/Ciudad_amurallada_Grid.json",
+        "colombia")
 
   }
 }

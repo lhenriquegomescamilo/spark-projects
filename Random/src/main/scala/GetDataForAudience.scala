@@ -343,7 +343,7 @@ object GetDataForAudience {
       .option("sep", "\t")
       .option("header", "true")
       .load(
-        "/datascience/geo/crossdeviced/jcdecaux_test_4_points_90d_mexico_25-11-2019-16h_xd"
+        "/datascience/geo/crossdeviced/jcdecaux_test_4_points_120d_mexico_28-11-2019-10h_xd"
       )
 
     val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
@@ -379,6 +379,28 @@ object GetDataForAudience {
       .format("csv")
       .mode("overwrite")
       .save("/datascience/custom/jcdecaux_with_segments")
+
+  }
+
+
+  def getAllDataSegmentsForAudience(spark: SparkSession) = {
+    val data_audiences = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load(
+        "/datascience/geo/crossdeviced/jcdecaux_test_4_points_120d_mexico_28-11-2019-10h_xd"
+      )
+
+       val data_segments = getDataTriplets(spark, country = "MX", nDays = 60)
+      .select("device_id", "segment")
+
+    data_audiences
+      .join(data_segments, Seq("device_id"))
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .save("/datascience/custom/jcdecaux_with_all_segments")
 
   }
 
@@ -423,7 +445,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataSegmentsForAudience(spark = spark)
+    getAllDataSegmentsForAudience(spark = spark)
 
   }
 }
