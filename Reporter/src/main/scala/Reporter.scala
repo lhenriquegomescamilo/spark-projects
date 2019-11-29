@@ -31,6 +31,9 @@ object Reporter {
       id_partner: String
   ): DataFrame = {
     println("DEVICER LOG: PIPELINE ID PARTNERS")
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
 
     // Get the list of days to be retrieved
     val from =
