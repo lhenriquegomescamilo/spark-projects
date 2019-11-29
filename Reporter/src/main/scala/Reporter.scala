@@ -76,7 +76,7 @@ object Reporter {
     // This function is used to add a ficticious segment that will serve
     // as the total per id partner
     val addTotalIdUDF = udf(
-      (segments: Seq[Int]) => Option(segments).getOrElse(Seq(-1)) :+ 0
+      (segments: Seq[Int]) => segments :+ 0//Option(segments).getOrElse(Seq(-1)) :+ 0
     )
 
     // In this part we process the dataset so that we have all the segments per device,
