@@ -964,33 +964,73 @@ object RandomTincho {
 
   def get_keywords_for_equifax(spark:SparkSession){
     
-    val nids = spark.read.load("/datascience/pii_matching/pii_tuples/day=20191*/")
+     val replicationFactor = 8
+
+    val nids = spark.read.load("/datascience/pii_matching/pii_tuples/")
                           .filter("country = 'AR' and nid_sh2 is not null")
                           .select("device_id","nid_sh2")
-                          .dropDuplicates()
+                          .distinct()
     nids.cache()
 
-    // val keywords_nov = spark.read
-    //                         .load("/datascience/data_keywords/day=201911*/country=AR/")
-    //                         .select("device_id","content_keys")
-    //                         .groupBy("device_id")
-    //                         .agg(collect_list(col("content_keys")).as("keywords"))
-    //                         .withColumn("keywords", concat_ws(";", col("keywords")))
+     val keywords_nov = spark.read
+                             .load("/datascience/data_keywords/day=201911*/country=AR/")
+                             .select("device_id","content_keys")
+                             .withColumn(
+                                  "composite_key",
+                                  concat(
+                                    col("device_id"),
+                                    lit("@"),
+                                    col("content_keys"),
+                                    lit("@"),
+                                    // This last part is a random integer ranging from 0 to replicationFactor
+                                    least(
+                                      floor(rand() * replicationFactor),
+                                      lit(replicationFactor - 1) // just to avoid unlikely edge case
+                                    )
+                                  )
+                            ).groupBy("composite_key")
+                              .count
+                              .withColumn("split", split(col("composite_key"), "@"))
+                              .withColumn("device_id",col("split")(0))
+                              .withColumn("content_keys",col("split")(1))
+                             .groupBy("device_id")
+                             .agg(collect_list(col("content_keys")).as("keywords"))
+                             .withColumn("keywords", concat_ws(";", col("keywords")))
 
     val keywords_oct = spark.read
                             .load("/datascience/data_keywords/day=201910*/country=AR/")
                             .select("device_id","content_keys")
-                            .groupBy("device_id")
-                            .agg(collect_list(col("content_keys")).as("keywords"))
-                            .withColumn("keywords", concat_ws(";", col("keywords")))
+                             .withColumn(
+                                  "composite_key",
+                                  concat(
+                                    col("device_id"),
+                                    lit("@"),
+                                    col("content_keys"),
+                                    lit("@"),
+                                    // This last part is a random integer ranging from 0 to replicationFactor
+                                    least(
+                                      floor(rand() * replicationFactor),
+                                      lit(replicationFactor - 1) // just to avoid unlikely edge case
+                                    )
+                                  )
+                            ).groupBy("composite_key")
+                              .count
+                              .withColumn("split", split(col("composite_key"), "@"))
+                              .withColumn("device_id",col("split")(0))
+                              .withColumn("content_keys",col("split")(1))
+                             .groupBy("device_id")
+                             .agg(collect_list(col("content_keys")).as("keywords"))
+                             .withColumn("keywords", concat_ws(";", col("keywords")))
 
-    // nids.join(keywords_nov,Seq("device_id"),"inner").write
-    //                                                 .format("csv")
-    //                                                 .mode(SaveMode.Overwrite)
-    //                                                 .save("/datascience/custom/kws_equifax_november")
+     nids.join(keywords_nov,Seq("device_id"),"inner").write
+                                                     .format("csv")
+                                                     .option("header","true")
+                                                     .mode(SaveMode.Overwrite)
+                                                     .save("/datascience/custom/kws_equifax_november")
 
     nids.join(keywords_oct,Seq("device_id"),"inner").write
                                                     .format("csv")
+                                                    .option("header","true")
                                                     .mode(SaveMode.Overwrite)
                                                     .save("/datascience/custom/kws_equifax_october")
 
