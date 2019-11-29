@@ -23,19 +23,42 @@ object Reporter {
   **/
   def getDataset(
       spark: SparkSession,
-      query: String
+      query: String,
+      interval: Seq[String],
+      id_partner: String
   ): DataFrame = {
     println("DEVICER LOG: PIPELINE ID PARTNERS")
+
+    // Get the list of days to be retrieved
+    val from =
+      DateTime.parse(interval(0), DateTimeFormat.forPattern("yyyyMMddHH"))
+    val to =
+      DateTime.parse(interval(1), DateTimeFormat.forPattern("yyyyMMddHH"))
+    val nDays = Days.daysBetween(from, to).getDays()
+
+    // Get list of valid days
+    val hdfs_files = (0 to nDays)
+      .flatMap(
+        day =>
+          (0 to 24).map(
+            hour =>
+              "/datascience/data_partner_streaming/hour=%s%02d/id_partner=%s"
+                .format(from.toString("yyyyMMdd"), hour, id_partner)
+          )
+      )
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    // Load the data
     val path =
       "/datascience/data_partner_streaming/"
-
     val data = spark.read
-      .load(path)
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
       .filter(query)
 
     // This is the list of columns to be allowed
     val columns =
-      """device_id, id_partner, first_party, all_segments"""
+      """device_id, all_segments"""
         .replace("\n", "")
         .replace(" ", "")
         .split(",")
@@ -76,7 +99,8 @@ object Reporter {
     // This function is used to add a ficticious segment that will serve
     // as the total per id partner
     val addTotalIdUDF = udf(
-      (segments: Seq[Int]) => segments :+ 0//Option(segments).getOrElse(Seq(-1)) :+ 0
+      (segments: Seq[Int]) =>
+        segments :+ 0 //Option(segments).getOrElse(Seq(-1)) :+ 0
     )
 
     // In this part we process the dataset so that we have all the segments per device,
@@ -121,13 +145,13 @@ object Reporter {
   ) = {
     // First of all we read all the parameters that are of interest
     val interval = jsonContent("interval").split(",").toSeq
-    val query = "(%s) AND (hour >= %s AND hour <= %s)".format(jsonContent("query"), interval(0), interval(1))
+    val query = jsonContent("query")
     val segments = jsonContent("datasource").split(",").map(_.toInt).toSeq :+ 0
     val firstParty = jsonContent("segments")
     val split = jsonContent("split")
 
     // Then we obtain the dataset and the overlap
-    val dataset = getDataset(spark, query)
+    val dataset = getDataset(spark, query, interval, jsonContent("partnerId"))
     val overlap = getOverlap(spark, dataset, segments)
 
     // If there is a split, then we have to add the field firstParty as a column
