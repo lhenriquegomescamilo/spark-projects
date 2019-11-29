@@ -964,18 +964,18 @@ object RandomTincho {
 
   def get_keywords_for_equifax(spark:SparkSession){
     
-    val nids = spark.read.load("/datascience/pii_matching/pii_tuples/day=20191*/")
-                          .filter("country = 'AR' and nid_sh2 is not null")
+    val nids = spark.read.load("/datascience/pii_matching/pii_tuples/day=20191*/country=AR/")
+                          .filter("nid_sh2 is not null")
                           .select("device_id","nid_sh2")
                           .dropDuplicates()
     nids.cache()
 
-    val keywords_nov = spark.read
-                            .load("/datascience/data_keywords/day=201911*/country=AR/")
-                            .select("device_id","content_keys")
-                            .groupBy("device_id")
-                            .agg(collect_list(col("content_keys")).as("keywords"))
-                            .withColumn("keywords", concat_ws(";", col("keywords")))
+    // val keywords_nov = spark.read
+    //                         .load("/datascience/data_keywords/day=201911*/country=AR/")
+    //                         .select("device_id","content_keys")
+    //                         .groupBy("device_id")
+    //                         .agg(collect_list(col("content_keys")).as("keywords"))
+    //                         .withColumn("keywords", concat_ws(";", col("keywords")))
 
     val keywords_oct = spark.read
                             .load("/datascience/data_keywords/day=201910*/country=AR/")
