@@ -1024,19 +1024,21 @@ object RandomTincho {
                             // .agg(collect_list(col("content_keys")).as("keywords"))
                             // .withColumn("keywords", concat_ws(";", col("keywords")))
 
-     nids.join(keywords_nov,Seq("device_id"),"inner").select("nid_sh2","keywords") 
+     nids.join(keywords_nov,Seq("device_id"),"inner").select("nid_sh2","content_keys") 
                                                     .groupBy("nid_sh2")
                                                     .agg(collect_list(col("content_keys")).as("keywords"))
                                                     .withColumn("keywords", concat_ws(";", col("keywords")))
+                                                    .select("nid_sh2","keywords")
                                                     .write
                                                     .format("parquet")
                                                     .mode(SaveMode.Overwrite)
                                                     .save("/datascience/custom/kws_equifax_november")
 
-    nids.join(keywords_oct,Seq("device_id"),"inner").select("nid_sh2","keywords") 
+    nids.join(keywords_oct,Seq("device_id"),"inner").select("nid_sh2","content_keys") 
                                                     .groupBy("nid_sh2")
                                                     .agg(collect_list(col("content_keys")).as("keywords"))
                                                     .withColumn("keywords", concat_ws(";", col("keywords")))
+                                                    .select("nid_sh2","keywords")
                                                     .write
                                                     .format("parquet")
                                                     .mode(SaveMode.Overwrite)
