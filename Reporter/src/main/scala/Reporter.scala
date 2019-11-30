@@ -52,16 +52,19 @@ object Reporter {
                 .format(from.toString("yyyyMMdd"), hour, id_partner)
           )
       )
+    val filtered = hdfs_files
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     
-    hdfs_files.foreach(println(_))
+    println("Files to be processed")
+    hdfs_files.foreach(file => println(file))
+    filtered.foreach(file => println(file))
 
     // Load the data
     val path =
       "/datascience/data_partner_streaming/"
     val data = spark.read
       .option("basePath", path)
-      .parquet(hdfs_files: _*)
+      .parquet(filtered: _*)
       .filter(query)
 
     // This is the list of columns to be allowed
