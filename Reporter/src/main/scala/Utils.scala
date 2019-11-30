@@ -40,7 +40,8 @@ object Utils {
       "segmentsFilter" -> "",
       "userEmail" -> "salvador@retargetly.com",
       "reportId" -> "0",
-      "report_subtype" -> ""
+      "report_subtype" -> "",
+      "userId" -> ""
     )
 
     for (query <- data) {
@@ -103,11 +104,11 @@ object Utils {
       jsonContent: Map[String, String]
   ) {
     // First of all we create a new map with all the information
-    val int_fields = "priority reportId partnerId split jobId"
+    val int_fields = "priority reportId partnerId split jobId userId"
       .split(" ")
       .toList
     val fields =
-      "split segmentsFilter userEmail reportId report_subtype jobId partnerId priority description queue"
+      "split segmentsFilter userEmail reportId report_subtype jobId partnerId priority description queue interval userId"
         .split(" ")
         .toList
     val jsonMap: Map[String, String] = fields
