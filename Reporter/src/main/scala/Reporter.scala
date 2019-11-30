@@ -49,7 +49,7 @@ object Reporter {
           (0 to 24).map(
             hour =>
               "/datascience/data_partner_streaming/hour=%s%02d/id_partner=%s"
-                .format(from.toString("yyyyMMdd"), hour, id_partner)
+                .format(from.plusDays(day).toString("yyyyMMdd"), hour, id_partner)
           )
       )
     val filtered = hdfs_files
