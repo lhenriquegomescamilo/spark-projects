@@ -121,17 +121,19 @@ object Streaming {
       finalDF
         .filter(
           length(col("device_id")) > 0 && col("event_type")
-            .isin(event_types: _*) && !col("id_partner").isin(blacklist: _*)
+            .isin(event_types: _*) && col("id_partner") < 5000 && !col(
+            "id_partner"
+          ).isin(blacklist: _*)
         )
 
     println("LOGGER:\n\tFinal DF: %s".format(finalDF))
 
     // In the last step we write the batch that has been read into /datascience/data_audiences_streaming/ or /datascience/data_partner_streaming/
     val outputPath = "/datascience/data_reporter" + (if (parallel > 0)
-                                                                "_%s".format(
-                                                                  parallel
-                                                                )
-                                                              else "")
+                                                       "_%s".format(
+                                                         parallel
+                                                       )
+                                                     else "")
 
     filtered.createOrReplaceTempView("temp_data_5")
 
