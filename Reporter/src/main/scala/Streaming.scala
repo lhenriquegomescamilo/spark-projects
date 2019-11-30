@@ -45,7 +45,7 @@ object Streaming {
 
     // This is the list of selected columns.
     val columns =
-      """device_id, id_partner, event_type, device_type, first_party, all_segments, country, datetime"""
+      """device_id, id_partner, event_type, device_type, first_party, all_segments, country, time"""
         .replace("\n", "")
         .replace(" ", "")
         .split(",")
