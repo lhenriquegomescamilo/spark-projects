@@ -120,7 +120,7 @@ object platformsReport {
       .withColumn("d11", col("platforms")(2))
       .withColumn("d13", col("platforms")(3))
       .withColumn("d14", col("platforms")(4))
-      .dropDuplicates("device_id")
+      .dropDuplicates("device_id", "segment")
       .groupBy("segment", "country", "device_type")
       .agg(
         sum("d2") as "d2",
