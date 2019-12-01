@@ -152,7 +152,7 @@ object platformsData {
     val segments = df//temp_data
       .select("device_id", "segments", "platforms", "country", "device_type")
       .withColumn("segment", explode(col("segments")))
-      .filter("segment < 580 AND segment > 830")
+      .filter("segment < 580 OR segment > 830")
       .dropDuplicates("device_id", "segment")//, "country")
       .orderBy("device_id")
 
