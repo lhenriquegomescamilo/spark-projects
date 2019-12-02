@@ -96,7 +96,7 @@ object Reporter {
       .parquet(filtered: _*)
       .select(columns_pipe.head, columns_pipe.tail: _*)
 
-    data_partner
+    val data = data_partner
       .unionAll(data_reporter)
       .filter(query)
 
