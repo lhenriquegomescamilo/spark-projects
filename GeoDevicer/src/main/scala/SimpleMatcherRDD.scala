@@ -140,19 +140,7 @@ val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, 
 */
 
 //Manera C
-  val PointRDDSplitter = FileDataSplitter.WKT
-  val PointRDDIndexType = IndexType.RTREE
-  val PointRDDNumPartitions = 16
-  val PointRDDOffset = 0
-
-  val PolygonRDDInputLocation = resourceFolder + "polygons.tsv"
-  val PolygonRDDSplitter = FileDataSplitter.WKT
-  val PolygonRDDNumPartitions = 16
-  val PolygonRDDStartOffset = 0
-  val PolygonRDDEndOffset = -1
-
-  val joinQueryPartitioningType = GridType.QUADTREE
-  val eachQueryLoopTimes=5
+//Proximamente. 
 
 
 //Manera B
