@@ -151,7 +151,7 @@ object platformsData {
     val taxo_segs = spark.read
       .format("csv")
       .option("header", "true")
-      .load(taxo_path)
+      .load("/datascience/misc/taxo_gral.csv")
       .select("seg_id")
       .collect()
       .map(_(0))
