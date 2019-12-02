@@ -532,6 +532,67 @@ def get_segments_from_triplets_from_xd(
                      
   }
 
+
+def get_segments_from_triplets_for_geo_users(
+      spark: SparkSession,
+      path_w_cookies: String
+  ) = {
+
+        //Levantamos los segmentos
+        val segments_raw = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","MX")
+                        
+
+        val segments = segments_raw.filter(col("feature").isin(List("99593", "5022","920","275","2660","302",48174):_*))
+                                    .select("device_id","feature")
+                                    .withColumn("device_id",upper(col("device_id")))
+
+                       
+       //LEvantamos lo GEO
+
+       //direct
+      val direct = spark.read.format("csv").option("header",true).option("delimiter","\t")
+      .load("/datascience/geo/geo_processed/LuxoticaRadiosCiudades_geodevicer_mexico_sjoin_polygon")
+      .withColumn("origin",lit("direct"))
+
+      //madid
+      val xd = spark.read.format("csv").option("header",false).option("delimiter",",")
+                .load("/datascience/audiences/crossdeviced/LuxoticaRadiosCiudades_geodevicer_mexico_sjoin_polygon_xd")
+                .select("_c1","_c2","_c5")
+                .toDF("ad_id","id_type","name")
+                .withColumn("origin",lit("xd"))
+
+      
+      val audience = List(direct,xd).reduce(_.unionByName (_))
+                      .distinct()
+                      .withColumn("device_id",upper(col("ad_id")))
+                      .drop("ad_id")
+
+
+      val joined = audience.join(w_segments,Seq("device_id"))
+                    
+
+        joined.groupBy("origin","feature")
+        .agg(countDistinct("device_id") as "unique_devices")
+        .repartition(1)
+        write.format("csv")
+      .option("header",true)
+      .option("delimiter","\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/geo_processed/Luxottica_counts")
+
+
+      joined.write.format("csv")
+      .option("header",true)
+      .option("delimiter","\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/geo_processed/Luxottica_raw")
+
+
+
+                
+                     
+  }
+
 def startapp_geo_metrics (spark: SparkSession) {
 
 
