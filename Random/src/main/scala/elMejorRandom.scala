@@ -721,7 +721,19 @@ safe
 //.groupBy("country","detections").agg(count("ad_id") as "frequency")
 */
 
-get_segments_from_triplets_for_geo_users(spark)
+//get_segments_from_triplets_for_geo_users(spark)
+val segments_raw = getDataPipeline(spark,"/datascience/geo/safegraph/","200","1","MX")
+                      .select("ad_id")
+                      .distinct()
+
+segments_raw
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geo_processed/safegraph_unique_users_last_120")
+//.groupBy("country","detections").agg(count("ad_id") as "frequency")
+
 
 }
 
