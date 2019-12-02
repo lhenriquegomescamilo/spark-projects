@@ -148,10 +148,19 @@ object platformsData {
     //   .agg(collect_list(col("platforms")) as "platforms")
     //   .withColumn("platforms", getAllPlatforms(col("platforms")))
     //   .select("device_id", "platforms")
+    val taxo_segs = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load(taxo_path)
+      .select("seg_id")
+      .collect()
+      .map(_(0))
+      .toList
 
     val segments = df//temp_data
       .select("device_id", "segments", "platforms", "country", "device_type")
       .withColumn("segment", explode(col("segments")))
+      .filter(col("segment").isin(taxo_segs: _*))
       .filter("segment < 580 OR segment > 830")
       .dropDuplicates("device_id", "segment")//, "country")
       .orderBy("device_id")
