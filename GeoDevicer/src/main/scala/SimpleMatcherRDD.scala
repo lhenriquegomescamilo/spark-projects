@@ -139,6 +139,22 @@ val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, 
 // Fin the Manera A
 */
 
+//Manera C
+  val PointRDDSplitter = FileDataSplitter.WKT
+  val PointRDDIndexType = IndexType.RTREE
+  val PointRDDNumPartitions = 16
+  val PointRDDOffset = 0
+
+  val PolygonRDDInputLocation = resourceFolder + "polygons.tsv"
+  val PolygonRDDSplitter = FileDataSplitter.WKT
+  val PolygonRDDNumPartitions = 16
+  val PolygonRDDStartOffset = 0
+  val PolygonRDDEndOffset = -1
+
+  val joinQueryPartitioningType = GridType.QUADTREE
+  val eachQueryLoopTimes=5
+
+
 //Manera B
 //Acá persistimos en memoria el poligono 
 spatialRDDusers.spatialPartitioning(GridType.RTREE,200);
@@ -146,6 +162,7 @@ spatialRDDusers.buildIndex(IndexType.RTREE, true);
 spatialRDDusers.indexedRDD.persist(StorageLevel.MEMORY_ONLY);
 spatialRDDusers.spatialPartitionedRDD.persist(StorageLevel.MEMORY_ONLY)
 spatialRDDpolygon.spatialPartitioning(spatialRDDusers.getPartitioner)
+
 val result = JoinQuery.SpatialJoinQueryFlat(spatialRDDpolygon, spatialRDDusers, true, true);
 
 var intersection = Adapter.toDf(result,spark).select("_c1","_c3").toDF("ad_id","name")
@@ -194,10 +211,10 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //"/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
 //
 match_users_to_polygons(spark,
-  "/datascience/geo/polygons/AR/radio_censal/radios_argentina_2010_geodevicer.json",
-  "30",
+  "/datascience/geo/POIs/LuxoticaRadiosCiudades_geodevicer.json",
+  "5",
   "1",
-  "argentina")
+  "mexico")
 /*spark: SparkSession,
       nDays: String,
       since: String,
