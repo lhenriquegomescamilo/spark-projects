@@ -731,7 +731,7 @@ segments_raw
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/safegraph_unique_users_last_120")
+.save("/datascience/geo/geo_processed/safegraph_unique_users_last_200")
 //.groupBy("country","detections").agg(count("ad_id") as "frequency")
 
 
