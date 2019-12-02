@@ -534,8 +534,7 @@ def get_segments_from_triplets_from_xd(
 
 
 def get_segments_from_triplets_for_geo_users(
-      spark: SparkSession,
-      path_w_cookies: String
+      spark: SparkSession
   ) = {
 
         //Levantamos los segmentos
@@ -732,51 +731,7 @@ safe
 //.groupBy("country","detections").agg(count("ad_id") as "frequency")
 */
 
-val nDays = 30
-val since = 15
-      
-val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-   // Get the days to be loaded
-    val format = "yyyy/MM/dd"
-    val end = DateTime.now.minusDays(since.toInt)
-    val days = (0 until nDays.toInt)
-      .map(end.minusDays(_))
-      .map(_.toString(format))
-      .filter(x => !(x contains "2019/05/27"))
-
-    // Now we obtain the list of hdfs files to be read
-    val path = "/data/geo/safegraph/"
-
-    val hdfs_files = days.map(day => path+"%s/".format(day))
-                            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-                            .map(day => day+"*.gz")
-
-
-    // Finally we read, filter by country, rename the columns and return the data
-    val onemonth_safegraph = spark.read
-      .option("header", "true")
-      .csv(hdfs_files: _*)
-      
-
-onemonth_safegraph
-.groupBy("country").agg(count("ad_id") as "detections", countDistinct("ad_id") as "unique_users")
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/onemonth_safegraph")
-
-val onemonth_startapp =  spark.read.format("parquet").option("header",false).option("delimiter","\t").load("/data/geo/startapp/parquet/")
-
-onemonth_startapp
-.groupBy("country").agg(count("ad_id") as "detections", countDistinct("ad_id") as "unique_users")
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/onemonth_startapp")
+get_segments_from_triplets_for_geo_users(spark)
 
 }
 
