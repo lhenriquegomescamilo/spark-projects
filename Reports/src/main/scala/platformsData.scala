@@ -155,15 +155,17 @@ object platformsData {
       .select("seg_id")
       .collect()
       .map(_(0))
-      .toList
+      .toSet
+
+    val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => !taxo_segs.contains(s)) )
 
     val segments = temp_data
       .select("device_id", "segments", "platforms", "country", "device_type")
+      .withColumn("segments", filter_firstparty(col("segments")))
       .withColumn("segment", explode(col("segments")))
-      .filter(col("segment").isin(taxo_segs: _*))
       .filter("segment < 580 OR segment > 830")
       .dropDuplicates("device_id", "segment")//, "country")
-      .orderBy("device_id")
+      // .orderBy("device_id")
 
     println("LOGGER: EXECUTION PLAN")
     segments.explain()
