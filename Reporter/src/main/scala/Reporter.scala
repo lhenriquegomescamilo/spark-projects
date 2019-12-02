@@ -89,11 +89,11 @@ object Reporter {
       "/datascience/data_partner_streaming/"
     val data_partner = spark.read
       .option("basePath", path)
-      .parquet(filtered: _*)
+      .parquet(hdfs_files: _*)
       .select(columns_pipe.head, columns_pipe.tail: _*)
     val data_reporter = spark.read
       .option("basePath", path)
-      .parquet(filtered: _*)
+      .parquet(hdfs_files_reporter: _*)
       .select(columns_pipe.head, columns_pipe.tail: _*)
 
     val data = data_partner
