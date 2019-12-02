@@ -532,6 +532,56 @@ def get_segments_from_triplets_from_xd(
                      
   }
 
+
+def get_segments_from_triplets_for_geo_users(
+      spark: SparkSession
+  ) = {
+
+        //Levantamos los segmentos
+        val segments_raw = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","MX")
+                        
+
+        val segments = segments_raw.filter(col("feature").isin(List("99593", "5022","920","275","2660","302","48174"):_*))
+                                    .select("device_id","feature")
+                                    .withColumn("device_id",upper(col("device_id")))
+
+                       
+       //LEvantamos lo GEO
+
+       //direct
+      val direct = spark.read.format("csv").option("header",true).option("delimiter","\t")
+      .load("/datascience/geo/geo_processed/LuxoticaRadiosCiudades_geodevicer_mexico_sjoin_polygon")
+      .withColumn("origin",lit("direct"))
+
+      //madid
+      val xd = spark.read.format("csv").option("header",false).option("delimiter",",")
+                .load("/datascience/audiences/crossdeviced/LuxoticaRadiosCiudades_geodevicer_mexico_sjoin_polygon_xd")
+                .select("_c1","_c2","_c5")
+                .toDF("ad_id","id_type","name")
+                .withColumn("origin",lit("xd"))
+
+      
+      val audience = List(direct,xd).reduce(_.unionByName (_))
+                      .distinct()
+                      .withColumn("device_id",upper(col("ad_id")))
+                      .drop("ad_id")
+
+
+      val joined = audience.join(segments,Seq("device_id"))
+                    
+
+      joined.write.format("csv")
+      .option("header",true)
+      .option("delimiter","\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/geo_processed/Luxottica_raw")
+
+
+
+                
+                     
+  }
+
 def startapp_geo_metrics (spark: SparkSession) {
 
 
@@ -671,51 +721,7 @@ safe
 //.groupBy("country","detections").agg(count("ad_id") as "frequency")
 */
 
-val nDays = 30
-val since = 15
-      
-val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-   // Get the days to be loaded
-    val format = "yyyy/MM/dd"
-    val end = DateTime.now.minusDays(since.toInt)
-    val days = (0 until nDays.toInt)
-      .map(end.minusDays(_))
-      .map(_.toString(format))
-      .filter(x => !(x contains "2019/05/27"))
-
-    // Now we obtain the list of hdfs files to be read
-    val path = "/data/geo/safegraph/"
-
-    val hdfs_files = days.map(day => path+"%s/".format(day))
-                            .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-                            .map(day => day+"*.gz")
-
-
-    // Finally we read, filter by country, rename the columns and return the data
-    val onemonth_safegraph = spark.read
-      .option("header", "true")
-      .csv(hdfs_files: _*)
-      
-
-onemonth_safegraph
-.groupBy("country").agg(count("ad_id") as "detections", countDistinct("ad_id") as "unique_users")
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/onemonth_safegraph")
-
-val onemonth_startapp =  spark.read.format("parquet").option("header",false).option("delimiter","\t").load("/data/geo/startapp/parquet/")
-
-onemonth_startapp
-.groupBy("country").agg(count("ad_id") as "detections", countDistinct("ad_id") as "unique_users")
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/onemonth_startapp")
+get_segments_from_triplets_for_geo_users(spark)
 
 }
 

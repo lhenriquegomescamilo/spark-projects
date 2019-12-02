@@ -1046,6 +1046,29 @@ object RandomTincho {
 
   }
 
+  def get_data_BR_matching(spark:SparkSession){
+    spark.read.load("/datascience/pii_matching/pii_tuples/")
+              .filter("country = 'BR' and nid_sh2 is not null")
+              .select("nid_sh2")
+              .distinct()
+              .write
+              .format("parquet")
+              .mode(SaveMode.Overwrite)
+              .save("/datascience/custom/nids_BR")
+
+
+    spark.read.load("/datascience/pii_matching/pii_tuples/")
+            .filter("country = 'BR' and ml_sh2 is not null")
+            .select("ml_sh2")
+            .distinct()
+            .write
+            .format("parquet")
+            .mode(SaveMode.Overwrite)
+            .save("/datascience/custom/ml_BR")
+
+
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1057,18 +1080,9 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_keywords_for_equifax(spark)
+    get_data_BR_matching(spark)
 
-    //get_dataset_contextual(spark,scrapped_path = "/datascience/custom/urls_scrapped_AR.csv")
-
-    // val df1 = spark.read.format("csv").option("header","true").load("/datascience/custom/urls_scrapped_AR.csv").select("url")
-    // val df2 = processURLHTTP(spark.read.load("/datascience/data_demo/data_urls/day=20191110/").select("url","segments"))
-
-    // val joint = processURL(df1.join(df2,Seq("url"),"inner").select("url","segments"))
-    
-    // joint.write.format("parquet")
-    //             .mode(SaveMode.Overwrite)
-    //             .save("/datascience/url_ingester/gt_contextual")
+  
   }
 
 }

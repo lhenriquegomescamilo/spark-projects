@@ -154,8 +154,8 @@ object platformsData {
       .load("/datascience/misc/taxo_gral.csv")
       .select("seg_id")
       .collect()
-      .map(_(0))
-      .toSet
+      .map(_(0).toString.toInt)
+      .toSeq
 
     val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => taxo_segs.contains(s)) )
 
