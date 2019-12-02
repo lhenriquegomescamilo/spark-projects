@@ -567,13 +567,12 @@ def get_segments_from_triplets_for_geo_users(
                       .drop("ad_id")
 
 
-      val joined = audience.join(w_segments,Seq("device_id"))
+      val joined = audience.join(segments,Seq("device_id"))
                     
 
-        joined.groupBy("origin","feature")
-        .agg(countDistinct("device_id") as "unique_devices")
-        .repartition(1)
-        write.format("csv")
+        joined.groupBy("origin","feature").agg(countDistinct("device_id") as "unique_devices")
+      .repartition(1)
+      .write.format("csv")
       .option("header",true)
       .option("delimiter","\t")
       .mode(SaveMode.Overwrite)
