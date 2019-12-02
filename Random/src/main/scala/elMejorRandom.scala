@@ -541,7 +541,7 @@ def get_segments_from_triplets_for_geo_users(
         val segments_raw = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","MX")
                         
 
-        val segments = segments_raw.filter(col("feature").isin(List("99593", "5022","920","275","2660","302",48174):_*))
+        val segments = segments_raw.filter(col("feature").isin(List("99593", "5022","920","275","2660","302","48174"):_*))
                                     .select("device_id","feature")
                                     .withColumn("device_id",upper(col("device_id")))
 
@@ -569,15 +569,6 @@ def get_segments_from_triplets_for_geo_users(
 
       val joined = audience.join(segments,Seq("device_id"))
                     
-
-        joined.groupBy("origin","feature").agg(countDistinct("device_id") as "unique_devices")
-      .repartition(1)
-      .write.format("csv")
-      .option("header",true)
-      .option("delimiter","\t")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/geo_processed/Luxottica_counts")
-
 
       joined.write.format("csv")
       .option("header",true)
