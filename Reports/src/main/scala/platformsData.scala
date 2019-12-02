@@ -157,7 +157,7 @@ object platformsData {
       .map(_(0))
       .toSet
 
-    val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => !taxo_segs.contains(s)) )
+    val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => taxo_segs.contains(s)) )
 
     val segments = temp_data
       .select("device_id", "segments", "platforms", "country", "device_type")
