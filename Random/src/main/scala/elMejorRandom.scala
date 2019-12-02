@@ -171,7 +171,7 @@ def get_safegraph_data(
       
 
     // Now we obtain the list of hdfs files to be read
-    val path = "/datascience/geo/safegraph_pipeline/"
+    val path = "/datascience/geo/safegraph/"
     val hdfs_files = days
       .map(day => path +  "day=0%s/country=%s/".format(day,country))
       .filter(
@@ -722,7 +722,7 @@ safe
 */
 
 //get_segments_from_triplets_for_geo_users(spark)
-val segments_raw = getDataPipeline(spark,"/datascience/geo/safegraph","200","1","MX")
+val segments_raw = get_safegraph_data(spark,"200","1","mexico")
                       .select("ad_id")
                       .distinct()
 
