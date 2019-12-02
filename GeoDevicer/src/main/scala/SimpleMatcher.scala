@@ -190,7 +190,7 @@ val df_safegraph = spark.read.format("csv")
                   .option("header",false)
                   .option("delimiter","\t")
                   .load(data_path) 
-                  .toDF("device_id","device_type","freq","geocode","latitude","longitude")
+                  .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
                   .withColumn("latitude",col("latitude").cast("Double"))
                   .withColumn("longitude",col("longitude").cast("Double"))
                                     .na.drop()//"/datascience/geo/startapp/2019*"
@@ -221,7 +221,7 @@ safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-.select("ad_id","id_type","utc_timestamp","name")
+.select("ad_id","id_type","name") //"utc_timestamp",
 
             
 //intersection.show(5)
