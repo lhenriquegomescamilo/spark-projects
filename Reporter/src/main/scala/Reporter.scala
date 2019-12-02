@@ -86,13 +86,13 @@ object Reporter {
 
     // Load the data
     val path =
-      "/datascience/data_partner_streaming/"
+      "/datascience/data_%s/"
     val data_partner = spark.read
-      .option("basePath", path)
+      .option("basePath", path.format("partner_streaming"))
       .parquet(hdfs_files: _*)
       .select(columns_pipe.head, columns_pipe.tail: _*)
     val data_reporter = spark.read
-      .option("basePath", path)
+      .option("basePath", path.format("reporter"))
       .parquet(hdfs_files_reporter: _*)
       .select(columns_pipe.head, columns_pipe.tail: _*)
 
