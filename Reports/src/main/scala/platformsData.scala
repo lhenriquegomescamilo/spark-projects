@@ -135,13 +135,13 @@ object platformsData {
       .withColumn("segments", col("segments").cast("array<int>"))
       .select("device_id", "segments", "platforms", "country", "device_type")
 
-    // df.write
-    //   .format("parquet")
-    //   .mode("overwrite")
-    //   .save("/datascience/reports/platforms/tmp/")
+    df.write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/reports/platforms/tmp/")
 
-    // val temp_data =
-    //   spark.read.format("parquet").load("/datascience/reports/platforms/tmp/")
+    val temp_data =
+      spark.read.format("parquet").load("/datascience/reports/platforms/tmp/")
 
     // val users = temp_data
     //   .groupBy("device_id")
@@ -157,7 +157,7 @@ object platformsData {
       .map(_(0))
       .toList
 
-    val segments = df//temp_data
+    val segments = temp_data
       .select("device_id", "segments", "platforms", "country", "device_type")
       .withColumn("segment", explode(col("segments")))
       .filter(col("segment").isin(taxo_segs: _*))
