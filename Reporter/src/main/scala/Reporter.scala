@@ -42,29 +42,62 @@ object Reporter {
       DateTime.parse(interval(1), DateTimeFormat.forPattern("yyyyMMddHH"))
     val nDays = Days.daysBetween(from, to).getDays()
 
+    // Columns to be used.
+    val columns_pipe =
+      """device_id, id_partner, event_type, device_type, first_party, all_segments, country, time"""
+        .replace("\n", "")
+        .replace(" ", "")
+        .split(",")
+        .toList
+
     // Get list of valid days
+    val paths = List("data_partner_streaming", "data_reporter")
     val hdfs_files = (0 to nDays)
       .flatMap(
         day =>
           (0 to 24).map(
             hour =>
               "/datascience/data_partner_streaming/hour=%s%02d/id_partner=%s"
-                .format(from.plusDays(day).toString("yyyyMMdd"), hour, id_partner)
+                .format(
+                  from.plusDays(day).toString("yyyyMMdd"),
+                  hour,
+                  id_partner
+                )
           )
       )
-    val filtered = hdfs_files
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    
+    val hdfs_files_reporter = (45 to nDays)
+      .flatMap(
+        day =>
+          (0 to 24).map(
+            hour =>
+              "/datascience/data_partner_streaming/hour=%s%02d/id_partner=%s"
+                .format(
+                  from.plusDays(day).toString("yyyyMMdd"),
+                  hour,
+                  id_partner
+                )
+          )
+      )
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
     println("Files to be processed")
     hdfs_files.foreach(file => println(file))
-    filtered.foreach(file => println(file))
 
     // Load the data
     val path =
       "/datascience/data_partner_streaming/"
-    val data = spark.read
+    val data_partner = spark.read
       .option("basePath", path)
       .parquet(filtered: _*)
+      .select(columns_pipe.head, columns_pipe.tail: _*)
+    val data_reporter = spark.read
+      .option("basePath", path)
+      .parquet(filtered: _*)
+      .select(columns_pipe.head, columns_pipe.tail: _*)
+
+    data_partner
+      .unionAll(data_reporter)
       .filter(query)
 
     // This is the list of columns to be allowed
