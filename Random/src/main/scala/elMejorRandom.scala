@@ -722,7 +722,7 @@ safe
 */
 
 //get_segments_from_triplets_for_geo_users(spark)
-val segments_raw = getDataPipeline(spark,"/datascience/geo/safegraph/","200","1","MX")
+val segments_raw = getDataPipeline(spark,"/datascience/geo/safegraph","200","1","MX")
                       .select("ad_id")
                       .distinct()
 
