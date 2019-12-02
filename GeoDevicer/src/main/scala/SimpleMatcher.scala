@@ -184,13 +184,29 @@ var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_
 spatialDf.createOrReplaceTempView("poligonomagico")
 spatialDf.show(2)
 
+
+//Esto para levantar csv
+val df_safegraph = spark.read.format("csv")
+                  .option("header",false)
+                  .option("delimiter","\t")
+                  .load(data_path) 
+                  .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
+                  .withColumn("latitude",col("latitude").cast("Double"))
+                  .withColumn("longitude",col("longitude").cast("Double"))
+                                    .na.drop()//"/datascience/geo/startapp/2019*"
+                //.toDF("ad_id","timestamp","country","longitude","latitude","some")
+
+
+//Esto para levantar parquet
+/*
 val df_safegraph = spark.read.format("parquet")
                   .load(data_path) 
                   .withColumn("latitude",col("latitude").cast("Double"))
                   .withColumn("longitude",col("longitude").cast("Double"))
                   .na.drop()//"/datascience/geo/startapp/2019*"
                 //.toDF("ad_id","timestamp","country","longitude","latitude","some")
-                 
+  
+*/               
 
 df_safegraph.createOrReplaceTempView("data")
 
@@ -205,7 +221,7 @@ safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-.select("ad_id","id_type","utc_timestamp","name")
+.select("ad_id","id_type","name") //"utc_timestamp",
 
             
 //intersection.show(5)
@@ -275,9 +291,9 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/data/geo/startapp/parquet/day=*/country=CO/",
-        "/datascience/geo/POIs/Ciudad_amurallada_Grid.json",
-        "colombia")
+        "/datascience/geo/NSEHomes/mexico_200d_home_20-11-2019-9h",
+         "/datascience/geo/POIs/LuxoticaRadiosCiudades_geodevicer.json",
+        "mexico")
 
   }
 }
