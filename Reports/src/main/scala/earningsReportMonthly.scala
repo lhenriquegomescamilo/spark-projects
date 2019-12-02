@@ -57,7 +57,7 @@ object earningsReportMonthly {
       .option("basePath", path)
       .parquet(hdfs_files: _*)
       .select("id_partner","feature","device_id","country")
-      .withColumnRenamed("feature", "seg_id")
+      .withColumnRenamed("feature", "segment")
 
     df
   }
@@ -211,7 +211,7 @@ object earningsReportMonthly {
   ): DataFrame = {
 
     val df_grouped_country = df
-      .groupBy("id_partner","seg_id","country")
+      .groupBy("id_partner","segment","country")
       .count()
       .withColumnRenamed("count", "device_unique")
       .withColumn("day", lit(date_current)) 
