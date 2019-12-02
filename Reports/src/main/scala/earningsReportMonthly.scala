@@ -129,11 +129,11 @@ object earningsReportMonthly {
     * obtaining the number of devices per partner per segment.
     *
     * @param df_keys: DataFrame obtained from json queries.
-    * @param df_data_keywords: DataFrame obtained from getDataTriplets().
+    * @param df_data_triplets: DataFrame obtained from getDataTriplets().
     *
     * @return a DataFrame with "device_type", "device_id", "kws", being "kws" a list of keywords.
    **/
-
+/**
   def getJoint(
       df_taxo: DataFrame,
       df_data_triplets: DataFrame
@@ -145,7 +145,7 @@ object earningsReportMonthly {
       .dropDuplicates()
     df_joint
   }
-
+ **/
 //////////////////////////////////////////////////////////////
 
   def getJoint_xd(
