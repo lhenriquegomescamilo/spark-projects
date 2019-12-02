@@ -200,7 +200,7 @@ val geosparkConf = new GeoSparkConf(spark.sparkContext.getConf)
 //
 match_users_to_polygons(spark,
   "/datascience/geo/POIs/LuxoticaRadiosCiudades_geodevicer.json",
-  "5",
+  "30",
   "1",
   "mexico")
 /*spark: SparkSession,
