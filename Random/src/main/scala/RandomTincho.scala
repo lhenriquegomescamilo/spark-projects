@@ -1071,7 +1071,7 @@ object RandomTincho {
 
   def get_data_dani(spark:SparkSession){
 
-  spark.read.load("/datascience/data_partner_streaming/hour=%s*".format(day))
+  spark.read.load("/datascience/data_partner_streaming/hour=201912*")
             .filter("id_partner = 879 or id_partner = 640")
             .select("datetime","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country")
             .write
