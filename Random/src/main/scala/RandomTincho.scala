@@ -1074,7 +1074,7 @@ object RandomTincho {
  spark.read.format("csv").option("sep", "\t").option("header", "true")
             .load("/data/eventqueue/%s/*.tsv.gz".format("2019/12/*"))
             .filter("id_partner = 879 or id_partner = 640")
-            .select("datetime","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type")
+            .select("time","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type")
             .write
             .format("csv")
             .option("header","true")
