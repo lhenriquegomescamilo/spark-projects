@@ -791,13 +791,13 @@ object RandomTincho {
   def get_dataset_contextual(spark:SparkSession, scrapped_path:String){
 
     val stopwords = List("a","aca","ahi","al","algo","alla","ante",
-                          "antes","aquel","aqui","arriba","asi","atras","aun","aunque","bien",
-                          "cada","casi","como","con","cual","cuales","cuan","cuando"
-                          ,"de","del","demas","desde","donde","en","eres"
-                          ,"etc","hasta","me",
-                          "mientras","muy","otra","otro",
-                          "para","pero","pues","que","si","siempre","siendo","sin","sino","sobre",
-                          "su","sus","te","tu","tus","y","ya","yo")
+                          "antes","aquel","aqui","arriba","asi","atras",
+                          "aun","aunque","bien","cada","casi","como","con",
+                          "cual","cuales","cuan","cuando","de","del","demas",
+                          "desde","donde","en","eres","etc","hasta","me",
+                          "mientras","muy","para","pero","pues","que","si",
+                          "siempre","siendo","sin","sino","sobre","su","sus",
+                          "te","tu","tus","y","ya","yo")
 
     val title_kws = spark.read.format("csv")
                               .option("header","true")
@@ -1069,6 +1069,18 @@ object RandomTincho {
 
   }
 
+  def get_data_dani(spark:SparkSession){
+
+  spark.read.load("/datascience/data_partner_streaming/hour=201912*")
+            .filter("id_partner = 879 or id_partner = 640")
+            .select("datetime","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country")
+            .write
+            .format("csv")
+            .option("header","true")
+            .save("/datascience/custom/sample_dani")
+            
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1080,7 +1092,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_data_BR_matching(spark)
+    get_data_dani(spark)
 
   
   }
