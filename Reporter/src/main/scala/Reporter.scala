@@ -87,18 +87,30 @@ object Reporter {
     // Load the data
     val path =
       "/datascience/data_%s/"
-    val data_partner = spark.read
-      .option("basePath", path.format("partner_streaming"))
-      .parquet(hdfs_files: _*)
-      .select(columns_pipe.head, columns_pipe.tail: _*)
-    val data_reporter = spark.read
-      .option("basePath", path.format("reporter"))
-      .parquet(hdfs_files_reporter: _*)
-      .select(columns_pipe.head, columns_pipe.tail: _*)
+    val data = if (hdfs_files.size > 0 && hdfs_files_reporter.size > 0) {
+      val data_partner = spark.read
+        .option("basePath", path.format("partner_streaming"))
+        .parquet(hdfs_files: _*)
+        .select(columns_pipe.head, columns_pipe.tail: _*)
+      val data_reporter = spark.read
+        .option("basePath", path.format("reporter"))
+        .parquet(hdfs_files_reporter: _*)
+        .select(columns_pipe.head, columns_pipe.tail: _*)
 
-    val data = data_partner
-      .unionAll(data_reporter)
-      .filter(query)
+      data_partner
+        .unionAll(data_reporter)
+        .filter(query)
+    } else if (hdfs_files.size > 0) {
+      spark.read
+        .option("basePath", path.format("partner_streaming"))
+        .parquet(hdfs_files: _*)
+        .select(columns_pipe.head, columns_pipe.tail: _*)
+    } else {
+      spark.read
+        .option("basePath", path.format("reporter"))
+        .parquet(hdfs_files_reporter: _*)
+        .select(columns_pipe.head, columns_pipe.tail: _*)
+    }
 
     // This is the list of columns to be allowed
     val columns =
