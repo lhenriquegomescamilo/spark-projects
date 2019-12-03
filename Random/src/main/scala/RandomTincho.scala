@@ -1076,7 +1076,7 @@ object RandomTincho {
             .select("datetime","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country")
             .write
             .format("csv")
-            .options("header","true")
+            .option("header","true")
             .save("/datascience/custom/sample_dani")
             
   }
