@@ -722,17 +722,35 @@ safe
 */
 
 //get_segments_from_triplets_for_geo_users(spark)
-val segments_raw = get_safegraph_data(spark,"200","1","mexico")
-                      .select("ad_id")
-                      .distinct()
 
-segments_raw
+val tabla_1 = spark.read.format("parquet").load("/datascience/data_partner_streaming/")
+.select("device_id","all_segments","campaign_id","hour","id_partner")
+.filter("id_partner == 474")
+.withColumn("hour",to_timestamp(col("hour").cast("string"),"yyyyMMddHH"))
+.withColumn("day",date_format(col("hour"),"dd"))
+.withColumn("month",date_format(col("hour"),"MM"))
+.withColumn("hour",date_format(col("hour"),"HH"))
+.na.drop()
+.filter("month==12")
+.withColumn("all_segments",explode(col("all_segments")))
+.filter(col("all_segments").isin(taxo:_*))
+
+val tabla_segmentos = tabla_1.select("device_id","all_segments").distinct()
+val tabla_el_resto = tabla_1.drop("all_segments").distinct()
+
+tabla_segmentos
 .write.format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/safegraph_unique_users_last_200")
-//.groupBy("country","detections").agg(count("ad_id") as "frequency")
+.save("/datascience/misc/tableau/tabla_segmentos")
+
+tabla_el_resto
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/misc/tableau/tabla_id_partner")
 
 
 }
