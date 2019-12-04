@@ -157,7 +157,7 @@ object Reporter {
     val addTotalIdUDF = udf(
       (segmentsCol: Seq[Int]) =>
         segmentsCol
-          .filter(segements.contains(_)) :+ 0
+          .filter(segments.contains(_)) :+ 0
     )
 
     // In this part we process the dataset so that we have all the segments per device,
