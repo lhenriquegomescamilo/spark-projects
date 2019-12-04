@@ -73,7 +73,6 @@ object UpdateStartApp {
       .filter(
         dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath))
       )
-      .toList
 
     // This is the Safegraph data schema
     val customSchema = StructType(
@@ -94,7 +93,7 @@ object UpdateStartApp {
       .option("header", "false")
       .option("delimiter", "\t")
       .schema(customSchema)
-      .load(hdfs_files)
+      .load(hdfs_files: _*)
       .withColumn("geo_hash", lit("startapp"))
       .withColumn("utc_timestamp", unix_timestamp(col("date")))
       .withColumn(
