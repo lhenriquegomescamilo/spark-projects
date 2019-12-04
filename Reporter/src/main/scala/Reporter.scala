@@ -296,7 +296,7 @@ object Reporter {
 
   def main(args: Array[String]) {
     // Parse the parameters
-    val options = nextOption(Map(), Args.toList)
+    val options = nextOption(Map(), args.toList)
     val nFiles = if (options.contains('nFiles)) options('nFiles) else 10
 
     // Setting logger config
