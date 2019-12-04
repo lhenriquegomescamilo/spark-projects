@@ -55,6 +55,7 @@ object CrossDevicer {
       "idfa" -> "ios",
       "aaid"->"android",
       "unknown"->"unknown") 
+    
     val mapUDF = udf((dev_type: String) => typeMap(dev_type))
 
     // Get DrawBridge Index. Here we transform the device id to upper case too.
@@ -73,7 +74,7 @@ object CrossDevicer {
       .withColumn("device_id", upper(col("device_id")))
 
    
-      val cross_deviced_proto = db_data      
+    val cross_deviced_proto = db_data      
       .join(        
         audience    
            //,     value_dictionary("audience_column_name"),"validUser","frequency",     "device_id","device_type",           value_dictionary("poi_column_name"),
@@ -88,7 +89,7 @@ object CrossDevicer {
       .drop(col("device_type_db"))
       .withColumn("device_type", mapUDF(col("device_type")))     
       
-      val equivalence_table = cross_deviced.filter("device_type_db == 'coo'")
+      val equivalence_table = cross_deviced_proto
       .select("device_id","device_type","device","device_type_db")
       .toDF("device_id_origin","device_type_origin","device_id_xd","device_type_xd")
       .withColumn("device_type_origin",mapUDF(col("device_type_origin")))
