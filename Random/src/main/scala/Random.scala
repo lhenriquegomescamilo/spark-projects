@@ -5324,7 +5324,7 @@ user_granularity.write
       .load("/datascience/geo/safegraph/day=201911*")
       .withColumn("point", array(col("latitude"), col("longitude")))
       .groupBy("ad_id", "country", "day")
-      .agg(count(col("id_type")) as "count", collect_list("points") as "points")
+      .agg(count(col("id_type")) as "count", collect_list("point") as "points")
       .filter("count > 10")
       .write
       .format("parquet")
