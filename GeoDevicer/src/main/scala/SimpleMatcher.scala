@@ -291,9 +291,9 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/datascience/geo/NSEHomes/mexico_200d_home_20-11-2019-9h",
-         "/datascience/geo/POIs/LuxoticaRadiosCiudades_geodevicer.json",
-        "mexico")
+        "/datascience/geo/startapp/2019*",
+        "/datascience/geo/POIs/LasCondesSantiagoChile.json",
+        "chile")
 
   }
 }
