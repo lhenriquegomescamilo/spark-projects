@@ -280,7 +280,25 @@ object Reporter {
 
   }
 
+  type OptionMap = Map[Symbol, Int]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--nFiles" :: value :: tail =>
+        nextOption(map ++ Map('nFiles -> value.toInt), tail)
+    }
+  }
+
   def main(args: Array[String]) {
+    // Parse the parameters
+    val options = nextOption(Map(), Args.toList)
+    val nFiles = if (options.contains('nFiles)) options('nFiles) else 10
+
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
 
@@ -292,7 +310,7 @@ object Reporter {
 
     // Get the json files to be processed
     val path = "/datascience/reporter/to_process"
-    val files = Utils.getQueryFiles(spark, path)
+    val files = Utils.getQueryFiles(spark, path).slice(0, nFiles)
 
     files.foreach(file => processFile(spark, file))
   }
