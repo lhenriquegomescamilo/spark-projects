@@ -57,7 +57,7 @@ object Utils {
   /**
    * This function returns the list of json files to be processed.
   */
-  def getQueryFiles(spark: SparkSession, pathToProcess: String) = {
+  def getQueryFiles(spark: SparkSession, pathToProcess: String): List[String] = {
     // First we get the list of files to be processed
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -78,7 +78,7 @@ object Utils {
     )
 
     // Finally we return the json paths
-    filesReadyOrdered.map(x => x._1)
+    filesReadyOrdered.map(x => x._1).toList
   }
 
   /**
