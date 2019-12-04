@@ -73,6 +73,7 @@ object UpdateStartApp {
       .filter(
         dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath))
       )
+      .toList
 
     // This is the Safegraph data schema
     val customSchema = StructType(
