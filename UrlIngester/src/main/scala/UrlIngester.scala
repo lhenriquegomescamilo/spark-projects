@@ -105,8 +105,10 @@ object UrlIngester {
 
    def processURLHTTP(dfURL: DataFrame, field: String = "url"): DataFrame = {
     // First of all, we get the domains, and filter out those ones that are very generic
+    
     val generic_domains = List(
       "google",
+      "doubleclick",
       "facebook",
       "yahoo",
       "android",
