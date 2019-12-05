@@ -79,7 +79,7 @@ object ReporterPipeline {
 
     // List of columns that are arrays of integers
     val array_ints =
-      "first_party all_segments"
+      "first_party third_party"
         .split(" ")
 
     // Current day
