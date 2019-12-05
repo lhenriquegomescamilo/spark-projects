@@ -16,7 +16,7 @@ import org.apache.hadoop.conf.Configuration
   */
 object GetUAForAudience {
 
-  def get_data_urls(
+  def get_data_user_agents(
       spark: SparkSession,
       ndays: Int,
       since: Int,
@@ -57,11 +57,7 @@ object GetUAForAudience {
       .drop("_c0")
 
     val user_agents =
-      get_data_urls(spark, 60, 1, country).select(
-        "device_id",
-        "url",
-        "event_type"
-      )
+      get_data_user_agents(spark, 60, 1, country)
 
     audience
       .join(user_agents, Seq("device_id"))
