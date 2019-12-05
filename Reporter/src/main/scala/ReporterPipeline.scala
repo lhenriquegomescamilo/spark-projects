@@ -8,6 +8,7 @@ import org.apache.spark.sql.streaming.ProcessingTime
 import java.sql.Date
 import java.time.DateTimeException
 import org.joda.time.DateTime
+import org.apache.spark.sql.expressions.Window
 
 object ReporterPipeline {
 
