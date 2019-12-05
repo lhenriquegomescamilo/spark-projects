@@ -5318,17 +5318,30 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    // spark.read
+    //   .format("parquet")
+    //   .option("basePath", "/datascience/geo/safegraph/")
+    //   .load("/datascience/geo/safegraph/day=201911*")
+    //   .withColumn("point", array(col("latitude"), col("longitude")))
+    //   .groupBy("ad_id", "country", "day")
+    //   .agg(count(col("id_type")) as "count", collect_list("point") as "points")
+    //   .filter("count > 10")
+      // .write
+      // .format("parquet")
+      // .partitionBy("country")
+      // .save("/datascience/custom/users_with_many_points")
     spark.read
       .format("parquet")
-      .option("basePath", "/datascience/geo/safegraph/")
-      .load("/datascience/geo/safegraph/day=201911*")
-      .withColumn("point", array(col("latitude"), col("longitude")))
-      .groupBy("ad_id", "country", "day")
-      .agg(count(col("id_type")) as "count", collect_list("point") as "points")
-      .filter("count > 10")
+      .load("/datascience/custom/users_with_many_points")
+      .groupBy("country", "ad_id")
+      .agg(count("count") as "nDays", avg("count") as "avgCount")
+      .withColumn("avgCount", col("avgCount").cast("int"))
+      .filter("nDays > 25")
+      .groupBy("country", "avgCount")
+      .count()
+      .orderBy("count")
       .write
       .format("parquet")
-      .partitionBy("country")
-      .save("/datascience/custom/users_with_many_points")
+      .save("/datascience/custom/users_with_many_points_stats")
   }
 }

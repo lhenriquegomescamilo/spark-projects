@@ -28,7 +28,8 @@ object Reporter {
       spark: SparkSession,
       query: String,
       interval: Seq[String],
-      id_partner: String
+      id_partner: String,
+      segment_column: String
   ): DataFrame = {
     println("DEVICER LOG: PIPELINE ID PARTNERS")
     // First we obtain the configuration to be allowed to watch if a file exists or not
@@ -112,17 +113,11 @@ object Reporter {
         .select(columns_pipe.head, columns_pipe.tail: _*)
     }
 
-    // This is the list of columns to be allowed
-    val columns =
-      """device_id, all_segments"""
-        .replace("\n", "")
-        .replace(" ", "")
-        .split(",")
-
     val df =
       if (data.columns.length > 0)
         data
-          .select(columns.head, columns.tail: _*)
+          .withColumn("segments", col(segment_column))
+          .select("device_id", "first_party", "segments")
       else
         spark.createDataFrame(
           spark.sparkContext.parallelize(Seq(Row(columns: _*))),
@@ -163,11 +158,10 @@ object Reporter {
     // In this part we process the dataset so that we have all the segments per device,
     // the totals and filter to only keep the relevant segments
     val datasetWithSegments = dataset
-      .select("device_id", "all_segments")
       .na
       .drop()
-      .withColumn("all_segments", addTotalIdUDF(col("all_segments")))
-      .withColumn("segment", explode(col("all_segments")))
+      .withColumn("egments", addTotalIdUDF(col("segments")))
+      .withColumn("segment", explode(col("segments")))
       .filter(col("segment").isin(segments: _*))
 
     // Now we group by segment and obtain the two relevant metrics: count and device_unique
@@ -206,9 +200,12 @@ object Reporter {
     val segments = jsonContent("datasource").split(",").map(_.toInt).toSeq :+ 0
     val firstParty = jsonContent("segments")
     val split = jsonContent("split")
+    val segment_column =
+      if (jsonContent("report_subtype") == "thirdparty") "third_party"
+      else "first_party"
 
     // Then we obtain the dataset and the overlap
-    val dataset = getDataset(spark, query, interval, jsonContent("partnerId"))
+    val dataset = getDataset(spark, query, interval, jsonContent("partnerId"), segment_column)
     val overlap = getOverlap(spark, dataset, segments)
 
     // If there is a split, then we have to add the field firstParty as a column
