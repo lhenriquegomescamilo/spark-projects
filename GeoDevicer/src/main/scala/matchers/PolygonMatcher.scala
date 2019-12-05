@@ -74,7 +74,7 @@ object PolygonMatcher {
         .dropDuplicates("ad_id","latitude","longitude")
         .filter("country = '%s'".format(value_dictionary("country")))
         .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
-                 
+        .na.fill("android", Seq("id_type"))                                                                  
 
     df_safegraph.createOrReplaceTempView("data")
     var safegraphDf = spark

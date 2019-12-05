@@ -272,7 +272,10 @@ def userAggregateFromPolygon(
     val country_iso =
       if (value_dictionary("country") == "argentina")
            "AR"
-      else "MX"
+      if (value_dictionary("country") == "mexico")
+           "MX"
+      else
+         value_dictionary("country")
 
     val nDays = value_dictionary("web_days")
     val since = 1

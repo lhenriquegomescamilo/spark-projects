@@ -74,7 +74,10 @@ object POICrossDevicerJson {
           col("longitude_user").cast("float")*100
         ).cast("int"))
         )
-                         df_safegraph                         }
+        .na.fill("android", Seq("id_type"))
+
+        
+        df_safegraph}
 
   else {
     // Get the days to be loaded
