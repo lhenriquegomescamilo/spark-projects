@@ -272,7 +272,7 @@ def userAggregateFromPolygon(
     val country_iso =
       if (value_dictionary("country") == "argentina")
            "AR"
-      if (value_dictionary("country") == "mexico")
+      else if (value_dictionary("country") == "mexico")
            "MX"
       else
          value_dictionary("country").toString
