@@ -93,6 +93,7 @@ object CrossDevicer {
       val equivalence_table = cross_deviced_proto
       .select("device_id","device_type","device","device_type_db")
       .toDF("device_id_origin","device_type_origin","device_id_xd","device_type_xd")
+      .na.drop()
       .withColumn("device_type_origin",mapUDF(col("device_type_origin")))
       .withColumn("device_type_xd",mapUDF(col("device_type_xd")))
 
