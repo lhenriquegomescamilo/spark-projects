@@ -81,7 +81,9 @@ object CrossDevicer {
            //,     value_dictionary("audience_column_name"),"validUser","frequency",     "device_id","device_type",           value_dictionary("poi_column_name"),
         .distinct(),        
         Seq("device_id"),
-            "right_outer")      
+            "right_outer")
+      .na.drop()
+
 
     val cross_deviced = cross_deviced_proto
       .withColumn("device_id", coalesce(col("device"), col("device_id")))      
@@ -93,7 +95,6 @@ object CrossDevicer {
       val equivalence_table = cross_deviced_proto
       .select("device_id","device_type","device","device_type_db")
       .toDF("device_id_origin","device_type_origin","device_id_xd","device_type_xd")
-      .na.drop()
       .withColumn("device_type_origin",mapUDF(col("device_type_origin")))
       .withColumn("device_type_xd",mapUDF(col("device_type_xd")))
 
