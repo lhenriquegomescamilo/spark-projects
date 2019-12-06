@@ -85,6 +85,7 @@ object Reporter {
     * to overlap).
     */
   def getDataset(
+      spark: SparkSession,
       pipeline: DataFrame,
       query: String,
       segment_column: String,
@@ -95,7 +96,7 @@ object Reporter {
     // that will be used in the report
     val filterSegments = udf(
       (segmentsCol: Seq[Int], segmentsToKeep: Set[Int]) =>
-        if (segmentsToKeep.length > 0)
+        if (segmentsToKeep.size > 0)
           segmentsCol.filter(s => segmentsToKeep.contains(s))
         else segmentsCol
     )
@@ -121,7 +122,11 @@ object Reporter {
           spark.sparkContext.parallelize(
             Seq(Row(List("device_id", "first_party", "segments"): _*))
           ),
-          StructType(columns.map(c => StructField(c, StringType, true)).toArray)
+          StructType(
+            List("device_id", "first_party", "segments")
+              .map(c => StructField(c, StringType, true))
+              .toArray
+          )
         )
 
     df
@@ -217,13 +222,14 @@ object Reporter {
       partnerId
     )
     val dataset = getDataset(
+      spark,
       pipeline,
       query,
       segment_column,
-      segmentFilter.toSet,
-      segments.toSet
+      segmentFilter.map(_.toInt).toSet,
+      segments.map(_.toInt).toSet
     )
-    val overlap = getOverlap(spark, dataset)
+    val overlap = getOverlap(dataset, (split == "1" || split == "true"))
 
     // If there is a split, then we have to add the field firstParty as a column
     val report = overlap //if (split == "1" || split == "true") {
