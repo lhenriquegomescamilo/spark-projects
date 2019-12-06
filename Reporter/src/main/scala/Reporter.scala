@@ -48,7 +48,7 @@ object Reporter {
         day =>
           (0 to 24).map(
             hour =>
-              "/datascience/data_reporter/hour=%s%02d/id_partner=%s"
+              "/datascience/data_reporter2/hour=%s%02d/id_partner=%s"
                 .format(
                   from.plusDays(day).toString("yyyyMMdd"),
                   hour,
@@ -65,7 +65,7 @@ object Reporter {
     val path =
       "/datascience/data_%s/"
     val data = spark.read
-      .option("basePath", path.format("reporter"))
+      .option("basePath", path.format("reporter2"))
       .parquet(hdfs_files_reporter: _*)
 
     data
@@ -172,7 +172,8 @@ object Reporter {
     val grouped = datasetWithSegments
       .groupBy("first_party", "segment")
       .agg(
-        countDistinct(col("device_id")) as "device_unique"
+        //countDistinct(col("device_id")) as "device_unique"
+        approx_count_distinct(col("device_id"), rsd=0.02) as "device_unique"
       )
 
     grouped
