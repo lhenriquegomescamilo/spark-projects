@@ -20,16 +20,15 @@ object Reporter {
     * DataFrame that will be returned.
     *
     * @param spark: Spark Session that will be used to load the data from HDFS.
-    * @param query: query to filter by id partner, date, and segments.
+    * @param inverval: interval of days to be loaded.
+    * @param id_partner: partner for which the data will be loaded.
     *
     * @return a DataFrame with the information coming from the data read.
   **/
-  def getDataset(
+  def getPipelineData(
       spark: SparkSession,
-      query: String,
       interval: Seq[String],
-      id_partner: String,
-      segment_column: String
+      id_partner: String
   ): DataFrame = {
     println("DEVICER LOG: PIPELINE ID PARTNERS")
     // First we obtain the configuration to be allowed to watch if a file exists or not
@@ -43,36 +42,13 @@ object Reporter {
       DateTime.parse(interval(1), DateTimeFormat.forPattern("yyyyMMddHH"))
     val nDays = Days.daysBetween(from, to).getDays()
 
-    // Columns to be used.
-    val columns_pipe =
-      """device_id, id_partner, event_type, device_type, first_party, all_segments, country, time"""
-        .replace("\n", "")
-        .replace(" ", "")
-        .split(",")
-        .toList
-
     // Get list of valid days
-    val paths = List("data_partner_streaming", "data_reporter")
-    val hdfs_files = (0 to nDays)
+    val hdfs_files_reporter = (0 to nDays)
       .flatMap(
         day =>
           (0 to 24).map(
             hour =>
-              "/datascience/data_partner_streaming/hour=%s%02d/id_partner=%s"
-                .format(
-                  from.plusDays(day).toString("yyyyMMdd"),
-                  hour,
-                  id_partner
-                )
-          )
-      )
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val hdfs_files_reporter = (45 to nDays)
-      .flatMap(
-        day =>
-          (0 to 24).map(
-            hour =>
-              "/datascience/data_partner_streaming/hour=%s%02d/id_partner=%s"
+              "/datascience/data_reporter/hour=%s%02d/id_partner=%s"
                 .format(
                   from.plusDays(day).toString("yyyyMMdd"),
                   hour,
@@ -88,39 +64,63 @@ object Reporter {
     // Load the data
     val path =
       "/datascience/data_%s/"
-    val data = if (hdfs_files.size > 0 && hdfs_files_reporter.size > 0) {
-      val data_partner = spark.read
-        .option("basePath", path.format("partner_streaming"))
-        .parquet(hdfs_files: _*)
-        .select(columns_pipe.head, columns_pipe.tail: _*)
-      val data_reporter = spark.read
-        .option("basePath", path.format("reporter"))
-        .parquet(hdfs_files_reporter: _*)
-        .select(columns_pipe.head, columns_pipe.tail: _*)
+    val data = spark.read
+      .option("basePath", path.format("reporter"))
+      .parquet(hdfs_files_reporter: _*)
 
-      data_partner
-        .unionAll(data_reporter)
-        .filter(query)
-    } else if (hdfs_files.size > 0) {
-      spark.read
-        .option("basePath", path.format("partner_streaming"))
-        .parquet(hdfs_files: _*)
-        .select(columns_pipe.head, columns_pipe.tail: _*)
-    } else {
-      spark.read
-        .option("basePath", path.format("reporter"))
-        .parquet(hdfs_files_reporter: _*)
-        .select(columns_pipe.head, columns_pipe.tail: _*)
-    }
+    data
+  }
+
+  /**
+    * This function takes as input the pipeline data, and returns a DataFrame with
+    * all the data to be used by the Reporter.
+    *
+    * @param pipeline: DataFrame with all the pipeline data for a given partner.
+    * @param query: query to be used to filter the rows that are not useful.
+    * @param segment_column: column that will be used to overlap. It can be 'third_party' or 'first_party'.
+    * @param first_party_segments: list of segments for the first party data. It can be empty.
+    * @param overlap_segments: list of segments that will be overlapped with the first party data.
+    *
+    * Returns a DataFrame with three columns: device_id, first_party and segments (with the list of segments
+    * to overlap).
+    */
+  def getDataset(
+      pipeline: DataFrame,
+      query: String,
+      segment_column: String,
+      first_party_segments: Set[Int],
+      overlap_segments: Set[Int]
+  ): DataFrame = {
+    // These UDF will be useful to filter the list of segments
+    // that will be used in the report
+    val filterSegments = udf(
+      (segmentsCol: Seq[Int], segmentsToKeep: Set[Int]) =>
+        if (segmentsToKeep.length > 0)
+          segmentsCol.filter(s => segmentsToKeep.contains(s))
+        else segmentsCol
+    )
+    // Filter the pipeline
+    val data = pipeline
+      .filter(query)
 
     val df =
-      if (data.columns.length > 0)
+      if (data.columns.length > 0) // If there is data for the partner
         data
           .withColumn("segments", col(segment_column))
+          .withColumn(
+            "first_party",
+            filterSegments(col("first_party"), lit(first_party_segments))
+          )
+          .withColumn(
+            "segments",
+            filterSegments(col("segments"), lit(overlap_segments))
+          )
           .select("device_id", "first_party", "segments")
       else
         spark.createDataFrame(
-          spark.sparkContext.parallelize(Seq(Row(columns: _*))),
+          spark.sparkContext.parallelize(
+            Seq(Row(List("device_id", "first_party", "segments"): _*))
+          ),
           StructType(columns.map(c => StructField(c, StringType, true)).toArray)
         )
 
@@ -132,44 +132,42 @@ object Reporter {
     * That is, it checks how many of such users have any of the given segments.
     * It returns a DataFrame with these stats (count and device_unique).
     *
-    * - spark: SparkSession that will be used to load and store the data.
-    * - dataset: dataset with all the users that have matched the query and that
+    * @param dataset: dataset with all the users that have matched the query and that
     * will be overlaped with the list of segments.
-    * - segments: list of segments to be used for the report.
+    * @param split: boolean that tells us if we should explode the dataframe for each
+    * of the first party segments.
     *
     * It returns a dataframe with three columns:
+    *  - first party segment.
     *  - segment that has matched.
-    *  - device_unique
-    *  - count
+    *  - device_unique.
     */
   def getOverlap(
-      spark: SparkSession,
       dataset: DataFrame,
-      segments: Seq[Int]
+      split: Boolean
   ): DataFrame = {
     // This function is used to add a ficticious segment that will serve
     // as the total per id partner
     val addTotalIdUDF = udf(
-      (segmentsCol: Seq[Int]) =>
-        segmentsCol
-          .filter(segments.contains(_)) :+ 0
+      (segmentsCol: Seq[Int]) => segmentsCol :+ 0
     )
 
     // In this part we process the dataset so that we have all the segments per device,
     // the totals and filter to only keep the relevant segments
-    val datasetWithSegments = dataset
-      .na
+    val datasetWithSegments = dataset.na
       .drop()
       .withColumn("egments", addTotalIdUDF(col("segments")))
       .withColumn("segment", explode(col("segments")))
-      .filter(col("segment").isin(segments: _*))
+      .withColumn(
+        "first_party",
+        if (split) explode(col("first_party")) else lit("")
+      )
 
     // Now we group by segment and obtain the two relevant metrics: count and device_unique
     val grouped = datasetWithSegments
-      .groupBy("segment")
+      .groupBy("first_party", "segment")
       .agg(
-        countDistinct(col("device_id")) as "device_unique",
-        count("device_id") as "count"
+        countDistinct(col("device_id")) as "device_unique"
       )
 
     grouped
@@ -196,26 +194,45 @@ object Reporter {
   ) = {
     // First of all we read all the parameters that are of interest
     val interval = jsonContent("interval").split(",").toSeq
-    val query = jsonContent("query")
     val segments = jsonContent("datasource").split(",").map(_.toInt).toSeq :+ 0
     val firstParty = jsonContent("segments")
+    val segmentFilter = jsonContent("segmentsFilter").split(",").toList
     val split = jsonContent("split")
+    val partnerId = jsonContent("partnerId")
+    val segmentsQuery = segmentFilter
+      .map(s => "array_contains(first_party, %s)".format(s))
+      .mkString(" OR ")
+    var query = "id_partner = '%s'".format(partnerId)
+    if (segmentsQuery.size > 0) {
+      query = query + "(%s)".format(segmentsQuery)
+    }
     val segment_column =
       if (jsonContent("report_subtype") == "thirdparty") "third_party"
       else "first_party"
 
     // Then we obtain the dataset and the overlap
-    val dataset = getDataset(spark, query, interval, jsonContent("partnerId"), segment_column)
-    val overlap = getOverlap(spark, dataset, segments)
+    val pipeline = getPipelineData(
+      spark,
+      interval,
+      partnerId
+    )
+    val dataset = getDataset(
+      pipeline,
+      query,
+      segment_column,
+      segmentFilter.toSet,
+      segments.toSet
+    )
+    val overlap = getOverlap(spark, dataset)
 
     // If there is a split, then we have to add the field firstParty as a column
-    val report = if (split == "1" || split == "true") {
-      overlap
-        .withColumn("first_party", lit(firstParty))
-        .select("first_party", "segment", "count", "device_unique")
-    } else {
-      overlap.select("segment", "count", "device_unique")
-    }
+    val report = overlap //if (split == "1" || split == "true") {
+    //   overlap
+    //     .withColumn("first_party", lit(firstParty))
+    //     .select("first_party", "segment", "count", "device_unique")
+    // } else {
+    //   overlap.select("segment", "count", "device_unique")
+    // }
 
     report.createOrReplaceTempView("report")
     val table = spark.table("report")
@@ -254,7 +271,7 @@ object Reporter {
         "/datascience/reporter/in_progress/" + fileName
       )
 
-      for (jsonContent <- jsonContents) {
+      for (jsonContent <- jsonContents.slice(0, 1)) { // WATCH OUT, THIS IS HARDCODED
         println("LOG: Processing the following query:")
         jsonContent.foreach(t => println("\t%s -> %s".format(t._1, t._2)))
         // Then we export the report
