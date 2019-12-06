@@ -59,7 +59,7 @@ object Reporter {
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
     println("Files to be processed")
-    hdfs_files.foreach(file => println(file))
+    hdfs_files_reporter.foreach(file => println(file))
 
     // Load the data
     val path =
