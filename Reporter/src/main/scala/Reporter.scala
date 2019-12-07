@@ -44,7 +44,7 @@ object Reporter {
 
     // Get list of valid days
     val hdfs_files_reporter = (0 to nDays)
-      .flatMap(
+      .map(
         day =>
           "/datascience/data_reporter2/day=%s%id_partner=%s"
             .format(
