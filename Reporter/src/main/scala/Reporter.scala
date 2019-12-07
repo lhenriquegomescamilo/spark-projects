@@ -198,7 +198,7 @@ object Reporter {
     val interval = jsonContent("interval").split(",").toSeq
     val segments = jsonContent("datasource").split(",").map(_.toInt).toSeq :+ 0
     val firstParty = jsonContent("segments")
-    val segmentFilter = jsonContent("segmentsFilter").split(",").toList
+    val segmentFilter = jsonContent("segmentsFilter").split(",")
     val split = jsonContent("split")
     val partnerId = jsonContent("partnerId")
     val segmentsQuery = segmentFilter
