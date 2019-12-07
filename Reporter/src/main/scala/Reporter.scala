@@ -206,7 +206,7 @@ object Reporter {
       .mkString(" OR ")
     var query = "id_partner = '%s'".format(partnerId)
     if (segmentsQuery.size > 0) {
-      query = query + "(%s)".format(segmentsQuery)
+      query = query + "AND (%s)".format(segmentsQuery)
     }
     val segment_column =
       if (jsonContent("report_subtype") == "thirdparty") "third_party"
