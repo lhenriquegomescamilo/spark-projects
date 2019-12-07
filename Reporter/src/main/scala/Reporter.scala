@@ -161,7 +161,7 @@ object Reporter {
     // the totals and filter to only keep the relevant segments
     val datasetWithSegments = dataset.na
       .drop()
-      .withColumn("egments", addTotalIdUDF(col("segments")))
+      .withColumn("segments", addTotalIdUDF(col("segments")))
       .withColumn("segment", explode(col("segments")))
       .withColumn(
         "first_party",
