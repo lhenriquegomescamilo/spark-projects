@@ -46,7 +46,7 @@ object Reporter {
     val hdfs_files_reporter = (0 to nDays)
       .map(
         day =>
-          "/datascience/data_reporter2/day=%s%id_partner=%s"
+          "/datascience/data_reporter2/day=%s/id_partner=%s"
             .format(
               from.plusDays(day).toString("yyyyMMdd"),
               id_partner
