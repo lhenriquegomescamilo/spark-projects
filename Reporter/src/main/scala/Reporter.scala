@@ -85,16 +85,20 @@ object Reporter {
       pipeline: DataFrame,
       query: String,
       segment_column: String,
-      first_party_segments: Seq[Int],
-      overlap_segments: Seq[Int]
+      first_party_segments: Set[Int],
+      overlap_segments: Set[Int]
   ): DataFrame = {
-    // These UDF will be useful to filter the list of segments
+    // These UDFs will be useful to filter the list of segments
     // that will be used in the report
-    val filterSegments = udf(
-      (segmentsCol: Seq[Int], segmentsToKeep: Seq[Int]) =>
-        if (segmentsToKeep.size > 0)
-          segmentsCol.filter(s => segmentsToKeep.contains(s))
+    val filterFirstSegments = udf(
+      (segmentsCol: Seq[Int]) =>
+        if (first_party_segments.size > 0)
+          segmentsCol.filter(s => first_party_segments.contains(s))
         else segmentsCol
+    )
+    val filterThirdSegments = udf(
+      (segmentsCol: Seq[Int]) =>
+        segmentsCol.filter(s => overlap_segments.contains(s))
     )
     // Filter the pipeline
     val data = pipeline
@@ -106,11 +110,11 @@ object Reporter {
           .withColumn("segments", col(segment_column))
           .withColumn(
             "first_party",
-            filterSegments(col("first_party"), lit(first_party_segments))
+            filterFirstSegments(col("first_party"))
           )
           .withColumn(
             "segments",
-            filterSegments(col("segments"), lit(overlap_segments))
+            filterThirdSegments(col("segments"))
           )
           .select("device_id", "first_party", "segments")
       else
@@ -223,8 +227,8 @@ object Reporter {
       pipeline,
       query,
       segment_column,
-      segmentFilter.map(_.toInt).toArray,
-      segments.map(_.toInt).toArray
+      segmentFilter.map(_.toInt).toSet,
+      segments.map(_.toInt).toSet
     )
     val overlap = getOverlap(dataset, (split == "1" || split == "true"))
 
