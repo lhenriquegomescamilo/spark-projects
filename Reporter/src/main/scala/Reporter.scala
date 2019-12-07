@@ -112,10 +112,12 @@ object Reporter {
             "first_party",
             filterFirstSegments(col("first_party"))
           )
-          .withColumn(
-            "segments",
-            filterThirdSegments(col("segments"))
-          )
+          .na
+          .drop()
+          // .withColumn(
+          //   "segments",
+          //   filterThirdSegments(col("segments"))
+          // )
           .select("device_id", "first_party", "segments")
       else
         spark.createDataFrame(
