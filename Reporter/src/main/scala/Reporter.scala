@@ -46,15 +46,11 @@ object Reporter {
     val hdfs_files_reporter = (0 to nDays)
       .flatMap(
         day =>
-          (0 to 24).map(
-            hour =>
-              "/datascience/data_reporter2/hour=%s%02d/id_partner=%s"
-                .format(
-                  from.plusDays(day).toString("yyyyMMdd"),
-                  hour,
-                  id_partner
-                )
-          )
+          "/datascience/data_reporter2/day=%s%id_partner=%s"
+            .format(
+              from.plusDays(day).toString("yyyyMMdd"),
+              id_partner
+            )
       )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
@@ -173,7 +169,7 @@ object Reporter {
       .groupBy("first_party", "segment")
       .agg(
         //countDistinct(col("device_id")) as "device_unique"
-        approx_count_distinct(col("device_id"), rsd=0.02) as "device_unique"
+        approx_count_distinct(col("device_id"), rsd = 0.02) as "device_unique"
       )
 
     grouped
