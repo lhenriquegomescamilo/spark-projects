@@ -1071,16 +1071,18 @@ object RandomTincho {
 
   def get_data_dani(spark:SparkSession){
 
-    spark.read.format("csv").option("sep", "\t").option("header", "true")
-                .load("/data/eventqueue/%s/*.tsv.gz".format("2019/12/*"))
+    val days = List("01","02","03","04","05")
+    for (day <- days){
+      spark.read.format("csv").option("sep", "\t").option("header", "true")
+                .load("/data/eventqueue/%s/*.tsv.gz".format("2019/12/%s".format(day)))
                 .filter("id_partner = 879 and device_id is not null")
                 .select("time","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type","nid_sh2")
-                .filter(filter)
                 .write
                 .format("parquet")
-                .mode(SaveMode.Overwrite)
-                .partitionBy("time")
-                .save("/datascience/custom/sample_dani")
+                .save("/datascience/custom/sample_dani/day=%s".format(day))
+
+    }
+    
   }
 
   def main(args: Array[String]) {
