@@ -1075,14 +1075,16 @@ object RandomTincho {
     spark.read.format("csv").option("sep", "\t").option("header", "true")
                 .load("/data/eventqueue/%s/*.tsv.gz".format("2019/12/*"))
                 .filter("id_partner = 879 or id_partner = 640")
-                .select("time","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type")
+                .select("time","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type","nid_sh2")
                 .filter(filter)
+                .withColumn("split", split(col("time"), "T"))
+                .withColumn("date",col("split")(0))
+                .select("time","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type","nid_sh2","date")
                 .write
-                .format("csv")
+                .format("parquet")
                 .mode(SaveMode.Overwrite)
-                .option("header","true")
+                .partitionBy("date")
                 .save("/datascience/custom/sample_dani")
-                
   }
 
   def main(args: Array[String]) {
