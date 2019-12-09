@@ -350,6 +350,7 @@ object Geodevicer {
       //acá deberíamos activar geospark
       spark = SparkSession
         .builder()
+        .config("spark.network.timeout","1000s") //agreado por recomendacion de los de geospark
         .config("spark.serializer", classOf[KryoSerializer].getName)
         .config(
           "spark.kryo.registrator",
