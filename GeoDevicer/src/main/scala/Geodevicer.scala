@@ -351,6 +351,7 @@ object Geodevicer {
       spark = SparkSession
         .builder()
         .config("spark.network.timeout","1000s") //agreado por recomendacion de los de geospark
+        .config("spark.driver.maxResultSize","2g")
         .config("spark.serializer", classOf[KryoSerializer].getName)
         .config(
           "spark.kryo.registrator",
