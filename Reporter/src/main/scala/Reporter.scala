@@ -167,7 +167,7 @@ object Reporter {
       .withColumn("segment", explode(col("segments")))
       .withColumn(
         "first_party",
-        if (split) explode(col("first_party")) else lit("")
+        if (split) explode(col("first_party")) else lit("0")
       )
 
     // Now we group by segment and obtain the two relevant metrics: count and device_unique
