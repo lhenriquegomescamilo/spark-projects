@@ -115,6 +115,7 @@ object UrlIngester {
       "bing",
       "instagram",
       "cxpublic",
+      "cxense",
       "criteo",
       "outbrain",
       "flipboard",
