@@ -1071,15 +1071,18 @@ object RandomTincho {
 
   def get_data_dani(spark:SparkSession){
 
- spark.read.format("csv").option("sep", "\t").option("header", "true")
-            .load("/data/eventqueue/%s/*.tsv.gz".format("2019/12/*"))
-            .filter("id_partner = 879 or id_partner = 640")
-            .select("time","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type")
-            .write
-            .format("csv")
-            .option("header","true")
-            .save("/datascience/custom/sample_dani")
-            
+    val filter = "times is not null and id_partner is not null and device_id is not null and campaign_id is not null and campaign_name is not null and segments is not null and device_type is not null and country is not null and data_type is not null"
+    spark.read.format("csv").option("sep", "\t").option("header", "true")
+                .load("/data/eventqueue/%s/*.tsv.gz".format("2019/12/*"))
+                .filter("id_partner = 879 or id_partner = 640")
+                .select("time","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type")
+                .filter(filter)
+                .write
+                .format("csv")
+                .mode(SaveMode.Overwrite)
+                .option("header","true")
+                .save("/datascience/custom/sample_dani")
+                
   }
 
   def main(args: Array[String]) {
