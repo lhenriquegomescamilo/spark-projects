@@ -115,11 +115,16 @@ object UrlIngester {
       "bing",
       "instagram",
       "cxpublic",
+      "cxense",
       "criteo",
       "outbrain",
       "flipboard",
       "googleapis",
-      "googlequicksearchbox"
+      "googlequicksearchbox",
+      "0_media",
+      "provider",
+      "downloads",
+      "''"
     )
     val query_generic_domains = generic_domains
       .map(dom => "domain NOT LIKE '%" + dom + "%'")
