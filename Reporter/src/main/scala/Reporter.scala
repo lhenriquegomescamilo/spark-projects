@@ -229,7 +229,7 @@ object Reporter {
       pipeline,
       query,
       segment_column,
-      segmentFilter.map(_.toInt).toSet,
+      segmentFilter.filter(_.length>0).map(_.toInt).toSet,
       segments.map(_.toInt).toSet
     )
     val overlap = getOverlap(dataset, (split == "1" || split == "true"))
