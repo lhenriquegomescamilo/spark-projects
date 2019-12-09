@@ -60,16 +60,16 @@ object UpdateStartApp {
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val format = "yyyy/MM/dd"
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays)
       .map(end.minusDays(_))
       .map(_.toString(format))
 
     // Now we obtain the list of hdfs files to be read
-    val path = "/data/geo/safegraph/"
+    val path = "/data/providers/Startapp_Geo/"
     val hdfs_files = days
-      .map(day => path + "%s/".format(day))
+      .map(day => path + "location_-_%s_-_startapp_location_%s16_v_soda_node0006.tsv.gz".format(day, day))
       .filter(
         dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath))
       )
@@ -93,7 +93,7 @@ object UpdateStartApp {
       .option("header", "false")
       .option("delimiter", "\t")
       .schema(customSchema)
-      .load("/data/providers/Startapp_Geo/")
+      .load(hdfs_files: _*)
       .withColumn("geo_hash", lit("startapp"))
       .withColumn("utc_timestamp", unix_timestamp(col("date")))
       .withColumn(

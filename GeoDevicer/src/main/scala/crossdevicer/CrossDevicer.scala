@@ -49,12 +49,14 @@ object CrossDevicer {
     val typeMap = Map(
       "coo" -> "web",
       "and" -> "android",
+      "android"->"android",
       "ios" -> "ios",
       "con" -> "TV",
       "dra" -> "drawbridge",
       "idfa" -> "ios",
       "aaid"->"android",
       "unknown"->"unknown") 
+    
     val mapUDF = udf((dev_type: String) => typeMap(dev_type))
 
     // Get DrawBridge Index. Here we transform the device id to upper case too.
@@ -73,21 +75,31 @@ object CrossDevicer {
       .withColumn("device_id", upper(col("device_id")))
 
    
-      val cross_deviced = db_data      
+    val cross_deviced_proto = db_data      
       .join(        
         audience    
-        .select(colNames:_*)      //,     value_dictionary("audience_column_name"),"validUser","frequency",     "device_id","device_type",           value_dictionary("poi_column_name"),
+           //,     value_dictionary("audience_column_name"),"validUser","frequency",     "device_id","device_type",           value_dictionary("poi_column_name"),
         .distinct(),        
         Seq("device_id"),
-            "right_outer")      
+            "right_outer")
+      .na.drop()
+
+
+    val cross_deviced = cross_deviced_proto
       .withColumn("device_id", coalesce(col("device"), col("device_id")))      
       .withColumn("device_type",coalesce(col("device_type_db"), col("device_type")))
       .drop(col("device"))
       .drop(col("device_type_db"))
-      .withColumn("device_type", mapUDF(col("device_type")))
+      .withColumn("device_type", mapUDF(col("device_type")))     
+      
+      val equivalence_table = cross_deviced_proto
+      .select("device_id","device_type","device","device_type_db")
+      .toDF("device_id_origin","device_type_origin","device_id_xd","device_type_xd")
+      .withColumn("device_type_origin",mapUDF(col("device_type_origin")))
+      .withColumn("device_type_xd",mapUDF(col("device_type_xd")))
 
-      cross_deviced.show(5)
 
+      
       val cross_deviced_agg = cross_deviced.groupBy(colNames.filter(y => y.toString !=  value_dictionary("poi_column_name").toString):_*) // ,"validUser","frequency"
       .agg(collect_set(value_dictionary("poi_column_name")) as value_dictionary("poi_column_name"))
       .withColumn(value_dictionary("poi_column_name"), concat_ws(",", col(value_dictionary("poi_column_name"))))
@@ -100,11 +112,22 @@ object CrossDevicer {
     val output_path = "/datascience/geo/crossdeviced/%s_xd".format(
       value_dictionary("poi_output_file")
     )
+
     cross_deviced_agg.write
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save(output_path)
+
+val output_path_eq_table = "/datascience/geo/crossdeviced/%s_xd_equivalence_table".format(
+      value_dictionary("poi_output_file")
+    )
+    equivalence_table.write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save(output_path_eq_table)  
   }
 }
