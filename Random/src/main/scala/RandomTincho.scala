@@ -1071,7 +1071,7 @@ object RandomTincho {
       piis.join(equifax_pii,Seq("pii"),"inner").write.format("parquet").save("/datascience/custom/piis_equifax_chkpt")
 
       val joint = spark.read.load("/datascience/custom/piis_equifax_chkpt")
-      join.cache()
+      joint.cache()
 
 
       val keywords = spark.read
