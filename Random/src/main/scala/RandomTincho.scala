@@ -1098,7 +1098,7 @@ object RandomTincho {
                         .distinct()
 
 
-      joint.join(keywords_oct,Seq("device_id"),"inner").select("pii","content_keys") 
+      joint.join(keywords_nov,Seq("device_id"),"inner").select("pii","content_keys") 
                                               .groupBy("pii")
                                               .agg(collect_list(col("content_keys")).as("keywords"))
                                               .withColumn("keywords", concat_ws(";", col("keywords")))
