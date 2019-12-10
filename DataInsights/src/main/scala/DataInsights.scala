@@ -2,7 +2,23 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.joda.time.Days
 import org.joda.time.DateTime
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{SaveMode, DataFrame}
+import org.apache.spark.sql.functions.{
+  upper,
+  count,
+  col,
+  abs,
+  udf,
+  regexp_replace,
+  split,
+  lit,
+  explode,
+  length,
+  to_timestamp,
+  from_unixtime,
+  date_format,
+  sum
+}
 
 object DataInsights {
   def process_day(spark: SparkSession, day: String) {
@@ -34,7 +50,7 @@ object DataInsights {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s".format(day, country))
+      .map(day => path + "/day=%s".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
