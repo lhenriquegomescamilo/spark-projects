@@ -202,6 +202,7 @@ object GetDataForAudience {
       .format("parquet")
       .load("/datascience/crossdevice/double_index/")
       .filter("index_type IN ('and', 'ios') AND device_type = 'coo'")
+      .withColumn("index", upper(col("index")))
 
     val crossdeviced = xd_index
       .join(
