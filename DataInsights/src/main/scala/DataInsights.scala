@@ -20,7 +20,7 @@ object DataInsights {
    def get_data_user_agent(
       spark: SparkSession,
       ndays: Int,
-      since: Int,
+      since: Int
   ): DataFrame = {
     // Spark configuration
     val conf = spark.sparkContext.hadoopConfiguration
