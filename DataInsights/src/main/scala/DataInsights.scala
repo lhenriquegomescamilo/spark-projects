@@ -58,7 +58,8 @@ object DataInsights {
                                 .select("time","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type","nid_sh2")
                                 
     data_eventqueue.join(df_ua,Seq("device_id"),"left")
-                    .withColumn("day",lit(day))
+                    .withColumn("segments", split(col("segments"), "")).withColumn("segments",explode(col("segments")))
+                    .withColumn("day",lit(day.replace("/","")))
                     .write
                     .format("parquet")
                     .partitionBy("day")
