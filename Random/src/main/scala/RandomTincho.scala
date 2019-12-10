@@ -1055,10 +1055,10 @@ object RandomTincho {
                           .distinct()
     
     val mobiles = spark.read.load("/datascience/pii_matching/pii_tuples/")
-                          .filter("country = 'AR' and mob_sh2 is not null")
-                          .select("device_id","mob_sh2")
-                          .withColumnRenamed("mob_sh2","pii")
-                          .withColumn("type",lit("mob"))
+                          .filter("country = 'AR' and mb_sh2 is not null")
+                          .select("device_id","mb_sh2")
+                          .withColumnRenamed("mb_sh2","pii")
+                          .withColumn("type",lit("mb"))
                           .distinct()
 
       val piis = mails.union(mobiles)
@@ -1088,7 +1088,7 @@ object RandomTincho {
                                               .write
                                               .format("parquet")
                                               .mode(SaveMode.Overwrite)
-                                              .save("/datascience/custom/ml_mob_kws_equifax")
+                                              .save("/datascience/custom/ml_mb_kws_equifax")
   }
 
   def get_data_BR_matching(spark:SparkSession){
