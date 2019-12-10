@@ -10,4 +10,4 @@
   --executor-cores 3\
   --queue default\
   --conf spark.yarn.maxAppAttempts=1\
-  /home/rely/spark-projects/DataGcba/target/scala-2.11/data-gcba_2.11-1.0.jar 0 1
+  /home/rely/spark-projects/DataInsights/target/scala-2.11/data-gcba_2.11-1.0.jar 0 1
