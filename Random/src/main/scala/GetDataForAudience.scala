@@ -193,12 +193,26 @@ object GetDataForAudience {
       .withColumnRenamed("_c2", "ids")
       .drop("_c0")
 
-    val data_segments = getDataTriplets(spark, country = "BR", nDays = 40)
+    val data_segments = getDataTriplets(spark, country = "MX", nDays = 60)
       .filter(col("segment").isin(taxonomy: _*))
       .select("device_id", "segment")
+      .withColumn("device_id", upper(col("device_id")))
+
+    val xd_index = spark.read
+      .format("parquet")
+      .load("/datascience/crossdevice/double_index/")
+      .filter("index_type IN ('and', 'ios') AND device_type = 'coo'")
+
+    val crossdeviced = xd_index
+      .join(
+        data_segments.withColumnRenamed("device_id", "index"),
+        Seq("index")
+      )
+      .select("device", "segment")
+      .withColumnRenamed("device", "device_id")
 
     data_audiences
-      .join(data_segments, Seq("device_id"))
+      .join(crossdeviced, Seq("device_id"))
       .write
       .format("csv")
       .option("header", "true")
