@@ -22,19 +22,8 @@ import org.apache.spark.sql.functions.{
 }
 
 object DataInsights {
-  def process_day(spark: SparkSession, day: String) {
-    val df = spark.read
-      .option("basePath", "/datascience/data_partner_streaming")
-      .load("/datascience/data_partner_streaming/hour=%s*/id_partner=349".format(day))
-      .filter("event_type = 'tk'")
-      .select("url", "time", "device_id")
-    df.write
-      .format("csv")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/data_gcba/%s".format(day))
-  }
 
-   def get_data_user_agent(
+  def get_data_user_agent(
       spark: SparkSession,
       ndays: Int,
       since: Int
@@ -82,6 +71,7 @@ object DataInsights {
     /// Configuracion spark
     val spark = SparkSession.builder.appName("Data Insights Process")
                                     .config("spark.sql.files.ignoreCorruptFiles", "true")
+                                    .config("spark.sql.sources.partitionOverwriteMode","dynamic")
                                     .getOrCreate()
 
     /// Parseo de parametros
