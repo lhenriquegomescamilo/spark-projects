@@ -55,6 +55,7 @@ object CrossDevicer {
       "dra" -> "drawbridge",
       "idfa" -> "ios",
       "aaid"->"android",
+      "maid"->"android",
       "unknown"->"unknown") 
     val mapUDF = udf((dev_type: String) => typeMap(dev_type))
 

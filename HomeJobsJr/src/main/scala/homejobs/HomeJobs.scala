@@ -51,6 +51,7 @@ object HomeJobs {
           col("longitude_user").cast("float") * 100
         ).cast("int"))
       )
+      
 
     df_safegraph
   }
