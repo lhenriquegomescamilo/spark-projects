@@ -49,8 +49,7 @@ object platformsData {
       "batch",
       "xp",
       "retroactive",
-      "xd",
-      "xd_xp"
+      "xd"
     )
 
     val devUDF = udf(
@@ -135,48 +134,38 @@ object platformsData {
       .withColumn("segments", col("segments").cast("array<int>"))
       .select("device_id", "segments", "platforms", "country", "device_type")
 
-    df.write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/reports/platforms/tmp/")
+    // df.write
+    //   .format("parquet")
+    //   .mode("overwrite")
+    //   .save("/datascience/reports/platforms/tmp/")
 
-    val temp_data =
-      spark.read.format("parquet").load("/datascience/reports/platforms/tmp/")
+    // val temp_data =
+    //   spark.read.format("parquet").load("/datascience/reports/platforms/tmp/")
+      
+    // val taxo_segs = spark.read
+    //   .format("csv")
+    //   .option("header", "true")
+    //   .load("/datascience/misc/taxo_gral.csv")
+    //   .select("seg_id")
+    //   .collect()
+    //   .map(_(0).toString.toInt)
+    //   .toSeq
 
-    // val users = temp_data
-    //   .groupBy("device_id")
-    //   .agg(collect_list(col("platforms")) as "platforms")
-    //   .withColumn("platforms", getAllPlatforms(col("platforms")))
-    //   .select("device_id", "platforms")
-    val taxo_segs = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load("/datascience/misc/taxo_gral.csv")
-      .select("seg_id")
-      .collect()
-      .map(_(0).toString.toInt)
-      .toSeq
+    // val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => taxo_segs.contains(s)) )
 
-    val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => taxo_segs.contains(s)) )
+    // val segments = temp_data
+    //   .select("device_id", "segments", "platforms", "country", "device_type")
+    //   .dropDuplicates("device_id")
+    //   //.withColumn("segments", filter_firstparty(col("segments")))
+    //   .withColumn("segment", explode(col("segments")))
+    //   .filter(col("segment").isin(taxo_segs: _*))
+    //   .filter("segment < 580 OR segment > 830")
 
-    val segments = temp_data
-      .select("device_id", "segments", "platforms", "country", "device_type")
-      .dropDuplicates("device_id")
-      .withColumn("segments", filter_firstparty(col("segments")))
-      .withColumn("segment", explode(col("segments")))
-      .filter("segment < 580 OR segment > 830")
-      //.dropDuplicates("device_id", "segment")//, "country")
-      // .orderBy("device_id")
+    // println("LOGGER: EXECUTION PLAN")
+    // segments.explain()
 
-    println("LOGGER: EXECUTION PLAN")
-    segments.explain()
-    // .distinct() //, "platforms")
-    // .dropDuplicates("device_id", "segment")
-
-    // val joint = users.join(segments, Seq("device_id"), "inner")
-    // .orderBy("segment")
-
-    segments
+    // segments
+    df
   }
 
   /**
@@ -195,7 +184,7 @@ object platformsData {
       date_current: String
   ) = {
 
-    val dir = "/datascience/reports/platforms/data/"
+    val dir = "/datascience/reports/platforms/data2/"
 
     df.withColumn("day", lit(date_current.replace("/", "")))
       .write
