@@ -123,6 +123,7 @@ object UrlIngester {
       "googlequicksearchbox",
       "0_media",
       "provider",
+      "parser",
       "downloads",
       "''"
     )
