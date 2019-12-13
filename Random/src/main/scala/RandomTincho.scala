@@ -1047,40 +1047,41 @@ object RandomTincho {
   }
 
   def get_mails_mobs_equifax(spark:SparkSession){
-     val mails = spark.read.load("/datascience/pii_matching/pii_tuples/")
-                          .filter("country = 'AR' and ml_sh2 is not null")
-                          .select("device_id","ml_sh2")
-                          .withColumnRenamed("ml_sh2","pii")
-                          .withColumn("type",lit("ml"))
-                          .distinct()
+    //  val mails = spark.read.load("/datascience/pii_matching/pii_tuples/")
+    //                       .filter("country = 'AR' and ml_sh2 is not null")
+    //                       .select("device_id","ml_sh2")
+    //                       .withColumnRenamed("ml_sh2","pii")
+    //                       .withColumn("type",lit("ml"))
+    //                       .distinct()
     
-    val mobiles = spark.read.load("/datascience/pii_matching/pii_tuples/")
-                          .filter("country = 'AR' and mb_sh2 is not null")
-                          .select("device_id","mb_sh2")
-                          .withColumnRenamed("mb_sh2","pii")
-                          .withColumn("type",lit("mb"))
-                          .distinct()
+    // val mobiles = spark.read.load("/datascience/pii_matching/pii_tuples/")
+    //                       .filter("country = 'AR' and mb_sh2 is not null")
+    //                       .select("device_id","mb_sh2")
+    //                       .withColumnRenamed("mb_sh2","pii")
+    //                       .withColumn("type",lit("mb"))
+    //                       .distinct()
 
-      val piis = mails.union(mobiles)
+    //   val piis = mails.union(mobiles)
 
-      val equifax_pii = spark.read.format("csv").option("header","true")
-                                  .load("/datascience/custom/match_eml_cel.csv")
-                                  .select("atributo_hash")
-                                  .withColumnRenamed("atributo_hash","pii")
+    //   val equifax_pii = spark.read.format("csv").option("header","true")
+    //                               .load("/datascience/custom/match_eml_cel.csv")
+    //                               .select("atributo_hash")
+    //                               .withColumnRenamed("atributo_hash","pii")
+    //                               .distinct()
 
-      piis.join(equifax_pii,Seq("pii"),"inner").write.format("parquet").save("/datascience/custom/piis_equifax_chkpt")
+    //   piis.join(equifax_pii,Seq("pii"),"inner").write.format("parquet").save("/datascience/custom/piis_equifax_chkpt")
 
       val joint = spark.read.load("/datascience/custom/piis_equifax_chkpt")
       joint.cache()
 
 
-      val keywords = spark.read
-                        .load("/datascience/data_keywords/day=20191*/country=AR/")
+      val keywords_oct = spark.read
+                        .load("/datascience/data_keywords/day=201910*/country=AR/")
                         .select("device_id","content_keys")
                         .distinct()
 
 
-      joint.join(keywords,Seq("device_id"),"inner").select("pii","content_keys") 
+      joint.join(keywords_oct,Seq("device_id"),"inner").select("pii","content_keys") 
                                               .groupBy("pii")
                                               .agg(collect_list(col("content_keys")).as("keywords"))
                                               .withColumn("keywords", concat_ws(";", col("keywords")))
@@ -1088,7 +1089,24 @@ object RandomTincho {
                                               .write
                                               .format("parquet")
                                               .mode(SaveMode.Overwrite)
-                                              .save("/datascience/custom/ml_mb_kws_equifax")
+                                              .save("/datascience/custom/ml_mb_kws_equifax_octubre")
+
+      
+      val keywords_nov = spark.read
+                        .load("/datascience/data_keywords/day=201911*/country=AR/")
+                        .select("device_id","content_keys")
+                        .distinct()
+
+
+      joint.join(keywords_nov,Seq("device_id"),"inner").select("pii","content_keys") 
+                                              .groupBy("pii")
+                                              .agg(collect_list(col("content_keys")).as("keywords"))
+                                              .withColumn("keywords", concat_ws(";", col("keywords")))
+                                              .select("pii","keywords")
+                                              .write
+                                              .format("parquet")
+                                              .mode(SaveMode.Overwrite)
+                                              .save("/datascience/custom/ml_mb_kws_equifax_noviembre")
   }
 
   def get_data_BR_matching(spark:SparkSession){
