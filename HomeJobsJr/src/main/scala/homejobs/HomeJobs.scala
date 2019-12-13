@@ -42,7 +42,7 @@ object HomeJobs {
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
       .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
-      .na.fill("android",col( "id_type")) //esto es una cabeceada probabilística
+      .na.fill("android", Seq("id_type")) //esto es una cabeceada probabilística
       .withColumnRenamed("latitude", "latitude_user")
       .withColumnRenamed("longitude", "longitude_user")
       .withColumn(
