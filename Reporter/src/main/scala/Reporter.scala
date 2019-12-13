@@ -167,7 +167,7 @@ object Reporter {
       .withColumn("segment", explode(col("segments")))
       .withColumn(
         "first_party",
-        if (split) explode(col("first_party")) else lit("")
+        if (split) explode(col("first_party")) else lit(0)
       )
 
     // Now we group by segment and obtain the two relevant metrics: count and device_unique
@@ -204,7 +204,8 @@ object Reporter {
     val interval = jsonContent("interval").split(",").toSeq
     val segments = jsonContent("datasource").split(",").map(_.toInt).toSeq :+ 0
     val firstParty = jsonContent("segments")
-    val segmentFilter = jsonContent("segmentsFilter").split(",")
+    val segmentFilter =
+      jsonContent("segmentsFilter").split(",").filter(_.length > 0)
     val split = jsonContent("split")
     val partnerId = jsonContent("partnerId")
     val segmentsQuery = segmentFilter
