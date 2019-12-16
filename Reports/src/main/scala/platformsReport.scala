@@ -240,6 +240,8 @@ object platformsReport {
   }
 
   def getVolumeReport(spark: SparkSession) = {
+    import spark.implicits._
+    
     val df = spark.read
       .format("parquet")
       .load("/datascience/reports/platforms/data2/")
