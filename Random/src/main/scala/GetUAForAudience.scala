@@ -49,12 +49,17 @@ object GetUAForAudience {
     */
   def getUAForAudience(spark: SparkSession, path: String, country: String) = {
     val audience = spark.read
-      .option("sep", "\t")
+      // .option("sep", "\t")
+      // .format("csv")
+      // .load(path)
+      // .withColumnRenamed("_c1", "device_id")
+      // .withColumnRenamed("_c2", "ids")
+      // .drop("_c0")
+      .option("sep", ",")
+      .option("header", "true")
       .format("csv")
-      .load(path)
-      .withColumnRenamed("_c1", "device_id")
-      .withColumnRenamed("_c2", "ids")
-      .drop("_c0")
+      .load("/datascience/custom/gt_br_bk.csv")
+      .drop("count")
 
     val user_agents =
       get_data_user_agents(spark, 60, 1, country)
@@ -81,7 +86,7 @@ object GetUAForAudience {
 
     getUAForAudience(
       spark = spark,
-      "/datascience/custom/gt_br_transunion_gender",
+      "/datascience/custom/gt_br_bk.csv",
       "BR"
     )
 
