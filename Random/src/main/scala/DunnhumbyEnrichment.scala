@@ -207,7 +207,7 @@ object DunnhumbyEnrichment {
 
     // Define the query that we will use
     val query =
-      "campaign_id IS NOT NULL AND (%s)".format(
+      "campaign_id IS NOT NULL AND campaign_id != '${CAMPAIGN_ID}' AND (%s)".format(
         segments
       )
 
