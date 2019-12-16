@@ -270,7 +270,13 @@ object platformsReport {
         approx_count_distinct(col("device_id"), rsd = 0.02) as "device_unique"
       )
 
-    saveData(df = df, path = "/datascience/reports/platforms/done")
+    volumes
+      .withColumn("day", DateTime.now.minusDays(1).toString("yyyyMMdd"))
+      .write
+      .format("parquet")
+      .partitionBy("day", "country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/reports/platforms/done/")
   }
 
   type OptionMap = Map[Symbol, Int]
