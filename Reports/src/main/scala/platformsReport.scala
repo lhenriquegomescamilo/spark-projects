@@ -271,7 +271,7 @@ object platformsReport {
       )
 
     volumes
-      .withColumn("day", DateTime.now.minusDays(1).toString("yyyyMMdd"))
+      .withColumn("day", lit(DateTime.now.minusDays(1).toString("yyyyMMdd")))
       .write
       .format("parquet")
       .partitionBy("day", "country")
