@@ -120,7 +120,7 @@ object DunnhumbyEnrichment {
   }
 
   def getUAEnrichedAudiences(
-      spark: sparkContext,
+      spark: SparkSession,
       audience_df: DataFrame
   ): DataFrame = {
     val browser_segments = List(-1) ::: (563 to 568).toList
