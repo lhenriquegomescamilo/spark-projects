@@ -149,7 +149,8 @@ object GetURLsForAudience {
 
     val urls = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
-    processURL(dfURL = urls, field = "url")
+    // processURL(dfURL = urls, field = "url")
+    urls
   }
 
   /**
@@ -176,7 +177,7 @@ object GetURLsForAudience {
       .write
       .format("parquet")
       .mode("overwrite")
-      .save("/datascience/custom/%s_urls".format(path.split("/").last))
+      .save("/datascience/custom/%s_urls_raw".format(path.split("/").last))
   }
 
   /*****************************************************/
