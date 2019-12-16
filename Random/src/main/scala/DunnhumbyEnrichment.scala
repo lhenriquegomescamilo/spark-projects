@@ -1,10 +1,9 @@
 package main.scala
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.joda.time.DateTime
 import org.apache.hadoop.fs.FileSystem
-import org.apache.spark.sql.DataFrame
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.Row
@@ -120,73 +119,10 @@ object DunnhumbyEnrichment {
     df
   }
 
-  /**
-   * 
-  */
-  def getEnrichment(
-      spark: SparkSession,
-      piiDateFrom: String,
-      campaingId: String,
-      crm_segments: String = "",
-      countries: String = "",
-      dateRange: String = ""
-  ) {
-    // val data =
-      // if (dateRange.size > 0)
-      //   getDataIdPartners(spark, List("831"), 40, 1, "streaming")
-      //     .filter(dateRange)
-      // else getDataIdPartners(spark, List("831"), 40, 1, "streaming")
-    val data = getDataAudiences(spark, 12, 28).filter(dateRange)
-    val crm_files =
-      if (crm_segments.size > 0)
-        crm_segments
-          .split(",")
-          .map("array_contains(all_segments, %s)".format(_))
-          .mkString(" OR ")
-      else ""
-    val segments = (560 to 576)
-      .map("array_contains(all_segments, %s)".format(_))
-      .mkString(" OR ")
-
-    val query =
-      if (crm_files.size > 0)
-        "array_contains(segments, %s) AND (%s) AND (%s)".format(
-          campaingId,
-          crm_files,
-          segments
-        )
-      else
-        "array_contains(segments, %s) AND (%s)".format(
-          campaingId,
-          segments
-        )
-    val select =
-      "time,all_segments,campaign_id,device_id,placement_id,advertiser_id"
-        .split(",")
-        .toList
-
-    val removeDuplicates = udf( (piis: Seq[String]) => piis.distinct.toSeq )
-
-    val pii = spark.read
-      .format("parquet")
-      .load("/datascience/pii_matching/pii_tuples/")
-      .filter("day >= %s".format(piiDateFrom))
-      .filter("country in (%s)".format(countries))
-      .groupBy("device_id")
-      .agg(
-        collect_list(col("ml_sh2")) as "ml_sh2",
-        collect_list(col("nid_sh2")) as "nid_sh2"
-      )
-      .withColumn("ml_sh2", removeDuplicates(col("ml_sh2")))
-      .withColumn("nid_sh2", removeDuplicates(col("nid_sh2")))
-      .withColumn("ml_sh2", concat_ws(",", col("ml_sh2")))
-      .withColumn("nid_sh2", concat_ws(",", col("nid_sh2")))
-
-    val joint = data
-      .filter(query)
-      .select(select.head, select.tail: _*)
-      .join(pii, Seq("device_id"), "left")
-
+  def getUAEnrichedAudiences(
+      spark: sparkContext,
+      audience_df: DataFrame
+  ): DataFrame = {
     val browser_segments = List(-1) ::: (563 to 568).toList
     val dev_types_segments = List(-1) ::: (560 to 562).toList
     val operating_sys_segments = List(-1) ::: (569 to 574).toList
@@ -242,15 +178,80 @@ object DunnhumbyEnrichment {
         )
     )
 
+    audience_df
+      .withColumn("browser", udfGetBrowser(col("all_segments")))
+      .withColumn("device_type", udfGetDevice(col("all_segments")))
+      .withColumn("os", udfGetOS(col("all_segments")))
+  }
+
+  /**
+    *
+    */
+  def getEnrichment(
+      spark: SparkSession,
+      piiDateFrom: String,
+      nDays: Int,
+      since: Int,
+      countries: String = "",
+      dateRange: String = ""
+  ) {
+    // First of all we obtain the data from the id partner and filter, if necessary,
+    // to keep only the relevant date interval
+    val raw = getDataIdPartners(spark, List("831"), nDays, since, "streaming")
+    val data = if (dateRange.length > 0) raw.filter(dateRange) else raw
+
+    // List of segments to keep
+    val segments = (560 to 576)
+      .map("array_contains(all_segments, %s)".format(_))
+      .mkString(" OR ")
+
+    // Define the query that we will use
+    val query =
+      "campaign_id IS NOT NULL AND (%s)".format(
+        segments
+      )
+
+    // List of columns to keep
+    val select =
+      "time,all_segments,campaign_id,device_id,placement_id,advertiser_id"
+        .split(",")
+        .toList
+
+    // This function will be used to remove duplicated PIIs.
+    val removeDuplicates = udf((piis: Seq[String]) => piis.distinct.toSeq)
+
+    // Now we obtain the list of PIIs for the given set of countries and date range.
+    val pii = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("day >= %s AND country in (%s)".format(piiDateFrom, countries))
+      .groupBy("device_id")
+      .agg(
+        collect_list(col("ml_sh2")) as "ml_sh2",
+        collect_list(col("nid_sh2")) as "nid_sh2"
+      )
+      .withColumn("ml_sh2", removeDuplicates(col("ml_sh2")))
+      .withColumn("nid_sh2", removeDuplicates(col("nid_sh2")))
+      .withColumn("ml_sh2", concat_ws(",", col("ml_sh2")))
+      .withColumn("nid_sh2", concat_ws(",", col("nid_sh2")))
+
+    // Now we finally perform the join between the data that has been read,
+    // and the PIIs for that country.
+    val joint = data
+      .filter(query)
+      .select(select.head, select.tail: _*)
+      .join(pii, Seq("device_id"), "left")
+
+    // Final list of columns to keep for the report
     val final_select =
       "advertiser_id,campaign_id,device_id,placement_id,time,browser,device_type,os,ml_sh2,nid_sh2"
         .split(",")
         .toList
 
-    joint
-      .withColumn("browser", udfGetBrowser(col("all_segments")))
-      .withColumn("device_type", udfGetDevice(col("all_segments")))
-      .withColumn("os", udfGetOS(col("all_segments")))
+    // Get the dataframe with the user-agent related information.
+    val ua_enriched = getUAEnrichedAudiences(spark, joint)
+
+    ua_enriched
       .drop("all_segments")
       .select(final_select.head, final_select.tail: _*)
       .write
@@ -272,8 +273,8 @@ object DunnhumbyEnrichment {
     getEnrichment(
       spark,
       "20190916",
-      "144633",
-      "",
+      30,
+      1,
       "'BR'",
       "country = 'BR' AND datetime >= '2019-09-16 00:00:00' AND datetime <= '2019-10-16 00:00:00'"
     )
