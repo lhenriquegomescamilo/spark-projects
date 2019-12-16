@@ -262,10 +262,10 @@ object platformsReport {
     def udfMap = udf((n: Int) => (mapping_b.value.get(n)))
 
     val volumes = df.withColumn("segment", explode(col("segments")))
-      .withColumn("platforms", udfMap(col("platforms")))
-      .withColumn("platform", explode(col("platforms")))
+      // .withColumn("platforms", udfMap(col("platforms")))
+      // .withColumn("platform", explode(col("platforms")))
       .drop("segments", "platforms")
-      .groupBy("device_type", "segment", "platform", "country")
+      .groupBy("device_type", "segment", "country")
       .agg(
         approx_count_distinct(col("device_id"), rsd = 0.02) as "device_unique"
       )
