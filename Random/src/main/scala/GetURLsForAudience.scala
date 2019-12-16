@@ -193,14 +193,8 @@ object GetURLsForAudience {
 
     getURLForAudience(
       spark = spark,
-      "/datascience/custom/gt_br_transunion_gender",
+      "/datascience/custom/gt_br_bk_audience",
       "BR"
-    )
-
-    getURLForAudience(
-      spark = spark,
-      "/datascience/devicer/processed/MX_genero_11_grouped",
-      "MX"
     )
 
   }
