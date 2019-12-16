@@ -133,6 +133,7 @@ object platformsData {
       .withColumn("segments", split(col("third_party"), "\u0001"))
       .withColumn("segments", col("segments").cast("array<int>"))
       .select("device_id", "segments", "platforms", "country", "device_type")
+      .dropDuplicates("device_id")
 
     // df.write
     //   .format("parquet")

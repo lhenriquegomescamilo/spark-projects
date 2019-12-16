@@ -91,10 +91,9 @@ object platformsReport {
     println("INFO: GETTING VOLUMES")
 
     val getVec =
-          udf(
-            (n: String) =>
-            (n.map(lines=>(lines+"").toInt))
-            )
+      udf(
+        (n: String) => (n.map(lines => (lines + "").toInt))
+      )
 
     val mapping_path = "/datascience/misc/mappingpl_2.csv"
     val mapping = spark.read
@@ -153,8 +152,9 @@ object platformsReport {
       db: DataFrame
   ): DataFrame = {
 
-    /** Read standard taxonomy segment_ids */  
-    val countries = "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
+    /** Read standard taxonomy segment_ids */
+    val countries =
+      "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
     val taxo_path = "/datascience/misc/taxo_gral.csv"
     val taxo_segs = spark.read
       .format("csv")
@@ -237,6 +237,38 @@ object platformsReport {
 
     saveData(df = df, path = path)
 
+  }
+
+  def getVolumeReport(spark: SparkSession) = {
+    val df = spark.read
+      .format("parquet")
+      .load("/datascience/reports/platforms/data2/")
+
+    val mapping_path = "/datascience/misc/mappingpl.csv"
+    val mapping = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load(mapping_path)
+      .withColumn("platforms", split(col("platforms"), ","))
+      .select(col("decimal").cast("int"), col("platforms"))
+      .as[(Int, List[String])]
+      .collect
+      .toMap
+
+    val mapping_b = spark.sparkContext.broadcast(mapping)
+
+    def udfMap = udf((n: Int) => (mapping_b.value.get(n)))
+
+    val volumes = df.withColumn("segment", explode(col("segments")))
+      .withColumn("platforms", udfMap(col("platforms")))
+      .withColumn("platform", explode(col("platforms")))
+      .drop("segments", "platforms")
+      .groupBy("device_type", "segment", "platform", "country")
+      .agg(
+        approx_count_distinct(col("device_id"), rsd = 0.02) as "device_unique"
+      )
+
+    saveData(df = df, path = "/datascience/reports/platforms/done")
   }
 
   type OptionMap = Map[Symbol, Int]
