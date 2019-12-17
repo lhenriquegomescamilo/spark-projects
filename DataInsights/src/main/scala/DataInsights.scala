@@ -45,7 +45,7 @@ object DataInsights {
 
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
                   .select("device_id","brand","model")
-                  .drop_duplicates()
+                  .distinct()
 
     df
   }
