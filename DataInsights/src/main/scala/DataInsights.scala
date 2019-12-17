@@ -45,6 +45,7 @@ object DataInsights {
 
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
                   .select("device_id","brand","model")
+                  .drop_duplicates()
 
     df
   }
@@ -54,7 +55,7 @@ object DataInsights {
 
     val data_eventqueue = spark.read.format("csv").option("sep", "\t").option("header", "true")
                                 .load("/data/eventqueue/%s/*.tsv.gz".format(day))
-                                .filter("id_partner = 879 and device_id is not null")
+                                .filter("id_partner = 879 and device_id is not null and event_type = 'tk'")
                                 .select("time","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type","nid_sh2")
                                 
     data_eventqueue.join(df_ua,Seq("device_id"),"left")
@@ -64,7 +65,7 @@ object DataInsights {
                     .format("parquet")
                     .partitionBy("day")
                     .mode("append")
-                    .save("/datascience/custom/sample_dani/")
+                    .save("/datascience/data_insights/")
   }
 
   
