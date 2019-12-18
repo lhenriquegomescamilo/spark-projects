@@ -1169,8 +1169,6 @@ object RandomTincho {
 
   def report_dada_sync(spark:SparkSession){
 
-    println("Count Devices No Data: %s".format(devices_no_data.count))
-
     val devices = spark.read.load("/datascience/custom/data_sync")
 
     // Mediamath
@@ -1180,7 +1178,7 @@ object RandomTincho {
     devices_mm_across.cache()
     println("Devices de MM aportados por across (Total): %s ".format(devices_mm.count))
 
-    val count_mm = devices_mm_across.join(devices_no_data.filter("id_partner != 47 and d10 != null"),Seq("device_id"),"inner")
+    val count_mm = devices_mm_across.join(devices.filter("id_partner != 47 and d10 != null"),Seq("device_id"),"inner")
                                       .select("device_id")
                                       .distinct()
                                       .count
