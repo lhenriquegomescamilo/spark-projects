@@ -67,8 +67,8 @@ object GetDataForAudience {
   def getDataSegmentsForAudience(spark: SparkSession) = {
     val data_audiences = spark.read
       .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
+      .option("sep", ",")
+      .option("header", "false")
       .load(
         "/datascience/custom/gt_br_bk.csv"
       )
