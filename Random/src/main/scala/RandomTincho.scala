@@ -1148,6 +1148,76 @@ object RandomTincho {
     
   }
 
+  def process_day_sync(spark:SparkSession,day:String){
+        spark.read
+            .format("csv")
+            .option("sep", "\t")
+            .option("header", "true")
+            .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+            .filter("(event_type = 'sync' or event_type = 'ltm_sync') and (d11 != null or d13 != null or d10 != null or d2 != null)")
+            .select("device_id","d11","d2","d13","d10","id_partner")
+            .withColumn("day",lit(day))
+            .write
+            .format("parquet")
+            .partitionBy("day")
+            .mode("append")
+            .save("/datascience/custom/data_sync")
+
+  }
+
+  
+
+  def report_dada_sync(spark:SparkSession){
+
+    println("Count Devices No Data: %s".format(devices_no_data.count))
+
+    val devices_33_across = spark.read
+                              .format("csv")
+                              .option("sep", "\t")
+                              .option("header", "true")
+                              .load("/data/eventqueue/%s/*.tsv.gz".format("2019/12/*"))
+                              .filter("(event_type = 'sync' or event_type = 'ltm_sync') and (d11 != null or d13 != null or d10 != null or d2 != null)")
+                              .select("device_id","d11","d2","d13","d10","id_partner")
+  
+    // FIltrar por id partner
+
+    
+
+    val devices_mm = devices_33_across.filter("d10 != null and id_partner = 47")  
+                                      .select("device_id")
+                                      .distinct()
+                                      
+    device_mm.cache()                 
+    println(devices_mm.count)                    
+    val devices_mm = devices_33_across.filter("d10 != null and id_partner = 47")  
+                                      .join(devices_no_data.filter("id_partner != 47 and d10 != null"),Seq("device_id"),"inner")
+                                      .select("device_id")
+                                      .distinct()
+                                      .count
+    
+                                      
+    println("Count MM: %s".format(devices_mm))
+
+    val devices_dbm = devices_33_across.filter("d11 != null")  
+                                      .select("device_id")
+                                      .join(devices_no_data,Seq("device_id"),"inner")
+                                      .count
+    println("Count DBM: %s".format(devices_dbm))
+    
+    val devices_ttd = devices_33_across.filter("d13 != null")  
+                                      .select("device_id")
+                                      .join(devices_no_data,Seq("device_id"),"inner")
+                                      .count
+    println("Count TTD: %s".format(devices_ttd))
+    
+    val devices_appnxs = devices_33_across.filter("d2 != null")  
+                                      .select("device_id")
+                                      .join(devices_no_data,Seq("device_id"),"inner")
+                                      .count
+    println("Count Appnexus: %s".format(devices_appnxs))
+    
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1159,7 +1229,19 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_mails_mobs_equifax(spark)
+    /// Parseo de parametros
+    val since =  0
+    val ndays = 50
+
+    val format = "YYYY/MM/dd"
+    val start = DateTime.now.minusDays(since + ndays)
+    val end = DateTime.now.minusDays(since)
+
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days =
+      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+    days.map(day => process_day_sync(spark, day))
 
   
   }
