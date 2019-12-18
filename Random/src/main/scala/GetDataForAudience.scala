@@ -222,6 +222,36 @@ object GetDataForAudience {
 
   }
 
+  def getDataSegmentsForAudienceWithoutFilterPleaseIneedAllDataMaybeIfilterItLater(spark: SparkSession) = {
+   
+
+    val data_audiences = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "false")
+      .load(
+        "/datascience/audiences/crossdeviced/in_store_audiences_xd/"
+      )
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "original_id")
+      
+
+    val data_segments = getDataTriplets(spark, country = "MX", nDays = 30)
+      .filter(col("segment")
+      .select("device_id", "segment")
+      .withColumn("device_id", upper(col("device_id")))
+
+    
+    data_audiences
+      .join(data_segments, Seq("device_id"))
+      .write
+      .format("csv")
+      .option("header", "true")
+      .mode("overwrite")
+      .save("/datascience/custom/in_store_audiences_xd_luxottica_w_segments")
+
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
