@@ -1176,7 +1176,7 @@ object RandomTincho {
                                       .select("device_id")
                                       .distinct()
     devices_mm_across.cache()
-    println("Devices de MM aportados por across (Total): %s ".format(devices_mm.count))
+    println("Devices de MM aportados por across (Total): %s ".format(devices_mm_across.count))
 
     val count_mm = devices_mm_across.join(devices.filter("id_partner != 47 and d10 != null"),Seq("device_id"),"inner")
                                       .select("device_id")
