@@ -1157,6 +1157,7 @@ object RandomTincho {
             .filter("(event_type = 'sync' or event_type = 'ltm_sync') and (d11 is not null or d13 is not null or d10 is not null or d2 is not null)")
             .select("device_id","d11","d2","d13","d10","id_partner")
             .withColumn("day",lit(day))
+            .withColumn("day",regexp_replace(col("day") ,"/", ""))
             .write
             .format("parquet")
             .partitionBy("day")
