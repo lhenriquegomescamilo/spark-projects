@@ -1167,56 +1167,65 @@ object RandomTincho {
 
   
 
-  // def report_dada_sync(spark:SparkSession){
+  def report_dada_sync(spark:SparkSession){
 
-    // println("Count Devices No Data: %s".format(devices_no_data.count))
+    println("Count Devices No Data: %s".format(devices_no_data.count))
 
-    // val devices_33_across = spark.read
-    //                           .format("csv")
-    //                           .option("sep", "\t")
-    //                           .option("header", "true")
-    //                           .load("/data/eventqueue/%s/*.tsv.gz".format("2019/12/*"))
-    //                           .filter("(event_type = 'sync' or event_type = 'ltm_sync') and (d11 != null or d13 != null or d10 != null or d2 != null)")
-    //                           .select("device_id","d11","d2","d13","d10","id_partner")
-  
-    // // FIltrar por id partner
+    val devices = spark.read.load("/datascience/custom/data_sync")
 
-    
+    // Mediamath
+    val devices_mm_across = devices.filter("d10 != null and id_partner = 47")  
+                                      .select("device_id")
+                                      .distinct()
+    devices_mm_across.cache()
+    println("Devices de MM aportados por across (Total): %s ".format(devices_mm.count))
 
-    // val devices_mm = devices_33_across.filter("d10 != null and id_partner = 47")  
-    //                                   .select("device_id")
-    //                                   .distinct()
-                                      
-    // device_mm.cache()                 
-    // println(devices_mm.count)                    
-    // val devices_mm = devices_33_across.filter("d10 != null and id_partner = 47")  
-    //                                   .join(devices_no_data.filter("id_partner != 47 and d10 != null"),Seq("device_id"),"inner")
-    //                                   .select("device_id")
-    //                                   .distinct()
-    //                                   .count
+    val count_mm = devices_mm_across.join(devices_no_data.filter("id_partner != 47 and d10 != null"),Seq("device_id"),"inner")
+                                      .select("device_id")
+                                      .distinct()
+                                      .count
+    println("Devices de MM aportados por across que ya teniamos: %s ".format(count_mm))
     
-                                      
-    // println("Count MM: %s".format(devices_mm))
+    // DBM
+    val devices_dbm_across = devices.filter("d11 != null and id_partner = 47")  
+                                      .select("device_id")
+                                      .distinct()
+    devices_dbm_across.cache()
+    println("Devices de DBM aportados por across (Total): %s ".format(devices_dbm_across.count))
 
-    // val devices_dbm = devices_33_across.filter("d11 != null")  
-    //                                   .select("device_id")
-    //                                   .join(devices_no_data,Seq("device_id"),"inner")
-    //                                   .count
-    // println("Count DBM: %s".format(devices_dbm))
+    val count_dbm = devices_dbm_across.join(devices.filter("id_partner != 47 and d11 != null"),Seq("device_id"),"inner")
+                                      .select("device_id")
+                                      .distinct()
+                                      .count
+    println("Devices de DBM aportados por across que ya teniamos: %s ".format(count_dbm))
+
+    // TTD
+    val devices_ttd_across = devices.filter("d13 != null and id_partner = 47")  
+                                  .select("device_id")
+                                  .distinct()
+    devices_ttd_across.cache()
+    println("Devices de TTD aportados por across (Total): %s ".format(devices_ttd_across.count))
+
+    val count_ttd = devices_ttd_across.join(devices.filter("id_partner != 47 and d13 != null"),Seq("device_id"),"inner")
+                                      .select("device_id")
+                                      .distinct()
+                                      .count
+    println("Devices de TTD aportados por across que ya teniamos: %s ".format(count_ttd))
+
+    // APPNXS
+    val devices_apn_across = devices.filter("d2 != null and id_partner = 47")  
+                              .select("device_id")
+                              .distinct()
+    devices_apn_across.cache()
+    println("Devices de Appnexus aportados por across (Total): %s ".format(devices_apn_across.count))
+
+    val count_apn = devices_ttd_across.join(devices.filter("id_partner != 47 and d2 != null"),Seq("device_id"),"inner")
+                                      .select("device_id")
+                                      .distinct()
+                                      .count
+    println("Devices de TTD aportados por across que ya teniamos: %s ".format(count_apn))
     
-    // val devices_ttd = devices_33_across.filter("d13 != null")  
-    //                                   .select("device_id")
-    //                                   .join(devices_no_data,Seq("device_id"),"inner")
-    //                                   .count
-    // println("Count TTD: %s".format(devices_ttd))
-    
-    // val devices_appnxs = devices_33_across.filter("d2 != null")  
-    //                                   .select("device_id")
-    //                                   .join(devices_no_data,Seq("device_id"),"inner")
-    //                                   .count
-    // println("Count Appnexus: %s".format(devices_appnxs))
-    
-  // }
+  }
 
   def main(args: Array[String]) {
      
