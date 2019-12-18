@@ -237,13 +237,11 @@ object GetDataForAudience {
       
 
     val data_segments = getDataTriplets(spark, country = "MX", nDays = 30)
-      .filter(col("segment")
       .select("device_id", "segment")
       .withColumn("device_id", upper(col("device_id")))
 
     
-    data_audiences
-      .join(data_segments, Seq("device_id"))
+    data_audiences.join(data_segments, Seq("device_id"))
       .write
       .format("csv")
       .option("header", "true")
