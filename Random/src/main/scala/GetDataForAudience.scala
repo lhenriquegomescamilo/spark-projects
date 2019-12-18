@@ -262,7 +262,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getAllDataSegmentsForAudience(spark = spark)
+    getDataSegmentsForAudienceWithoutFilterPleaseIneedAllDataMaybeIfilterItLater(spark = spark)
 
   }
 }
