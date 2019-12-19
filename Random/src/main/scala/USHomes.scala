@@ -45,11 +45,13 @@ object USHomes {
   }
 
   def getHomes(spark: SparkSession) = {
+    val w = Window.partitionBy(col("estid")).orderBy(col("count").desc)
+    
     spark.read
       .format("parquet")
       .load("/datascience/custom/us_homes_approx")
       .withColumn("zip4", explode(col("points")))
-      .groupBy("estid")
+      .groupBy("estid", "zip4")
       .count()
       .withColumn("rn", row_number.over(w))
       .where(col("rn") === 1)
