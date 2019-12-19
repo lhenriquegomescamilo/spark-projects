@@ -197,7 +197,8 @@ object DunnhumbyEnrichment {
   ) {
     // First of all we obtain the data from the id partner and filter, if necessary,
     // to keep only the relevant date interval
-    val raw = getDataIdPartners(spark, List("831"), nDays, since, "streaming")
+    // val raw = getDataIdPartners(spark, List("831"), nDays, since, "streaming")
+    val raw = getDataAudiences(spark, nDays, since).filter("id_partner = 811")
     val data = if (dateRange.length > 0) raw.filter(dateRange) else raw
 
     // List of segments to keep
@@ -273,10 +274,10 @@ object DunnhumbyEnrichment {
     getEnrichment(
       spark,
       "20190916",
-      30,
-      1,
+      64,
+      29,
       "'BR'",
-      "country = 'BR'"
+      "country = 'BR' AND (datetime >= '2019-16-10 00:00:00' AND datetime <= '2019-11-15 00:00:00')"
     )
   }
 }
