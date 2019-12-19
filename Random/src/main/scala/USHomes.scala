@@ -31,7 +31,7 @@ object USHomes {
       .select("estid", "zipplus4", "standardTimestamp")
       .withColumn("approx_zip4", substring(col("zipplus4"), 0, 8))
       .withColumn("hour", hour(col("standardTimestamp")))
-      .filter("hour >= 19 OR hour <= 10")
+      .filter("hour >= 19 OR hour <= 8")
       .groupBy("estid", "approx_zip4")
       .agg(count("hour") as "count", collect_list("zipplus4") as "points")
       .filter("count > 1")
@@ -88,6 +88,8 @@ object USHomes {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    getApproximatePlacePerId(spark)
+    getHomes(spark)
     getEstidMap(
       spark = spark
     )
