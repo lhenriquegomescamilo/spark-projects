@@ -110,6 +110,7 @@ object UrlIngester {
       "google",
       "doubleclick",
       "facebook",
+      "messenger",
       "yahoo",
       "android",
       "bing",
@@ -125,6 +126,9 @@ object UrlIngester {
       "provider",
       "parser",
       "downloads",
+      "xlxx",
+      "xvideo2",
+      "coffetube",
       "''"
     )
     val query_generic_domains = generic_domains
