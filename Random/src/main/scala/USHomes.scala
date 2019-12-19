@@ -11,7 +11,7 @@ import org.joda.time.DateTime
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.sql.expressions.Window
 
-object GetUAForAudience {
+object USHomes {
   def getApproximatePlacePerId(spark: SparkSession) = {
     val w = Window.partitionBy(col("estid")).orderBy(col("count").desc)
 
@@ -56,5 +56,20 @@ object GetUAForAudience {
       .format("parquet")
       .mode("overwrite")
       .save("/datascience/custom/us_homes")
+  }
+
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder
+        .appName("Spark devicer")
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
+        .getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+    getApproximatePlacePerId(
+      spark = spark
+    )
+
   }
 }
