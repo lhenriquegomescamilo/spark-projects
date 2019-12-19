@@ -46,7 +46,7 @@ object USHomes {
 
   def getHomes(spark: SparkSession) = {
     val w = Window.partitionBy(col("estid")).orderBy(col("count").desc)
-    
+
     spark.read
       .format("parquet")
       .load("/datascience/custom/us_homes_approx")
@@ -62,6 +62,23 @@ object USHomes {
       .save("/datascience/custom/us_homes")
   }
 
+  def getEstidMap(spark: SparkSession) = {
+    val estid_map = spark.read
+      .format("parquet")
+      .load("/datascience/sharethis/estid_map")
+      .filter("country = 'US'")
+    val homes =
+      spark.read.format("parquet").load("/datascience/custom/us_homes")
+    val joint = homes
+      .join(estid_map, Seq("estid"))
+      .withColumn("device_id", explode("device_id"))
+
+    joint.write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/us_homes_rely_ids")
+  }
+
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder
@@ -71,7 +88,7 @@ object USHomes {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getHomes(
+    getEstidMap(
       spark = spark
     )
 
