@@ -1166,6 +1166,64 @@ object RandomTincho {
 
   }
 
+  def report_dada_sync_v2(spark:SparkSession){
+
+    val devices = spark.read.load("/datascience/custom/data_sync")
+
+    // Mediamath
+    val devices_mm_across = devices.filter("d10 is not null and id_partner = 47")  
+                                      .select("d10")
+                                      .distinct()
+    devices_mm_across.cache()
+    println("D10 aportados por across (Total): %s ".format(devices_mm_across.count))
+
+    val count_mm = devices_mm_across.join(devices.filter("id_partner != 47 and d10 is not null"),Seq("d10"),"inner")
+                                      .select("d10")
+                                      .distinct()
+                                      .count
+    println("D10 aportados por across que ya teniamos: %s ".format(count_mm))
+    
+    // DBM
+    val devices_dbm_across = devices.filter("d11 is not null and id_partner = 47")  
+                                      .select("d11")
+                                      .distinct()
+    devices_dbm_across.cache()
+    println("d11 aportados por across (Total): %s ".format(devices_dbm_across.count))
+
+    val count_dbm = devices_dbm_across.join(devices.filter("id_partner != 47 and d11 is not null"),Seq("d11"),"inner")
+                                      .select("d11")
+                                      .distinct()
+                                      .count
+    println("d11 aportados por across que ya teniamos: %s ".format(count_dbm))
+
+    // TTD
+    val devices_ttd_across = devices.filter("d13 is not null and id_partner = 47")  
+                                  .select("d13")
+                                  .distinct()
+    devices_ttd_across.cache()
+    println("d13 aportados por across (Total): %s ".format(devices_ttd_across.count))
+
+    val count_ttd = devices_ttd_across.join(devices.filter("id_partner != 47 and d13 is not null"),Seq("d13"),"inner")
+                                      .select("d13")
+                                      .distinct()
+                                      .count
+    println("d13 aportados por across que ya teniamos: %s ".format(count_ttd))
+
+    // APPNXS
+    val devices_apn_across = devices.filter("d2 is not null and id_partner = 47")  
+                              .select("d2")
+                              .distinct()
+    devices_apn_across.cache()
+    println("d2 aportados por across (Total): %s ".format(devices_apn_across.count))
+
+    val count_apn = devices_ttd_across.join(devices.filter("id_partner != 47 and d2 is not null"),Seq("d2"),"inner")
+                                      .select("d2")
+                                      .distinct()
+                                      .count
+    println("d2 aportados por across que ya teniamos: %s ".format(count_apn))
+    
+  }
+
 
   def report_dada_sync(spark:SparkSession){
 
@@ -1221,7 +1279,7 @@ object RandomTincho {
                                       .select("device_id")
                                       .distinct()
                                       .count
-    println("Devices de TTD aportados por across que ya teniamos: %s ".format(count_apn))
+    println("Devices de Appnexus aportados por across que ya teniamos: %s ".format(count_apn))
     
   }
 
@@ -1249,7 +1307,7 @@ object RandomTincho {
     //   (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
     // days.map(day => process_day_sync(spark, day))
-    report_dada_sync(spark)
+    report_dada_sync_v2(spark)
   
   }
 
