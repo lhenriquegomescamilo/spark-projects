@@ -42,12 +42,14 @@ object USHomes {
       .format("parquet")
       .mode("overwrite")
       .save("/datascience/custom/us_homes_approx")
+  }
 
+  def getHomes(spark: SparkSession) = {
     spark.read
       .format("parquet")
       .load("/datascience/custom/us_homes_approx")
       .withColumn("zip4", explode(col("points")))
-      .groupBy("estid", "zip4")
+      .groupBy("estid")
       .count()
       .withColumn("rn", row_number.over(w))
       .where(col("rn") === 1)
@@ -67,7 +69,7 @@ object USHomes {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getApproximatePlacePerId(
+    getHomes(
       spark = spark
     )
 
