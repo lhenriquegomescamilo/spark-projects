@@ -1166,7 +1166,6 @@ object RandomTincho {
 
   }
 
-  
 
   def report_dada_sync(spark:SparkSession){
 
@@ -1238,19 +1237,19 @@ object RandomTincho {
         .getOrCreate()
     
     /// Parseo de parametros
-    val since =  0
-    val ndays = 48
+    // val since =  0
+    // val ndays = 48
 
-    val format = "YYYY/MM/dd"
-    val start = DateTime.now.minusDays(since + ndays)
-    val end = DateTime.now.minusDays(since)
+    // val format = "YYYY/MM/dd"
+    // val start = DateTime.now.minusDays(since + ndays)
+    // val end = DateTime.now.minusDays(since)
 
-    val daysCount = Days.daysBetween(start, end).getDays()
-    val days =
-      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+    // val daysCount = Days.daysBetween(start, end).getDays()
+    // val days =
+    //   (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-    days.map(day => process_day_sync(spark, day))
-
+    // days.map(day => process_day_sync(spark, day))
+    report_dada_sync(spark)
   
   }
 
