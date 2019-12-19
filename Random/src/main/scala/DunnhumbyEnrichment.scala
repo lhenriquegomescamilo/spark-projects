@@ -111,8 +111,10 @@ object DunnhumbyEnrichment {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/hour=%s*".format(day))
-    // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .flatMap(
+        day => (0 to 23).map(hour => path + "/hour=%s%02d".format(day, hour))
+      )
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     fs.close()
 
@@ -197,7 +199,8 @@ object DunnhumbyEnrichment {
   ) {
     // First of all we obtain the data from the id partner and filter, if necessary,
     // to keep only the relevant date interval
-    val raw = getDataIdPartners(spark, List("831"), nDays, since, "streaming")
+    // val raw = getDataIdPartners(spark, List("831"), nDays, since, "streaming")
+    val raw = getDataAudiences(spark, nDays, since).filter("id_partner = 831")
     val data = if (dateRange.length > 0) raw.filter(dateRange) else raw
 
     // List of segments to keep
@@ -207,9 +210,10 @@ object DunnhumbyEnrichment {
 
     // Define the query that we will use
     val query =
-      "campaign_id IS NOT NULL AND campaign_id != '${CAMPAIGN_ID}' AND (%s)".format(
-        segments
-      )
+      "campaign_id IS NOT NULL AND campaign_id != '${CAMPAIGN_ID}' AND (%s)"
+        .format(
+          segments
+        )
 
     // List of columns to keep
     val select =
@@ -273,10 +277,10 @@ object DunnhumbyEnrichment {
     getEnrichment(
       spark,
       "20190916",
-      30,
-      1,
+      40,
+      29,
       "'BR'",
-      "country = 'BR'"
+      "country = 'BR' AND (datetime >= '2019-10-16 00:00:00' AND datetime <= '2019-11-15 00:00:00')"
     )
   }
 }
