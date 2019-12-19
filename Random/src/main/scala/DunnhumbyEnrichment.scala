@@ -200,7 +200,7 @@ object DunnhumbyEnrichment {
     // First of all we obtain the data from the id partner and filter, if necessary,
     // to keep only the relevant date interval
     // val raw = getDataIdPartners(spark, List("831"), nDays, since, "streaming")
-    val raw = getDataAudiences(spark, nDays, since).filter("id_partner = 811")
+    val raw = getDataAudiences(spark, nDays, since).filter("id_partner = 831")
     val data = if (dateRange.length > 0) raw.filter(dateRange) else raw
 
     // List of segments to keep
