@@ -277,10 +277,10 @@ object DunnhumbyEnrichment {
     getEnrichment(
       spark,
       "20190916",
-      64,
+      40,
       29,
       "'BR'",
-      "country = 'BR' AND (datetime >= '2019-16-10 00:00:00' AND datetime <= '2019-11-15 00:00:00')"
+      "country = 'BR' AND (datetime >= '2019-10-16 00:00:00' AND datetime <= '2019-11-15 00:00:00')"
     )
   }
 }
