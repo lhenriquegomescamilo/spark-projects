@@ -111,8 +111,10 @@ object DunnhumbyEnrichment {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/hour=%s*".format(day))
-    // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .flatMap(
+        day => (0 to 23).map(hour => path + "/hour=%s%02d".format(day, hour))
+      )
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     fs.close()
 
@@ -208,9 +210,10 @@ object DunnhumbyEnrichment {
 
     // Define the query that we will use
     val query =
-      "campaign_id IS NOT NULL AND campaign_id != '${CAMPAIGN_ID}' AND (%s)".format(
-        segments
-      )
+      "campaign_id IS NOT NULL AND campaign_id != '${CAMPAIGN_ID}' AND (%s)"
+        .format(
+          segments
+        )
 
     // List of columns to keep
     val select =
