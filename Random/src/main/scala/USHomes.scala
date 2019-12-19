@@ -71,7 +71,7 @@ object USHomes {
       spark.read.format("parquet").load("/datascience/custom/us_homes")
     val joint = homes
       .join(estid_map, Seq("estid"))
-      .withColumn("device_id", explode("device_id"))
+      .withColumn("device_id", explode(col("device_id")))
 
     joint.write
       .format("parquet")
