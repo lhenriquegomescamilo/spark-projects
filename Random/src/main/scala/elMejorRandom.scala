@@ -820,7 +820,7 @@ val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
 mapeo.drop("device_type")
 .join(befaf,Seq("device_id"))
 .join(audience_segments,Seq("device_id"))
- filter(col("segment").isin(taxonomy: _*))
+.filter(col("segment").isin(taxonomy: _*))
 .distinct()
 .repartition(10)
 .write
