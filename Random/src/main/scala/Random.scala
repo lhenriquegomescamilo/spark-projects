@@ -5287,6 +5287,7 @@ user_granularity.write
         .unionAll(dnis)
         .unionAll(mobs)
         .withColumnRenamed("device_id", "index")
+        .withColumn("index", upper(col("index")))
         
     val xd_index = spark.read
         .format("parquet")
@@ -5309,6 +5310,6 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-       
+    procesPII(spark)
   }
 }
