@@ -5318,30 +5318,18 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    // spark.read
-    //   .format("parquet")
-    //   .option("basePath", "/datascience/geo/safegraph/")
-    //   .load("/datascience/geo/safegraph/day=201911*")
-    //   .withColumn("point", array(col("latitude"), col("longitude")))
-    //   .groupBy("ad_id", "country", "day")
-    //   .agg(count(col("id_type")) as "count", collect_list("point") as "points")
-    //   .filter("count > 10")
-      // .write
-      // .format("parquet")
-      // .partitionBy("country")
-      // .save("/datascience/custom/users_with_many_points")
-    spark.read
+    val xd_index = spark.read
       .format("parquet")
-      .load("/datascience/custom/users_with_many_points")
-      .groupBy("country", "ad_id")
-      .agg(count("count") as "nDays", avg("count") as "avgCount")
-      .withColumn("avgCount", col("avgCount").cast("int"))
-      .filter("nDays > 25")
-      .groupBy("country", "avgCount")
-      .count()
-      .orderBy("count")
-      .write
-      .format("parquet")
-      .save("/datascience/custom/users_with_many_points_stats")
+      .load("/datascience/crossdevice/double_index/")
+      .filter("device_type IN ('and', 'ios') AND index_type = 'coo'")
+      .withColumn("index", upper(col("index")))
+
+    val piis = spark.read
+      .format("csv")
+      .load("/datascience/pii_matching/pii_table/20191209/country=AR/")
+      .withColumnRenamed("_c0", "index")
+      .withColumn("index", upper(col("index")))
+
+    xd_index.join(piis, Seq("index")).groupBy("device_type", "_c1").count().collect.foreach(println)
   }
 }
