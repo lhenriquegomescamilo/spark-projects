@@ -237,7 +237,7 @@ object GetDataForAudience {
       .withColumn("device_id", upper(col("device_id")))
       
 
-    val data_segments = getDataTriplets(spark, country = "MX", nDays = 5)
+    val data_segments = getDataTriplets(spark, country = "MX", nDays = 1)
       .select("device_id", "segment")
       .withColumn("device_id", upper(col("device_id")))
 
