@@ -726,57 +726,87 @@ safe
 
 //get_segments_from_triplets_for_geo_users(spark)
 
-val taxo = List(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
-      104, 118, 129, 131, 141, 144, 145, 147, 149, 150, 152, 154, 155, 158, 160,
-      165, 166, 177, 178, 210, 213, 218, 224, 225, 226, 230, 245, 247, 250, 264,
-      265, 270, 275, 276, 302, 305, 311, 313, 314, 315, 316, 317, 318, 322, 323,
-      325, 326, 352, 353, 354, 356, 357, 358, 359, 363, 366, 367, 374, 377, 378,
-      379, 380, 384, 385, 386, 389, 395, 396, 397, 398, 399, 401, 402, 403, 404,
-      405, 409, 410, 411, 412, 413, 418, 420, 421, 422, 429, 430, 432, 433, 434,
-      440, 441, 446, 447, 450, 451, 453, 454, 456, 457, 458, 459, 460, 462, 463,
-      464, 465, 467, 895, 898, 899, 909, 912, 914, 915, 916, 917, 919, 920, 922,
-      923, 928, 929, 930, 931, 932, 933, 934, 935, 937, 938, 939, 940, 942, 947,
-      948, 949, 950, 951, 952, 953, 955, 956, 957, 1005, 1116, 1159, 1160, 1166,
-      2623, 2635, 2636, 2660, 2719, 2720, 2721, 2722, 2723, 2724, 2725, 2726,
-      2727, 2733, 2734, 2735, 2736, 2737, 2743, 3010, 3011, 3012, 3013, 3014,
-      3015, 3016, 3017, 3018, 3019, 3020, 3021, 3022, 3023, 3024, 3025, 3026,
-      3027, 3028, 3029, 3030, 3031, 3032, 3033, 3034, 3035, 3036, 3037, 3038,
-      3039, 3040, 3041, 3055, 3076, 3077, 3084, 3085, 3086, 3087, 3302, 3303,
-      3308, 3309, 3310, 3388, 3389, 3418, 3420, 3421, 3422, 3423, 3470, 3472,
-      3473, 3564, 3565, 3566, 3567, 3568, 3569, 3570, 3571, 3572, 3573, 3574,
-      3575, 3576, 3577, 3578, 3579, 3580, 3581, 3582, 3583, 3584, 3585, 3586,
-      3587, 3588, 3589, 3590, 3591, 3592, 3593, 3594, 3595, 3596, 3597, 3598,
-      3599, 3600, 3779, 3782, 3913, 3914, 3915, 4097)
 
-val tabla_1 = spark.read.format("parquet").load("/datascience/data_partner_streaming/")
-.select("device_id","all_segments","campaign_id","hour","id_partner")
-.filter("id_partner == 474")
-.withColumn("hour",to_timestamp(col("hour").cast("string"),"yyyyMMddHH"))
-.withColumn("day",date_format(col("hour"),"dd"))
-.withColumn("month",date_format(col("hour"),"MM"))
-.withColumn("hour",date_format(col("hour"),"HH"))
-.na.drop()
-.filter("month==12")
-.withColumn("all_segments",explode(col("all_segments")))
-.filter(col("all_segments").isin(taxo:_*))
 
-val tabla_segmentos = tabla_1.select("device_id","all_segments").distinct()
-val tabla_el_resto = tabla_1.drop("all_segments").distinct()
+//1) Acá está el mapeo de los usuarios para ver a qué grupo pertenecen
+val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/misc/Luxottica/in_store_audiences_w_group.csv")
+.withColumn("device_id",upper(col("device_id")))
+.withColumnRenamed("segment","old_group")
+.withColumnRenamed("new_segment","new_group")
 
-tabla_segmentos
-.write.format("csv")
+
+//2) Acá están los usuarios y sus segmentos asociados de triplets
+val audience_segments = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_w_segments")
+.withColumn("device_id",upper(col("device_id")))
+.select("device_id","segment")
+
+
+//3) Tenemos la gente Geo de esos Puntos (son 30 días del 18 de diciembre para atrás, la campaña empezó el 8):
+val raw_output = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/raw_output/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_30d_mexico_18-12-2019-12h")
+
+
+
+//4) Acá está la tabla de equivalencias entre lo geo y los devices_id
+val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/crossdeviced/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_30d_mexico_18-12-2019-12h_xd_equivalence_table")
+.withColumn("device_id",upper(col("device_id_origin")))
+
+
+//5) Acá está la data compilada que sería para empujar, si bien no sirve en sí, tiene información de si el usuario alguna vez """entró""" a una de las tiendas. para ahorrar tiempo
+val audience = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/crossdeviced/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_30d_mexico_18-12-2019-12h_xd")
+.withColumn("device_id",upper(col("device_id")))
+
+
+
+
+
+//esto nos dice de cada ping si es antes o después.
+//ojo que va a haber usuarios que aparezcan en uno, dos o ningún grupo
+
+val data_befaf = raw_output
+.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+.withColumn("Day", date_format(col("Time"),"dd-M"))
+.withColumn("campaign_start",lit("2019-12-08"))
+.withColumn("datediff",datediff(col("Time"),col("campaign_start")))
+.withColumn("before_after",when(col("datediff") <= 0, "before").otherwise("after"))
+.withColumn("dateAmplitude",abs(col("datediff")))
+.filter("dateAmplitude<10")
+.select("device_id","distance","name_id","Day","Time","campaign_start","datediff","before_after")
+
+
+//Igual ojo también porque la cantidad de días antes y despuués tienen que ser comparables, lo chequeamos acá
+data_befaf.agg(min("datediff"), max("datediff")).show()
+//Ahí miramos la amplitud
+
+//acá tenemos de cada usuario si fue antes o después
+val befaf_madid = data_befaf.select("device_id","before_after","Day","name_id")
+.withColumn("device_id",upper(col("device_id")))
+.distinct()
+
+//vamos a expandir eso con la data de XD
+
+val befaf = befaf_madid
+.join(equiv.select("device_id","device_id_xd"), Seq("device_id"), "right_outer")
+.withColumn("device_id", coalesce(col("device_id"), col("device_id_xd")))  
+.drop("device_id_xd")
+.distinct()
+
+befaf.printSchema()
+
+
+
+
+mapeo.drop("device_type")
+.join(befaf,Seq("device_id"))
+.join(audience_segments,Seq("device_id"))
+.repartition(10)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/misc/tableau/tabla_segmentos")
-
-tabla_el_resto
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/misc/tableau/tabla_id_partner")
-
+.save("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_classified_w_segments")
 
 }
 
