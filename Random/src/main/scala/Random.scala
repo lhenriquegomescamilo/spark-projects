@@ -5281,7 +5281,6 @@ user_granularity.write
       .select("device_id")
       .withColumn("pii_type", lit("mob"))
       .dropDuplicates("device_id")
-      .withColumn("index", upper(col("index")))
 
     var total = mails
         .unionAll(dnis)
