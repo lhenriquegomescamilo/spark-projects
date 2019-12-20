@@ -5255,55 +5255,46 @@ user_granularity.write
 
   }
 
-  def get_segments_pmi(spark: SparkSession) {
+  def procesPII(spark: SparkSession) {
+    // First we load all the data generated from PIIs
+    val data = spark.read
+        .format("parquet")
+        .option("basePath", "/datascience/pii_matching/pii_tuples/")
+        .load("/datascience/pii_matching/pii_tuples/day=201911*")
+        .filter("country in('AR')")
 
-    val files = List(
-      "/datascience/misc/cookies_chesterfield.csv",
-      "/datascience/misc/cookies_marlboro.csv",
-      "/datascience/misc/cookies_phillip_morris.csv",
-      "/datascience/misc/cookies_parliament.csv"
-    )
+    // Then we separate the data acording to the PII type
+    var mails = data
+      .filter("ml_sh2 is not null")
+      .select("device_id")
+      .withColumn("pii_type", lit("mail"))
+      .dropDuplicates("device_id")
 
-    /// Configuraciones de spark
-    val sc = spark.sparkContext
-    val conf = sc.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    var dnis = data
+      .filter("nid_sh2 is not null")
+      .select("device_id")
+      .withColumn("pii_type", lit("nid"))
+      .dropDuplicates("device_id")
 
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(1)
+    var mobs = data
+      .filter("mb_sh2 is not null")
+      .select("device_id")
+      .withColumn("pii_type", lit("mob"))
+      .dropDuplicates("device_id")
+      .withColumn("index", upper(col("index")))
 
-    val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_triplets/segments/"
-    val dfs = days
-      .map(day => path + "day=%s/".format(day) + "country=AR")
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      .map(
-        x =>
-          spark.read
-            .option("basePath", "/datascience/data_triplets/segments/")
-            .parquet(x)
-      )
-
-    var data = dfs.reduce((df1, df2) => df1.union(df2))
-
-    for (filename <- files) {
-      var cookies = spark.read
-        .format("csv")
-        .load(filename)
-        .withColumnRenamed("_c0", "device_id")
-
-      data
-        .join(broadcast(cookies), Seq("device_id"))
-        .select("device_id", "feature", "count")
-        .dropDuplicates()
-        .write
-        .format("csv")
-        .mode(SaveMode.Overwrite)
-        .save(
-          "/datascience/custom/segments_%s"
-            .format(filename.split("/").last.split("_").last)
-        )
-    }
+    var total = mails
+        .unionAll(dnis)
+        .unionAll(mobs)
+        .withColumnRenamed("device_id", "index")
+        
+    val xd_index = spark.read
+        .format("parquet")
+        .load("/datascience/crossdevice/double_index/")
+        .filter("device_type IN ('and', 'ios') AND index_type = 'coo'")
+        .withColumn("index", upper(col("index")))
+    
+    xd_index.join(total, Seq("index")).groupBy("device_type", "pii_type").count().collect.foreach(println)
   }
 
   /*****************************************************/
@@ -5318,18 +5309,6 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val xd_index = spark.read
-      .format("parquet")
-      .load("/datascience/crossdevice/double_index/")
-      .filter("device_type IN ('and', 'ios') AND index_type = 'coo'")
-      .withColumn("index", upper(col("index")))
-
-    val piis = spark.read
-      .format("csv")
-      .load("/datascience/pii_matching/pii_table/20191209/country=AR/")
-      .withColumnRenamed("_c0", "index")
-      .withColumn("index", upper(col("index")))
-
-    xd_index.join(piis, Seq("index")).groupBy("device_type", "_c1").count().collect.foreach(println)
+       
   }
 }
