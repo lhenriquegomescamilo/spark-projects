@@ -67,11 +67,14 @@ object GetDataForAudience {
   def getDataSegmentsForAudience(spark: SparkSession) = {
     val data_audiences = spark.read
       .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
+      .option("sep", ",")
+      .option("header", "false")
       .load(
-        "/datascience/geo/crossdeviced/jcdecaux_test_4_points_120d_mexico_28-11-2019-10h_xd"
+        "/datascience/custom/gt_br_bk.csv"
       )
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "ids")
+      .drop("_c0")
 
     val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
       104, 118, 129, 131, 141, 144, 145, 147, 149, 150, 152, 154, 155, 158, 160,
@@ -96,29 +99,16 @@ object GetDataForAudience {
       3599, 3600, 3779, 3782, 3913, 3914, 3915, 4097, 104014, 104015, 104016,
       104017, 104018, 104019)
 
-    val data_segments = getDataTriplets(spark, country = "MX", nDays = 60)
+    val data_segments = getDataTriplets(spark, country = "BR", nDays = 60)
       .filter(col("segment").isin(taxonomy: _*))
       .select("device_id", "segment")
 
-    val xd_index = spark.read
-      .format("parquet")
-      .load("/datascience/crossdevice/double_index/")
-      .filter("index_type IN ('and', 'ios') AND device_type = 'coo'")
-
-    val crossdeviced = xd_index
-      .join(
-        data_segments.withColumnRenamed("device_id", "index"),
-        Seq("index")
-      )
-      .select("device", "segment")
-      .withColumnRenamed("device", "device_id")
-
     data_audiences
-      .join(crossdeviced, Seq("device_id"))
+      .join(data_segments, Seq("device_id"))
       .write
       .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/jcdecaux_with_segments")
+      .save("/datascience/custom/gt_br_bk_segments")
 
   }
 
@@ -187,7 +177,7 @@ object GetDataForAudience {
       .option("sep", "\t")
       .option("header", "false")
       .load(
-        "/datascience/custom/gt_br_transunion_gender"
+        "/datascience/custom/gt_br_bk.csv"
       )
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "ids")
@@ -263,7 +253,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataSegmentsForAudienceWithoutFilterPleaseIneedAllDataMaybeIfilterItLater(spark = spark)
+    getDataSegmentsForAudience(spark = spark)
 
   }
 }

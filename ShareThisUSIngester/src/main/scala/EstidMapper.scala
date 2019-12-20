@@ -159,24 +159,4 @@ object EstidMapper {
     //  crossDeviceTable(spark)
     //}
   }
-
-  /*def main(args: Array[String]) {
-    val spark = SparkSession.builder
-        .appName("Run matching estid-device_id")
-        .config("spark.sql.files.ignoreCorruptFiles", "true")
-        .getOrCreate()
-
-    val today = DateTime.now()
-    val days = (1 until 2).map(
-      days =>
-        getEstIdsMatching(
-          spark,
-          today.minusDays(days).toString("yyyy/MM/dd")
-        )
-    )
-
-    if (DateTime.now.getDayOfWeek()==7){
-      crossDeviceTable(spark)
-    }
-  }*/
 }
