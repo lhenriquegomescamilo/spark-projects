@@ -198,6 +198,31 @@ object GetDataXPBR {
       .save("/datascience/custom/urls_br_xp")
   }
 
+  def get_joint(spark: SparkSession) = {
+    val ua_df =
+      spark.read.format("parquet").load("/datascience/custom/user_agent_br_xp")
+    val urls =
+      spark.read.format("parquet").load("/datascience/custom/urls_br_xp")
+
+    val joint = ua_df
+      .join(urls, Seq("device_id"), "left")
+      .withColumn("urls", concat_ws("|", col("urls")))
+
+    val gt = spark.read
+      .format("csv")
+      .load("/datascience/custom/devices_gt_br.csv")
+      .withColumnRenamed("_c0", "device_id")
+      .repartition(20)
+
+    joint
+      .join(gt, Seq("device_id"), "left_anti")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode("overwrite")
+      .save("/datascience/custom/dataset_expansion_br")
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -210,12 +235,13 @@ object GetDataXPBR {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getUAData(
-      spark = spark
-    )
-    getURLData(
-      spark = spark
-    )
+    // getUAData(
+    //   spark = spark
+    // )
+    // getURLData(
+    //   spark = spark
+    // )
+    get_joint(spark)
 
   }
 }
