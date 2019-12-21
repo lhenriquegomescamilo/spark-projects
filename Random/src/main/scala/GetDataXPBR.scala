@@ -165,7 +165,7 @@ object GetDataXPBR {
       get_data_user_agents(spark, 60, 1, "BR")
 
     user_agents
-      .selec("device_id", "user_agent")
+      .select("device_id", "user_agent")
       .dropDuplicates("device_id")
       .write
       .format("parquet")
@@ -189,7 +189,7 @@ object GetDataXPBR {
 
     urls
       .join(broadcast(selected_urls), Seq("url"), "inner")
-      .selec("device_id", "url")
+      .select("device_id", "url")
       .distinct()
       .groupBy("device_id")
       .agg(collect_list("url") as "urls")
