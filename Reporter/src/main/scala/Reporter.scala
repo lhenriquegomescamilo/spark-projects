@@ -236,13 +236,7 @@ object Reporter {
     val overlap = getOverlap(dataset, (split == "1" || split == "true"))
 
     // If there is a split, then we have to add the field firstParty as a column
-    val report = overlap //if (split == "1" || split == "true") {
-    //   overlap
-    //     .withColumn("first_party", lit(firstParty))
-    //     .select("first_party", "segment", "count", "device_unique")
-    // } else {
-    //   overlap.select("segment", "count", "device_unique")
-    // }
+    val report = overlap 
 
     report.createOrReplaceTempView("report")
     val table = spark.table("report")
