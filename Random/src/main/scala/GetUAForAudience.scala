@@ -81,7 +81,7 @@ object GetUAForAudience {
 
     getUAForAudience(
       spark = spark,
-      "/datascience/custom/gt_br_bk.csv",
+      "/datascience/custom/ages_br_gt_bk.csv",
       "BR"
     )
 
