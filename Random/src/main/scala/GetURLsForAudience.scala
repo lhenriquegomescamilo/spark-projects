@@ -194,7 +194,7 @@ object GetURLsForAudience {
 
     getURLForAudience(
       spark = spark,
-      "/datascience/custom/gt_br_bk_audience",
+      "/datascience/custom/ages_br_gt_bk.csv",
       "BR"
     )
 
