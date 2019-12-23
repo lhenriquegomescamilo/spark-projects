@@ -685,31 +685,6 @@ count_no_birra.write.format("csv")
 
     Logger.getRootLogger.setLevel(Level.WARN)
 //Ahora vamos a negativizar la gente que fue hace 6 meses
-val raw_output = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/raw_output/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_180d_mexico_23-12-2019-9h")
-
-val data_befaf = raw_output
-.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-.withColumn("Day", date_format(col("Time"),"dd-M"))
-.withColumn("campaign_start",lit("2019-12-10"))
-.withColumn("datediff",datediff(col("Time"),col("campaign_start")))
-.withColumn("before_after",when(col("datediff") <= 0, "before").otherwise("after"))
-.withColumn("dateAmplitude",abs(col("datediff")))
-.select("device_id","distance","name_id","Day","Time","campaign_start","datediff","before_after")
-.filter("datediff>-13") //esto me filtra los usuarios que ya había visto antes durante 6 meses
-
-val new_users = data_befaf.select("device_id").distinct()
-
-val data_befaf_no_old = new_users.join(data_befaf,Seq("device_id"))
-
-
-//Igual ojo también porque la cantidad de días antes y despuués tienen que ser comparables, lo chequeamos acá
-data_befaf_no_old.agg(min("datediff"), max("datediff")).show()
-//Ahí miramos la amplitud
-
-//acá tenemos de cada usuario si fue antes o después
-val befaf_madid = data_befaf_no_old.select("device_id","before_after","Day","name_id")
-.withColumn("device_id",upper(col("device_id")))
-.distinct()
 
 //1) Acá está el mapeo de los usuarios para ver a qué grupo pertenecen
 val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",")
@@ -718,26 +693,87 @@ val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",
 .withColumnRenamed("segment","old_group")
 .withColumnRenamed("new_segment","new_group")
 
+
+//3) Tenemos la gente Geo de esos Puntos (son 30 días del 18 de diciembre para atrás, la campaña empezó el 8):
+val raw_output = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/raw_output/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_180d_mexico_23-12-2019-9h")
+//.withColumn("device_id_origin",upper(col("device_id")))
+//.drop("device_id")
+
+//4) Acá está la tabla de equivalencias entre lo geo y los devices_id
+val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/crossdeviced/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_30d_mexico_18-12-2019-12h_xd_equivalence_table")
+.withColumn("device_id",upper(col("device_id_origin")))
+
+//mapeo.show(1)
+//raw_output.show(1)
+
+//esto nos dice de cada ping si es antes o después.
+//ojo que va a haber usuarios que aparezcan en uno, dos o ningún grupo
+//tenemos que hacer que el before sea las mismas fechas pero un mes antes
+
+
+//acá genero todos los que fueron despuués y antes
+val data_befaf = raw_output
+.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+.withColumn("Date", date_format(col("Time"),"dd-M"))
+.withColumn("Day", date_format(col("Time"),"dd"))
+.withColumn("Month", date_format(col("Time"),"M"))
+.withColumn("campaign_start",lit("2019-12-10"))
+.withColumn("datediff",datediff(col("Time"),col("campaign_start")))
+.withColumn("before_after",when(col("datediff") <= 0, "before").otherwise("after"))
+.withColumn("dateAmplitude",abs(col("datediff")))
+.select("device_id","distance","name_id","campaign_start","datediff","before_after","Time","Date","Day","Month")
+//.filter("dateAmplitude<12") //este es el máximo que puedo ver en el futuro, entonces también lo tengo que filtrar para el pasado
+
+//acá me quedo sólo con los que fueron después
+
+val data_af = data_befaf.filter("before_after == 'after'")
+
+data_af.printSchema
+
+//acá genero un dataset que tiene los días de los que fueron después, pero con el mes anterior
+val dates_1_month_before = data_af.select("Day").withColumn("Month",lit(11)).distinct()
+
+//acá filtro befaf, que tiene todo, por los días y meses anteriores
+val data_be = dates_1_month_before.join(data_befaf,Seq("Day","Month"))
+.select(data_af.columns.head, data_af.columns.tail: _*) //así lo ordemamos en el mismo orden
+
+data_be.printSchema
+
+//acá uno be y af
+
+val data_befaf_month = List(data_be,data_af).reduce(_.unionByName (_)).distinct()
+
+//Igual ojo también porque la cantidad de días antes y despuués tienen que ser comparables, lo chequeamos acá
+data_befaf_month.agg(min("datediff"), max("datediff")).show()
+//Ahí miramos la amplitud
+
+//acá tenemos de cada usuario si fue antes o después y qué día fue
+val befaf_madid = data_befaf_month.select("device_id","before_after","Day","name_id")
+.withColumn("device_id",upper(col("device_id")))
+.distinct()
+
+//vamos a expandir eso con la data de XD
+//Nos da una tabla que tiene la columna del madid original y la del xd para despuués hacer el join con la data del mapeo de segmentos
+val befaf = befaf_madid
+.join(equiv.select("device_id","device_id_xd"), Seq("device_id"))
+.withColumn("device_id", coalesce(col("device_id"), col("device_id_xd")))  
+.distinct()
+
+
+befaf.printSchema()
+
+
 //2) Acá están los usuarios y sus segmentos asociados de triplets
 val audience_segments = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_w_segments")
 .withColumn("device_id",upper(col("device_id")))
 .select("device_id","segment")
 
+//5) Acá está la data compilada que sería para empujar, si bien no sirve en sí, tiene información de si el usuario alguna vez """entró""" a una de las tiendas. para ahorrar tiempo
+val audience = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/crossdeviced/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_30d_mexico_18-12-2019-12h_xd")
+.withColumn("device_id",upper(col("device_id")))
 
-//4) Acá está la tabla de equivalencias entre lo geo y los devices_id
-val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/crossdeviced/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_30d_mexico_18-12-2019-12h_xd_equivalence_table")
-.withColumn("device_id",upper(col("device_id_origin")))
-
-
-
-//vamos a expandir eso con la data de XD
-
-val befaf = befaf_madid
-.join(equiv.select("device_id","device_id_xd"), Seq("device_id"), "right_outer")
-.withColumn("device_id", coalesce(col("device_id"), col("device_id_xd")))  
-.drop("device_id_xd")
-.distinct()
+audience.show(2)
 
 mapeo.drop("device_type")
 .join(befaf,Seq("device_id"))
@@ -748,7 +784,7 @@ mapeo.drop("device_type")
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_classified_w_segments_no_old_6month")
+.save("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_classified_w_segments_prev_month")
 
 }
 
