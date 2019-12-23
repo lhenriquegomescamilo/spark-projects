@@ -5258,10 +5258,10 @@ user_granularity.write
   def procesPII(spark: SparkSession) {
     // First we load all the data generated from PIIs
     val data = spark.read
-        .format("parquet")
-        .option("basePath", "/datascience/pii_matching/pii_tuples/")
-        .load("/datascience/pii_matching/pii_tuples/day=201911*")
-        .filter("country in('AR')")
+      .format("parquet")
+      .option("basePath", "/datascience/pii_matching/pii_tuples/")
+      .load("/datascience/pii_matching/pii_tuples/day=201911*")
+      .filter("country in('AR')")
 
     // Then we separate the data acording to the PII type
     var mails = data
@@ -5283,18 +5283,23 @@ user_granularity.write
       .dropDuplicates("device_id")
 
     var total = mails
-        .unionAll(dnis)
-        .unionAll(mobs)
-        .withColumnRenamed("device_id", "index")
-        .withColumn("index", upper(col("index")))
-        
+      .unionAll(dnis)
+      .unionAll(mobs)
+      .withColumnRenamed("device_id", "index")
+      .withColumn("index", upper(col("index")))
+
     val xd_index = spark.read
-        .format("parquet")
-        .load("/datascience/crossdevice/double_index/")
-        .filter("device_type IN ('and', 'ios') AND index_type = 'coo'")
-        .withColumn("index", upper(col("index")))
-    
-    xd_index.join(total, Seq("index")).groupBy("device_type", "pii_type").count().collect.foreach(println)
+      .format("parquet")
+      .load("/datascience/crossdevice/double_index/")
+      .filter("device_type IN ('and', 'ios') AND index_type = 'coo'")
+      .withColumn("index", upper(col("index")))
+
+    xd_index
+      .join(total, Seq("index"))
+      .groupBy("device_type", "pii_type")
+      .count()
+      .collect
+      .foreach(println)
   }
 
   /*****************************************************/
@@ -5309,6 +5314,27 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    procesPII(spark)
+    val genero = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/data_startapp_genero_grouped")
+      .drop("_c0")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "genero")
+
+    val edad = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/data_startapp_edad_grouped")
+      .drop("_c0")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "edad")
+
+    genero
+      .join(edad, Seq("device_id"), "outer")
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .save("/datascience/custom/data_startapp_edad_genero")
   }
 }
