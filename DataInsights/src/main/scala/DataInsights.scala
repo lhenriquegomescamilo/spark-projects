@@ -50,6 +50,23 @@ object DataInsights {
     df
   }
 
+  def get_data_first_party(spark:SparkSession, day:String, df_ua: DataFrame){
+
+    val data_eventqueue = spark.read.format("csv").option("sep", "\t").option("header", "true")
+                                .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+                                .filter("first_party is not null and event_type in ('pv','batch','data','retroactive') and id_partner = 643")
+                                .select("time","id_partner","device_id","device_type","country","data_type","nid_sh2","first_party")
+                                
+    data_eventqueue.join(df_ua,Seq("device_id"),"left")
+                    .withColumn("first_party", split(col("first_party"), "")).withColumn("first_party",explode(col("first_party")))
+                    .withColumn("day",lit(day.replace("/","")))
+                    .write
+                    .format("parquet")
+                    .partitionBy("day","id_partner")
+                    .mode("append")
+                    .save("/datascience/data_insights/data_first_party/")
+  }
+
 
   def get_data(spark:SparkSession, day:String, df_ua: DataFrame){
 
@@ -91,7 +108,7 @@ object DataInsights {
     val df_ua = get_data_user_agent(spark,10,1)
     df_ua.cache()
 
-    days.map(day => get_data(spark, day, df_ua))
+    days.map(day => get_data_first_party(spark, day, df_ua))
 
   }
 }
