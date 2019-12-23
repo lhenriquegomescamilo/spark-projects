@@ -5344,6 +5344,7 @@ user_granularity.write
       .load("/datascience/custom/data_startapp_edad_genero")
       .groupBy("genero", "edad")
       .count()
-      .show(40)
+      .collect()
+      .foreach(println)
   }
 }
