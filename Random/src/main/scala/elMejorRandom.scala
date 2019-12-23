@@ -728,7 +728,6 @@ val data_befaf = raw_output
 
 val data_af = data_befaf.filter("before_after == 'after'")
 
-data_af.printSchema
 
 //acá genero un dataset que tiene los días de los que fueron después, pero con el mes anterior
 val dates_1_month_before = data_af.select("Day").withColumn("Month",lit(11)).distinct()
@@ -737,14 +736,10 @@ val dates_1_month_before = data_af.select("Day").withColumn("Month",lit(11)).dis
 val data_be = dates_1_month_before.join(data_befaf,Seq("Day","Month"))
 .select(data_af.columns.head, data_af.columns.tail: _*) //así lo ordemamos en el mismo orden
 
-data_be.printSchema
 
-//acá uno be y af
 
 val data_befaf_month = List(data_be,data_af).reduce(_.unionByName (_)).distinct()
 
-//Igual ojo también porque la cantidad de días antes y despuués tienen que ser comparables, lo chequeamos acá
-data_befaf_month.agg(min("datediff"), max("datediff")).show()
 //Ahí miramos la amplitud
 
 //acá tenemos de cada usuario si fue antes o después y qué día fue
@@ -760,7 +755,6 @@ val befaf = befaf_madid
 .distinct()
 
 
-befaf.printSchema()
 
 
 //2) Acá están los usuarios y sus segmentos asociados de triplets
@@ -773,11 +767,35 @@ val audience_segments = spark.read.format("csv").option("header",true).option("d
 val audience = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/crossdeviced/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_30d_mexico_18-12-2019-12h_xd")
 .withColumn("device_id",upper(col("device_id")))
 
-audience.show(2)
+
+val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
+      104, 118, 129, 131, 141, 144, 145, 147, 149, 150, 152, 154, 155, 158, 160,
+      165, 166, 177, 178, 210, 213, 218, 224, 225, 226, 230, 245, 247, 250, 264,
+      265, 270, 275, 276, 302, 305, 311, 313, 314, 315, 316, 317, 318, 322, 323,
+      325, 326, 352, 353, 354, 356, 357, 358, 359, 363, 366, 367, 374, 377, 378,
+      379, 380, 384, 385, 386, 389, 395, 396, 397, 398, 399, 401, 402, 403, 404,
+      405, 409, 410, 411, 412, 413, 418, 420, 421, 422, 429, 430, 432, 433, 434,
+      440, 441, 446, 447, 450, 451, 453, 454, 456, 457, 458, 459, 460, 462, 463,
+      464, 465, 467, 895, 898, 899, 909, 912, 914, 915, 916, 917, 919, 920, 922,
+      923, 928, 929, 930, 931, 932, 933, 934, 935, 937, 938, 939, 940, 942, 947,
+      948, 949, 950, 951, 952, 953, 955, 956, 957, 1005, 1116, 1159, 1160, 1166,
+      2623, 2635, 2636, 2660, 2719, 2720, 2721, 2722, 2723, 2724, 2725, 2726,
+      2727, 2733, 2734, 2735, 2736, 2737, 2743, 3010, 3011, 3012, 3013, 3014,
+      3015, 3016, 3017, 3018, 3019, 3020, 3021, 3022, 3023, 3024, 3025, 3026,
+      3027, 3028, 3029, 3030, 3031, 3032, 3033, 3034, 3035, 3036, 3037, 3038,
+      3039, 3040, 3041, 3055, 3076, 3077, 3084, 3085, 3086, 3087, 3302, 3303,
+      3308, 3309, 3310, 3388, 3389, 3418, 3420, 3421, 3422, 3423, 3470, 3472,
+      3473, 3564, 3565, 3566, 3567, 3568, 3569, 3570, 3571, 3572, 3573, 3574,
+      3575, 3576, 3577, 3578, 3579, 3580, 3581, 3582, 3583, 3584, 3585, 3586,
+      3587, 3588, 3589, 3590, 3591, 3592, 3593, 3594, 3595, 3596, 3597, 3598,
+      3599, 3600, 3779, 3782, 3913, 3914, 3915, 4097, 104014, 104015, 104016,
+      104017, 104018, 104019)
 
 mapeo.drop("device_type")
 .join(befaf,Seq("device_id"))
 .join(audience_segments,Seq("device_id"))
+.filter(col("segment").isin(taxonomy: _*))
+.distinct()
 .repartition(10)
 .write
 .mode(SaveMode.Overwrite)
@@ -785,6 +803,17 @@ mapeo.drop("device_type")
 .option("header",true)
 .option("delimiter","\t")
 .save("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_classified_w_segments_prev_month")
+
+
+spark.read.format("csv").option("header",true)
+.option("delimiter","\t")
+.load("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_classified_w_segments_no_old_6month").distinct()
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_classified_w_segments_no_old_6month_reduced")
 
 }
 
