@@ -257,16 +257,26 @@ object platformsReport {
       .collect
       .toMap
 
+    val taxo_segs = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/misc/taxo_gral.csv")
+      .select("seg_id")
+      .collect()
+      .map(_(0).toString.toInt)
+      .toSeq
+
     val mapping_b = spark.sparkContext.broadcast(mapping)
 
     def udfMap = udf((n: Int) => (mapping_b.value.get(n)))
 
     val volumes = df
       .withColumn("segment", explode(col("segments")))
+      .filter(col("segment").isin(taxo_segs: _*))
       // .withColumn("platforms", udfMap(col("platforms")))
       // .withColumn("platform", explode(col("platforms")))
       .drop("segments", "platforms")
-      .groupBy("device_type", "segment", "country")
+      .groupBy("device_type", "segment", "country", "platforms")
       .agg(
         approx_count_distinct(col("device_id"), rsd = 0.02) as "device_unique"
       )
@@ -328,21 +338,21 @@ object platformsReport {
       .toSeq
 
     // val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => taxo_segs.contains(s)) )
-        
+
     // val df = spark.read
     //       .format("parquet")
     //       .load("/datascience/reports/platforms/data2/day=20191222")
     //       .withColumn("segments", filter_firstparty(col("segments")))
     //       .withColumn("segment", explode(col("segments")))
-          
+
     // println(df.count())
 
     val df2 = spark.read
-          .format("parquet")
-          .load("/datascience/reports/platforms/data2/day=20191222")
-          .withColumn("segment", explode(col("segments")))
-          .filter(col("segment").isin(taxo_segs: _*))
-          
+      .format("parquet")
+      .load("/datascience/reports/platforms/data2/day=20191222")
+      .withColumn("segment", explode(col("segments")))
+      .filter(col("segment").isin(taxo_segs: _*))
+
     println(df2.count())
   }
 }
