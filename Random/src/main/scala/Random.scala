@@ -5321,6 +5321,7 @@ user_granularity.write
       .drop("_c0")
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "genero")
+      .filter("genero NOT LIKE '%,%'")
 
     val edad = spark.read
       .format("csv")
@@ -5329,6 +5330,7 @@ user_granularity.write
       .drop("_c0")
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "edad")
+      .filter("edad NOT LIKE '%,%'")
 
     genero
       .join(edad, Seq("device_id"), "outer")
