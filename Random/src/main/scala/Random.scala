@@ -5318,7 +5318,7 @@ user_granularity.write
       .format("csv")
       .option("sep", "\t")
       .load("/datascience/devicer/processed/data_startapp_genero_grouped")
-      .drop("_c0")
+      .withColumnRenamed("_c0", "device_type")
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "genero")
       .filter("genero NOT LIKE '%,%'")
@@ -5327,16 +5327,23 @@ user_granularity.write
       .format("csv")
       .option("sep", "\t")
       .load("/datascience/devicer/processed/data_startapp_edad_grouped")
-      .drop("_c0")
+      .withColumnRenamed("_c0", "device_type")
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "edad")
       .filter("edad NOT LIKE '%,%'")
 
     genero
-      .join(edad, Seq("device_id"), "outer")
+      .join(edad, Seq("device_type", "device_id"), "outer")
       .write
-      .format("csv")
+      .format("parquet")
       .mode("overwrite")
       .save("/datascience/custom/data_startapp_edad_genero")
+
+    spark.read
+      .format("parquet")
+      .load("/datascience/custom/data_startapp_edad_genero")
+      .groupBy("genero", "edad")
+      .count()
+      .show()
   }
 }
