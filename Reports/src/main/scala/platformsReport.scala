@@ -327,15 +327,15 @@ object platformsReport {
       .map(_(0).toString.toInt)
       .toSeq
 
-    val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => taxo_segs.contains(s)) )
+    // val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => taxo_segs.contains(s)) )
         
-    val df = spark.read
-          .format("parquet")
-          .load("/datascience/reports/platforms/data2/day=20191222")
-          .withColumn("segments", filter_firstparty(col("segments")))
-          .withColumn("segment", explode(col("segments")))
+    // val df = spark.read
+    //       .format("parquet")
+    //       .load("/datascience/reports/platforms/data2/day=20191222")
+    //       .withColumn("segments", filter_firstparty(col("segments")))
+    //       .withColumn("segment", explode(col("segments")))
           
-    println(df.count())
+    // println(df.count())
 
     val df2 = spark.read
           .format("parquet")
