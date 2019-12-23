@@ -261,7 +261,8 @@ object platformsReport {
 
     def udfMap = udf((n: Int) => (mapping_b.value.get(n)))
 
-    val volumes = df.withColumn("segment", explode(col("segments")))
+    val volumes = df
+      .withColumn("segment", explode(col("segments")))
       // .withColumn("platforms", udfMap(col("platforms")))
       // .withColumn("platform", explode(col("platforms")))
       .drop("segments", "platforms")
@@ -316,6 +317,12 @@ object platformsReport {
       .getOrCreate()
 
     // getReports(spark = spark, nDays = nDays, since = since)
-    getVolumeReport(spark)
+    // getVolumeReport(spark)
+    val df = spark.read
+      .format("parquet")
+      .load("/datascience/reports/platforms/data2/day=20191222")
+      .withColumn("segment", explode(col("segments")))
+
+    df.count()
   }
 }
