@@ -275,7 +275,7 @@ object platformsReport {
       .filter(col("segment").isin(taxo_segs: _*))
       // .withColumn("platforms", udfMap(col("platforms")))
       // .withColumn("platform", explode(col("platforms")))
-      .drop("segments", "platforms")
+      .drop("segments")//, "platforms")
       .groupBy("device_type", "segment", "country", "platforms")
       .agg(
         approx_count_distinct(col("device_id"), rsd = 0.02) as "device_unique"
