@@ -808,6 +808,7 @@ mapeo.drop("device_type")
 spark.read.format("csv").option("header",true)
 .option("delimiter","\t")
 .load("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_classified_w_segments_no_old_6month").distinct()
+.filter(col("segment").isin(taxonomy: _*))
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
