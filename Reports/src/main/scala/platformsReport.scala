@@ -327,15 +327,15 @@ object platformsReport {
       .getOrCreate()
 
     // getReports(spark = spark, nDays = nDays, since = since)
-    // getVolumeReport(spark)
-    val taxo_segs = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load("/datascience/misc/taxo_gral.csv")
-      .select("seg_id")
-      .collect()
-      .map(_(0).toString.toInt)
-      .toSeq
+    getVolumeReport(spark)
+    // val taxo_segs = spark.read
+    //   .format("csv")
+    //   .option("header", "true")
+    //   .load("/datascience/misc/taxo_gral.csv")
+    //   .select("seg_id")
+    //   .collect()
+    //   .map(_(0).toString.toInt)
+    //   .toSeq
 
     // val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => taxo_segs.contains(s)) )
 
@@ -347,12 +347,12 @@ object platformsReport {
 
     // println(df.count())
 
-    val df2 = spark.read
-      .format("parquet")
-      .load("/datascience/reports/platforms/data2/day=20191222")
-      .withColumn("segment", explode(col("segments")))
-      .filter(col("segment").isin(taxo_segs: _*))
+    // val df2 = spark.read
+    //   .format("parquet")
+    //   .load("/datascience/reports/platforms/data2/day=20191222")
+    //   .withColumn("segment", explode(col("segments")))
+    //   .filter(col("segment").isin(taxo_segs: _*))
 
-    println(df2.count())
+    // println(df2.count())
   }
 }
