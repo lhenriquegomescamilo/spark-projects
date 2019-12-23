@@ -5314,36 +5314,36 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val genero = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .load("/datascience/devicer/processed/data_startapp_genero_grouped")
-      .withColumnRenamed("_c0", "device_type")
-      .withColumnRenamed("_c1", "device_id")
-      .withColumnRenamed("_c2", "genero")
-      .filter("genero NOT LIKE '%,%'")
+    // val genero = spark.read
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .load("/datascience/devicer/processed/data_startapp_genero_grouped")
+    //   .withColumnRenamed("_c0", "device_type")
+    //   .withColumnRenamed("_c1", "device_id")
+    //   .withColumnRenamed("_c2", "genero")
+    //   .filter("genero NOT LIKE '%,%'")
 
-    val edad = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .load("/datascience/devicer/processed/data_startapp_edad_grouped")
-      .withColumnRenamed("_c0", "device_type")
-      .withColumnRenamed("_c1", "device_id")
-      .withColumnRenamed("_c2", "edad")
-      .filter("edad NOT LIKE '%,%'")
+    // val edad = spark.read
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .load("/datascience/devicer/processed/data_startapp_edad_grouped")
+    //   .withColumnRenamed("_c0", "device_type")
+    //   .withColumnRenamed("_c1", "device_id")
+    //   .withColumnRenamed("_c2", "edad")
+    //   .filter("edad NOT LIKE '%,%'")
 
-    genero
-      .join(edad, Seq("device_type", "device_id"), "outer")
-      .write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/data_startapp_edad_genero")
+    // genero
+    //   .join(edad, Seq("device_type", "device_id"), "outer")
+    //   .write
+    //   .format("parquet")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/data_startapp_edad_genero")
 
     spark.read
       .format("parquet")
       .load("/datascience/custom/data_startapp_edad_genero")
       .groupBy("genero", "edad")
       .count()
-      .show()
+      .show(40)
   }
 }
