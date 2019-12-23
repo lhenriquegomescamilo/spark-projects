@@ -318,11 +318,31 @@ object platformsReport {
 
     // getReports(spark = spark, nDays = nDays, since = since)
     // getVolumeReport(spark)
-    val df = spark.read
-      .format("parquet")
-      .load("/datascience/reports/platforms/data2/day=20191222")
-      .withColumn("segment", explode(col("segments")))
+    val taxo_segs = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/misc/taxo_gral.csv")
+      .select("seg_id")
+      .collect()
+      .map(_(0).toString.toInt)
+      .toSeq
 
-    df.count()
+    val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => taxo_segs.contains(s)) )
+        
+    val df = spark.read
+          .format("parquet")
+          .load("/datascience/reports/platforms/data2/day=20191222")
+          .withColumn("segments", filter_firstparty(col("segments")))
+          .withColumn("segment", explode(col("segments")))
+          
+    println(df.count())
+
+    val df2 = spark.read
+          .format("parquet")
+          .load("/datascience/reports/platforms/data2/day=20191222")
+          .withColumn("segment", explode(col("segments")))
+          .filter(col("segment").isin(taxo_segs: _*))
+          
+    println(df2.count())
   }
 }
