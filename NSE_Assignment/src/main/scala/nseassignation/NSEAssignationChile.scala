@@ -1,4 +1,4 @@
-package  main.scala.NSEAssignationChile
+package  main.scala.nseassignationchile
 
 import main.scala.NSEFromHomesChile
 
@@ -181,7 +181,7 @@ val modeled = intersection
       .appName("match_POI_geospark")
       .getOrCreate()
 
-    val value_dictionary = NSEFromHomes.get_variables(spark, path_geo_json)
+    val value_dictionary = NSEFromHomesChile.get_variables(spark, path_geo_json)
 
     // Initialize the variables
     GeoSparkSQLRegistrator.registerAll(spark)
