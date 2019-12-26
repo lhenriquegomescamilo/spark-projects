@@ -1,4 +1,4 @@
-package  main.scala.nseassignationChile
+package  main.scala.NSEAssignationChile
 
 import main.scala.NSEFromHomes
 
