@@ -10,7 +10,7 @@ import org.apache.hadoop.conf.Configuration
 //Acá traemos los paquetes propios
 import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
-import main.scala.nseassignationchile.NSEAssignationChile
+import main.scala.nseassignation.NSEAssignationChile
 
 import org.apache.log4j.{Level, Logger}
 
@@ -27,7 +27,7 @@ import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
    The method then proceeds to filter the users by a desired minimum distance returning a final dataset with user id and device type.
    The current method will provide the basis for future more customizable geolocation jobs.
   */
-object NSEFromHomes {
+object NSEFromHomesChile {
 
   /**
     * This method returns a Map with all the parameters obtained from the JSON file.
