@@ -10,7 +10,7 @@ import org.apache.hadoop.conf.Configuration
 //Acá traemos los paquetes propios
 import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
-import main.scala.nseassignation.NSEAssignationChile
+import main.scala.nseassignationchile.NSEAssignationChile
 
 import org.apache.log4j.{Level, Logger}
 
