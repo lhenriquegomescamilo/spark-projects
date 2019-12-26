@@ -122,6 +122,21 @@ val intersection = spark.sql(
 
 //intersection.show(5)
 
+//Con esto vamos a asignar el NSE según los daus
+val typeMapNSE = Map(
+      "01_dau" -> "104007",
+      "02_dau" -> "104007",
+      "03_dau" -> "104006",
+      "04_dau" -> "104006",
+      "05_dau" -> "104005",
+      "06_dau" -> "104005",
+      "07_dau" -> "104004",
+      "08_dau"->"104004",
+      "09_dau"->"104003",
+      "10_dau"->"104003") 
+
+    val mapUDFNSE = udf((dau: String) => typeMapNSE(dau))
+
 //Acá asignamos NSE según en qué probabilidad caen
 val modeled = intersection
 .withColumn("NSE", when(col("ramd") <= col("01_dau"), "01_dau").otherwise(
@@ -134,6 +149,8 @@ val modeled = intersection
                           when(col("ramd") <= col("08_dau"), "08_dau").otherwise(
                            when(col("ramd") <= col("09_dau"), "09_dau")))))))))).na.fill("10_dau")
 .select("ad_id","id_type","NSE","ramd","GEOID")
+.withColumn("audience",mapUDFNSE(col("NSE")))
+
 
  modeled//.drop("geometry","latitude","longitude","geocode")
       .write
