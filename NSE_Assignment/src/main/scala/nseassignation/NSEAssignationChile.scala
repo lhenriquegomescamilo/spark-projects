@@ -41,7 +41,7 @@ import scala.util.Random
 
 //////////////////////////////////////////////////////////////////////////////////
 
-object NSEAssignation {
+object NSEAssignationChile {
 
   def get_processed_homes(spark: SparkSession, value_dictionary: Map[String, String]) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
