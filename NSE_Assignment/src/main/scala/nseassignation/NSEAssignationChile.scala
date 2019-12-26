@@ -133,7 +133,7 @@ val modeled = intersection
                          when(col("ramd") <= col("07_dau"), "07_dau").otherwise(
                           when(col("ramd") <= col("08_dau"), "08_dau").otherwise(
                            when(col("ramd") <= col("09_dau"), "09_dau")))))))))).na.fill("10_dau")
-.select("ad_id","id_type","NSE","ramd")
+.select("ad_id","id_type","NSE","ramd","GEOID")
 
  modeled//.drop("geometry","latitude","longitude","geocode")
       .write
