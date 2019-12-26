@@ -27,7 +27,7 @@ import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
    The method then proceeds to filter the users by a desired minimum distance returning a final dataset with user id and device type.
    The current method will provide the basis for future more customizable geolocation jobs.
   */
-object NSE_by_Geo {
+object NSE_by_Geo_Chile {
 
   /**
     * This method returns a Map with all the parameters obtained from the JSON file.
@@ -253,7 +253,7 @@ object NSE_by_Geo {
 
    HomeJobs.get_homejobs(spark, value_dictionary)
    
-   NSEAssignation.nse_join(spark, value_dictionary)
+   NSEAssignationChile.nse_join(spark, value_dictionary)
 
    CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
    
