@@ -1,6 +1,6 @@
 package  main.scala.NSEAssignationChile
 
-import main.scala.NSEFromHomes
+import main.scala.NSEFromHomesChile
 
 
 import org.apache.spark.sql.SparkSession
