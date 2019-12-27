@@ -150,6 +150,7 @@ val modeled = intersection
                            when(col("ramd") <= col("09_dau"), "09_dau")))))))))).na.fill("10_dau",Seq("NSE"))
 .select("ad_id","id_type","NSE","ramd","GEOID","freq")
 .withColumn("audience",mapUDFNSE(col("NSE")))
+.na.fill("android",Seq("id_type"))
 
 
  modeled//.drop("geometry","latitude","longitude","geocode")
