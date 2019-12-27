@@ -722,6 +722,7 @@ val una_base = spark.read.format("csv").option("header",true).option("delimiter"
 .load("/datascience/misc/Luxottica/in_store_audiences_w_group_taxo_gral")
 .select("device_id")
 .withColumn("device_id",upper(col("device_id")))
+.distinct()
 
 una_base.join(audience_segments,Seq("device_id"))
 .write
