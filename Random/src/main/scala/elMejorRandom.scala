@@ -741,57 +741,27 @@ una_base.join(audience_segments,Seq("device_id"))
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-//1) Acá está el mapeo de los usuarios para ver a qué grupo pertenecen
+//ahora vamos a pegar el mapeo...aunque no sé si vale mucho la pena, esto ocupa lugar al pedo pero se pueden hacer los counts más fácil con toda la data..
+
+val todadatafter = spark.read.format("csv").option("header",true)
+.option("delimiter","\t").load("/datascience/misc/Luxottica/luxottica_27-12_data_geo_revisado")
+.withColumn("device_id",upper(col("device_id")))
+
+
 val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/misc/Luxottica/in_store_audiences_w_group.csv")
 .withColumn("device_id",upper(col("device_id")))
 .withColumnRenamed("segment","old_group")
 .withColumnRenamed("new_segment","new_group")
 
-
-//3) Tenemos la gente Geo de esos Puntos (son 30 días del 18 de diciembre para atrás, la campaña empezó el 8):
-val raw_output = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/raw_output/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_180d_mexico_23-12-2019-9h")
-
-
-//4) Acá está la tabla de equivalencias entre lo geo y los devices_id
-val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/crossdeviced/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_180d_mexico_23-12-2019-9h_xd_equivalence_table")
-.withColumn("device_id",upper(col("device_id_origin")))
-
-
-
-val mapeo_xd = equiv.select("device_id_origin","device_id_xd").distinct()
-.withColumnRenamed("device_id_xd","device_id")
-.withColumn("device_id",upper(col("device_id")))
-.join(
-    mapeo.withColumn("device_id",upper(col("device_id"))).drop("device_type"),
-Seq("device_id"))
-.drop("device_id")
-.withColumnRenamed("device_id_origin","device_id")
-.withColumn("device_id",upper(col("device_id")))
-
-
-val data_befaf = raw_output
-.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-.withColumn("Date", date_format(col("Time"),"dd-M"))
-.withColumn("Day", date_format(col("Time"),"dd"))
-.withColumn("Month", date_format(col("Time"),"M"))
-.withColumn("campaign_start",lit("2019-12-10"))
-.withColumn("datediff",datediff(col("Time"),col("campaign_start")))
-.withColumn("before_after",when(col("datediff") <= 0, "before").otherwise("after"))
-.withColumn("dateAmplitude",abs(col("datediff")))
-.filter("dateAmplitude<=12")
-.select("device_id","name_id","datediff","before_after","Time","Date")
-.withColumn("device_id",upper(col("device_id")))
-
-
-val befaf = data_befaf.join(mapeo_xd,Seq("device_id")).distinct()
-
-befaf.write
+mapeo.join(todadatafter.drop("Date").distinct(),Seq("old_group","new_group","group","device_id"),"left_outer")
+.distinct()
+.write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/misc/Luxottica/luxottica_centros_comerciales_spark")
+.save("/datascience/misc/Luxottica/luxottica_centros_comerciales_ATRIBUCION")
 
 }
 
