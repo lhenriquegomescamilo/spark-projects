@@ -674,18 +674,10 @@ count_no_birra.write.format("csv")
 .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_no_birra_type")
 
 */
-}
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+/*
 
-    Logger.getRootLogger.setLevel(Level.WARN)
-
-
+//Esto es para agregarle la taxonomia a la data 27-12
 val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
       104, 118, 129, 131, 141, 144, 145, 147, 149, 150, 152, 154, 155, 158, 160,
       165, 166, 177, 178, 210, 213, 218, 224, 225, 226, 230, 245, 247, 250, 264,
@@ -732,6 +724,74 @@ una_base.join(audience_segments,Seq("device_id"))
 .option("delimiter",",")
 .save("/datascience/misc/Luxottica/in_store_audiences_w_group_taxo_gral_expanded")
 
+
+*/
+
+
+
+}
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+
+//1) Acá está el mapeo de los usuarios para ver a qué grupo pertenecen
+val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/misc/Luxottica/in_store_audiences_w_group.csv")
+.withColumn("device_id",upper(col("device_id")))
+.withColumnRenamed("segment","old_group")
+.withColumnRenamed("new_segment","new_group")
+
+
+//3) Tenemos la gente Geo de esos Puntos (son 30 días del 18 de diciembre para atrás, la campaña empezó el 8):
+val raw_output = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/raw_output/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_180d_mexico_23-12-2019-9h")
+
+
+//4) Acá está la tabla de equivalencias entre lo geo y los devices_id
+val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/crossdeviced/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_180d_mexico_23-12-2019-9h_xd_equivalence_table")
+.withColumn("device_id",upper(col("device_id_origin")))
+
+
+
+val mapeo_xd = equiv.select("device_id_origin","device_id_xd").distinct()
+.withColumnRenamed("device_id_xd","device_id")
+.withColumn("device_id",upper(col("device_id")))
+.join(
+    mapeo.withColumn("device_id",upper(col("device_id"))).drop("device_type"),
+Seq("device_id"))
+.drop("device_id")
+.withColumnRenamed("device_id_origin","device_id")
+.withColumn("device_id",upper(col("device_id")))
+
+
+val data_befaf = raw_output
+.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+.withColumn("Date", date_format(col("Time"),"dd-M"))
+.withColumn("Day", date_format(col("Time"),"dd"))
+.withColumn("Month", date_format(col("Time"),"M"))
+.withColumn("campaign_start",lit("2019-12-10"))
+.withColumn("datediff",datediff(col("Time"),col("campaign_start")))
+.withColumn("before_after",when(col("datediff") <= 0, "before").otherwise("after"))
+.withColumn("dateAmplitude",abs(col("datediff")))
+.filter("dateAmplitude<=12")
+.select("device_id","name_id","datediff","before_after","Time","Date")
+.withColumn("device_id",upper(col("device_id")))
+
+
+val befaf = data_befaf.join(mapeo_xd,Seq("device_id")).distinct()
+
+befaf.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/Luxottica/luxottica_centros_comerciales_spark")
 
 }
 
