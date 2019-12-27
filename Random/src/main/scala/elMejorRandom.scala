@@ -740,12 +740,12 @@ una_base.join(audience_segments,Seq("device_id"))
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-
 //ahora vamos a pegar el mapeo...aunque no sé si vale mucho la pena, esto ocupa lugar al pedo pero se pueden hacer los counts más fácil con toda la data..
-
+//lo corro por script en scala
 val todadatafter = spark.read.format("csv").option("header",true)
 .option("delimiter","\t").load("/datascience/misc/Luxottica/luxottica_27-12_data_geo_revisado")
 .withColumn("device_id",upper(col("device_id")))
+.drop("device_type")
 
 
 val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",")
@@ -754,7 +754,7 @@ val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",
 .withColumnRenamed("segment","old_group")
 .withColumnRenamed("new_segment","new_group")
 
-mapeo.join(todadatafter.drop("Date").distinct(),Seq("old_group","new_group","group","device_id"),"left_outer")
+mapeo.join(todadatafter.drop("Date").distinct(),Seq("device_id"),"left_outer")
 .distinct()
 .write
 .mode(SaveMode.Overwrite)
