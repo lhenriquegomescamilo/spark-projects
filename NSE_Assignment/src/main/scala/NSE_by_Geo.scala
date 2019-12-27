@@ -1,3 +1,7 @@
+/*
+Legacy Function - Not in Use
+(Era para usar geospark)
+
 package main.scala
 
 import org.apache.spark.sql.SparkSession
@@ -287,3 +291,4 @@ object NSE_by_Geo {
                                     
     }
   }
+*/
