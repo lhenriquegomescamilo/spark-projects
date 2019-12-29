@@ -10,7 +10,7 @@ import org.apache.hadoop.conf.Configuration
 //Acá traemos los paquetes propios
 import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
-import main.scala.nseassignation.NSEAssignation
+import main.scala.nseassignationchile.NSEAssignationChile
 
 import org.apache.log4j.{Level, Logger}
 
@@ -18,8 +18,6 @@ import org.apache.spark.serializer.KryoSerializer
 import org.apache.spark.serializer.KryoRegistrator
 import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator
-import org.datasyslab.geospark.formatMapper.GeoJsonReader
-import org.datasyslab.geospark.formatMapper.shapefileParser.ShapefileReader
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 
 /**
@@ -29,7 +27,7 @@ import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
    The method then proceeds to filter the users by a desired minimum distance returning a final dataset with user id and device type.
    The current method will provide the basis for future more customizable geolocation jobs.
   */
-object NSEFromHomes {
+object NSEFromHomesChile {
 
   /**
     * This method returns a Map with all the parameters obtained from the JSON file.
@@ -258,7 +256,7 @@ object NSEFromHomes {
 
    HomeJobs.get_homejobs(spark, value_dictionary)
    
-   NSEAssignation.nse_join(spark, value_dictionary)
+   NSEAssignationChile.nse_join(spark, value_dictionary)
 
    CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
    

@@ -674,100 +674,10 @@ count_no_birra.write.format("csv")
 .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_no_birra_type")
 
 */
-}
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+/*
 
-    Logger.getRootLogger.setLevel(Level.WARN)
-//Ahora vamos a negativizar la gente que fue hace 6 meses
-
-//1) Acá está el mapeo de los usuarios para ver a qué grupo pertenecen
-val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",")
-.load("/datascience/misc/Luxottica/in_store_audiences_w_group.csv")
-.withColumn("device_id",upper(col("device_id")))
-.withColumnRenamed("segment","old_group")
-.withColumnRenamed("new_segment","new_group")
-
-
-//3) Tenemos la gente Geo de esos Puntos (son 30 días del 18 de diciembre para atrás, la campaña empezó el 8):
-val raw_output = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/raw_output/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_180d_mexico_23-12-2019-9h")
-//.withColumn("device_id_origin",upper(col("device_id")))
-//.drop("device_id")
-
-//4) Acá está la tabla de equivalencias entre lo geo y los devices_id
-val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/crossdeviced/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_30d_mexico_18-12-2019-12h_xd_equivalence_table")
-.withColumn("device_id",upper(col("device_id_origin")))
-
-//mapeo.show(1)
-//raw_output.show(1)
-
-//esto nos dice de cada ping si es antes o después.
-//ojo que va a haber usuarios que aparezcan en uno, dos o ningún grupo
-//tenemos que hacer que el before sea las mismas fechas pero un mes antes
-
-
-//acá genero todos los que fueron despuués y antes
-val data_befaf = raw_output
-.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-.withColumn("Date", date_format(col("Time"),"dd-M"))
-.withColumn("Day", date_format(col("Time"),"dd"))
-.withColumn("Month", date_format(col("Time"),"M"))
-.withColumn("campaign_start",lit("2019-12-10"))
-.withColumn("datediff",datediff(col("Time"),col("campaign_start")))
-.withColumn("before_after",when(col("datediff") <= 0, "before").otherwise("after"))
-.withColumn("dateAmplitude",abs(col("datediff")))
-.select("device_id","distance","name_id","campaign_start","datediff","before_after","Time","Date","Day","Month")
-//.filter("dateAmplitude<12") //este es el máximo que puedo ver en el futuro, entonces también lo tengo que filtrar para el pasado
-
-//acá me quedo sólo con los que fueron después
-
-val data_af = data_befaf.filter("before_after == 'after'")
-
-
-//acá genero un dataset que tiene los días de los que fueron después, pero con el mes anterior
-val dates_1_month_before = data_af.select("Day").withColumn("Month",lit(11)).distinct()
-
-//acá filtro befaf, que tiene todo, por los días y meses anteriores
-val data_be = dates_1_month_before.join(data_befaf,Seq("Day","Month"))
-.select(data_af.columns.head, data_af.columns.tail: _*) //así lo ordemamos en el mismo orden
-
-
-
-val data_befaf_month = List(data_be,data_af).reduce(_.unionByName (_)).distinct()
-
-//Ahí miramos la amplitud
-
-//acá tenemos de cada usuario si fue antes o después y qué día fue
-val befaf_madid = data_befaf_month.select("device_id","before_after","Day","name_id")
-.withColumn("device_id",upper(col("device_id")))
-.distinct()
-
-//vamos a expandir eso con la data de XD
-//Nos da una tabla que tiene la columna del madid original y la del xd para despuués hacer el join con la data del mapeo de segmentos
-val befaf = befaf_madid
-.join(equiv.select("device_id","device_id_xd"), Seq("device_id"))
-.withColumn("device_id", coalesce(col("device_id"), col("device_id_xd")))  
-.distinct()
-
-
-
-
-//2) Acá están los usuarios y sus segmentos asociados de triplets
-val audience_segments = spark.read.format("csv").option("header",true).option("delimiter",",")
-.load("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_w_segments")
-.withColumn("device_id",upper(col("device_id")))
-.select("device_id","segment")
-
-//5) Acá está la data compilada que sería para empujar, si bien no sirve en sí, tiene información de si el usuario alguna vez """entró""" a una de las tiendas. para ahorrar tiempo
-val audience = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/crossdeviced/Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_30d_mexico_18-12-2019-12h_xd")
-.withColumn("device_id",upper(col("device_id")))
-
-
+//Esto es para agregarle la taxonomia a la data 27-12
 val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
       104, 118, 129, 131, 141, 144, 145, 147, 149, 150, 152, 154, 155, 158, 160,
       165, 166, 177, 178, 210, 213, 218, 224, 225, 226, 230, 245, 247, 250, 264,
@@ -791,30 +701,67 @@ val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
       3599, 3600, 3779, 3782, 3913, 3914, 3915, 4097, 104014, 104015, 104016,
       104017, 104018, 104019)
 
-mapeo.drop("device_type")
-.join(befaf,Seq("device_id"))
-.join(audience_segments,Seq("device_id"))
-.filter(col("segment").isin(taxonomy: _*))
+//2) Acá están los usuarios y sus segmentos asociados de triplets
+val audience_segments = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_w_segments")
+.withColumn("device_id",upper(col("device_id")))
+.select("device_id","segment")
+.withColumnRenamed("segment","interest")
+.filter(col("interest").isin(taxonomy: _*))
+
+
+val una_base = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/misc/Luxottica/in_store_audiences_w_group_taxo_gral")
+.select("device_id")
+.withColumn("device_id",upper(col("device_id")))
 .distinct()
-.repartition(10)
+
+una_base.join(audience_segments,Seq("device_id"))
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter",",")
+.save("/datascience/misc/Luxottica/in_store_audiences_w_group_taxo_gral_expanded")
+
+
+*/
+
+
+
+}
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+//ahora vamos a pegar el mapeo...aunque no sé si vale mucho la pena, esto ocupa lugar al pedo pero se pueden hacer los counts más fácil con toda la data..
+//lo corro por script en scala
+val todadatafter = spark.read.format("csv").option("header",true)
+.option("delimiter","\t").load("/datascience/misc/Luxottica/luxottica_27-12_data_geo_revisado")
+.withColumn("device_id",upper(col("device_id")))
+.drop("device_type")
+
+
+val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/misc/Luxottica/in_store_audiences_w_group.csv")
+.withColumn("device_id",upper(col("device_id")))
+.withColumnRenamed("segment","old_group")
+.withColumnRenamed("new_segment","new_group")
+
+mapeo.join(todadatafter.drop("Date").distinct(),Seq("device_id"),"left_outer")
+.distinct()
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_classified_w_segments_prev_month")
-
-
-spark.read.format("csv").option("header",true)
-.option("delimiter","\t")
-.load("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_classified_w_segments_no_old_6month").distinct()
-.filter(col("segment").isin(taxonomy: _*))
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.save("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_classified_w_segments_no_old_6month_reduced")
+.save("/datascience/misc/Luxottica/luxottica_centros_comerciales_ATRIBUCION")
 
 }
 
