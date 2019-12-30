@@ -774,7 +774,7 @@ def getDataTriplets(
 
   def getDataTripletsCSVNSE(spark: SparkSession, country:String, nDays: Int, from: Int) = {
     val segments =
-      """'35360,35361,35362,35363,20107,20108,20109,20110'"""
+      """35360,35361,35362,35363,20107,20108,20109,20110"""
         .replace("\n", "")
         .replace("\t", "")
         .replace(" ", "")
