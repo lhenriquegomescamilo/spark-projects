@@ -205,7 +205,7 @@ object IpgMaids {
     val segments = spark.read
       .format("csv")
       .option("header", "true")
-      .load("/datascience/custom/segments_IPG.csv")
+      .load("/datascience/taxonomies/segments_IPG.csv")
       .withColumnRenamed("ID", "feature")
       .withColumn("feature", col("feature").cast("int"))
       .select("feature")
