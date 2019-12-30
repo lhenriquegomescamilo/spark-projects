@@ -806,7 +806,7 @@ def getDataTriplets(
 
 //ahora vamos a pegar el mapeo...aunque no sé si vale mucho la pena, esto ocupa lugar al pedo pero se pueden hacer los counts más fácil con toda la data..
 //lo corro por script en scala
-getDataTripletsCSVNSE(spark, "AR", 1, 1)
+getDataTripletsCSVNSE(spark, "AR", 90, 1)
 }
 
   
