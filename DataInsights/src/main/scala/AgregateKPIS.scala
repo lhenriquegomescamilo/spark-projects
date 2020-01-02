@@ -37,7 +37,6 @@ object AgregateKPIS {
     // Get the days to be loaded
     var format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
-    
     val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_insights"
 
@@ -75,10 +74,9 @@ object AgregateKPIS {
             first("periodo").as("periodo"))
       .withColumn("ctr",udfCTR(col("impressions"),col("clicks")))
       .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-      .withColumn("day",lit("actual_day"))
       .write
       .format("parquet")
-      .partitionBy("day")
+      .partitionBy("today")
       .mode("append")
       .save("/datascience/data_insights/data_kpis/")
 
