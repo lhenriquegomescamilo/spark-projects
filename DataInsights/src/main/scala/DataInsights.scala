@@ -108,7 +108,7 @@ object DataInsights {
     val df_ua = get_data_user_agent(spark,10,1)
     df_ua.cache()
 
-    days.map(day => get_data_first_party(spark, day, df_ua))
+    days.map(day => get_data(spark, day, df_ua))
 
   }
 }
