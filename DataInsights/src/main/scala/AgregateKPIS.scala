@@ -14,6 +14,9 @@ import org.apache.spark.sql.functions.{
   split,
   lit,
   explode,
+  when,
+  first,
+  countDistinct,
   length,
   to_timestamp,
   from_unixtime,
@@ -23,14 +26,15 @@ import org.apache.spark.sql.functions.{
 
 object AgregateKPIS {
 
-  def get_data_kpis(spark:SparkSession, actual_day:String){
+  def get_data_kpis(spark:SparkSession, ndays:Int, since:Int){
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
     var format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(0)
+    val end = DateTime.now.minusDays(since)
+    
     val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_insights"
 
@@ -42,7 +46,7 @@ object AgregateKPIS {
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
     format = "yyyy-MM-dd"
-    val today = DateTime.now.toString(format)
+    val today = end.toString(format)
     val magic_ratio = 6.798
 
     val udfClk = udf((keyword: String) => if (keyword == "clk") 1 else 0)
@@ -88,6 +92,8 @@ object AgregateKPIS {
     /// Parseo de parametros
     val format = "yyyy-MM-dd"
     val actual_day = DateTime.now.toString(format)
+    val ndays = 30
+    val since = 0
 
     get_data_kpis(spark,actual_day)
 
