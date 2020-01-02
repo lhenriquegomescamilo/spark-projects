@@ -218,12 +218,7 @@ def getReport(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    val nDays = 60
-    val since = 1
-
-    checkNulls(spark=spark,
-                nDays=nDays,
-                since=since)
+    getReport(spark)
 
     /**getUsersCustom(spark=spark,
                    nDays=nDays,
