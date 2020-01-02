@@ -93,8 +93,8 @@ object AgregateKPIS {
     /// Parseo de parametros
     val format = "yyyy-MM-dd"
     val actual_day = DateTime.now.toString(format)
-    val ndays = 30
-    val since = 0
+    val since = if (args.length > 0) args(0).toInt else 0
+    val ndays = if (args.length > 1) args(1).toInt else 30
 
     get_data_kpis(spark,ndays,since)
 
