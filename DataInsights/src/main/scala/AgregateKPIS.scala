@@ -92,7 +92,7 @@ object AgregateKPIS {
     // Data Agregada Age
     val age_segments = List(4, 5, 6, 7, 8, 9)
     df_chkpt.filter(col("feature").isin(age_segments: _*))
-            .groupBy(Seq("campaign_id","segments"))
+            .groupBy("campaign_id","segments")
             .agg(countDistinct(col("device_id")).as("devices"),
                   countDistinct(col("nid_sh2")).as("nids"),
                   first("ID").as("ID"),
@@ -108,7 +108,7 @@ object AgregateKPIS {
     // Data Agregada Gender
     val gender_segments = List(2, 3)
     df_chkpt.filter(col("feature").isin(gender_segments: _*))
-            .groupBy(Seq("campaign_id","segments"))
+            .groupBy("campaign_id","segments")
             .agg(countDistinct(col("device_id")).as("devices"),
                   countDistinct(col("nid_sh2")).as("nids"),
                   first("ID").as("ID"),
@@ -122,7 +122,7 @@ object AgregateKPIS {
             .save("/datascience/data_insights/data_gender/")
 
     // Data Agregada Device type
-    df_chkpt.groupBy(Seq("campaign_id","device_type"))
+    df_chkpt.groupBy("campaign_id","device_type")
             .agg(countDistinct(col("device_id")).as("devices"),
                   countDistinct(col("nid_sh2")).as("nids"),
                   first("ID").as("ID"),
@@ -134,10 +134,6 @@ object AgregateKPIS {
             .partitionBy("day")
             .mode("append")
             .save("/datascience/data_insights/data_gender/")
-
-
-
-
   }
 
   
