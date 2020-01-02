@@ -161,6 +161,53 @@ def getDataEventQueue(
         .save("/datascience/misc/pv_mx_br.csv")
   }
 
+def getReport(
+      spark: SparkSession
+  ) = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val nDays = 90
+    val since = 1
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val segList=List(154,155,158,177,178,103928,103937,103939,103966,103986)
+    val dir = "/datascience/misc/"
+    val fileNameFinal = dir + "doohmain_90d_PE"
+
+    val path_data = "/datascience/geo/crossdeviced/doohmain_90d_PE_2-1-2020-15h_xd_dropped"
+    val data =  spark.read
+      .format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .load(path_data)
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .filter("country = 'PE'")
+      .withColumnRenamed("feature", "seg_id")
+      .select("seg_id","device_id")
+      .join(data), Seq("device_id"))
+      .groupBy("name","device id")
+      .agg(collect_list("seg_id") as "segments")
+      .withColumn("segments", concat_ws(",", col("segments")))     
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save(fileNameFinal)
+  }
+
 
  /*****************************************************/
   /******************     MAIN     *********************/
