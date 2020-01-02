@@ -5255,55 +5255,51 @@ user_granularity.write
 
   }
 
-  def get_segments_pmi(spark: SparkSession) {
+  def procesPII(spark: SparkSession) {
+    // First we load all the data generated from PIIs
+    val data = spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/pii_matching/pii_tuples/")
+      .load("/datascience/pii_matching/pii_tuples/day=201911*")
+      .filter("country in('AR')")
 
-    val files = List(
-      "/datascience/misc/cookies_chesterfield.csv",
-      "/datascience/misc/cookies_marlboro.csv",
-      "/datascience/misc/cookies_phillip_morris.csv",
-      "/datascience/misc/cookies_parliament.csv"
-    )
+    // Then we separate the data acording to the PII type
+    var mails = data
+      .filter("ml_sh2 is not null")
+      .select("device_id")
+      .withColumn("pii_type", lit("mail"))
+      .dropDuplicates("device_id")
 
-    /// Configuraciones de spark
-    val sc = spark.sparkContext
-    val conf = sc.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    var dnis = data
+      .filter("nid_sh2 is not null")
+      .select("device_id")
+      .withColumn("pii_type", lit("nid"))
+      .dropDuplicates("device_id")
 
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(1)
+    var mobs = data
+      .filter("mb_sh2 is not null")
+      .select("device_id")
+      .withColumn("pii_type", lit("mob"))
+      .dropDuplicates("device_id")
 
-    val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_triplets/segments/"
-    val dfs = days
-      .map(day => path + "day=%s/".format(day) + "country=AR")
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      .map(
-        x =>
-          spark.read
-            .option("basePath", "/datascience/data_triplets/segments/")
-            .parquet(x)
-      )
+    var total = mails
+      .unionAll(dnis)
+      .unionAll(mobs)
+      .withColumnRenamed("device_id", "index")
+      .withColumn("index", upper(col("index")))
 
-    var data = dfs.reduce((df1, df2) => df1.union(df2))
+    val xd_index = spark.read
+      .format("parquet")
+      .load("/datascience/crossdevice/double_index/")
+      .filter("device_type IN ('and', 'ios') AND index_type = 'coo'")
+      .withColumn("index", upper(col("index")))
 
-    for (filename <- files) {
-      var cookies = spark.read
-        .format("csv")
-        .load(filename)
-        .withColumnRenamed("_c0", "device_id")
-
-      data
-        .join(broadcast(cookies), Seq("device_id"))
-        .select("device_id", "feature", "count")
-        .dropDuplicates()
-        .write
-        .format("csv")
-        .mode(SaveMode.Overwrite)
-        .save(
-          "/datascience/custom/segments_%s"
-            .format(filename.split("/").last.split("_").last)
-        )
-    }
+    xd_index
+      .join(total, Seq("index"))
+      .groupBy("device_type", "pii_type")
+      .count()
+      .collect
+      .foreach(println)
   }
 
   /*****************************************************/
@@ -5318,30 +5314,37 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    // spark.read
+    // val genero = spark.read
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .load("/datascience/devicer/processed/data_startapp_genero_grouped")
+    //   .withColumnRenamed("_c0", "device_type")
+    //   .withColumnRenamed("_c1", "device_id")
+    //   .withColumnRenamed("_c2", "genero")
+    //   .filter("genero NOT LIKE '%,%'")
+
+    // val edad = spark.read
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .load("/datascience/devicer/processed/data_startapp_edad_grouped")
+    //   .withColumnRenamed("_c0", "device_type")
+    //   .withColumnRenamed("_c1", "device_id")
+    //   .withColumnRenamed("_c2", "edad")
+    //   .filter("edad NOT LIKE '%,%'")
+
+    // genero
+    //   .join(edad, Seq("device_type", "device_id"), "outer")
+    //   .write
     //   .format("parquet")
-    //   .option("basePath", "/datascience/geo/safegraph/")
-    //   .load("/datascience/geo/safegraph/day=201911*")
-    //   .withColumn("point", array(col("latitude"), col("longitude")))
-    //   .groupBy("ad_id", "country", "day")
-    //   .agg(count(col("id_type")) as "count", collect_list("point") as "points")
-    //   .filter("count > 10")
-      // .write
-      // .format("parquet")
-      // .partitionBy("country")
-      // .save("/datascience/custom/users_with_many_points")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/data_startapp_edad_genero")
+
     spark.read
       .format("parquet")
-      .load("/datascience/custom/users_with_many_points")
-      .groupBy("country", "ad_id")
-      .agg(count("count") as "nDays", avg("count") as "avgCount")
-      .withColumn("avgCount", col("avgCount").cast("int"))
-      .filter("nDays > 25")
-      .groupBy("country", "avgCount")
+      .load("/datascience/custom/data_startapp_edad_genero")
+      .groupBy("genero", "edad")
       .count()
-      .orderBy("count")
-      .write
-      .format("parquet")
-      .save("/datascience/custom/users_with_many_points_stats")
+      .collect()
+      .foreach(println)
   }
 }

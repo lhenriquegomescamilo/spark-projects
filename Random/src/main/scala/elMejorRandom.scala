@@ -674,59 +674,11 @@ count_no_birra.write.format("csv")
 .save("/datascience/geo/geo_processed/mex_alcohol_60d_mexico_no_birra_type")
 
 */
-}
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-    Logger.getRootLogger.setLevel(Level.WARN)
-
-//get_segments_from_triplets_from_xd(spark,"/datascience/audiences/crossdeviced/aud_havas_nov_19_CO_sjoin_polygon_xd" )
-//Radios censales:
 /*
-val chile = spark.read.format("parquet").option("header",true).option("delimiter","\t")
-.load("/data/geo/startapp/parquet/day=20191110/country=CL/").select("ad_id","id_type")
-.withColumn("country",lit("CL"))
 
-val colo = spark.read.format("parquet").option("header",true).option("delimiter","\t")
-.load("/data/geo/startapp/parquet/day=20191110/country=CO/").select("ad_id","id_type")
-.withColumn("country",lit("CO"))
-
-val pr = spark.read.format("parquet").option("header",true).option("delimiter","\t")
-.load("/data/geo/startapp/parquet/day=20191110/country=PR/").select("ad_id","id_type")
-.withColumn("country",lit("PR"))
-
-val sample =  List(chile,colo,pr).reduce(_.unionByName (_))
-
-
-sample
-.groupBy("country","id_type","ad_id").agg(count("ad_id") as "detections")
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/startapp_frequency_dispersion_deagg")
-//.groupBy("country","detections").agg(count("ad_id") as "frequency")
-
-val safe = spark.read.format("csv").option("header",true).option("delimiter",",").load("/data/geo/safegraph/2019/11/10/")
-
-safe
-.groupBy("country","id_type","ad_id").agg(count("ad_id") as "detections")
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geo_processed/safegraph_frequency_dispersion_deagg")
-//.groupBy("country","detections").agg(count("ad_id") as "frequency")
-*/
-
-//get_segments_from_triplets_for_geo_users(spark)
-
-val taxo = List(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
+//Esto es para agregarle la taxonomia a la data 27-12
+val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
       104, 118, 129, 131, 141, 144, 145, 147, 149, 150, 152, 154, 155, 158, 160,
       165, 166, 177, 178, 210, 213, 218, 224, 225, 226, 230, 245, 247, 250, 264,
       265, 270, 275, 276, 302, 305, 311, 313, 314, 315, 316, 317, 318, 322, 323,
@@ -746,38 +698,115 @@ val taxo = List(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
       3473, 3564, 3565, 3566, 3567, 3568, 3569, 3570, 3571, 3572, 3573, 3574,
       3575, 3576, 3577, 3578, 3579, 3580, 3581, 3582, 3583, 3584, 3585, 3586,
       3587, 3588, 3589, 3590, 3591, 3592, 3593, 3594, 3595, 3596, 3597, 3598,
-      3599, 3600, 3779, 3782, 3913, 3914, 3915, 4097)
+      3599, 3600, 3779, 3782, 3913, 3914, 3915, 4097, 104014, 104015, 104016,
+      104017, 104018, 104019)
 
-val tabla_1 = spark.read.format("parquet").load("/datascience/data_partner_streaming/")
-.select("device_id","all_segments","campaign_id","hour","id_partner")
-.filter("id_partner == 474")
-.withColumn("hour",to_timestamp(col("hour").cast("string"),"yyyyMMddHH"))
-.withColumn("day",date_format(col("hour"),"dd"))
-.withColumn("month",date_format(col("hour"),"MM"))
-.withColumn("hour",date_format(col("hour"),"HH"))
-.na.drop()
-.filter("month==12")
-.withColumn("all_segments",explode(col("all_segments")))
-.filter(col("all_segments").isin(taxo:_*))
+//2) Acá están los usuarios y sus segmentos asociados de triplets
+val audience_segments = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/misc/Luxottica/in_store_audiences_xd_luxottica_w_segments")
+.withColumn("device_id",upper(col("device_id")))
+.select("device_id","segment")
+.withColumnRenamed("segment","interest")
+.filter(col("interest").isin(taxonomy: _*))
 
-val tabla_segmentos = tabla_1.select("device_id","all_segments").distinct()
-val tabla_el_resto = tabla_1.drop("all_segments").distinct()
 
-tabla_segmentos
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
+val una_base = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/misc/Luxottica/in_store_audiences_w_group_taxo_gral")
+.select("device_id")
+.withColumn("device_id",upper(col("device_id")))
+.distinct()
+
+una_base.join(audience_segments,Seq("device_id"))
+.write
 .mode(SaveMode.Overwrite)
-.save("/datascience/misc/tableau/tabla_segmentos")
-
-tabla_el_resto
-.write.format("csv")
+.format("csv")
 .option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/misc/tableau/tabla_id_partner")
+.option("delimiter",",")
+.save("/datascience/misc/Luxottica/in_store_audiences_w_group_taxo_gral_expanded")
 
 
+*/
+
+
+
+}
+
+
+
+
+def getDataTriplets(
+      spark: SparkSession,
+      country: String,
+      nDays: Int = -1,
+      from: Int = 1
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+    val path = "/datascience/data_triplets/segments/"
+
+    val df: DataFrame = if (nDays > 0) {
+      // read files from dates
+      val format = "yyyyMMdd"
+      val endDate = DateTime.now.minusDays(from)
+      val days =
+        (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+      // Now we obtain the list of hdfs folders to be read
+      val hdfs_files = days
+        .map(day => path + "/day=%s/country=%s".format(day, country))
+        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+      val dfs = hdfs_files.map(
+        f =>
+          spark.read
+            .parquet(f)
+            .select("device_id", "feature")
+            .withColumn("count", lit(1))
+            .withColumnRenamed("feature", "segment")
+      )
+      dfs.reduce((df1, df2) => df1.unionAll(df2))
+    } else {
+      // read all date files
+      spark.read.load(path + "/day=*/country=%s/".format(country))
+    }
+    df
+  }
+
+  def getDataTripletsCSVNSE(spark: SparkSession, country:String, nDays: Int, from: Int) = {
+    val segments =
+      """35360,35361,35362,35363,20107,20108,20109,20110"""
+        .replace("\n", "")
+        .replace("\t", "")
+        .replace(" ", "")
+        .split(",")
+        .map(_.toInt)
+        .toSeq
+
+    
+
+    val triplets = getDataTriplets(spark, country, nDays, from)
+      triplets
+        .filter(col("segment").isin(segments: _*))
+        .select("device_id", "segment")
+        .distinct()
+        .write
+        .format("csv")
+        .mode("overwrite")
+        .save("/datascience/geo/Embeddings/NSE_%s".format(country))
+    }
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+//ahora vamos a pegar el mapeo...aunque no sé si vale mucho la pena, esto ocupa lugar al pedo pero se pueden hacer los counts más fácil con toda la data..
+//lo corro por script en scala
+getDataTripletsCSVNSE(spark, "AR", 90, 1)
 }
 
   
