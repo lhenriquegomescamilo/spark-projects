@@ -15,8 +15,11 @@ import org.apache.spark.sql.functions.{
   lit,
   explode,
   when,
+  datediff,
+  ceil,
   first,
   countDistinct,
+  concat,
   length,
   to_timestamp,
   from_unixtime,
@@ -40,7 +43,7 @@ object AgregateKPIS {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/".format(day, country))
+      .map(day => path + "/day=%s/".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
@@ -57,7 +60,7 @@ object AgregateKPIS {
     df.withColumn("data_type_clk",udfClk(col("data_type")))
       .withColumn("data_type_imp",udfImp(col("data_type")))
       .withColumn("data_type_cnv",udfCnv(col("data_type")))
-      .withColumn("today",lit(actual_day))
+      .withColumn("today",lit(today))
       .withColumn("datediff",datediff(col("today"),col("time")))
       .withColumn("periodo",when(col("datediff") <= 1, "Last 1 day").otherwise(when(col("datediff") <= 7, "Last 7 days").otherwise("Last 30 days")))
       .withColumn("ID",concat(col("periodo"),lit("-"),col("campaign_id")))
@@ -95,7 +98,7 @@ object AgregateKPIS {
     val ndays = 30
     val since = 0
 
-    get_data_kpis(spark,actual_day)
+    get_data_kpis(spark,ndays,since)
 
   }
 }
