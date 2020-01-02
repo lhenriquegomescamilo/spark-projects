@@ -59,8 +59,8 @@ object AgregateKPIS {
     df.withColumn("data_type_clk",udfClk(col("data_type")))
       .withColumn("data_type_imp",udfImp(col("data_type")))
       .withColumn("data_type_cnv",udfCnv(col("data_type")))
-      .withColumn("today",lit(today))
-      .withColumn("datediff",datediff(col("today"),col("time")))
+      .withColumn("day",lit(today))
+      .withColumn("datediff",datediff(col("day"),col("time")))
       .withColumn("periodo",when(col("datediff") <= 1, "Last 1 day").otherwise(when(col("datediff") <= 7, "Last 7 days").otherwise("Last 30 days")))
       .withColumn("ID",concat(col("periodo"),lit("-"),col("campaign_id")))
       .groupBy("campaign_id")
@@ -76,7 +76,7 @@ object AgregateKPIS {
       .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
       .write
       .format("parquet")
-      .partitionBy("today")
+      .partitionBy("day")
       .mode("append")
       .save("/datascience/data_insights/data_kpis/")
 
