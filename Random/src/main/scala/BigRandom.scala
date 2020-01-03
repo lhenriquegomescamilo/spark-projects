@@ -181,7 +181,6 @@ def getReport(
       .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
-    val segList=List(154,155,158,177,178,103928,103937,103939,103966,103986)
     val dir = "/datascience/misc/"
     val fileNameFinal = dir + "doohmain_90d_PE"
 
@@ -198,8 +197,8 @@ def getReport(
       .filter("country = 'PE'")
       .withColumnRenamed("feature", "seg_id")
       .select("seg_id","device_id")
-      .join(data), Seq("device_id"))
-      .groupBy("name","device id")
+      .join(broadcast(data), Seq("device_id"))
+      .groupBy("name","device_id")
       .agg(collect_list("seg_id") as "segments")
       .withColumn("segments", concat_ws(",", col("segments")))     
       .write
