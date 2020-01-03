@@ -73,10 +73,11 @@ object DataInsights {
     val data_eventqueue = spark.read.format("csv").option("sep", "\t").option("header", "true")
                                 .load("/data/eventqueue/%s/*.tsv.gz".format(day))
                                 .filter("campaign_id is not null and event_type = 'tk'")
-                                .select("time","id_partner","device_id","campaign_id","campaign_name","segments","device_type","country","data_type","nid_sh2")
+                                .select("time","id_partner","device_id","campaign_id","campaign_name","third_party","device_type","country","data_type","nid_sh2")
                                 
     data_eventqueue.join(df_ua,Seq("device_id"),"left")
-                    .withColumn("segments", split(col("segments"), "")).withColumn("segments",explode(col("segments")))
+                    .withColumn("third_party", split(col("third_party"), "")).withColumn("third_party",explode(col("third_party")))
+                    .withColumnRenamed("third_party","segments")
                     .withColumn("day",lit(day.replace("/","")))
                     .write
                     .format("parquet")
