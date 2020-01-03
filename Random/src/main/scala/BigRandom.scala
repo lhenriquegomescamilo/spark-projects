@@ -179,7 +179,7 @@ def getReport(
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
       .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
-      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))) //analogue to "os.exists"
 
     val dir = "/datascience/misc/"
     val fileNameFinal = dir + "doohmain_90d_PE"
