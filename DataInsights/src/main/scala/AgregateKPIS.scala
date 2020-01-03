@@ -207,7 +207,29 @@ object AgregateKPIS {
           .partitionBy("day")
           .mode("append")
           .save("/datascience/data_insights/data_interest/")
-     
+
+    // Data Agregada Horario
+    val udfMoment = udf((hour: String) =>if (List("07", "08", "09", "10", "11","12").contains(hour)) "Morning"
+                                        else if (List("13", "14", "15", "16", "17", "18").contains(hour)) "Afternoon"
+                                            else if (List("19", "20", "21", "22", "23", "24").contains(hour)) "Evening"
+                                                else "Night")
+    
+     df_chkpt.withColumn("hour", date_format(col("time"), "HH"))
+              .withColumn("moment_day",udfMoment(col("hour")))
+              .groupBy("campaign_id","hour")
+              .agg(countDistinct(col("device_id")).as("devices"),
+                    countDistinct(col("nid_sh2")).as("nids"),
+                    first("ID").as("ID"),
+                    first("campaign_name").as("campaign_name"),
+                    first("day").as("day"),
+                    first("moment_day").as("moment_day"),
+                    first("periodo").as("periodo"))
+              .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
+              .write
+              .format("parquet")
+              .partitionBy("day")
+              .mode("append")
+              .save("/datascience/data_insights/data_horario/")
   }
 
   
