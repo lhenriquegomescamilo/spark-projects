@@ -92,7 +92,7 @@ object AgregateKPIS {
 
     // Data Agregada Age
     val age_segments = List(4, 5, 6, 7, 8, 9)
-    df_chkpt.filter(col("feature").isin(age_segments: _*))
+    df_chkpt.filter(col("segments").isin(age_segments: _*))
             .groupBy("campaign_id","segments")
             .agg(countDistinct(col("device_id")).as("devices"),
                   countDistinct(col("nid_sh2")).as("nids"),
@@ -109,7 +109,7 @@ object AgregateKPIS {
 
     // Data Agregada Gender
     val gender_segments = List(2, 3)
-    df_chkpt.filter(col("feature").isin(gender_segments: _*))
+    df_chkpt.filter(col("segments").isin(gender_segments: _*))
             .groupBy("campaign_id","segments")
             .agg(countDistinct(col("device_id")).as("devices"),
                   countDistinct(col("nid_sh2")).as("nids"),
