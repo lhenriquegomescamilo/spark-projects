@@ -220,7 +220,7 @@ object Item2Item {
                   k: Int = 1000) {
     import spark.implicits._
     val expandInput = getSegmentsToTest(k)
-    val metaInput: Map[String, String] = Map("country" -> country, "job_id" -> "", "partner_id" -> "")
+    val metaInput: Map[String, String] = Map("country" -> country, "job_id" -> "")
 
     val nSegmentToExpand = expandInput.length
     val baseFeatureSegments = getBaseFeatureSegments()
@@ -299,8 +299,7 @@ object Item2Item {
 
     val metaInput: Map[String, String] = Map("country" -> country,
                                              "output_name" -> "test_%s".format(segmentId),
-                                             "job_id" -> "",
-                                             "partner_id" -> "")
+                                             "job_id" -> "")
     var expandInput: List[Map[String, Any]] = List(Map("segment_id" -> segmentId,
                                                        "dst_segment_id" -> segmentId,
                                                        "size" -> size))
@@ -742,8 +741,6 @@ object Item2Item {
     }
     else{ // on demand expansion
       val jobId = metaParameters("job_id")
-      val partnerId = metaParameters("partner_id")
-      val priority = metaParameters("priority")
 
       val dataExpansion = data
       .flatMap(
@@ -763,7 +760,7 @@ object Item2Item {
         .option("header", "false")
         .mode(SaveMode.Overwrite)
         .save(filePath)
-      writeOutputMetaFile(filePath, jobId, partnerId, priority, "datascience", resultDescription)
+      writeOutputMetaFile(filePath, jobId, resultDescription)
     }
     
   }
@@ -775,9 +772,6 @@ object Item2Item {
   def writeOutputMetaFile(
       file_path: String,
       jobId: String,
-      partnerId: String,
-      priority: String = "10",
-      queue: String = "datascience",
       resultDescription: String = ""
   ) {
     println("Lookalike LOG:\n\tPushing the audience to the ingester")
@@ -785,12 +779,9 @@ object Item2Item {
     var description = "Lookalike on demand - jobId = %s - %s".format(jobId, resultDescription)
 
     // Then we generate the content for the json file.
-    val json_content = """{"filePath":"%s", "priority":%s, "partnerId":%s, "queue":"%s", "jobId":%s, "description":"%s"}"""
+    val json_content = """{"filePath":"%s", jobId":%s, "description":"%s"}"""
       .format(
         if (file_path.takeRight(1) == "/") file_path.dropRight(1) else file_path, // remove last '/''
-        priority,
-        partnerId,
-        queue,
         jobId,
         description
       )
@@ -810,8 +801,6 @@ object Item2Item {
     os.write(json_content.getBytes)
     os.close()
   }
-
-               
 
   /*
   * It calculates precision, recall and F1 metrics.
@@ -943,8 +932,6 @@ object Item2Item {
       .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
     // Now we extract the different values from each row.
     var jobId = ""
-    var partnerId = "119"
-    var priority = "10"
     var country = ""
     var outputName = ""
 
@@ -955,24 +942,12 @@ object Item2Item {
             .toString
             .length > 0) line("jobId").toString
           else jobId
-      partnerId =
-          if (line.contains("partnerId") && Option(line("partnerId"))
-            .getOrElse("")
-            .toString
-            .length > 0) line("partnerId").toString
-          else partnerId
       country =
           if (line.contains("country") && Option(line("country"))
             .getOrElse("")
             .toString
             .length > 0) line("country").toString.toUpperCase
           else country
-      priority =
-          if (line.contains("priority") && Option(line("priority"))
-            .getOrElse("")
-            .toString
-            .length > 0) line("priority").toString
-          else priority
       outputName =
           if (line.contains("outputName") && Option(line("outputName"))
             .getOrElse("")
@@ -989,9 +964,7 @@ object Item2Item {
     }
     val map: Map[String, String] = Map(
         "job_id" -> jobId,
-        "partner_id" -> partnerId,
         "country" -> country,
-        "priority" -> priority,
         "output_name" -> outputName
     )
     map

@@ -731,6 +731,70 @@ una_base.join(audience_segments,Seq("device_id"))
 
 }
 
+
+
+
+def getDataTriplets(
+      spark: SparkSession,
+      country: String,
+      nDays: Int = -1,
+      from: Int = 1
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+    val path = "/datascience/data_triplets/segments/"
+
+    val df: DataFrame = if (nDays > 0) {
+      // read files from dates
+      val format = "yyyyMMdd"
+      val endDate = DateTime.now.minusDays(from)
+      val days =
+        (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+      // Now we obtain the list of hdfs folders to be read
+      val hdfs_files = days
+        .map(day => path + "/day=%s/country=%s".format(day, country))
+        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+      val dfs = hdfs_files.map(
+        f =>
+          spark.read
+            .parquet(f)
+            .select("device_id", "feature")
+            .withColumn("count", lit(1))
+            .withColumnRenamed("feature", "segment")
+      )
+      dfs.reduce((df1, df2) => df1.unionAll(df2))
+    } else {
+      // read all date files
+      spark.read.load(path + "/day=*/country=%s/".format(country))
+    }
+    df
+  }
+
+  def getDataTripletsCSVNSE(spark: SparkSession, country:String, nDays: Int, from: Int) = {
+    val segments =
+      """35360,35361,35362,35363,20107,20108,20109,20110"""
+        .replace("\n", "")
+        .replace("\t", "")
+        .replace(" ", "")
+        .split(",")
+        .map(_.toInt)
+        .toSeq
+
+    
+
+    val triplets = getDataTriplets(spark, country, nDays, from)
+      triplets
+        .filter(col("segment").isin(segments: _*))
+        .select("device_id", "segment")
+        .distinct()
+        .write
+        .format("csv")
+        .mode("overwrite")
+        .save("/datascience/geo/Embeddings/NSE_%s".format(country))
+    }
+
  /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -742,27 +806,7 @@ una_base.join(audience_segments,Seq("device_id"))
 
 //ahora vamos a pegar el mapeo...aunque no sé si vale mucho la pena, esto ocupa lugar al pedo pero se pueden hacer los counts más fácil con toda la data..
 //lo corro por script en scala
-val todadatafter = spark.read.format("csv").option("header",true)
-.option("delimiter","\t").load("/datascience/misc/Luxottica/luxottica_27-12_data_geo_revisado")
-.withColumn("device_id",upper(col("device_id")))
-.drop("device_type")
-
-
-val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",")
-.load("/datascience/misc/Luxottica/in_store_audiences_w_group.csv")
-.withColumn("device_id",upper(col("device_id")))
-.withColumnRenamed("segment","old_group")
-.withColumnRenamed("new_segment","new_group")
-
-mapeo.join(todadatafter.drop("Date").distinct(),Seq("device_id"),"left_outer")
-.distinct()
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.save("/datascience/misc/Luxottica/luxottica_centros_comerciales_ATRIBUCION")
-
+getDataTripletsCSVNSE(spark, "AR", 90, 1)
 }
 
   
