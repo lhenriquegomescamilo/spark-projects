@@ -319,6 +319,7 @@ object Streaming {
     val spark =
       SparkSession.builder
         .appName("Eventqueue Streaming")
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
         // .config("spark.sql.streaming.pollingDelay", 1000)
         .getOrCreate()
 
