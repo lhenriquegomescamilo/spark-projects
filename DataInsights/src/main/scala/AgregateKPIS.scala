@@ -55,106 +55,48 @@ object AgregateKPIS {
     val udfImp = udf((keyword: String) => if (keyword == "imp") 1 else 0)
     val udfCnv = udf((keyword: String) => if (keyword == "cnv") 1 else 0)
     val udfCTR = udf((impressions: String, click: String) => if (impressions.toInt > 0) (click.toInt)/(impressions.toInt) else 0)
+    val udfCnvRate = udf((convertions: String, click: String) => if (convertions.toInt > 0) (click.toInt)/(convertions.toInt) else 0)
 
-    // df.withColumn("data_type_clk",udfClk(col("data_type")))
-    //   .withColumn("data_type_imp",udfImp(col("data_type")))
-    //   .withColumn("data_type_cnv",udfCnv(col("data_type")))
-    //   .withColumn("day",lit(today))
-    //   .withColumn("datediff",datediff(col("day"),col("time")))
-    //   .withColumn("periodo",when(col("datediff") <= 1, "Last 1 day").otherwise(when(col("datediff") <= 7, "Last 7 days").otherwise("Last 30 days")))
-    //   .withColumn("ID",concat(col("periodo"),lit("-"),col("campaign_id")))
-    //   .write
-    //   .format("parquet")
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/data_insights/data_chkpt")
+    df.withColumn("day",lit(today))
+      .withColumn("datediff",datediff(col("day"),col("time")))
+      .withColumn("periodo",when(col("datediff") <= 1, "Last 1 day").otherwise(when(col("datediff") <= 7, "Last 7 days").otherwise("Last 30 days")))
+      .withColumn("ID",concat(col("periodo"),lit("-"),col("campaign_id")))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_insights/aggregated/data_chkpt")
 
-    val df_chkpt = spark.read.load("/datascience/data_insights/data_chkpt")
-    df_chkpt.cache()
+    val df_chkpt = spark.read.load("/datascience/data_insights/aggregated/data_chkpt")
 
-    // // Data Agregada KPIS
-    // df_chkpt.groupBy("campaign_id")
-    //   .agg(count(col("id_partner")).as("hits"),
-    //         countDistinct(col("device_id")).as("devices"),
-    //         countDistinct(col("nid_sh2")).as("nids"),
-    //         sum(col("data_type_imp")).as("impressions"),
-    //         sum(col("data_type_clk")).as("clicks"),
-    //         sum(col("data_type_cnv")).as("conversions"),
-    //         first("ID").as("ID"),
-    //         first("day").as("day"),
-    //         first("periodo").as("periodo"))
-    //   .withColumn("ctr",udfCTR(col("impressions"),col("clicks")))
-    //   .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-    //   .write
-    //   .format("parquet")
-    //   .partitionBy("day")
-    //   .mode("append")
-    //   .save("/datascience/data_insights/data_kpis/")
+    // Data Agregada KPIS
+    df_chkpt.withColumn("data_type_clk",udfClk(col("data_type")))
+            .withColumn("data_type_imp",udfImp(col("data_type")))
+            .withColumn("data_type_cnv",udfCnv(col("data_type")))
+            .groupBy("campaign_id")
+            .agg(count(col("id_partner")).as("hits"),
+                  approxCountDistinct(col("device_id")).as("devices"),
+                  approxCountDistinct(col("nid_sh2")).as("nids"),
+                  sum(col("data_type_imp")).as("impressions"),
+                  sum(col("data_type_clk")).as("clicks"),
+                  sum(col("data_type_cnv")).as("convertions"),
+                  first("ID").as("ID"),
+                  first("day").as("day"),
+                  first("id_partner").as("id_partner"),
+                  first("periodo").as("periodo"))
+            .withColumn("ctr",udfCTR(col("impressions"),col("clicks")))
+            .withColumn("cnvrate",udfCnvRate(col("convertions"),col("clicks")))
+            .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
+            .write
+            .format("parquet")
+            .partitionBy("day","id_partner")
+            .mode("append")
+            .save("/datascience/data_insights/aggregated/data_kpis/")
 
-    // // Data Agregada Age
-    // val age_segments = List("4", "5", "6", "7", "8", "9")
-    // df_chkpt.filter(col("segments").isin(age_segments: _*))
-    //         .groupBy("campaign_id","segments")
-    //         .agg(countDistinct(col("device_id")).as("devices"),
-    //               countDistinct(col("nid_sh2")).as("nids"),
-    //               first("ID").as("ID"),
-    //               first("campaign_name").as("campaign_name"),
-    //               first("day").as("day"),
-    //               first("periodo").as("periodo"))
-    //         .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-    //         .write
-    //         .format("parquet")
-    //         .partitionBy("day")
-    //         .mode("append")
-    //         .save("/datascience/data_insights/data_age/")
+    // Data Agregada Segments
+    val age_segments = List("4", "5", "6", "7", "8", "9")
 
-    // // Data Agregada Gender
-    // val gender_segments = List("2", "3")
-    // df_chkpt.filter(col("segments").isin(gender_segments: _*))
-    //         .groupBy("campaign_id","segments")
-    //         .agg(countDistinct(col("device_id")).as("devices"),
-    //               countDistinct(col("nid_sh2")).as("nids"),
-    //               first("ID").as("ID"),
-    //               first("campaign_name").as("campaign_name"),
-    //               first("day").as("day"),
-    //               first("periodo").as("periodo"))
-    //         .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-    //         .write
-    //         .format("parquet")
-    //         .partitionBy("day")
-    //         .mode("append")
-    //         .save("/datascience/data_insights/data_gender/")
+    val gender_segments = List("2", "3")
 
-    // // Data Agregada Device type
-    // df_chkpt.groupBy("campaign_id","device_type")
-    //         .agg(countDistinct(col("device_id")).as("devices"),
-    //               countDistinct(col("nid_sh2")).as("nids"),
-    //               first("ID").as("ID"),
-    //               first("campaign_name").as("campaign_name"),
-    //               first("day").as("day"),
-    //               first("periodo").as("periodo"))
-    //         .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-    //         .write
-    //         .format("parquet")
-    //         .partitionBy("day")
-    //         .mode("append")
-    //         .save("/datascience/data_insights/data_device_type/")
-    
-    // // Data Agregada Brand
-    // df_chkpt.groupBy("campaign_id","brand")
-    //         .agg(countDistinct(col("device_id")).as("devices"),
-    //               countDistinct(col("nid_sh2")).as("nids"),
-    //               first("ID").as("ID"),
-    //               first("campaign_name").as("campaign_name"),
-    //               first("day").as("day"),
-    //               first("periodo").as("periodo"))
-    //         .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-    //         .write
-    //         .format("parquet")
-    //         .partitionBy("day")
-    //         .mode("append")
-    //         .save("/datascience/data_insights/data_brand/")
-      
-    // Data Agregada Intent
     val in_market = List("352", "353", "354",  "356",  "357",  "358",  "359",  "363",  "366",  "367",  "374",  "377",
                           "378",  "379",  "380",  "384",  "385",  "386",  "389",  "395",  "396",  "397",  "398",  "399",  "401",  "402",  "403",
                           "404",  "405",  "409",  "410",  "411",  "412",  "413",  "418",  "420",  "421",  "422",  "429",  "430",  "432",  "433",
@@ -170,43 +112,61 @@ object AgregateKPIS {
                           "3589", "3590", "3591", "3592", "3593", "3594", "3595", "3596", "3597", "3598", "3599", "3600", "3779", "3782", "3914",
                           "3915")
 
-    df_chkpt.filter(col("segments").isin(in_market: _*))
-        .groupBy("campaign_id","segments")
-        .agg(countDistinct(col("device_id")).as("devices"),
-              countDistinct(col("nid_sh2")).as("nids"),
-              first("ID").as("ID"),
-              first("campaign_name").as("campaign_name"),
-              first("day").as("day"),
-              first("periodo").as("periodo"))
-        .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-        .write
-        .format("parquet")
-        .partitionBy("day")
-        .mode("append")
-        .save("/datascience/data_insights/data_in_market/")
-        
-    // Data Agregada Interest
     val interest = List("26","32","36","59","61","82","85","92","104","118","129","131","141","144","145",
-                              "147","149","150","152","154","155","158","160","165","166","177","178","210","213",
-                              "218","224","225","226","230","245","247","250","264","265","270","275","276","302",
-                              "305","311","313","314","315","316","317","318","322","323","325","326","2635","2636",
-                              "2660","2719","2743","3010","3011","3012","3013","3014","3015","3016","3017","3018","3019",
-                              "3020","3021","3022","3055","3076","3077","3086","3087","3913","4097")
+                          "147","149","150","152","154","155","158","160","165","166","177","178","210","213",
+                          "218","224","225","226","230","245","247","250","264","265","270","275","276","302",
+                          "305","311","313","314","315","316","317","318","322","323","325","326","2635","2636",
+                          "2660","2719","2743","3010","3011","3012","3013","3014","3015","3016","3017","3018","3019",
+                          "3020","3021","3022","3055","3076","3077","3086","3087","3913","4097")
 
-    df_chkpt.filter(col("segments").isin(interest: _*))
-          .groupBy("campaign_id","segments")
-          .agg(countDistinct(col("device_id")).as("devices"),
-                countDistinct(col("nid_sh2")).as("nids"),
-                first("ID").as("ID"),
-                first("campaign_name").as("campaign_name"),
-                first("day").as("day"),
-                first("periodo").as("periodo"))
-          .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-          .write
-          .format("parquet")
-          .partitionBy("day")
-          .mode("append")
-          .save("/datascience/data_insights/data_interest/")
+    val taxo_segments = age_segments ::: gender_segments ::: in_market ::: interest
+
+    df_chkpt.filter(col("segments").isin(taxo_segments: _*))
+            .groupBy("campaign_id","segments")
+            .agg(approxCountDistinct(col("device_id")).as("devices"),
+                  approxCountDistinct(col("nid_sh2")).as("nids"),
+                  first("ID").as("ID"),
+                  first("campaign_name").as("campaign_name"),
+                  first("day").as("day"),
+                  first("id_partner").as("id_partner"),
+                  first("periodo").as("periodo"))
+            .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
+            .write
+            .format("parquet")
+            .partitionBy("day","id_partner")
+            .mode("append")
+            .save("/datascience/data_insights/aggregated/data_segments/")
+
+    // Data Agregada Device type
+    df_chkpt.groupBy("campaign_id","device_type")
+            .agg(approxCountDistinct(col("device_id")).as("devices"),
+                  approxCountDistinct(col("nid_sh2")).as("nids"),
+                  first("ID").as("ID"),
+                  first("campaign_name").as("campaign_name"),
+                  first("day").as("day"),
+                  first("periodo").as("periodo"))
+            .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
+            .write
+            .format("parquet")
+            .partitionBy("day")
+            .mode("append")
+            .save("/datascience/data_insights/data_device_type/")
+    
+    // Data Agregada Brand
+    df_chkpt.groupBy("campaign_id","brand")
+            .agg(approxCountDistinct(col("device_id")).as("devices"),
+                  approxCountDistinct(col("nid_sh2")).as("nids"),
+                  first("ID").as("ID"),
+                  first("campaign_name").as("campaign_name"),
+                  first("day").as("day"),
+                  first("periodo").as("periodo"))
+            .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
+            .write
+            .format("parquet")
+            .partitionBy("day")
+            .mode("append")
+            .save("/datascience/data_insights/aggregated/data_brand/")
+  
 
     // Data Agregada Horario
     val udfMoment = udf((hour: String) =>if (List("07", "08", "09", "10", "11","12").contains(hour)) "Morning"
@@ -217,8 +177,8 @@ object AgregateKPIS {
      df_chkpt.withColumn("hour", date_format(col("time"), "HH"))
               .withColumn("moment_day",udfMoment(col("hour")))
               .groupBy("campaign_id","hour")
-              .agg(countDistinct(col("device_id")).as("devices"),
-                    countDistinct(col("nid_sh2")).as("nids"),
+              .agg(approxCountDistinct(col("device_id")).as("devices"),
+                    approxCountDistinct(col("nid_sh2")).as("nids"),
                     first("ID").as("ID"),
                     first("campaign_name").as("campaign_name"),
                     first("day").as("day"),
@@ -229,7 +189,7 @@ object AgregateKPIS {
               .format("parquet")
               .partitionBy("day")
               .mode("append")
-              .save("/datascience/data_insights/data_horario/")
+              .save("/datascience/data_insights/aggregated/data_horario/")
   }
 
   
