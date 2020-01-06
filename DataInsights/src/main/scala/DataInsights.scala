@@ -58,7 +58,8 @@ object DataInsights {
                                 .select("time","id_partner","device_id","device_type","country","data_type","nid_sh2","first_party")
                                 
     data_eventqueue.join(df_ua,Seq("device_id"),"left")
-                    .withColumn("first_party", split(col("first_party"), "")).withColumn("first_party",explode(col("first_party")))
+                    .withColumn("first_party", split(col("first_party"), ""))
+                    .withColumn("first_party",explode(col("first_party")))
                     .withColumn("day",lit(day.replace("/","")))
                     .write
                     .format("parquet")
@@ -73,17 +74,19 @@ object DataInsights {
     val data_eventqueue = spark.read.format("csv").option("sep", "\t").option("header", "true")
                                 .load("/data/eventqueue/%s/*.tsv.gz".format(day))
                                 .filter("campaign_id is not null and event_type = 'tk'")
-                                .select("time","id_partner","device_id","campaign_id","campaign_name","third_party","device_type","country","data_type","nid_sh2")
+                                .select("time","id_partner","device_id","campaign_id","campaign_name","third_party",
+                                        "device_type","country","data_type","nid_sh2")
                                 
     data_eventqueue.join(df_ua,Seq("device_id"),"left")
-                    .withColumn("third_party", split(col("third_party"), "")).withColumn("third_party",explode(col("third_party")))
+                    .withColumn("third_party", split(col("third_party"), ""))
+                    .withColumn("third_party",explode(col("third_party")))
                     .withColumnRenamed("third_party","segments")
                     .withColumn("day",lit(day.replace("/","")))
                     .write
                     .format("parquet")
                     .partitionBy("day","id_partner")
                     .mode("append")
-                    .save("/datascience/data_insights/")
+                    .save("/datascience/data_insights/raw")
   }
 
   
