@@ -24,6 +24,7 @@ import org.apache.spark.sql.functions.{
   to_timestamp,
   from_unixtime,
   date_format,
+  approx_count_distinct,
   sum
 }
 
