@@ -74,8 +74,8 @@ object AgregateKPIS {
             .withColumn("data_type_cnv",udfCnv(col("data_type")))
             .groupBy("campaign_id")
             .agg(count(col("id_partner")).as("hits"),
-                  approxCountDistinct(col("device_id")).as("devices"),
-                  approxCountDistinct(col("nid_sh2")).as("nids"),
+                  approx_count_distinct(col("device_id")).as("devices"),
+                  approx_count_distinct(col("nid_sh2")).as("nids"),
                   sum(col("data_type_imp")).as("impressions"),
                   sum(col("data_type_clk")).as("clicks"),
                   sum(col("data_type_cnv")).as("convertions"),
@@ -123,8 +123,8 @@ object AgregateKPIS {
 
     df_chkpt.filter(col("segments").isin(taxo_segments: _*))
             .groupBy("campaign_id","segments")
-            .agg(approxCountDistinct(col("device_id")).as("devices"),
-                  approxCountDistinct(col("nid_sh2")).as("nids"),
+            .agg(approx_count_distinct(col("device_id")).as("devices"),
+                  approx_count_distinct(col("nid_sh2")).as("nids"),
                   first("ID").as("ID"),
                   first("campaign_name").as("campaign_name"),
                   first("day").as("day"),
@@ -139,8 +139,8 @@ object AgregateKPIS {
 
     // Data Agregada Device type
     df_chkpt.groupBy("campaign_id","device_type")
-            .agg(approxCountDistinct(col("device_id")).as("devices"),
-                  approxCountDistinct(col("nid_sh2")).as("nids"),
+            .agg(approx_count_distinct(col("device_id")).as("devices"),
+                  approx_count_distinct(col("nid_sh2")).as("nids"),
                   first("ID").as("ID"),
                   first("campaign_name").as("campaign_name"),
                   first("day").as("day"),
@@ -150,12 +150,12 @@ object AgregateKPIS {
             .format("parquet")
             .partitionBy("day")
             .mode("append")
-            .save("/datascience/data_insights/data_device_type/")
+            .save("/datascience/data_insights/aggregated/data_device_type/")
     
     // Data Agregada Brand
     df_chkpt.groupBy("campaign_id","brand")
-            .agg(approxCountDistinct(col("device_id")).as("devices"),
-                  approxCountDistinct(col("nid_sh2")).as("nids"),
+            .agg(approx_count_distinct(col("device_id")).as("devices"),
+                  approx_count_distinct(col("nid_sh2")).as("nids"),
                   first("ID").as("ID"),
                   first("campaign_name").as("campaign_name"),
                   first("day").as("day"),
@@ -177,8 +177,8 @@ object AgregateKPIS {
      df_chkpt.withColumn("hour", date_format(col("time"), "HH"))
               .withColumn("moment_day",udfMoment(col("hour")))
               .groupBy("campaign_id","hour")
-              .agg(approxCountDistinct(col("device_id")).as("devices"),
-                    approxCountDistinct(col("nid_sh2")).as("nids"),
+              .agg(approx_count_distinct(col("device_id")).as("devices"),
+                    approx_count_distinct(col("nid_sh2")).as("nids"),
                     first("ID").as("ID"),
                     first("campaign_name").as("campaign_name"),
                     first("day").as("day"),
