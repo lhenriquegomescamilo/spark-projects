@@ -130,9 +130,6 @@ object AggregateData {
                                     .agg(approx_count_distinct(col("device_id")).as("devices_x_seg"),
                                           first("periodo").as("periodo"))
     
-    lastnday["total_base"] = df.device_id.nunique()
-    lastnday["porc_seg_tot"] = (lastnday.devices_x_seg / lastnday.total_base)
-
     df_chkpt.filter(col("segments").isin(taxo_segments: _*))
             .groupBy("campaign_id","segments")
             .agg(approx_count_distinct(col("device_id")).as("devices"),
