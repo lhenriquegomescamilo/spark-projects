@@ -58,14 +58,14 @@ object AggregateData {
     val udfCTR = udf((impressions: String, click: String) => if (impressions.toInt > 0) (click.toInt)/(impressions.toInt) else 0)
     val udfCnvRate = udf((convertions: String, click: String) => if (convertions.toInt > 0) (click.toInt)/(convertions.toInt) else 0)
 
-    df.withColumn("day",lit(today))
-      .withColumn("datediff",datediff(col("day"),col("time")))
-      .withColumn("periodo",when(col("datediff") <= 1, "Last 1 day").otherwise(when(col("datediff") <= 7, "Last 7 days").otherwise("Last 30 days")))
-      .withColumn("ID",concat(col("periodo"),lit("-"),col("campaign_id")))
-      .write
-      .format("parquet")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/data_insights/aggregated/data_chkpt")
+    // df.withColumn("day",lit(today))
+    //   .withColumn("datediff",datediff(col("day"),col("time")))
+    //   .withColumn("periodo",when(col("datediff") <= 1, "Last 1 day").otherwise(when(col("datediff") <= 7, "Last 7 days").otherwise("Last 30 days")))
+    //   .withColumn("ID",concat(col("periodo"),lit("-"),col("campaign_id")))
+    //   .write
+    //   .format("parquet")
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/data_insights/aggregated/data_chkpt")
 
     val df_chkpt = spark.read.load("/datascience/data_insights/aggregated/data_chkpt")
 
@@ -122,6 +122,17 @@ object AggregateData {
 
     val taxo_segments = age_segments ::: gender_segments ::: in_market ::: interest
 
+    val devices_campaign = df_chkpt.groupBy("campaign_id")
+                                    .agg(approx_count_distinct(col("device_id")).as("tot_devices_x_camp"),
+                                          first("ID").as("ID"))
+
+    val segments_campaign = df_chkpt.groupBy("segments")
+                                    .agg(approx_count_distinct(col("device_id")).as("devices_x_seg"),
+                                          first("periodo").as("periodo"))
+    
+    lastnday["total_base"] = df.device_id.nunique()
+    lastnday["porc_seg_tot"] = (lastnday.devices_x_seg / lastnday.total_base)
+
     df_chkpt.filter(col("segments").isin(taxo_segments: _*))
             .groupBy("campaign_id","segments")
             .agg(approx_count_distinct(col("device_id")).as("devices"),
@@ -132,6 +143,11 @@ object AggregateData {
                   first("id_partner").as("id_partner"),
                   first("periodo").as("periodo"))
             .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
+            .join(devices_campaign,Seq("ID"),"left")
+            .withColumn("porc_devices_tot_dev_x_camp",col("devices")/col("tot_devices_x_camp"))
+            .join(segments_campaign,Seq("segments","periodo"),"left")
+            .withColumn("total_base",approx_count_distinct(df_chkpt.select("device_id")))
+            .withColumn("porc_seg_tot",col("devices_x_seg")/col("total_base"))
             .write
             .format("parquet")
             .partitionBy("day","id_partner")
