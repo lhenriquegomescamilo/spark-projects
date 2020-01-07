@@ -28,9 +28,9 @@ import org.apache.spark.sql.functions.{
   sum
 }
 
-object AgregateKPIS {
+object AggregateData {
 
-  def get_data_kpis(spark:SparkSession, ndays:Int, since:Int){
+  def get_aggregated_data(spark:SparkSession, ndays:Int, since:Int){
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -207,7 +207,7 @@ object AgregateKPIS {
     val since = if (args.length > 0) args(0).toInt else 0
     val ndays = if (args.length > 1) args(1).toInt else 30
 
-    get_data_kpis(spark,ndays,since)
+    get_aggregated_data(spark,ndays,since)
 
   }
 }
