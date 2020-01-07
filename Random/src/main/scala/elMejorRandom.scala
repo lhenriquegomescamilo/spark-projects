@@ -822,17 +822,25 @@ val xd = spark.read.format("csv").option("header",false).option("delimiter",",")
 .withColumn("device_id",upper(col("device_id")))
 
 //Estos son los usuarios con data Geo, más o menos
-val mex = spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/NSEHomes/mexico_200d_home_20-11-2019-9h_push")
+//val mex = spark.read.format("csv")
+//.option("delimiter","\t")
+//.option("header",true)
+//.load("/datascience/geo/NSEHomes/mexico_200d_home_20-11-2019-9h_push")
+//.withColumn("device_id",upper(col("device_id")))
+
+
+//Esto es otra manera de hacer lo mismo, sólo con los usuarios de la audiencia
+val filename = "Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_60d_mexico_2-1-2020-17h"
+val mex = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/raw_output/%s".format(filename))
+.select("device_id","name_id")
 .withColumn("device_id",upper(col("device_id")))
 
 //acá joineamos data de la audiencia con GEO
-val direct_with_geo = direct.join(mex.select("device_id"),Seq("device_id")).withColumn("has_geo",lit(1))
+val direct_with_geo = direct.join(mex,Seq("device_id")).withColumn("has_geo",lit(1))
 
 //acá joineamos data de la audiencia expandidad con GEO, le tiramos el device expandido y nos quedamos con el device original
-val xd_with_geo = xd.join(mex.select("device_id"),Seq("device_id"))
+val xd_with_geo = xd.join(mex,Seq("device_id"))
 .withColumn("has_geo",lit(1))
 .drop("device_id")
 .withColumnRenamed("device_id_ori","device_id")
@@ -847,7 +855,23 @@ with_geo.write
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/misc/Luxottica/in_store_audiences_devices_with_geo")
+.save("/datascience/misc/Luxottica/in_store_audiences_devices_with_geo_of_audience")
+
+val has_geo = spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/misc/Luxottica/in_store_audiences_devices_with_geo_of_audience")
+.distinct()
+
+mapeo.join(has_geo,Seq("device_id"),"left_outer")
+.na.fill(0)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/Luxottica/in_store_audiences_w_group_with_geo_of_audience")
+
 }
 
   
