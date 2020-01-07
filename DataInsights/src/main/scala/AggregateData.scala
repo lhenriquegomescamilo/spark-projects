@@ -27,6 +27,7 @@ import org.apache.spark.sql.functions.{
   approx_count_distinct,
   sum
 }
+import org.apache.spark.sql.types.{IntegerType}
 
 object AggregateData {
 
@@ -58,14 +59,16 @@ object AggregateData {
     val udfCTR = udf((impressions: String, click: String) => if (impressions.toDouble > 0) (click.toDouble)/(impressions.toDouble) else 0)
     val udfCnvRate = udf((convertions: String, click: String) => if (convertions.toDouble > 0) (click.toDouble)/(convertions.toDouble) else 0)
 
-    // df.withColumn("day",lit(today))
-    //   .withColumn("datediff",datediff(col("day"),col("time")))
-    //   .withColumn("periodo",when(col("datediff") <= 1, "Last 1 day").otherwise(when(col("datediff") <= 7, "Last 7 days").otherwise("Last 30 days")))
-    //   .withColumn("ID",concat(col("periodo"),lit("-"),col("campaign_id")))
-    //   .write
-    //   .format("parquet")
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/data_insights/aggregated/data_chkpt")
+    df.withColumn("day",lit(today))
+      .withColumn("datediff",datediff(col("day"),col("time")))
+      .withColumn("periodo",when(col("datediff") <= 1, "Last 1 day").otherwise(when(col("datediff") <= 7, "Last 7 days").otherwise("Last 30 days")))
+//    TODO: Agregar un vector que tenga todas las inclusiones y despues explotar por ese vector
+      .withColumn("ID",concat(col("periodo"),lit("-"),col("campaign_id")))
+      .write
+      .format("parquet")
+      .partitionBy("day","id_partner")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_insights/aggregated/data_chkpt")
 
     val df_chkpt = spark.read.load("/datascience/data_insights/aggregated/data_chkpt")
 
@@ -75,8 +78,8 @@ object AggregateData {
             .withColumn("data_type_cnv",udfCnv(col("data_type")))
             .groupBy("campaign_id")
             .agg(count(col("id_partner")).as("hits"),
-                  approx_count_distinct(col("device_id")).as("devices"),
-                  approx_count_distinct(col("nid_sh2")).as("nids"),
+                  approx_count_distinct(col("device_id"),0.03).as("devices"),
+                  approx_count_distinct(col("nid_sh2"),0.03).as("nids"),
                   sum(col("data_type_imp")).as("impressions"),
                   sum(col("data_type_clk")).as("clicks"),
                   sum(col("data_type_cnv")).as("convertions"),
@@ -122,32 +125,38 @@ object AggregateData {
 
     val taxo_segments = age_segments ::: gender_segments ::: in_market ::: interest
 
-    val devices_campaign = df_chkpt.groupBy("campaign_id")
-                                    .agg(approx_count_distinct(col("device_id")).as("tot_devices_x_camp"),
-                                          first("ID").as("ID"))
-                                    .select("ID","tot_devices_x_camp")
+    // val devices_campaign = df_chkpt.groupBy("campaign_id")
+    //                                 .agg(approx_count_distinct(col("device_id")).as("tot_devices_x_camp"),
+    //                                       first("ID").as("ID"))
+    //                                 .select("ID","tot_devices_x_camp")
+                                    // TODO: Sacar del anterior
 
-    val segments_campaign = df_chkpt.groupBy("segments")
+    val segments_campaign = df_chkpt.groupBy("segments","id_partner")
                                     .agg(approx_count_distinct(col("device_id")).as("devices_x_seg"),
-                                          first("periodo").as("periodo"))
-
-    val total_base = df_chkpt.select("device_id").distinct.count
+                                          first("periodo").as("periodo"),
+                                          first("day").as("day"))
+                                    .write
+                                    .format("parquet")
+                                    .partitionBy("day","id_partner")
+                                    .mode("append")
+                                    .save("/datascience/data_insights/aggregated/data_segments_campaign/")
+                                    
+    //val total_base = df_chkpt.select("device_id").distinct.count
     
     df_chkpt.filter(col("segments").isin(taxo_segments: _*))
-            .groupBy("campaign_id","segments")
-            .agg(approx_count_distinct(col("device_id")).as("devices"),
-                  approx_count_distinct(col("nid_sh2")).as("nids"),
+            .groupBy("id_partner","campaign_id","segments")
+            .agg(approx_count_distinct(col("device_id"),0.03).as("devices"),
+                  approx_count_distinct(col("nid_sh2"),0.03).as("nids"),
                   first("ID").as("ID"),
                   first("campaign_name").as("campaign_name"),
                   first("day").as("day"),
-                  first("id_partner").as("id_partner"),
                   first("periodo").as("periodo"))
             .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-            .join(devices_campaign,Seq("ID"),"left")
-            .withColumn("porc_devices_tot_dev_x_camp",col("devices")/col("tot_devices_x_camp"))
-            .join(segments_campaign,Seq("segments","periodo"),"left")
-            .withColumn("total_base",lit(total_base))
-            .withColumn("porc_seg_tot",col("devices_x_seg")/col("total_base"))
+            // .join(devices_campaign,Seq("ID"),"left")
+            // .withColumn("porc_devices_tot_dev_x_camp",col("devices")/col("tot_devices_x_camp"))
+            // .join(segments_campaign,Seq("segments","periodo"),"left")
+            // .withColumn("total_base",lit(total_base))
+            // .withColumn("porc_seg_tot",col("devices_x_seg")/col("total_base"))
             .write
             .format("parquet")
             .partitionBy("day","id_partner")
@@ -155,9 +164,9 @@ object AggregateData {
             .save("/datascience/data_insights/aggregated/data_segments/")
 
     // Data Agregada Device type
-    df_chkpt.groupBy("campaign_id","device_type")
-            .agg(approx_count_distinct(col("device_id")).as("devices"),
-                  approx_count_distinct(col("nid_sh2")).as("nids"),
+    df_chkpt.groupBy("id_partner","campaign_id","device_type")
+            .agg(approx_count_distinct(col("device_id"),0.03).as("devices"),
+                  approx_count_distinct(col("nid_sh2"),0.03).as("nids"),
                   first("ID").as("ID"),
                   first("campaign_name").as("campaign_name"),
                   first("day").as("day"),
@@ -165,14 +174,14 @@ object AggregateData {
             .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
             .write
             .format("parquet")
-            .partitionBy("day")
+            .partitionBy("day","id_partner")
             .mode("append")
             .save("/datascience/data_insights/aggregated/data_device_type/")
     
     // Data Agregada Brand
-    df_chkpt.groupBy("campaign_id","brand")
-            .agg(approx_count_distinct(col("device_id")).as("devices"),
-                  approx_count_distinct(col("nid_sh2")).as("nids"),
+    df_chkpt.groupBy("id_partner","campaign_id","brand")
+            .agg(approx_count_distinct(col("device_id"),0.03).as("devices"),
+                  approx_count_distinct(col("nid_sh2"),0.03).as("nids"),
                   first("ID").as("ID"),
                   first("campaign_name").as("campaign_name"),
                   first("day").as("day"),
@@ -180,22 +189,25 @@ object AggregateData {
             .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
             .write
             .format("parquet")
-            .partitionBy("day")
+            .partitionBy("day","id_partner")
             .mode("append")
             .save("/datascience/data_insights/aggregated/data_brand/")
   
 
+
     // Data Agregada Horario
-    val udfMoment = udf((hour: String) =>if (List("07", "08", "09", "10", "11","12").contains(hour)) "Morning"
-                                        else if (List("13", "14", "15", "16", "17", "18").contains(hour)) "Afternoon"
-                                            else if (List("19", "20", "21", "22", "23", "24").contains(hour)) "Evening"
+    val udfMoment = udf((hour: String) =>if (7 <= hour <= 12) "Morning"
+                                        else if (13 <= hour <= 18) "Afternoon"
+                                            else if (19 <= hour <= 24) "Evening"
                                                 else "Night")
+
+    // TODO: Cambiar a entero y hacerlo con mayor y menor
     
      df_chkpt.withColumn("hour", date_format(col("time"), "HH"))
-              .withColumn("moment_day",udfMoment(col("hour")))
-              .groupBy("campaign_id","hour")
-              .agg(approx_count_distinct(col("device_id")).as("devices"),
-                    approx_count_distinct(col("nid_sh2")).as("nids"),
+              .withColumn("moment_day",udfMoment(col("hour").cast(IntegerType)))
+              .groupBy("id_partner","campaign_id","hour")
+              .agg(approx_count_distinct(col("device_id"),0.03).as("devices"),
+                    approx_count_distinct(col("nid_sh2"),0.03).as("nids"),
                     first("ID").as("ID"),
                     first("campaign_name").as("campaign_name"),
                     first("day").as("day"),
@@ -204,7 +216,7 @@ object AggregateData {
               .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
               .write
               .format("parquet")
-              .partitionBy("day")
+              .partitionBy("day","id_partner")
               .mode("append")
               .save("/datascience/data_insights/aggregated/data_horario/")
 
@@ -218,7 +230,7 @@ object AggregateData {
     //           .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
     //           .write
     //           .format("parquet")
-    //           .partitionBy("day")
+    //           .partitionBy("day","id_partner")
     //           .mode("append")
     //           .save("/datascience/data_insights/aggregated/data_geo/")
   }
