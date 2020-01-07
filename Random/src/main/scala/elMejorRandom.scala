@@ -787,12 +787,12 @@ def getDataTriplets(
     val triplets = getDataTriplets(spark, country, nDays, from)
       triplets
         .filter(col("segment").isin(segments: _*))
-        .select("device_id", "segment")
+        .select("device_type","device_id", "segment")
         .distinct()
         .write
         .format("csv")
         .mode("overwrite")
-        .save("/datascience/geo/Embeddings/NSE_%s".format(country))
+        .save("/datascience/geo/Embeddings/NSE_w_type_%s".format(country))
     }
 
  /*****************************************************/
@@ -806,7 +806,78 @@ def getDataTriplets(
 
 //ahora vamos a pegar el mapeo...aunque no sé si vale mucho la pena, esto ocupa lugar al pedo pero se pueden hacer los counts más fácil con toda la data..
 //lo corro por script en scala
-getDataTripletsCSVNSE(spark, "AR", 90, 1)
+//VAmos a ver un aproximado de cuántos de los usuarios de la audiencia tenían geo
+
+//Estas son los devices de la audiencia original
+val direct = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/misc/Luxottica/in_store_audiences_w_group_compiled")
+.withColumn("device_id",upper(col("device_id")))
+
+//Estas son los devices de la audiencia original que tienen XD
+val xd = spark.read.format("csv").option("header",false).option("delimiter",",")
+.load("/datascience/audiences/crossdeviced/in_store_audiences_w_group_compiled_xd")
+.select("_c0","_c1")
+.toDF("device_id_ori","device_id")
+.distinct()
+.withColumn("device_id",upper(col("device_id")))
+
+//Estos son los usuarios con data Geo, más o menos
+//val mex = spark.read.format("csv")
+//.option("delimiter","\t")
+//.option("header",true)
+//.load("/datascience/geo/NSEHomes/mexico_200d_home_20-11-2019-9h_push")
+//.withColumn("device_id",upper(col("device_id")))
+
+
+//Esto es otra manera de hacer lo mismo, sólo con los usuarios de la audiencia
+val filename = "Ubicaciones_Prioritarias_Geolocalización_Media_2019_Nov_Update_pois_60d_mexico_2-1-2020-17h"
+val mex = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/raw_output/%s".format(filename))
+.select("device_id","name_id")
+.withColumn("device_id",upper(col("device_id")))
+
+//acá joineamos data de la audiencia con GEO
+val direct_with_geo = direct.join(mex,Seq("device_id")).withColumn("has_geo",lit(1))
+
+//acá joineamos data de la audiencia expandidad con GEO, le tiramos el device expandido y nos quedamos con el device original
+val xd_with_geo = xd.join(mex,Seq("device_id"))
+.withColumn("has_geo",lit(1))
+.drop("device_id")
+.withColumnRenamed("device_id_ori","device_id")
+.withColumn("device_id",upper(col("device_id")))
+.distinct()
+
+
+val with_geo = List(direct_with_geo,xd_with_geo).reduce(_.unionByName (_))
+
+with_geo.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/Luxottica/in_store_audiences_devices_with_geo_of_audience")
+
+val has_geo = spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/misc/Luxottica/in_store_audiences_devices_with_geo_of_audience")
+.distinct()
+
+val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/misc/Luxottica/in_store_audiences_w_group.csv")
+.withColumn("device_id",upper(col("device_id")))
+.withColumnRenamed("segment","old_group")
+.withColumnRenamed("new_segment","new_group")
+
+mapeo.join(has_geo,Seq("device_id"),"left_outer")
+.na.fill(0)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/Luxottica/in_store_audiences_w_group_with_geo_of_audience")
+
 }
 
   
