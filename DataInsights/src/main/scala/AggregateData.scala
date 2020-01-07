@@ -196,7 +196,7 @@ object AggregateData {
 
 
     // Data Agregada Horario
-    val udfMoment = udf((hour: String) =>if (7 <= hour <= 12) "Morning"
+    val udfMoment = udf((hour: Int) =>if (7 <= hour <= 12) "Morning"
                                         else if (13 <= hour <= 18) "Afternoon"
                                             else if (19 <= hour <= 24) "Evening"
                                                 else "Night")
