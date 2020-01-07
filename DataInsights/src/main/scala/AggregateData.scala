@@ -125,6 +125,7 @@ object AggregateData {
     val devices_campaign = df_chkpt.groupBy("campaign_id")
                                     .agg(approx_count_distinct(col("device_id")).as("tot_devices_x_camp"),
                                           first("ID").as("ID"))
+                                    .select("ID","tot_devices_x_camp")
 
     val segments_campaign = df_chkpt.groupBy("segments")
                                     .agg(approx_count_distinct(col("device_id")).as("devices_x_seg"),
