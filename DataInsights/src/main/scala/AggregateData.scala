@@ -55,8 +55,8 @@ object AggregateData {
     val udfClk = udf((keyword: String) => if (keyword == "clk") 1 else 0)
     val udfImp = udf((keyword: String) => if (keyword == "imp") 1 else 0)
     val udfCnv = udf((keyword: String) => if (keyword == "cnv") 1 else 0)
-    val udfCTR = udf((impressions: String, click: String) => if (impressions.toInt > 0) (click.toInt)/(impressions.toInt) else 0)
-    val udfCnvRate = udf((convertions: String, click: String) => if (convertions.toInt > 0) (click.toInt)/(convertions.toInt) else 0)
+    val udfCTR = udf((impressions: String, click: String) => if (impressions.toDouble > 0) (click.toDouble)/(impressions.toDouble) else 0)
+    val udfCnvRate = udf((convertions: String, click: String) => if (convertions.toDouble > 0) (click.toDouble)/(convertions.toDouble) else 0)
 
     // df.withColumn("day",lit(today))
     //   .withColumn("datediff",datediff(col("day"),col("time")))
@@ -206,6 +206,20 @@ object AggregateData {
               .partitionBy("day")
               .mode("append")
               .save("/datascience/data_insights/aggregated/data_horario/")
+
+    // // Data Agregada GEO
+    // df_chkpt.groupBy("campaign_id","estate")
+    //           .agg(approx_count_distinct(col("device_id")).as("devices"),
+    //                 approx_count_distinct(col("nid_sh2")).as("nids"),
+    //                 first("ID").as("ID"),
+    //                 first("campaign_name").as("campaign_name"),
+    //                 first("periodo").as("periodo"))
+    //           .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
+    //           .write
+    //           .format("parquet")
+    //           .partitionBy("day")
+    //           .mode("append")
+    //           .save("/datascience/data_insights/aggregated/data_geo/")
   }
 
   
