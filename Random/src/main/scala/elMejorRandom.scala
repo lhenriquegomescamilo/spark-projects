@@ -808,7 +808,7 @@ def getDataTriplets(
 //lo corro por script en scala
 //VAmos a ver un aproximado de cuántos de los usuarios de la audiencia tenían geo
 
-getDataTripletsCSVNSE(spark,"CL","10","1")
+getDataTripletsCSVNSE(spark,"CL",10,1)
 
 }
 
