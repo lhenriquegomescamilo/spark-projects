@@ -334,6 +334,7 @@ object Geodevicer {
        */
       SparkSession.builder
         .appName("GeoCode Matcher")
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
         .getOrCreate()
 
     // Parsing parameters from json file.
@@ -350,8 +351,9 @@ object Geodevicer {
       //acá deberíamos activar geospark
       spark = SparkSession
         .builder()
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
         .config("spark.network.timeout","1000s") //agreado por recomendacion de los de geospark
-        .config("spark.driver.maxResultSize","2g")
+        .config("spark.driver.maxResultSize","5g") //agreado por recomendacion de los de geospark
         .config("spark.serializer", classOf[KryoSerializer].getName)
         .config(
           "spark.kryo.registrator",
