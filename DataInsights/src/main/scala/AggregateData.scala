@@ -129,6 +129,8 @@ object AggregateData {
     val segments_campaign = df_chkpt.groupBy("segments")
                                     .agg(approx_count_distinct(col("device_id")).as("devices_x_seg"),
                                           first("periodo").as("periodo"))
+
+    val total_base = df_chkpt.select("device_id").distinct.count
     
     df_chkpt.filter(col("segments").isin(taxo_segments: _*))
             .groupBy("campaign_id","segments")
@@ -143,7 +145,7 @@ object AggregateData {
             .join(devices_campaign,Seq("ID"),"left")
             .withColumn("porc_devices_tot_dev_x_camp",col("devices")/col("tot_devices_x_camp"))
             .join(segments_campaign,Seq("segments","periodo"),"left")
-            .withColumn("total_base",approx_count_distinct(df_chkpt.select("device_id")))
+            .withColumn("total_base",lit(total_base))
             .withColumn("porc_seg_tot",col("devices_x_seg")/col("total_base"))
             .write
             .format("parquet")
