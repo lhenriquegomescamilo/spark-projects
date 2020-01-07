@@ -76,8 +76,12 @@ object DataInsights {
                                 .filter("campaign_id is not null and event_type = 'tk'")
                                 .select("time","id_partner","device_id","campaign_id","campaign_name","third_party",
                                         "device_type","country","data_type","nid_sh2")
+                                .withColumn("device_id",lower(col("device_id")))
+
+    val data_geo = spark.read.load("/datascience/geo/NSEHomes/data_geo_homes_for_insights")
                                 
     data_eventqueue.join(df_ua,Seq("device_id"),"left")
+                    .join(data_geo,Seq("device_id"),"left")
                     .withColumn("third_party", split(col("third_party"), ""))
                     .withColumn("third_party",explode(col("third_party")))
                     .withColumnRenamed("third_party","segments")
