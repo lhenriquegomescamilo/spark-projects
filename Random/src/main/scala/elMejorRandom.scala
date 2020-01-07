@@ -863,6 +863,12 @@ val has_geo = spark.read.format("csv")
 .load("/datascience/misc/Luxottica/in_store_audiences_devices_with_geo_of_audience")
 .distinct()
 
+val mapeo = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/misc/Luxottica/in_store_audiences_w_group.csv")
+.withColumn("device_id",upper(col("device_id")))
+.withColumnRenamed("segment","old_group")
+.withColumnRenamed("new_segment","new_group")
+
 mapeo.join(has_geo,Seq("device_id"),"left_outer")
 .na.fill(0)
 .write
