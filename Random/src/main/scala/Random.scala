@@ -577,155 +577,6 @@ object Random {
     *
     *
     *
-    * Geo Metrics Sample
-    *
-    *
-    *
-    */
-  def get_geo_sample_data(spark: SparkSession) = {
-    //loading user files with geolocation, added drop duplicates to remove users who are detected in the same location
-    // Here we load the data, eliminate the duplicates so that the following computations are faster, and select a subset of the columns
-    // Also we generate a new column call 'geocode' that will be used for the join
-
-    // First we obtain the configuration to be allowed to watch if a file exists or not
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-    val nDays = 10
-    val since = 10
-    val country = "argentina"
-
-    // Get the days to be loaded
-    val format = "yyyy/MM/dd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-
-    // Now we obtain the list of hdfs folders to be read
-    val path = "/data/geo/safegraph/"
-
-    // Now we obtain the list of hdfs folders to be read
-
-    val hdfs_files = days
-      .map(day => path + "%s/".format(day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      .map(day => day + "*.gz")
-    fs.close()
-
-    val df_safegraph = spark.read
-      .option("header", "true")
-      .csv(hdfs_files: _*)
-      .filter("country = '%s'".format(country))
-      .select("ad_id", "id_type", "utc_timestamp")
-      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-      .withColumn("Day", date_format(col("Time"), "d"))
-      .withColumn("Month", date_format(col("Time"), "M"))
-      .write
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .save("/datascience/geo/safegraph_10d.tsv")
-    /*
-    df_safegraph.cache()
-    //usarios unicos por día
-    val df_user_day_safe = (df_safegraph
-                        .select(col("ad_id"), col("Day"))
-                        .distinct())
-                        .groupBy(col("Day"))
-                        .count()
-
-            println("Unique users per day - safegraph")
-            df_user_day_safe.show()
-
-    //usuarios unicos en un mes
-//   val df_user_month = (df_safegraph  .select(col("ad_id"), col("Month")).distinct()).groupBy(col("Month")).count()
-
-    //promedio de señales por usuario por dia
-    val df_user_signal_safe = df_safegraph
-                            .groupBy(col("ad_id"), col("Month"))
-                            .agg(count("id_type").alias("signals"))
-                            .agg(avg(col("signals")))
-
-
-    println("Mean signals per user - safegraph",df_user_signal_safe)
-
-////////////////////////
-//Now the sample dataset
-
-val df_sample = spark.read.option("header", "true").option("delimiter", ",").csv("hdfs://rely-hdfs/datascience/geo/sample")
-          .withColumn("day", date_format(to_date(col("timestamp")), "d"))
-          .withColumn("month", date_format(to_date(col("timestamp")), "M"))
-
-        df_sample.cache()
-
-            //Unique MAIDs
-            val unique_MAIDSs = df_sample.select(col("identifier")).distinct().count()
-            println("Unique MAIDs - sample dataset",unique_MAIDSs)
-
-            //Total number of events
-            val number_events = df_sample.select(col("record_id")).distinct().count()
-            println("Total Events - sample dataset",number_events)
-
-            //usarios unicos por día
-            val df_user_day = (df_sample.select(col("identifier"),col("day"))
-                              .distinct())
-                              .groupBy(col("Day"))
-                              .count()
-
-            println("Unique users per day - sample dataset")
-            df_user_day.show()
-
-//Mean, median, mode y range de events/MAID
-
-//promedio de señales por usuario por dia
-      val df_user_signal = df_sample.groupBy(col("identifier"),col("day"))
-                                    .agg(count("identifier_type")
-                                    .alias("signals"))
-                                    .agg(avg(col("signals")))
-
- println("Mean signals per user - sample data",df_user_signal)
-
-//Overlap de MAIDs con current data set (buscamos entender el incremental de IDs)
-
-//common users
-val the_join = df_sample.join(df_safegraph, df_sample.col("identifier")===df_safegraph.col("ad_id"),"inner")
-
-val common = the_join.distinct().count()
-
-println("Common Users with Safegraph",common)
-
-//Overlap de events/MAID con current data set (buscamos entender si nos provee más puntos por ID aunque no necesariamente traiga mas IDs).
-
- val records_common_safegraph = the_join.groupBy(col("identifier"))
-                      .agg(count("utc_timestamp").alias("records_safegraph"))
-                      .agg(avg(col("records_safegraph")))
-
-println("Records in Sample in safegraph",records_common_safegraph)
-
-val records_common_sample = the_join.select(col("ad_id"),col("timestamp"))
-                .groupBy(col("ad_id")).agg(count("timestamp").alias("records_sample"))
-                      .agg(avg(col("records_sample")))
-
-println("Records in Sample in common users",records_common_sample)
-
-
-val records_common = the_join.select(col("identifier"))
-                      .groupBy(col("identifier")).agg(count("timestamp").alias("records_safegraph"))
-                      .agg(count("utc_timestamp").alias("records_sample"))
-                      .withColumn("ratio", col("records_safegraph") / col("records_sample"))
-
-
-   the_join.write
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/geo/sample_metrics")
-
-   */
-
-  }
-
-  /**
-    *
-    *
-    *
     * Downloading safegraph data for GCBA study (porque no hay job que haga polygon matching aun)
     * Recycled for McDonalds
     *
@@ -1911,86 +1762,6 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     *
-    *                PITCH DANONE
-    *
-    *
-    *
-
-
-  def kw_pitch_danone(
-      spark: SparkSession,
-      nDays: Integer = 1,
-      since: Integer = 0
-  ) = {
-
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-    // Get the days to be loaded
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_keywords"
-
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days
-      .map(day => path + "/day=%s/country=AR".format(day)) //para cada dia de la lista day devuelve el path del día
-      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //es como if os.exists
-
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*) //lee todo de una
-
-    val df_keys = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load("/datascience/custom/content_keys_danone.csv")
-
-    val data = df.join(broadcast(df_keys), Seq("content_keys"))
-    data
-      .drop("country_t")
-      .drop("_c0")
-      .drop("count")
-      .dropDuplicates()
-      .groupBy("device_id")
-      .agg(collect_list("content_keys").as("kws"))
-      .withColumn("device_type", lit("web"))
-      .select("device_type", "device_id", "seg_id")
-    data.cache()
-
-    val job_name = "pitch_danone"
-
-    val queries = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load("/datascience/custom/queries_danone.csv")
-      .select("seg_id", "query")
-      .collect()
-      .map(r => (r(0).toString, r(1).toString))
-    for (t <- queries) {
-      data
-        .filter(t._2)
-        .withColumn("seg_id", lit(t._1))
-        .select("device_type", "device_id", "seg_id")
-        .write
-        .format("csv")
-        .option("sep", "\t")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/devicer/processed/%s_%s".format(job_name,t._1))
-      val os = fs.create(
-        new Path("/datascience/ingester/ready/%s_%s".format(job_name,t._1))
-      )
-      val content =
-        """{"filePath":"/datascience/devicer/processed/%s_%s", "priority": 20, "partnerId": 0, "queue":"highload", "jobid": 0, "description":"%s"}"""
-          .format(job_name,t._1,job_name)
-      println(content)
-      os.write(content.getBytes)
-      os.close()
-    }
-  }
-    */
-  /**
-    *
-    *
-    *
     *
     *
     *
@@ -2678,86 +2449,6 @@ val records_common = the_join.select(col("identifier"))
     *
     *
     *
-    *                  DATASET FOR EXPANSION MX
-    *
-    *
-    *
-    *
-    *
-
-  def getExpansionDataset(spark: SparkSession) {
-    // val ga = spark.read
-    //   .load(
-    //     "/datascience/data_demo/join_google_analytics/country=MX/"
-    //   )
-    //   .dropDuplicates("url", "device_id")
-    // val users =
-    //   ga.groupBy("device_id").count().filter("count >= 2").select("device_id")
-
-    // users.cache()
-    // users.write
-    //   .format("csv")
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/data_demo/users_to_expand_ga_MX")
-
-    // // val users = spark.read.format("csv").load("/datascience/data_demo/users_to_expand_ga_MX").withColumnRenamed("_c0", "device_id")
-    // ga.join(users, Seq("device_id"))
-    //   .write
-    //   .format("csv")
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/data_demo/expand_ga_dataset")
-
-    val segments =
-      """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
-      247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
-      386,389,395,396,397,398,399,401,402,403,404,405,409,410,411,412,413,418,420,421,422,429,430,432,433,434,440,441,446,447,450,451,453,454,456,457,458,
-      459,460,462,463,464,465,467,895,898,899,909,912,914,915,916,917,919,920,922,923,928,929,930,931,932,933,934,935,937,938,939,940,942,947,948,949,950,
-      951,952,953,955,956,957,1005,1116,1159,1160,1166,2064,2623,2635,2636,2660,2719,2720,2721,2722,2723,2724,2725,2726,2727,2733,2734,2735,2736,2737,2743,
-      3010,3011,3012,3013,3014,3015,3016,3017,3018,3019,3020,3021,3022,3023,3024,3025,3026,3027,3028,3029,3030,3031,3032,3033,3034,3035,3036,3037,3038,3039,
-      3040,3041,3042,3043,3044,3045,3046,3047,3048,3049,3050,3051,3055,3076,3077,3084,3085,3086,3087,3302,3303,3308,3309,3310,3388,3389,3418,3420,3421,3422,
-      3423,3450,3470,3472,3473,3564,3565,3566,3567,3568,3569,3570,3571,3572,3573,3574,3575,3576,3577,3578,3579,3580,3581,3582,3583,3584,3585,3586,3587,3588,
-      3589,3590,3591,3592,3593,3594,3595,3596,3597,3598,3599,3600,3730,3731,3732,3733,3779,3782,3843,3844,3913,3914,3915,4097,
-      5025,5310,5311""".replace("\n", "").split(",").toList.toSeq
-
-    val triplets =
-      spark.read
-        .load("/datascience/data_demo/triplets_segments/country=MX/")
-        .filter(col("feature").isin(segments: _*))
-
-    triplets
-      .join(users, Seq("device_id"))
-      .write
-      .format("csv")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/data_demo/expand_triplets_dataset")
-
-    // val myUDF = udf(
-    //   (weekday: String, hour: String) =>
-    //     if (weekday == "Sunday" || weekday == "Saturday") "%s1".format(hour)
-    //     else "%s0".format(hour)
-    // )
-    // val data =
-    //   spark.read.load("/datascience/data_demo/join_google_analytics/country=MX")
-    // data
-    //   .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-    //   .withColumn("Hour", date_format(col("Time"), "HH"))
-    //   .withColumn("Weekday", date_format(col("Time"), "EEEE"))
-    //   .withColumn("wd", myUDF(col("Weekday"), col("Hour")))
-    //   .groupBy("device_id", "wd")
-    //   .count()
-    //   .groupBy("device_id")
-    //   .pivot("wd")
-    //   .agg(sum("count"))
-    //   .write
-    //   .format("csv")
-    //   .option("header", "true")
-    //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/data_demo/expand_ga_timestamp")
-  }  */
-  /**
-    *
-    *
-    *
     *
     *
     *          PEDIDO DUNNHUMBY
@@ -3332,137 +3023,6 @@ val records_common = the_join.select(col("identifier"))
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/geo/drawbridge_monthly")
-  }
-
-  /**
-    *
-    *
-    *
-    *
-    *
-    *
-    *                    Metricas Sample Data
-    *
-    *
-    * */
-  def sample_metrics_geo_brco(
-      spark: SparkSession
-  ) = {
-    /*
-//hardcoded variables
-    val nDays = 16
-    val since = 9
-
-    // First we obtain the configuration to be allowed to watch if a file exists or not
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-    // Get the days to be loaded
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since.toInt)
-    val days =
-      (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
-
-    // Now we obtain the list of hdfs folders to be read
-    val path = "/datascience/geo/samples/startapp/"
-
-    // Now we obtain the list of hdfs folders to be read
-
-    val hdfs_files = days      .map(day => path + "%s/".format(day))      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))      .map(day => day + "*.csv.gz")
-
-
-
- val sample_data = spark.read      .option("header", "true")  .option("delimiter","\t")    .csv(hdfs_files: _*)      .toDF("ad_id", "timestamp", "country", "longitude","latitude","etc")
-
-
-//usuarios únicos por día
-val user_detections = sample_data.withColumn("Day", date_format(col("timestamp"), "d")).groupBy("country","day").agg(countDistinct("ad_id") as "unique_users")
-
-//detecciones por día
-val day_detections = sample_data.withColumn("Day", date_format(col("timestamp"), "d")).groupBy("country","day").agg(count("timestamp") as "detections")
-
-//detecciones por usuario por día
-val user_granularity = sample_data.withColumn("Day", date_format(col("timestamp"), "d")).groupBy("ad_id","country","day").agg(count("timestamp") as "time_granularity")
-
-//detecciones por usuario por día, promedio
-val mean_user_granularity = user_granularity.groupBy("ad_id","country").agg(mean("time_granularity") as "avg_granularity")
-
-//guardamos los dataframes generados para posterior análisis
-user_detections.write
-      .mode(SaveMode.Overwrite)
-      .format("csv")
-      .option("sep", ",")
-      .option("header", "true")
-      .save("/datascience/geo/samples/metrics/sample_user_detections")
-
-day_detections.write
-      .mode(SaveMode.Overwrite)
-      .format("csv")
-      .option("sep", ",")
-      .option("header", "true")
-      .save("/datascience/geo/samples/metrics/sample_day_detections")
-
-
-user_granularity.write
-      .mode(SaveMode.Overwrite)
-      .format("csv")
-      .option("sep", ",")
-      .option("header", "true")
-      .save("/datascience/geo/samples/metrics/sample_user_granularity")
-
-     */
-
-//Estaba mal hecho el cálculo de granularidad promedio, volvemos a correrlo
-    val granularity = spark.read
-      .format("csv")
-      .option("header", true)
-      .load("/datascience/geo/samples/metrics/sample_user_granularity")
-
-    val avg_granularity = granularity
-      .groupBy("ad_id", "country")
-      .agg(avg("time_granularity") as "avg_granularity")
-
-//usuarios por deteccion BR
-    val plus2bra = avg_granularity
-      .filter("country == 'BR'")
-      .filter("avg_granularity > 2")
-      .count()
-    val plus20bra = avg_granularity
-      .filter("country == 'BR'")
-      .filter("avg_granularity > 20")
-      .count()
-    val plus80bra = avg_granularity
-      .filter("country == 'BR'")
-      .filter("avg_granularity > 80")
-      .count()
-
-//usuarios por deteccion CO
-    val plus2co = avg_granularity
-      .filter("country == 'CO'")
-      .filter("avg_granularity > 2")
-      .count()
-    val plus20co = avg_granularity
-      .filter("country == 'CO'")
-      .filter("avg_granularity > 20")
-      .count()
-    val plus80co = avg_granularity
-      .filter("country == 'CO'")
-      .filter("avg_granularity > 80")
-      .count()
-
-//guardamos las metricas
-    val conf = new Configuration()
-    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-    val fs = FileSystem.get(conf)
-    val os = fs.create(new Path("/datascience/geo/samples/metrics.log"))
-
-    val json_content =
-      """{"plus2bra": "%s", "plus20bra": "%s", "plus80bra":"%s", "plus2co":"%s","plus20co":"%s","plus80co":"%s"}"""
-        .format(plus2bra, plus20bra, plus80bra, plus2co, plus20co, plus80co)
-
-    os.write(json_content.getBytes)
-    fs.close()
-
   }
 
   /**
@@ -5314,37 +4874,39 @@ user_granularity.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    // val genero = spark.read
-    //   .format("csv")
-    //   .option("sep", "\t")
-    //   .load("/datascience/devicer/processed/data_startapp_genero_grouped")
-    //   .withColumnRenamed("_c0", "device_type")
-    //   .withColumnRenamed("_c1", "device_id")
-    //   .withColumnRenamed("_c2", "genero")
-    //   .filter("genero NOT LIKE '%,%'")
-
-    // val edad = spark.read
-    //   .format("csv")
-    //   .option("sep", "\t")
-    //   .load("/datascience/devicer/processed/data_startapp_edad_grouped")
-    //   .withColumnRenamed("_c0", "device_type")
-    //   .withColumnRenamed("_c1", "device_id")
-    //   .withColumnRenamed("_c2", "edad")
-    //   .filter("edad NOT LIKE '%,%'")
-
-    // genero
-    //   .join(edad, Seq("device_type", "device_id"), "outer")
-    //   .write
-    //   .format("parquet")
-    //   .mode("overwrite")
-    //   .save("/datascience/custom/data_startapp_edad_genero")
-
-    spark.read
+    val data = spark.read
       .format("parquet")
-      .load("/datascience/custom/data_startapp_edad_genero")
-      .groupBy("genero", "edad")
-      .count()
-      .collect()
-      .foreach(println)
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country = 'AR'")
+      .select("device_id", "nid_sh2", "mb_sh2")
+      .withColumn("pii", array(col("nid_sh2"), col("mb_sh2")))
+      .withColumn("pii", explode(col("pii")))
+      .na
+      .drop()
+      .select("device_id", "pii")
+      .distinct()
+
+    data.cache()
+
+    val devices =
+      data.groupBy("device_id").count().filter("count < 5").drop("count")
+    val piis = data.groupBy("pii").count().filter("count < 5").drop("count")
+    val equi = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/custom/gt_equifax_ready.csv")
+      .withColumnRenamed("_c1", "device_id")
+
+    data
+      .join(devices, Seq("device_id"))
+      .join(piis, Seq("pii"))
+      .join(equi, Seq("device_id"), "right")
+      .select("_c0", "device_id", "_c2", "pii")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/gt_equifax_filtered")
+    
+    data.unpersist()
   }
 }

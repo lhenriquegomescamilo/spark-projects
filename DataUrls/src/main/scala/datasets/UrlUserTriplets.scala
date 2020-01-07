@@ -112,7 +112,7 @@ object UrlUserTriplets {
     raw_data
       .groupBy("country", "url")
       .count()
-      .filter("count >= 2")
+      .filter("count >= 5")
       .withColumn("url_idx", row_number().over(windowUrl))
       .withColumn("url_idx", col("url_idx") - 1) // Indexing to 0
       .select("url_idx", "url", "country")
@@ -128,6 +128,85 @@ object UrlUserTriplets {
     // Get the index for the devices
     val windowUser = Window.partitionBy("country").orderBy(col("device_id"))
     raw_data
+      .join(url_idx.select("url", "country"), Seq("url", "country"))
+      .select("country", "device_id")
+      .distinct()
+      .withColumn("device_idx", row_number().over(windowUser))
+      .withColumn("device_idx", col("device_idx") - 1) // Indexing to 0
+      .select("device_idx", "device_id", "country")
+      .write
+      .format("parquet")
+      .partitionBy("country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_triplets/urls/device_index/")
+
+    // Finally we use the indexes to store triplets partitioned by country
+
+    val device_idx = spark.read
+      .format("parquet")
+      .load("/datascience/data_triplets/urls/device_index/")
+    // .drop("country")
+
+    raw_data
+      .join(device_idx, Seq("device_id", "country"))
+      .join(url_idx, Seq("url", "country"))
+      .select("device_idx", "url_idx", "country")
+      .write
+      .format("parquet")
+      .partitionBy("country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_triplets/urls/indexed/")
+  }
+
+  /**
+    * This function reads the raw data downloaded previously, and creates
+    * two indexes: one for devices and the other one for URLs. Finally, it
+    * generates a properly triplets-like dataset only with indexes.
+    */
+  def get_indexes2(spark: SparkSession) = {
+    // Load the raw data
+    val raw_data = spark.read
+      .format("parquet")
+      .load("/datascience/data_triplets/urls/raw/")
+
+    raw_data
+      .groupBy("country", "device_id")
+      .count()
+      .filter("count >= 5")
+      .drop("count")
+      .write
+      .format("parquet")
+      .partitionBy("country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_triplets/urls/users_to_consider/")
+
+    val users_to_consider = spark.read
+      .format("parquet")
+      .load("/datascience/data_triplets/urls/users_to_consider/")
+
+    // Obtain an id for every URL. Here we filter out those URLs that have only one person visiting it.
+    val windowUrl = Window.partitionBy("country").orderBy(col("url"))
+    raw_data
+      .join(users_to_consider, Seq("device_id", "country"))
+      .groupBy("country", "url")
+      .count()
+      .filter("count >= 5")
+      .withColumn("url_idx", row_number().over(windowUrl))
+      .withColumn("url_idx", col("url_idx") - 1) // Indexing to 0
+      .select("url_idx", "url", "country")
+      .write
+      .format("parquet")
+      .partitionBy("country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/data_triplets/urls/url_index/")
+    val url_idx = spark.read
+      .format("parquet")
+      .load("/datascience/data_triplets/urls/url_index/")
+
+    // Get the index for the devices
+    val windowUser = Window.partitionBy("country").orderBy(col("device_id"))
+    raw_data
+      .join(users_to_consider, Seq("device_id", "country"))
       .join(url_idx.select("url", "country"), Seq("url", "country"))
       .select("country", "device_id")
       .distinct()
@@ -187,7 +266,7 @@ object UrlUserTriplets {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    // generate_triplets(spark, nDays, from)
-    get_indexes(spark)
+    generate_triplets(spark, nDays, from)
+    get_indexes2(spark)
   }
 }
