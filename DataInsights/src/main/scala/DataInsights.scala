@@ -15,6 +15,7 @@ import org.apache.spark.sql.functions.{
   lit,
   explode,
   length,
+  lower
   to_timestamp,
   from_unixtime,
   date_format,
