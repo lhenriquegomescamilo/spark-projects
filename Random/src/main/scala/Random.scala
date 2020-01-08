@@ -4879,24 +4879,23 @@ object Random {
       .option("header", "true")
       .load("/data/providers/Bridge/")
 
-    val piis =
-      spark.read.format("parquet").load("/datascience/pii_matching/pii_tuples")
+    val gcba = spark.read.format("parquet").load("/datascience/data_partner_streaming/hour=*/id_partner=349/")
 
-    piis
-      .select("country", "device_id", "ml_sh2")
-      .filter("ml_sh2 IS NOT NULL")
+    gcba
+      .filter("device_type IN ('android', 'ios')")
+      .select("nid_sh2", "device_id", "ml_sh2")
       .distinct()
       .join(
         bridge
           .select("SHA256_Email_Hash", "Device_ID")
-          .withColumnRenamed("SHA256_Email_Hash", "ml_sh2")
-          .withColumnRenamed("Device_ID", "device_id_bridge")
+          .withColumnRenamed("SHA256_Email_Hash", "ml_sh2_bridge")
+          .withColumnRenamed("Device_ID", "device_id")
           .distinct(),
-        Seq("ml_sh2")
+        Seq("device_id")
       )
       .write
       .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/bridge_piis")
+      .save("/datascience/custom/bridge_gcba")
   }
 }
