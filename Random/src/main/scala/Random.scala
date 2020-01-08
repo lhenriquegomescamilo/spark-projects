@@ -4883,7 +4883,7 @@ object Random {
 
     gcba
       .filter("device_type IN ('android', 'ios')")
-      .select("nid_sh2", "device_id", "ml_sh2")
+      .select("device_id")
       .distinct()
       .join(
         bridge
