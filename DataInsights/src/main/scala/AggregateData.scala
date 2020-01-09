@@ -57,15 +57,15 @@ object AggregateData {
       .withColumn("ID", concat(col("periodo"), lit("-"), col("campaign_id")))
       .withColumn(
         "data_type_clk",
-        when(col("data_type") == "clk", 1).otherwise(0)
+        when(col("data_type") === "clk", 1).otherwise(0)
       )
       .withColumn(
         "data_type_imp",
-        when(col("data_type") == "imp", 1).otherwise(0)
+        when(col("data_type") === "imp", 1).otherwise(0)
       )
       .withColumn(
         "data_type_cnv",
-        when(col("data_type") == "cnv", 1).otherwise(0)
+        when(col("data_type") === "cnv", 1).otherwise(0)
       )
 
     df_chkpt
@@ -448,10 +448,10 @@ object AggregateData {
       )
       .withColumn(
         "moment_day",
-        when(col("hour") <= 12 & col("hour") >= 7, "Morning").otherwise(
-          when(col("hour") <= 18 & col("hour") >= 13, "Afternoon")
+        when(col("hour") <= 12 && col("hour") >= 7, "Morning").otherwise(
+          when(col("hour") <= 18 && col("hour") >= 13, "Afternoon")
             .otherwise(
-              when(col("hour") <= 24 & col("hour") >= 19, "Evening")
+              when(col("hour") <= 24 && col("hour") >= 19, "Evening")
                 .otherwise("Night")
             )
         )
@@ -522,14 +522,14 @@ object AggregateData {
       .getOrCreate()
 
     /// Parseo de parametros
-    val format = "yyyy-MM-dd"
+    var format = "yyyy-MM-dd"
     val actual_day = DateTime.now.toString(format)
     val since = if (args.length > 0) args(0).toInt else 0
     val ndays = if (args.length > 1) args(1).toInt else 30
 
     format = "yyyyMMdd"
     val today = DateTime.now.minusDays(since).toString(format)
-    val df_chkpt = getRawData(spark, ndays, since)
-    get_aggregated_data(spark, today)
+    val df_chkpt = getRawData(spark, ndays, since, List("879", "753"))
+    get_aggregated_data(df_chkpt, today)
   }
 }
