@@ -96,7 +96,7 @@ object AggregateData {
 
   def aggregateSegments(df_chkpt: DataFrame, today: String) = {
     // List of segments to filter
-    val taxo_segments = SegmentList.getSegmentList()
+    val taxo_segments: Seq[String] = SegmentList.getSegmentList()
 
     // Get total per segments and id partner
     df_chkpt
@@ -115,7 +115,7 @@ object AggregateData {
 
     // Totals per segment, id and campaign id
     df_chkpt
-      .withColumnRenamed("third_party", "segments")
+      .withColumn("segments", explode(col("segments")))
       .filter(col("segments").isin(taxo_segments: _*))
       .groupBy("id_partner", "ID", "segments")
       .agg(
