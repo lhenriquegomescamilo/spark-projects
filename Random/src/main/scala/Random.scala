@@ -4885,11 +4885,13 @@ object Random {
       .filter("device_type IN ('android', 'ios')")
       .select("device_id")
       .distinct()
+      .withColumn("device_id", upper(col("device_id")))
       .join(
         bridge
           .select("SHA256_Email_Hash", "Device_ID")
           .withColumnRenamed("SHA256_Email_Hash", "ml_sh2_bridge")
           .withColumnRenamed("Device_ID", "device_id")
+          .withColumn("device_id", upper(col("device_id")))
           .distinct(),
         Seq("device_id")
       )
