@@ -1,7 +1,7 @@
 package main.scala
 
 object SegmentList {
-  def getSegmentList(): List[String] = {
+  def getSegmentList(): Seq[String] = {
     // Data Agregada Segments
     val age_segments = List("4", "5", "6", "7", "8", "9")
 
@@ -291,6 +291,6 @@ object SegmentList {
 
     val taxo_segments = age_segments ::: gender_segments ::: in_market ::: interest ::: generation ::: devices
 
-    taxo_segments
+    taxo_segments.toSeq
   }
 }
