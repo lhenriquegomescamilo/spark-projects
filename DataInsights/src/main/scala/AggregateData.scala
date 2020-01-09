@@ -47,10 +47,10 @@ object AggregateData {
         "periodo",
         when(
           col("datediff") <= 1,
-          Seq("Last 1 day", "Last 7 day", "Last 30 day")
+          lit(Seq("Last 1 day", "Last 7 day", "Last 30 day"))
         ).otherwise(
-          when(col("datediff") <= 7, Seq("Last 7 days", "Last 30 day"))
-            .otherwise("Last 30 day")
+          when(col("datediff") <= 7, lit(Seq("Last 7 days", "Last 30 day")))
+            .otherwise(lit(Seq("Last 30 day")))
         )
       )
       .withColumn("periodo", explode(col("periodo")))
