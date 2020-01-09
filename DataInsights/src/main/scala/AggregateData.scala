@@ -96,7 +96,7 @@ object AggregateData {
 
   def aggregateSegments(df_chkpt: DataFrame, today: String) = {
     // List of segments to filter
-    val segments = SegmentList.getSegmentList()
+    val taxo_segments = SegmentList.getSegmentList()
 
     // Get total per segments and id partner
     df_chkpt
