@@ -175,7 +175,7 @@ object AggregateData {
       .format("parquet")
       .partitionBy("day", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_horario/")
+      .save("/datascience/data_insights/aggregated/data_hour/")
   }
 
   def aggregateDay(df_chkpt: DataFrame, today: String) = {
@@ -196,7 +196,7 @@ object AggregateData {
       .format("parquet")
       .partitionBy("day", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_horario/")
+      .save("/datascience/data_insights/aggregated/data_day/")
   }
 
   def get_aggregated_data(df_chkpt: DataFrame, today: String) {
