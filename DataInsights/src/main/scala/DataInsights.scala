@@ -84,13 +84,12 @@ object DataInsights {
     data_eventqueue.join(df_ua,Seq("device_id"),"left")
                     //.join(data_geo,Seq("device_id"),"left")
                     .withColumn("third_party", split(col("third_party"), ""))
-                    .withColumn("third_party",explode(col("third_party")))
                     .withColumnRenamed("third_party","segments")
                     .withColumn("day",lit(day.replace("/","")))
                     .write
                     .format("parquet")
                     .partitionBy("day","id_partner")
-                    .mode("append")
+                    .mode("overwrite")
                     .save("/datascience/data_insights/raw")
   }
 
