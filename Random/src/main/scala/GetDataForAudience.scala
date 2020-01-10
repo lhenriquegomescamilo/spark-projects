@@ -67,7 +67,7 @@ object GetDataForAudience {
   def getDataSegmentsForAudience(spark: SparkSession) = {
     val data_audiences = spark.read
       .format("csv")
-      .option("sep", ",")
+      .option("sep", "\t")
       .option("header", "false")
       .load(
         "/datascience/custom/gt_equifax_filtered_pii"
