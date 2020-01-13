@@ -4905,6 +4905,7 @@ object Random {
       .write
       .format("csv")
       .option("sep", "\t")
+      .mode("overwrite")
       .save("/datascience/custom/gt_equifax_filtered")
 
     data.unpersist()
