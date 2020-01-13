@@ -810,6 +810,17 @@ def getDataTriplets(
 
 //Con esta función cargamos la data de safegraph
 
+import org.apache.spark.sql.SparkSession
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.joda.time.DateTime
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.SaveMode
+import scala.collection.Map
+import org.apache.spark.sql.expressions.Window
+
+//Por ahora vamos a setear a la hora de argentina
+spark.conf.set("spark.sql.session.timeZone","AR")
+
 def get_safegraph_data(
       spark: SparkSession,
       nDays: String,
