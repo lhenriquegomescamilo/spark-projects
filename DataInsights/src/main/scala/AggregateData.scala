@@ -182,8 +182,9 @@ object AggregateData {
     df_chkpt
       .filter("periodo = 'Last 30 day'")
       .withColumn("dom", date_format(col("time"), "dd"))
-      .withColumn("dom", col("dom").cast(IntegerType))
-      .groupBy("id_partner", "campaign_id", "dom")
+      .withColumn("month", date_format(col("time"), "MM"))
+      .withColumn("day_month", concat(col("dom"), lit("_"), col("month")))
+      .groupBy("id_partner", "campaign_id", "day_month")
       .agg(
         approx_count_distinct(col("device_id"), 0.03).as("devices"),
         approx_count_distinct(col("nid_sh2"), 0.03).as("nids"),
