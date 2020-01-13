@@ -868,7 +868,7 @@ def get_safegraph_data(
           
 
 //Acá usamos la función para levantar la data de safegraph y crearle las columnas necesarias          
-val safegraph_data = get_safegraph_data(spark,"5","1","10","argentina")
+val safegraph_data = get_safegraph_data(spark,"30","1","10","argentina")
 
 
 //Acá generamos un conteo de geocodes por usuario por dia
@@ -900,8 +900,8 @@ val devices_to_join_with_themselves_right =  top_geocode_by_user_by_day_w_coordi
 //Aramos el vs dataset
 val device_vs_device = devices_to_join_with_themselves_left.join(devices_to_join_with_themselves_right,Seq("device_id"))
 
-//val km_limit = 200*1000
-val km_limit = 50
+val km_limit = 200*1000
+//val km_limit = 50
 
 // Using vincenty formula to calculate distance between user/device location and ITSELF.
 device_vs_device.createOrReplaceTempView("joint")
@@ -938,7 +938,7 @@ sqlDF
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save("/datascience/geo/misc/travelers_test")
+.save("/datascience/geo/misc/travelers_test2")
 
 }
 
