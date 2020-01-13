@@ -4874,30 +4874,40 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val bridge = spark.read
-      .format("csv")
-      .option("header", "true")
-      .load("/data/providers/Bridge/")
-
-    val gcba = spark.read.format("parquet").load("/datascience/data_partner_streaming/hour=*/id_partner=349/")
-
-    gcba
-      .filter("device_type IN ('android', 'ios')")
-      .select("device_id")
+    val data = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country = 'AR'")
+      .select("device_id", "nid_sh2", "mb_sh2")
+      .withColumn("pii", array(col("nid_sh2"), col("mb_sh2")))
+      .withColumn("pii", explode(col("pii")))
+      .na
+      .drop()
+      .select("device_id", "pii")
       .distinct()
-      .withColumn("device_id", upper(col("device_id")))
-      .join(
-        bridge
-          .select("SHA256_Email_Hash", "Device_ID")
-          .withColumnRenamed("SHA256_Email_Hash", "ml_sh2_bridge")
-          .withColumnRenamed("Device_ID", "device_id")
-          .withColumn("device_id", upper(col("device_id")))
-          .distinct(),
-        Seq("device_id")
-      )
+
+    data.cache()
+
+    val devices =
+      data.groupBy("device_id").count().filter("count < 2").drop("count")
+    val piis = data.groupBy("pii").count().filter("count < 2").drop("count")
+    val equi = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/custom/gt_equifax_ready.csv")
+      .withColumnRenamed("_c1", "device_id")
+
+    data
+      .join(devices, Seq("device_id"))
+      .join(piis, Seq("pii"))
+      .join(equi, Seq("device_id"), "right")
+      .select("_c0", "device_id", "_c2", "pii")
       .write
       .format("csv")
+      .option("sep", "\t")
       .mode("overwrite")
-      .save("/datascience/custom/bridge_gcba")
+      .save("/datascience/custom/gt_equifax_filtered")
+
+    data.unpersist()
   }
 }
