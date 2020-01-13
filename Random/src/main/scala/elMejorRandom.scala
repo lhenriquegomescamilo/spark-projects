@@ -808,7 +808,126 @@ def getDataTriplets(
 //lo corro por script en scala
 //VAmos a ver un aproximado de cuántos de los usuarios de la audiencia tenían geo
 
-getDataTripletsCSVNSE(spark,"CL",60,1)
+//Con esta función cargamos la data de safegraph
+
+def get_safegraph_data(
+      spark: SparkSession,
+      nDays: String,
+      since: String,
+      decimals: String,
+      country: String) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+  
+    // Get the days to be loaded
+   val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+
+    // Now we obtain the list of hdfs files to be read
+    val path = "/datascience/geo/safegraph/"
+    val hdfs_files = days
+      .map(day => path +  "day=%s/country=%s/".format(day,country))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
+      .map(day => day + "*.snappy.parquet")
+
+
+    // Finally we read, filter by country, rename the columns and return the data
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .parquet(hdfs_files: _*)
+      .dropDuplicates("ad_id", "latitude", "longitude")
+      .withColumnRenamed("ad_id", "device_id")
+.withColumnRenamed("id_type", "device_type")
+.withColumn( "lat_user",((col("latitude").cast("float"))))
+.withColumn( "lon_user",((col("longitude").cast("float"))))
+.withColumn("geocode",((abs(col("lat_user")) * decimals).cast("int") * decimals * 100) + (abs(col("lon_user")) * decimals).cast("int"))
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Date", date_format(col("Time"),"M-dd"))
+.select("device_id","device_type","lat_user","lon_user","geocode","Date")
+
+
+          df_safegraph } 
+          
+
+//Acá usamos la función para levantar la data de safegraph y crearle las columnas necesarias          
+val safegraph_data = get_safegraph_data(spark,"5","1","10","argentina")
+
+
+//Acá generamos un conteo de geocodes por usuario por dia
+val devices_geocode_counts = safegraph_data.groupBy("device_id","Date","geocode").agg(count("lat_user") as "geocode_count_by_day")
+
+//Ahora nos quedamos con el mayor geocode count para un determinado día
+val w = Window.partitionBy(col("device_id"),col("Date")).orderBy(col("geocode_count_by_day").desc) //esto es como una máscara, ordenamos descentendente
+val devices_single_top_geocode = devices_geocode_counts.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn") //acá le inventas una columna y te quedás con la primer ocurrencia
+                
+
+// Ahora nos queremos quedar con un lat long de verdad donde haya estado ese usuario
+//Para eso eliminamos duplicados de la data de safegraph 
+val top_geocode_by_user_by_day_w_coordinates = devices_single_top_geocode.join(safegraph_data.dropDuplicates("device_id","Date","geocode"),Seq("device_id","Date","geocode"))
+
+//Ahora tenemos una latitud y longitud por día, representativa del geocode de mayor frecuencia. Vamos a calcular las distancias entre ellos
+
+val devices_to_join_with_themselves_left = top_geocode_by_user_by_day_w_coordinates
+.select("device_type","device_id","lat_user","lon_user","Date")
+.withColumnRenamed("lat_user","lat_user_left")
+.withColumnRenamed("lon_user","lon_user_left")
+.withColumnRenamed("Date","Date_left")
+
+val devices_to_join_with_themselves_right =  top_geocode_by_user_by_day_w_coordinates
+.select("device_id","lat_user","lon_user","Date")
+.withColumnRenamed("lat_user","lat_user_right")
+.withColumnRenamed("lon_user","lon_user_right")
+.withColumnRenamed("Date","Date_right")
+
+//Aramos el vs dataset
+val device_vs_device = devices_to_join_with_themselves_left.join(devices_to_join_with_themselves_right,Seq("device_id"))
+
+//val km_limit = 200*1000
+val km_limit = 50
+
+// Using vincenty formula to calculate distance between user/device location and ITSELF.
+device_vs_device.createOrReplaceTempView("joint")
+
+val columns = device_vs_device.columns
+
+val query =
+  """SELECT lat_user_left,
+            lon_user_left,
+            Date_left,
+            lat_user_right,
+            lon_user_right,
+            Date_right,
+            device_id,
+            device_type,
+            distance
+        FROM (
+          SELECT *,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(lat_user_left)) * COS(RADIANS(lat_user_right)) *
+          COS(RADIANS(lon_user_left) - RADIANS(lon_user_right)) +
+          SIN(RADIANS(lat_user_left)) * SIN(RADIANS(lat_user_right))))) as distance
+          FROM joint 
+        )
+        WHERE distance > %s""".format(km_limit)      
+
+
+
+// Storing result
+val sqlDF = spark.sql(query)
+.withColumn( "distance",(col("distance")/ 1000)).orderBy(desc("distance")).na.fill(0).filter("distance>0")
+
+sqlDF
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.save("/datascience/geo/misc/travelers_test")
 
 }
 
