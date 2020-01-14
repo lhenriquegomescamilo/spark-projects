@@ -69,10 +69,12 @@ object UpdateStartApp {
     // Now we obtain the list of hdfs files to be read
     val path = "/data/providers/Startapp_Geo/"
     val hdfs_files = days
-      .map(day => path + "location_-_%s_-_startapp_location_%s16_v_soda_node0006.tsv.gz".format(day, day))
+      .map(day => path + "location_-_%s_-_startapp_location_%s16_v_soda_node00*.tsv.gz".format(day, day))
       .filter(
         dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath))
       )
+
+    hdfs_files.foreach(println)
 
     // This is the Safegraph data schema
     val customSchema = StructType(
