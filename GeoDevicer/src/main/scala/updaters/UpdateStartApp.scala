@@ -69,7 +69,19 @@ object UpdateStartApp {
     // Now we obtain the list of hdfs files to be read
     val path = "/data/providers/Startapp_Geo/"
     val hdfs_files = days
-      .map(day => path + "location_-_%s_-_startapp_location_%s16_v_soda_node00*.tsv.gz".format(day, day))
+      .flatMap(
+        day =>
+          (0 to 10).map(
+            node =>
+              path + "location_-_%s_-_startapp_location_%s16_v_soda_node00%s.tsv.gz"
+                .format(
+                  day,
+                  day,
+                  if (node == 10) node
+                  else "0" + node.toString
+                )
+          )
+      )
       .filter(
         dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath))
       )
