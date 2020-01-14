@@ -141,7 +141,9 @@ object HomeJobs {
 
 
 
-    final_users.write.format("csv")
+    final_users
+    .na.fill("empty")
+    .write.format("csv")
       .option("header", true)
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
