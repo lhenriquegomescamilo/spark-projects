@@ -53,8 +53,9 @@ object HomeJobs {
         ).cast("int"))
       )
       .na.drop()
-      
 
+      
+//
     df_safegraph //
   }
 
