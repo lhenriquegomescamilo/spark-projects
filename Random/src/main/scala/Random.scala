@@ -4875,39 +4875,40 @@ object Random {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     val data = spark.read
-      .format("parquet")
-      .load("/datascience/pii_matching/pii_tuples/")
-      .filter("country = 'AR'")
-      .select("device_id", "nid_sh2", "mb_sh2")
-      .withColumn("pii", array(col("nid_sh2"), col("mb_sh2")))
-      .withColumn("pii", explode(col("pii")))
-      .na
-      .drop()
-      .select("device_id", "pii")
-      .distinct()
-
-    data.cache()
-
-    val devices =
-      data.groupBy("device_id").count().filter("count < 2").drop("count")
-    val piis = data.groupBy("pii").count().filter("count < 2").drop("count")
-    val equi = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/custom/gt_equifax_ready.csv")
-      .withColumnRenamed("_c1", "device_id")
-
+      .load("/datascience/custom/gt_br_tu_edad/")
+    val n_users = data
+      .select("_c0", "_c1")
+      .distinct()
+      .groupBy("_c0")
+      .count()
+      .filter("count < 4")
+    val n_pii = data
+      .select("_c0", "_c1")
+      .distinct()
+      .groupBy("_c1")
+      .count()
+      .filter("count < 4")
+    val n_class = data
+      .select("_c0", "_c2")
+      .distinct()
+      .groupBy("_c0")
+      .count()
+      .filter("count == 1")
     data
-      .join(devices, Seq("device_id"))
-      .join(piis, Seq("pii"))
-      .join(equi, Seq("device_id"), "right")
-      .select("_c0", "device_id", "_c2", "pii")
+      .join(n_users, Seq("_c0"))
+      .join(n_class, Seq("_c0"))
+      .join(n_pii, Seq("_c1"))
+      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c2", "class")
+      .withColumn("dev_type", lit("web"))
+      .select("dev_type", "device_id", "class")
+      .distinct()
       .write
       .format("csv")
       .option("sep", "\t")
       .mode("overwrite")
-      .save("/datascience/custom/gt_equifax_filtered")
-
-    data.unpersist()
+      .save("/datascience/custom/gt_br_tu_edad_filtered")
   }
 }
