@@ -209,7 +209,7 @@ object AggregateData {
       .save("/datascience/data_insights/aggregated/data_day/")
   }
 
-  def get_aggregated_data(df_chkpt: DataFrame, today: String) {
+  def get_aggregated_data(spark: SparkSession, df_chkpt: DataFrame, today: String) {
     aggregateKPIs(df_chkpt, today)
     aggregateSegments(df_chkpt, today, spark)
     aggregateUserAgent(df_chkpt, today)
@@ -254,6 +254,6 @@ object AggregateData {
     format = "yyyyMMdd"
     val today = DateTime.now.minusDays(since).toString(format)
     val df_chkpt = getRawData(spark, ndays, since, List("879", "753"))
-    get_aggregated_data(df_chkpt, today)
+    get_aggregated_data(spark, df_chkpt, today)
   }
 }
