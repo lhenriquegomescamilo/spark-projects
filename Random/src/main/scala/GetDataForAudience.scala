@@ -70,7 +70,7 @@ object GetDataForAudience {
       .option("sep", "\t")
       .option("header", "false")
       .load(
-        "/datascience/custom/gt_equifax_filtered_pii"
+        "/datascience/custom/gt_br_tu_edad_filtered"
       )
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "ids")
@@ -99,7 +99,7 @@ object GetDataForAudience {
       3599, 3600, 3779, 3782, 3913, 3914, 3915, 4097, 104014, 104015, 104016,
       104017, 104018, 104019)
 
-    val data_segments = getDataTriplets(spark, country = "AR", nDays = 60)
+    val data_segments = getDataTriplets(spark, country = "BR", nDays = 60)
       .filter(col("segment").isin(taxonomy: _*))
       .select("device_id", "segment")
 
