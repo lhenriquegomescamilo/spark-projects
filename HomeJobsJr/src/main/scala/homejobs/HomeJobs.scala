@@ -142,7 +142,7 @@ object HomeJobs {
 
 
     final_users
-    .na.drop()
+    .na.fill(0)
     .write.format("csv")
       .option("header", true)
       .option("sep", "\t")
