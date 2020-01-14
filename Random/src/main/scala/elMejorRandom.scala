@@ -804,6 +804,7 @@ def getDataTriplets(
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+//Acá el código para correr Peru
 
 //Acá vamos a probar hacerlo vs homes
 //Con esta función cargamos la data de safegraph
@@ -868,7 +869,7 @@ def get_safegraph_data(
 
 //Acá usamos la función para levantar la data de safegraph y crearle las columnas necesarias          
 //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
-val safegraph_data = get_safegraph_data(spark,"30","1","10","CL")
+val safegraph_data = get_safegraph_data(spark,"30","1","10","PE")
 
 
 //Acá generamos un conteo de geocodes por usuario por dia
@@ -886,7 +887,7 @@ val top_geocode_by_user_by_day_w_coordinates = devices_single_top_geocode.join(s
 
 //Acá levantamos el dataset de homes
 //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
-val path = "/datascience/geo/CL_90d_home_14-1-2020-16h"
+val path = "/datascience/geo/PE_90d_home_14-1-2020-19h"
 val df_homes = spark.read
 .format("csv")
 .option("sep","\t")
@@ -939,9 +940,10 @@ sqlDF
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save("/datascience/geo/misc/travelers_from_home_CL")
+.save("/datascience/geo/misc/travelers_from_home_PE")
 
 }
+
 
   
 }
