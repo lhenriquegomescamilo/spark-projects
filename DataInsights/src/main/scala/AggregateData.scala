@@ -96,7 +96,7 @@ object AggregateData {
       .save("/datascience/data_insights/aggregated/data_kpis/")
   }
 
-  def aggregateSegments(df_chkpt: DataFrame, today: String) = {
+  def aggregateSegments(df_chkpt: DataFrame, today: String, spark: SparkSession) = {
     // List of segments to filter
     val taxo_segments: Seq[String] = spark.read
       .format("csv")
@@ -211,7 +211,7 @@ object AggregateData {
 
   def get_aggregated_data(df_chkpt: DataFrame, today: String) {
     aggregateKPIs(df_chkpt, today)
-    aggregateSegments(df_chkpt, today)
+    aggregateSegments(df_chkpt, today, spark)
     aggregateUserAgent(df_chkpt, today)
     aggregateHour(df_chkpt, today)
     aggregateDay(df_chkpt, today)
