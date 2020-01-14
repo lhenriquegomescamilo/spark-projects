@@ -194,8 +194,8 @@ object GetURLsForAudience {
 
     getURLForAudience(
       spark = spark,
-      "/datascience/custom/gt_br_tu_edad_filtered",
-      "BR"
+      "/datascience/geo/reports/GCBA/carteles_GCBA_devices_type",
+      "AR"
     )
 
   }
