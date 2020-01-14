@@ -99,7 +99,8 @@ object HomeJobs {
     val timezone = Map("argentina" -> "GMT-3",
                        "mexico" -> "GMT-5",
                        "CL"->"GMT-3",
-                       "CO"-> "GMT-5")
+                       "CO"-> "GMT-5",
+                       "PE"-> "GMT-5")
     
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(value_dictionary("country")))
