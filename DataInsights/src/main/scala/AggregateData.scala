@@ -54,6 +54,8 @@ object AggregateData {
         )
       )
       .withColumn("periodo", explode(col("periodo")))
+      .withColumn("campaign_id", array(col("campaign_id"), lit(0)))
+      .withColumn("campaign_id", explode(col("campaign_id")))
       .withColumn("ID", concat(col("periodo"), lit("-"), col("campaign_id")))
       .withColumn(
         "data_type_clk",
@@ -94,9 +96,16 @@ object AggregateData {
       .save("/datascience/data_insights/aggregated/data_kpis/")
   }
 
-  def aggregateSegments(df_chkpt: DataFrame, today: String) = {
+  def aggregateSegments(df_chkpt: DataFrame, today: String, spark: SparkSession) = {
     // List of segments to filter
-    val taxo_segments: Seq[String] = SegmentList.getSegmentList()
+    val taxo_segments: Seq[String] = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/data_insights/taxo_pure.csv")
+      .select("ID")
+      .collect()
+      .map(r => r(0).toString)
+      .toSeq
 
     // Get total per segments and id partner
     df_chkpt
@@ -202,7 +211,7 @@ object AggregateData {
 
   def get_aggregated_data(df_chkpt: DataFrame, today: String) {
     aggregateKPIs(df_chkpt, today)
-    aggregateSegments(df_chkpt, today)
+    aggregateSegments(df_chkpt, today, spark)
     aggregateUserAgent(df_chkpt, today)
     aggregateHour(df_chkpt, today)
     aggregateDay(df_chkpt, today)
