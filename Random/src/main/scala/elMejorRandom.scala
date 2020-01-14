@@ -820,6 +820,20 @@ import org.apache.spark.sql.expressions.Window
 
 //Por ahora vamos a setear a la hora de argentina
 spark.conf.set("spark.sql.session.timeZone","AR")
+//Acá vamos a probar hacerlo vs homes
+//Con esta función cargamos la data de safegraph
+
+import org.apache.spark.sql.SparkSession
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.joda.time.DateTime
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.SaveMode
+import scala.collection.Map
+import org.apache.spark.sql.expressions.Window
+
+//Por ahora vamos a setear a la hora de argentina
+spark.conf.set("spark.sql.session.timeZone","AR")
+
 
 def get_safegraph_data(
       spark: SparkSession,
@@ -881,27 +895,28 @@ val devices_single_top_geocode = devices_geocode_counts.withColumn("rn", row_num
 
 // Ahora nos queremos quedar con un lat long de verdad donde haya estado ese usuario
 //Para eso eliminamos duplicados de la data de safegraph 
+//Ahora tenemos una latitud y longitud por día, representativa del geocode de mayor frecuencia.
 val top_geocode_by_user_by_day_w_coordinates = devices_single_top_geocode.join(safegraph_data.dropDuplicates("device_id","Date","geocode"),Seq("device_id","Date","geocode"))
 
-//Ahora tenemos una latitud y longitud por día, representativa del geocode de mayor frecuencia. Vamos a calcular las distancias entre ellos
+//Acá levantamos el dataset de homes
+val path = "/datascience/geo/NSEHomes/argentina_365d_home_20-11-2019-12h"
+val df_homes = spark.read
+.format("csv")
+.option("sep","\t")
+.option("header",false)
+.load(path)
+.toDF("device_id","pii_type","freq","else","lat_home","lon_home")
+.filter("lat_home != lon_home")
+.withColumn( "lat_home",((col("lat_home").cast("float"))))
+.withColumn( "lon_home",((col("lon_home").cast("float"))))
+.select("device_id","lat_home","lon_home")
 
-val devices_to_join_with_themselves_left = top_geocode_by_user_by_day_w_coordinates
-.select("device_type","device_id","lat_user","lon_user","Date")
-.withColumnRenamed("lat_user","lat_user_left")
-.withColumnRenamed("lon_user","lon_user_left")
-.withColumnRenamed("Date","Date_left")
-
-val devices_to_join_with_themselves_right =  top_geocode_by_user_by_day_w_coordinates
-.select("device_id","lat_user","lon_user","Date")
-.withColumnRenamed("lat_user","lat_user_right")
-.withColumnRenamed("lon_user","lon_user_right")
-.withColumnRenamed("Date","Date_right")
-
-//Aramos el vs dataset
-val device_vs_device = devices_to_join_with_themselves_left.join(devices_to_join_with_themselves_right,Seq("device_id"))
 
 val km_limit = 200*1000
 //val km_limit = 50
+
+//Aramos el vs dataset
+val device_vs_device = df_homes.join(top_geocode_by_user_by_day_w_coordinates,Seq("device_id"))
 
 // Using vincenty formula to calculate distance between user/device location and ITSELF.
 device_vs_device.createOrReplaceTempView("joint")
@@ -909,19 +924,18 @@ device_vs_device.createOrReplaceTempView("joint")
 val columns = device_vs_device.columns
 
 val query =
-  """SELECT lat_user_left,
-            lon_user_left,
-            Date_left,
-            lat_user_right,
-            lon_user_right,
-            Date_right,
+  """SELECT lat_user,
+            lon_user,
+            Date,
+            lat_home,
+            lon_home,
             device_id,
             device_type,
             distance
         FROM (
-          SELECT *,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(lat_user_left)) * COS(RADIANS(lat_user_right)) *
-          COS(RADIANS(lon_user_left) - RADIANS(lon_user_right)) +
-          SIN(RADIANS(lat_user_left)) * SIN(RADIANS(lat_user_right))))) as distance
+          SELECT *,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(lat_user)) * COS(RADIANS(lat_home)) *
+          COS(RADIANS(lon_user) - RADIANS(lon_home)) +
+          SIN(RADIANS(lat_user)) * SIN(RADIANS(lat_home))))) as distance
           FROM joint 
         )
         WHERE distance > %s""".format(km_limit)      
@@ -938,7 +952,7 @@ sqlDF
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save("/datascience/geo/misc/travelers_test2")
+.save("/datascience/geo/misc/travelers_from_home_test")
 
 }
 
