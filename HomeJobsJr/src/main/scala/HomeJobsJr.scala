@@ -176,6 +176,7 @@ object HomeJobsJr {
        SparkSession
           .builder()
           .config("spark.serializer", classOf[KryoSerializer].getName)
+          .config("spark.sql.files.ignoreCorruptFiles", "true")
           .config(
             "spark.kryo.registrator",
             classOf[GeoSparkKryoRegistrator].getName
