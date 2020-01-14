@@ -52,8 +52,10 @@ object HomeJobs {
           col("longitude_user").cast("float") * 100
         ).cast("int"))
       )
-      
+      .na.drop()
 
+      
+//
     df_safegraph //
   }
 
@@ -121,6 +123,7 @@ object HomeJobs {
                             round(avg(col("latitude_user")),4).as("avg_latitude"),
                             (round(avg(col("longitude_user")),4)).as("avg_longitude"))
                     .select("ad_id","id_type","freq","geocode","avg_latitude","avg_longitude")
+                    
 
      
     
@@ -142,7 +145,6 @@ object HomeJobs {
 
 
     final_users
-    .na.fill("empty")
     .write.format("csv")
       .option("header", true)
       .option("sep", "\t")
