@@ -16,8 +16,35 @@ object DumpBase {
     data
   }
 
+  def getDataAudiences(
+      spark: SparkSession,
+      nDays: Int = 30,
+      since: Int = 1,
+      id_partner: String,
+      country: String
+  ): DataFrame = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences_streaming/"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/hour=%s*/country=%s".format(day, country))
+    // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    fs.close()
+
+    df.filter("id_partner = %s".format(id_partner))
+  }
+
   def dumpData(spark: SparkSession, id_partner: String) = {
-    val data = getDataFromPartner(spark, id_partner)
+    val data = getDataAudiences(spark, 45, 46, id_partner, "MX") //getDataFromPartner(spark, id_partner)
 
     val array_columns = "segments first_party all_segments".split(" ")
 
@@ -33,7 +60,7 @@ object DumpBase {
       .option("sep", "\t")
       .option("header", "true")
       .mode("overwrite")
-      .save("/datascience/custom/dump_%s".format(id_partner))
+      .save("/datascience/custom/dump_%s_2".format(id_partner))
   }
 
   def main(args: Array[String]) {
