@@ -54,6 +54,8 @@ object AggregateData {
         )
       )
       .withColumn("periodo", explode(col("periodo")))
+      .withColumn("campaign_id", array(col("campaign_id"), lit(0)))
+      .withColumn("campaign_id", explode(col("campaign_id")))
       .withColumn("ID", concat(col("periodo"), lit("-"), col("campaign_id")))
       .withColumn(
         "data_type_clk",
@@ -96,7 +98,14 @@ object AggregateData {
 
   def aggregateSegments(df_chkpt: DataFrame, today: String) = {
     // List of segments to filter
-    val taxo_segments: Seq[String] = SegmentList.getSegmentList()
+    val taxo_segments: Seq[String] = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/data_insights/taxo_pure.csv")
+      .select("ID")
+      .collect()
+      .map(r => r(0).toString)
+      .toSeq
 
     // Get total per segments and id partner
     df_chkpt
