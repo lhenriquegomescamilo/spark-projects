@@ -3,6 +3,8 @@ package main.scala
 import org.apache.spark.sql.{SparkSession, DataFrame}
 import org.apache.spark.sql.functions._
 import org.apache.log4j.{Level, Logger}
+import org.joda.time.{Days, DateTime}
+import org.apache.hadoop.fs.{FileSystem, Path}
 
 object DumpBase {
   def getDataFromPartner(spark: SparkSession, id_partner: String): DataFrame = {
