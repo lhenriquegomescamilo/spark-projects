@@ -804,22 +804,7 @@ def getDataTriplets(
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-//ahora vamos a pegar el mapeo...aunque no sé si vale mucho la pena, esto ocupa lugar al pedo pero se pueden hacer los counts más fácil con toda la data..
-//lo corro por script en scala
-//VAmos a ver un aproximado de cuántos de los usuarios de la audiencia tenían geo
 
-//Con esta función cargamos la data de safegraph
-
-import org.apache.spark.sql.SparkSession
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.joda.time.DateTime
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.SaveMode
-import scala.collection.Map
-import org.apache.spark.sql.expressions.Window
-
-//Por ahora vamos a setear a la hora de argentina
-spark.conf.set("spark.sql.session.timeZone","AR")
 //Acá vamos a probar hacerlo vs homes
 //Con esta función cargamos la data de safegraph
 
@@ -832,7 +817,7 @@ import scala.collection.Map
 import org.apache.spark.sql.expressions.Window
 
 //Por ahora vamos a setear a la hora de argentina
-spark.conf.set("spark.sql.session.timeZone","AR")
+spark.conf.set("spark.sql.session.timeZone","CL")
 
 
 def get_safegraph_data(
@@ -882,7 +867,8 @@ def get_safegraph_data(
           
 
 //Acá usamos la función para levantar la data de safegraph y crearle las columnas necesarias          
-val safegraph_data = get_safegraph_data(spark,"30","1","10","argentina")
+//OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
+val safegraph_data = get_safegraph_data(spark,"30","1","10","CL")
 
 
 //Acá generamos un conteo de geocodes por usuario por dia
@@ -899,11 +885,12 @@ val devices_single_top_geocode = devices_geocode_counts.withColumn("rn", row_num
 val top_geocode_by_user_by_day_w_coordinates = devices_single_top_geocode.join(safegraph_data.dropDuplicates("device_id","Date","geocode"),Seq("device_id","Date","geocode"))
 
 //Acá levantamos el dataset de homes
-val path = "/datascience/geo/NSEHomes/argentina_365d_home_20-11-2019-12h"
+//OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
+val path = "/datascience/geo/CL_90d_home_14-1-2020-16h"
 val df_homes = spark.read
 .format("csv")
 .option("sep","\t")
-.option("header",false)
+.option("header",true)
 .load(path)
 .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
 .filter("lat_home != lon_home")
@@ -952,7 +939,7 @@ sqlDF
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save("/datascience/geo/misc/travelers_from_home_test")
+.save("/datascience/geo/misc/travelers_from_home_CL")
 
 }
 
