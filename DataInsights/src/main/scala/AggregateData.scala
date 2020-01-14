@@ -109,18 +109,21 @@ object AggregateData {
 
     // Get total per segments and id partner
     df_chkpt
-      .withColumn("segments", explode(col("segments")))
-      .filter(col("segments").isin(taxo_segments: _*))
-      .groupBy("id_partner", "periodo", "segments")
+      .withColumn("segments", explode(col("first_party")))
+      .groupBy("id_partner", "ID", "segments")
       .agg(
-        approx_count_distinct(col("device_id"), 0.03).as("devices_x_seg")
+        approx_count_distinct(col("device_id"), 0.03).as("devices"),
+        approx_count_distinct(col("nid_sh2"), 0.03).as("nids"),
+        sum(col("data_type_imp")).as("impressions"),
+        sum(col("data_type_clk")).as("clicks"),
+        sum(col("data_type_cnv")).as("conversions")
       )
       .withColumn("day", lit(today))
       .write
       .format("parquet")
       .partitionBy("day", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_segments_campaign/")
+      .save("/datascience/data_insights/aggregated/data_segments_first_party/")
 
     // Totals per segment, id and campaign id
     df_chkpt
