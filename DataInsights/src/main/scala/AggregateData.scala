@@ -89,11 +89,12 @@ object AggregateData {
         col("impressions") + col("clicks") + col("conversions")
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("kpis"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_kpis/")
+      .save("/datascience/data_insights/aggregated/")
   }
 
   def aggregateSegments(df_chkpt: DataFrame, today: String, spark: SparkSession) = {
@@ -109,6 +110,7 @@ object AggregateData {
 
     // Get total per segments and id partner
     df_chkpt
+      .withColumn("first_party", split(col("first_party"), "\u0001"))
       .withColumn("segments", explode(col("first_party")))
       .groupBy("id_partner", "ID", "segments")
       .agg(
@@ -119,11 +121,12 @@ object AggregateData {
         sum(col("data_type_cnv")).as("conversions")
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("segments_first_party"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_segments_first_party/")
+      .save("/datascience/data_insights/aggregated/")
 
     // Totals per segment, id and campaign id
     df_chkpt
@@ -138,11 +141,12 @@ object AggregateData {
         sum(col("data_type_cnv")).as("conversions")
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("segments"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_segments/")
+      .save("/datascience/data_insights/aggregated/")
   }
 
   def aggregateUserAgent(df_chkpt: DataFrame, today: String) = {
@@ -153,11 +157,12 @@ object AggregateData {
         approx_count_distinct(col("nid_sh2"), 0.03).as("nids")
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("brand"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_brand/")
+      .save("/datascience/data_insights/aggregated/")
   }
 
   def aggregateHour(df_chkpt: DataFrame, today: String) = {
@@ -183,11 +188,12 @@ object AggregateData {
         )
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("hour"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_hour/")
+      .save("/datascience/data_insights/aggregated/")
   }
 
   def aggregateDay(df_chkpt: DataFrame, today: String) = {
@@ -205,11 +211,12 @@ object AggregateData {
         sum(col("data_type_cnv")).as("conversions")
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("day"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_day/")
+      .save("/datascience/data_insights/aggregated/")
   }
 
   def get_aggregated_data(spark: SparkSession, df_chkpt: DataFrame, today: String) {
