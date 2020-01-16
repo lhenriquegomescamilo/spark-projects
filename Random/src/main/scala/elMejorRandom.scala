@@ -835,7 +835,7 @@ val users = spark.read.format("csv")
 .withColumn("transporte",when(col("content_keys").isin(transporte:_*),"1").otherwise("0"))
 
 
-val intereses_especificos = keywords.groupBy("device_id")
+val intereses_especificos = data_keywords.groupBy("device_id")
 .agg(sum("espacio_publico") as "espacio_publico" ,
   sum("seguridad") as "seguridad",
   sum("cultura") as "cultura",
