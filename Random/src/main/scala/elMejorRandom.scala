@@ -826,7 +826,7 @@ val users = spark.read.format("csv")
 .load("/datascience/geo/reports/GCBA/carteles_GCBA_devices")
 .withColumn("device_id",lower(col("device_id")))
 
- data_keywords
+val data_keywords_new  =  data_keywords
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("espacio_publico",when(col("content_keys").isin(espacio_publico:_*),"1").otherwise("0"))
 .withColumn("seguridad",when(col("content_keys").isin(seguridad:_*),"1").otherwise("0"))
@@ -835,7 +835,7 @@ val users = spark.read.format("csv")
 .withColumn("transporte",when(col("content_keys").isin(transporte:_*),"1").otherwise("0"))
 
 
-val intereses_especificos = data_keywords.groupBy("device_id")
+val intereses_especificos = data_keywords_new.groupBy("device_id")
 .agg(sum("espacio_publico") as "espacio_publico" ,
   sum("seguridad") as "seguridad",
   sum("cultura") as "cultura",
