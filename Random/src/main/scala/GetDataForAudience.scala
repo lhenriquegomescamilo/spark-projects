@@ -113,6 +113,17 @@ object GetDataForAudience {
   }
 
   def getAllDataSegmentsForAudience(spark: SparkSession) = {
+    val data_audiences = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "false")
+      .load(
+        "/datascience/geo/reports/GCBA/carteles_GCBA_devices_type"
+      )
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "ids")
+      .drop("_c0")
+
     val taxonomy = Seq(20107, 20108, 20109, 20110, 20111, 20112, 20113, 20114,
       20115, 20116, 20117, 20118, 20119, 20120, 20121, 20122, 20123, 20124,
       20125, 20126, 22474, 22476, 22478, 22480, 22482, 22484, 22486, 22488,
@@ -141,43 +152,16 @@ object GetDataForAudience {
       36043, 36044, 36045, 36046, 36047, 36048, 36049, 36050, 36051, 36052,
       36053, 36054)
 
-    val data_audiences = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "false")
-      .load(
-        "/datascience/custom/gt_br_bk.csv"
-      )
-      .withColumnRenamed("_c1", "device_id")
-      .withColumnRenamed("_c2", "ids")
-      .drop("_c0")
-
-    val data_segments = getDataTriplets(spark, country = "MX", nDays = 60)
+    val data_segments = getDataTriplets(spark, country = "AR", nDays = 60)
       .filter(col("segment").isin(taxonomy: _*))
       .select("device_id", "segment")
-      .withColumn("device_id", upper(col("device_id")))
-
-    val xd_index = spark.read
-      .format("parquet")
-      .load("/datascience/crossdevice/double_index/")
-      .filter("index_type IN ('and', 'ios') AND device_type = 'coo'")
-      .withColumn("index", upper(col("index")))
-
-    val crossdeviced = xd_index
-      .join(
-        data_segments.withColumnRenamed("device_id", "index"),
-        Seq("index")
-      )
-      .select("device", "segment")
-      .withColumnRenamed("device", "device_id")
 
     data_audiences
-      .join(crossdeviced, Seq("device_id"))
+      .join(data_segments, Seq("device_id"))
       .write
       .format("csv")
-      .option("header", "true")
       .mode("overwrite")
-      .save("/datascience/custom/gt_br_transunion_gender_startapp")
+      .save("/datascience/custom/carteles_GCBA_devices_type_segments_equifax")
 
   }
 
@@ -222,7 +206,7 @@ object GetDataForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getDataSegmentsForAudience(spark = spark)
+    getAllDataSegmentsForAudience(spark = spark)
 
   }
 }
