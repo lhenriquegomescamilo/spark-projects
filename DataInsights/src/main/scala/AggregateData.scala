@@ -108,7 +108,7 @@ object AggregateData {
       .map(r => r(0).toString)
       .toSeq
 
-    // Get total per segments and id partner
+    // Get first_party segments
     df_chkpt
       .withColumn("first_party", split(col("first_party"), "\u0001"))
       .withColumn("segments", explode(col("first_party")))
@@ -225,26 +225,6 @@ object AggregateData {
     aggregateUserAgent(df_chkpt, today)
     aggregateHour(df_chkpt, today)
     aggregateDay(df_chkpt, today)
-
-    // val devices_campaign = df_chkpt.groupBy("campaign_id")
-    //                                 .agg(approx_count_distinct(col("device_id")).as("tot_devices_x_camp"),
-    //                                       first("ID").as("ID"))
-    //                                 .select("ID","tot_devices_x_camp")
-    // TODO: Sacar del anterior
-
-    // // Data Agregada GEO
-    // df_chkpt.groupBy("campaign_id","estate")
-    //           .agg(approx_count_distinct(col("device_id")).as("devices"),
-    //                 approx_count_distinct(col("nid_sh2")).as("nids"),
-    //                 first("ID").as("ID"),
-    //                 first("campaign_name").as("campaign_name"),
-    //                 first("periodo").as("periodo"))
-    //           .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-    //           .write
-    //           .format("parquet")
-    //           .partitionBy("day","id_partner")
-    //           .mode("append")
-    //           .save("/datascience/data_insights/aggregated/data_geo/")
   }
 
   def main(args: Array[String]) {
