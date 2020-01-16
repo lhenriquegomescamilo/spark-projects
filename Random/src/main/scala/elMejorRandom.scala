@@ -811,9 +811,8 @@ def getDataTriplets(
 
 
 
-val data_keywords = getDataPipeline(spark,"/datascience/data_keywords/","30","1","AR")
-
-val data_keywords_new = data_keywords.withColumn("device_id",lower(col("device_id")))
+val data_keywords = getDataPipeline(spark,"/datascience/data_keywords/","10","1","AR")
+.withColumn("device_id",lower(col("device_id")))
 
 val users = spark.read.format("csv")
 .option("header",true)
@@ -821,7 +820,7 @@ val users = spark.read.format("csv")
 .load("/datascience/geo/reports/GCBA/carteles_GCBA_devices")
 .withColumn("device_id",lower(col("device_id")))
 
-users.join(data_keywords_new,Seq("device_id"))
+users.join(data_keywords,Seq("device_id"))
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
