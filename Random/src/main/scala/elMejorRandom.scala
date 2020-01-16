@@ -809,7 +809,9 @@ def getDataTriplets(
 //Acá vamos a probar hacerlo vs homes
 //Con esta función cargamos la data de safegraph
 
- val data_keywords = getDataPipeline(spark,"/datascience/data_keywords/","2","1","AR")
+
+
+val data_keywords = getDataPipeline(spark,"/datascience/data_keywords/","30","1","AR")
 
 //Queremos buscar keywords relativos a los temas que nos interean
 val espacio_publico = List("parque","plaza","arbol")
@@ -848,6 +850,10 @@ users.join(intereses_especificos,Seq("device_id"))
 .option("delimiter","\t")
 .option("header",true)
 .save("/datascience/geo/reports/GCBA/carteles_GCBA_intereses_especificos")
+
+
+}
+
 
   
 }
