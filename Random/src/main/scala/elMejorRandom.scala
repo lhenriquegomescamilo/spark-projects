@@ -813,14 +813,7 @@ def getDataTriplets(
 
 val data_keywords = getDataPipeline(spark,"/datascience/data_keywords/","30","1","AR")
 
-val data_keywords_2 = data_keywords.withColumn("device_id",lower(col("device_id")))
-
-//Queremos buscar keywords relativos a los temas que nos interean
-val espacio_publico = List("parque","plaza","arbol")
-val seguridad = List("polici","ladro","robo","homicidi","asesina","chorro")
-val cultura = List("teatr","cine","cultur","conciert")
-val educacion = List("colegi","secundari","maestr","docent")
-val transporte = List("transport","colecti","tren","taxi","uber","cabify","boleto","subte")
+val data_keywords_new = data_keywords.withColumn("device_id",lower(col("device_id")))
 
 val users = spark.read.format("csv")
 .option("header",true)
@@ -828,16 +821,7 @@ val users = spark.read.format("csv")
 .load("/datascience/geo/reports/GCBA/carteles_GCBA_devices")
 .withColumn("device_id",lower(col("device_id")))
 
-
-
-val intereses_especificos = data_keywords_new.groupBy("device_id")
-.agg(sum("espacio_publico") as "espacio_publico" ,
-  sum("seguridad") as "seguridad",
-  sum("cultura") as "cultura",
-  sum("educacion") as "educacion",
-  sum("transporte") as "transporte")
-
-users.join(data_keywords_2,Seq("device_id"))
+users.join(data_keywords_new,Seq("device_id"))
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
