@@ -779,7 +779,7 @@ object Item2Item {
     var description = "Lookalike on demand - jobId = %s - %s".format(jobId, resultDescription)
 
     // Then we generate the content for the json file.
-    val json_content = """{"filePath":"%s", jobId":%s, "description":"%s"}"""
+    val json_content = """{"filePath":"%s", "jobId":%s, "description":"%s"}"""
       .format(
         if (file_path.takeRight(1) == "/") file_path.dropRight(1) else file_path, // remove last '/''
         jobId,
