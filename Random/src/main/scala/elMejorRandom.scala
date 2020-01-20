@@ -772,7 +772,7 @@ def getDataTriplets(
     df
   }
 
-  def getDataTripletsCSVNSE(spark: SparkSession, country:String, nDays: String, from: String) = {
+  def getDataTripletsCSVNSE(spark: SparkSession, country:String, nDays: Int, from: Int) = {
     val segments = List(136529,35360,136531,35361,136533,35362,136535,144741,35363,136537,210275,20107,20108,20109,20110,210265)
         .map(_.toInt)
         .toSeq
@@ -807,7 +807,7 @@ def getDataTriplets(
 
 
 
-val data_triplets = getDataTripletsCSVNSE(spark,"AR","30","1")
+val data_triplets = getDataTripletsCSVNSE(spark,"AR",30,1)
 
 
 
