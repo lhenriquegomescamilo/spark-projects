@@ -1,3 +1,5 @@
+package main.scala
+
 import org.apache.spark.sql._
 import org.joda.time.{Days, DateTime}
 import org.apache.spark.sql.types._
