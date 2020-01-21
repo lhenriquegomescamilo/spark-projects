@@ -150,7 +150,7 @@ object GetURLsForAudience {
     val urls = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
     processURL(dfURL = urls, field = "url")
-    urls
+    // urls
   }
 
   /**
@@ -194,7 +194,7 @@ object GetURLsForAudience {
 
     getURLForAudience(
       spark = spark,
-      "/datascience/geo/reports/GCBA/carteles_GCBA_devices_type",
+      "/datascience/custom/gt_equifax_filtered_pii",
       "AR"
     )
 
