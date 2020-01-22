@@ -807,7 +807,7 @@ def getDataTriplets(
 
 
 
-val data_triplets = getDataTripletsCSVNSE(spark,"AR",30,60)
+val data_triplets = getDataTripletsCSVNSE(spark,"AR",1,90)
 
 
 
