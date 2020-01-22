@@ -825,6 +825,7 @@ spark.read.format("csv")
 .drop("_c5")
 .toDF("device_id","country","utc_timestamp","latitude","longitude")
 .filter("country == '%'".format(country)) //*******************************Ojo que esto hay que cambiarlo para el otro país
+.drop("country")
 .withColumn("provider",lit("startapp"))
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
