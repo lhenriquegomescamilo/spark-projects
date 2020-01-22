@@ -1283,6 +1283,35 @@ object RandomTincho {
     
   }
 
+  def get_join_kws(spark:SparkSession){
+
+    val encodeUdf = udf((s: String) => scala.io.Source.fromBytes(s.getBytes(), "UTF-8").mkString)
+
+    val filtered = df.withColumn("url_p",flatten(col("url"))).withColumn("url_p",regexp_replace(col("url_p"), "'", ""))
+
+
+    val df = spark.read
+      .option("basePath", "/datascience/data_audiences_streaming/")
+      .parquet("/datascience/data_audiences_streaming/hour=%s*".format(20200121)) // We read the data
+      .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")) 
+      .withColumn("url",flatten(col("url"))).withColumn("url",regexp_replace(col("url"), "'", ""))
+      .select( "url")
+      .distinct()
+
+    val kws = spark.read.format("csv").option("header","true")
+                    .load("/datascience/selected_keywords/2020-01-21.csv")
+                    .withColumnRenamed("url_raw","url")
+                    .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
+                    .select("url")
+                    .distinct()
+
+    df.join(kws,Seq("url"),"inner")
+      .write
+      .format("parquet").mode(SaveMode.Overwrite)
+      .save("/datascience/custom/join_kws")
+
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1294,20 +1323,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    /// Parseo de parametros
-    // val since =  0
-    // val ndays = 48
-
-    // val format = "YYYY/MM/dd"
-    // val start = DateTime.now.minusDays(since + ndays)
-    // val end = DateTime.now.minusDays(since)
-
-    // val daysCount = Days.daysBetween(start, end).getDays()
-    // val days =
-    //   (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
-    // days.map(day => process_day_sync(spark, day))
-    report_dada_sync_v2(spark)
+    get_join_kws(spark)
   
   }
 
