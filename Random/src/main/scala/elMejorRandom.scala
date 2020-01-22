@@ -813,7 +813,7 @@ val safegraph = get_safegraph_data(spark,"10","16","argentina")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("utc_timestamp", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
-.select("device_id","utc_timestamp",  "latitude", "longitude", "provider", "country", "date")
+.select("device_id","utc_timestamp",  "latitude", "longitude", "provider","date")
 
 
 val cols = safegraph.columns.toList
