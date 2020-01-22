@@ -166,7 +166,7 @@ def get_safegraph_data(
 
    
     // Get the days to be loaded
-    val format = "yyMMdd"
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since.toInt)
     val days = (0 until nDays.toInt)
       .map(end.minusDays(_))
