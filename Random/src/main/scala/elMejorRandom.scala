@@ -807,7 +807,7 @@ val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
 val country = "AR"
 //Argentina
 
-val safegraph_AR = get_safegraph_data(spark,10,16,"argentina")
+val safegraph = get_safegraph_data(spark,"10","16","argentina")
 .withColumn("provider",lit("safegraph"))
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
