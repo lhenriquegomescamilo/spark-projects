@@ -824,7 +824,7 @@ spark.read.format("csv")
 .load("/data/providers/Startapp_Geo/location_-_MX_AR_sample*")
 .drop("_c5")
 .toDF("device_id","country","utc_timestamp","latitude","longitude")
-.filter("country == '%'".format(country)) //*******************************Ojo que esto hay que cambiarlo para el otro país
+.filter("country == '%s'".format(country)) //*******************************Ojo que esto hay que cambiarlo para el otro país
 .drop("country")
 .withColumn("provider",lit("startapp"))
 .withColumn("device_id",lower(col("device_id")))
@@ -843,7 +843,7 @@ date_data
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save(output_path+"date_data_%".format(country))
+.save(output_path+"date_data_%s".format(country))
 
 
 //Acá calculamos las detecciones por día por usuario
@@ -855,7 +855,7 @@ date_user_data
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save(output_path+"date_user_data_%".format(country))
+.save(output_path+"date_user_data_%s".format(country))
 
 //Acá agregamos lo de arriba para tener una frecuencia
 
@@ -867,7 +867,7 @@ date_user_data_agg
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save(output_path+"date_user_data_%".format(country))
+.save(output_path+"date_user_data_%s".format(country))
 
                         
 //Acá calculamos la intersección entre ambos data sets. 
@@ -885,7 +885,7 @@ all_users
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save(output_path+"all_users_%".format(country))
+.save(output_path+"all_users_%s".format(country))
 
 
 //Lo hacemos entre date_user_data, acá vemos usuarios por día. Es más restrictivido, pero así podemos comparar detecciones por día por usuario, re zarpado
@@ -907,7 +907,7 @@ all_users
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save(output_path+"all_users_date_user_data_%".format(country))
+.save(output_path+"all_users_date_user_data_%s".format(country))
 
 
 
