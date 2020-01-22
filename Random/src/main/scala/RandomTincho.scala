@@ -1287,9 +1287,6 @@ object RandomTincho {
 
     val encodeUdf = udf((s: String) => scala.io.Source.fromBytes(s.getBytes(), "UTF-8").mkString)
 
-    val filtered = df.withColumn("url_p",flatten(col("url"))).withColumn("url_p",regexp_replace(col("url_p"), "'", ""))
-
-
     val df = spark.read
       .option("basePath", "/datascience/data_audiences_streaming/")
       .parquet("/datascience/data_audiences_streaming/hour=%s*".format(20200121)) // We read the data
