@@ -821,7 +821,7 @@ val cols = safegraph.columns.toList
 val startapp = 
 spark.read.format("csv")
 .option("delimiter","\t")
-.load("/data/providers/Startapp_Geo/location_-_*")
+.load("/data/providers/Startapp_Geo/location_-_MX_AR_sample*")
 .drop("_c5")
 .toDF("device_id","country","utc_timestamp","latitude","longitude")
 .filter("country == '%'".format(country)) //*******************************Ojo que esto hay que cambiarlo para el otro país
