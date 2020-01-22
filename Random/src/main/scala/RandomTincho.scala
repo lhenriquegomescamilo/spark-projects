@@ -1294,7 +1294,7 @@ object RandomTincho {
       .option("basePath", "/datascience/data_audiences_streaming/")
       .parquet("/datascience/data_audiences_streaming/hour=%s*".format(20200121)) // We read the data
       .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")) 
-      .withColumn("url",flatten(col("url"))).withColumn("url",regexp_replace(col("url"), "'", ""))
+      .withColumn("url",encodeUdf(col("url"))).withColumn("url",regexp_replace(col("url"), "'", ""))
       .select( "url")
       .distinct()
 
