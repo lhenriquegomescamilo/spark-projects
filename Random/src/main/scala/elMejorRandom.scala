@@ -800,15 +800,113 @@ def getDataTriplets(
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-//Acá el código para correr Peru
 
-//Acá vamos a probar hacerlo vs homes
-//Con esta función cargamos la data de safegraph
+//Con esto levantamos todo
+
+val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
+val country = "AR"
+//Argentina
+
+val safegraph_AR = get_safegraph_data(spark,10,16,"argentina")
+.withColumn("provider",lit("safegraph"))
+.withColumnRenamed("ad_id","device_id")
+.withColumn("device_id",lower(col("device_id")))
+.withColumn("utc_timestamp", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
+.select("device_id","utc_timestamp",  "latitude", "longitude", "provider", "country", "date")
 
 
+val cols = safegraph.columns.toList
 
-val data_triplets = getDataTripletsCSVNSE(spark,"AR",90,1)
+val startapp = 
+spark.read.format("csv")
+.option("delimiter","\t")
+.load("/data/providers/Startapp_Geo/location_-_*")
+.drop("_c5")
+.toDF("device_id","country","utc_timestamp","latitude","longitude")
+.filter("country == '%'".format(country)) //*******************************Ojo que esto hay que cambiarlo para el otro país
+.withColumn("provider",lit("startapp"))
+.withColumn("device_id",lower(col("device_id")))
+.withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
+.select(cols.head, cols.tail: _*)
 
+//Juntamos las dos para hacer las agregaciones juntas. Igual no sé si es lo más eficiente...pero bueno
+val all = List(safegraph,startapp).reduce(_.unionByName (_))
+
+//Acá calculamos las detecciones por día y los usuarios únicos por día
+val date_data = all.groupBy("date","provider").agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections").orderBy("date")
+
+date_data
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.save(output_path+"date_data_%".format(country))
+
+
+//Acá calculamos las detecciones por día por usuario
+val date_user_data = all.groupBy("date","device_id","provider").agg(count("utc_timestamp") as "detections")
+
+date_user_data
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.save(output_path+"date_user_data_%".format(country))
+
+//Acá agregamos lo de arriba para tener una frecuencia
+
+val date_user_data_agg = date_user_data.groupBy("date","provider","detections").agg(count("device_id") as "devices_with_this_frequency")
+
+date_user_data_agg
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.save(output_path+"date_user_data_%".format(country))
+
+                        
+//Acá calculamos la intersección entre ambos data sets. 
+
+//Lo hacemos sobre el total de la base. Esto nos va a dar usuarios que aparecen en ambos INDISTINTAMENTE DEL DÍA
+val both_users = startapp.select("device_id").distinct().withColumn("startapp",lit(1)).join(safegraph.select("device_id").distinct().withColumn("safegraph",lit(1)),Seq("device_id"))
+val all_users = startapp
+.select("device_id").distinct().withColumn("startapp",lit(1))
+.join(safegraph.select("device_id").distinct().withColumn("safegraph",lit(1)),Seq("device_id"),"outer")
+.na.fill(0)
+
+all_users
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.save(output_path+"all_users_%".format(country))
+
+
+//Lo hacemos entre date_user_data, acá vemos usuarios por día. Es más restrictivido, pero así podemos comparar detecciones por día por usuario, re zarpado
+val date_user_data_startapp = date_user_data.filter("provider == 'startapp'")
+.withColumn("startapp",lit(1))
+.withColumnRenamed("detections","detections_startapp")
+.select("device_id","date","detections_startapp")
+
+val date_user_data_safegraph = date_user_data.filter("provider == 'safegraph'")
+.withColumn("safegraph",lit(1))
+.withColumnRenamed("detections","detections_safegraph")
+.select("device_id","date","detections_safegraph")
+
+val all_users_date_user_data = date_user_data_startapp.join(date_user_data_safegraph,Seq("device_id","date"),"outer").na.fill(0)
+
+all_users
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.save(output_path+"all_users_date_user_data_%".format(country))
 
 
 
