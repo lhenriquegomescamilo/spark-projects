@@ -143,13 +143,7 @@ object SampleURLs {
 
     urls
       .filter(!col("domain").isin(domain_not_shareable: _*))
-      .filter(!col("_c3").contains(".ar"))
-      .filter(!col("_c3").contains(".cr"))
-      .filter(!col("_c3").contains(".cl"))
-      .filter(!col("_c3").contains(".co"))
-      .filter(!col("_c3").contains(".pe"))
-      .filter(!col("_c3").contains(".pr"))
-      .filter(!col("_c3").contains(".uy"))
+      .filter("domain NOT LIKE '%.ar' AND domain NOT LIKE '%.cr' AND domain NOT LIKE '%.cl' AND domain NOT LIKE '%.co AND domain NOT LIKE '%.pe AND domain NOT LIKE '%.pr AND domain NOT LIKE '%.uy")
       .write
       .format("csv")
       .mode("overwrite")
