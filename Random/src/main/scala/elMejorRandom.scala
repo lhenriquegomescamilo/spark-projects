@@ -835,7 +835,8 @@ spark.read.format("csv")
 val all = List(safegraph,startapp).reduce(_.unionByName (_))
 
 //Acá calculamos las detecciones por día y los usuarios únicos por día
-val date_data = all.groupBy("date","provider").agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections").orderBy("date")
+val date_data = all.groupBy("date","provider").agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections")
+.orderBy("date")
 
 date_data
 .write
@@ -901,7 +902,7 @@ val date_user_data_safegraph = date_user_data.filter("provider == 'safegraph'")
 
 val all_users_date_user_data = date_user_data_startapp.join(date_user_data_safegraph,Seq("device_id","date"),"outer").na.fill(0)
 
-all_users
+all_users_date_user_data
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
