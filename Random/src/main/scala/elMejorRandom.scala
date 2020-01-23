@@ -804,10 +804,10 @@ def getDataTriplets(
 //Con esto levantamos todo
 
 val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
-val country = "AR"
+val country = "MX"
 //Argentina
 
-val safegraph = get_safegraph_data(spark,"10","16","argentina")
+val safegraph = get_safegraph_data(spark,"9","18","mexico")
 .withColumn("provider",lit("safegraph"))
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
