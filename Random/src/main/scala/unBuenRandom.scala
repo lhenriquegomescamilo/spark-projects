@@ -830,7 +830,7 @@ val domain_popular = spark.read
 
 //los filtramos del de arriba      
 val popular_filter_domain = filtered
-      .filter(!col("domain").isin(domain_popular: _*))
+      //.filter(!col("domain").isin(domain_popular: _*))
       .filter("domain NOT LIKE '%.perfil.%' AND domain NOT LIKE '%.br' AND domain NOT LIKE '%.mopar.%' AND domain NOT LIKE '%.apura.%' AND domain NOT LIKE '%elgrafico%' AND domain NOT LIKE '%naranja%'" )
 
 
@@ -839,7 +839,7 @@ popular_filter_domain.write
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save("/datascience/custom/sample_publicis_mx_22_01_20_filter_word_popular__")
+.save("/datascience/custom/sample_publicis_mx_22_01_20_filter_word__")
 
 
 
