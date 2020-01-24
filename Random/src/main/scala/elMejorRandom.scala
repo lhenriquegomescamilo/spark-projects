@@ -859,8 +859,12 @@ date_user_data
 .save(output_path+"date_user_data_%s".format(country))
 
 //Acá agregamos lo de arriba para tener una frecuencia
+//Levntar lo ya generado abajo.
 
-val date_user_data_agg = date_user_data.groupBy("date","provider","detections").agg(count("device_id") as "devices_with_this_frequency")
+val date_user_data_agg = spark.read.format("csv")
+.option("delimiter","\t")
+.load(output_path+"date_user_data_%s".format(country))
+  .groupBy("date","provider","detections").agg(count("device_id") as "devices_with_this_frequency")
 
 date_user_data_agg
 .write
