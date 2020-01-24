@@ -132,8 +132,9 @@ object SampleURLs {
 
     val urls = get_data_urls(spark, 15, 5, "MX")
       .filter("event_type IN ('pv', 'data')")
-      .select("url", "device_id", "event_type")
+      .select("url", "device_id", "event_type","time")
       .withColumn("domain", split(col("url"), "/").getItem(0))
+    
     val domain_not_shareable = spark.read
       .format("csv")
       .load("/datascience/custom/not_shareable_domains.csv")
@@ -142,10 +143,11 @@ object SampleURLs {
 
     urls
       .filter(!col("domain").isin(domain_not_shareable: _*))
+     .filter("domain NOT LIKE '%.ar' AND domain NOT LIKE '%.cr' AND domain NOT LIKE '%.cl' AND domain NOT LIKE '%.co'  AND domain NOT LIKE '%.pe' AND domain NOT LIKE '%.pr' AND domain NOT LIKE '%.uy'")
       .write
       .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/sample_publicis_mx")
+      .save("/datascience/custom/sample_publicis_mx_22_01_20")
 
   }
 }

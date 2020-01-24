@@ -12,7 +12,7 @@ import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object elMejorRandom {
+object unBuenRandom {
   def get_tapad_home_cluster(spark:SparkSession){
 
 /*
@@ -800,120 +800,46 @@ def getDataTriplets(
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+//tomamos el dataframe output
+val unfilter = spark.read.format("csv")
+.load("/datascience/custom/sample_publicis_mx_22_01_20")
+.toDF("url","device_id","event_type","timestamp","domain")
 
-//Con esto levantamos todo
+//levantamos nuestra lista de not shareable domains, pero ahora tiene una columna con una palabra representativa del domain
+val donot = spark.read
+      .format("csv")
+      .option("header",true)
+      .load("/datascience/custom/not_shareable_domains_III.csv")
+      .select("sname")
+      .collect()
+      .map(row => row(0).toString)
 
-val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
-val country = "MX"
-//Argentina
+//creamos el filtro con las palabras de arriba      
+val filtered = unfilter.filter( !col("domain").rlike(donot.mkString("|")))
 
-val safegraph = get_safegraph_data(spark,"9","18","mexico")
-.withColumn("provider",lit("safegraph"))
-.withColumnRenamed("ad_id","device_id")
-.withColumn("device_id",lower(col("device_id")))
-.withColumn("utc_timestamp", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
-.select("device_id","utc_timestamp",  "latitude", "longitude", "provider","date")
+//le filtramos tambien las populares
+
+//levantamos los domains populares, la idea de esto es remover los que son populares en otros paises tambien 
+val domain_popular = spark.read
+      .format("csv")
+      .option("header",true)
+      .load("/datascience/custom/popular_domains.csv")
+      .select("url_domain")
+      .collect()
+      .map(row => row(0).toString)
+
+//los filtramos del de arriba      
+val popular_filter_domain = filtered
+      //.filter(!col("domain").isin(domain_popular: _*))
+      .filter("domain NOT LIKE '%.perfil.%' AND domain NOT LIKE '%.br' AND domain NOT LIKE '%.mopar.%' AND domain NOT LIKE '%.apura.%' AND domain NOT LIKE '%elgrafico%' AND domain NOT LIKE '%naranja%'" )
 
 
-val cols = safegraph.columns.toList
-
-val startapp = 
-spark.read.format("csv")
-.option("delimiter","\t")
-.load("/data/providers/Startapp_Geo/location_-_MX_AR_sample*")
-.drop("_c5")
-.toDF("device_id","country","utc_timestamp","latitude","longitude")
-.filter("country == '%s'".format(country)) //*******************************Ojo que esto hay que cambiarlo para el otro país
-.drop("country")
-.withColumn("provider",lit("startapp"))
-.withColumn("device_id",lower(col("device_id")))
-.withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
-.select(cols.head, cols.tail: _*)
-
-//Juntamos las dos para hacer las agregaciones juntas. Igual no sé si es lo más eficiente...pero bueno
-val all = List(safegraph,startapp).reduce(_.unionByName (_))
-
-//Acá calculamos las detecciones por día y los usuarios únicos por día
-val date_data = all.groupBy("date","provider").agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections")
-.orderBy("date")
-
-date_data
-.write
+popular_filter_domain.write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save(output_path+"date_data_%s".format(country))
-
-
-
-//Acá calculamos las detecciones por día por usuario
-val date_user_data = all.groupBy("date","device_id","provider").agg(count("utc_timestamp") as "detections")
-/*
-date_user_data
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"date_user_data_%s".format(country))
-
-//Acá agregamos lo de arriba para tener una frecuencia
-//Levntar lo ya generado abajo.
-
-val date_user_data_agg = spark.read.format("csv")
-.option("delimiter","\t")
-.load(output_path+"date_user_data_%s".format(country))
-  .groupBy("date","provider","detections").agg(count("device_id") as "devices_with_this_frequency")
-
-date_user_data_agg
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"date_user_data_%s".format(country))
-
-                        
-//Acá calculamos la intersección entre ambos data sets. 
-
-//Lo hacemos sobre el total de la base. Esto nos va a dar usuarios que aparecen en ambos INDISTINTAMENTE DEL DÍA
-val both_users = startapp.select("device_id").distinct().withColumn("startapp",lit(1)).join(safegraph.select("device_id").distinct().withColumn("safegraph",lit(1)),Seq("device_id"))
-val all_users = startapp
-.select("device_id").distinct().withColumn("startapp",lit(1))
-.join(safegraph.select("device_id").distinct().withColumn("safegraph",lit(1)),Seq("device_id"),"outer")
-.na.fill(0)
-
-all_users
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"all_users_%s".format(country))
-*/
-
-//Lo hacemos entre date_user_data, acá vemos usuarios por día. Es más restrictivido, pero así podemos comparar detecciones por día por usuario, re zarpado
-val date_user_data_startapp = date_user_data.filter("provider == 'startapp'")
-.withColumn("startapp",lit(1))
-.withColumnRenamed("detections","detections_startapp")
-.select("device_id","date","detections_startapp")
-
-val date_user_data_safegraph = date_user_data.filter("provider == 'safegraph'")
-.withColumn("safegraph",lit(1))
-.withColumnRenamed("detections","detections_safegraph")
-.select("device_id","date","detections_safegraph")
-
-val all_users_date_user_data = date_user_data_startapp.join(date_user_data_safegraph,Seq("device_id","date"),"outer").na.fill(0)
-
-all_users_date_user_data
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"all_users_date_user_data_%s".format(country))
+.save("/datascience/custom/sample_publicis_mx_22_01_20_filter_word_less_restrict")
 
 
 
