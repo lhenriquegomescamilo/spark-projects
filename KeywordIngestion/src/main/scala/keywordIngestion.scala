@@ -79,9 +79,9 @@ object keywordIngestion {
         df.withColumn("domain", lit(""))
           .withColumn("stemmed_keys", col("content_keys"))
 
-      processURLHTTP(processed)
-            .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
-            .withColumn("url",regexp_replace(col("url"), "'", ""))
+      processed
+          .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
+          .withColumn("url",regexp_replace(col("url"), "'", ""))
   }
 
   /**
