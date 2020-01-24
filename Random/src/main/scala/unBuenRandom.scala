@@ -839,7 +839,7 @@ popular_filter_domain.write
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save("/datascience/custom/sample_publicis_mx_22_01_20_filter_word__")
+.save("/datascience/custom/sample_publicis_mx_22_01_20_filter_word_less_restrict")
 
 
 
