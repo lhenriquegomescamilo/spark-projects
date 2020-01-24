@@ -308,7 +308,6 @@ object keywordIngestion {
     val spark = SparkSession.builder
       .appName("keyword ingestion")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
-      .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
     val ndays = if (args.length > 0) args(0).toInt else 10
