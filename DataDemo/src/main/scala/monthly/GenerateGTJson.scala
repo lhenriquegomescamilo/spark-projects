@@ -80,7 +80,7 @@ object GenerateGTJson{
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
 
     // Get actual month to put in gt jsons name
-    val current_month = DateTime.now().getMonthOfYear.toString
+    val current_month = DateTime.now().toString("yyyyMM")
 
     generate_json_age_ar(spark, conf, current_month)
 
