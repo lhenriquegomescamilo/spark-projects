@@ -1,7 +1,8 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{SaveMode, DataFrame}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{SaveMode, DataFrame, Row}
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.hadoop.fs.Path
@@ -90,19 +91,19 @@ object keywordIngestion {
     * keywords de dicha data.
     */
   def getAudienceData(spark: SparkSession, today: String): DataFrame = {
-    spark.read
-      .option("basePath", "/datascience/data_audiences_streaming/")
-      .parquet("/datascience/data_audiences_streaming/hour=%s*".format(today)) // We read the data
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      ) // Standarize the URL
-      .select(
-        "device_id",
-        "device_type",
-        "url",
-        "country"
-      )
+    val df = spark.read
+              .option("basePath", "/datascience/data_audiences_streaming/")
+              .parquet("/datascience/data_audiences_streaming/hour=%s*".format(today)) // We read the data
+              .select(
+                "device_id",
+                "device_type",
+                "url",
+                "country"
+              )
+              
+    processURLHTTP(df)
+        .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
+        .withColumn("url",regexp_replace(col("url"), "'", ""))
   }
 
   /**
@@ -198,6 +199,110 @@ object keywordIngestion {
       .partitionBy("day", "country")
       .save("/datascience/data_keywords/")
   }
+
+ def processURLHTTP(dfURL: DataFrame, field: String = "url"): DataFrame = {
+    // First of all, we get the domains, and filter out those ones that are very generic
+    
+    val generic_domains = List(
+      "google",
+      "doubleclick",
+      "facebook",
+      "messenger",
+      "yahoo",
+      "android",
+      "android-app",
+      "bing",
+      "instagram",
+      "cxpublic",
+      "content",
+      "cxense",
+      "criteo",
+      "outbrain",
+      "flipboard",
+      "googleapis",
+      "googlequicksearchbox",
+      "0_media",
+      "provider",
+      "parser",
+      "downloads",
+      "xlxx",
+      "xvideo2",
+      "coffetube",
+      "''"
+    )
+    val query_generic_domains = generic_domains
+      .map(dom => "domain NOT LIKE '%" + dom + "%'")
+      .mkString(" AND ")
+    val filtered_domains = dfURL
+      .selectExpr("*", "parse_url(%s, 'HOST') as domain".format(field))
+      .filter(query_generic_domains)
+    // Now we filter out the domains that are IPs
+    val filtered_IPs = filtered_domains
+      .withColumn(
+        "domain",
+        regexp_replace(col("domain"), "^([0-9]+\\.){3}[0-9]+$", "IP")
+      )
+      .filter("domain != 'IP'")
+    // Now if the host belongs to Retargetly, then we will take the r_url field from the QS
+    val retargetly_domains = filtered_IPs
+      .filter("domain LIKE '%retargetly%'")
+      .selectExpr(
+        "*",
+        "parse_url(%s, 'QUERY', 'r_url') as new_url".format(field)
+      )
+      .filter("new_url IS NOT NULL")
+      .withColumn(field, col("new_url"))
+      .drop("new_url")
+    // Then we process the domains that come from ampprojects
+    val pattern =
+      """^([a-zA-Z0-9_\-]+).cdn.ampproject.org/?([a-z]/)*([a-zA-Z0-9_\-\/\.]+)?""".r
+    def ampPatternReplace(url: String): String = {
+      var result = ""
+      if (url != null) {
+        val matches = pattern.findAllIn(url).matchData.toList
+        if (matches.length > 0) {
+          val list = matches
+            .map(
+              m =>
+                if (m.groupCount > 2) m.group(3)
+                else if (m.groupCount > 0) m.group(1).replace("-", ".")
+                else "a"
+            )
+            .toList
+          result = list(0).toString
+        }
+      }
+      result
+    }
+    val ampUDF = udf(ampPatternReplace _, StringType)
+    val ampproject_domains = filtered_IPs
+      .filter("domain LIKE '%ampproject%'")
+      .withColumn(field, ampUDF(col(field)))
+      .filter("length(%s)>0".format(field))
+    // Now we union the filtered dfs with the rest of domains
+    val non_filtered_domains = filtered_IPs.filter(
+      "domain NOT LIKE '%retargetly%' AND domain NOT LIKE '%ampproject%'"
+    )
+    val filtered_retargetly = non_filtered_domains
+      .unionAll(retargetly_domains)
+      .unionAll(ampproject_domains)
+    // Finally, we remove the querystring and protocol
+    filtered_retargetly
+      .withColumn(
+        field,
+        regexp_replace(col(field), "://(.\\.)*", "://")
+      )
+      .withColumn(
+        field,
+        regexp_replace(col(field), "(\\?|#).*", "")
+      )
+      .drop("domain")
+      .withColumn(field,lower(col(field)))
+        .withColumn(
+        field,
+        regexp_replace(col(field), "@", "_")
+      )    
+  }  
 
   def main(args: Array[String]) {
     /// Configuracion spark
