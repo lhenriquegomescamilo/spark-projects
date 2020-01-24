@@ -157,12 +157,6 @@ object keywordIngestion {
     // This function appends two columns
     val zip = udf((xs: Seq[String], ys: Seq[String]) => xs.zip(ys))
 
-    println("DF AUDIENCES:")
-    df_audiences.show()
-
-    println("DF URL KEYS:")
-    URLkeys.show()
-
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
     val joint = df_audiences
       .join(URLkeys, Seq("composite_key"))
