@@ -100,7 +100,7 @@ object keywordIngestion {
                 "url",
                 "country"
               )
-              
+
     processURLHTTP(df)
         .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
         .withColumn("url",regexp_replace(col("url"), "'", ""))
@@ -227,8 +227,7 @@ object keywordIngestion {
       "downloads",
       "xlxx",
       "xvideo2",
-      "coffetube",
-      "''"
+      "coffetube"
     )
     val query_generic_domains = generic_domains
       .map(dom => "domain NOT LIKE '%" + dom + "%'")
