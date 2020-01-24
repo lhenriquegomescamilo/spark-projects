@@ -61,10 +61,7 @@ object keywordIngestion {
       .withColumnRenamed("_c3", "content_keys")
       .withColumnRenamed("_c4", "scores")
       .withColumn("content_keys", split(col("content_keys"), " "))
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
+      
       .drop("count", "scores")
       .na
       .drop()
@@ -82,7 +79,9 @@ object keywordIngestion {
         df.withColumn("domain", lit(""))
           .withColumn("stemmed_keys", col("content_keys"))
 
-    processed
+      processURLHTTP(processed)
+            .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
+            .withColumn("url",regexp_replace(col("url"), "'", ""))
   }
 
   /**
