@@ -5,6 +5,8 @@ import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.hadoop.fs.Path
+import org.apache.log4j.{Level, Logger}
+
 
 object keywordIngestion {
 
@@ -155,6 +157,12 @@ object keywordIngestion {
     // This function appends two columns
     val zip = udf((xs: Seq[String], ys: Seq[String]) => xs.zip(ys))
 
+    println("DF AUDIENCES:")
+    df_audiences.show()
+
+    println("DF URL KEYS:")
+    URLkeys.show()
+
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
     val joint = df_audiences
       .join(URLkeys, Seq("composite_key"))
@@ -182,19 +190,24 @@ object keywordIngestion {
       .count()
       .withColumn("day", lit(today)) // Agregamos el dia
 
+
     // Guardamos la data en formato parquet
     joint.write
       .format("parquet")
-      .mode("append")
+      .mode("overwrite")
       .partitionBy("day", "country")
       .save("/datascience/data_keywords/")
   }
 
   def main(args: Array[String]) {
     /// Configuracion spark
+    Logger.getRootLogger.setLevel(Level.WARN)
+
     val spark = SparkSession.builder
       .appName("keyword ingestion")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
     val ndays = if (args.length > 0) args(0).toInt else 10
     val since = if (args.length > 1) args(1).toInt else 1
