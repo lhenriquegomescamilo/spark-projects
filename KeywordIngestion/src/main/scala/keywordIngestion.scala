@@ -154,6 +154,10 @@ object keywordIngestion {
       )
     )
 
+    URLkeys.show()
+
+    df_audiences.show()
+
     // This function appends two columns
     val zip = udf((xs: Seq[String], ys: Seq[String]) => xs.zip(ys))
 
@@ -184,6 +188,7 @@ object keywordIngestion {
       .count()
       .withColumn("day", lit(today)) // Agregamos el dia
 
+    joint.show()
 
     // Guardamos la data en formato parquet
     joint.write
