@@ -847,9 +847,10 @@ date_data
 .save(output_path+"date_data_%s".format(country))
 
 
+
 //Acá calculamos las detecciones por día por usuario
 val date_user_data = all.groupBy("date","device_id","provider").agg(count("utc_timestamp") as "detections")
-
+/*
 date_user_data
 .write
 .mode(SaveMode.Overwrite)
@@ -891,7 +892,7 @@ all_users
 .option("delimiter","\t")
 .option("header",true)
 .save(output_path+"all_users_%s".format(country))
-
+*/
 
 //Lo hacemos entre date_user_data, acá vemos usuarios por día. Es más restrictivido, pero así podemos comparar detecciones por día por usuario, re zarpado
 val date_user_data_startapp = date_user_data.filter("provider == 'startapp'")
