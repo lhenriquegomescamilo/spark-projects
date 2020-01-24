@@ -4882,8 +4882,9 @@ object Random {
       .load(
         "/data/providers/sharethis/keywords/"
       )
+      .select("url", "categories")
+      .na.drop()
       .withColumn("categories", categoryUDF(col("categories")))
-      .select("categories")
       .write
       .format("parquet")
       .mode("overwrite")
