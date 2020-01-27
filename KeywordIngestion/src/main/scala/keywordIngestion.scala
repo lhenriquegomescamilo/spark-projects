@@ -51,7 +51,7 @@ object keywordIngestion {
       )
       .map(day => "/datascience/selected_keywords/%s.csv".format(day))
 
-    hdfs_files.foreach(println)
+    dfs.foreach(println)
 
     val df = spark.read
       .format("csv")
