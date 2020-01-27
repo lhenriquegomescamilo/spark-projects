@@ -66,7 +66,7 @@ object DataUrls{
     val df = spark.read
                   .option("basePath", "/datascience/data_audiences_streaming/")
                   .parquet(dfs: _*)
-                  .filter("url is not null AND event_type IN ('pv', 'batch')")
+                  .filter("url is not null AND event_type IN ('pv', 'batch', 'data')")
                   .withColumn("day", lit(DateTime.now.minusDays(from).toString(format)))
                   .select("device_id", "url", "referer", "event_type","country","day","segments","time")
 
