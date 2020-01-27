@@ -33,12 +33,13 @@ object TestJoin {
       .parquet(hdfs_files: _*)
       .select("url")
 
-    processURLHTTP(df)
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
-      .withColumn("url", regexp_replace(col("url"), "'", ""))
+    // processURLHTTP(df)
+    //   .withColumn(
+    //     "url",
+    //     regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+    //   )
+    //   .withColumn("url", regexp_replace(col("url"), "'", ""))
+    df
   }
 
   def getAudienceData(spark: SparkSession, today: String): DataFrame = {

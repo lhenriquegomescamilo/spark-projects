@@ -12,10 +12,9 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.{Level, Logger}
 
 /**
-  * The idea of this script is to Ingest Urls daily to local servers for Scrapper. 
+  * The idea of this script is to Ingest Urls daily to local servers for Scrapper.
   */
 object UrlIngester {
-
 
   /**
     *
@@ -58,7 +57,7 @@ object UrlIngester {
       .parquet(hdfs_files: _*)
       .select("url", "country", "day")
     df
-  }  
+  }
 
 //////////////////////////////////////////////////////////////
 
@@ -88,7 +87,7 @@ object UrlIngester {
       .parquet(hdfs_files: _*)
 
     df
-  }  
+  }
 
   /**
     *
@@ -102,10 +101,9 @@ object UrlIngester {
     *
     * @return a DataFrame with processed urls.
    **/
-
-   def processURLHTTP(dfURL: DataFrame, field: String = "url"): DataFrame = {
+  def processURLHTTP(dfURL: DataFrame, field: String = "url"): DataFrame = {
     // First of all, we get the domains, and filter out those ones that are very generic
-    
+
     val generic_domains = List(
       "google",
       "doubleclick",
@@ -199,13 +197,13 @@ object UrlIngester {
         regexp_replace(col(field), "(\\?|#).*", "")
       )
       .drop("domain")
-      .withColumn(field,lower(col(field)))
-        .withColumn(
+      .withColumn(field, lower(col(field)))
+      .withColumn(
         field,
         regexp_replace(col(field), "@", "_")
-      )    
-  }  
-              
+      )
+  }
+
   /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR SAVING DATA     //////////////////////
@@ -225,7 +223,7 @@ object UrlIngester {
 
     data.write
       .format("parquet")
-      .partitionBy("day","country")
+      .partitionBy("day", "country")
       .mode(SaveMode.Overwrite)
       .save(path)
   }
@@ -235,19 +233,23 @@ object UrlIngester {
     *         \\\\\\\\\\\\\\\\\\\\\     MAIN METHOD     //////////////////////
     *
     */
-   /**
+  /**
     * This method returns a DataFrame with the data from the "data_triplets" pipeline, for the interval
     * of days specified. Basically, it loads every DataFrame for the days specified, and merges them as a single
-    * DataFrame that will be returned. 
+    * DataFrame that will be returned.
     *
     * @param spark: Spark Session that will be used to load the data from HDFS.
     * @param nDays: number of days that will be read.
-    * @param since: number of days ago from where the data is going to be read.  
+    * @param since: number of days ago from where the data is going to be read.
     *
     * @return a DataFrame with the information coming from the read data. Columns: "seg_id","id_partner" and "device_id"
    **/
-
-  def get_urls_for_ingester(spark: SparkSession, nDays: Integer, since: Integer, urls_limit: Integer){
+  def get_urls_for_ingester(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer,
+      urls_limit: Integer
+  ) {
 
     val date_now = DateTime.now
     val date_since = date_now.minusDays(since)
@@ -255,58 +257,59 @@ object UrlIngester {
 
     println("INFO:\n\tDay: %s".format(date_current))
 
-    /**  Load data */    
-    val db = getDataUrls(spark = spark, nDays = nDays, since = since)    
-    
+    /**  Load data */
+    val db = getDataUrls(spark = spark, nDays = nDays, since = since)
+
     val temppath = "/datascience/url_ingester/db_tmp"
 
-    /** Preprocess URLS and checkpoint */    
-    val df = processURLHTTP(db)
-            
-    df.write
-      .format("parquet")
-      .mode(SaveMode.Overwrite)
-      .save(temppath)    
+    /** Preprocess URLS and checkpoint */
+    val df = db //processURLHTTP(db)
 
-    df.cache()
+    // df.write
+    //   .format("parquet")
+    //   .mode(SaveMode.Overwrite)
+    //   .save(temppath)
 
-    /** Process and store the Data for each country */  
-    val countries = "AR,BO,BR,CL,CO,EC,MX,PE,US,UY,VE".split(",").toList
+    // df.cache()
 
-    val savepath = "/datascience/url_ingester/data"
+    /** Process and store the Data for each country */
+    val countries = "AR".split(",").toList//,BO,BR,CL,CO,EC,MX,PE,US,UY,VE".split(",").toList
+
+    val savepath = "/datascience/url_ingester/data_test"
 
     val replicationFactor = 8
 
     for (country <- countries) {
-          df.filter("country = '%s'".format(country))
-            .withColumn(
-                    "composite_key",
-                    concat(
-                      col("url"),
-                      lit("@"),
-                      // This last part is a random integer ranging from 0 to replicationFactor
-                      least(
-                        floor(rand() * replicationFactor),
-                        lit(replicationFactor - 1) // just to avoid unlikely edge case
-                      )
-                    )
-                  ).groupBy("composite_key")
-                   .count
-                   .withColumn("split", split(col("composite_key"), "@"))
-                   .withColumn("url",col("split")(0))
-                   .groupBy("url")
-                   .agg(sum(col("count")).as("count"))
-                   .sort(desc("count"))
-                   .limit(urls_limit)
-                   .withColumn("country",lit(country))
-                   .withColumn("day", lit(date_current))
-                   .select("url","country","count","day")
-                   .write
-                   .format("parquet")
-                   .partitionBy("day","country")
-                   .mode(SaveMode.Overwrite)
-                   .save(savepath)                  
-        }
+      df.filter("country = '%s'".format(country))
+        .withColumn(
+          "composite_key",
+          concat(
+            col("url"),
+            lit("@"),
+            // This last part is a random integer ranging from 0 to replicationFactor
+            least(
+              floor(rand() * replicationFactor),
+              lit(replicationFactor - 1) // just to avoid unlikely edge case
+            )
+          )
+        )
+        .groupBy("composite_key")
+        .count
+        .withColumn("split", split(col("composite_key"), "@"))
+        .withColumn("url", col("split")(0))
+        .groupBy("url")
+        .agg(sum(col("count")).as("count"))
+        .sort(desc("count"))
+        .limit(urls_limit)
+        .withColumn("country", lit(country))
+        .withColumn("day", lit(date_current))
+        .select("url", "country", "count", "day")
+        .write
+        .format("parquet")
+        .partitionBy("day", "country")
+        .mode(SaveMode.Overwrite)
+        .save(savepath)
+    }
 
   }
 
@@ -324,9 +327,9 @@ object UrlIngester {
       case "--since" :: value :: tail =>
         nextOption(map ++ Map('since -> value.toInt), tail)
       case "--urls_limit" :: value :: tail =>
-        nextOption(map ++ Map('urls_limit -> value.toInt), tail)        
+        nextOption(map ++ Map('urls_limit -> value.toInt), tail)
     }
-  }    
+  }
 
   /*****************************************************/
   /******************     MAIN     *********************/
@@ -336,7 +339,9 @@ object UrlIngester {
     val options = nextOption(Map(), Args.toList)
     val nDays = if (options.contains('nDays)) options('nDays) else 1
     val since = if (options.contains('since)) options('since) else 1
-    val urls_limit = if (options.contains('urls_limit)) options('urls_limit) else 1000000 //500000
+    val urls_limit =
+      if (options.contains('urls_limit)) options('urls_limit)
+      else 1000000 //500000
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
 
@@ -344,14 +349,15 @@ object UrlIngester {
     val spark = SparkSession.builder
       .appName("UrlIngester")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
-      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")      
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
-    
+
     get_urls_for_ingester(
-       spark = spark,
-       nDays = nDays,
-       since = since,
-       urls_limit = urls_limit)
-    
+      spark = spark,
+      nDays = nDays,
+      since = since,
+      urls_limit = urls_limit
+    )
+
   }
 }
