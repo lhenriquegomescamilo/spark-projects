@@ -809,18 +809,20 @@ def getDataTriplets(
 //Acá queremos calcular los usuarios desviados respecto a velocidad
 
 val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
-val country = "MX"
+val country = "AR"
+val country2 = "argentina"
 //Argentina
 
 spark.conf.set("spark.sql.session.timeZone",country)
 
-val safegraph = get_safegraph_data(spark,"9","18","mexico")
+val safegraph = get_safegraph_data(spark,"9","18",country2)
 .withColumn("provider",lit("safegraph"))
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("utc_timestamp", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
 .select("device_id","utc_timestamp",  "latitude", "longitude", "provider","date")
+.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
 
 
 val cols = safegraph.columns.toList
@@ -837,7 +839,7 @@ spark.read.format("csv")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
 .select(cols.head, cols.tail: _*)
-
+.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
 //Juntamos las dos para hacer las agregaciones juntas. Igual no sé si es lo más eficiente...pero bueno
 
 val all = List(safegraph,startapp).reduce(_.unionByName (_))
