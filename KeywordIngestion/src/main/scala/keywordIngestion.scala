@@ -79,7 +79,7 @@ object keywordIngestion {
           .withColumn("stemmed_keys", col("content_keys"))
 
       processed.show()
-      processed
+      processURLHTTP(processed)
           .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
           .withColumn("url",regexp_replace(col("url"), "'", ""))
   }
@@ -91,8 +91,8 @@ object keywordIngestion {
     */
   def getAudienceData(spark: SparkSession, today: String): DataFrame = {
     val df = spark.read
-              .option("basePath", "/datascience/data_audiences_streaming/")
-              .parquet("/datascience/data_audiences_streaming/hour=%s*".format(today)) // We read the data
+              .option("basePath", "/datascience/data_demo/data_urls/")
+              .parquet("/datascience/data_demo/data_urls/day=%s".format(today)) // We read the data
               .select(
                 "device_id",
                 "device_type",
@@ -154,8 +154,6 @@ object keywordIngestion {
       )
     )
 
-    df_audiences.show()
-
     // This function appends two columns
     val zip = udf((xs: Seq[String], ys: Seq[String]) => xs.zip(ys))
 
@@ -185,8 +183,6 @@ object keywordIngestion {
       )
       .count()
       .withColumn("day", lit(today)) // Agregamos el dia
-
-    joint.show()
 
     // Guardamos la data en formato parquet
     joint.write
