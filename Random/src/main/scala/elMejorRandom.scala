@@ -801,7 +801,7 @@ def getDataTriplets(
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-//Con esto levantamos todo
+//Acá queremos calcular los usuarios desviados respecto a velocidad
 
 val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
 val country = "MX"
@@ -832,88 +832,46 @@ spark.read.format("csv")
 .select(cols.head, cols.tail: _*)
 
 //Juntamos las dos para hacer las agregaciones juntas. Igual no sé si es lo más eficiente...pero bueno
+
 val all = List(safegraph,startapp).reduce(_.unionByName (_))
 
-//Acá calculamos las detecciones por día y los usuarios únicos por día
-val date_data = all.groupBy("date","provider").agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections")
-.orderBy("date")
-
-date_data
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"date_data_%s".format(country))
 
 
+//Acá calculamos la distancia que recorre cada usuario
 
-//Acá calculamos las detecciones por día por usuario
-val date_user_data = all.groupBy("date","device_id","provider").agg(count("utc_timestamp") as "detections")
-/*
-date_user_data
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"date_user_data_%s".format(country))
+val tipito = 
+all
+.withColumn("latituderad",toRadians(col("latitude")))
+.withColumn("longituderad",toRadians(col("longitude")))
 
-//Acá agregamos lo de arriba para tener una frecuencia
-//Levntar lo ya generado abajo.
 
-val date_user_data_agg = spark.read.format("csv")
-.option("delimiter","\t")
-.load(output_path+"date_user_data_%s".format(country))
-  .groupBy("date","provider","detections").agg(count("device_id") as "devices_with_this_frequency")
+val windowSpec = Window.partitionBy("device_id").orderBy("utc_timestamp")
 
-date_user_data_agg
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"date_user_data_%s".format(country))
+val spacelapse = tipito
+.withColumn("deltaLat", col("latituderad") - lag("latituderad", 1).over(windowSpec))
+.withColumn("deltaLong", col("longituderad") - lag("longituderad", 1).over(windowSpec))
+.withColumn("a1", pow(sin(col("deltaLat")/2),2))
+.withColumn("a2", cos(col("latituderad")) * cos(lag("latituderad", 1).over(windowSpec)) * col("deltaLong")/2)
+.withColumn("a", pow(col("a1")+col("a2"),2))
+.withColumn("greatCircleDistance1",(sqrt(col("a"))*2))
+.withColumn("greatCircleDistance2",(sqrt(lit(1)-col("a"))))
+.withColumn("distance(m)",atan2(col("greatCircleDistance1"),col("greatCircleDistance2"))*6371*1000)
+.withColumn("timeDelta(s)", (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec)))
+.withColumn("speed(km/h)",col("distance(m)") *3.6/ col("timeDelta(s)") )
+.select("device_id","utc_timestamp","latitude","longitude","distance(m)","timeDelta(s)","speed(km/h)","provider")
 
-                        
-//Acá calculamos la intersección entre ambos data sets. 
+//Para el primer approach vamos a levantar la cantidad de usuarios que se mueven más de 50 km por hora y anotar cuánto mantuvieron esa velocidad
 
-//Lo hacemos sobre el total de la base. Esto nos va a dar usuarios que aparecen en ambos INDISTINTAMENTE DEL DÍA
-val both_users = startapp.select("device_id").distinct().withColumn("startapp",lit(1)).join(safegraph.select("device_id").distinct().withColumn("safegraph",lit(1)),Seq("device_id"))
-val all_users = startapp
-.select("device_id").distinct().withColumn("startapp",lit(1))
-.join(safegraph.select("device_id").distinct().withColumn("safegraph",lit(1)),Seq("device_id"),"outer")
-.na.fill(0)
+val max_limit = 50
 
-all_users
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"all_users_%s".format(country))
-*/
+//Esto acá me dice de cada usuario, cuántas veces lo detecté y cuántas estaba por arriba del límite
+//val bias_user_detections = spacelapse.withColumn("faster_than_%s".format(max_limit),when(col("speed(km/h)") >= max_limit,1).otherwise(0))
+//.groupBy("device_id").agg(count("utc_timestamp") as "detections",sum("faster_than_%s".format(max_limit)) as "bias_detections")
 
-//Lo hacemos entre date_user_data, acá vemos usuarios por día. Es más restrictivido, pero así podemos comparar detecciones por día por usuario, re zarpado
-val date_user_data_startapp = date_user_data.filter("provider == 'startapp'")
-.withColumn("startapp",lit(1))
-.withColumnRenamed("detections","detections_startapp")
-.select("device_id","date","detections_startapp")
+//Esto cuenta cuántos usarios de cada provider 
+val bias_user_detections = spacelapse.withColumn("faster_than_%s".format(max_limit),when(col("speed(km/h)") >= max_limit,1).otherwise(0))
+.groupBy("provider","faster_than_%s".format(max_limit)).agg(countDistinct("device_id") as "devices")
 
-val date_user_data_safegraph = date_user_data.filter("provider == 'safegraph'")
-.withColumn("safegraph",lit(1))
-.withColumnRenamed("detections","detections_safegraph")
-.select("device_id","date","detections_safegraph")
-
-val all_users_date_user_data = date_user_data_startapp.join(date_user_data_safegraph,Seq("device_id","date"),"outer").na.fill(0)
-
-all_users_date_user_data
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"all_users_date_user_data_%s".format(country))
 
 
 
