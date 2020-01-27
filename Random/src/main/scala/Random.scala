@@ -4874,41 +4874,20 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val data = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .load("/datascience/custom/gt_br_tu_edad/")
-    val n_users = data
-      .select("_c0", "_c1")
-      .distinct()
-      .groupBy("_c0")
-      .count()
-      .filter("count < 4")
-    val n_pii = data
-      .select("_c0", "_c1")
-      .distinct()
-      .groupBy("_c1")
-      .count()
-      .filter("count < 4")
-    val n_class = data
-      .select("_c0", "_c2")
-      .distinct()
-      .groupBy("_c0")
-      .count()
-      .filter("count == 1")
-    data
-      .join(n_users, Seq("_c0"))
-      .join(n_class, Seq("_c0"))
-      .join(n_pii, Seq("_c1"))
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c2", "class")
-      .withColumn("dev_type", lit("web"))
-      .select("dev_type", "device_id", "class")
-      .distinct()
+    val categoryUDF = udf(
+      (segments: Seq[Row]) => segments.map(record => record(5).toString)
+    )
+    spark.read
+      .format("json")
+      .load(
+        "/data/providers/sharethis/keywords/"
+      )
+      .select("url", "categories")
+      .na.drop()
+      .withColumn("categories", categoryUDF(col("categories")))
       .write
-      .format("csv")
-      .option("sep", "\t")
+      .format("parquet")
       .mode("overwrite")
-      .save("/datascience/custom/gt_br_tu_edad_filtered")
+      .save("/datascience/custom/sharethis_URLs_categories")
   }
 }

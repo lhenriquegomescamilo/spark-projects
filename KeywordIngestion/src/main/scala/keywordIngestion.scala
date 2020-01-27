@@ -61,10 +61,6 @@ object keywordIngestion {
       .withColumnRenamed("_c3", "content_keys")
       .withColumnRenamed("_c4", "scores")
       .withColumn("content_keys", split(col("content_keys"), " "))
-      .withColumn(
-        "url",
-        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
-      )
       .drop("count", "scores")
       .na
       .drop()
@@ -82,7 +78,10 @@ object keywordIngestion {
         df.withColumn("domain", lit(""))
           .withColumn("stemmed_keys", col("content_keys"))
 
-    processed
+      processed.show()
+      processed
+          .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
+          .withColumn("url",regexp_replace(col("url"), "'", ""))
   }
 
   /**
@@ -155,14 +154,10 @@ object keywordIngestion {
       )
     )
 
-    // This function appends two columns
-    val zip = udf((xs: Seq[String], ys: Seq[String]) => xs.zip(ys))
-
-    println("DF AUDIENCES:")
     df_audiences.show()
 
-    println("DF URL KEYS:")
-    URLkeys.show()
+    // This function appends two columns
+    val zip = udf((xs: Seq[String], ys: Seq[String]) => xs.zip(ys))
 
     // Hacemos el join entre nuestra data y la data de las urls con keywords.
     val joint = df_audiences
@@ -191,6 +186,7 @@ object keywordIngestion {
       .count()
       .withColumn("day", lit(today)) // Agregamos el dia
 
+    joint.show()
 
     // Guardamos la data en formato parquet
     joint.write
@@ -230,21 +226,21 @@ object keywordIngestion {
       "coffetube"
     )
     val query_generic_domains = generic_domains
-      .map(dom => "domain NOT LIKE '%" + dom + "%'")
+      .map(dom => "new_domain NOT LIKE '%" + dom + "%'")
       .mkString(" AND ")
     val filtered_domains = dfURL
-      .selectExpr("*", "parse_url(%s, 'HOST') as domain".format(field))
+      .selectExpr("*", "parse_url(%s, 'HOST') as new_domain".format(field))
       .filter(query_generic_domains)
     // Now we filter out the domains that are IPs
     val filtered_IPs = filtered_domains
       .withColumn(
-        "domain",
-        regexp_replace(col("domain"), "^([0-9]+\\.){3}[0-9]+$", "IP")
+        "new_domain",
+        regexp_replace(col("new_domain"), "^([0-9]+\\.){3}[0-9]+$", "IP")
       )
-      .filter("domain != 'IP'")
+      .filter("new_domain != 'IP'")
     // Now if the host belongs to Retargetly, then we will take the r_url field from the QS
     val retargetly_domains = filtered_IPs
-      .filter("domain LIKE '%retargetly%'")
+      .filter("new_domain LIKE '%retargetly%'")
       .selectExpr(
         "*",
         "parse_url(%s, 'QUERY', 'r_url') as new_url".format(field)
@@ -275,12 +271,12 @@ object keywordIngestion {
     }
     val ampUDF = udf(ampPatternReplace _, StringType)
     val ampproject_domains = filtered_IPs
-      .filter("domain LIKE '%ampproject%'")
+      .filter("new_domain LIKE '%ampproject%'")
       .withColumn(field, ampUDF(col(field)))
       .filter("length(%s)>0".format(field))
     // Now we union the filtered dfs with the rest of domains
     val non_filtered_domains = filtered_IPs.filter(
-      "domain NOT LIKE '%retargetly%' AND domain NOT LIKE '%ampproject%'"
+      "new_domain NOT LIKE '%retargetly%' AND new_domain NOT LIKE '%ampproject%'"
     )
     val filtered_retargetly = non_filtered_domains
       .unionAll(retargetly_domains)
@@ -295,7 +291,7 @@ object keywordIngestion {
         field,
         regexp_replace(col(field), "(\\?|#).*", "")
       )
-      .drop("domain")
+      .drop("new_domain")
       .withColumn(field,lower(col(field)))
         .withColumn(
         field,
@@ -309,7 +305,6 @@ object keywordIngestion {
 
     val spark = SparkSession.builder
       .appName("keyword ingestion")
-      .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
