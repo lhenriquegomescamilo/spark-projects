@@ -4,8 +4,43 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 import org.apache.log4j.{Level, Logger}
+import org.joda.time._
+import org.apache.hadoop.fs.{FileSystem, Path}
 
 object TestJoin {
+  def getDataUrls(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer
+  ): DataFrame = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_demo/data_urls"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .select("url")
+
+    processURLHTTP(df)
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+      .withColumn("url", regexp_replace(col("url"), "'", ""))
+  }
+
   def getAudienceData(spark: SparkSession, today: String): DataFrame = {
     val df = spark.read
       .option("basePath", "/datascience/data_audiences_streaming/")
@@ -137,13 +172,21 @@ object TestJoin {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    getAudienceData(spark, "20200126")
+    // getAudienceData(spark, "20200126")
+    //   .select("url")
+    //   .distinct()
+    //   .write
+    //   .format("csv")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/urls_test_data_keywords")
+
+    getDataUrls(spark, 1, 1)
       .select("url")
       .distinct()
       .write
       .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/urls_test_data_keywords")
+      .save("/datascience/custom/urls_test_data_keywords_urls")
   }
 
 }
