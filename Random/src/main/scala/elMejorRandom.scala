@@ -815,41 +815,43 @@ val country2 = "argentina"
 
 spark.conf.set("spark.sql.session.timeZone",country)
 
-val safegraph = 
-
-spark.read.format("parquet")
-.load("/datascience/geo/safegraph/day=20200104/country=mexico/part-00032-a8c4282e-788b-4b88-98c8-0359f2e77637.c000.snappy.parquet")
-.drop("horizontal_accuracy","geo_hash","id_type")
+val safegraph = get_safegraph_data(spark,"9","18",country2)
 .withColumn("provider",lit("safegraph"))
-.withColumn("country",lit("MX")) //Esto hay que borrarlo después
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("utc_timestamp", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
-.select("device_id","utc_timestamp",  "latitude", "longitude", "provider", "country", "date")
+.select("device_id","utc_timestamp",  "latitude", "longitude", "provider","date")
 .withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
+
 
 val cols = safegraph.columns.toList
 
 val startapp = 
 spark.read.format("csv")
 .option("delimiter","\t")
-.load("/data/providers/Startapp_Geo/location_-_MX_AR_sample20191231_-__0.csv.gz")
+.load("/data/providers/Startapp_Geo/location_-_MX_AR_sample*")
 .drop("_c5")
 .toDF("device_id","country","utc_timestamp","latitude","longitude")
+.filter("country == '%s'".format(country)) //*******************************Ojo que esto hay que cambiarlo para el otro país
+.drop("country")
 .withColumn("provider",lit("startapp"))
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
 .select(cols.head, cols.tail: _*)
 .withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
+//Juntamos las dos para hacer las agregaciones juntas. Igual no sé si es lo más eficiente...pero bueno
 
 val all = List(safegraph,startapp).reduce(_.unionByName (_))
+
+
+
+//Acá calculamos la distancia que recorre cada usuario
 
 val tipito = 
 all
 .withColumn("latituderad",toRadians(col("latitude")))
 .withColumn("longituderad",toRadians(col("longitude")))
-
 
 val windowSpec = Window.partitionBy("device_id").orderBy("utc_timestamp")
 
