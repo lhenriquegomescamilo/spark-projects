@@ -40,7 +40,7 @@ object keywordIngestion {
     val days =
       (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-    val dfs = (0 until daysCount)
+    val hdfs_files = (0 until daysCount)
       .map(start.plusDays(_))
       .map(_.toString(format))
       .filter(
@@ -50,6 +50,8 @@ object keywordIngestion {
           )
       )
       .map(day => "/datascience/selected_keywords/%s.csv".format(day))
+
+    hdfs_files.foreach(println)
 
     val df = spark.read
       .format("csv")
@@ -61,8 +63,8 @@ object keywordIngestion {
       .withColumnRenamed("_c4", "scores")
       .withColumn("content_keys", split(col("content_keys"), " "))
       .drop("count", "scores")
-      .na
-      .drop()
+      // .na
+      // .drop()
       .dropDuplicates("url")
 
     val processed =
