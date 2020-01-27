@@ -879,6 +879,14 @@ val bias_user_detections = spacelapse.withColumn("faster_than_%s".format(max_lim
 .groupBy("provider","faster_than_%s".format(max_limit)).agg(countDistinct("device_id") as "devices")
 
 
+bias_user_detections
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.save(output_path+"bias_user_detections_%s".format(country))
+
 
 
 }
