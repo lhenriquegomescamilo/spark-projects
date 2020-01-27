@@ -809,12 +809,13 @@ def getDataTriplets(
 //Acá queremos calcular los usuarios desviados respecto a velocidad
 
 val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
-val country = "MX"
+val country = "AR"
+val country2 = "argentina"
 //Argentina
 
 spark.conf.set("spark.sql.session.timeZone",country)
 
-val safegraph = get_safegraph_data(spark,"9","18","mexico")
+val safegraph = get_safegraph_data(spark,"9","18",country2)
 .withColumn("provider",lit("safegraph"))
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
