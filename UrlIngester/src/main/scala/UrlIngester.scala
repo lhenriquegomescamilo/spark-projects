@@ -263,19 +263,19 @@ object UrlIngester {
     val temppath = "/datascience/url_ingester/db_tmp"
 
     /** Preprocess URLS and checkpoint */
-    val df = db //processURLHTTP(db)
+    val df = processURLHTTP(db)
 
     // df.write
     //   .format("parquet")
     //   .mode(SaveMode.Overwrite)
     //   .save(temppath)
 
-    // df.cache()
+    df.cache()
 
     /** Process and store the Data for each country */
-    val countries = "AR".split(",").toList//,BO,BR,CL,CO,EC,MX,PE,US,UY,VE".split(",").toList
+    val countries = "AR,BO,BR,CL,CO,EC,MX,PE,US,UY,VE".split(",").toList
 
-    val savepath = "/datascience/url_ingester/data_test"
+    val savepath = "/datascience/url_ingester/data"
 
     val replicationFactor = 8
 
