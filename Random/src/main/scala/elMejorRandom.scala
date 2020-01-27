@@ -809,8 +809,8 @@ def getDataTriplets(
 //Acá queremos calcular los usuarios desviados respecto a velocidad
 
 val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
-val country = "AR"
-val country2 = "argentina"
+val country = "MX"
+val country2 = "mexico"
 //Argentina
 
 spark.conf.set("spark.sql.session.timeZone",country)
@@ -880,6 +880,9 @@ val max_limit = 50
 val bias_user_detections = spacelapse.withColumn("faster_than_%s".format(max_limit),when(col("speed(km/h)") >= max_limit,1).otherwise(0))
 .groupBy("provider","faster_than_%s".format(max_limit)).agg(countDistinct("device_id") as "devices")
 
+//val bias_user_detections = spacelapse.withColumn("faster_than_%s".format(max_limit),when(col("speed(km/h)") >= max_limit,1).otherwise(0))
+//.groupBy("provider","faster_than_%s".format(max_limit))
+//.agg(sum("faster_than_%s".format(max_limit)) as "bias_detections", count("device_id") as "detections")
 
 bias_user_detections
 .write
