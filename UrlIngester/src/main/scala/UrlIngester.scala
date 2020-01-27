@@ -336,7 +336,7 @@ object UrlIngester {
     val options = nextOption(Map(), Args.toList)
     val nDays = if (options.contains('nDays)) options('nDays) else 1
     val since = if (options.contains('since)) options('since) else 1
-    val urls_limit = if (options.contains('urls_limit)) options('urls_limit) else 500000
+    val urls_limit = if (options.contains('urls_limit)) options('urls_limit) else 1000000 //500000
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
 
