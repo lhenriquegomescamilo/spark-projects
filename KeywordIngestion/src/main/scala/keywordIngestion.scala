@@ -131,6 +131,7 @@ object keywordIngestion {
       since: Int,
       replicationFactor: Int
   ) {
+    println("LOG: Processing day %s".format(today))
     // This function takes a list of lists and returns only a list with all the values.
     val flatten = udf((xs: Seq[Seq[String]]) => xs.flatten)
 
@@ -157,6 +158,9 @@ object keywordIngestion {
         )
       )
     )
+
+    URLkeys.show()
+    df_audiences.show()
 
     // This function appends two columns
     val zip = udf((xs: Seq[String], ys: Seq[String]) => xs.zip(ys))
