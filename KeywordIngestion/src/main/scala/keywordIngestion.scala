@@ -40,7 +40,7 @@ object keywordIngestion {
     val days =
       (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-    val hdfs_files = (0 until daysCount)
+    val dfs = (0 until daysCount)
       .map(start.plusDays(_))
       .map(_.toString(format))
       .filter(
