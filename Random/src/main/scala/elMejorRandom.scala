@@ -7,6 +7,11 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime,count, avg}
 import org.apache.spark.sql.SaveMode
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
+import org.apache.spark.sql.expressions.Window
+
+
+
+
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -807,6 +812,8 @@ val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
 val country = "MX"
 //Argentina
 
+spark.conf.set("spark.sql.session.timeZone",country)
+
 val safegraph = get_safegraph_data(spark,"9","18","mexico")
 .withColumn("provider",lit("safegraph"))
 .withColumnRenamed("ad_id","device_id")
@@ -843,7 +850,6 @@ val tipito =
 all
 .withColumn("latituderad",toRadians(col("latitude")))
 .withColumn("longituderad",toRadians(col("longitude")))
-
 
 val windowSpec = Window.partitionBy("device_id").orderBy("utc_timestamp")
 
