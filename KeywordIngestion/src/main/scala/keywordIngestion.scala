@@ -8,7 +8,6 @@ import org.joda.time.DateTime
 import org.apache.hadoop.fs.Path
 import org.apache.log4j.{Level, Logger}
 
-
 object keywordIngestion {
 
   /**
@@ -78,10 +77,12 @@ object keywordIngestion {
         df.withColumn("domain", lit(""))
           .withColumn("stemmed_keys", col("content_keys"))
 
-      processed.show()
-      processURLHTTP(processed)
-          .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
-          .withColumn("url",regexp_replace(col("url"), "'", ""))
+    processURLHTTP(processed)
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+      .withColumn("url", regexp_replace(col("url"), "'", ""))
   }
 
   /**
@@ -91,18 +92,21 @@ object keywordIngestion {
     */
   def getAudienceData(spark: SparkSession, today: String): DataFrame = {
     val df = spark.read
-              .option("basePath", "/datascience/data_demo/data_urls/")
-              .parquet("/datascience/data_demo/data_urls/day=%s".format(today)) // We read the data
-              .select(
-                "device_id",
-                "device_type",
-                "url",
-                "country"
-              )
+      .option("basePath", "/datascience/data_demo/data_urls/")
+      .parquet("/datascience/data_demo/data_urls/day=%s".format(today)) // We read the data
+      .select(
+        "device_id",
+        "url",
+        "country"
+      )
+      .withColumn("device_type", lit("web"))
 
     processURLHTTP(df)
-        .withColumn("url",regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", ""))
-        .withColumn("url",regexp_replace(col("url"), "'", ""))
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
+      )
+      .withColumn("url", regexp_replace(col("url"), "'", ""))
   }
 
   /**
@@ -192,9 +196,9 @@ object keywordIngestion {
       .save("/datascience/data_keywords/")
   }
 
- def processURLHTTP(dfURL: DataFrame, field: String = "url"): DataFrame = {
+  def processURLHTTP(dfURL: DataFrame, field: String = "url"): DataFrame = {
     // First of all, we get the domains, and filter out those ones that are very generic
-    
+
     val generic_domains = List(
       "google",
       "doubleclick",
@@ -288,12 +292,12 @@ object keywordIngestion {
         regexp_replace(col(field), "(\\?|#).*", "")
       )
       .drop("new_domain")
-      .withColumn(field,lower(col(field)))
-        .withColumn(
+      .withColumn(field, lower(col(field)))
+      .withColumn(
         field,
         regexp_replace(col(field), "@", "_")
-      )    
-  }  
+      )
+  }
 
   def main(args: Array[String]) {
     /// Configuracion spark
