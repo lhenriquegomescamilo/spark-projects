@@ -130,8 +130,7 @@ object UrlIngester {
       "downloads",
       "xlxx",
       "xvideo2",
-      "coffetube",
-      "''"
+      "coffetube"
     )
     val query_generic_domains = generic_domains
       .map(dom => "domain NOT LIKE '%" + dom + "%'")

@@ -126,7 +126,7 @@ object GenerateMonthlyDataset{
 
     // Parameters
     val ndays = if (args.length > 0) args(0).toInt else 30
-    val current_month = DateTime.now().getMonthOfYear.toString
+    val current_month = DateTime.now().toString("yyyyMM")
 
     // AR GENERO
     var training_name = "training_AR_genero_%s".format(current_month)

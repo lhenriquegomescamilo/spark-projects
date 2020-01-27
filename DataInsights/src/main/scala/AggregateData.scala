@@ -49,11 +49,13 @@ object AggregateData {
           col("datediff") <= 1,
           lit(Array("Last 1 day", "Last 7 day", "Last 30 day"))
         ).otherwise(
-          when(col("datediff") <= 7, lit(Array("Last 7 days", "Last 30 day")))
+          when(col("datediff") <= 7, lit(Array("Last 7 day", "Last 30 day")))
             .otherwise(lit(Array("Last 30 day")))
         )
       )
       .withColumn("periodo", explode(col("periodo")))
+      .withColumn("campaign_id", array(col("campaign_id"), lit(0)))
+      .withColumn("campaign_id", explode(col("campaign_id")))
       .withColumn("ID", concat(col("periodo"), lit("-"), col("campaign_id")))
       .withColumn(
         "data_type_clk",
@@ -87,31 +89,44 @@ object AggregateData {
         col("impressions") + col("clicks") + col("conversions")
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("kpis"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_kpis/")
+      .save("/datascience/data_insights/aggregated/")
   }
 
-  def aggregateSegments(df_chkpt: DataFrame, today: String) = {
+  def aggregateSegments(df_chkpt: DataFrame, today: String, spark: SparkSession) = {
     // List of segments to filter
-    val taxo_segments: Seq[String] = SegmentList.getSegmentList()
+    val taxo_segments: Seq[String] = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/data_insights/taxo_pure.csv")
+      .select("ID")
+      .collect()
+      .map(r => r(0).toString)
+      .toSeq
 
-    // Get total per segments and id partner
+    // Get first_party segments
     df_chkpt
-      .withColumn("segments", explode(col("segments")))
-      .filter(col("segments").isin(taxo_segments: _*))
-      .groupBy("id_partner", "periodo", "segments")
+      .withColumn("first_party", split(col("first_party"), "\u0001"))
+      .withColumn("segments", explode(col("first_party")))
+      .groupBy("id_partner", "ID", "segments")
       .agg(
-        approx_count_distinct(col("device_id"), 0.03).as("devices_x_seg")
+        approx_count_distinct(col("device_id"), 0.03).as("devices"),
+        approx_count_distinct(col("nid_sh2"), 0.03).as("nids"),
+        sum(col("data_type_imp")).as("impressions"),
+        sum(col("data_type_clk")).as("clicks"),
+        sum(col("data_type_cnv")).as("conversions")
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("segments_first_party"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_segments_campaign/")
+      .save("/datascience/data_insights/aggregated/")
 
     // Totals per segment, id and campaign id
     df_chkpt
@@ -126,11 +141,12 @@ object AggregateData {
         sum(col("data_type_cnv")).as("conversions")
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("segments"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_segments/")
+      .save("/datascience/data_insights/aggregated/")
   }
 
   def aggregateUserAgent(df_chkpt: DataFrame, today: String) = {
@@ -141,11 +157,12 @@ object AggregateData {
         approx_count_distinct(col("nid_sh2"), 0.03).as("nids")
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("brand"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_brand/")
+      .save("/datascience/data_insights/aggregated/")
   }
 
   def aggregateHour(df_chkpt: DataFrame, today: String) = {
@@ -171,11 +188,12 @@ object AggregateData {
         )
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("hour"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_hour/")
+      .save("/datascience/data_insights/aggregated/")
   }
 
   def aggregateDay(df_chkpt: DataFrame, today: String) = {
@@ -193,39 +211,20 @@ object AggregateData {
         sum(col("data_type_cnv")).as("conversions")
       )
       .withColumn("day", lit(today))
+      .withColumn("type", lit("day"))
       .write
       .format("parquet")
-      .partitionBy("day", "id_partner")
+      .partitionBy("day", "type", "id_partner")
       .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/data_day/")
+      .save("/datascience/data_insights/aggregated/")
   }
 
-  def get_aggregated_data(df_chkpt: DataFrame, today: String) {
+  def get_aggregated_data(spark: SparkSession, df_chkpt: DataFrame, today: String) {
     aggregateKPIs(df_chkpt, today)
-    aggregateSegments(df_chkpt, today)
+    aggregateSegments(df_chkpt, today, spark)
     aggregateUserAgent(df_chkpt, today)
     aggregateHour(df_chkpt, today)
     aggregateDay(df_chkpt, today)
-
-    // val devices_campaign = df_chkpt.groupBy("campaign_id")
-    //                                 .agg(approx_count_distinct(col("device_id")).as("tot_devices_x_camp"),
-    //                                       first("ID").as("ID"))
-    //                                 .select("ID","tot_devices_x_camp")
-    // TODO: Sacar del anterior
-
-    // // Data Agregada GEO
-    // df_chkpt.groupBy("campaign_id","estate")
-    //           .agg(approx_count_distinct(col("device_id")).as("devices"),
-    //                 approx_count_distinct(col("nid_sh2")).as("nids"),
-    //                 first("ID").as("ID"),
-    //                 first("campaign_name").as("campaign_name"),
-    //                 first("periodo").as("periodo"))
-    //           .withColumn("people",ceil((col("devices")/magic_ratio) + col("nids")))
-    //           .write
-    //           .format("parquet")
-    //           .partitionBy("day","id_partner")
-    //           .mode("append")
-    //           .save("/datascience/data_insights/aggregated/data_geo/")
   }
 
   def main(args: Array[String]) {
@@ -245,6 +244,6 @@ object AggregateData {
     format = "yyyyMMdd"
     val today = DateTime.now.minusDays(since).toString(format)
     val df_chkpt = getRawData(spark, ndays, since, List("879", "753"))
-    get_aggregated_data(df_chkpt, today)
+    get_aggregated_data(spark, df_chkpt, today)
   }
 }

@@ -4874,40 +4874,20 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val data = spark.read
-      .format("parquet")
-      .load("/datascience/pii_matching/pii_tuples/")
-      .filter("country = 'AR'")
-      .select("device_id", "nid_sh2", "mb_sh2")
-      .withColumn("pii", array(col("nid_sh2"), col("mb_sh2")))
-      .withColumn("pii", explode(col("pii")))
-      .na
-      .drop()
-      .select("device_id", "pii")
-      .distinct()
-
-    data.cache()
-
-    val devices =
-      data.groupBy("device_id").count().filter("count < 2").drop("count")
-    val piis = data.groupBy("pii").count().filter("count < 2").drop("count")
-    val equi = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .load("/datascience/custom/gt_equifax_ready.csv")
-      .withColumnRenamed("_c1", "device_id")
-
-    data
-      .join(devices, Seq("device_id"))
-      .join(piis, Seq("pii"))
-      .join(equi, Seq("device_id"), "right")
-      .select("_c0", "device_id", "_c2", "pii")
+    val categoryUDF = udf(
+      (segments: Seq[Row]) => segments.map(record => record(5).toString)
+    )
+    spark.read
+      .format("json")
+      .load(
+        "/data/providers/sharethis/keywords/"
+      )
+      .select("url", "categories")
+      .na.drop()
+      .withColumn("categories", categoryUDF(col("categories")))
       .write
-      .format("csv")
-      .option("sep", "\t")
+      .format("parquet")
       .mode("overwrite")
-      .save("/datascience/custom/gt_equifax_filtered")
-
-    data.unpersist()
+      .save("/datascience/custom/sharethis_URLs_categories")
   }
 }

@@ -1,44 +1,12 @@
 package main.scala
-import org.apache.spark.sql.{SparkSession, Row, SaveMode}
-import org.apache.spark.sql.functions._
+
+import org.apache.spark.sql._
 import org.joda.time.{Days, DateTime}
-import org.joda.time.format.DateTimeFormat
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.{SaveMode, DataFrame}
-import org.apache.spark.ml.attribute.Attribute
-import org.apache.spark.ml.feature.{IndexToString, StringIndexer}
-//import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
-import org.apache.spark.ml.linalg.Vectors
-import org.apache.spark.mllib.regression.LabeledPoint
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.evaluation.RegressionEvaluator
-import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
-import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Encoders, SparkSession}
-import org.joda.time.Days
-import org.joda.time.DateTime
-import org.apache.hadoop.conf.Configuration
-import org.apache.spark.ml.classification.{
-  RandomForestClassificationModel,
-  RandomForestClassifier
-}
-import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
-import org.apache.spark.ml.classification.{
-  GBTClassificationModel,
-  GBTClassifier
-}
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{LongType, StructField, StructType}
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.functions._
+import org.apache.log4j.{Level, Logger}
 
-/**
-  * The idea of this script is to run random stuff. Most of the times, the idea is
-  * to run quick fixes, or tests.
-  */
-object GetURLsForAudience {
-
+object SampleURLs {
   def processURL(dfURL: DataFrame, field: String = "url"): DataFrame = {
     // First of all, we get the domains, and filter out those ones that are very generic
     val generic_domains = List(
@@ -153,36 +121,6 @@ object GetURLsForAudience {
     // urls
   }
 
-  /**
-    * GET URL DATA FOR A GIVEN AUDIENCE
-    */
-  def getURLForAudience(spark: SparkSession, path: String, country: String) = {
-    val audience = spark.read
-      .option("sep", "\t")
-      .format("csv")
-      .load(path)
-      .withColumnRenamed("_c1", "device_id")
-      .withColumnRenamed("_c2", "ids")
-      .drop("_c0")
-
-    val urls =
-      get_data_urls(spark, 60, 1, country).select(
-        "device_id",
-        "url",
-        "event_type"
-      )
-
-    audience
-      .join(urls, Seq("device_id"))
-      .write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/%s_urls".format(path.split("/").last))
-  }
-
-  /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder
@@ -192,11 +130,24 @@ object GetURLsForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getURLForAudience(
-      spark = spark,
-      "/datascience/custom/gt_equifax_filtered_pii",
-      "AR"
-    )
+    val urls = get_data_urls(spark, 15, 5, "MX")
+      .filter("event_type IN ('pv', 'data')")
+      .select("url", "device_id", "event_type","time")
+      .withColumn("domain", split(col("url"), "/").getItem(0))
+    
+    val domain_not_shareable = spark.read
+      .format("csv")
+      .load("/datascience/custom/not_shareable_domains.csv")
+      .collect()
+      .map(row => row(0).toString)
+
+    urls
+      .filter(!col("domain").isin(domain_not_shareable: _*))
+     .filter("domain NOT LIKE '%.ar' AND domain NOT LIKE '%.cr' AND domain NOT LIKE '%.cl' AND domain NOT LIKE '%.co'  AND domain NOT LIKE '%.pe' AND domain NOT LIKE '%.pr' AND domain NOT LIKE '%.uy'")
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .save("/datascience/custom/sample_publicis_mx_22_01_20")
 
   }
 }

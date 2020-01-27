@@ -44,62 +44,99 @@ object DataInsights {
       .map(day => path + "/day=%s".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
-                  .select("device_id","brand","model")
-                  .distinct()
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .select("device_id", "brand", "model")
+      .distinct()
 
     df
   }
 
-  def get_data_first_party(spark:SparkSession, day:String, df_ua: DataFrame){
+  def get_data_first_party(spark: SparkSession, day: String, df_ua: DataFrame) {
 
-    val data_eventqueue = spark.read.format("csv").option("sep", "\t").option("header", "true")
-                                .load("/data/eventqueue/%s/*.tsv.gz".format(day))
-                                .filter("first_party is not null and event_type in ('pv','batch','data','retroactive') and id_partner = 643")
-                                .select("time","id_partner","device_id","device_type","country","data_type","nid_sh2","first_party")
-                                
-    data_eventqueue.join(df_ua,Seq("device_id"),"left")
-                    .withColumn("first_party", split(col("first_party"), ""))
-                    .withColumn("first_party",explode(col("first_party")))
-                    .withColumn("day",lit(day.replace("/","")))
-                    .write
-                    .format("parquet")
-                    .partitionBy("day","id_partner")
-                    .mode("append")
-                    .save("/datascience/data_insights/data_first_party/")
+    val data_eventqueue = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+      .filter(
+        "first_party is not null and event_type in ('pv','batch','data','retroactive') and id_partner = 643"
+      )
+      .select(
+        "time",
+        "id_partner",
+        "device_id",
+        "device_type",
+        "country",
+        "data_type",
+        "nid_sh2",
+        "first_party"
+      )
+
+    data_eventqueue
+      .join(df_ua, Seq("device_id"), "left")
+      .withColumn("first_party", split(col("first_party"), "\u0001"))
+      .withColumn("first_party", explode(col("first_party")))
+      .withColumn("day", lit(day.replace("/", "")))
+      .write
+      .format("parquet")
+      .partitionBy("day", "id_partner")
+      .mode("append")
+      .save("/datascience/data_insights/data_first_party/")
   }
 
+  def get_data(
+      spark: SparkSession,
+      day: String,
+      df_ua: DataFrame,
+      partners: List[String]
+  ) {
 
-  def get_data(spark:SparkSession, day:String, df_ua: DataFrame){
-
-    val data_eventqueue = spark.read.format("csv").option("sep", "\t").option("header", "true")
-                                .load("/data/eventqueue/%s/*.tsv.gz".format(day))
-                                .filter("campaign_id is not null and event_type = 'tk'")
-                                .select("time","id_partner","device_id","campaign_id","campaign_name","third_party",
-                                        "device_type","country","data_type","nid_sh2")
-                                .withColumn("device_id",lower(col("device_id")))
+    val data_eventqueue = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load("/data/eventqueue/%s/*.tsv.gz".format(day))
+      .filter("campaign_id is not null and event_type = 'tk'")
+      .filter(col("id_partner").isin(partners: _*))
+      .select(
+        "time",
+        "id_partner",
+        "device_id",
+        "campaign_id",
+        "campaign_name",
+        "third_party",
+        "device_type",
+        "country",
+        "data_type",
+        "nid_sh2",
+        "first_party"
+      )
+      .withColumn("device_id", lower(col("device_id")))
 
     //val data_geo = spark.read.load("/datascience/geo/NSEHomes/data_geo_homes_for_insights")
-                                
-    data_eventqueue.join(df_ua,Seq("device_id"),"left")
-                    //.join(data_geo,Seq("device_id"),"left")
-                    .withColumn("third_party", split(col("third_party"), ""))
-                    .withColumnRenamed("third_party","segments")
-                    .withColumn("day",lit(day.replace("/","")))
-                    .write
-                    .format("parquet")
-                    .partitionBy("day","id_partner")
-                    .mode("overwrite")
-                    .save("/datascience/data_insights/raw")
+
+    data_eventqueue
+      .join(df_ua, Seq("device_id"), "left")
+      //.join(data_geo,Seq("device_id"),"left")
+      .withColumn("third_party", split(col("third_party"), "\u0001"))
+      .withColumnRenamed("third_party", "segments")
+      .withColumn("day", lit(day.replace("/", "")))
+      .write
+      .format("parquet")
+      .partitionBy("day", "id_partner")
+      .mode("overwrite")
+      .save("/datascience/data_insights/raw")
   }
 
-  
   def main(args: Array[String]) {
     /// Configuracion spark
-    val spark = SparkSession.builder.appName("Data Insights Process")
-                                    .config("spark.sql.files.ignoreCorruptFiles", "true")
-                                    .config("spark.sql.sources.partitionOverwriteMode","dynamic")
-                                    .getOrCreate()
+    val spark = SparkSession.builder
+      .appName("Data Insights Process")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
+      .getOrCreate()
 
     /// Parseo de parametros
     val since = if (args.length > 0) args(0).toInt else 0
@@ -113,10 +150,11 @@ object DataInsights {
     val days =
       (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-    val df_ua = get_data_user_agent(spark,10,1)
+    val df_ua = get_data_user_agent(spark, 10, 1)
     df_ua.cache()
 
-    days.map(day => get_data(spark, day, df_ua))
+    val partners = List("879", "753")
+    days.map(day => get_data(spark, day, df_ua, partners))
 
   }
 }

@@ -14,9 +14,9 @@ import org.apache.hadoop.conf.Configuration
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object GetUAForAudience {
+object GetAppsForAudience {
 
-  def get_data_user_agents(
+  def get_data_audiences(
       spark: SparkSession,
       ndays: Int,
       since: Int,
@@ -33,21 +33,26 @@ object GetUAForAudience {
 
     val days =
       (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_useragents/"
+    val path = "/datascience/data_audiences_streaming/"
     val hdfs_files = days
-      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .flatMap(
+        day =>
+          (0 to 23).map(
+            hour => path + "/hour=%s%s/country=%s".format(day, hour, country)
+          )
+      )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    val user_agents =
+    val audiences =
       spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
-    user_agents
+    audiences.select("device_id", "app_installed").na.drop
   }
 
   /**
     * GET URL DATA FOR A GIVEN AUDIENCE
     */
-  def getUAForAudience(spark: SparkSession, path: String, country: String) = {
+  def getAppsForAudience(spark: SparkSession, path: String, country: String) = {
     val audience = spark.read
       .option("sep", "\t")
       .format("csv")
@@ -56,15 +61,15 @@ object GetUAForAudience {
       .withColumnRenamed("_c2", "ids")
       .drop("_c0")
 
-    val user_agents =
-      get_data_user_agents(spark, 60, 1, country)
+    val apps =
+      get_data_audiences(spark, 30, 1, country)
 
     audience
-      .join(user_agents, Seq("device_id"))
+      .join(apps, Seq("device_id"))
       .write
       .format("parquet")
       .mode("overwrite")
-      .save("/datascience/custom/%s_ua".format(path.split("/").last))
+      .save("/datascience/custom/%s_apps".format(path.split("/").last))
   }
 
   /*****************************************************/
@@ -79,7 +84,7 @@ object GetUAForAudience {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getUAForAudience(
+    getAppsForAudience(
       spark = spark,
       "/datascience/geo/reports/GCBA/carteles_GCBA_devices_type",
       "AR"

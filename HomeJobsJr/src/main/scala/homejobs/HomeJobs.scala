@@ -52,8 +52,10 @@ object HomeJobs {
           col("longitude_user").cast("float") * 100
         ).cast("int"))
       )
-      
+      .na.drop()
 
+      
+//
     df_safegraph //
   }
 
@@ -99,7 +101,8 @@ object HomeJobs {
     val timezone = Map("argentina" -> "GMT-3",
                        "mexico" -> "GMT-5",
                        "CL"->"GMT-3",
-                       "CO"-> "GMT-5")
+                       "CO"-> "GMT-5",
+                       "PE"-> "GMT-5")
     
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(value_dictionary("country")))
@@ -120,6 +123,7 @@ object HomeJobs {
                             round(avg(col("latitude_user")),4).as("avg_latitude"),
                             (round(avg(col("longitude_user")),4)).as("avg_longitude"))
                     .select("ad_id","id_type","freq","geocode","avg_latitude","avg_longitude")
+                    
 
      
     
@@ -140,7 +144,8 @@ object HomeJobs {
 
 
 
-    final_users.write.format("csv")
+    final_users
+    .write.format("csv")
       .option("header", true)
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
