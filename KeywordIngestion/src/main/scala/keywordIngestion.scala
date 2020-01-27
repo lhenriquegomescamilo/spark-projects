@@ -62,9 +62,9 @@ object keywordIngestion {
       .withColumnRenamed("_c3", "content_keys")
       .withColumnRenamed("_c4", "scores")
       .withColumn("content_keys", split(col("content_keys"), " "))
-      .drop("count", "scores")
-      // .na
-      // .drop()
+      .drop("count", "scores", "country_web")
+      .na
+      .drop()
       .dropDuplicates("url")
 
     val processed =
