@@ -4877,14 +4877,14 @@ object Random {
     val categoryUDF = udf(
       (segments: Seq[Row]) => segments.map(record => record(5).toString)
     )
-    val df = (18 to 28)
+    val df = (18 to 20)
       .map(
         day =>
           spark.read
             .format("csv")
             .option("sep", "\t")
             .option("header", "true")
-            .load("/data/eventqueue/2020/01/%s/0000.tsv.gz".format(day))
+            .load("/data/eventqueue/2020/01/%s/*.tsv.gz".format(day))
       )
       .reduce((df1, df2) => df1.unionAll(df2))
 
