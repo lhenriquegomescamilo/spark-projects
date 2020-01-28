@@ -244,6 +244,8 @@ object AggregateData {
     format = "yyyyMMdd"
     val today = DateTime.now.minusDays(since).toString(format)
     val df_chkpt = getRawData(spark, ndays, since, List("879", "753"))
+    val df_chkpt_previous = getRawData(spark, ndays, since+30, List("879", "753"))
     get_aggregated_data(spark, df_chkpt, today)
+    aggregateSegments(df_chkpt_previous, today, spark)
   }
 }
