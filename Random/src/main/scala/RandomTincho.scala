@@ -1309,6 +1309,19 @@ object RandomTincho {
 
   }
 
+  def get_kws_sharethis(spark:SparkSession){
+    spark.read.json("/data/providers/sharethis/keywords/")
+          .withColumn("description",lit("sharethis"))
+          .select("url","description, dt")
+          .write
+          .format("csv")
+          .option("delimiter", "\t")
+          .partitionBy("dt")
+          .mode("overwrite")
+          .save("/datascience/custom/kws_sharethis/")
+
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1320,7 +1333,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_join_kws(spark)
+    get_kws_sharethis(spark)
   
   }
 
