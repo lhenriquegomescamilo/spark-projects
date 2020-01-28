@@ -796,16 +796,10 @@ def getDataTriplets(
         .save("/datascience/geo/NSEHomes/NSE_GT_Equifax_%s_%s".format(nDays,country))
     }
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-    Logger.getRootLogger.setLevel(Level.WARN)
+/*
 
-
+//Esto se usó para calcular velocidades de usuarios y tratar de encontrar dispersiones entre los mismos
 //Acá queremos calcular los usuarios desviados respecto a velocidad
 
 val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
@@ -891,6 +885,88 @@ bias_user_detections
 .option("delimiter","\t")
 .option("header",true)
 .save(output_path+"bias_user_detections_%s".format(country))
+
+*/*/
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+
+//Acá queremos calcular los usuarios desviados respecto a velocidad
+
+val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
+val country = "MX"
+val country2 = "mexico"
+//Argentina
+
+spark.conf.set("spark.sql.session.timeZone",country)
+
+val safegraph = get_safegraph_data(spark,"9","18",country2)
+.withColumn("provider",lit("safegraph"))
+.withColumnRenamed("ad_id","device_id")
+.withColumn("device_id",lower(col("device_id")))
+.withColumn("utc_timestamp", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
+.select("device_id","utc_timestamp",  "latitude", "longitude", "provider","date")
+.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
+.withColumn("hour", date_format(col("utc_timestamp"), "HH"))
+.select("device_id","utc_timestamp",  "latitude", "longitude", "provider", "country", "date","hour")
+
+val cols = safegraph.columns.toList
+
+val startapp = 
+spark.read.format("csv")
+.option("delimiter","\t")
+.load("/data/providers/Startapp_Geo/location_-_MX_AR_sample*")
+.drop("_c5")
+.toDF("device_id","country","utc_timestamp","latitude","longitude")
+.filter("country == '%s'".format(country)) //*******************************Ojo que esto hay que cambiarlo para el otro país
+.drop("country")
+.withColumn("provider",lit("startapp"))
+.withColumn("device_id",lower(col("device_id")))
+.withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
+.select(cols.head, cols.tail: _*)
+.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
+
+
+//Juntamos las dos para hacer las agregaciones juntas. Igual no sé si es lo más eficiente...pero bueno
+
+val listadias = List("31-12-20","01-01-20","02-01-20","03-01-20","04-01-20","05-01-20","06-01-20")
+val all = List(safegraph,startapp).reduce(_.unionByName (_)).filter(col("date").isin(listadias:_*))
+
+
+//Acá calculamos las detecciones por día y los usuarios únicos por día
+val hour_data_by_date = all.groupBy("date","hour","provider")
+      .agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections").orderBy("date")
+
+//Acá calculamos las detecciones por día por usuario
+val hour_data_by_period = all.groupBy("hour","device_id","provider")
+    .agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections").orderBy("hour")
+
+
+hour_data_by_period
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.save(output_path+"hour_data_by_period_%s".format(country))
+
+
+hour_data_by_date
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.save(output_path+"hour_data_by_date_%s".format(country))
 
 
 
