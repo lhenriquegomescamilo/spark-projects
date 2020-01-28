@@ -1315,6 +1315,7 @@ object RandomTincho {
           .select("url","description", "dt", "concepts", "entities", "keywords")
           .write
           .format("parquet")
+          .partitionBy("dt")
           .mode("overwrite")
           .save("/datascience/custom/kws_sharethis/")
 
