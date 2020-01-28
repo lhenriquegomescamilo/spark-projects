@@ -1312,7 +1312,7 @@ object RandomTincho {
   def get_kws_sharethis(spark:SparkSession){
     spark.read.json("/data/providers/sharethis/keywords/")
           .withColumn("description",lit("sharethis"))
-          .select("url","description, dt")
+          .select("url","description, dt, conecepts, entities, keywords")
           .write
           .format("csv")
           .option("delimiter", "\t")
