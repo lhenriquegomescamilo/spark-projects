@@ -1322,6 +1322,39 @@ object RandomTincho {
 
   }
 
+  def get_piis_bridge(spark:SparkSession){
+    val pii_1 = spark.read.format("csv").option("header","true")
+                      .load("/data/providers/Bridge/Bridge_Linkage_File_Retargetly_LATAM.csv")
+                      .withColumnRenamed("SHA256_Email_Hash","pii")
+                      .select("pii")
+    val pii_2 = spark.read.format("csv").option("header","true")
+                      .load("/data/providers/Bridge/Bridge_Linkage_File_Retargetly_LATAM_Historical.csv")
+                      .withColumnRenamed("SHA256_Email_Hash","pii")
+                      .select("pii")
+    val pii_3 = spark.read.format("csv").option("header","true")
+                      .load("/data/providers/Bridge/Retargetly_Bridge_Linkage_LATAM_01_2020.csv")
+                      .withColumnRenamed("SHA256_Email_Hash","pii")
+                      .select("pii")
+    val pii_4 = spark.read.format("csv").option("header","true")
+                      .load("/data/providers/Bridge/Retargetly_Bridge_Linkage_LATAM_11_2019.csv")
+                      .withColumnRenamed("SHA256_Email_Hash","pii")
+                      .select("pii")
+    val pii_5 = spark.read.format("csv").option("header","true")
+                      .load("/data/providers/Bridge/Retargetly_Bridge_Linkage_LATAM_12_2019.csv")
+                      .withColumnRenamed("SHA256_Email_Hash","pii")
+                      .select("pii")
+    
+    pii_1.unionAll(pii_2)
+          .unionAll(pii_3)
+          .unionAll(pii_4)
+          .unionAll(pii_5)
+          .select("pii")
+          .distinct()
+          .write.format("parquet")
+          .save("/datascience/custom/piis_bridge")
+
+    }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1333,8 +1366,8 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_kws_sharethis(spark)
-  
+    get_piis_bridge(spark)
+
   }
 
 }
