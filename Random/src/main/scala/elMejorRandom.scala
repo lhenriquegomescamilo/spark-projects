@@ -902,8 +902,8 @@ bias_user_detections
 //Acá queremos calcular los usuarios desviados respecto a velocidad
 
 val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
-val country = "MX"
-val country2 = "mexico"
+val country = "AR"
+val country2 = "argentina"
 //Argentina
 
 spark.conf.set("spark.sql.session.timeZone",country)
@@ -915,9 +915,9 @@ val safegraph = get_safegraph_data(spark,"9","18",country2)
 .withColumn("utc_timestamp", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
 .select("device_id","utc_timestamp",  "latitude", "longitude", "provider","date")
-.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
 .withColumn("hour", date_format(col("utc_timestamp"), "HH"))
-.select("device_id","utc_timestamp",  "latitude", "longitude", "provider", "country", "date","hour")
+.select("device_id","utc_timestamp",  "latitude", "longitude", "provider", "date","hour")
+//.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
 
 val cols = safegraph.columns.toList
 
@@ -932,8 +932,9 @@ spark.read.format("csv")
 .withColumn("provider",lit("startapp"))
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
+.withColumn("hour", date_format(col("utc_timestamp"), "HH"))
 .select(cols.head, cols.tail: _*)
-.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
+//.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
 
 
 //Juntamos las dos para hacer las agregaciones juntas. Igual no sé si es lo más eficiente...pero bueno
@@ -942,12 +943,12 @@ val listadias = List("31-12-20","01-01-20","02-01-20","03-01-20","04-01-20","05-
 val all = List(safegraph,startapp).reduce(_.unionByName (_)).filter(col("date").isin(listadias:_*))
 
 
-//Acá calculamos las detecciones por día y los usuarios únicos por día
+///Acá calculamos las detecciones por día por horario de cada dia
 val hour_data_by_date = all.groupBy("date","hour","provider")
       .agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections").orderBy("date")
 
-//Acá calculamos las detecciones por día por usuario
-val hour_data_by_period = all.groupBy("hour","device_id","provider")
+//Acá calculamos las detecciones por día por horario del periodo
+val hour_data_by_period = all.groupBy("hour","provider")
     .agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections").orderBy("hour")
 
 
