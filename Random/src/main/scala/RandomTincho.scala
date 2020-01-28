@@ -1364,7 +1364,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_piis_bridge(spark)
+    //get_piis_bridge(spark)
     get_kws_sharethis(spark)
 
   }
