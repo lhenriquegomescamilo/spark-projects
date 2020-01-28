@@ -4877,7 +4877,7 @@ object Random {
     val categoryUDF = udf(
       (segments: Seq[Row]) => segments.map(record => record(5).toString)
     )
-    val df = (18 to 20)
+    val df = (18 to 28)
       .map(
         day =>
           spark.read
