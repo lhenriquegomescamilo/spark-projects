@@ -1311,12 +1311,10 @@ object RandomTincho {
 
   def get_kws_sharethis(spark:SparkSession){
     spark.read.json("/data/providers/sharethis/keywords/")
-          .withColumn("description",lit("sharethis"))
-          .select("url","description", "dt")
+          .select("url","description")
           .write
           .format("csv")
           .option("delimiter","\t")
-          .partitionBy("dt")
           .mode("overwrite")
           .save("/datascience/custom/kws_sharethis/")
 
@@ -1366,7 +1364,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_piis_bridge(spark)
+    get_kws_sharethis(spark)
 
   }
 
