@@ -943,12 +943,12 @@ val listadias = List("31-12-20","01-01-20","02-01-20","03-01-20","04-01-20","05-
 val all = List(safegraph,startapp).reduce(_.unionByName (_)).filter(col("date").isin(listadias:_*))
 
 
-//Acá calculamos las detecciones por día y los usuarios únicos por día
+///Acá calculamos las detecciones por día por horario de cada dia
 val hour_data_by_date = all.groupBy("date","hour","provider")
       .agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections").orderBy("date")
 
-//Acá calculamos las detecciones por día por usuario
-val hour_data_by_period = all.groupBy("hour","device_id","provider")
+//Acá calculamos las detecciones por día por horario del periodo
+val hour_data_by_period = all.groupBy("hour","provider")
     .agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections").orderBy("hour")
 
 
