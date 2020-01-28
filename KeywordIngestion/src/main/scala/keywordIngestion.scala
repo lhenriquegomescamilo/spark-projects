@@ -165,6 +165,7 @@ object keywordIngestion {
     URLkeys.show()
     df_audiences.show()
     println(df_audiences.count())
+    println(df_audiences.select("device_id").distinct().count())
 
     // This function appends two columns
     val zip = udf((xs: Seq[String], ys: Seq[String]) => xs.zip(ys))
