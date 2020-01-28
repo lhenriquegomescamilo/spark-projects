@@ -915,7 +915,7 @@ val safegraph = get_safegraph_data(spark,"9","18",country2)
 .withColumn("utc_timestamp", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
 .select("device_id","utc_timestamp",  "latitude", "longitude", "provider","date")
-.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
+//.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
 .withColumn("hour", date_format(col("utc_timestamp"), "HH"))
 .select("device_id","utc_timestamp",  "latitude", "longitude", "provider", "country", "date","hour")
 
@@ -933,7 +933,7 @@ spark.read.format("csv")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
 .select(cols.head, cols.tail: _*)
-.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
+//.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
 
 
 //Juntamos las dos para hacer las agregaciones juntas. Igual no sé si es lo más eficiente...pero bueno
