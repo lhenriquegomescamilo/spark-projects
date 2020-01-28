@@ -1314,7 +1314,8 @@ object RandomTincho {
           .withColumn("description",lit("sharethis"))
           .select("url","description", "dt", "concepts", "entities", "keywords")
           .write
-          .format("parquet")
+          .format("csv")
+          .option("delimiter","\t")
           .partitionBy("dt")
           .mode("overwrite")
           .save("/datascience/custom/kws_sharethis/")
