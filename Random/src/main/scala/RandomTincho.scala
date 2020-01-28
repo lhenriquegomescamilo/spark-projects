@@ -1348,7 +1348,7 @@ object RandomTincho {
           .unionAll(pii_5)
           .select("pii")
           .distinct()
-          .write.format("parquet")
+          .write.format("csv")
           .save("/datascience/custom/piis_bridge")
 
     }
@@ -1364,6 +1364,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
+    get_piis_bridge(spark)
     get_kws_sharethis(spark)
 
   }
