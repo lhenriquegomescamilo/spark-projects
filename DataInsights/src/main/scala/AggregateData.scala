@@ -97,7 +97,7 @@ object AggregateData {
       .save("/datascience/data_insights/aggregated/")
   }
 
-  def aggregateSegments(df_chkpt: DataFrame, today: String, spark: SparkSession) = {
+  def aggregateSegments(df_chkpt: DataFrame, today: String, spark: SparkSession, agg_type: String = "segments") = {
     // List of segments to filter
     val taxo_segments: Seq[String] = spark.read
       .format("csv")
@@ -141,7 +141,7 @@ object AggregateData {
         sum(col("data_type_cnv")).as("conversions")
       )
       .withColumn("day", lit(today))
-      .withColumn("type", lit("segments"))
+      .withColumn("type", lit(agg_type))
       .write
       .format("parquet")
       .partitionBy("day", "type", "id_partner")
@@ -246,6 +246,6 @@ object AggregateData {
     val df_chkpt = getRawData(spark, ndays, since, List("879", "753"))
     val df_chkpt_previous = getRawData(spark, ndays, since+30, List("879", "753"))
     get_aggregated_data(spark, df_chkpt, today)
-    aggregateSegments(df_chkpt_previous, today, spark)
+    aggregateSegments(df_chkpt_previous, today, spark, "segments_since30")
   }
 }
