@@ -902,8 +902,8 @@ bias_user_detections
 //Acá queremos calcular los usuarios desviados respecto a velocidad
 
 val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
-val country = "MX"
-val country2 = "mexico"
+val country = "AR"
+val country2 = "argentina"
 //Argentina
 
 spark.conf.set("spark.sql.session.timeZone",country)
