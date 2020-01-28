@@ -73,7 +73,11 @@ object AggregateData {
     df_chkpt
   }
 
-  def aggregateKPIs(df_chkpt: DataFrame, today: String) = {
+  def aggregateKPIs(
+      df_chkpt: DataFrame,
+      today: String,
+      agg_type: String = "kpis"
+  ) = {
     // Data Agregada KPIS
     df_chkpt
       .groupBy("id_partner", "ID")
@@ -89,7 +93,7 @@ object AggregateData {
         col("impressions") + col("clicks") + col("conversions")
       )
       .withColumn("day", lit(today))
-      .withColumn("type", lit("kpis"))
+      .withColumn("type", lit(agg_type))
       .write
       .format("parquet")
       .partitionBy("day", "type", "id_partner")
@@ -265,6 +269,11 @@ object AggregateData {
       spark,
       "segments_since30",
       false
+    )
+    aggregateKPIs(
+      df_chkpt_previous,
+      today,
+      "kpis_since30"
     )
   }
 }
