@@ -901,73 +901,32 @@ bias_user_detections
 
 //Acá queremos calcular los usuarios desviados respecto a velocidad
 
-val output_path = "/datascience/geo/misc/StartAppvsSafegraph/"
-val country = "MX"
-val country2 = "mexico"
+val output_path = "/datascience/geo/misc/ChileCounts/"
+val country = "CL"
+
 //Argentina
 
 spark.conf.set("spark.sql.session.timeZone",country)
 
-val safegraph = get_safegraph_data(spark,"9","18",country2)
-.withColumn("provider",lit("safegraph"))
+val safegraph = get_safegraph_data(spark,"30","1",country)
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("utc_timestamp", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
-.select("device_id","utc_timestamp",  "latitude", "longitude", "provider","date")
-.withColumn("hour", date_format(col("utc_timestamp"), "HH"))
-.select("device_id","utc_timestamp",  "latitude", "longitude", "provider", "date","hour")
-//.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
 
-val cols = safegraph.columns.toList
-
-val startapp = 
-spark.read.format("csv")
-.option("delimiter","\t")
-.load("/data/providers/Startapp_Geo/location_-_MX_AR_sample*")
-.drop("_c5")
-.toDF("device_id","country","utc_timestamp","latitude","longitude")
-.filter("country == '%s'".format(country)) //*******************************Ojo que esto hay que cambiarlo para el otro país
-.drop("country")
-.withColumn("provider",lit("startapp"))
-.withColumn("device_id",lower(col("device_id")))
-.withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
-.withColumn("hour", date_format(col("utc_timestamp"), "HH"))
-.select(cols.head, cols.tail: _*)
-//.withColumn("utc_timestamp", unix_timestamp(col("utc_timestamp")))
+val total_users_1_month = safegraph.select("device_id").distinct().count().toInt
+val detecions_by_date = safegraph
+            .groupBy("date").agg(countDistinct("device_id") as "unique_devices",count("device_id") as "detections")
+            .withColumn("total_users_1_month",lit(total_users_1_month))
 
 
-//Juntamos las dos para hacer las agregaciones juntas. Igual no sé si es lo más eficiente...pero bueno
-
-val listadias = List("31-12-20","01-01-20","02-01-20","03-01-20","04-01-20","05-01-20","06-01-20")
-val all = List(safegraph,startapp).reduce(_.unionByName (_)).filter(col("date").isin(listadias:_*))
-
-
-///Acá calculamos las detecciones por día por horario de cada dia
-val hour_data_by_date = all.groupBy("date","hour","provider")
-      .agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections").orderBy("date")
-
-//Acá calculamos las detecciones por día por horario del periodo
-val hour_data_by_period = all.groupBy("hour","provider")
-    .agg(countDistinct("device_id") as "unique_users",count("utc_timestamp") as "total_detections").orderBy("hour")
-
-
-hour_data_by_period
+detecions_by_date
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.save(output_path+"hour_data_by_period_%s".format(country))
-
-
-hour_data_by_date
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"hour_data_by_date_%s".format(country))
+.save(output_path+"detecions_by_date_%s".format(country))
 
 
 
