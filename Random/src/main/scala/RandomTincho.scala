@@ -1374,7 +1374,7 @@ object RandomTincho {
 
   def email_to_madid(spark:SparkSession){
     val piis = spark.read
-                    .load("/datascience/pii_matching/pii_tuples/day=20200128")
+                    .load("/datascience/pii_matching/pii_tuples/")
                     .filter("country = 'CL' and ml_sh2 is not null")
                     .select("device_id","ml_sh2")
                     .distinct()
