@@ -157,6 +157,43 @@ object GetDataXPAR {
     user_agents
   }
 
+  def getDataTriplets(
+      spark: SparkSession,
+      country: String,
+      nDays: Int = -1,
+      path: String = "/datascience/data_triplets/segments/"
+  ) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    val df = if (nDays > 0) {
+      // read files from dates
+      val format = "yyyyMMdd"
+      val endDate = DateTime.now.minusDays(1)
+      val days =
+        (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+      // Now we obtain the list of hdfs folders to be read
+      val hdfs_files = days
+        .map(day => path + "/day=%s/country=%s".format(day, country))
+        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+      val dfs = hdfs_files.map(
+        f =>
+          spark.read
+            .parquet(f)
+            .select("device_id", "feature")
+            .withColumn("count", lit(1))
+            .withColumnRenamed("feature", "segment")
+      )
+      dfs.reduce((df1, df2) => df1.unionAll(df2))
+    } else {
+      // read all date files
+      spark.read.load(path + "/day=*/country=%s/".format(country))
+    }
+    df
+  }
+
   /**
     * GET URL DATA FOR A GIVEN AUDIENCE
     */
