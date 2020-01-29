@@ -337,6 +337,8 @@ object GetDataXPAR {
       .option("sep", "\t")
       .load("/datascience/custom/dataset_expansion_ar_segments")
       .filter("_c2 IS NOT NULL")
+      .write
+      .format("csv")
       .option("sep", "\t")
       .mode("overwrite")
       .save("/datascience/custom/dataset_expansion_ar_segments_filtered")
