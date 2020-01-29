@@ -169,6 +169,7 @@ object GetDataXPAR {
       .dropDuplicates("device_id")
       .write
       .format("parquet")
+      .mode("overwrite")
       .save("/datascience/custom/user_agent_ar_xp")
   }
 
@@ -195,6 +196,7 @@ object GetDataXPAR {
       .agg(collect_list("url") as "urls")
       .write
       .format("parquet")
+      .mode("overwrite")
       .save("/datascience/custom/urls_ar_xp")
   }
 
