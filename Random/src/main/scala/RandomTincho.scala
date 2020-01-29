@@ -1372,6 +1372,25 @@ object RandomTincho {
                   .save("/datascience/custom/dataset_kws_sharethis")
   }
 
+  def email_to_madid(spark:SparkSession){
+    val piis = spark.read
+                    .load("/datascience/pii_matching/pii_tuples/day=20200128")
+                    .filter("country = 'CL' and ml_sh2 is not null")
+                    .select("device_id","ml_sh2")
+                    .distinct()
+
+    val crossdevice = spark.read.format("csv")
+                            .load("/datascience/audiences/crossdeviced/cookies_cl_xd")
+                            .withColumnRenamed("_c0","device_id")
+
+    val count = piis.join(crossdevice,Seq("device_id"),"inner")
+                    .select("ml_sh2")
+                    .distinct
+                    .count()
+
+    println("Count ml unique: %s".format(count))
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1384,7 +1403,7 @@ object RandomTincho {
         .getOrCreate()
     
     //get_piis_bridge(spark)
-    get_dataset_sharethis_kws(spark)
+    email_to_madid(spark)
 
   }
 
