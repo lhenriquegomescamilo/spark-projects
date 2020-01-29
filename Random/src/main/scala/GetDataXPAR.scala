@@ -169,6 +169,7 @@ object GetDataXPAR {
       .dropDuplicates("device_id")
       .write
       .format("parquet")
+      .mode("overwrite")
       .save("/datascience/custom/user_agent_ar_xp")
   }
 
@@ -184,17 +185,18 @@ object GetDataXPAR {
 
     val selected_urls = spark.read
       .format("csv")
-      .load("/datascience/custom/list_urls_DEC.csv")
+      .load("/datascience/custom/urls_used.csv")
       .withColumnRenamed("_c0", "url")
 
     urls
-      // .join(broadcast(selected_urls), Seq("url"), "inner")
+      .join(broadcast(selected_urls), Seq("url"), "inner")
       .select("device_id", "url")
       .distinct()
       .groupBy("device_id")
       .agg(collect_list("url") as "urls")
       .write
       .format("parquet")
+      .mode("overwrite")
       .save("/datascience/custom/urls_ar_xp")
   }
 
@@ -235,9 +237,9 @@ object GetDataXPAR {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getUAData(
-      spark = spark
-    )
+    // getUAData(
+    //   spark = spark
+    // )
     getURLData(
       spark = spark
     )

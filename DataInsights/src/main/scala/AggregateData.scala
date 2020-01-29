@@ -73,7 +73,11 @@ object AggregateData {
     df_chkpt
   }
 
-  def aggregateKPIs(df_chkpt: DataFrame, today: String) = {
+  def aggregateKPIs(
+      df_chkpt: DataFrame,
+      today: String,
+      agg_type: String = "kpis"
+  ) = {
     // Data Agregada KPIS
     df_chkpt
       .groupBy("id_partner", "ID")
@@ -89,7 +93,7 @@ object AggregateData {
         col("impressions") + col("clicks") + col("conversions")
       )
       .withColumn("day", lit(today))
-      .withColumn("type", lit("kpis"))
+      .withColumn("type", lit(agg_type))
       .write
       .format("parquet")
       .partitionBy("day", "type", "id_partner")
@@ -97,7 +101,13 @@ object AggregateData {
       .save("/datascience/data_insights/aggregated/")
   }
 
-  def aggregateSegments(df_chkpt: DataFrame, today: String, spark: SparkSession) = {
+  def aggregateSegments(
+      df_chkpt: DataFrame,
+      today: String,
+      spark: SparkSession,
+      agg_type: String = "segments",
+      first_party: Boolean = true
+  ) = {
     // List of segments to filter
     val taxo_segments: Seq[String] = spark.read
       .format("csv")
@@ -108,25 +118,27 @@ object AggregateData {
       .map(r => r(0).toString)
       .toSeq
 
-    // Get first_party segments
-    df_chkpt
-      .withColumn("first_party", split(col("first_party"), "\u0001"))
-      .withColumn("segments", explode(col("first_party")))
-      .groupBy("id_partner", "ID", "segments")
-      .agg(
-        approx_count_distinct(col("device_id"), 0.03).as("devices"),
-        approx_count_distinct(col("nid_sh2"), 0.03).as("nids"),
-        sum(col("data_type_imp")).as("impressions"),
-        sum(col("data_type_clk")).as("clicks"),
-        sum(col("data_type_cnv")).as("conversions")
-      )
-      .withColumn("day", lit(today))
-      .withColumn("type", lit("segments_first_party"))
-      .write
-      .format("parquet")
-      .partitionBy("day", "type", "id_partner")
-      .mode("overwrite")
-      .save("/datascience/data_insights/aggregated/")
+    if (first_party) {
+      // Get first_party segments
+      df_chkpt
+        .withColumn("first_party", split(col("first_party"), "\u0001"))
+        .withColumn("segments", explode(col("first_party")))
+        .groupBy("id_partner", "ID", "segments")
+        .agg(
+          approx_count_distinct(col("device_id"), 0.03).as("devices"),
+          approx_count_distinct(col("nid_sh2"), 0.03).as("nids"),
+          sum(col("data_type_imp")).as("impressions"),
+          sum(col("data_type_clk")).as("clicks"),
+          sum(col("data_type_cnv")).as("conversions")
+        )
+        .withColumn("day", lit(today))
+        .withColumn("type", lit("segments_first_party"))
+        .write
+        .format("parquet")
+        .partitionBy("day", "type", "id_partner")
+        .mode("overwrite")
+        .save("/datascience/data_insights/aggregated/")
+    }
 
     // Totals per segment, id and campaign id
     df_chkpt
@@ -141,7 +153,7 @@ object AggregateData {
         sum(col("data_type_cnv")).as("conversions")
       )
       .withColumn("day", lit(today))
-      .withColumn("type", lit("segments"))
+      .withColumn("type", lit(agg_type))
       .write
       .format("parquet")
       .partitionBy("day", "type", "id_partner")
@@ -219,7 +231,11 @@ object AggregateData {
       .save("/datascience/data_insights/aggregated/")
   }
 
-  def get_aggregated_data(spark: SparkSession, df_chkpt: DataFrame, today: String) {
+  def get_aggregated_data(
+      spark: SparkSession,
+      df_chkpt: DataFrame,
+      today: String
+  ) {
     aggregateKPIs(df_chkpt, today)
     aggregateSegments(df_chkpt, today, spark)
     aggregateUserAgent(df_chkpt, today)
@@ -244,6 +260,20 @@ object AggregateData {
     format = "yyyyMMdd"
     val today = DateTime.now.minusDays(since).toString(format)
     val df_chkpt = getRawData(spark, ndays, since, List("879", "753"))
+    val df_chkpt_previous =
+      getRawData(spark, ndays, since + 30, List("879", "753"))
     get_aggregated_data(spark, df_chkpt, today)
+    aggregateSegments(
+      df_chkpt_previous,
+      today,
+      spark,
+      "segments_since30",
+      false
+    )
+    aggregateKPIs(
+      df_chkpt_previous,
+      today,
+      "kpis_since30"
+    )
   }
 }

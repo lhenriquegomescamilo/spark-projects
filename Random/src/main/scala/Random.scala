@@ -4877,17 +4877,26 @@ object Random {
     val categoryUDF = udf(
       (segments: Seq[Row]) => segments.map(record => record(5).toString)
     )
-    spark.read
-      .format("json")
-      .load(
-        "/data/providers/sharethis/keywords/"
+    val df = (18 to 20)
+      .map(
+        day =>
+          spark.read
+            .format("csv")
+            .option("sep", "\t")
+            .option("header", "true")
+            .load("/data/eventqueue/2020/01/%s/*.tsv.gz".format(day))
       )
-      .select("url", "categories")
-      .na.drop()
-      .withColumn("categories", categoryUDF(col("categories")))
-      .write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/sharethis_URLs_categories")
+      .reduce((df1, df2) => df1.unionAll(df2))
+
+    println(
+      df.withColumn(
+          "removed_segments",
+          split(col("removed_segments"), "\u0001")
+        )
+        .filter("array_contains(removed_segments, '934')")
+        .select("device_id")
+        .distinct()
+        .count()
+    )
   }
 }

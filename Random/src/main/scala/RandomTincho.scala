@@ -1311,15 +1311,84 @@ object RandomTincho {
 
   def get_kws_sharethis(spark:SparkSession){
     spark.read.json("/data/providers/sharethis/keywords/")
-          .withColumn("description",lit("sharethis"))
-          .select("url","description", "dt")
+          .select("url")
           .write
           .format("csv")
           .option("delimiter","\t")
-          .partitionBy("dt")
           .mode("overwrite")
           .save("/datascience/custom/kws_sharethis/")
 
+  }
+
+  def get_piis_bridge(spark:SparkSession){
+    val pii_1 = spark.read.format("csv").option("header","true")
+                      .load("/data/providers/Bridge/Bridge_Linkage_File_Retargetly_LATAM.csv")
+                      .withColumnRenamed("SHA256_Email_Hash","pii")
+                      .select("pii")
+    val pii_2 = spark.read.format("csv").option("header","true")
+                      .load("/data/providers/Bridge/Bridge_Linkage_File_Retargetly_LATAM_Historical.csv")
+                      .withColumnRenamed("SHA256_Email_Hash","pii")
+                      .select("pii")
+    val pii_3 = spark.read.format("csv").option("header","true")
+                      .load("/data/providers/Bridge/Retargetly_Bridge_Linkage_LATAM_01_2020.csv")
+                      .withColumnRenamed("SHA256_Email_Hash","pii")
+                      .select("pii")
+    val pii_4 = spark.read.format("csv").option("header","true")
+                      .load("/data/providers/Bridge/Retargetly_Bridge_Linkage_LATAM_11_2019.csv")
+                      .withColumnRenamed("SHA256_Email_Hash","pii")
+                      .select("pii")
+    val pii_5 = spark.read.format("csv").option("header","true")
+                      .load("/data/providers/Bridge/Retargetly_Bridge_Linkage_LATAM_12_2019.csv")
+                      .withColumnRenamed("SHA256_Email_Hash","pii")
+                      .select("pii")
+    
+    pii_1.unionAll(pii_2)
+          .unionAll(pii_3)
+          .unionAll(pii_4)
+          .unionAll(pii_5)
+          .select("pii")
+          .distinct()
+          .write.format("csv")
+          .save("/datascience/custom/piis_bridge")
+
+    }
+
+  def get_dataset_sharethis_kws(spark:SparkSession){
+    val kws_scrapper = spark.read.format("csv")
+                            .option("header","true")
+                            .load("/datascience/custom/kws_sharethis_scrapper.csv")
+                            .withColumnRenamed("url_raw","url")
+                            .withColumnRenamed("kw","kw_scrapper")
+                            .select("url","kw_scrapper")
+
+    val kws_sharethis = spark.read
+                        .json("/data/providers/sharethis/keywords/")
+                        .withColumnRenamed("keywords","kws_sharethis")
+                        .select("url","kws_sharethis","entities","concepts")
+
+    kws_sharethis.join(kws_scrapper,Seq("url"),"inner")
+                  .write.format("csv")
+                  .mode(SaveMode.Overwrite)
+                  .save("/datascience/custom/dataset_kws_sharethis")
+  }
+
+  def email_to_madid(spark:SparkSession){
+    val piis = spark.read
+                    .load("/datascience/pii_matching/pii_tuples/day=20200128")
+                    .filter("country = 'CL' and ml_sh2 is not null")
+                    .select("device_id","ml_sh2")
+                    .distinct()
+
+    val crossdevice = spark.read.format("csv")
+                            .load("/datascience/audiences/crossdeviced/cookies_cl_xd")
+                            .withColumnRenamed("_c0","device_id")
+
+    val count = piis.join(crossdevice,Seq("device_id"),"inner")
+                    .select("ml_sh2")
+                    .distinct
+                    .count()
+
+    println("Count ml unique: %s".format(count))
   }
 
   def main(args: Array[String]) {
@@ -1333,8 +1402,9 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_kws_sharethis(spark)
-  
+    //get_piis_bridge(spark)
+    email_to_madid(spark)
+
   }
 
 }
