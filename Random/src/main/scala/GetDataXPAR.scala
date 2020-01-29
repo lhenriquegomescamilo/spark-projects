@@ -331,6 +331,14 @@ object GetDataXPAR {
     //   spark = spark
     // )
     // get_joint(spark)
-    getDataSegments(spark)
+    // getDataSegments(spark)
+    spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/custom/dataset_expansion_ar_segments")
+      .filter("_c2 IS NOT NULL")
+      .option("sep", "\t")
+      .mode("overwrite")
+      .save("/datascience/custom/dataset_expansion_ar_segments_filtered")
   }
 }
