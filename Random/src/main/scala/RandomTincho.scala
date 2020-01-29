@@ -31,6 +31,7 @@ import org.apache.spark.sql.types.{
  StringType,
  IntegerType
 }
+import org.apache.spark.sql.Column
 import scala.util.Random.shuffle
 
 object RandomTincho {
@@ -1353,6 +1354,8 @@ object RandomTincho {
 
     }
 
+  def stringify(c: Column) = concat(lit("["), concat_ws(",", c), lit("]"))
+
   def get_dataset_sharethis_kws(spark:SparkSession){
     val kws_scrapper = spark.read.format("csv")
                             .option("header","true")
@@ -1366,7 +1369,11 @@ object RandomTincho {
                         .withColumnRenamed("keywords","kws_sharethis")
                         .select("url","kws_sharethis","entities","concepts")
 
+
     kws_sharethis.join(kws_scrapper,Seq("url"),"inner")
+                  .withColumn("kws_sharethis", stringify(col("kws_sharethis")))
+                  .withColumn("entities", stringify(col("entities")))
+                  .withColumn("concepts", stringify(col("concepts")))
                   .write.format("csv")
                   .mode(SaveMode.Overwrite)
                   .save("/datascience/custom/dataset_kws_sharethis")
@@ -1374,7 +1381,7 @@ object RandomTincho {
 
   def email_to_madid(spark:SparkSession){
     val piis = spark.read
-                    .load("/datascience/pii_matching/pii_tuples/day=20200128")
+                    .load("/datascience/pii_matching/pii_tuples/")
                     .filter("country = 'CL' and ml_sh2 is not null")
                     .select("device_id","ml_sh2")
                     .distinct()
@@ -1403,7 +1410,7 @@ object RandomTincho {
         .getOrCreate()
     
     //get_piis_bridge(spark)
-    email_to_madid(spark)
+    get_dataset_sharethis_kws(spark)
 
   }
 
