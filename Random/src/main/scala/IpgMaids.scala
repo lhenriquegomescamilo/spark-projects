@@ -114,7 +114,7 @@ object IpgMaids {
     val dataBase =
       getDataIdPartners(
         spark,
-        List("1008", "640", "119", "412", "979", "1131"),
+        List("1008", "640", "119", "412", "979", "1131", "1139"),
         40,
         1,
         "streaming"
@@ -272,7 +272,7 @@ object IpgMaids {
       .save("/datascience/custom/IPG_maids_enriched")
   }
 
-  def gzipOutput(spark: SparkSession) = {
+  def gzipOutput(spark: SparkSession, month: String) = {
     spark.read
       .format("csv")
       .load("/datascience/custom/IPG_maids/")
@@ -281,7 +281,7 @@ object IpgMaids {
       .option("sep", ",")
       .option("compression", "gzip")
       .mode("overwrite")
-      .save("/datascience/custom/IPG_maids_gz")
+      .save("/datascience/ipg/month=%s/IPG_maids_gz")
 
     spark.read
       .format("csv")
@@ -293,7 +293,7 @@ object IpgMaids {
       .option("sep", "\t")
       .option("compression", "gzip")
       .mode("overwrite")
-      .save("/datascience/custom/IPG_maids_enriched_gz")
+      .save("/datascience/ipg/month=%s/IPG_maids_enriched_gz")
   }
 
   def main(args: Array[String]) {
@@ -305,10 +305,13 @@ object IpgMaids {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    val format = "yyyyMM"
+    val month = DateTime.now.toString(format)
+
     getDataAcxiom(spark)
     getDataSegments(spark)
     getSegmentsPerMaid(spark)
-    gzipOutput(spark)
+    gzipOutput(spark, month)
 
   }
 }
