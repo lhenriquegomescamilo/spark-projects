@@ -1353,6 +1353,25 @@ object RandomTincho {
 
     }
 
+  def get_dataset_sharethis_kws(spark:SparkSession){
+    val kws_scrapper = spark.read.format("csv")
+                            .option("header","true")
+                            .load("/datascience/custom/kws_sharethis_scrapper.csv")
+                            .withColumnRenamed("url_raw","url")
+                            .withColumnRenamed("kw","kw_scrapper")
+                            .select("url","kw_scrapper")
+
+    val kws_sharethis = spark.read
+                        .json("/data/providers/sharethis/keywords/")
+                        .withColumnRenamed("keywords","kws_sharethis")
+                        .select("url","kws_sharethis","entities","concepts")
+
+    kws_sharethis.join(kws_scrapper,Seq("url"),"inner")
+                  .write.format("csv")
+                  .mode(SaveMode.Overwrite)
+                  .save("/datascience/custom/dataset_kws_sharethis")
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1365,7 +1384,7 @@ object RandomTincho {
         .getOrCreate()
     
     //get_piis_bridge(spark)
-    get_kws_sharethis(spark)
+    get_dataset_sharethis_kws(spark)
 
   }
 
