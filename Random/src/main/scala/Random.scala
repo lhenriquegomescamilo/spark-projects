@@ -4877,7 +4877,7 @@ object Random {
     val categoryUDF = udf(
       (segments: Seq[Row]) => segments.map(record => record(5).toString)
     )
-    val df = (18 to 20)
+    val df = (22 to 29)
       .map(
         day =>
           spark.read
@@ -4888,15 +4888,16 @@ object Random {
       )
       .reduce((df1, df2) => df1.unionAll(df2))
 
-    println(
-      df.withColumn(
-          "removed_segments",
-          split(col("removed_segments"), "\u0001")
-        )
-        .filter("array_contains(removed_segments, '934')")
-        .select("device_id")
-        .distinct()
-        .count()
-    )
+    df.withColumn(
+        "removed_segments",
+        split(col("removed_segments"), "\u0001")
+      )
+      .filter("array_contains(removed_segments, '235699')")
+      .select("device_id")
+      .distinct()
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .save("/datascience/custom/removed_235699")
   }
 }
