@@ -19,7 +19,6 @@ import org.apache.spark.sql.expressions.Window
 object HolidaysCoke {
   
 //Acá el código para correr Peru
-​
 def get_safegraph_data(
       spark: SparkSession,
       nDays: String,
@@ -29,15 +28,13 @@ def get_safegraph_data(
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
-​
-  
+​ 
     // Get the days to be loaded
-   val format = "yyyyMMdd"
+    val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since.toInt)
     val days = (0 until nDays.toInt)
       .map(end.minusDays(_))
       .map(_.toString(format))
-​
     // Now we obtain the list of hdfs files to be read
     val path = "/datascience/geo/safegraph/"
     val hdfs_files = days
@@ -46,26 +43,22 @@ def get_safegraph_data(
         path => fs.exists(new org.apache.hadoop.fs.Path(path))
       )
       .map(day => day + "*.snappy.parquet")
-​
-​
+
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read
       .option("header", "true")
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
       .withColumnRenamed("ad_id", "device_id")
-.withColumnRenamed("id_type", "device_type")
-.withColumn( "lat_user",((col("latitude").cast("float"))))
-.withColumn( "lon_user",((col("longitude").cast("float"))))
-.withColumn("geocode",((abs(col("lat_user")) * decimals).cast("int") * decimals * 100) + (abs(col("lon_user")) * decimals).cast("int"))
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Date", date_format(col("Time"),"M-dd"))
-.select("device_id","device_type","lat_user","lon_user","geocode","Date")
-​
-​
-          df_safegraph } 
+      .withColumnRenamed("id_type", "device_type")
+      .withColumn( "lat_user",((col("latitude").cast("float"))))
+      .withColumn( "lon_user",((col("longitude").cast("float"))))
+      .withColumn("geocode",((abs(col("lat_user")) * decimals).cast("int") * decimals * 100) + (abs(col("lon_user")) * decimals).cast("int"))
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Date", date_format(col("Time"),"M-dd"))
+      .select("device_id","device_type","lat_user","lon_user","geocode","Date")
+    df_safegraph } 
           
-
  /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -75,8 +68,6 @@ def get_safegraph_data(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
     .conf.set("spark.sql.session.timeZone","PE")
-
-    
 
     //Acá usamos la función para levantar la data de safegraph y crearle las columnas necesarias          
     //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
@@ -89,7 +80,6 @@ def get_safegraph_data(
     //Ahora nos quedamos con el mayor geocode count para un determinado día
     val w = Window.partitionBy(col("device_id"),col("Date")).orderBy(col("geocode_count_by_day").desc) //esto es como una máscara, ordenamos descentendente
     val devices_single_top_geocode = devices_geocode_counts.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn") //acá le inventas una columna y te quedás con la primer ocurrencia
-                    
     ​
     // Ahora nos queremos quedar con un lat long de verdad donde haya estado ese usuario
     //Para eso eliminamos duplicados de la data de safegraph 
@@ -109,8 +99,7 @@ def get_safegraph_data(
     .withColumn( "lat_home",((col("lat_home").cast("float"))))
     .withColumn( "lon_home",((col("lon_home").cast("float"))))
     .select("device_id","lat_home","lon_home")
-    ​
-    ​
+    ​​
     val km_limit = 200*1000
     //val km_limit = 50
     ​
@@ -138,9 +127,7 @@ def get_safegraph_data(
             FROM joint 
             )
             WHERE distance > %s""".format(km_limit)      
-    ​
-    ​
-    ​
+
     // Storing result
     val sqlDF = spark.sql(query)
     .withColumn( "distance",(col("distance")/ 1000)).orderBy(desc("distance")).na.fill(0).filter("distance>0")
@@ -186,9 +173,7 @@ def get_safegraph_data(
     val mapUDF = udf((aud: String) => typeMap(aud))
     ​
     val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type")))
-    ​
-    ​
-    ​
+
     val country = "PE"
     val vacacion_path = "/datascience/geo/misc/travelers_from_home_PE_JAN_30_2020"
     ​
@@ -207,7 +192,6 @@ def get_safegraph_data(
     .option("delimiter","\t")
     .option("header",true)
     .save("/datascience/geo/misc/stay_at_home_full_audience_%s_JAN_30_2020".format(country))
-
 
        }
   }
