@@ -1355,7 +1355,7 @@ object RandomTincho {
     }
 
   val udfGet = udf(
-        (segments: Seq[Row], pos: Int) => segments.map(record => if(record(pos).toString != null) record(pos).toString else "")
+        (segments: Seq[Row], pos: Int) => segments.map(record => record(pos).toString)
       )    
     
 
@@ -1368,14 +1368,14 @@ object RandomTincho {
                             .select("url","kw_scrapper")
 
   val kws_sharethis = spark.read.json("/data/providers/sharethis/keywords/")
-                            .dropna()
+                            .na.drop()
                             .withColumnRenamed("keywords","kws_sharethis")
                             .withColumn("kws_sharethis",udfGet(col("kws_sharethis"),lit(2)))
-                            //.withColumn("concepts",udfGet(col("concepts"),lit(1)))
-                            //.withColumn("entities",udfGet(col("entities"),lit(3)))
-                            //.withColumn("concepts", concat_ws(";", col("concepts")))
+                            .withColumn("concepts",udfGet(col("concepts"),lit(1)))
+                            .withColumn("entities",udfGet(col("entities"),lit(3)))
+                            .withColumn("concepts", concat_ws(";", col("concepts")))
                             .withColumn("kws_sharethis", concat_ws(";", col("kws_sharethis")))
-                            //.withColumn("entities", concat_ws(";", col("entities")))
+                            .withColumn("entities", concat_ws(";", col("entities")))
                             .select("url","kws_sharethis")
 
     kws_sharethis.join(kws_scrapper,Seq("url"),"inner")
