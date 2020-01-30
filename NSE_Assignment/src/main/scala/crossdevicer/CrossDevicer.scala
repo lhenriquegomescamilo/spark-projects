@@ -84,7 +84,7 @@ object CrossDevicer {
       .drop(col("device"))
       .drop(col("device_type_db"))
       .na.fill("android",Seq("device_type"))
-      .withColumn("unknown", mapUDF(col("device_type")))
+      .withColumn("device_type", mapUDF(col("device_type")))
       .filter(col("frequency")>value_dictionary("minFreq"))
       .select("device_type","device_id","audience","frequency","NSE","GEOID") 
       //.select("device_type","device_id","NSE","CVEGEO","frequency")
