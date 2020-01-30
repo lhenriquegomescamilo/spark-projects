@@ -99,7 +99,7 @@ def get_safegraph_data(
     .withColumn( "lat_home",((col("lat_home").cast("float"))))
     .withColumn( "lon_home",((col("lon_home").cast("float"))))
     .select("device_id","lat_home","lon_home")
-​
+
     val km_limit = 200*1000
     //val km_limit = 50
 
@@ -139,7 +139,8 @@ def get_safegraph_data(
     .option("delimiter","\t")
     .option("header",true)
     .save("/datascience/geo/misc/travelers_from_home_PE_JAN_30_2020")
-   ​
+
+/*
     //una vez que tenemos la audiencia VACACionantes, se la restamos a los homes para obtener los no vacacionantes
 
     //Peru
@@ -189,7 +190,7 @@ def get_safegraph_data(
     .option("delimiter","\t")
     .option("header",true)
     .save("/datascience/geo/misc/stay_at_home_full_audience_%s_JAN_30_2020".format(country))
-    
+    */
     }
   }
 
