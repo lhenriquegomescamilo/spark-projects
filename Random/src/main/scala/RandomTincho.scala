@@ -31,7 +31,7 @@ import org.apache.spark.sql.types.{
  StringType,
  IntegerType
 }
-import org.apache.spark.sql.Column
+import org.apache.spark.sql.{Column, Row}
 import scala.util.Random.shuffle
 
 object RandomTincho {
