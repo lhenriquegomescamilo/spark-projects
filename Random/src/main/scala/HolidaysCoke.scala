@@ -85,7 +85,7 @@ def get_safegraph_data(
     //Para eso eliminamos duplicados de la data de safegraph 
     //Ahora tenemos una latitud y longitud por día, representativa del geocode de mayor frecuencia.
     val top_geocode_by_user_by_day_w_coordinates = devices_single_top_geocode.join(safegraph_data.dropDuplicates("device_id","Date","geocode"),Seq("device_id","Date","geocode"))
-    ​
+
     //Acá levantamos el dataset de homes
     //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
     val path = "/datascience/geo/PE_90d_home_14-1-2020-19h"
@@ -99,18 +99,18 @@ def get_safegraph_data(
     .withColumn( "lat_home",((col("lat_home").cast("float"))))
     .withColumn( "lon_home",((col("lon_home").cast("float"))))
     .select("device_id","lat_home","lon_home")
-    ​​
+​
     val km_limit = 200*1000
     //val km_limit = 50
-    ​
+
     //Aramos el vs dataset
     val device_vs_device = df_homes.join(top_geocode_by_user_by_day_w_coordinates,Seq("device_id"))
-    ​
+
     // Using vincenty formula to calculate distance between user/device location and ITSELF.
     device_vs_device.createOrReplaceTempView("joint")
-    ​
+
     val columns = device_vs_device.columns
-    ​
+
     val query =
     """SELECT lat_user,
                 lon_user,
@@ -131,7 +131,7 @@ def get_safegraph_data(
     // Storing result
     val sqlDF = spark.sql(query)
     .withColumn( "distance",(col("distance")/ 1000)).orderBy(desc("distance")).na.fill(0).filter("distance>0")
-    ​
+
     sqlDF
     .write
     .mode(SaveMode.Overwrite)
@@ -139,28 +139,28 @@ def get_safegraph_data(
     .option("delimiter","\t")
     .option("header",true)
     .save("/datascience/geo/misc/travelers_from_home_PE_JAN_30_2020")
-    ​   ​
+   ​
     //una vez que tenemos la audiencia VACACionantes, se la restamos a los homes para obtener los no vacacionantes
-    ​
+
     //Peru
     //Primero juntamos madid y XD
-    ​
+
     val home_madid_path = "/datascience/geo/CL_90d_home_14-1-2020-16h"
     val home_xd_path = "/datascience/audiences/crossdeviced/PE_90d_home_14-1-2020-19h_xd"
-    ​
+
     val homes_madid = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",true)
     .load(home_madid_path)
     .select("ad_id","id_type")
     .toDF("device_id","device_type")
-    ​
+
     val homes_xd = spark.read.format("csv")
     .option("delimiter",",")
     .load(home_xd_path)
     .select("_c1","_c2")
     .toDF("device_id","device_type")
-    ​
+
     val typeMap = Map(
         "coo" -> "web",
         "and" -> "android",
@@ -180,9 +180,9 @@ def get_safegraph_data(
     .option("header",true)
     .load(vacacion_path)
     .select("device_type","device_id")
-    ​
+
     val no_vacacion =  homes.join(vacaciones,Seq("device_id"),"left_anti")
-    ​
+
     no_vacacion.write
     .mode(SaveMode.Overwrite)
     .format("csv")
