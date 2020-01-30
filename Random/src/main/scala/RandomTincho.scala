@@ -1354,7 +1354,10 @@ object RandomTincho {
 
     }
 
-  def stringify(c: Column) = concat(lit("["), concat_ws(",", c), lit("]"))
+  val udfGet = udf(
+        (segments: Seq[Row], pos: Int) => segments.map(record => record(pos).toString)
+      )    
+    
 
   def get_dataset_sharethis_kws(spark:SparkSession){
     val kws_scrapper = spark.read.format("csv")
@@ -1364,16 +1367,17 @@ object RandomTincho {
                             .withColumnRenamed("kw","kw_scrapper")
                             .select("url","kw_scrapper")
 
-    val kws_sharethis = spark.read
-                        .json("/data/providers/sharethis/keywords/")
-                        .withColumnRenamed("keywords","kws_sharethis")
-                        .select("url","kws_sharethis","entities","concepts")
-
+  val kws_sharethis = spark.read.json("/data/providers/sharethis/keywords/")
+                            .withColumnRenamed("keywords","kws_sharethis")
+                            .withColumn("kws_sharethis",udfGet(col("kws_sharethis"),lit(2)))
+                            .withColumn("concepts",udfGet(col("concepts"),lit(1)))
+                            .withColumn("entities",udfGet(col("entities"),lit(3)))
+                            .withColumn("concepts", concat_ws(";", col("concepts")))
+                            .withColumn("kws_sharethis", concat_ws(";", col("kws_sharethis")))
+                            .withColumn("entities", concat_ws(";", col("entities")))
+                            .select("url","kws_sharethis","entities","concepts")
 
     kws_sharethis.join(kws_scrapper,Seq("url"),"inner")
-                  .withColumn("kws_sharethis", stringify(col("kws_sharethis")))
-                  .withColumn("entities", stringify(col("entities")))
-                  .withColumn("concepts", stringify(col("concepts")))
                   .write.format("csv")
                   .mode(SaveMode.Overwrite)
                   .save("/datascience/custom/dataset_kws_sharethis")
