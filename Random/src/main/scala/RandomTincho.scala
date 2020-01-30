@@ -1376,7 +1376,7 @@ object RandomTincho {
                             .withColumn("concepts", concat_ws(";", col("concepts")))
                             .withColumn("kws_sharethis", concat_ws(";", col("kws_sharethis")))
                             .withColumn("entities", concat_ws(";", col("entities")))
-                            .select("url","kws_sharethis")
+                            .select("url","kws_sharethis","entities","concepts")
 
     kws_sharethis.join(kws_scrapper,Seq("url"),"inner")
                   .write.format("csv")
