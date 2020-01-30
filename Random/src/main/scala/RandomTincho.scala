@@ -1355,7 +1355,7 @@ object RandomTincho {
     }
 
   val udfGet = udf(
-        (segments: Seq[Row], pos: Int) => segments.map(record => record(pos).toString)
+        (segments: Seq[Row], pos: Int) => segments.map(record => record(pos).toString if record.length >= pos else "")
       )    
     
 
