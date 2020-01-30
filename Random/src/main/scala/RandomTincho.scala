@@ -1368,6 +1368,7 @@ object RandomTincho {
                             .select("url","kw_scrapper")
 
   val kws_sharethis = spark.read.json("/data/providers/sharethis/keywords/")
+                            .dropna()
                             .withColumnRenamed("keywords","kws_sharethis")
                             .withColumn("kws_sharethis",udfGet(col("kws_sharethis"),lit(2)))
                             //.withColumn("concepts",udfGet(col("concepts"),lit(1)))
