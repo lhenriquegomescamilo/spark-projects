@@ -281,7 +281,7 @@ object IpgMaids {
       .option("sep", ",")
       .option("compression", "gzip")
       .mode("overwrite")
-      .save("/datascience/ipg/month=%s/IPG_maids_gz")
+      .save("/datascience/ipg/month=%s/IPG_maids_gz".format(month))
 
     spark.read
       .format("csv")
@@ -293,7 +293,7 @@ object IpgMaids {
       .option("sep", "\t")
       .option("compression", "gzip")
       .mode("overwrite")
-      .save("/datascience/ipg/month=%s/IPG_maids_enriched_gz")
+      .save("/datascience/ipg/month=%s/IPG_maids_enriched_gz".format(month))
   }
 
   def main(args: Array[String]) {
@@ -308,9 +308,9 @@ object IpgMaids {
     val format = "yyyyMM"
     val month = DateTime.now.toString(format)
 
-    getDataAcxiom(spark)
-    getDataSegments(spark)
-    getSegmentsPerMaid(spark)
+    // getDataAcxiom(spark)
+    // getDataSegments(spark)
+    // getSegmentsPerMaid(spark)
     gzipOutput(spark, month)
 
   }
