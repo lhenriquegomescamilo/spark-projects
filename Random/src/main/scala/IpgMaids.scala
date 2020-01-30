@@ -308,9 +308,9 @@ object IpgMaids {
     val format = "yyyyMM"
     val month = DateTime.now.toString(format)
 
-    // getDataAcxiom(spark)
-    // getDataSegments(spark)
-    // getSegmentsPerMaid(spark)
+    getDataAcxiom(spark)
+    getDataSegments(spark)
+    getSegmentsPerMaid(spark)
     gzipOutput(spark, month)
 
   }
