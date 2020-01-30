@@ -28,7 +28,7 @@ def get_safegraph_data(
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
-​ 
+
     // Get the days to be loaded
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since.toInt)
@@ -72,15 +72,15 @@ def get_safegraph_data(
     //Acá usamos la función para levantar la data de safegraph y crearle las columnas necesarias          
     //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
     val safegraph_data = get_safegraph_data(spark,"30","1","10","PE")
-    ​
-    ​
+
     //Acá generamos un conteo de geocodes por usuario por dia
     val devices_geocode_counts = safegraph_data.groupBy("device_id","Date","geocode").agg(count("lat_user") as "geocode_count_by_day")
-    ​
+
     //Ahora nos quedamos con el mayor geocode count para un determinado día
-    val w = Window.partitionBy(col("device_id"),col("Date")).orderBy(col("geocode_count_by_day").desc) //esto es como una máscara, ordenamos descentendente
-    val devices_single_top_geocode = devices_geocode_counts.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn") //acá le inventas una columna y te quedás con la primer ocurrencia
-    ​
+    val w = Window.partitionBy(col("device_id"),col("Date")).orderBy(col("geocode_count_by_day").desc) 
+    //esto es como una máscara, ordenamos descentendente
+    val devices_single_top_geocode = devices_geocode_counts.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn") 
+    //acá le inventas una columna y te quedás con la primer ocurrencia
     // Ahora nos queremos quedar con un lat long de verdad donde haya estado ese usuario
     //Para eso eliminamos duplicados de la data de safegraph 
     //Ahora tenemos una latitud y longitud por día, representativa del geocode de mayor frecuencia.
@@ -169,15 +169,12 @@ def get_safegraph_data(
         "unknown" -> "android",
         "ios" -> "ios",
         "idfa"->"ios")
-        
-    val mapUDF = udf((aud: String) => typeMap(aud))
-    ​
-    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type")))
 
+    val mapUDF = udf((aud: String) => typeMap(aud))
+    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type")))
     val country = "PE"
     val vacacion_path = "/datascience/geo/misc/travelers_from_home_PE_JAN_30_2020"
-    ​
-    ​
+
     val vacaciones = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",true)
@@ -192,7 +189,7 @@ def get_safegraph_data(
     .option("delimiter","\t")
     .option("header",true)
     .save("/datascience/geo/misc/stay_at_home_full_audience_%s_JAN_30_2020".format(country))
-
-       }
+    
+    }
   }
 
