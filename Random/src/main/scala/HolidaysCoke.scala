@@ -63,11 +63,14 @@ def get_safegraph_data(
   /******************     MAIN     *********************/
   /*****************************************************/
   def main(args: Array[String]) {
+    
     val spark = SparkSession.builder
     .appName("HolidaysCoke")
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
-    .conf.set("spark.sql.session.timeZone","PE")
+    
+
+    spark.conf.set("spark.sql.session.timeZone","PE")
 
     //Acá usamos la función para levantar la data de safegraph y crearle las columnas necesarias          
     //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
