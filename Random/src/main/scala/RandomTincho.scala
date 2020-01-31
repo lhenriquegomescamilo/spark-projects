@@ -1362,7 +1362,7 @@ object RandomTincho {
   def get_dataset_sharethis_kws(spark:SparkSession){
     val kws_scrapper = spark.read.format("csv")
                             .option("header","true")
-                            .load("/datascience/custom/kws_sharethis_scrapper.csv")
+                            .load("/datascience/custom/kws_sharethis_scrapper_20200130.csv")
                             .withColumnRenamed("url_raw","url")
                             .withColumnRenamed("kw","kw_scrapper")
                             .select("url","kw_scrapper")
