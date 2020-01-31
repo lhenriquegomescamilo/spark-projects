@@ -59,7 +59,7 @@ object VolumesReport {
       .select(
         "device_id",
         "platforms",
-        "segment",
+        "segments",
         "device_type",
         "country",
         "day"
