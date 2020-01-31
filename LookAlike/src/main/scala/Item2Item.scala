@@ -142,6 +142,8 @@ object Item2Item {
       baseFeatureSegments ++= factualSegments.toSet.diff(baseFeatureSegments.toSet).toList
     }
 
+    val extraFeatureSegments = getExtraFeatureSegments()
+
     val nSegmentToExpand = expandInput.length
 
     if (isOnDemand)
