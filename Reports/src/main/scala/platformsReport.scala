@@ -13,7 +13,7 @@ import org.apache.log4j.{Level, Logger}
 /**
   * The idea of this script is to generate days of volumes by platform for platform Report.
   */
-object platformsReport {
+object VolumesReport {
 
   /**
     *
@@ -43,7 +43,7 @@ object platformsReport {
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/reports/platforms/data"
+    val path = "/datascience/reports/platforms/data2"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
@@ -239,7 +239,7 @@ object platformsReport {
 
   }
 
-  def getVolumeReport(spark: SparkSession) = {
+  def getVolumeReport_old(spark: SparkSession) = {
     import spark.implicits._
 
     val df = spark.read
@@ -290,6 +290,44 @@ object platformsReport {
       .save("/datascience/reports/platforms/done/")
   }
 
+
+  def getVolumesReport(spark: SparkSession,
+                       nDays: Integer,
+                       since: Integer) = {
+
+    import spark.implicits._
+
+    val df =  getPlatformsData(spark = spark,
+                               nDays = nDays,
+                               since = since)
+
+    val taxo_segs = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/misc/taxo_gral.csv")
+      .select("seg_id")
+      .collect()
+      .map(_(0).toString.toInt)
+      .toSeq
+
+    val volumes = df
+      .withColumn("segment", explode(col("segments")))
+      .drop("segments")
+      .filter(col("segment").isin(taxo_segs: _*))
+      .groupBy("device_type", "segment", "country")
+      .agg(
+        approx_count_distinct(col("device_id"), rsd = 0.03) as "device_unique"
+      )
+
+    volumes
+      .withColumn("day", lit(DateTime.now.minusDays(1).toString("yyyyMMdd")))
+      .write
+      .format("parquet")
+      .partitionBy("day", "country")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/reports/volumes/done")
+  }  
+
   type OptionMap = Map[Symbol, Int]
 
   /**
@@ -321,38 +359,15 @@ object platformsReport {
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
-      .appName("PlatformsReportFast")
+      .appName("VolumesReport")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    // getReports(spark = spark, nDays = nDays, since = since)
-    getVolumeReport(spark)
-    // val taxo_segs = spark.read
-    //   .format("csv")
-    //   .option("header", "true")
-    //   .load("/datascience/misc/taxo_gral.csv")
-    //   .select("seg_id")
-    //   .collect()
-    //   .map(_(0).toString.toInt)
-    //   .toSeq
+    getVolumesReport(spark = spark,
+                     nDays = nDays,
+                     since = since)
 
-    // val filter_firstparty = udf( (segments: Seq[Int]) => segments.filter(s => taxo_segs.contains(s)) )
 
-    // val df = spark.read
-    //       .format("parquet")
-    //       .load("/datascience/reports/platforms/data2/day=20191222")
-    //       .withColumn("segments", filter_firstparty(col("segments")))
-    //       .withColumn("segment", explode(col("segments")))
-
-    // println(df.count())
-
-    // val df2 = spark.read
-    //   .format("parquet")
-    //   .load("/datascience/reports/platforms/data2/day=20191222")
-    //   .withColumn("segment", explode(col("segments")))
-    //   .filter(col("segment").isin(taxo_segs: _*))
-
-    // println(df2.count())
   }
 }
