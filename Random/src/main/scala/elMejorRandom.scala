@@ -899,9 +899,7 @@ bias_user_detections
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-val nDays = "30"
-val country = "AR"
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/",nDays,"1",country)
+    val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","AR")
                              
               
 val triplets = getDataTriplets(spark, country, nDays, from)
@@ -913,7 +911,7 @@ val triplets = getDataTriplets(spark, country, nDays, from)
         .write
         .format("csv")
         .mode("overwrite")
-        .save("/datascience/geo/NSEHomes/Ingreso_GT_Equifax_%s_%s".format(nDays,country))
+        .save("/datascience/geo/NSEHomes/Ingreso_GT_Equifax_AR_30")
 
 }
 
