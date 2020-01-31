@@ -185,7 +185,7 @@ object ReporterPipeline {
     val spark =
       SparkSession.builder
         .appName("Eventqueue Streaming")
-        // .config("spark.sql.streaming.pollingDelay", 1000)
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
