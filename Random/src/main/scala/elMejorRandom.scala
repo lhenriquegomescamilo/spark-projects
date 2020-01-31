@@ -899,10 +899,21 @@ bias_user_detections
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","AR")
-                  .filter(col("feature") isin (20107,20108,20109, 20110))              
+val nDays = "30"
+val country = "AR"
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/",nDays,"1",country)
+                             
               
-
+val triplets = getDataTriplets(spark, country, nDays, from)
+      triplets
+        .filter(col("segment").isin (List(20107,20108,20109, 20110):_*))
+        .withColumn("device_id",lower(col("device_id")))
+        .select("device_id", "segment")
+        .distinct()
+        .write
+        .format("csv")
+        .mode("overwrite")
+        .save("/datascience/geo/NSEHomes/Ingreso_GT_Equifax_%s_%s".format(nDays,country))
 
 }
 
