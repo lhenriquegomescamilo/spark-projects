@@ -899,35 +899,9 @@ bias_user_detections
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-//Acá queremos calcular los usuarios desviados respecto a velocidad
-
-val output_path = "/datascience/geo/misc/ChileCounts/"
-val country = "CL"
-
-//Argentina
-
-spark.conf.set("spark.sql.session.timeZone",country)
-
-val safegraph = get_safegraph_data(spark,"30","1",country)
-.withColumnRenamed("ad_id","device_id")
-.withColumn("device_id",lower(col("device_id")))
-.withColumn("utc_timestamp", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("date", date_format(col("utc_timestamp"), "dd-MM-YY"))
-
-val total_users_1_month = safegraph.select("device_id").distinct().count().toInt
-val detecions_by_date = safegraph
-            .groupBy("date").agg(countDistinct("device_id") as "unique_devices",count("device_id") as "detections")
-            .withColumn("total_users_1_month",lit(total_users_1_month))
-
-
-detecions_by_date
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save(output_path+"detecions_by_date_%s".format(country))
-
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","AR")
+                  .filter(col("feature") isin (20107,20108,20109, 20110))              
+              
 
 
 }
