@@ -72,6 +72,8 @@ def get_safegraph_data(
 
     spark.conf.set("spark.sql.session.timeZone","PE")
 
+    /*
+
     //Acá usamos la función para levantar la data de safegraph y crearle las columnas necesarias          
     //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
     val safegraph_data = get_safegraph_data(spark,"30","1","10","PE")
@@ -143,13 +145,13 @@ def get_safegraph_data(
     .option("header",true)
     .save("/datascience/geo/misc/travelers_from_home_PE_JAN_30_2020")
 
-/*
+  */
     //una vez que tenemos la audiencia VACACionantes, se la restamos a los homes para obtener los no vacacionantes
 
     //Peru
     //Primero juntamos madid y XD
 
-    val home_madid_path = "/datascience/geo/CL_90d_home_14-1-2020-16h"
+    val home_madid_path = "/datascience/geo/PE_90d_home_14-1-2020-19h"
     val home_xd_path = "/datascience/audiences/crossdeviced/PE_90d_home_14-1-2020-19h_xd"
 
     val homes_madid = spark.read.format("csv")
@@ -193,7 +195,7 @@ def get_safegraph_data(
     .option("delimiter","\t")
     .option("header",true)
     .save("/datascience/geo/misc/stay_at_home_full_audience_%s_JAN_30_2020".format(country))
-    */
+  
     }
   }
 
