@@ -240,13 +240,16 @@ def getReport(
     .agg(countDistinct("device_id").as("count_new"))
 
     var df = df_old.join(df_new,Seq("segment_id"))
-    df.write
-          .mode(SaveMode.Overwrite)
-          .format("csv")
-          .option("delimiter","\t")
-          .option("header",true)
-          .save("/datascience/misc/scrapper_test/%s".format(country))
-    
+    df.withColumn("country", lit(country))
+    .write
+    .format("csv")
+    .option("delimiter","\t")
+    .option("header",true)
+    .mode("append") 
+    .save("/datascience/misc/scrapper_test_all")
+    //.mode(SaveMode.Overwrite)    
+    //.save("/datascience/misc/scrapper_test/%s".format(country))
+
     }
 
 
