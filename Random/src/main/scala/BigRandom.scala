@@ -245,7 +245,7 @@ def getReport(
           .format("csv")
           .option("delimiter","\t")
           .option("header",true)
-          .save("/datascience/misc/scrapper_test_%s".format(country))
+          .save("/datascience/misc/scrapper_test/%s".format(country))
     
     }
 
