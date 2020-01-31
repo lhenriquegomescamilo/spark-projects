@@ -899,10 +899,10 @@ bias_user_detections
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-    val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","AR")
+
                              
               
-val triplets = getDataTriplets(spark, country, nDays, from)
+val triplets = getDataTriplets(spark, "AR", 30, 1)
       triplets
         .filter(col("segment").isin (List(20107,20108,20109, 20110):_*))
         .withColumn("device_id",lower(col("device_id")))
