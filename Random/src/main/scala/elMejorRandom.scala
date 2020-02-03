@@ -900,18 +900,26 @@ bias_user_detections
 
 
 
-                             
+val users = spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/keywiser/processed/MX_pitch_whiskey_NOF_2020-02-03T16-19-30-428047")
+.toDF("device_type","device_id","audience")
+.drop("device_type","audience")
+.withColumn("device_id",lower(col("device_id")))
               
 val triplets = getDataTriplets(spark, "AR", 30, 1)
-      triplets
-        .filter(col("segment").isin (List(20107,20108,20109, 20110):_*))
         .withColumn("device_id",lower(col("device_id")))
         .select("device_id", "segment")
         .distinct()
+
+
+
+users.join(triplets,Seq("device_id"))
         .write
         .format("csv")
         .mode("overwrite")
-        .save("/datascience/geo/NSEHomes/Ingreso_GT_Equifax_AR_30")
+        .save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_30D")
 
 }
 
