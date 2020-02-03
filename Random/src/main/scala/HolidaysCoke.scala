@@ -168,7 +168,7 @@ def get_safegraph_data(
     val object_xd = AudienceCrossDevicer.cross_device(
     spark,
     path_travellers,
-    queries(0)("xdFilter").toString,
+    xd_filter,
     "\t",
     "_c0"
   )
