@@ -132,7 +132,7 @@ object AggregateData {
           sum(col("data_type_cnv")).as("conversions")
         )
         .withColumn("day", lit(today))
-        .withColumn("type", lit("segments_first_party"))
+        .withColumn("type", lit(agg_type+"_first_party"))
         .write
         .format("parquet")
         .partitionBy("day", "type", "id_partner")
