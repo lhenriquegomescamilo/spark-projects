@@ -268,7 +268,7 @@ object AggregateData {
       today,
       spark,
       "segments_since30",
-      false
+      true
     )
     aggregateKPIs(
       df_chkpt_previous,
