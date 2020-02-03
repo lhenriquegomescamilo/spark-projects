@@ -217,30 +217,42 @@ def getReport(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    getReport(spark)
+    val countries = "AR,BR,CL,CO,EC,MX,PE,US".split(",").toList
 
-    /**getUsersCustom(spark=spark,
-                   nDays=nDays,
-                   since=since)
+    for (country <- countries) {
 
-    val query_27 = "country IN ('MX', 'BR') AND event_type = 'pv' AND array_contains(platforms, '27')"
- 
-    
-    val query = "country IN ('MX', 'BR') AND event_type = 'pv'"
-    val nDays = 2
-    val since = 1
-    
-     getDataEventQueue(
-      spark=spark,
-      query=query,
-      nDays=nDays,
-      since=since)
-    
-    getDataEventQueue_27(
-      spark=spark,
-      query_27=query_27,
-      nDays=nDays,
-      since=since)
-    **/
+     var df_old = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",false)
+    .load("/datascience/keywiser/test/%s_scrapper_test_5Dsince10*".format(country))
+    .withColumnRenamed("_c1", "device_id")
+    .withColumnRenamed("_c2", "segment_id")
+    .groupBy("segment_id")
+    .agg(countDistinct("device_id").as("count_old"))
+
+    var df_new = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",false)
+    .load("/datascience/keywiser/test/%s_scrapper_test_5Dsince2*".format(country))
+    .withColumnRenamed("_c1", "device_id")
+    .withColumnRenamed("_c2", "segment_id")
+    .groupBy("segment_id")
+    .agg(countDistinct("device_id").as("count_new"))
+
+    var df = df_old.join(df_new,Seq("segment_id"))
+    df.withColumn("country", lit(country))
+    .write
+    .format("csv")
+    .option("delimiter","\t")
+    .option("header",true)
+    .mode("append") 
+    .save("/datascience/misc/scrapper_test_all")
+    //.mode(SaveMode.Overwrite)    
+    //.save("/datascience/misc/scrapper_test/%s".format(country))
+
+    }
+
+
+
   }
 }
