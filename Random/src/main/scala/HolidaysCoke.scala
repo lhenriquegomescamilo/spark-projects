@@ -1,4 +1,5 @@
 package main.scala
+import main.scala.crossdevicer.AudienceCrossDevicer
 import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
@@ -9,7 +10,6 @@ import org.apache.spark.sql.SaveMode
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.apache.spark.sql.expressions.Window
 
-
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
@@ -18,7 +18,7 @@ import org.apache.spark.sql.expressions.Window
  
 object HolidaysCoke {
   
-//Acá el código para correr Peru
+//Acá el código para correr Peru , PE, Chile CL, argentina
 def get_safegraph_data(
       spark: SparkSession,
       nDays: String,
