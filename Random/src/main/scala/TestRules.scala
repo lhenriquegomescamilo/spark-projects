@@ -80,6 +80,7 @@ object TestRules {
     filtered_rules.cache()
 
     val N = filtered_rules.count().toInt
+    val batch_size = 100
 
     val queries = filtered_rules.rdd
       .take(N)
@@ -91,33 +92,37 @@ object TestRules {
             scala.xml.Utility.escape(row(2).toString.replace("o'", "o\\'"))
           )
       )
-    ((0 until queries.size) zip queries)
-      .map(
-        t => {
-          val df: DataFrame = try {
-            finalDF
-              .filter(t._2)
-              .withColumn("segment", lit(t._1))
-              .select("device_id", "segment")
-          } catch {
-            case e: Exception => {
-              println("Failed on query: %s".format(t._2))
-              Seq.empty[(String, String)].toDF("device_id", "segment")
-            }
-          }
-          df
-        }
-      )
-      .reduce((df1, df2) => df1.unionAll(df2))
-      .distinct()
-      .groupBy("device_id")
-      .agg(collect_list("segment").as("segments"))
-      .withColumn("segments", concat_ws(",", col("segments")))
-      .write
-      .format("csv")
-      .mode("append")
-      .save("/datascience/custom/test_rules")
 
+    for (batch <- (0 to (N / batch_size).toInt)) {
+      ((0 until batch_size) zip queries.slice(
+        batch_size * batch,
+        (batch_size + 1) * batch
+      )).map(
+          t => {
+            val df: DataFrame = try {
+              finalDF
+                .filter(t._2)
+                .withColumn("segment", lit(batch * batch_size + t._1))
+                .select("device_id", "segment")
+            } catch {
+              case e: Exception => {
+                println("Failed on query: %s".format(t._2))
+                Seq.empty[(String, String)].toDF("device_id", "segment")
+              }
+            }
+            df
+          }
+        )
+        .reduce((df1, df2) => df1.unionAll(df2))
+        .distinct()
+        .groupBy("device_id")
+        .agg(collect_list("segment").as("segments"))
+        .withColumn("segments", concat_ws(",", col("segments")))
+        .write
+        .format("csv")
+        .mode("append")
+        .save("/datascience/custom/test_rules")
+    }
   }
 
   def main(args: Array[String]) {
