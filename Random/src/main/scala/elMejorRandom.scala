@@ -905,10 +905,10 @@ val users = spark.read.format("csv")
 .option("header",true)
 .load("/datascience/keywiser/processed/MX_pitch_whiskey_NOF_2020-02-03T16-19-30-428047")
 .toDF("device_type","device_id","audience")
-.drop("device_type","audience")
+.drop("device_type")
 .withColumn("device_id",lower(col("device_id")))
               
-val triplets = getDataTriplets(spark, "AR", 30, 1)
+val triplets = getDataTriplets(spark, "AR", 90, 1)
         .withColumn("device_id",lower(col("device_id")))
         .select("device_id", "segment")
         .distinct()
@@ -919,7 +919,7 @@ users.join(triplets,Seq("device_id"))
         .write
         .format("csv")
         .mode("overwrite")
-        .save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_30D")
+        .save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D")
 
 }
 
