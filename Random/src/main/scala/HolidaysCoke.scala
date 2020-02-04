@@ -11,11 +11,9 @@ import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.apache.spark.sql.expressions.Window
 
 /**
-  * The idea of this script is to run random stuff. Most of the times, the idea is
-  * to run quick fixes, or tests.
+  * The idea of this script is to populate cocacola holiday/non-holiday segments.
   */
 
- 
 object HolidaysCoke {
   
 //Acá el código para correr Peru , PE, Chile CL, argentina
@@ -68,15 +66,16 @@ def get_safegraph_data(
     .appName("HolidaysCoke")
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
-    
 
-    spark.conf.set("spark.sql.session.timeZone","PE")
-
- 
+    //spark.conf.set("spark.sql.session.timeZone","PE")
+    //spark.conf.set("spark.sql.session.timeZone","CL")
+    spark.conf.set("spark.sql.session.timeZone","AR")
 
     //Acá usamos la función para levantar la data de safegraph y crearle las columnas necesarias          
     //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
-    val safegraph_data = get_safegraph_data(spark,"30","1","10","PE")
+    //val safegraph_data = get_safegraph_data(spark,"30","1","10","PE")
+    //val safegraph_data = get_safegraph_data(spark,"30","1","10","CL")
+    val safegraph_data = get_safegraph_data(spark,"30","1","10","argentina")
 
     //Acá generamos un conteo de geocodes por usuario por dia
     val devices_geocode_counts = safegraph_data.groupBy("device_id","Date","geocode").agg(count("lat_user") as "geocode_count_by_day")
@@ -94,19 +93,58 @@ def get_safegraph_data(
     //Acá levantamos el dataset de homes
     //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
  
+    /**
     //Path home peru
-    //val path_homes = "/datascience/geo/PE_90d_home_14-1-2020-19h"
-    //Path home chile
-    val path_homes = "/datascience/geo/CL_90d_home_14-1-2020-16h"
-    //Path home ARG
-    //val path_homes = "/datascience/geo/NSEHomes/argentina_365d_home_20-11-2019-12h"
-
+    val path_homes = "/datascience/geo/PE_90d_home_14-1-2020-19h"
     val df_homes = spark.read
     .format("csv")
     .option("sep","\t")
     .option("header",true)
     .load(path_homes)
     .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
+    .filter("lat_home != lon_home")
+    .withColumn( "lat_home",((col("lat_home").cast("float"))))
+    .withColumn( "lon_home",((col("lon_home").cast("float"))))
+    .select("device_id","lat_home","lon_home")    
+    */
+
+    /**
+    //Path home chile
+    val path_homes = "/datascience/geo/CL_90d_home_14-1-2020-16h"
+    val df_homes = spark.read
+    .format("csv")
+    .option("sep","\t")
+    .option("header",true)
+    .load(path_homes)
+    .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
+    .filter("lat_home != lon_home")
+    .withColumn( "lat_home",((col("lat_home").cast("float"))))
+    .withColumn( "lon_home",((col("lon_home").cast("float"))))
+    .select("device_id","lat_home","lon_home")    
+    */
+
+    //Path home ARG
+    val path_homes = "/datascience/geo/NSEHomes/argentina_365d_home_20-11-2019-12h"
+ 
+    val typeMap_homes = Map(
+          "coo" -> "web",
+          "and" -> "android",
+          "maid" -> "android",
+          "ios" -> "ios",
+          "con" -> "TV",
+          "dra" -> "drawbridge",
+          "idfa" -> "ios",
+          "aaid"->"android",
+          "android"->"android",
+          "unknown"->"unknown")
+    val mapUDF_homes = udf((dev_type: String) => typeMap_homes(dev_type))
+
+    val homes_madid = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",false)
+    .load(path_homes)
+    .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
+    .withColumn("pii_type",mapUDF_homes(col("pii_type")))
     .filter("lat_home != lon_home")
     .withColumn( "lat_home",((col("lat_home").cast("float"))))
     .withColumn( "lon_home",((col("lon_home").cast("float"))))
@@ -143,12 +181,13 @@ def get_safegraph_data(
     // Storing result
 
     //val country = "PE"
-    val country = "CL"
-    //val country = "AR"
+    //val country = "CL"
+    val country = "AR"
 
-    val date = "20200203"
+    val date = "20200204"
     val root_path = "/datascience/geo/holidays/coca/"
-    val path_travellers =  root_path + "travellers_%s/".format(country) + date
+    val file_path_travellers = "travellers_%s_".format(country) + date
+    val path_travellers =  root_path + file_path_travellers
 
     val sqlDF = spark.sql(query)
     .withColumn( "distance",(col("distance")/ 1000)).orderBy(desc("distance")).na.fill(0).filter("distance>0")
@@ -158,7 +197,7 @@ def get_safegraph_data(
     .mode(SaveMode.Overwrite)
     .format("csv")
     .option("delimiter","\t")
-    .option("header",true)
+    .option("header",false)
     .save(path_travellers)
     //.save("/datascience/geo/misc/travelers_from_home_PE_JAN_30_2020")
 
@@ -174,7 +213,7 @@ def get_safegraph_data(
   )
 
     val dir_xd = "/datascience/audiences/crossdeviced/"
-    val path_travellers_xd = dir_xd + path_travellers + "_xd"
+    val path_travellers_xd = dir_xd + file_path_travellers + "_xd"
 
     //una vez que tenemos la audiencia VACACionantes, se la restamos a los homes para obtener los no vacacionantes
 
@@ -188,9 +227,11 @@ def get_safegraph_data(
     .select("ad_id","id_type")
     .toDF("device_id","device_type")
 
+    /**Path home peru xd
+    val path_homes_xd = "/datascience/audiences/crossdeviced/PE_90d_home_14-1-2020-19h_xd"
     val homes_xd = spark.read.format("csv")
     .option("delimiter",",")
-    .load(path_homes + "_xd")
+    .load(path_homes_xd)
     .select("_c1","_c2")
     .toDF("device_id","device_type")
 
@@ -205,23 +246,47 @@ def get_safegraph_data(
 
     val mapUDF = udf((aud: String) => typeMap(aud))
     val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type")))
+    **/
+
+    /**
+    //Path home chile xd
+    val path_homes_xd = "/datascience/audiences/crossdeviced/CL_90d_home_14-1-2020-16h_xd"
+    val homes_xd = spark.read.format("csv")
+        .option("delimiter","\t")
+        .option("header",true)
+        .load(path_homes_xd)
+        .select("device_id","device_type")
+    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_))
+    **/
+
+    //Path home ARG xdddddd
+    val path_homes_xd = "/datascience/audiences/crossdeviced/argentina_365d_home_11-12-2019-14h_xd"    
+    val homes_xd = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",true)
+    .load(path_homes)
+    .select("device_id","device_type")
+
+    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_))
 
     //segment values PE
     //val stay_seg = 233591
     //val travel_seg = 232001
  
     //segment values CL
-    val stay_seg = 233589
-    val travel_seg = 232003
+    //val stay_seg = 233589
+    //val travel_seg = 232003
 
     //segment values AR
-    //val stay_seg = 233573
-    //val travel_seg = 229115
+    val stay_seg = 233573
+    val travel_seg = 229115
 
     val vaca_new = spark.read.format("csv")
-    .option("delimiter","\t")
-    .option("header",true)
+    .option("sep",",")
+    .option("header",false)
     .load(path_travellers_xd)
+    .select("_c1","_c2")
+    .toDF("device_id","device_type")    
     .withColumn("segment_id_new", lit(travel_seg))
     .select("device_type","device_id","segment_id_new")  
     
@@ -229,7 +294,7 @@ def get_safegraph_data(
     .withColumn("segment_id_new", lit(stay_seg))
     .select("device_type","device_id","segment_id_new")
 
-    val path_stay_home = "/datascience/geo/holidays/coca/stay_home_%s_/".format(country) + date
+    val path_stay_home = "/datascience/geo/holidays/coca/stay_home_%s_".format(country) + date
 
     stay_home_new.write
     .mode(SaveMode.Overwrite)
@@ -243,16 +308,16 @@ def get_safegraph_data(
     val df_new = vaca_new.unionAll(stay_home_new)
 
     //CHILE
-    val path_travellers_old = "/datascience/geo/misc/travelers_from_home_full_audience_CL_push"
-    val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_CL"
+    //val path_travellers_old = "/datascience/geo/misc/travelers_from_home_full_audience_CL_push"
+    //val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_CL"
     
     //PERU
     //val path_travellers_old = "/datascience/geo/misc/travelers_from_home_full_audience_PE_push"
     //val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_PE"
 
     //ARGENTINA
-    //val path_travellers_old = "/datascience/geo/misc/travelers_from_home_AR_full_audience_push"
-    //val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_AR"
+    val path_travellers_old = "/datascience/geo/misc/travelers_from_home_AR_full_audience_push"
+    val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_AR"
 
     //read old dataframes and concat
     val vaca_old = spark.read.format("csv")
