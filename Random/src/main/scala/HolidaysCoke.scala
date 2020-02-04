@@ -275,10 +275,11 @@ def get_safegraph_data(
 
     val path_homes_xd = "/datascience/audiences/crossdeviced/argentina_365d_home_11-12-2019-14h_xd"    
     val homes_xd = spark.read.format("csv")
-    .option("delimiter","\t")
-    .option("header",true)
-    .load(path_homes)
-    .select("device_id","device_type")
+    .option("delimiter",",")
+    .load(path_homes_xd)
+    .select("_c1","_c2")
+    .toDF("device_id","device_type")   
+    .withColumn("device_type",mapUDF_homes(col("device_type")))   
 
     val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_))
 
