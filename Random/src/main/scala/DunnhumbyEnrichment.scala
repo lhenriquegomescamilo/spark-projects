@@ -277,10 +277,10 @@ object DunnhumbyEnrichment {
     getEnrichment(
       spark,
       "20190916",
-      40,
-      29,
+      63,
+      23,
       "'BR'",
-      "country = 'BR' AND (datetime >= '2019-10-16 00:00:00' AND datetime <= '2019-11-15 00:00:00')"
+      "country = 'BR' AND (datetime >= '2019-11-12 00:00:00' AND datetime <= '2020-01-13 00:00:00') AND campaign_id IN (31903894, 31903895, 31903893, 31903892, 32785302, 32785303)"
     )
   }
 }
