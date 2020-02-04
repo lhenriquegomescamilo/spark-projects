@@ -253,7 +253,7 @@ def get_safegraph_data(
     //val travel_seg = 229115
 
     val vaca_new = spark.read.format("csv")
-    .option("delimiter","\t")
+    .option("sep",",")
     .option("header",false)
     .load(path_travellers_xd)
     .select("_c1","_c2")
@@ -265,7 +265,7 @@ def get_safegraph_data(
     .withColumn("segment_id_new", lit(stay_seg))
     .select("device_type","device_id","segment_id_new")
 
-    val path_stay_home = "/datascience/geo/holidays/coca/stay_home_%s_/".format(country) + date
+    val path_stay_home = "/datascience/geo/holidays/coca/stay_home_%s_".format(country) + date
 
     stay_home_new.write
     .mode(SaveMode.Overwrite)
