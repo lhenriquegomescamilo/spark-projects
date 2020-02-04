@@ -886,11 +886,52 @@ bias_user_detections
 .option("header",true)
 .save(output_path+"bias_user_detections_%s".format(country))
 
+val result = spark.read.format("csv")
+.option("delimiter",",")
+.option("header",false)
+.load("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D")
+.toDF("device_id","audience","feature")
+
+
+
+val by_group = result.groupBy("audience","feature").agg(countDistinct("device_id") as "unique_users_by_audience_by_feature")
+val total = result.groupBy("audience").agg(countDistinct("device_id") as "unique_users_by_audience")
+
+by_group
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_groups")
+
+total
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_total")
+
+*/*/
+
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+
 
 val users = spark.read.format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.load("/datascience/keywiser/processed/MX_pitch_whiskey_NOF_2020-02-03T16-19-30-428047")
+.load("/datascience/keywiser/processed/MX_pitch_whiskey_NOF_2020-02-04T15-41-06-055131")
 .toDF("device_type","device_id","audience")
 .drop("device_type")
 .withColumn("device_id",lower(col("device_id")))
@@ -933,50 +974,6 @@ total
 .option("header",true)
 .option("delimiter","\t")
 .save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_total")
-
-
-*/*/
-
-
-
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-    Logger.getRootLogger.setLevel(Level.WARN)
-
-//Lo hicimos para más días también
-
-val result = spark.read.format("csv")
-.option("delimiter",",")
-.option("header",false)
-.load("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D")
-.toDF("device_id","audience","feature")
-
-
-
-val by_group = result.groupBy("audience","feature").agg(countDistinct("device_id") as "unique_users_by_audience_by_feature")
-val total = result.groupBy("audience").agg(countDistinct("device_id") as "unique_users_by_audience")
-
-by_group
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_groups")
-
-total
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_total")
-
 
 }
 
