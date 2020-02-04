@@ -169,7 +169,7 @@ def get_safegraph_data(
     path_travellers,
     xd_filter,
     "\t",
-    "_c0"
+    "device_id"
   )
 
     val dir_xd = "/datascience/audiences/crossdeviced/"
