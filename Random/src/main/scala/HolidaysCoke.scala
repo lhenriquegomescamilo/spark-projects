@@ -139,7 +139,7 @@ def get_safegraph_data(
           "unknown"->"unknown")
     val mapUDF_homes = udf((dev_type: String) => typeMap_homes(dev_type))
 
-    val homes_madid = spark.read.format("csv")
+    val df_homes = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
     .load(path_homes)
@@ -217,7 +217,6 @@ def get_safegraph_data(
 
     //una vez que tenemos la audiencia VACACionantes, se la restamos a los homes para obtener los no vacacionantes
 
-    //Peru
     //Primero juntamos madid y XD
 
     val homes_madid = spark.read.format("csv")
