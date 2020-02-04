@@ -1,4 +1,4 @@
-package main.scala
+package main.scala.crossdevicer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{upper, col}
 import org.apache.spark.sql.SaveMode
