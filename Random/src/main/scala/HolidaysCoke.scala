@@ -187,6 +187,13 @@ def get_safegraph_data(
     .select("ad_id","id_type")
     .toDF("device_id","device_type")
 
+    //Path home peru xd
+    //val path_homes_xd = "/datascience/audiences/crossdeviced/PE_90d_home_14-1-2020-19h_xd"
+    //Path home chile xd
+    val path_homes_xd = "/datascience/audiences/crossdeviced/CL_90d_home_14-1-2020-16h_xd"
+    //Path home ARG xdddddd
+    //val path_homes_xd = "/datascience/audiences/crossdeviced/argentina_365d_home_11-12-2019-14h_xd"    
+
     val homes_xd = spark.read.format("csv")
     .option("delimiter",",")
     .load(path_homes + "_xd")
