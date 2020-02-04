@@ -93,8 +93,8 @@ object TestRules {
       )
     ((0 until queries.size) zip queries)
       .map(
-        t =>
-          try {
+        t => {
+          val df: DataFrame = try {
             finalDF
               .filter(t._2)
               .withColumn("segment", lit(t._1))
@@ -105,6 +105,8 @@ object TestRules {
               println("Failed on query: %s".format(t._2))
             }
           }
+          df
+        }
       )
       .reduce((df1, df2) => df1.unionAll(df2))
       .distinct()
