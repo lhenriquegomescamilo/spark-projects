@@ -886,19 +886,6 @@ bias_user_detections
 .option("header",true)
 .save(output_path+"bias_user_detections_%s".format(country))
 
-*/*/
-
-
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-    Logger.getRootLogger.setLevel(Level.WARN)
-
-
 
 val users = spark.read.format("csv")
 .option("delimiter","\t")
@@ -946,6 +933,50 @@ total
 .option("header",true)
 .option("delimiter","\t")
 .save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_total")
+
+
+*/*/
+
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+//Lo hicimos para más días también
+
+val result = spark.read.format("csv")
+.option("delimiter",",")
+.option("header",false)
+.load("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D")
+.toDF("device_id","audience","feature")
+
+
+
+val by_group = result.groupBy("audience","feature").agg(countDistinct("device_id") as "unique_users_by_audience_by_feature")
+val total = result.groupBy("audience").agg(countDistinct("device_id") as "unique_users_by_audience")
+
+by_group
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_groups")
+
+total
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_total")
+
 
 }
 
