@@ -77,7 +77,7 @@ object TestRules {
     val filtered_rules = rules.filter(col("id_partner").isin(partners: _*))
     filtered_rules.cache()
 
-    val N = filtered_rules.count()
+    val N = filtered_rules.count().toInt
 
     val queries = filtered_rules.rdd
       .take(N)
