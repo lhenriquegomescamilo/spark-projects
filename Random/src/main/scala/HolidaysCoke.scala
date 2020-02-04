@@ -187,13 +187,8 @@ def get_safegraph_data(
     .select("ad_id","id_type")
     .toDF("device_id","device_type")
 
-    //Path home peru xd
-    //val path_homes_xd = "/datascience/audiences/crossdeviced/PE_90d_home_14-1-2020-19h_xd"
-    //Path home chile xd
-    val path_homes_xd = "/datascience/audiences/crossdeviced/CL_90d_home_14-1-2020-16h_xd"
-    //Path home ARG xdddddd
-    //val path_homes_xd = "/datascience/audiences/crossdeviced/argentina_365d_home_11-12-2019-14h_xd"    
-
+    /**Path home peru xd
+    val path_homes_xd = "/datascience/audiences/crossdeviced/PE_90d_home_14-1-2020-19h_xd"
     val homes_xd = spark.read.format("csv")
     .option("delimiter",",")
     .load(path_homes_xd)
@@ -211,6 +206,38 @@ def get_safegraph_data(
 
     val mapUDF = udf((aud: String) => typeMap(aud))
     val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type")))
+    **/
+
+    //Path home chile xd
+    val path_homes_xd = "/datascience/audiences/crossdeviced/CL_90d_home_14-1-2020-16h_xd"
+    val homes_xd = spark.read.format("csv")
+        .option("delimiter","\t")
+        .option("header",true)
+        .load(path_homes_xd)
+        .select("device_id","device_type")
+    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_))
+
+    /**
+    //Path home ARG xdddddd
+    //val path_homes_xd = "/datascience/audiences/crossdeviced/argentina_365d_home_11-12-2019-14h_xd"    
+    val homes_xd = spark.read.format("csv")
+    .option("delimiter",",")
+    .load(path_homes_xd)
+    .select("_c1","_c2")
+    .toDF("device_id","device_type")
+
+    val typeMap = Map(
+        "coo" -> "web",
+        "and" -> "android",
+        "aaid" -> "android",
+            "android" -> "android",
+        "unknown" -> "android",
+        "ios" -> "ios",
+        "idfa"->"ios")
+
+    val mapUDF = udf((aud: String) => typeMap(aud))
+    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type")))
+    **/
 
     //segment values PE
     //val stay_seg = 233591
