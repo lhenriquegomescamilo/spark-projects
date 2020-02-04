@@ -113,5 +113,6 @@ object TestRules {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    runTest(spark)
   }
 }
