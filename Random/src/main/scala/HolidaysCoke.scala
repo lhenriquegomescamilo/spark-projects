@@ -158,7 +158,7 @@ def get_safegraph_data(
     .mode(SaveMode.Overwrite)
     .format("csv")
     .option("delimiter","\t")
-    .option("header",true)
+    .option("header",false)
     .save(path_travellers)
     //.save("/datascience/geo/misc/travelers_from_home_PE_JAN_30_2020")
 
@@ -170,7 +170,7 @@ def get_safegraph_data(
     path_travellers,
     xd_filter,
     "\t",
-    "device_id"
+    "_c0"
   )
 
     val dir_xd = "/datascience/audiences/crossdeviced/"
@@ -254,8 +254,10 @@ def get_safegraph_data(
 
     val vaca_new = spark.read.format("csv")
     .option("delimiter","\t")
-    .option("header",true)
+    .option("header",false)
     .load(path_travellers_xd)
+    .select("_c1","_c2")
+    .toDF("device_id","device_type")    
     .withColumn("segment_id_new", lit(travel_seg))
     .select("device_type","device_id","segment_id_new")  
     
