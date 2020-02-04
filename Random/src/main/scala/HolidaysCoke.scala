@@ -265,7 +265,7 @@ def get_safegraph_data(
     **/
 
     //ARGENTINA
-    val df_homes = spark.read.format("csv")
+    val homes_madid = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
     .load(path_homes)
