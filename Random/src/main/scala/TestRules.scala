@@ -94,10 +94,12 @@ object TestRules {
       )
 
     for (batch <- (0 to (N / batch_size).toInt)) {
-      ((0 until batch_size) zip queries.slice(
-        batch_size * batch,
-        (batch_size + 1) * batch
-      )).map(
+      var queries_batch = ((0 until batch_size) zip queries.slice(
+        batch * batch_size,
+        (batch + 1) * batch_size
+      ))
+      queries_batch
+        .map(
           t => {
             val df: DataFrame = try {
               finalDF
