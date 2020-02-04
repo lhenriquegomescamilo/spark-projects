@@ -70,7 +70,7 @@ object TestRules {
       .withColumnRenamed("_c2", "rule")
       .withColumnRenamed("_c1", "segment")
 
-    val finalDF = getEventqueueData(spark)
+    val finalDF = getEventqueueData(spark).repartition(12)
     finalDF.cache()
 
     // Partners that are part of the eventqueue
@@ -122,7 +122,7 @@ object TestRules {
         .withColumn("segments", concat_ws(",", col("segments")))
         .write
         .format("csv")
-        .mode("append")
+        .mode(if (batch == 0) "overwrite" else "append")
         .save("/datascience/custom/test_rules")
     }
   }
