@@ -96,12 +96,17 @@ object TestRules {
             .filter(t._2)
             .withColumn("segment", lit(t._1))
             .select("device_id", "segment")
-            .write
-            .format("csv")
-            .mode("append")
-            .save("/datascience/custom/test_rules")
       )
-    //   .reduce((df1, df2) => df1.unionAll(df2))
+      .reduce((df1, df2) => df1.unionAll(df2))
+      .distinct()
+      .groupBy("device_id")
+      .agg(collect_list("segment").as("segments"))
+      .withColumn("segments", concat_ws(",", col("segments")))
+      .write
+      .format("csv")
+      .mode("append")
+      .save("/datascience/custom/test_rules")
+
   }
 
   def main(args: Array[String]) {
