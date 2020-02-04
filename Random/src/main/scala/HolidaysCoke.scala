@@ -265,7 +265,7 @@ def get_safegraph_data(
     .withColumn("segment_id_new", lit(stay_seg))
     .select("device_type","device_id","segment_id_new")
 
-    val path_stay_home = "/datascience/geo/holidays/coca/stay_home_%s_/".format(country) + date
+    val path_stay_home = "/datascience/geo/holidays/coca/stay_home_%s_".format(country) + date
 
     stay_home_new.write
     .mode(SaveMode.Overwrite)
