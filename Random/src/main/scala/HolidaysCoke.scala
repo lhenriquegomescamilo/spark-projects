@@ -144,7 +144,6 @@ def get_safegraph_data(
     .option("header",false)
     .load(path_homes)
     .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
-    .withColumn("pii_type",mapUDF_homes(col("pii_type")))
     .filter("lat_home != lon_home")
     .withColumn( "lat_home",((col("lat_home").cast("float"))))
     .withColumn( "lon_home",((col("lon_home").cast("float"))))
@@ -219,6 +218,7 @@ def get_safegraph_data(
 
     //Primero juntamos madid y XD
 
+    /**PERUU
     val homes_madid = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",true)
@@ -226,7 +226,6 @@ def get_safegraph_data(
     .select("ad_id","id_type")
     .toDF("device_id","device_type")
 
-    /**Path home peru xd
     val path_homes_xd = "/datascience/audiences/crossdeviced/PE_90d_home_14-1-2020-19h_xd"
     val homes_xd = spark.read.format("csv")
     .option("delimiter",",")
@@ -248,7 +247,14 @@ def get_safegraph_data(
     **/
 
     /**
-    //Path home chile xd
+    //CHILE
+    val homes_madid = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",true)
+    .load(path_homes)
+    .select("ad_id","id_type")
+    .toDF("device_id","device_type")
+
     val path_homes_xd = "/datascience/audiences/crossdeviced/CL_90d_home_14-1-2020-16h_xd"
     val homes_xd = spark.read.format("csv")
         .option("delimiter","\t")
@@ -258,7 +264,15 @@ def get_safegraph_data(
     val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_))
     **/
 
-    //Path home ARG xdddddd
+    //ARGENTINA
+    val homes_madid = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",false)
+    .load(path_homes)
+    .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
+    .withColumn("device_type",mapUDF_homes(col("pii_type")))
+    .select("device_id","device_type")    
+
     val path_homes_xd = "/datascience/audiences/crossdeviced/argentina_365d_home_11-12-2019-14h_xd"    
     val homes_xd = spark.read.format("csv")
     .option("delimiter","\t")
