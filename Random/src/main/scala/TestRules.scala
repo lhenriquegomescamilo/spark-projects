@@ -101,8 +101,8 @@ object TestRules {
               .select("device_id", "segment")
           } catch {
             case e: Exception => {
-              Seq.empty[(String, String)].toDF("device_id", "segment")
               println("Failed on query: %s".format(t._2))
+              Seq.empty[(String, String)].toDF("device_id", "segment")
             }
           }
           df
