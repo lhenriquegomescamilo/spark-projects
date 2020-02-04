@@ -60,6 +60,8 @@ object TestRules {
   }
 
   def runTest(spark: SparkSession) = {
+    import spark.implicits._
+
     val rules = spark.read
       .format("csv")
       .option("sep", "\t")
@@ -92,10 +94,17 @@ object TestRules {
     ((0 until queries.size) zip queries)
       .map(
         t =>
-          finalDF
-            .filter(t._2)
-            .withColumn("segment", lit(t._1))
-            .select("device_id", "segment")
+          try {
+            finalDF
+              .filter(t._2)
+              .withColumn("segment", lit(t._1))
+              .select("device_id", "segment")
+          } catch {
+            case e: Exception => {
+              Seq.empty[(String, String)].toDF("device_id", "segment")
+              println("Failed on query: %s".format(t._2))
+            }
+          }
       )
       .reduce((df1, df2) => df1.unionAll(df2))
       .distinct()
