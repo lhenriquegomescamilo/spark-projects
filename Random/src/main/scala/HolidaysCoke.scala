@@ -196,7 +196,7 @@ def get_safegraph_data(
 
     val homes_xd = spark.read.format("csv")
     .option("delimiter",",")
-    .load(path_homes + "_xd")
+    .load(path_homes_xd)
     .select("_c1","_c2")
     .toDF("device_id","device_type")
 
