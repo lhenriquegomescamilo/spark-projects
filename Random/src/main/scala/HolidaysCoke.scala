@@ -253,7 +253,7 @@ def get_safegraph_data(
     //val travel_seg = 229115
 
     val vaca_new = spark.read.format("csv")
-    .option("delimiter","\t")
+    .option("sep",",")
     .option("header",false)
     .load(path_travellers_xd)
     .select("_c1","_c2")
