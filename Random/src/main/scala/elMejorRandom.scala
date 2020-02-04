@@ -921,6 +921,32 @@ users.join(triplets,Seq("device_id"))
         .mode("overwrite")
         .save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D")
 
+
+val resultado = spark.read.format("csv")
+.option("delimiter",",")
+.option("header",false)
+.load("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D")
+.toDF("device_id","feature")
+
+val by_group = resultado.groupBy("audience","feature").agg(countDistinct("device_id") as "unique_users_by_audience_by_feature")
+val total = resultado.groupBy("audience").agg(countDistinct("device_id") as "unique_users_by_audience")
+
+by_group
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_groups")
+
+total
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_total")
+
 }
 
 
