@@ -145,9 +145,10 @@ def get_safegraph_data(
     val country = "CL"
     //val country = "AR"
 
-    val date = "20200203"
+    val date = "20200204"
     val root_path = "/datascience/geo/holidays/coca/"
-    val path_travellers =  root_path + "travellers_%s_/".format(country) + date
+    val file_path_travellers = "travellers_%s_".format(country) + date
+    val path_travellers =  root_path + file_path_travellers
 
     val sqlDF = spark.sql(query)
     .withColumn( "distance",(col("distance")/ 1000)).orderBy(desc("distance")).na.fill(0).filter("distance>0")
@@ -173,7 +174,7 @@ def get_safegraph_data(
   )
 
     val dir_xd = "/datascience/audiences/crossdeviced/"
-    val path_travellers_xd = dir_xd + path_travellers + "xd"
+    val path_travellers_xd = dir_xd + file_path_travellers + "_xd"
 
     //una vez que tenemos la audiencia VACACionantes, se la restamos a los homes para obtener los no vacacionantes
 
