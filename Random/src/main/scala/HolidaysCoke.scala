@@ -11,11 +11,9 @@ import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.apache.spark.sql.expressions.Window
 
 /**
-  * The idea of this script is to run random stuff. Most of the times, the idea is
-  * to run quick fixes, or tests.
+  * The idea of this script is to populate cocacola holiday/non-holiday segments.
   */
 
- 
 object HolidaysCoke {
   
 //Acá el código para correr Peru , PE, Chile CL, argentina
@@ -68,15 +66,16 @@ def get_safegraph_data(
     .appName("HolidaysCoke")
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
-    
 
-    spark.conf.set("spark.sql.session.timeZone","PE")
-
- 
+    //spark.conf.set("spark.sql.session.timeZone","PE")
+    spark.conf.set("spark.sql.session.timeZone","CL")
+    //spark.conf.set("spark.sql.session.timeZone","AR")
 
     //Acá usamos la función para levantar la data de safegraph y crearle las columnas necesarias          
     //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
-    val safegraph_data = get_safegraph_data(spark,"30","1","10","PE")
+    //val safegraph_data = get_safegraph_data(spark,"30","1","10","PE")
+    val safegraph_data = get_safegraph_data(spark,"30","1","10","CL")
+    //val safegraph_data = get_safegraph_data(spark,"30","1","10","argentina")
 
     //Acá generamos un conteo de geocodes por usuario por dia
     val devices_geocode_counts = safegraph_data.groupBy("device_id","Date","geocode").agg(count("lat_user") as "geocode_count_by_day")
@@ -148,7 +147,7 @@ def get_safegraph_data(
 
     val date = "20200203"
     val root_path = "/datascience/geo/holidays/coca/"
-    val path_travellers =  root_path + "travellers_%s/".format(country) + date
+    val path_travellers =  root_path + "travellers_%s_/".format(country) + date
 
     val sqlDF = spark.sql(query)
     .withColumn( "distance",(col("distance")/ 1000)).orderBy(desc("distance")).na.fill(0).filter("distance>0")
@@ -174,7 +173,7 @@ def get_safegraph_data(
   )
 
     val dir_xd = "/datascience/audiences/crossdeviced/"
-    val path_travellers_xd = dir_xd + path_travellers + "_xd"
+    val path_travellers_xd = dir_xd + path_travellers + "xd"
 
     //una vez que tenemos la audiencia VACACionantes, se la restamos a los homes para obtener los no vacacionantes
 
