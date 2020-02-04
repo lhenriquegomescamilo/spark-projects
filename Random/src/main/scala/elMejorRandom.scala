@@ -928,36 +928,15 @@ total
 
 
 
-val users = spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/keywiser/processed/MX_pitch_whiskey_NOF_2020-02-04T15-41-06-055131")
-.toDF("device_type","device_id","audience")
-.drop("device_type")
-.withColumn("device_id",lower(col("device_id")))
-              
-val triplets = getDataTriplets(spark, "AR", 90, 1)
-        .withColumn("device_id",lower(col("device_id")))
-        .select("device_id", "segment")
-        .distinct()
-
-
-
-users.join(triplets,Seq("device_id"))
-        .write
-        .format("csv")
-        .mode("overwrite")
-        .save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D")
-
-
-val resultado = spark.read.format("csv")
+val result = spark.read.format("csv")
 .option("delimiter",",")
 .option("header",false)
 .load("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D")
-.toDF("device_id","feature")
+.toDF("device_id","audience","feature")
 
-val by_group = resultado.groupBy("audience","feature").agg(countDistinct("device_id") as "unique_users_by_audience_by_feature")
-val total = resultado.groupBy("audience").agg(countDistinct("device_id") as "unique_users_by_audience")
+
+val by_group = result.groupBy("audience","feature").agg(countDistinct("device_id") as "unique_users_by_audience_by_feature")
+val total = result.groupBy("audience").agg(countDistinct("device_id") as "unique_users_by_audience")
 
 by_group
 .write
