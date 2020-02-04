@@ -145,9 +145,10 @@ def get_safegraph_data(
     val country = "CL"
     //val country = "AR"
 
-    val date = "20200203"
+    val date = "20200204"
     val root_path = "/datascience/geo/holidays/coca/"
-    val path_travellers =  root_path + "travellers_%s_/".format(country) + date
+    val file_path_travellers = "travellers_%s_".format(country) + date
+    val path_travellers =  root_path + file_path_travellers
 
     val sqlDF = spark.sql(query)
     .withColumn( "distance",(col("distance")/ 1000)).orderBy(desc("distance")).na.fill(0).filter("distance>0")
@@ -157,7 +158,7 @@ def get_safegraph_data(
     .mode(SaveMode.Overwrite)
     .format("csv")
     .option("delimiter","\t")
-    .option("header",true)
+    .option("header",false)
     .save(path_travellers)
     //.save("/datascience/geo/misc/travelers_from_home_PE_JAN_30_2020")
 
@@ -169,11 +170,11 @@ def get_safegraph_data(
     path_travellers,
     xd_filter,
     "\t",
-    "device_id"
+    "_c0"
   )
 
     val dir_xd = "/datascience/audiences/crossdeviced/"
-    val path_travellers_xd = dir_xd + path_travellers + "xd"
+    val path_travellers_xd = dir_xd + file_path_travellers + "_xd"
 
     //una vez que tenemos la audiencia VACACionantes, se la restamos a los homes para obtener los no vacacionantes
 
@@ -187,13 +188,8 @@ def get_safegraph_data(
     .select("ad_id","id_type")
     .toDF("device_id","device_type")
 
-    //Path home peru xd
-    //val path_homes_xd = "/datascience/audiences/crossdeviced/PE_90d_home_14-1-2020-19h_xd"
-    //Path home chile xd
-    val path_homes_xd = "/datascience/audiences/crossdeviced/CL_90d_home_14-1-2020-16h_xd"
-    //Path home ARG xdddddd
-    //val path_homes_xd = "/datascience/audiences/crossdeviced/argentina_365d_home_11-12-2019-14h_xd"    
-
+    /**Path home peru xd
+    val path_homes_xd = "/datascience/audiences/crossdeviced/PE_90d_home_14-1-2020-19h_xd"
     val homes_xd = spark.read.format("csv")
     .option("delimiter",",")
     .load(path_homes_xd)
@@ -211,6 +207,38 @@ def get_safegraph_data(
 
     val mapUDF = udf((aud: String) => typeMap(aud))
     val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type")))
+    **/
+
+    //Path home chile xd
+    val path_homes_xd = "/datascience/audiences/crossdeviced/CL_90d_home_14-1-2020-16h_xd"
+    val homes_xd = spark.read.format("csv")
+        .option("delimiter","\t")
+        .option("header",true)
+        .load(path_homes_xd)
+        .select("device_id","device_type")
+    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_))
+
+    /**
+    //Path home ARG xdddddd
+    //val path_homes_xd = "/datascience/audiences/crossdeviced/argentina_365d_home_11-12-2019-14h_xd"    
+    val homes_xd = spark.read.format("csv")
+    .option("delimiter",",")
+    .load(path_homes_xd)
+    .select("_c1","_c2")
+    .toDF("device_id","device_type")
+
+    val typeMap = Map(
+        "coo" -> "web",
+        "and" -> "android",
+        "aaid" -> "android",
+            "android" -> "android",
+        "unknown" -> "android",
+        "ios" -> "ios",
+        "idfa"->"ios")
+
+    val mapUDF = udf((aud: String) => typeMap(aud))
+    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type")))
+    **/
 
     //segment values PE
     //val stay_seg = 233591
@@ -226,8 +254,10 @@ def get_safegraph_data(
 
     val vaca_new = spark.read.format("csv")
     .option("delimiter","\t")
-    .option("header",true)
+    .option("header",false)
     .load(path_travellers_xd)
+    .select("_c1","_c2")
+    .toDF("device_id","device_type")    
     .withColumn("segment_id_new", lit(travel_seg))
     .select("device_type","device_id","segment_id_new")  
     
