@@ -93,19 +93,58 @@ def get_safegraph_data(
     //Acá levantamos el dataset de homes
     //OJO QUE DEPENDIENDO DEL PAIS HAY QUE CAMBIARLO***********************************************
  
+    /**
     //Path home peru
-    //val path_homes = "/datascience/geo/PE_90d_home_14-1-2020-19h"
-    //Path home chile
-    //val path_homes = "/datascience/geo/CL_90d_home_14-1-2020-16h"
-    //Path home ARG
-    val path_homes = "/datascience/geo/NSEHomes/argentina_365d_home_20-11-2019-12h"
-
+    val path_homes = "/datascience/geo/PE_90d_home_14-1-2020-19h"
     val df_homes = spark.read
     .format("csv")
     .option("sep","\t")
     .option("header",true)
     .load(path_homes)
     .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
+    .filter("lat_home != lon_home")
+    .withColumn( "lat_home",((col("lat_home").cast("float"))))
+    .withColumn( "lon_home",((col("lon_home").cast("float"))))
+    .select("device_id","lat_home","lon_home")    
+    */
+
+    /**
+    //Path home chile
+    val path_homes = "/datascience/geo/CL_90d_home_14-1-2020-16h"
+    val df_homes = spark.read
+    .format("csv")
+    .option("sep","\t")
+    .option("header",true)
+    .load(path_homes)
+    .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
+    .filter("lat_home != lon_home")
+    .withColumn( "lat_home",((col("lat_home").cast("float"))))
+    .withColumn( "lon_home",((col("lon_home").cast("float"))))
+    .select("device_id","lat_home","lon_home")    
+    */
+
+    //Path home ARG
+    val path_homes = "/datascience/geo/NSEHomes/argentina_365d_home_20-11-2019-12h"
+ 
+    val typeMap_homes = Map(
+          "coo" -> "web",
+          "and" -> "android",
+          "maid" -> "android",
+          "ios" -> "ios",
+          "con" -> "TV",
+          "dra" -> "drawbridge",
+          "idfa" -> "ios",
+          "aaid"->"android",
+          "android"->"android",
+          "unknown"->"unknown")
+    val mapUDF_homes = udf((dev_type: String) => typeMap_homes(dev_type))
+
+    val homes_madid = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",false)
+    .load(path_homes)
+    .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
+    .withColumn("pii_type",mapUDF_homes(col("pii_type")))
     .filter("lat_home != lon_home")
     .withColumn( "lat_home",((col("lat_home").cast("float"))))
     .withColumn( "lon_home",((col("lon_home").cast("float"))))
@@ -223,22 +262,12 @@ def get_safegraph_data(
     //Path home ARG xdddddd
     val path_homes_xd = "/datascience/audiences/crossdeviced/argentina_365d_home_11-12-2019-14h_xd"    
     val homes_xd = spark.read.format("csv")
-    .option("delimiter",",")
-    .load(path_homes_xd)
-    .select("_c1","_c2")
-    .toDF("device_id","device_type")
+    .option("delimiter","\t")
+    .option("header",true)
+    .load(path_homes)
+    .select("device_id","device_type")
 
-    val typeMap = Map(
-        "coo" -> "web",
-        "and" -> "android",
-        "aaid" -> "android",
-            "android" -> "android",
-        "unknown" -> "android",
-        "ios" -> "ios",
-        "idfa"->"ios")
-
-    val mapUDF = udf((aud: String) => typeMap(aud))
-    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type"))) 
+    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_))
 
     //segment values PE
     //val stay_seg = 233591
