@@ -200,7 +200,8 @@ object DunnhumbyEnrichment {
     // First of all we obtain the data from the id partner and filter, if necessary,
     // to keep only the relevant date interval
     // val raw = getDataIdPartners(spark, List("831"), nDays, since, "streaming")
-    val raw = getDataAudiences(spark, nDays, since).filter("id_partner IN (831, 1332)")
+    val raw =
+      getDataAudiences(spark, nDays, since).filter("id_partner IN (831, 1332, 1334, 1336)")
     val data = if (dateRange.length > 0) raw.filter(dateRange) else raw
 
     // List of segments to keep
@@ -258,11 +259,15 @@ object DunnhumbyEnrichment {
     ua_enriched
       .drop("all_segments")
       .select(final_select.head, final_select.tail: _*)
+      .repartition(1)
       .write
       .format("csv")
       .option("sep", "\t")
       .mode("overwrite")
-      .save("/datascience/custom/dunnhumby_enrichment_piis")
+      .save(
+        "/datascience/dunnhumby/enrichment/day=%s"
+          .format(DateTime.now.minusDays(since).format("yyyyMMdd"))
+      )
   }
 
   def main(args: Array[String]) {
@@ -277,10 +282,10 @@ object DunnhumbyEnrichment {
     getEnrichment(
       spark,
       "20190916",
-      63,
-      23,
+      1,
+      1,
       "'BR'",
-      "country = 'BR' AND (datetime >= '2019-11-12 00:00:00' AND datetime <= '2020-01-13 00:00:00') AND campaign_id IN (31903894, 31903895, 31903893, 31903892, 32785302, 32785303)"
+      "country = 'BR'"
     )
   }
 }
