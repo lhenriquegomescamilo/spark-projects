@@ -928,31 +928,90 @@ total
 
 
 
-val result = spark.read.format("csv")
-.option("delimiter",",")
-.option("header",false)
-.load("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D")
-.toDF("device_id","audience","feature")
+//Aca tenemos los usuarios que devuelve el geodevicer
+val useg  = spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/geo_processed/JCDecauxOOH_120d_mexico_5-2-2020-13h_output_path_users_data/").drop("day","country","id_partner","ID").toDF("device_id","segmentID").withColumn("device_id",lower(col("device_id")))
+
+//Estos usuarios tienen las features, y en base a estas features queremos meterles un nombre de audiencia. Queremos taggear los usuarios en base a su info web. Un user puede pertenecer a múltiples clusters. Después vamos a tener que ir a los carteles y contar, pero vamos a eso después. Primero el taggeo
 
 
-val by_group = result.groupBy("audience","feature").agg(countDistinct("device_id") as "unique_users_by_audience_by_feature")
-val total = result.groupBy("audience").agg(countDistinct("device_id") as "unique_users_by_audience")
+//Aca levantamos un dataset que nos indica a que cluster pertenece según el feature
 
-by_group
+val cluster =  spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/Reports/JCDecaux/all_clusters.csv")
+.select("segmentId","longname").distinct()
+
+//Acá tageamos a los usuarios, ya no necesitamos el segmentId original, lo tiramos y distinct
+val tagged = useg.join(cluster,Seq("segmentId")).drop("segmentId").distinct()
+
+//Con esto ya podríamos hacer conteo de usuarios por cartel, pero necesitamos por horario, así que vamos a des-crosdevicear, vamos a taggear a lo geo en base a esto
+
+
+//Levantamos la tabla de equivalencias
+val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/crossdeviced/JCDecauxOOH_120d_mexico_5-2-2020-13h_xd_equivalence_table")
+.withColumn("device_id_origin",lower(col("device_id_xd")))
+.withColumn("device_id_xd",lower(col("device_id_xd")))
+.drop("device_type_origin","device_type_xd")
+
+
+
+//Unimos a los tagged la tabla de equivalencias para recuperar el device original geo
+val geo_tagged = tagged.withColumnRenamed("device_id","device_id_xd")
+                .join(equiv,Seq("device_id_xd"))
+                .drop("device_id_xd")
+                .distinct()
+                .withColumnRenamed("device_id_origin","device_id")
+
+
+
+//geo_tagged.show(5)
+
+//Ahora cada dispositivo geo lo tenemos taggeado, podemos ir a buscarlos al raw y ahí contar cuántos hay de cada cluster
+//Ahora levantamos la raw_data. La necesitamos porque nos piden desagregación por franja horaria
+
+val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/raw_output/JCDecauxOOH_120d_mexico_5-2-2020-13h/")
+
+spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
+
+//Unimos el geotagged al raw y extraemos los tiempos
+val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
+.select("device_id","longname","timestamp","SITIO","RECORRIDO","CALLE","CATEGORIA","ID")
+.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+ .withColumn("Hour", date_format(col("Time"), "HH"))
+ .withColumn("Date", date_format(col("Time"), "MMM dd"))
+ .withColumn("Day", date_format(col("Time"), "EEEE"))
+ .withColumn("Month", date_format(col("Time"), "MMM"))
+ .na.fill("0")
+ .withColumn("WeekDay", when(col("Day").isin(List("Saturday", "Sunday"):_*), "WeekEnd").otherwise("WeekDay"))
+ .withColumn("DayPeriod", when(col("Hour")>=0 && col("Hour")<6, "0 - EarlyMorning")
+     .otherwise(when(col("Hour")>=6 && col("Hour")<11, "1 - Morning")
+     .otherwise(when(col("Hour")>=11 && col("Hour")<14, "2 - Noon")
+     .otherwise(when(col("Hour")>=14 && col("Hour")<18, "3 - Evening")
+     .otherwise(when(col("Hour")>=18, "4 - Night"))))))
+
+tagged_timed.persist()
+
+val cluster_time_count = tagged_timed.groupBy("WeekDay","DayPeriod","ID","longname")
+.agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
+
+val total_time_count = tagged_timed.groupBy("WeekDay","DayPeriod","ID")
+.agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
+
+cluster_time_count
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_groups")
+.save("/datascience/geo/Reports/JCDecaux/cluster_time_count")
 
-total
+total_time_count
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/misc/reportes/whiskies/MX_pitch_whiskey_NOF_w_segments_90D_total")
+.save("/datascience/geo/Reports/JCDecaux/total_time_count")
 
 }
 
