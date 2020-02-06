@@ -948,7 +948,7 @@ val tagged = useg.join(cluster,Seq("segmentId")).drop("segmentId").distinct()
 //Levantamos la tabla de equivalencias
 val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/crossdeviced/JCDecauxOOH_120d_mexico_5-2-2020-13h_xd_equivalence_table")
-.withColumn("device_id_origin",lower(col("device_id_xd")))
+.withColumn("device_id_origin",lower(col("device_id_origin")))
 .withColumn("device_id_xd",lower(col("device_id_xd")))
 .drop("device_type_origin","device_type_xd")
 
@@ -976,6 +976,7 @@ spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
 //Unimos el geotagged al raw y extraemos los tiempos
 val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
 .select("device_id","longname","timestamp","SITIO","RECORRIDO","CALLE","CATEGORIA","ID")
+.withColumn("device_id", lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
  .withColumn("Hour", date_format(col("Time"), "HH"))
  .withColumn("Date", date_format(col("Time"), "MMM dd"))
@@ -994,7 +995,7 @@ tagged_timed.persist()
 val cluster_time_count = tagged_timed.groupBy("WeekDay","DayPeriod","ID","longname")
 .agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
 
-val total_time_count = tagged_timed.groupBy("WeekDay","DayPeriod","ID")
+val total_time_count = raw.groupBy("WeekDay","DayPeriod","ID")
 .agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
 
 cluster_time_count
