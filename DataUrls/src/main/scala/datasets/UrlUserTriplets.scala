@@ -32,10 +32,11 @@ object UrlUserTriplets {
   def generate_triplets(spark: SparkSession, nDays: Int, from: Int) = {
     // Load the data from data_urls pipeline
     val data_urls = getDataUrls(spark, nDays, from)
+      .filter("event_type != 'data'")
       .select("device_id", "url", "country", "referer")
-      .withColumn("url", array(col("url"), col("referer")))
+      // .withColumn("url", array(col("url"), col("referer")))
       .drop("referer")
-      .withColumn("url", explode(col("url")))
+      // .withColumn("url", explode(col("url")))
       .distinct()
 
     // Now we process the URLs the data
