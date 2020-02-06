@@ -929,7 +929,11 @@ total
 
 
 //Aca tenemos los usuarios que devuelve el geodevicer
-val useg  = spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/geo_processed/JCDecauxOOH_120d_mexico_5-2-2020-13h_output_path_users_data/").drop("day","country","id_partner","ID").toDF("device_id","segmentID").withColumn("device_id",lower(col("device_id")))
+val useg  = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/geo/geo_processed/JCDecauxOOH_120d_mexico_5-2-2020-13h_output_path_users_data/")
+.drop("day","country","id_partner","ID")
+.toDF("device_id","segmentID")
+.withColumn("device_id",lower(col("device_id")))
 
 //Estos usuarios tienen las features, y en base a estas features queremos meterles un nombre de audiencia. Queremos taggear los usuarios en base a su info web. Un user puede pertenecer a múltiples clusters. Después vamos a tener que ir a los carteles y contar, pero vamos a eso después. Primero el taggeo
 
@@ -948,7 +952,7 @@ val tagged = useg.join(cluster,Seq("segmentId")).drop("segmentId").distinct()
 //Levantamos la tabla de equivalencias
 val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/crossdeviced/JCDecauxOOH_120d_mexico_5-2-2020-13h_xd_equivalence_table")
-.withColumn("device_id_origin",lower(col("device_id_xd")))
+.withColumn("device_id_origin",lower(col("device_id_origin")))
 .withColumn("device_id_xd",lower(col("device_id_xd")))
 .drop("device_type_origin","device_type_xd")
 
@@ -968,14 +972,11 @@ val geo_tagged = tagged.withColumnRenamed("device_id","device_id_xd")
 //Ahora cada dispositivo geo lo tenemos taggeado, podemos ir a buscarlos al raw y ahí contar cuántos hay de cada cluster
 //Ahora levantamos la raw_data. La necesitamos porque nos piden desagregación por franja horaria
 
+//extraemos los tiempos
+
 val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/raw_output/JCDecauxOOH_120d_mexico_5-2-2020-13h/")
-
-spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
-
-//Unimos el geotagged al raw y extraemos los tiempos
-val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
-.select("device_id","longname","timestamp","SITIO","RECORRIDO","CALLE","CATEGORIA","ID")
+.withColumn("device_id", lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
  .withColumn("Hour", date_format(col("Time"), "HH"))
  .withColumn("Date", date_format(col("Time"), "MMM dd"))
@@ -989,15 +990,34 @@ val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
      .otherwise(when(col("Hour")>=14 && col("Hour")<18, "3 - Evening")
      .otherwise(when(col("Hour")>=18, "4 - Night"))))))
 
-tagged_timed.persist()
+spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
 
-val cluster_time_count = tagged_timed.groupBy("WeekDay","DayPeriod","ID","longname")
-.agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
+//Unimos el geotagged al raw 
+val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
 
-val total_time_count = tagged_timed.groupBy("WeekDay","DayPeriod","ID")
-.agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
+tagged_timed
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/geo/Reports/JCDecaux/tagged_timed")
+
+val tagged_time_up = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/Reports/JCDecaux/tagged_timed")
+
+val cluster_time_count = tagged_time_up.groupBy("WeekDay","DayPeriod","ID","longname")
+.agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
+
+val all_day_long_count = tagged_time_up.groupBy("WeekDay","ID","longname")
+.agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
+.withColumn("DayPeriod",lit("24hs"))
+
+val total_time_count = raw.groupBy("WeekDay","DayPeriod","ID")
+.agg(countDistinct("device_id") as "total_uniques",count("timestamp") as "total_detections")
 
 cluster_time_count
+.repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
@@ -1005,13 +1025,25 @@ cluster_time_count
 .option("delimiter","\t")
 .save("/datascience/geo/Reports/JCDecaux/cluster_time_count")
 
+all_day_long_count
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/geo/Reports/JCDecaux/all_day_long_count")
+
 total_time_count
+.repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
 .save("/datascience/geo/Reports/JCDecaux/total_time_count")
+
+
 
 }
 
