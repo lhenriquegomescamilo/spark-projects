@@ -266,7 +266,7 @@ object DunnhumbyEnrichment {
       .mode("overwrite")
       .save(
         "/datascience/dunnhumby/enrichment/day=%s"
-          .format(DateTime.now.minusDays(since).format("yyyyMMdd"))
+          .format(DateTime.now.minusDays(since).toString("yyyyMMdd"))
       )
   }
 
