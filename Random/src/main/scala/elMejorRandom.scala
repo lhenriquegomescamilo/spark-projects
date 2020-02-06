@@ -1006,9 +1006,12 @@ tagged_timed
 val tagged_time_up = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/Reports/JCDecaux/tagged_timed")
 
-
 val cluster_time_count = tagged_time_up.groupBy("WeekDay","DayPeriod","ID","longname")
 .agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
+
+val all_day_long_count = tagged_time_up.groupBy("WeekDay","ID","longname")
+.agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
+.withColumn("DayPeriod",lit("24hs"))
 
 val total_time_count = raw.groupBy("WeekDay","DayPeriod","ID")
 .agg(countDistinct("device_id") as "total_uniques",count("timestamp") as "total_detections")
@@ -1022,6 +1025,15 @@ cluster_time_count
 .option("delimiter","\t")
 .save("/datascience/geo/Reports/JCDecaux/cluster_time_count")
 
+all_day_long_count
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/geo/Reports/JCDecaux/all_day_long_count")
+
 total_time_count
 .repartition(1)
 .write
@@ -1030,6 +1042,8 @@ total_time_count
 .option("header",true)
 .option("delimiter","\t")
 .save("/datascience/geo/Reports/JCDecaux/total_time_count")
+
+
 
 }
 
