@@ -1047,6 +1047,14 @@ total_time_count
 .option("delimiter","\t")
 .save("/datascience/geo/Reports/JCDecaux/total_time_count")
 
+all_day_total_time_count
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count")
 
 
 }
