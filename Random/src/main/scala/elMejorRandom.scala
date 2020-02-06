@@ -1016,6 +1016,10 @@ val all_day_long_count = tagged_time_up.groupBy("WeekDay","ID","longname")
 val total_time_count = raw.groupBy("WeekDay","DayPeriod","ID")
 .agg(countDistinct("device_id") as "total_uniques",count("timestamp") as "total_detections")
 
+val all_day_total_time_count = raw.groupBy("WeekDay","ID")
+.agg(countDistinct("device_id") as "total_uniques",count("timestamp") as "total_detections")
+.withColumn("DayPeriod",lit("24hs"))
+
 cluster_time_count
 .repartition(1)
 .write
