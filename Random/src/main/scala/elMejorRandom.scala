@@ -990,7 +990,7 @@ spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
 
 //Unimos el geotagged al raw 
 val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
-.select("device_id","longname","timestamp","SITIO","RECORRIDO","CALLE","CATEGORIA","ID")
+
 
 
 tagged_timed.persist()
