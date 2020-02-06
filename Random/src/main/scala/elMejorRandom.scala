@@ -996,10 +996,10 @@ val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
 tagged_timed.persist()
 
 val cluster_time_count = tagged_timed.groupBy("WeekDay","DayPeriod","ID","longname")
-.agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
+.agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
 
 val total_time_count = raw.groupBy("WeekDay","DayPeriod","ID")
-.agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
+.agg(countDistinct("device_id") as "total_uniques",count("device_id") as "total_detections")
 
 cluster_time_count
 .write
