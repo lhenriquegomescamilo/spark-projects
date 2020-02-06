@@ -929,7 +929,11 @@ total
 
 
 //Aca tenemos los usuarios que devuelve el geodevicer
-val useg  = spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/geo_processed/JCDecauxOOH_120d_mexico_5-2-2020-13h_output_path_users_data/").drop("day","country","id_partner","ID").toDF("device_id","segmentID").withColumn("device_id",lower(col("device_id")))
+val useg  = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/geo/geo_processed/JCDecauxOOH_120d_mexico_5-2-2020-13h_output_path_users_data/")
+.drop("day","country","id_partner","ID")
+.toDF("device_id","segmentID")
+.withColumn("device_id",lower(col("device_id")))
 
 //Estos usuarios tienen las features, y en base a estas features queremos meterles un nombre de audiencia. Queremos taggear los usuarios en base a su info web. Un user puede pertenecer a múltiples clusters. Después vamos a tener que ir a los carteles y contar, pero vamos a eso después. Primero el taggeo
 
@@ -991,17 +995,26 @@ spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
 //Unimos el geotagged al raw 
 val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
 
+tagged_timed
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/geo/Reports/JCDecaux/tagged_timed")
+
+val tagged_time_up = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/Reports/JCDecaux/tagged_timed")
 
 
-tagged_timed.persist()
-
-val cluster_time_count = tagged_timed.groupBy("WeekDay","DayPeriod","ID","longname")
+val cluster_time_count = tagged_time_up.groupBy("WeekDay","DayPeriod","ID","longname")
 .agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
 
 val total_time_count = raw.groupBy("WeekDay","DayPeriod","ID")
-.agg(countDistinct("device_id") as "total_uniques",count("device_id") as "total_detections")
+.agg(countDistinct("device_id") as "total_uniques",count("timestamp") as "total_detections")
 
 cluster_time_count
+.repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
@@ -1010,6 +1023,7 @@ cluster_time_count
 .save("/datascience/geo/Reports/JCDecaux/cluster_time_count")
 
 total_time_count
+.repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
