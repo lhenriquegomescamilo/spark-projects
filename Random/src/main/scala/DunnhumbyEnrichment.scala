@@ -263,6 +263,7 @@ object DunnhumbyEnrichment {
       .write
       .format("csv")
       .option("sep", "\t")
+      .option("header", "true")
       .mode("overwrite")
       .save(
         "/datascience/dunnhumby/enrichment/day=%s"
