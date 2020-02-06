@@ -968,14 +968,10 @@ val geo_tagged = tagged.withColumnRenamed("device_id","device_id_xd")
 //Ahora cada dispositivo geo lo tenemos taggeado, podemos ir a buscarlos al raw y ahí contar cuántos hay de cada cluster
 //Ahora levantamos la raw_data. La necesitamos porque nos piden desagregación por franja horaria
 
+//extraemos los tiempos
+
 val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/raw_output/JCDecauxOOH_120d_mexico_5-2-2020-13h/")
-
-spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
-
-//Unimos el geotagged al raw y extraemos los tiempos
-val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
-.select("device_id","longname","timestamp","SITIO","RECORRIDO","CALLE","CATEGORIA","ID")
 .withColumn("device_id", lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
  .withColumn("Hour", date_format(col("Time"), "HH"))
@@ -989,6 +985,13 @@ val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
      .otherwise(when(col("Hour")>=11 && col("Hour")<14, "2 - Noon")
      .otherwise(when(col("Hour")>=14 && col("Hour")<18, "3 - Evening")
      .otherwise(when(col("Hour")>=18, "4 - Night"))))))
+
+spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
+
+//Unimos el geotagged al raw 
+val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
+.select("device_id","longname","timestamp","SITIO","RECORRIDO","CALLE","CATEGORIA","ID")
+
 
 tagged_timed.persist()
 
