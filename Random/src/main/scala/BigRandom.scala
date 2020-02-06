@@ -251,7 +251,7 @@ def getReport(
     //.mode(SaveMode.Overwrite)    
     //.save("/datascience/misc/scrapper_test/%s".format(country))
 
-    */
+    
 
     val audiences = """MX_71172_2020-01-30T14-29-02-220256,MX_71172_2020-01-30T14-29-14-744166,MX_71172_2020-01-30T14-29-33-106219,MX_71172_2020-01-30T14-29-02-220256,MX_71172_2020-01-30T14-29-23-107754,MX_71172_2020-01-30T14-29-35-550514,MX_71172_2020-01-30T14-29-38-074317,MX_71172_2020-01-30T14-28-57-423908,MX_71172_2020-01-30T14-29-40-379240""".split(",").toList
     val ids = """124641,124643,124645,124647,124649,124651,124653,124655,124657""".split(",").toList
@@ -267,6 +267,22 @@ def getReport(
         .mode("append")
         .save("/datascience/misc/amex_leo_feb6.csv")
     }
+
+    */
+
+    def getString =
+  udf((array: Seq[Integer]) => array.map(_.toString).mkString(","))
+          
+    val df = spark.read.format("csv")
+        .option("sep", "\t")
+        .load("/datascience/misc/amex_leo_feb6.csv")
+        .toDF("device_type","device_id","segment")
+        .groupBy("device_type","device_id").agg(collect_list("segment").as("segment"))
+        .withColumn("segment",getString(col("segment")))
+        .write.format("csv")
+        .option("sep", "\t")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/misc/amex_leo_feb6_total")      
 
 
 
