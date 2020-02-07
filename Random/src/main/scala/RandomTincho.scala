@@ -1515,14 +1515,14 @@ object RandomTincho {
       .write.format("csv").save("/datascience/custom/urls_mx_st")
 
 
-    val grouped_domain_ar = df.filter("country = 'MX'")
+    val grouped_domain_mx = df.filter("country = 'MX'")
                               .selectExpr("*", "parse_url(%s, 'HOST') as domain".format("url"))
                               .groupBy("domain")
                               .agg(approx_count_distinct(col("device_id"), 0.01).as("devices"))
                               .sort(desc("devices"))
 
     println("Top Domains MX")
-    grouped_domain_ar.show(15)
+    grouped_domain_mx.show(15)
 
 
   }
