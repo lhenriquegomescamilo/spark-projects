@@ -325,8 +325,8 @@ object VolumesReport {
       .format("parquet")
       .partitionBy("day", "country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/leo_test_elastic")      
-      //.save("/datascience/reports/volumes/done")
+      .save("/datascience/reports/volumes/done")
+      //.save("/datascience/misc/leo_test_elastic")         
   }  
 
   type OptionMap = Map[Symbol, Int]
