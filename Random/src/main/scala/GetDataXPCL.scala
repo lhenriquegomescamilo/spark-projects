@@ -214,7 +214,7 @@ object GetDataXPCL {
       val audience = spark.read
         .format("csv")
         .option("sep", "\t")
-        .load("/datascience/devicer/processed/equifax_cl_gender")
+        .load("/datascience/devicer/processed/equifax_cl_gender_grouped")
         .withColumnRenamed("_c1", "device_id")
         .withColumnRenamed("_c2", "ids")
 
@@ -257,7 +257,7 @@ object GetDataXPCL {
       val audience = spark.read
         .format("csv")
         .option("sep", "\t")
-        .load("/datascience/devicer/processed/equifax_cl_gender")
+        .load("/datascience/devicer/processed/equifax_cl_gender_grouped")
         .withColumnRenamed("_c1", "device_id")
         .withColumnRenamed("_c2", "ids")
 
@@ -295,7 +295,7 @@ object GetDataXPCL {
       .format("csv")
       .option("sep", "\t")
       .mode("overwrite")
-      .save("/datascience/custom/dataset_expansion_ar")
+      .save("/datascience/custom/dataset_expansion_cl")
   }
 
   def getDataSegments(spark: SparkSession, expansion: Boolean) = {
@@ -303,7 +303,7 @@ object GetDataXPCL {
       .format("csv")
       .option("sep", "\t")
       .option("header", "false")
-      .load("/datascience/custom/dataset_expansion_ar")
+      .load("/datascience/custom/dataset_expansion_cl")
       .withColumnRenamed("_c0", "device_id")
       .withColumnRenamed("_c1", "ua")
       .withColumnRenamed("_c2", "urls")
@@ -311,7 +311,7 @@ object GetDataXPCL {
     val audience = spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/datascience/devicer/processed/equifax_cl_gender")
+      .load("/datascience/devicer/processed/equifax_cl_gender_grouped")
       .withColumnRenamed("_c1", "device_id")
       .withColumnRenamed("_c2", "ids")
 
