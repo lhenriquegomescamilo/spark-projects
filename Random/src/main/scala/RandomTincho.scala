@@ -1415,7 +1415,7 @@ object RandomTincho {
                               .sort(desc("devices"))
 
     println("Top urls AR")
-    println(grouped_url_ar.take(15))
+    grouped_url_ar.take(15)
 
 
     val grouped_domain_ar = spark.read
