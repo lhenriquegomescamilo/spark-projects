@@ -299,21 +299,6 @@ object GetDataXPCL {
   }
 
   def getDataSegments(spark: SparkSession, expansion: Boolean) = {
-    val data_audiences = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "false")
-      .load("/datascience/custom/dataset_expansion_cl")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c1", "ua")
-      .withColumnRenamed("_c2", "urls")
-
-    val audience = spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .load("/datascience/devicer/processed/equifax_cl_gender_grouped")
-      .withColumnRenamed("_c1", "device_id")
-      .withColumnRenamed("_c2", "ids")
 
     val taxonomy = Seq(2, 3, 4, 5, 6, 7, 8, 9, 26, 32, 36, 59, 61, 82, 85, 92,
       104, 118, 129, 131, 141, 144, 145, 147, 149, 150, 152, 154, 155, 158, 160,
@@ -346,6 +331,15 @@ object GetDataXPCL {
       .withColumn("segment", concat_ws("|", col("segment")))
 
     if (expansion) {
+      val data_audiences = spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .option("header", "false")
+        .load("/datascience/custom/dataset_expansion_cl")
+        .withColumnRenamed("_c0", "device_id")
+        .withColumnRenamed("_c1", "ua")
+        .withColumnRenamed("_c2", "urls")
+
       data_audiences
         .join(data_segments, Seq("device_id"), "left")
         .write
@@ -354,6 +348,13 @@ object GetDataXPCL {
         .mode("overwrite")
         .save("/datascience/custom/cl_users_all_xp")
     } else {
+      val audience = spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .load("/datascience/devicer/processed/equifax_cl_gender_grouped")
+        .withColumnRenamed("_c1", "device_id")
+        .withColumnRenamed("_c2", "ids")
+
       audience
         .join(data_segments, Seq("device_id"), "inner")
         .write
@@ -377,14 +378,14 @@ object GetDataXPCL {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getUAData(
-      spark = spark,
-      expansion = false
-    )
-    getURLData(
-      spark = spark,
-      expansion = false
-    )
+    // getUAData(
+    //   spark = spark,
+    //   expansion = false
+    // )
+    // getURLData(
+    //   spark = spark,
+    //   expansion = false
+    // )
     // get_joint(spark)
     getDataSegments(spark, expansion = false)
   }
