@@ -1415,7 +1415,7 @@ object RandomTincho {
                               .sort(desc("devices"))
 
     println("Top urls AR")
-    grouped_url_ar.take(15)
+    grouped_url_ar.show(15)
 
 
     val grouped_domain_ar = spark.read
@@ -1429,7 +1429,7 @@ object RandomTincho {
                               .sort(desc("devices"))
 
     println("Top Domains AR")
-    println(grouped_domain_ar.take(15))
+    grouped_domain_ar.show(15)
 
     val grouped_category_ar = spark.read
                               .format("csv")
@@ -1441,7 +1441,7 @@ object RandomTincho {
                               .sort(desc("devices"))
 
     println("Top Categories AR")
-    println(grouped_category_ar.take(15))
+    grouped_category_ar.show(15)
 
     val grouped_url_mx = spark.read
                               .format("csv")
@@ -1453,7 +1453,7 @@ object RandomTincho {
                               .sort(desc("devices"))
 
     println("Top urls MX")
-    println(grouped_url_mx.take(15))
+    grouped_url_mx.show(15)
 
     val grouped_domain_mx = spark.read
                               .format("csv")
@@ -1466,7 +1466,7 @@ object RandomTincho {
                               .sort(desc("devices"))
 
     println("Top Domains MX")
-    println(grouped_domain_mx.take(15))
+    grouped_domain_mx.show(15)
 
     val grouped_category_mx = spark.read
                               .format("csv")
@@ -1478,7 +1478,7 @@ object RandomTincho {
                               .sort(desc("devices"))
 
     println("Top Categories MX")
-    println(grouped_category_mx.take(15))
+    grouped_category_mx.show(15)
   }
 
   def main(args: Array[String]) {
