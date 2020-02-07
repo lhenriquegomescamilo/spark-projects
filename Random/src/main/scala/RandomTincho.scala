@@ -1405,17 +1405,14 @@ object RandomTincho {
 
   def report_33across(spark:SparkSession){
 
-    val grouped_url_ar = spark.read
-                              .format("csv")
-                              .option("sep", "\t")
-                              .option("header", "true")
-                              .load("/datascience/33accross/20200*/*/*views-ar-*.gz")
-                              .groupBy("PAGE_URL")
-                              .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
-                              .sort(desc("devices"))
-
-    println("Top urls AR")
-    grouped_url_ar.show(15)
+    spark.read.format("csv")
+          .option("sep", "\t")
+          .option("header", "true")
+          .load("/datascience/33accross/20200*/*/*views-ar-*.gz")
+          .groupBy("PAGE_URL")
+          .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
+          .sort(desc("devices"))
+          .write.format("csv").save("/datascience/custom/urls_ar_across")
 
 
     val grouped_domain_ar = spark.read
@@ -1443,17 +1440,15 @@ object RandomTincho {
     println("Top Categories AR")
     grouped_category_ar.show(15)
 
-    val grouped_url_mx = spark.read
-                              .format("csv")
-                              .option("sep", "\t")
-                              .option("header", "true")
-                              .load("/datascience/33accross/20200*/*/*views-mx-*.gz")
-                              .groupBy("PAGE_URL")
-                              .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
-                              .sort(desc("devices"))
-
-    println("Top urls MX")
-    grouped_url_mx.show(15)
+    spark.read
+          .format("csv")
+          .option("sep", "\t")
+          .option("header", "true")
+          .load("/datascience/33accross/20200*/*/*views-mx-*.gz")
+          .groupBy("PAGE_URL")
+          .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
+          .sort(desc("devices"))
+          .write.format("csv").save("/datascience/custom/urls_mx_across")
 
     val grouped_domain_mx = spark.read
                               .format("csv")
@@ -1461,7 +1456,7 @@ object RandomTincho {
                               .option("header", "true")
                               .load("/datascience/33accross/20200*/*/*views-mx-*.gz")
                               .selectExpr("*", "parse_url(%s, 'HOST') as domain".format("PAGE_URL"))
-                              .groupBy("PAGE_URL")
+                              .groupBy("domain")
                               .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
                               .sort(desc("devices"))
 
