@@ -1403,6 +1403,84 @@ object RandomTincho {
     println("Count ml unique: %s".format(count))
   }
 
+  def report_33across(spark:SparkSession){
+
+    val grouped_url_ar = spark.read
+                              .format("csv")
+                              .option("sep", "\t")
+                              .option("header", "true")
+                              .load("/datascience/33accross/202001*/*/*views-ar-*.gz")
+                              .groupBy("PAGE_URL")
+                              .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
+                              .sort(desc("devices"))
+
+    println("Top urls AR")
+    println(grouped_url_ar.take(15))
+
+
+    val grouped_domain_ar = spark.read
+                              .format("csv")
+                              .option("sep", "\t")
+                              .option("header", "true")
+                              .load("/datascience/33accross/202001*/*/*views-ar-*.gz")
+                              .selectExpr("*", "parse_url(%s, 'HOST') as domain".format("PAGE_URL"))
+                              .groupBy("domain")
+                              .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
+                              .sort(desc("devices"))
+
+    println("Top Domains AR")
+    println(grouped_domain_ar.take(15))
+
+    val grouped_category_ar = spark.read
+                              .format("csv")
+                              .option("sep", "\t")
+                              .option("header", "true")
+                              .load("/datascience/33accross/202001*/*/*views-ar-*.gz")
+                              .groupBy("PAGE_CATEGORY")
+                              .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
+                              .sort(desc("devices"))
+
+    println("Top Categories AR")
+    println(grouped_category_ar.take(15))
+
+    val grouped_url_mx = spark.read
+                              .format("csv")
+                              .option("sep", "\t")
+                              .option("header", "true")
+                              .load("/datascience/33accross/202001*/*/*views-mx-*.gz")
+                              .groupBy("PAGE_URL")
+                              .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
+                              .sort(desc("devices"))
+
+    println("Top urls MX")
+    println(grouped_url_mx.take(15))
+
+    val grouped_domain_mx = spark.read
+                              .format("csv")
+                              .option("sep", "\t")
+                              .option("header", "true")
+                              .load("/datascience/33accross/202001*/*/*views-mx-*.gz")
+                              .selectExpr("*", "parse_url(%s, 'HOST') as domain".format("PAGE_URL"))
+                              .groupBy("PAGE_URL")
+                              .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
+                              .sort(desc("devices"))
+
+    println("Top Domains MX")
+    println(grouped_domain_mx.take(15))
+
+    val grouped_category_mx = spark.read
+                              .format("csv")
+                              .option("sep", "\t")
+                              .option("header", "true")
+                              .load("/datascience/33accross/202001*/*/*views-mx-*.gz")
+                              .groupBy("PAGE_CATEGORY")
+                              .agg(approx_count_distinct(col("COOKIE"), 0.01).as("devices"))
+                              .sort(desc("devices"))
+
+    println("Top Categories MX")
+    println(grouped_category_mx.take(15))
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1414,8 +1492,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    //get_piis_bridge(spark)
-    get_dataset_sharethis_kws(spark)
+    report_33across(spark)
 
   }
 
