@@ -324,5 +324,7 @@ object DunnhumbyEnrichment {
       "'BR'",
       "country = 'BR'"
     )
+    splitInPartners(spark, 1)
   }
+
 }
