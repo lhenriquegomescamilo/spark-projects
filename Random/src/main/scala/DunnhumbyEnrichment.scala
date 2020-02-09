@@ -201,7 +201,9 @@ object DunnhumbyEnrichment {
     // to keep only the relevant date interval
     // val raw = getDataIdPartners(spark, List("831"), nDays, since, "streaming")
     val raw =
-      getDataAudiences(spark, nDays, since).filter("id_partner IN (831, 1332, 1334, 1336)")
+      getDataAudiences(spark, nDays, since).filter(
+        "id_partner IN (831, 1332, 1334, 1336)"
+      )
     val data = if (dateRange.length > 0) raw.filter(dateRange) else raw
 
     // List of segments to keep
@@ -218,7 +220,7 @@ object DunnhumbyEnrichment {
 
     // List of columns to keep
     val select =
-      "time,all_segments,campaign_id,device_id,placement_id,advertiser_id"
+      "time,all_segments,campaign_id,device_id,placement_id,advertiser_id,id_partner"
         .split(",")
         .toList
 
@@ -249,7 +251,7 @@ object DunnhumbyEnrichment {
 
     // Final list of columns to keep for the report
     val final_select =
-      "advertiser_id,campaign_id,device_id,placement_id,time,browser,device_type,os,ml_sh2,nid_sh2"
+      "advertiser_id,campaign_id,device_id,placement_id,time,browser,device_type,os,ml_sh2,nid_sh2,id_partner"
         .split(",")
         .toList
 
@@ -271,6 +273,40 @@ object DunnhumbyEnrichment {
       )
   }
 
+  def splitInPartners(spark: SparkSession, since: Int) = {
+    val data = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load(
+        "/datascience/dunnhumby/enrichment/day=%s"
+          .format(DateTime.now.minusDays(since).toString("yyyyMMdd"))
+      )
+      .cache()
+
+    val final_select =
+      "device_id,time,advertiser_id,campaign_id,placement_id,browser,device_type,os,ml_sh2,nid_sh2"
+        .split(",")
+        .toList
+
+    for (partner <- List(831, 1332, 1334, 1336)) {
+      data
+        .filter("id_partner = %s".format(partner))
+        .drop("id_partner")
+        .select(final_select.head, final_select.tail: _*)
+        .repartition(1)
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .option("header", "true")
+        .mode("overwrite")
+        .save(
+          "/datascience/dunnhumby/enrichment/day=%s/partner=%s"
+            .format(DateTime.now.minusDays(since).toString("yyyyMMdd"), partner)
+        )
+    }
+  }
+
   def main(args: Array[String]) {
     val spark =
       SparkSession.builder
@@ -283,10 +319,10 @@ object DunnhumbyEnrichment {
     getEnrichment(
       spark,
       "20190916",
-      65,
+      1,
       1,
       "'BR'",
-      "country = 'BR' and campaign_id IN (32658644, 33616889) AND (datetime >= '2019-12-10 00:00:00' AND datetime <= '2020-06-02 00:00:00')"
+      "country = 'BR'"
     )
   }
 }
