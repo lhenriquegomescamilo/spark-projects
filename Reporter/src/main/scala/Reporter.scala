@@ -42,8 +42,12 @@ object Reporter {
       DateTime.parse(interval(1), DateTimeFormat.forPattern("yyyyMMddHH"))
     val nDays = Days.daysBetween(from, to).getDays()
 
+    // Empty file that will be used when there is no Data
+    val file =
+      "/datascience/reporter/empty_files/pipeline_reporter_overlap.snappy.parquet"
+
     // Get list of valid days
-    val hdfs_files_reporter = (0 to nDays)
+    var hdfs_files_reporter = file :: (0 to nDays)
       .map(
         day =>
           "/datascience/data_reporter2/day=%s/id_partner=%s"
@@ -52,6 +56,9 @@ object Reporter {
               id_partner
             )
       )
+      .toList
+
+    hdfs_files_reporter = hdfs_files_reporter
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
     println("Files to be processed")
@@ -236,7 +243,7 @@ object Reporter {
     val overlap = getOverlap(dataset, (split == "1" || split == "true"))
 
     // If there is a split, then we have to add the field firstParty as a column
-    val report = overlap 
+    val report = overlap
 
     report.createOrReplaceTempView("report")
     val table = spark.table("report")
