@@ -80,7 +80,7 @@ object TestRules {
       broadcast(rules.filter(col("id_partner").isin(partners: _*)).cache())
 
     val N = filtered_rules.count().toInt
-    val batch_size = 500
+    val batch_size = 200
 
     val queries = filtered_rules.rdd
       .take(N)
