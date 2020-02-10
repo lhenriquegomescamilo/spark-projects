@@ -70,14 +70,14 @@ object TestRules {
       .withColumnRenamed("_c2", "rule")
       .withColumnRenamed("_c1", "segment")
 
-    val finalDF = getEventqueueData(spark).repartition(12)
-    finalDF.cache()
+    val finalDF = getEventqueueData(spark).repartition(12).cache()
+    // finalDF.cache()
 
     // Partners that are part of the eventqueue
     val partners =
       finalDF.select("id_partner").collect().map(row => row(0).toString)
-    val filtered_rules = rules.filter(col("id_partner").isin(partners: _*))
-    filtered_rules.cache()
+    val filtered_rules =
+      rules.filter(col("id_partner").isin(partners: _*)).cache()
 
     val N = filtered_rules.count().toInt
     val batch_size = 100
