@@ -183,7 +183,7 @@ def get_safegraph_data(
     //val country = "CL"
     val country = "AR"
 
-    val date = "20200204"
+    val date = "20200210"
     val root_path = "/datascience/geo/holidays/coca/"
     val file_path_travellers = "travellers_%s_".format(country) + date
     val path_travellers =  root_path + file_path_travellers
@@ -330,8 +330,8 @@ def get_safegraph_data(
     //val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_PE"
 
     //ARGENTINA
-    val path_travellers_old = "/datascience/geo/misc/travelers_from_home_AR_full_audience_push"
-    val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_AR"
+    val path_travellers_old = "/datascience/geo/holidays/coca/travellers_AR_20200204"
+    val path_stay_old = "/datascience/geo/holidays/coca/stay_home_AR_20200204"
 
     //read old dataframes and concat
     val vaca_old = spark.read.format("csv")
