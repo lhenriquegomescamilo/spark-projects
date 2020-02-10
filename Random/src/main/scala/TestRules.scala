@@ -70,7 +70,7 @@ object TestRules {
       .withColumnRenamed("_c2", "rule")
       .withColumnRenamed("_c1", "segment")
 
-    val finalDF = getEventqueueData(spark)//.repartition(12).cache()
+    val finalDF = getEventqueueData(spark).cache()//.repartition(12)
     // finalDF.cache()
 
     // Partners that are part of the eventqueue
