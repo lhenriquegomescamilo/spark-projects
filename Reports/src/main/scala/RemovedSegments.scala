@@ -100,7 +100,7 @@ object RemovedSegments {
     df.withColumn("day", lit(date_current.replace("/", "")))
       .write
       .format("parquet")
-      .partitionBy("day", "country")
+      .partitionBy("day")
       .mode(SaveMode.Overwrite)
       .save(dir)
   }
