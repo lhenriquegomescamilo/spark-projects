@@ -35,7 +35,7 @@ object RemovedSegments {
       date_current: String
   ): DataFrame = {
 
-    val columns = "device_id,removed_segments".split(",").toList
+    val columns = "country,device_id,removed_segments".split(",").toList
 
     val countries =
     "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
@@ -95,12 +95,12 @@ object RemovedSegments {
       date_current: String
   ) = {
 
-    val dir = "/datascience/reports/volumes/removed_segments/"
+    val dir = "/datascience/reports/removed_segments/data/"
 
     df.withColumn("day", lit(date_current.replace("/", "")))
       .write
       .format("parquet")
-      .partitionBy("day")
+      .partitionBy("day", "country")
       .mode(SaveMode.Overwrite)
       .save(dir)
   }
