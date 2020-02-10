@@ -127,7 +127,7 @@ object RemovedSegments {
     println("STREAMING LOGGER:\n\tDay: %s".format(date_current))
 
     /** Read from "eventqueue" database */
-    val data = getDayEventQueue(spark = spark, date_current = date_current)
+    val df = getDayEventQueue(spark = spark, date_current = date_current)
 
     /** Store df */
     saveData(df = df, date_current = date_current)
