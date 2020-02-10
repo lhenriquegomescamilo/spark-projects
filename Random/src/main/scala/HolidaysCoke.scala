@@ -331,11 +331,11 @@ def get_safegraph_data(
     
     //PERU
     //val path_travellers_old = "/datascience/geo/misc/travelers_from_home_full_audience_PE_push"
-    //val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_PE"
+    //val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_PE_JAN_30_2020"
 
     //ARGENTINA
-    //val path_travellers_old = "/datascience/geo/holidays/coca/travellers_AR_20200204"
-    //val path_stay_old = "/datascience/geo/holidays/coca/stay_home_AR_20200204"
+    val path_travellers_old = "/datascience/geo/holidays/coca/travellers_AR_20200204"
+    val path_stay_old = "/datascience/geo/holidays/coca/stay_home_AR_20200204"
 
 
     //.save("/datascience/geo/misc/stay_at_home_full_audience_%s_JAN_30_2020".format(country))
