@@ -48,12 +48,27 @@ object ScrapperMetrics {
 
   def get_metrics(spark: SparkSession,conf:Configuration) {
 
-    val actual_date = DateTime.now.toString("yyyyMMdd")
+    val actual_date = DateTime.now().minusDays(2).toString("yyyyMMdd")
 
-    val count = spark.read.format("parquet").load("/datascience/data_keywords/day=20200209").count()
-    val domains = spark.read.format("parquet").load("/datascience/data_keywords/day=20200209").select("domain").distinct().count()
-    val devices = spark.read.format("parquet").load("/datascience/data_keywords/day=20200209").select("device_id").distinct().count()
-    val keywords = spark.read.format("parquet").load("/datascience/data_keywords/day=20200209").select("content_keys").distinct().count()
+    val count = spark.read.format("parquet")
+                    .load("/datascience/data_keywords/day=%s".format(actual_date))
+                    .count()
+    val domains = spark.read
+                        .format("parquet")
+                        .load("/datascience/data_keywords/day=%s".format(actual_date))
+                        .select("domain")
+                        .distinct()
+                        .count()
+    val devices = spark.read.format("parquet")
+                        .load("/datascience/data_keywords/day=%s".format(actual_date))
+                        .select("device_id")
+                        .distinct()
+                        .count()
+    val keywords = spark.read.format("parquet")
+                        .load("/datascience/data_keywords/day=%s".format(actual_date))
+                        .select("content_keys")
+                        .distinct()
+                        .count()
 
     
     var fs = FileSystem.get(conf)
