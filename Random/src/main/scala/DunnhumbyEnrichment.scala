@@ -333,7 +333,7 @@ object DunnhumbyEnrichment {
     }
   }
 
-  type OptionMap = Map[Symbol, Int]
+  type OptionMap = Map[Symbol, Any]
 
   /**
     * This method parses the parameters sent.
@@ -352,7 +352,7 @@ object DunnhumbyEnrichment {
   def main(args: Array[String]) {
     // Parse the parameters
     val options = nextOption(Map(), args.toList)
-    val from = if (options.contains('from)) options('from).toInt else 1
+    val from = if (options.contains('from)) options('from).toString.toInt else 1
     val nDays =
       if (options.contains('nDays)) options('nDays).toString.toInt else 1
 
