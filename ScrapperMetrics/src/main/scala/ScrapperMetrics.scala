@@ -40,7 +40,7 @@ import scala.util.Random.shuffle
   */
 object ScrapperMetrics {
 
-  def get_metrics(spark: SparkSession) {
+  def get_metrics(spark: SparkSession,conf:Configuration) {
 
     val actual_date = DateTime.now.toString("yyyyMMdd")
 
@@ -49,12 +49,16 @@ object ScrapperMetrics {
     val devices = spark.read.format("parquet").load("/datascience/data_keywords/day=20200209").select("device_id").distinct().count()
     val keywords = spark.read.format("parquet").load("/datascience/data_keywords/day=20200209").select("content_keys").distinct().count()
 
-    val df = List((count,domains,devices,keywords,actual_date)).toDF("count", "domains","devices","keywords","day")
-    df.write
-        .format("parquet")
-        .mode(SaveMode.Overwrite)
-        .partitionBy("day")
-        .save("/datascience/scrapper_metrics/")
+    
+    var fs = FileSystem.get(conf)
+    var os = fs.create(new Path("/datascience/scrapper_metrics/%s.json".format(actual_date)))
+
+    val content = "{"count": %s, "domains": %s, "devices": %s, "keywords": %s}".format(count,domains,devices,keywords)
+
+    os.write(content.getBytes)
+    fs.close()
+
+
     }
 
   /*****************************************************/
@@ -70,7 +74,9 @@ object ScrapperMetrics {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    get_metrics(spark)
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    get_metrics(spark,conf)
 
   }
 }
