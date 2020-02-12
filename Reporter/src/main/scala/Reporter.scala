@@ -44,7 +44,7 @@ object Reporter {
 
     // Empty file that will be used when there is no Data
     val file =
-      "/datascience/data_reporter2/day=20200201/id_partner=1/"
+      "/datascience/data_reporter2/day=20190201/id_partner=1/"
 
     // Get list of valid days
     var hdfs_files_reporter = file :: (0 to nDays)

@@ -187,24 +187,44 @@ object DunnhumbyEnrichment {
   }
 
   /**
-    *
+    * This method returns the following list of columns for all the Dunnhumby
+    * accounts and each row in the eventqueue.
+    * - advertiser_id
+    * - campaign_id
+    * - device_id
+    * - placement_id
+    * - time
+    * - browser
+    * - device_type
+    * - os
+    * - ml_sh2
+    * - nid_sh2
     */
   def getEnrichment(
       spark: SparkSession,
-      piiDateFrom: String,
       nDays: Int,
       since: Int,
       countries: String = "",
-      dateRange: String = ""
+      filter: String = "",
+      partner: Boolean = true,
+      piiDateFrom: String = "20190916"
   ) {
     // First of all we obtain the data from the id partner and filter, if necessary,
     // to keep only the relevant date interval
-    // val raw = getDataIdPartners(spark, List("831"), nDays, since, "streaming")
     val raw =
-      getDataAudiences(spark, nDays, since).filter(
-        "id_partner IN (831, 1332, 1334, 1336)"
-      )
-    val data = if (dateRange.length > 0) raw.filter(dateRange) else raw
+      if (partner)
+        getDataIdPartners(
+          spark,
+          List("831", "1332", "1334", "1336"),
+          nDays,
+          since,
+          "streaming"
+        )
+      else
+        getDataAudiences(spark, nDays, since).filter(
+          "id_partner IN (831, 1332, 1334, 1336)"
+        )
+    val data = if (dateRange.length > 0) raw.filter(filter) else raw
 
     // List of segments to keep
     val segments = (560 to 576)
@@ -273,7 +293,11 @@ object DunnhumbyEnrichment {
       )
   }
 
+  /** This method takes the previously downloaded enrichment and divides
+    * it into several folders, one for each DunnHumby account.
+    */
   def splitInPartners(spark: SparkSession, since: Int) = {
+    // Load the enrichment
     val data = spark.read
       .format("csv")
       .option("sep", "\t")
@@ -284,11 +308,13 @@ object DunnhumbyEnrichment {
       )
       .cache()
 
+    // Keep only the enrichment columns
     val final_select =
       "device_id,time,advertiser_id,campaign_id,placement_id,browser,device_type,os,ml_sh2,nid_sh2"
         .split(",")
         .toList
 
+    // For every account, create a new folder
     for (partner <- List(831, 1332, 1334, 1336)) {
       data
         .filter("id_partner = %s".format(partner))
@@ -307,7 +333,29 @@ object DunnhumbyEnrichment {
     }
   }
 
+  type OptionMap = Map[Symbol, Int]
+
+  /**
+    * This method parses the parameters sent.
+    */
+  def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+    def isSwitch(s: String) = (s(0) == '-')
+    list match {
+      case Nil => map
+      case "--from" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toString), tail)
+      case "--nDays" :: value :: tail =>
+        nextOption(map ++ Map('nDays -> value.toString), tail)
+    }
+  }
+
   def main(args: Array[String]) {
+    // Parse the parameters
+    val options = nextOption(Map(), args.toList)
+    val from = if (options.contains('from)) options('from).toInt else 1
+    val nDays =
+      if (options.contains('nDays)) options('nDays).toString.toInt else 1
+
     val spark =
       SparkSession.builder
         .appName("Spark devicer")
@@ -318,13 +366,12 @@ object DunnhumbyEnrichment {
 
     getEnrichment(
       spark,
-      "20190916",
-      1,
-      1,
-      "'BR'",
-      "country = 'BR'"
+      nDays,
+      from,
+      "'BR', 'CO'", // Countries for PIIs
+      "country IN ('BR', 'CO')" // Filter to be used for the pipeline data
     )
-    splitInPartners(spark, 1)
+    splitInPartners(spark, from)
   }
 
 }
