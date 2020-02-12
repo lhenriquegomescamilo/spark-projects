@@ -49,6 +49,10 @@ object UrlUserTriplets {
         "domain",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
       )
+      .withColumn(
+        "url",
+        regexp_replace(col("url"), "/$", "")
+      )
       .withColumn("domain", regexp_replace(col("domain"), "/.*", ""))
       // add an identifier for each of the two columns
       .withColumn("domain", concat(lit("dom@"), col("domain")))
