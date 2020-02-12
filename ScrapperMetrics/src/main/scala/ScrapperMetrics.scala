@@ -49,7 +49,7 @@ object ScrapperMetrics {
     val devices = spark.read.format("parquet").load("/datascience/data_keywords/day=20200209").select("device_id").distinct().count()
     val keywords = spark.read.format("parquet").load("/datascience/data_keywords/day=20200209").select("content_keys").distinct().count()
 
-    val df = Seq((count,domains,devices,keywords,actual_date)).toDF("count", "domains","devices","keywords","day")
+    val df = List((count,domains,devices,keywords,actual_date)).toDF("count", "domains","devices","keywords","day")
     df.write
         .format("parquet")
         .mode(SaveMode.Overwrite)
