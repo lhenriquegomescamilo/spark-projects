@@ -217,6 +217,17 @@ def get_safegraph_data(
 
     //una vez que tenemos la audiencia VACACionantes, se la restamos a los homes para obtener los no vacacionantes
 
+    val typeMap = Map(
+    "coo" -> "web",
+    "and" -> "android",
+    "aaid" -> "android",
+        "android" -> "android",
+    "unknown" -> "android",
+    "ios" -> "ios",
+    "idfa"->"ios")
+
+    val mapUDF = udf((aud: String) => typeMap(aud))
+
     //Primero juntamos madid y XD
     /**
     //PERUU
@@ -234,19 +245,8 @@ def get_safegraph_data(
     .select("_c1","_c2")
     .toDF("device_id","device_type")
 
-    val typeMap = Map(
-        "coo" -> "web",
-        "and" -> "android",
-        "aaid" -> "android",
-            "android" -> "android",
-        "unknown" -> "android",
-        "ios" -> "ios",
-        "idfa"->"ios")
-
-    val mapUDF = udf((aud: String) => typeMap(aud))
-    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type")))
-   */
-
+    val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type"))) 
+    */
     /**
     //CHILE
     val homes_madid = spark.read.format("csv")
@@ -263,7 +263,7 @@ def get_safegraph_data(
         .load(path_homes_xd)
         .select("device_id","device_type")
     val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_))
-    **/
+   */
     
     
     //ARGENTINA
@@ -307,6 +307,7 @@ def get_safegraph_data(
     .select("_c1","_c2")
     .toDF("device_id","device_type")    
     .withColumn("segment_id_new", lit(travel_seg))
+    .withColumn("device_type",mapUDF(col("device_type"))) 
     .select("device_type","device_id","segment_id_new")  
     
     val stay_home_new =  homes.join(vaca_new,Seq("device_id"),"left_anti")
@@ -330,18 +331,13 @@ def get_safegraph_data(
     //val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_CL"
     
     //PERU
-    //val path_travellers_old = "/datascience/geo/misc/travelers_from_home_full_audience_PE_push"
+    //val path_travellers_old = "/datascience/audiences/crossdeviced/travelers_from_home_PE_JAN_30_2020_2_xd"
     //val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_PE_JAN_30_2020"
 
     //ARGENTINA
     val path_travellers_old = "/datascience/audiences/crossdeviced/travellers_AR_20200204_xd"
     val path_stay_old = "/datascience/geo/holidays/coca/stay_home_AR_20200204"
 
-
-    //.save("/datascience/geo/misc/stay_at_home_full_audience_%s_JAN_30_2020".format(country))
-
-
-        //.save("/datascience/geo/misc/travelers_from_home_PE_JAN_30_2020")
 
     //read old dataframes and concat
     val vaca_old = spark.read.format("csv")
@@ -351,6 +347,7 @@ def get_safegraph_data(
     .select("_c1","_c2")
     .toDF("device_id","device_type") 
     .withColumn("segment_id_old", lit(travel_seg))
+    .withColumn("device_type",mapUDF(col("device_type"))) 
     .select("device_type","device_id","segment_id_old")
 
     val stay_old = spark.read.format("csv")

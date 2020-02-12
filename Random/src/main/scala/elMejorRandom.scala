@@ -975,7 +975,7 @@ val geo_tagged = tagged.withColumnRenamed("device_id","device_id_xd")
 //extraemos los tiempos
 
 val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/raw_output/JCDecauxOOH_120d_mexico_5-2-2020-13h/")
+.load("/datascience/geo/raw_output/JCDecauxOOH_updated_11_02_20_120d_mexico_11-2-2020-11h")
 .withColumn("device_id", lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
  .withColumn("Hour", date_format(col("Time"), "HH"))
@@ -1027,7 +1027,7 @@ cluster_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_")
+.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_updated")
 
 all_day_long_count
 .repartition(1)
@@ -1036,7 +1036,7 @@ all_day_long_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_")
+.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_updated")
 
 total_time_count
 .repartition(1)
@@ -1045,7 +1045,7 @@ total_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/total_time_count_")
+.save("/datascience/geo/Reports/JCDecaux/total_time_count_updated")
 
 all_day_total_time_count
 .repartition(1)
@@ -1054,7 +1054,7 @@ all_day_total_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_")
+.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_updated")
 
 
 }
