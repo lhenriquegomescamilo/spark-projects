@@ -53,7 +53,10 @@ object ScrapperMetrics {
     var fs = FileSystem.get(conf)
     var os = fs.create(new Path("/datascience/scrapper_metrics/%s.json".format(actual_date)))
 
-    val content = "{"count": %s, "domains": %s, "devices": %s, "keywords": %s}".format(count,domains,devices,keywords)
+    val content = """{"count": %s, "domains": %s, "devices": %s, "keywords": %s}""".format(count.toString,
+                                                                                        domains.toString,
+                                                                                        devices.toString,
+                                                                                        keywords.toString)
 
     os.write(content.getBytes)
     fs.close()
