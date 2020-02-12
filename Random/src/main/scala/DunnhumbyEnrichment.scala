@@ -224,7 +224,7 @@ object DunnhumbyEnrichment {
         getDataAudiences(spark, nDays, since).filter(
           "id_partner IN (831, 1332, 1334, 1336)"
         )
-    val data = if (dateRange.length > 0) raw.filter(filter) else raw
+    val data = if (filter.length > 0) raw.filter(filter) else raw
 
     // List of segments to keep
     val segments = (560 to 576)
