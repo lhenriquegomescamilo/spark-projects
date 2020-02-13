@@ -101,15 +101,16 @@ object TestRules {
         ))
 
       val columns = queries_batch.map(q => q._1).toList
-      val sql_queries = queries_batch
-        .map(
-          q =>
-            expr("CASE WHEN %s THEN %s ELSE -1 END".format(q._2, q._1))
-              .alias(q._1.toString)
-        )
-        .toList
 
       try {
+        val sql_queries = queries_batch
+          .map(
+            q =>
+              expr("CASE WHEN %s THEN %s ELSE -1 END".format(q._2, q._1))
+                .alias(q._1.toString)
+          )
+          .toList
+
         val batch_sql_queries = List(col("*")) ::: sql_queries
         println("batch")
         finalDF
