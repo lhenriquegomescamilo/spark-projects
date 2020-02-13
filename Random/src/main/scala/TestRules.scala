@@ -110,6 +110,7 @@ object TestRules {
       val columns = queries_batch.map(q => q._1).toList
 
       val batch_sql_queries = List(col("*")) ::: sql_queries
+      batch_sql_queries.foreach(println)
 
       try {
         finalDF
