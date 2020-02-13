@@ -80,7 +80,7 @@ object TestRules {
       broadcast(rules.filter(col("id_partner").isin(partners: _*)).cache())
 
     val N = filtered_rules.count().toInt
-    val batch_size = 200
+    val batch_size = 50
 
     val queries = filtered_rules.rdd
       .take(N)
@@ -99,30 +99,38 @@ object TestRules {
         (batch + 1) * batch_size
       ))
 
-      val sql_queries = queries_batch.map(
-        q => "CASE WHEN %s THEN %s ELSE 0 END AS %s".format(q._2, q._1, q._1)
-      )
+      val sql_queries = queries_batch
+        .map(
+          q =>
+            expr("CASE WHEN %s THEN %s ELSE -1 END".format(q._2, q._1))
+              .alias(q._1.toString)
+        )
+        .toList
 
       val columns = queries_batch.map(q => q._1).toList
 
-      val query = "SELECT %s FROM eventqueue".format(sql_queries.mkString(", "))
+      val batch_sql_queries = List(col("*")) ::: sql_queries
+      batch_sql_queries.foreach(println)
 
-      val df: DataFrame = try {
+      try {
         finalDF
-          .filter(query)
+          .select(batch_sql_queries: _*)
           .withColumn("segments", array(columns.map(c => col(c.toString)): _*))
+          .withColumn("segments", explode(col("segments")))
+          .groupBy("device_id")
+          .agg(collect_list("segments").as("segments"))
+          .withColumn("segments", concat_ws(",", col("segments")))
           .select("device_id", "segments")
+          .write
+          .format("csv")
+          .mode(if (batch == 0) "overwrite" else "append")
+          .save("/datascience/custom/test_rules")
       } catch {
         case e: Exception => {
           println(e)
           println("Failed on batch: %s".format(batch))
-          Seq.empty[(String, String)].toDF("device_id", "segment")
         }
       }
-      df.write
-        .format("csv")
-        .mode(if (batch == 0) "overwrite" else "append")
-        .save("/datascience/custom/test_rules")
 
       // queries_batch
       //   .map(
