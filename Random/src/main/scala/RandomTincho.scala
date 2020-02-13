@@ -1540,7 +1540,7 @@ object RandomTincho {
     val fs = FileSystem.get(conf)
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(0)
-    val days = (0 until 15).map(end.minusDays(_)).map(_.toString(format))
+    val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_partner_streaming/"
 
     // Now we obtain the list of hdfs folders to be read
@@ -1560,15 +1560,15 @@ object RandomTincho {
 
     val join_factual = bridge.join(factual,Seq("device_id"),"inner")
     println("Factual Devices:")
-    join_factual.select("device_id").distinct.count
+    println(join_factual.select("device_id").distinct().count())
     println("Factual Emails:")
-    join_factual.select("email_sha256").distinct.count
+    println(join_factual.select("email_sha256").distinct().count())
 
     val join_startapp = bridge.join(startapp,Seq("device_id"),"inner")
     println("Startapp Devices:")
-    join_startapp.select("device_id").distinct.count
+    println(join_startapp.select("device_id").distinct().count())
     println("Startapp Emails:")
-    join_startapp.select("email_sha256").distinct.count
+    println((join_startapp.select("email_sha256").distinct().count())
 
   }
 
