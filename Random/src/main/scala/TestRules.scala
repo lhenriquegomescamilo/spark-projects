@@ -94,11 +94,13 @@ object TestRules {
       )
 
     for (batch <- (0 to (N / batch_size).toInt)) {
-      var queries_batch = ((0 until batch_size).map(batch * batch_size + _) zip queries
+      var queries_batch = ((0 until batch_size).map(i => batch * batch_size + i) zip queries
         .slice(
           batch * batch_size,
           (batch + 1) * batch_size
         ))
+
+      val columns = queries_batch.map(q => q._1).toList
 
       try {
         val sql_queries = queries_batch
@@ -109,9 +111,8 @@ object TestRules {
           )
           .toList
 
-        val columns = queries_batch.map(q => q._1).toList
-
         val batch_sql_queries = List(col("*")) ::: sql_queries
+        println("batch")
         finalDF
           .select(batch_sql_queries: _*)
           .withColumn("segments", array(columns.map(c => col(c.toString)): _*))
