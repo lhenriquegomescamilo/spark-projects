@@ -1568,7 +1568,7 @@ object RandomTincho {
     println("Startapp Devices:")
     println(join_startapp.select("device_id").distinct().count())
     println("Startapp Emails:")
-    println((join_startapp.select("email_sha256").distinct().count())
+    println(join_startapp.select("email_sha256").distinct().count())
 
   }
 
