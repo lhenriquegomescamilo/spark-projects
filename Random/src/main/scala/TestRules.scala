@@ -111,7 +111,7 @@ object TestRules {
 
       val batch_sql_queries = List(col("*")) ::: sql_queries
 
-      val df: DataFrame = try {
+      try {
         finalDF
           .select(batch_sql_queries: _*)
           .withColumn("segments", array(columns.map(c => col(c.toString)): _*))
@@ -128,7 +128,6 @@ object TestRules {
         case e: Exception => {
           println(e)
           println("Failed on batch: %s".format(batch))
-          Seq.empty[(String, String)].toDF("device_id", "segment")
         }
       }
 
