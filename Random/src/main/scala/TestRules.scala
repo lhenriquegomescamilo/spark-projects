@@ -117,7 +117,7 @@ object TestRules {
           .withColumn("segments", array(columns.map(c => col(c.toString)): _*))
           .withColumn("segments", explode(col("segments")))
           .groupBy("device_id")
-          .agg(collect_list("segment").as("segments"))
+          .agg(collect_list("segments").as("segments"))
           .withColumn("segments", concat_ws(",", col("segments")))
           .select("device_id", "segments")
       } catch {
