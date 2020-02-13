@@ -157,17 +157,17 @@ object TestRules {
       //   .save("/datascience/custom/test_rules")
     }
 
-    spark.read
-      .format("parquet")
-      .load("/datascience/custom/test_rules")
-      .groupBy("device_id")
-      .agg(collect_list("segments").as("segments"))
-      .withColumn("segments", concat_ws(",", col("segments")))
-      .select("device_id", "segments")
-      .write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/test_rules_grouped")
+    // spark.read
+    //   .format("parquet")
+    //   .load("/datascience/custom/test_rules")
+    //   .groupBy("device_id")
+    //   .agg(collect_list("segments").as("segments"))
+    //   .withColumn("segments", concat_ws(",", col("segments")))
+    //   .select("device_id", "segments")
+    //   .write
+    //   .format("parquet")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/test_rules_grouped")
   }
 
   def main(args: Array[String]) {
