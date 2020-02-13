@@ -70,7 +70,7 @@ object TestRules {
       .withColumnRenamed("_c2", "rule")
       .withColumnRenamed("_c1", "segment")
 
-    val finalDF = getEventqueueData(spark).cache()//.repartition(12)
+    val finalDF = getEventqueueData(spark).repartition(12).cache()
     // finalDF.cache()
 
     // Partners that are part of the eventqueue
@@ -80,7 +80,7 @@ object TestRules {
       broadcast(rules.filter(col("id_partner").isin(partners: _*)).cache())
 
     val N = filtered_rules.count().toInt
-    val batch_size = 200
+    val batch_size = 50
 
     val queries = filtered_rules.rdd
       .take(N)
@@ -94,37 +94,84 @@ object TestRules {
       )
 
     for (batch <- (0 to (N / batch_size).toInt)) {
-      var queries_batch = ((0 until batch_size) zip queries.slice(
-        batch * batch_size,
-        (batch + 1) * batch_size
-      ))
-      queries_batch
-        .map(
-          t => {
-            val df: DataFrame = try {
-              finalDF
-                .filter(t._2)
-                .withColumn("segment", lit(batch * batch_size + t._1))
-                .select("device_id", "segment")
-            } catch {
-              case e: Exception => {
-                println("Failed on query: %s".format(t._2))
-                Seq.empty[(String, String)].toDF("device_id", "segment")
-              }
-            }
-            df
-          }
-        )
-        .reduce((df1, df2) => df1.unionAll(df2))
-        .distinct()
-        .groupBy("device_id")
-        .agg(collect_list("segment").as("segments"))
-        .withColumn("segments", concat_ws(",", col("segments")))
-        .write
-        .format("csv")
-        .mode(if (batch == 0) "overwrite" else "append")
-        .save("/datascience/custom/test_rules")
+      var queries_batch = ((0 until batch_size).map(i => batch * batch_size + i) zip queries
+        .slice(
+          batch * batch_size,
+          (batch + 1) * batch_size
+        ))
+
+      val columns = queries_batch.map(q => q._1).toList
+
+      try {
+        val sql_queries = queries_batch
+          .map(
+            q =>
+              expr("CASE WHEN %s THEN %s ELSE -1 END".format(q._2, q._1))
+                .alias(q._1.toString)
+          )
+          .toList
+
+        val batch_sql_queries = List(col("*")) ::: sql_queries
+        println("batch")
+        finalDF
+          .select(batch_sql_queries: _*)
+          .withColumn("segments", array(columns.map(c => col(c.toString)): _*))
+          .withColumn("segments", explode(col("segments")))
+          .filter("segments >= 0")
+          .groupBy("device_id")
+          .agg(collect_list("segments").as("segments"))
+          .withColumn("segments", concat_ws(",", col("segments")))
+          .select("device_id", "segments")
+          .write
+          .format("parquet")
+          .mode(if (batch == 0) "overwrite" else "append")
+          .save("/datascience/custom/test_rules")
+      } catch {
+        case e: Exception => {
+          println(e)
+          println("Failed on batch: %s".format(batch))
+        }
+      }
+
+      // queries_batch
+      //   .map(
+      //     t => {
+      //       val df: DataFrame = try {
+      //         finalDF
+      //           .filter(t._2)
+      //           .withColumn("segment", lit(batch * batch_size + t._1))
+      //           .select("device_id", "segment")
+      //       } catch {
+      //         case e: Exception => {
+      //           println("Failed on query: %s".format(t._2))
+      //           Seq.empty[(String, String)].toDF("device_id", "segment")
+      //         }
+      //       }
+      //       df
+      //     }
+      //   )
+      //   .reduce((df1, df2) => df1.unionAll(df2))
+      //   .distinct()
+      //   .groupBy("device_id")
+      //   .agg(collect_list("segment").as("segments"))
+      //   .withColumn("segments", concat_ws(",", col("segments")))
+      //   .write
+      //   .format("csv")
+      //   .mode(if (batch == 0) "overwrite" else "append")
+      //   .save("/datascience/custom/test_rules")
     }
+
+    // spark.read
+    //   .format("parquet")
+    //   .load("/datascience/custom/test_rules")
+    // .groupBy("device_id")
+    // .agg(collect_list("segments").as("segments"))
+    // .withColumn("segments", concat_ws(",", col("segments")))
+    // .select("device_id", "segments")
+    // .write
+    // .format("parquet")
+    // .mode("overwrite")
+    // .save("/datascience/custom/test_rules_grouped")
   }
 
   def main(args: Array[String]) {
