@@ -1526,6 +1526,51 @@ object RandomTincho {
 
 
   }
+  
+  def report_bridge(spark:SparkSession){
+
+    val bridge = spark.read.format("csv")
+                      .option("header","true")
+                      .load("/data/tmp/Bridge_Linkage_File_Retargetly_LATAM_ALL.csv")
+                      .filter("country = 'ar'")
+                      .withColumnRenamed("advertising_id","device_id")
+                      .withColumn("device_id",lower(col("device_id")))
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until 15).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_partner_streaming/"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files_factual = days.flatMap(day =>(0 until 24).map(hour =>path + "hour=%s%02d/id_partner=%s".format(day, hour, 1008))).filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val factual = spark.read.option("basePath", path).parquet(hdfs_files_factual: _*)
+                        .filter("country = 'AR'")
+                        .withColumn("device_id",lower(col("device_id")))
+                        .select("device_id")
+
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files_startapp = days.flatMap(day =>(0 until 24).map(hour =>path + "hour=%s%02d/id_partner=%s".format(day, hour, 1139))).filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val startapp = spark.read.option("basePath", path).parquet(hdfs_files_factual: _*)
+                        .filter("country = 'AR'")
+                        .withColumn("device_id",lower(col("device_id")))
+                        .select("device_id")
+
+    val join_factual = bridge.join(factual,Seq("device_id"),"inner")
+    println("Factual Devices:")
+    join_factual.select("device_id").distinct.count
+    println("Factual Emails:")
+    join_factual.select("email_sha256").distinct.count
+
+    val join_startapp = bridge.join(startapp,Seq("device_id"),"inner")
+    println("Startapp Devices:")
+    join_startapp.select("device_id").distinct.count
+    println("Startapp Emails:")
+    join_startapp.select("email_sha256").distinct.count
+
+  }
 
   def main(args: Array[String]) {
      
@@ -1538,7 +1583,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    report_sharethis(spark)
+    report_bridge(spark)
 
   }
 
