@@ -166,7 +166,7 @@ object TestRules {
       .select("device_id", "segments")
       .write
       .format("parquet")
-      .mode(if (batch == 0) "overwrite" else "append")
+      .mode("overwrite")
       .save("/datascience/custom/test_rules_grouped")
   }
 
