@@ -94,35 +94,31 @@ object TestRules {
       )
 
     for (batch <- (0 to (N / batch_size).toInt)) {
-      var queries_batch = ((0 until batch_size) zip queries.slice(
-        batch * batch_size,
-        (batch + 1) * batch_size
-      ))
-
-      val sql_queries = queries_batch
-        .map(
-          q =>
-            expr("CASE WHEN %s THEN %s ELSE -1 END".format(q._2, q._1))
-              .alias(q._1.toString)
-        )
-        .toList
-
-      val columns = queries_batch.map(q => q._1).toList
-
-      val batch_sql_queries = List(col("*")) ::: sql_queries
-      batch_sql_queries.foreach(println)
+      var queries_batch = ((0 until batch_size).map(batch * batch_size + _) zip queries
+        .slice(
+          batch * batch_size,
+          (batch + 1) * batch_size
+        ))
 
       try {
+        val sql_queries = queries_batch
+          .map(
+            q =>
+              expr("CASE WHEN %s THEN %s ELSE -1 END".format(q._2, q._1))
+                .alias(q._1.toString)
+          )
+          .toList
+
+        val columns = queries_batch.map(q => q._1).toList
+
+        val batch_sql_queries = List(col("*")) ::: sql_queries
         finalDF
           .select(batch_sql_queries: _*)
           .withColumn("segments", array(columns.map(c => col(c.toString)): _*))
           .withColumn("segments", explode(col("segments")))
-          .groupBy("device_id")
-          .agg(collect_list("segments").as("segments"))
-          .withColumn("segments", concat_ws(",", col("segments")))
-          .select("device_id", "segments")
+          .filter("segments >= 0")
           .write
-          .format("csv")
+          .format("parquet")
           .mode(if (batch == 0) "overwrite" else "append")
           .save("/datascience/custom/test_rules")
       } catch {
@@ -131,6 +127,18 @@ object TestRules {
           println("Failed on batch: %s".format(batch))
         }
       }
+
+      spark.read
+        .format("parquet")
+        .load("/datascience/custom/test_rules")
+        .groupBy("device_id")
+        .agg(collect_list("segments").as("segments"))
+        .withColumn("segments", concat_ws(",", col("segments")))
+        .select("device_id", "segments")
+        .write
+        .format("parquet")
+        .mode(if (batch == 0) "overwrite" else "append")
+        .save("/datascience/custom/test_rules_grouped")
 
       // queries_batch
       //   .map(
