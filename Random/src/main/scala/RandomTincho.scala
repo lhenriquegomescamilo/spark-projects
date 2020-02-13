@@ -1553,7 +1553,7 @@ object RandomTincho {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files_startapp = days.flatMap(day =>(0 until 24).map(hour =>path + "hour=%s%02d/id_partner=%s".format(day, hour, 1139))).filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val startapp = spark.read.option("basePath", path).parquet(hdfs_files_factual: _*)
+    val startapp = spark.read.option("basePath", path).parquet(hdfs_files_startapp: _*)
                         .filter("country = 'AR'")
                         .withColumn("device_id",lower(col("device_id")))
                         .select("device_id")
