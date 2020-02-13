@@ -254,7 +254,7 @@ object AggregateData {
     /// Parseo de parametros
     var format = "yyyy-MM-dd"
     val actual_day = DateTime.now.toString(format)
-    val since = if (args.length > 0) args(0).toInt else 0
+    val since = if (args.length > 0) args(0).toInt else 1
     val ndays = if (args.length > 1) args(1).toInt else 30
 
     format = "yyyyMMdd"
