@@ -80,7 +80,7 @@ object TestRules {
       broadcast(rules.filter(col("id_partner").isin(partners: _*)).cache())
 
     val N = filtered_rules.count().toInt
-    val batch_size = 200
+    val batch_size = 50
 
     val queries = filtered_rules.rdd
       .take(N)
@@ -120,6 +120,10 @@ object TestRules {
           .agg(collect_list("segments").as("segments"))
           .withColumn("segments", concat_ws(",", col("segments")))
           .select("device_id", "segments")
+          .write
+          .format("csv")
+          .mode(if (batch == 0) "overwrite" else "append")
+          .save("/datascience/custom/test_rules")
       } catch {
         case e: Exception => {
           println(e)
@@ -127,10 +131,6 @@ object TestRules {
           Seq.empty[(String, String)].toDF("device_id", "segment")
         }
       }
-      df.write
-        .format("csv")
-        .mode(if (batch == 0) "overwrite" else "append")
-        .save("/datascience/custom/test_rules")
 
       // queries_batch
       //   .map(
