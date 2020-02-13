@@ -100,16 +100,16 @@ object TestRules {
       ))
 
       val sql_queries = queries_batch.map(
-        q => "CASE WHEN %s THEN %s ELSE 0 END AS %s".format(q._2, q._1, q._1)
-      )
+        q => expr("CASE WHEN %s THEN %s ELSE -1 END".format(q._2, q._1)).alias(q._1.toString)
+      ).toList
 
       val columns = queries_batch.map(q => q._1).toList
 
-      val query = "SELECT %s FROM eventqueue".format(sql_queries.mkString(", "))
+      val batch_sql_queries = List(col("*")) ::: sql_queries
 
       val df: DataFrame = try {
         finalDF
-          .filter(query)
+          .select(batch_sql_queries: _*)
           .withColumn("segments", array(columns.map(c => col(c.toString)): _*))
           .select("device_id", "segments")
       } catch {
