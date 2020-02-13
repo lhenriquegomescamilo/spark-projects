@@ -99,9 +99,13 @@ object TestRules {
         (batch + 1) * batch_size
       ))
 
-      val sql_queries = queries_batch.map(
-        q => expr("CASE WHEN %s THEN %s ELSE -1 END".format(q._2, q._1)).alias(q._1.toString)
-      ).toList
+      val sql_queries = queries_batch
+        .map(
+          q =>
+            expr("CASE WHEN %s THEN %s ELSE -1 END".format(q._2, q._1))
+              .alias(q._1.toString)
+        )
+        .toList
 
       val columns = queries_batch.map(q => q._1).toList
 
@@ -111,6 +115,10 @@ object TestRules {
         finalDF
           .select(batch_sql_queries: _*)
           .withColumn("segments", array(columns.map(c => col(c.toString)): _*))
+          .withColumn("segments", explode(col("segments")))
+          .groupBy("device_id")
+          .agg(collect_list("segment").as("segments"))
+          .withColumn("segments", concat_ws(",", col("segments")))
           .select("device_id", "segments")
       } catch {
         case e: Exception => {
