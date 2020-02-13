@@ -114,6 +114,7 @@ object TestRules {
           .select("device_id", "segments")
       } catch {
         case e: Exception => {
+          println(e)
           println("Failed on batch: %s".format(batch))
           Seq.empty[(String, String)].toDF("device_id", "segment")
         }
