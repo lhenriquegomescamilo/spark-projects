@@ -1592,6 +1592,8 @@ object RandomTincho {
           .mode(SaveMode.Overwrite)
           .save("/datascience/custom/join_geo")
 
+  
+
   }
 
   def main(args: Array[String]) {
@@ -1605,7 +1607,11 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    report_bridge(spark)
+    //report_bridge(spark)
+    
+    val join_geo = spark.read.load("/datascience/custom/join_geo")
+    val join_startapp = spark.read.load("/datascience/custom/join_startapp")
+    join_geo.join(join_startapp,Seq("email_sha256"),"inner").select("email_sha256").write.format("csv").save("/datascience/custom/join_final_equifax")
 
   }
 
