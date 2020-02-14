@@ -1603,6 +1603,8 @@ object RandomTincho {
                       .load("/datascience/custom/devices_gcba.csv")
                       .withColumnRenamed("Device Id","device_id")
                       .withColumn("device_id",lower(col("device_id")))
+                      .select("device_id")
+                      .distinct
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
