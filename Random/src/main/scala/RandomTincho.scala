@@ -1658,53 +1658,40 @@ object RandomTincho {
   def analisis_domains(spark:SparkSession){
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-    /// Leemos la data de keywords de ndays hacia atras
-    val format = "yyyy-MM-dd"
-    var start = DateTime.now.minusDays(2 + 15)
-    var end = DateTime.now.minusDays(2)
 
-    var daysCount = Days.daysBetween(start, end).getDays()
-    var days =
-      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(2 + 15)
+    val end = DateTime.now.minusDays(2)
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
 
-    var dfs = (0 until daysCount)
-      .map(start.plusDays(_))
-      .map(_.toString(format))
-      .filter(
-        day =>
-          fs.exists(
-            new Path("/datascience/selected_keywords/%s.csv".format(day))
-          )
-      )
-      .map(day => "/datascience/selected_keywords/%s.csv".format(day))
+    // Now we obtain the list of hdfs folders to be read
+    var hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, "AR")) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
 
     val data_new = spark.read
-      .format("csv")
-      .load(dfs: _*)
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
       .groupBy("domain")
       .agg(approx_count_distinct(col("device_id"), 0.03).as("devices_new"))
 
 
     start = DateTime.now.minusDays(25 + 15)
     end = DateTime.now.minusDays(25)
-
     daysCount = Days.daysBetween(start, end).getDays()
     days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-    dfs = (0 until daysCount)
-      .map(start.plusDays(_))
-      .map(_.toString(format))
-      .filter(
-        day =>
-          fs.exists(
-            new Path("/datascience/selected_keywords/%s.csv".format(day))
-          )
-      )
-      .map(day => "/datascience/selected_keywords/%s.csv".format(day))
+    hdfs_files = days
+                .map(day => path + "/day=%s/country=%s".format(day, "AR")) //for each day from the list it returns the day path.
+                .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
     val data_old = spark.read
-      .format("csv")
-      .load(dfs: _*)
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
       .groupBy("domain")
       .agg(approx_count_distinct(col("device_id"), 0.03).as("devices_old"))
 
