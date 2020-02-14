@@ -1651,7 +1651,7 @@ object RandomTincho {
     val join_geo = gcba.join(geo,Seq("device_id"),"inner")
 
     println("Join Final Devices:")
-    println(join_bridge.join(join_factual,Seq("device_id"),"inner").join(join_startapp,Seq("device_id"),"inner").join(join_geo,Seq("device_id"),"inner").select("device_id").distinct().count())
+    println(gcba.join(factual,Seq("device_id"),"inner").join(startapp,Seq("device_id"),"inner").join(geo,Seq("device_id"),"inner").join(bridge,Seq("device_id"),"inner").select("device_id").distinct().count())
 
   }
 
