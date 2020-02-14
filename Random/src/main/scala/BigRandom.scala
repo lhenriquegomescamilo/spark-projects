@@ -218,7 +218,9 @@ def getReport(
     .getOrCreate()
 
 
-    val countries = "AR,BR,CL,CO,EC,MX,PE,US".split(",").toList
+    //val countries = "AR,BR,CL,CO,EC,MX,PE,US".split(",").toList
+
+    val countries = "AR".split(",").toList
 
     for (country <- countries) {
 
