@@ -1696,7 +1696,7 @@ object RandomTincho {
       .agg(approx_count_distinct(col("device_id"), 0.03).as("devices_old"))
 
 
-    data_old.join(data_new,Seq("domain"),"inner").write.format("csv").save("/datascience/custom/domains_scrapper")
+    data_old.join(data_new,Seq("domain"),"inner").option("header","true").write.format("csv").save("/datascience/custom/domains_scrapper")
 
   }
 
