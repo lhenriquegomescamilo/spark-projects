@@ -1558,17 +1558,39 @@ object RandomTincho {
                         .withColumn("device_id",lower(col("device_id")))
                         .select("device_id")
 
-    val join_factual = bridge.join(factual,Seq("device_id"),"inner")
-    println("Factual Devices:")
-    println(join_factual.select("device_id").distinct().count())
-    println("Factual Emails:")
-    println(join_factual.select("email_sha256").distinct().count())
+    val geo = spark.read.format("csv")
+                    .option("sep","\t")
+                    .option("header","true")
+                    .load("/datascience/geo/NSEHomes/argentina_365d_home_21-1-2020-12h_xd_push")
+                    .withColumn("device_id",lower(col("device_id")))
 
-    val join_startapp = bridge.join(startapp,Seq("device_id"),"inner")
-    println("Startapp Devices:")
-    println(join_startapp.select("device_id").distinct().count())
-    println("Startapp Emails:")
-    println(join_startapp.select("email_sha256").distinct().count())
+    // val join_factual = bridge.join(factual,Seq("device_id"),"inner")
+    // println("Factual Devices:")
+    // println(join_factual.select("device_id").distinct().count())
+    // println("Factual Emails:")
+    // println(join_factual.select("email_sha256").distinct().count())
+    // bridge.join(factual,Seq("device_id"),"inner")
+    //       .write
+    //       .format("parquet")
+    //       .mode(SaveMode.Overwrite)
+    //       .save("/datascience/custom/join_factual")
+
+    // val join_startapp = bridge.join(startapp,Seq("device_id"),"inner")
+    // println("Startapp Devices:")
+    // println(join_startapp.select("device_id").distinct().count())
+    // println("Startapp Emails:")
+    // println(join_startapp.select("email_sha256").distinct().count())
+    bridge.join(startapp,Seq("device_id"),"inner")
+          .write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/join_startapp")
+
+    bridge.join(geo,Seq("device_id"),"inner")
+          .write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/join_geo")
 
   }
 
