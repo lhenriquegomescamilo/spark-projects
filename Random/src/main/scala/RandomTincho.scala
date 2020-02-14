@@ -1642,16 +1642,22 @@ object RandomTincho {
                     .withColumn("device_id",lower(col("device_id")))
 
 
-    val join_bridge = gcba.join(bridge,Seq("device_id"),"inner")
-    println("Bridge Devices:")
-    println(join_bridge.select("device_id").distinct().count())
+    // val join_bridge = gcba.join(bridge,Seq("device_id"),"inner")
+    
+    // val join_factual = gcba.join(factual,Seq("device_id"),"inner")
+    // val join_startapp = gcba.join(startapp,Seq("device_id"),"inner")
+    // val join_geo = gcba.join(geo,Seq("device_id"),"inner")
 
-    val join_factual = gcba.join(factual,Seq("device_id"),"inner")
-    val join_startapp = gcba.join(startapp,Seq("device_id"),"inner")
-    val join_geo = gcba.join(geo,Seq("device_id"),"inner")
+
+    val hdfs_files_gcba = days.flatMap(day =>(0 until 24).map(hour =>path + "hour=%s%02d/id_partner=%s".format(day, hour, 349))).filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val gcba_first = spark.read.option("basePath", path).parquet(hdfs_files_factual: _*)
+                        .filter("country = 'AR'")
+                        .withColumn("device_id",lower(col("device_id")))
+                        .select("device_id")
 
     println("Join Final Devices:")
-    println(gcba.join(factual,Seq("device_id"),"inner").join(startapp,Seq("device_id"),"inner").join(geo,Seq("device_id"),"inner").join(bridge,Seq("device_id"),"inner").select("device_id").distinct().count())
+    println(gcba.join(factual,Seq("device_id"),"inner").join(startapp,Seq("device_id"),"inner").join(geo,Seq("device_id"),"inner").join(bridge,Seq("device_id"),"inner").join(gcba_first,Seq("device_id"),"inner").select("device_id").distinct().count())
+
 
   }
 
@@ -1712,7 +1718,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    analisis_domains(spark)
+    report_gcba(spark)
     
 
   }
