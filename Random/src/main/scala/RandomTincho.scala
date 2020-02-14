@@ -1661,10 +1661,10 @@ object RandomTincho {
 
     // Get the days to be loaded
     val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(2 + 15)
-    val end = DateTime.now.minusDays(2)
-    val daysCount = Days.daysBetween(start, end).getDays()
-    val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+    var start = DateTime.now.minusDays(2 + 15)
+    var end = DateTime.now.minusDays(2)
+    var daysCount = Days.daysBetween(start, end).getDays()
+    var days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
     val path = "/datascience/data_keywords"
 
     // Now we obtain the list of hdfs folders to be read
