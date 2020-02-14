@@ -1606,6 +1606,13 @@ object RandomTincho {
                       .select("device_id")
                       .distinct
 
+    val bridge = spark.read.format("csv")
+                  .option("header","true")
+                  .load("/data/tmp/Bridge_Linkage_File_Retargetly_LATAM_ALL.csv")
+                  .filter("country = 'ar'")
+                  .withColumnRenamed("advertising_id","device_id")
+                  .withColumn("device_id",lower(col("device_id")))
+
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
     val format = "yyyyMMdd"
@@ -1634,17 +1641,18 @@ object RandomTincho {
                     .load("/datascience/geo/NSEHomes/argentina_365d_home_21-1-2020-12h_xd_push")
                     .withColumn("device_id",lower(col("device_id")))
 
+
+    val join_bridge = gcba.join(bridge,Seq("device_id"),"inner")
+    println("Bridge Devices:")
+    println(join_bridge.select("device_id").distinct().count())
+
     val join_factual = gcba.join(factual,Seq("device_id"),"inner")
-    println("Factual Devices:")
-    println(join_factual.select("device_id").distinct().count())
-
     val join_startapp = gcba.join(startapp,Seq("device_id"),"inner")
-    println("Startapp Devices:")
-    println(join_startapp.select("device_id").distinct().count())
-
     val join_geo = gcba.join(geo,Seq("device_id"),"inner")
-    println("Geo Devices:")
-    println(join_geo.select("device_id").distinct().count())
+
+    println("Join Final Devices:")
+    println(join_bridge.join(join_factual,Seq("device_id"),"inner").join(join_startapp,Seq("device_id"),"inner").join(join_geo,Seq("device_id"),"inner").select("device_id").distinct().count())
+
   }
 
   def main(args: Array[String]) {
