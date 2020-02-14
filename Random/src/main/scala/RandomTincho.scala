@@ -1656,8 +1656,9 @@ object RandomTincho {
                         .select("device_id")
 
     println("Join Final Devices:")
-    println(gcba.join(factual,Seq("device_id"),"inner").join(startapp,Seq("device_id"),"inner").join(geo,Seq("device_id"),"inner").join(bridge,Seq("device_id"),"inner").join(gcba_first,Seq("device_id"),"inner").select("device_id").distinct().count())
-
+    //println(gcba.join(factual,Seq("device_id"),"inner").join(startapp,Seq("device_id"),"inner").join(geo,Seq("device_id"),"inner").join(bridge,Seq("device_id"),"inner").join(gcba_first,Seq("device_id"),"inner").select("device_id").distinct().count())
+    println("GCBA First Devices:")
+    println(gcba.join(gcba_first,Seq("device_id"),"inner").select("device_id").distinct().count())
 
   }
 
