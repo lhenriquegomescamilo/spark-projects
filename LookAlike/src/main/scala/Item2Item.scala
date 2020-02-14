@@ -47,7 +47,9 @@ object Item2Item {
                          nDaysSegment: Int = 0,
                          simMatrixHits: String = "binary",
                          simThreshold: Double = 0.05,
-                         predMatrixHits: String = "binary") {
+                         predMatrixHits: String = "binary",
+                         useFactualSegments: Boolean = false,
+                         useStartapSegments: Boolean = false) {
 
     val pathToProcess = "/datascience/data_lookalike/to_process/"
     val pathInProcess = "/datascience/data_lookalike/in_process/"
@@ -97,7 +99,8 @@ object Item2Item {
       fs.rename(hadoopPathToProcess, hadoopPathInProcess)
 
       try {
-        runExpand(spark, fileInProcess, nDays, nDaysSegment, simMatrixHits, simThreshold, predMatrixHits)
+        runExpand(spark, fileInProcess, nDays, nDaysSegment, simMatrixHits, simThreshold, predMatrixHits,
+                  useFactualSegments, useStartapSegments)
       } catch {
         case e: Throwable => {
           var errorMessage = e.toString()
@@ -122,7 +125,9 @@ object Item2Item {
                 nDaysDataSegment: Int = 0,
                 simMatrixHits: String = "binary",
                 simThreshold: Double = 0.05,
-                predMatrixHits: String = "binary") {
+                predMatrixHits: String = "binary",
+                useFactualSegments: Boolean = false,
+                useStartapSegments: Boolean = false) {
     import spark.implicits._
 
     println("LOOKALIKE LOG: Input File: " + filePath)
@@ -137,9 +142,15 @@ object Item2Item {
     var baseFeatureSegments = getBaseFeatureSegments()
 
     // We use factual segments in BR to imporve volumes
-    if(isOnDemand && country == "BR"){
+    if(useFactualSegments || (isOnDemand && country == "BR")){
       val factualSegments = getFactualSegments()
       baseFeatureSegments ++= factualSegments.toSet.diff(baseFeatureSegments.toSet).toList
+    }
+
+    if(useStartapSegments){
+      // TODO get US segments to country = US
+      val startapSegments = getLatamStartappSegments()
+      baseFeatureSegments ++= startapSegments.toSet.diff(baseFeatureSegments.toSet).toList
     }
 
     val extraFeatureSegments = getExtraFeatureSegments()
@@ -1150,6 +1161,10 @@ object Item2Item {
         nextOption(map ++ Map('nDaysSegment -> value), tail)
       case "--simThreshold" :: value :: tail =>
         nextOption(map ++ Map('simThreshold -> value), tail)
+      case "--useFactualSegments" :: value :: tail =>
+        nextOption(map ++ Map('useFactualSegments -> value), tail)
+      case "--useStartapSegments" :: value :: tail =>
+        nextOption(map ++ Map('useStartapSegments -> value), tail)
     }
   }
 
@@ -1188,6 +1203,11 @@ object Item2Item {
       if (options.contains('nDaysSegment)) options('nDaysSegment).toInt else 0
     val simThreshold =
       if (options.contains('simThreshold)) options('simThreshold).toDouble else 0.05
+    val useFactualSegments =
+     if (options.contains('useFactualSegments)) options('useFactualSegments).toBoolean else false
+    val useStartapSegments = 
+     if (options.contains('useStartapSegments)) options('useStartapSegments).toBoolean else false
+
     if(isTest){
       if(testSegmentId.length > 0)
         runTestOnDemmand(spark, testCountry, testSegmentId, nDays, nDaysSegment, simHits, simThreshold, predHits, testSize)
@@ -1195,8 +1215,10 @@ object Item2Item {
         runTestTaxo(spark, testCountry, nDays, nDaysSegment, simHits, simThreshold, predHits, testSize)
     }
     else if(filePath.length > 0)
-      runExpand(spark, filePath, nDays, nDaysSegment, simHits, simThreshold, predHits)
+      runExpand(spark, filePath, nDays, nDaysSegment, simHits, simThreshold, predHits,
+                useFactualSegments, useStartapSegments)
     else
-      processPendingJobs(spark, nDays, nDaysSegment, simHits, simThreshold, predHits)
+      processPendingJobs(spark, nDays, nDaysSegment, simHits, simThreshold, predHits,
+                         useFactualSegments, useStartapSegments)
   }
 }
