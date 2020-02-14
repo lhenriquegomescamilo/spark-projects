@@ -1655,6 +1655,65 @@ object RandomTincho {
 
   }
 
+  def analisis_domains(spark:SparkSession){
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    /// Leemos la data de keywords de ndays hacia atras
+    val format = "yyyy-MM-dd"
+    var start = DateTime.now.minusDays(2 + 15)
+    var end = DateTime.now.minusDays(2)
+
+    var daysCount = Days.daysBetween(start, end).getDays()
+    var days =
+      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+    var dfs = (0 until daysCount)
+      .map(start.plusDays(_))
+      .map(_.toString(format))
+      .filter(
+        day =>
+          fs.exists(
+            new Path("/datascience/selected_keywords/%s.csv".format(day))
+          )
+      )
+      .map(day => "/datascience/selected_keywords/%s.csv".format(day))
+
+    val data_new = spark.read
+      .format("csv")
+      .load(dfs: _*)
+      .groupBy("domain")
+      .agg(approx_count_distinct(col("device_id"), 0.03).as("devices_new"))
+
+
+    start = DateTime.now.minusDays(25 + 15)
+    end = DateTime.now.minusDays(25)
+
+    daysCount = Days.daysBetween(start, end).getDays()
+    days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+
+    dfs = (0 until daysCount)
+      .map(start.plusDays(_))
+      .map(_.toString(format))
+      .filter(
+        day =>
+          fs.exists(
+            new Path("/datascience/selected_keywords/%s.csv".format(day))
+          )
+      )
+      .map(day => "/datascience/selected_keywords/%s.csv".format(day))
+
+    val data_old = spark.read
+      .format("csv")
+      .load(dfs: _*)
+      .groupBy("domain")
+      .agg(approx_count_distinct(col("device_id"), 0.03).as("devices_old"))
+
+
+    data_old.join(data_new,Seq("domain"),"inner").write.format("csv").save("/datascience/custom/domains_scrapper")
+
+  }
+
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1666,7 +1725,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    report_gcba(spark)
+    analisis_domains(spark)
     
 
   }
