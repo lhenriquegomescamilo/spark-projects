@@ -217,9 +217,42 @@ def getReport(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val df_old = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",false)
+    .load("/datascience/keywiser/test_stem/AR_scrapper_test_15Dsince24_IM_stemmed_2020-02-14T19-51-58-773407")
+    .withColumnRenamed("_c1", "device_id")
+    .withColumnRenamed("_c2", "segment_id")
+    .groupBy("segment_id")
+    .agg(
+      approx_count_distinct(col("device_id"), rsd = 0.02) as "count_old"
+    )    
+    .agg(countDistinct("device_id").as("count_old"))
+
+
+    val df_new = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",false)
+    .load("/datascience/keywiser/test_stem/AR_scrapper_test_15Dsince1_IM_stemmed_2020-02-14T19-51-50-998076")
+    .withColumnRenamed("_c1", "device_id")
+    .withColumnRenamed("_c2", "segment_id")
+    .groupBy("segment_id")
+    .agg(
+      approx_count_distinct(col("device_id"), rsd = 0.02) as "count_old"
+    )    
+    .agg(countDistinct("device_id").as("count_new"))
+
+    val df = df_old.join(df_new,Seq("segment_id"))
+    df.withColumn("country", lit(country))
+    .write
+    .format("csv")
+    .option("delimiter","\t")
+    .option("header",true)
+    .mode("append") 
+    .save("/datascience/misc/scrapper_test_results_stemmed")
 
     //val countries = "AR,BR,CL,CO,EC,MX,PE,US".split(",").toList
-
+    /*
     val countries = "AR".split(",").toList
 
     for (country <- countries) {
@@ -251,6 +284,7 @@ def getReport(
     .mode("append") 
     .save("/datascience/misc/scrapper_test_results")
     }
+    **/
     
     /**  
     val audiences = """MX_71172_2020-01-30T14-29-02-220256,MX_71172_2020-01-30T14-29-14-744166,MX_71172_2020-01-30T14-29-33-106219,MX_71172_2020-01-30T14-29-02-220256,MX_71172_2020-01-30T14-29-23-107754,MX_71172_2020-01-30T14-29-35-550514,MX_71172_2020-01-30T14-29-38-074317,MX_71172_2020-01-30T14-28-57-423908,MX_71172_2020-01-30T14-29-40-379240""".split(",").toList
