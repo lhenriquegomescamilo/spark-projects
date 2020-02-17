@@ -242,6 +242,7 @@ def getReport(
     )    
     .agg(countDistinct("device_id").as("count_new"))
 
+    val country = "AR"
     val df = df_old.join(df_new,Seq("segment_id"))
     df.withColumn("country", lit(country))
     .write
