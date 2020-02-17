@@ -1693,8 +1693,8 @@ object RandomTincho {
                     .select("ml_sh2")
                     .distinct()
 
-    println("Devices Nid:")
-    println(detergentes.join(nids,Seq("nid_sh2"),"inner").select("nid_sh2").distinct().count())
+//    println("Devices Nid:")
+ //   println(detergentes_nid.join(nids,Seq("nid_sh2"),"inner").select("nid_sh2").distinct().count())
 
     println("Devices Mail:")
     println(detergentes_ml.join(mls,Seq("ml_sh2"),"inner").select("ml_sh2").distinct().count())
