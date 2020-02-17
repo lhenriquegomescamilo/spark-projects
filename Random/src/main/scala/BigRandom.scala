@@ -227,8 +227,6 @@ def getReport(
     .agg(
       approx_count_distinct(col("device_id"), rsd = 0.02) as "count_old"
     )    
-    .agg(countDistinct("device_id").as("count_old"))
-
 
     val df_new = spark.read.format("csv")
     .option("delimiter","\t")
@@ -240,7 +238,6 @@ def getReport(
     .agg(
       approx_count_distinct(col("device_id"), rsd = 0.02) as "count_old"
     )    
-    .agg(countDistinct("device_id").as("count_new"))
 
     val country = "AR"
     val df = df_old.join(df_new,Seq("segment_id"))
