@@ -996,15 +996,12 @@ val lospiibe = getDataPipelineMarkII(spark,"/datascience/pii_matching/pii_tuples
 .withColumn("device_id",lower(col("device_id")))
 .select("device_id","ml_sh2","mb_sh2","nid_sh2")
 
-val device_expanded_pii = equiv.join(lospiibe,Seq("device_id"))
-val device_original_pii = equiv.drop("device_id").withColumnRenamed("device_id_origin","device_id").join(lospiibe,Seq("device_id"))
+//val device_expanded_pii = equiv.join(lospiibe,Seq("device_id"))
 
-device_expanded_pii
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/geo/Reports/Equifax/DataMixta/Pii_expanded")
+val device_original_pii = equiv.drop("device_id")
+.withColumnRenamed("device_id_origin","device_id")
+.withColumn("device_id",lower(col("device_id")))
+.join(lospiibe,Seq("device_id"))
 
 
 device_original_pii
