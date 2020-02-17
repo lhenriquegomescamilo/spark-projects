@@ -985,15 +985,7 @@ object RandomTincho {
                             .distinct()
 
 
-     nids.join(keywords_diciembre,Seq("device_id"),"inner").select("nid_sh2","content_keys") 
-                                                    .groupBy("nid_sh2")
-                                                    .agg(collect_list(col("content_keys")).as("keywords"))
-                                                    .withColumn("keywords", concat_ws(";", col("keywords")))
-                                                    .select("nid_sh2","keywords")
-                                                    .write
-                                                    .format("parquet")
-                                                    .mode(SaveMode.Overwrite)
-                                                    .save("/datascience/custom/kws_equifax_diciembre")
+ 
 
     nids.join(keywords_enero,Seq("device_id"),"inner").select("nid_sh2","content_keys") 
                                                     .groupBy("nid_sh2")
@@ -1668,18 +1660,47 @@ object RandomTincho {
   }
 
   def matching_detergentes(spark:SparkSession){
-    val detergentes = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
+    val detergentes_nid = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
                             .filter("device_type = 'nid'")
                             .select("device_id")
                             .withColumnRenamed("device_id","nid_sh2")
+                            .distinct()
+
+    val detergentes_ml = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
+                            .filter("device_type = 'email'")
+                            .select("device_id")
+                            .withColumnRenamed("device_id","ml_sh2")
+                            .distinct()
+
+    val detergentes_mob = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
+                            .filter("device_type = 'phone'")
+                            .select("device_id")
+                            .withColumnRenamed("device_id","mob_sh2")
                             .distinct()
 
     val nids = spark.read.load("/datascience/pii_matching/pii_tuples/")
                           .filter("country = 'AR' and nid_sh2 is not null")
                           .select("nid_sh2")
                           .distinct()
-    println("Devices:")
+
+    val mob = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'AR' and mob_sh2 is not null")
+                      .select("mob_sh2")
+                      .distinct()
+
+    val mls = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                    .filter("country = 'AR' and ml_sh2 is not null")
+                    .select("ml_sh2")
+                    .distinct()
+
+    println("Devices Nid:")
     println(detergentes.join(nids,Seq("nid_sh2"),"inner").select("nid_sh2").distinct().count())
+
+    println("Devices Mail:")
+    println(detergentes_ml.join(mls,Seq("ml_sh2"),"inner").select("ml_sh2").distinct().count())
+
+    println("Devices Phone:")
+    println(detergentes_mob.join(mob,Seq("mob_sh2"),"inner").select("mob_sh2").distinct().count())
   
   }
 
