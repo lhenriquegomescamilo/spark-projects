@@ -916,6 +916,31 @@ total
 */*/
 
 
+  def getDataPipelineMarkII(
+      spark: SparkSession,
+      path: String,
+      nDays: String,
+      since: String) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    //specifying country
+    //val country_iso = "MX"
+      
+        // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/".format(day)) //
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+    df
+  }
 
  /*****************************************************/
   /******************     MAIN     *********************/
@@ -944,36 +969,35 @@ val equiv = spark.read.format("csv")
 
 equiv.persist()
 
-//aca levantamos segmentos, le pegamos los nombres y también a qué device id original pertenecían, después agrupamos por device_id y nos queda una lista de intereses
-val segments = spark.read.format("csv")
-.option("delimiter",",")
-.option("header",true)
-.load("/datascience/geo/geo_processed/EstacionYPF_365d_argentina_14-2-2020-17h_output_path_users_data")
-.select("device_id","feature")
-.withColumn("device_id",lower(col("device_id")))
-.withColumnRenamed("feature","segmentId")
-.join(taxo,Seq("segmentId"))
-.join(equiv,Seq("device_id"))
-.groupBy("device_id_origin").agg(concat_ws(",",collect_set("name")) as "behaviour")
+//  //aca levantamos segmentos, le pegamos los nombres y también a qué device id original pertenecían, después agrupamos por device_id y nos queda una lista de intereses
+//     val segments = spark.read.format("csv")
+//     .option("delimiter",",")
+//     .option("header",true)
+//     .load("/datascience/geo/geo_processed/EstacionYPF_365d_argentina_14-2-2020-17h_output_path_users_data")
+//     .select("device_id","feature")
+//     .withColumn("device_id",lower(col("device_id")))
+//     .withColumnRenamed("feature","segmentId")
+//     .join(taxo,Seq("segmentId"))
+//     .join(equiv,Seq("device_id"))
+//     .groupBy("device_id_origin").agg(concat_ws(",",collect_set("name")) as "behaviour")
 
 
 
-segments.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/geo/Reports/Equifax/DataMixta/BehaviourII")
+//     segments.write
+//     .mode(SaveMode.Overwrite)
+//     .format("csv")
+//     .option("header",true)
+//     .save("/datascience/geo/Reports/Equifax/DataMixta/BehaviourII")//
 
 
 
-val pii = spark.read.format("parquet")
-.load("/datascience/pii_matching/pii_tuples/day=20200216/part-00193-cae57b52-5ba9-43f1-aa01-ae2b43c62619-c000.snappy.parquet")
-.filter("country=='AR'")
+val lospiibe = getDataPipelineMarkII(spark,"/datascience/pii_matching/pii_tuples/","30","1")
+.filter("country == 'AR'")
 .withColumn("device_id",lower(col("device_id")))
 .select("device_id","ml_sh2","mb_sh2","nid_sh2")
 
-val device_expanded_pii = equiv.join(pii,Seq("device_id"))
-val device_original_pii = equiv.drop("device_id").withColumnRenamed("device_id_origin","device_id").join(pii,Seq("device_id"))
+val device_expanded_pii = equiv.join(lospiibe,Seq("device_id"))
+val device_original_pii = equiv.drop("device_id").withColumnRenamed("device_id_origin","device_id").join(lospiibe,Seq("device_id"))
 
 device_expanded_pii
 .write
