@@ -1675,7 +1675,7 @@ object RandomTincho {
     val detergentes_mob = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
                             .filter("device_type = 'phone'")
                             .select("device_id")
-                            .withColumnRenamed("device_id","mob_sh2")
+                            .withColumnRenamed("device_id","mb_sh2")
                             .distinct()
 
     val nids = spark.read.load("/datascience/pii_matching/pii_tuples/")
@@ -1684,8 +1684,8 @@ object RandomTincho {
                           .distinct()
 
     val mob = spark.read.load("/datascience/pii_matching/pii_tuples/")
-                      .filter("country = 'AR' and mob_sh2 is not null")
-                      .select("mob_sh2")
+                      .filter("country = 'AR' and mb_sh2 is not null")
+                      .select("mb_sh2")
                       .distinct()
 
     val mls = spark.read.load("/datascience/pii_matching/pii_tuples/")
@@ -1700,7 +1700,7 @@ object RandomTincho {
     println(detergentes_ml.join(mls,Seq("ml_sh2"),"inner").select("ml_sh2").distinct().count())
 
     println("Devices Phone:")
-    println(detergentes_mob.join(mob,Seq("mob_sh2"),"inner").select("mob_sh2").distinct().count())
+    println(detergentes_mob.join(mob,Seq("mb_sh2"),"inner").select("mb_sh2").distinct().count())
   
   }
 
