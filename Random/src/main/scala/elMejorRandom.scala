@@ -963,6 +963,32 @@ segments.write
 .format("csv")
 .option("header",true)
 .save("/datascience/geo/Reports/Equifax/DataMixta/BehaviourII")
+
+
+
+val pii = spark.read.format("parquet")
+.load("/datascience/pii_matching/pii_tuples/day=20200216/part-00193-cae57b52-5ba9-43f1-aa01-ae2b43c62619-c000.snappy.parquet")
+.filter("country=='AR'")
+.withColumn("device_id",lower(col("device_id")))
+.select("device_id","ml_sh2","mb_sh2","nid_sh2")
+
+val device_expanded_pii = equiv.join(pii,Seq("device_id"))
+val device_original_pii = equiv.drop("device_id").withColumnRenamed("device_id_origin","device_id").join(pii,Seq("device_id"))
+
+device_expanded_pii
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/Equifax/DataMixta/Pii_expanded")
+
+
+device_original_pii
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/Equifax/DataMixta/Pii_original")
+
+
 }
 
 
