@@ -236,7 +236,7 @@ def getReport(
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
     .agg(
-      approx_count_distinct(col("device_id"), rsd = 0.02) as "count_old"
+      approx_count_distinct(col("device_id"), rsd = 0.02) as "count_new"
     )    
 
     val country = "AR"
