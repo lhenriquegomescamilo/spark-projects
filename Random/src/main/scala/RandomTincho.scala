@@ -1667,6 +1667,22 @@ object RandomTincho {
 
   }
 
+  def matching_detergentes(spark:SparkSession){
+    val detergentes = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
+                            .filter("device_type = 'nid'")
+                            .select("device_id")
+                            .withColumnRenamed("device_id","nid_sh2")
+                            .distinct()
+
+    val nids = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                          .filter("country = 'AR' and nid_sh2 is not null")
+                          .select("nid_sh2")
+                          .distinct()
+    println("Devices:")
+    println(detergentes.join(nids,Seq("nid_sh2"),"inner").select("nid_sh2").distinct().count())
+  
+  }
+
 
   def main(args: Array[String]) {
      
@@ -1679,7 +1695,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_keywords_for_equifax(spark)
+    matching_detergentes(spark)
     
 
   }
