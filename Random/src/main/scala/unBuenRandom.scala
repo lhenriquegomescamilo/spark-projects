@@ -89,7 +89,7 @@ def getDataPipeline(
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/".format(day,country)) //
+      .map(day => path + "/day=%s/".format(day)) //
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
@@ -827,46 +827,8 @@ def getDataTriplets(
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-//tomamos el dataframe output
-val unfilter = spark.read.format("csv")
-.load("/datascience/custom/sample_publicis_mx_22_01_20")
-.toDF("url","device_id","event_type","timestamp","domain")
-
-//levantamos nuestra lista de not shareable domains, pero ahora tiene una columna con una palabra representativa del domain
-val donot = spark.read
-      .format("csv")
-      .option("header",true)
-      .load("/datascience/custom/not_shareable_domains_III.csv")
-      .select("sname")
-      .collect()
-      .map(row => row(0).toString)
-
-//creamos el filtro con las palabras de arriba      
-val filtered = unfilter.filter( !col("domain").rlike(donot.mkString("|")))
-
-//le filtramos tambien las populares
-
-//levantamos los domains populares, la idea de esto es remover los que son populares en otros paises tambien 
-val domain_popular = spark.read
-      .format("csv")
-      .option("header",true)
-      .load("/datascience/custom/popular_domains.csv")
-      .select("url_domain")
-      .collect()
-      .map(row => row(0).toString)
-
-//los filtramos del de arriba      
-val popular_filter_domain = filtered
-      //.filter(!col("domain").isin(domain_popular: _*))
-      .filter("domain NOT LIKE '%.perfil.%' AND domain NOT LIKE '%.br' AND domain NOT LIKE '%.mopar.%' AND domain NOT LIKE '%.apura.%' AND domain NOT LIKE '%elgrafico%' AND domain NOT LIKE '%naranja%'" )
-
-
-popular_filter_domain.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.save("/datascience/custom/sample_publicis_mx_22_01_20_filter_word_less_restrict")
+//Levantamos los pii
+val lospiibe = getDataPipelineMarkII(spark,"/datascience/pii_matching/pii_tuples/",30,1)
 
 
 
