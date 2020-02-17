@@ -976,6 +976,7 @@ val device_expanded_pii = equiv.join(pii,Seq("device_id"))
 val device_original_pii = equiv.drop("device_id").withColumnRenamed("device_id_origin","device_id").join(pii,Seq("device_id"))
 
 device_expanded_pii
+.write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
@@ -983,6 +984,7 @@ device_expanded_pii
 
 
 device_original_pii
+.write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
