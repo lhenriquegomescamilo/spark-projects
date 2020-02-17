@@ -55,6 +55,7 @@ object UrlIngester {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
+      .filter("share_data = 1")
       .select("url", "country", "day")
     df
   }
