@@ -69,6 +69,33 @@ def getDataPipeline(
     df
   }
 
+
+  def getDataPipelineMarkII(
+      spark: SparkSession,
+      path: String,
+      nDays: String,
+      since: String) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    //specifying country
+    //val country_iso = "MX"
+      
+        // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/".format(day,country)) //
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+    df
+  }
+
 def get_ua_segments(spark:SparkSession) = {
 
 //

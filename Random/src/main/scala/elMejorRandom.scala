@@ -926,6 +926,7 @@ total
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+
 //De acá tenemos la taxo base
 val taxo = spark.read.format("csv").option("header",true).load("/datascience/geo/Reports/Equifax/DataMixta/RelyTaxonomy_06_02_2020.csv")
 .filter(col("clusterParent").isin(0,1,2))
@@ -938,6 +939,8 @@ val equiv = spark.read.format("csv")
 .load("/datascience/geo/crossdeviced/EstacionYPF_365d_argentina_14-2-2020-17h_xd_equivalence_table")
 .select("device_id_origin","device_id_xd")
 .withColumnRenamed("device_id_xd","device_id")
+.withColumn("device_id",lower(col("device_id")))
+
 
 equiv.persist()
 
@@ -947,17 +950,19 @@ val segments = spark.read.format("csv")
 .option("header",true)
 .load("/datascience/geo/geo_processed/EstacionYPF_365d_argentina_14-2-2020-17h_output_path_users_data")
 .select("device_id","feature")
+.withColumn("device_id",lower(col("device_id")))
 .withColumnRenamed("feature","segmentId")
 .join(taxo,Seq("segmentId"))
 .join(equiv,Seq("device_id"))
 .groupBy("device_id_origin").agg(concat_ws(",",collect_set("name")) as "behaviour")
 
 
+
 segments.write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/Equifax/DataMixta/Behaviour")
+.save("/datascience/geo/Reports/Equifax/DataMixta/BehaviourII")
 }
 
 
