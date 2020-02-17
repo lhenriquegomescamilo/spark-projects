@@ -828,7 +828,7 @@ def getDataTriplets(
     Logger.getRootLogger.setLevel(Level.WARN)
 
 //Levantamos los pii
-val lospiibe = getDataPipelineMarkII(spark,"/datascience/pii_matching/pii_tuples/",30,1)
+val lospiibe = getDataPipelineMarkII(spark,"/datascience/pii_matching/pii_tuples/","30","1")
 
 
 
