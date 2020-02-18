@@ -25,11 +25,11 @@ object TestScrapper {
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    /**
+    
     val df_old = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_stem/AR_stem_scrapper_test_15Dsince28*")
+    .load("/datascience/keywiser/test_nof/AR_nofilter_scrapper_test_15Dsince28*")
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -40,7 +40,7 @@ object TestScrapper {
     val df_new = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_stem/AR_stem_scrapper_test_15Dsince1*")
+    .load("/datascience/keywiser/test_nof/AR_nofilter_scrapper_test_15Dsince1*")
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -56,20 +56,19 @@ object TestScrapper {
     .option("delimiter","\t")
     .option("header",true)
     .mode("append") 
-    .save("/datascience/misc/stem_test_results2")
-    **/
+    .save("/datascience/misc/nofilter_scrapper_results")
+  
 
+    /**
 
     val countries = "AR,BR,CL,CO,EC,MX,PE,US".split(",").toList
     
-    //val countries = "AR".split(",").toList
-
     for (country <- countries) {
 
      var df_old = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test/%s_huge_scrapper_test_15Dsince28*".format(country))
+    .load("/datascience/keywiser/test_stem/%s_huge_scrapper_test_15Dsince28*".format(country))
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -80,14 +79,14 @@ object TestScrapper {
     var df_new = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test/%s_huge_scrapper_test_15Dsince1*".format(country))
+    .load("/datascience/keywiser/test_stem/%s_huge_scrapper_test_15Dsince1*".format(country))
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
     .agg(
       approx_count_distinct(col("device_id"), rsd = 0.02) as "count_new"
     )    
-    
+
     var df = df_old.join(df_new,Seq("segment_id"))
     df.withColumn("country", lit(country))
     .write
@@ -97,7 +96,8 @@ object TestScrapper {
     .mode("append") 
     .save("/datascience/misc/huge_scrapper_test_results")
     }
-    
+
+    **/  
 
   }
 }
