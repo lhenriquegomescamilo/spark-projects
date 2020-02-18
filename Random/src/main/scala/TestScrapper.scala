@@ -25,7 +25,7 @@ object TestScrapper {
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    
+    /**    
     val df_old = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
@@ -58,8 +58,8 @@ object TestScrapper {
     .mode("append") 
     .save("/datascience/misc/nofilter_scrapper_results")
   
+    **/  
 
-    /**
 
     val countries = "AR,BR,CL,CO,EC,MX,PE,US".split(",").toList
     
@@ -97,7 +97,7 @@ object TestScrapper {
     .save("/datascience/misc/huge_scrapper_test_results")
     }
 
-    **/  
+
 
   }
 }
