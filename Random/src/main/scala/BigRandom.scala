@@ -220,7 +220,7 @@ def getReport(
     val df_old = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_stem/AR_big_scrapper_test_15Dsince27*")
+    .load("/datascience/keywiser/test_stem/AR_stem_scrapper_test_15Dsince28*")
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -231,7 +231,7 @@ def getReport(
     val df_new = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_stem/AR_big_scrapper_test_15Dsince1*")
+    .load("/datascience/keywiser/test_stem/AR_stem_scrapper_test_15Dsince1*")
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -247,7 +247,7 @@ def getReport(
     .option("delimiter","\t")
     .option("header",true)
     .mode("append") 
-    .save("/datascience/misc/big_scrapper_test_results")
+    .save("/datascience/misc/stem_test_results")
 
     //val countries = "AR,BR,CL,CO,EC,MX,PE,US".split(",").toList
     /*
