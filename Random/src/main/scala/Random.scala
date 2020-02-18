@@ -4862,6 +4862,117 @@ object Random {
       .foreach(println)
   }
 
+  def getFactualSegments(): List[String] = {
+    val segments =
+      """105056,105057,105058,105059,105060,105061,105062,105063,105064,105065,105066,105067,105068,105069,105070,
+            105071,105072,105073,105074,105075,105076,105077,105078,105079,105080,105081,105082,105083,105084,105085,
+            105086,105087,105088,105089,105090,105091,105092,105093,105094,105095,105096,105097,105098,105099,105100,
+            105101,105102,105103,105104,105105,105106,105107,105108,105109,105110,105111,105112,105113,105114,105115,
+            105116,105117,105118,105119,105120,105121,105122,105123,105124,105125,105126,105127,105128,105129,105130,
+            105131,105132,105133,105134,105135,105136,105137,105138,105139,105140,105141,105142,105143,105144,105145,
+            105146,105147,105148,105149,105150,105151,105152,105153,105154,105155,105156,105157,105158,105159,105160,
+            105161,105162,105163,105164,105165,105166,105167,105168,105169,105170,105171,105172,105173,105174,105175,
+            105176,105177,105178,105179,105180,105181,105182,105183,105184,105185,105186,105187,105188,105189,105190,
+            105191,105192,105193,105194,105195,105196,105197,105198,105199,105200,105201,105202,105203,105204,105205,
+            105206,105207,105208,105209,105210,105211,105212,105213,105214,105215,105216,105217,105218,105219,105220,
+            105221,105222,105223,105224,105225,105226,105227,105228,105229,105230,105231,105232,105233,105234,105235,
+            105236,105237,105238,105239,105240,105241,105242,105243,105244,105245,105246,105247,105248,105249,105250,
+            105251,105252,105253,105254,105255,105256,105257,105258,105259,105260,105261,105262,105263,105264,105265,
+            105266,105267,105268,105269,105270,105271,105272,105273,105274,105275,105276,105277,105278,105279,105280,
+            105281,105282,105283,105284,105285,105286,105287,105288,105289,105290,105291,105292,105293,105294,105295,
+            105296,105297,105298,105299,105300,105301,105302,105303,105304,105305,105306,105307,105308,105309,105310,
+            105311,105312,105313,105314,105315,105316,105317,105318,105319,105320,105321,105322,105323,105324,105325,
+            105326,105327,105328,105329,105330,105331,105332,105333,105334,105335,105336,105337,105338"""
+        .replace("\n", "")
+        .split(",")
+        .toList
+    segments
+  }
+
+  def getDataTriplets2(
+      spark: SparkSession,
+      country: String,
+      nDays: Int = 30,
+      from: Int = 1,
+      path: String = "/datascience/data_triplets/segments/"
+  ) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // read files from dates
+    val format = "yyyyMMdd"
+    val endDate = DateTime.now.minusDays(from)
+    val days =
+      (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .select("device_id", "feature")
+    // force count to 1 - if column doesn't exists, it creates it
+    df.withColumn("count", lit(1))
+  }
+
+  def getMaidsLAL(spark: SparkSession, segmentLAL: String, jobId: String) = {
+    // Parámetros de entrada
+    val country = "BR"
+    // val segmentLAL = "249889" // Segmentos LAL BR "249889" "249887", "249891"
+    val nDaysData = 40
+    val device_type = "android" // device type a escribir en archivo salida
+    var outputPath = "/datascience/custom/LAL_" + segmentLAL // path archivo salida en formato device_type, device_id, segmentLAL
+
+    // Listado de segmentos Facutal
+    val factualSegments = getFactualSegments()
+
+    // Lee data triplets
+    val data = getDataTriplets2(spark, country, nDaysData)
+
+    // Prepara filtro de segmentos
+    var segmentsFilter = List(segmentLAL) // LAL Segment
+    segmentsFilter ++= factualSegments.toSet
+      .diff(segmentsFilter.toSet)
+      .toList // Add Factual Segments
+
+    // Borra duplicados
+    val dataTriples = data
+      .select("device_id", "feature")
+      .dropDuplicates()
+
+    val lalAudience = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load(
+        "/datascience/data_lookalike/expansion/ondemand/jobId=%s/".format(jobId)
+      )
+      .withColumnRenamed("_c0", "device_type")
+      .withColumnRenamed("_c2", "segment")
+      .withColumnRenamed("_c1", "device_id")
+
+    // Filtra usuarios con segmentos LAL y segmentos de Factual. Y guarda resultados en csv
+    dataTriples
+      .filter(col("feature").isin(factualSegments: _*)) // segment filtering
+      .select("device_id")
+      .distinct()
+      .join(lalAudience, Seq("device_id"))
+      // .map(row => (row(0), (row(1), 1))) // 1 harcodeado para simular count (para esto no lo necesitams)
+      // .groupByKey() // group by device_id
+      // .filter(
+      //   row => row._2.map(t => t._1.toString).exists(factualSegments.contains)
+      // ) // Filtras aquellos que tengan al menos un segmento Factua
+      // .map(row => (device_type, row._1, segmentLAL)) // selecciona device_id
+      .select("device_type", "device_id", "segment")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "false")
+      .mode(SaveMode.Overwrite)
+      .save(outputPath)
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -4874,30 +4985,8 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val categoryUDF = udf(
-      (segments: Seq[Row]) => segments.map(record => record(5).toString)
-    )
-    val df = (22 to 29)
-      .map(
-        day =>
-          spark.read
-            .format("csv")
-            .option("sep", "\t")
-            .option("header", "true")
-            .load("/data/eventqueue/2020/01/%s/*.tsv.gz".format(day))
-      )
-      .reduce((df1, df2) => df1.unionAll(df2))
-
-    df.withColumn(
-        "removed_segments",
-        split(col("removed_segments"), "\u0001")
-      )
-      .filter("array_contains(removed_segments, '235699')")
-      .select("device_id")
-      .distinct()
-      .write
-      .format("csv")
-      .mode("overwrite")
-      .save("/datascience/custom/removed_235699")
+    for ((s, j) <- (List("249889", "249887", "249891") zip List("679407", "679405", "679403"))) {
+      getMaidsLAL(spark, s, j)
+    }
   }
 }
