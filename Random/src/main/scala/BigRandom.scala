@@ -220,7 +220,7 @@ def getReport(
     val df_old = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_stem/AR_big_scrapper_test_15Dsince27*")
+    .load("/datascience/keywiser/test/AR_big_scrapper_test_15Dsince27*")
     .toDF("device_type", "device_id","segment")
     .groupBy("device_id").agg(countDistinct("segment") as "segment_count")
 
@@ -231,7 +231,7 @@ def getReport(
     val df_new = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_stem/AR_big_scrapper_test_15Dsince1*")
+    .load("/datascience/keywiser/test/AR_big_scrapper_test_15Dsince1*")
     .toDF("device_type", "device_id","segment")
     .groupBy("device_id").agg(countDistinct("segment") as "segment_count")
 
