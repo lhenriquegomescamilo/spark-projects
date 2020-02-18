@@ -102,6 +102,7 @@ object keywordIngestion {
         "country"
       )
       .withColumn("device_type", lit("web"))
+      .filter("share_data = 1")
 
     processURLHTTP(df)
       .withColumn(
