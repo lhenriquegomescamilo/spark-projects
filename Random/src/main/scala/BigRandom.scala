@@ -247,7 +247,7 @@ def getReport(
     .option("delimiter","\t")
     .option("header",true)
     .mode("append") 
-    .save("/datascience/misc/stem_test_results")
+    .save("/datascience/misc/stem_test_results2")
 
     //val countries = "AR,BR,CL,CO,EC,MX,PE,US".split(",").toList
     /*
