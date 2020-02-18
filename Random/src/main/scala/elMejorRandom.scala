@@ -952,64 +952,25 @@ total
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-//De acá tenemos la taxo base
-val taxo = spark.read.format("csv").option("header",true).load("/datascience/geo/Reports/Equifax/DataMixta/RelyTaxonomy_06_02_2020.csv")
-.filter(col("clusterParent").isin(0,1,2))
-.select("segmentId","name")
-
-//Acá tenemos la tabla de equivalencias
-val equiv = spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/crossdeviced/EstacionYPF_365d_argentina_14-2-2020-17h_xd_equivalence_table")
-.select("device_id_origin","device_id_xd")
-.withColumnRenamed("device_id_xd","device_id")
-.withColumn("device_id",lower(col("device_id")))
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30","AR")
+              .withColumn("device_id",lower(col("device_id")))
+              .select("device_id","feature")
+              .distinct()
 
 
-equiv.persist()
+val users = spark.read.format("csv").option("header",true)
+.option("delimiter","\t").load("/datascience/geo/Reports/CopaAmerica/UsersAndDate")          
 
-//  //aca levantamos segmentos, le pegamos los nombres y también a qué device id original pertenecían, después agrupamos por device_id y nos queda una lista de intereses
-//     val segments = spark.read.format("csv")
-//     .option("delimiter",",")
-//     .option("header",true)
-//     .load("/datascience/geo/geo_processed/EstacionYPF_365d_argentina_14-2-2020-17h_output_path_users_data")
-//     .select("device_id","feature")
-//     .withColumn("device_id",lower(col("device_id")))
-//     .withColumnRenamed("feature","segmentId")
-//     .join(taxo,Seq("segmentId"))
-//     .join(equiv,Seq("device_id"))
-//     .groupBy("device_id_origin").agg(concat_ws(",",collect_set("name")) as "behaviour")
+val joined = users.join(segments,Seq("device_id"))   
 
-
-
-//     segments.write
-//     .mode(SaveMode.Overwrite)
-//     .format("csv")
-//     .option("header",true)
-//     .save("/datascience/geo/Reports/Equifax/DataMixta/BehaviourII")//
-
-
-
-val lospiibe = getDataPipelineMarkII(spark,"/datascience/pii_matching/pii_tuples/","30","1")
-.filter("country == 'AR'")
-.withColumn("device_id",lower(col("device_id")))
-.select("device_id","ml_sh2","mb_sh2","nid_sh2")
-
-//val device_expanded_pii = equiv.join(lospiibe,Seq("device_id"))
-
-val device_original_pii = equiv.drop("device_id")
-.withColumnRenamed("device_id_origin","device_id")
-.withColumn("device_id",lower(col("device_id")))
-.join(lospiibe,Seq("device_id"))
-
-
-device_original_pii
+joined
+.repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/Equifax/DataMixta/Pii_original")
+.option("delimiter","\t")
+.save("/datascience/geo/Reports/CopaAmerica/UsersAndDateandSegments")
 
 
 }

@@ -94,7 +94,7 @@ object HomeJobs {
     val df_users = get_safegraph_data(spark, value_dictionary)
 
     //dictionary for timezones
-    val timezone = Map("argentina" -> "GMT-3","CL" -> "GMT-3", "mexico" -> "GMT-5")
+    val timezone = Map("argentina" -> "GMT-3","CL" -> "GMT-3", "mexico" -> "GMT-5","CO"-> "GMT-5")
     
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(value_dictionary("country")))
