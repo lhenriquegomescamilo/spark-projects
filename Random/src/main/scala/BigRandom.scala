@@ -223,8 +223,10 @@ def getReport(
     .load("/datascience/keywiser/test_stem/AR_big_scrapper_test_15Dsince27*")
     .toDF("device_type", "device_id","segment")
     .groupBy("device_id").agg(countDistinct("segment") as "segment_count")
+
     println("old overlap mean:")
     println(df_old.select(mean(col("segment_count"))).show())
+    
 
     val df_new = spark.read.format("csv")
     .option("delimiter","\t")
@@ -232,8 +234,23 @@ def getReport(
     .load("/datascience/keywiser/test_stem/AR_big_scrapper_test_15Dsince1*")
     .toDF("device_type", "device_id","segment")
     .groupBy("device_id").agg(countDistinct("segment") as "segment_count")
+
     println("new overlap mean:")
     println(df_new.select(mean(col("segment_count"))).show())
+
+    df_old.write
+        .format("csv")
+        .option("delimiter","\t")
+        .option("header",true)
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/misc/scrapper_overlap_old")
+
+    df_new.write
+        .format("csv")
+        .option("delimiter","\t")
+        .option("header",true)
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/misc/scrapper_overlap_new")    
 
     /**
     val country = "AR"
