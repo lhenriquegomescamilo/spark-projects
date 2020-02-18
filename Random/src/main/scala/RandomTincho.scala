@@ -1716,7 +1716,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    matching_detergentes(spark)
+    get_keywords_for_equifax(spark)
     
 
   }
