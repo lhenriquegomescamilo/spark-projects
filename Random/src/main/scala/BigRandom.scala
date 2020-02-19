@@ -247,6 +247,9 @@ def getDataKeywords(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    def getString =
+        udf((array: Seq[String]) => array.map(_.toString).mkString(","))
+
     val domain_filter =  "domain IN ('autocosmos', 'autoscerokm', 'demotores', 'olx')"
 
     val query ="((array_contains(kw, 'hybrid') OR array_contains(kw, 'rimac') OR array_contains(kw, 'tesla')) or ((array_contains(kw, 'bmw') and array_contains(kw, 'i3')) or ((array_contains(kw, 'nissan') and array_contains(kw, 'leaf')) or ((array_contains(kw, 'renault') and array_contains(kw, 'twizy')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'model3')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'models')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'modelx')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'p900')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'spider')) or ((array_contains(kw, 'toyota') and array_contains(kw, 'prius')) or ((array_contains(kw, 'auto') and array_contains(kw, 'electrico')) or (array_contains(kw, 'vehiculo') and array_contains(kw, 'electrico')))))))))))))"
