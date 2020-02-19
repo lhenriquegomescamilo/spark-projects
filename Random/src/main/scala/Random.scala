@@ -4988,7 +4988,7 @@ object Random {
     spark.read
       .format("csv")
       .option("sep", "\t")
-      .load("/data/jobs/activator/prepackage_-_startapp_pp_2020011008_v_soda_*")
+      .load("/data/jobs/activator/files_-_xac_*")
       .withColumn("_c2", split(col("_c2"), ","))
       .withColumn("_c2", explode(col("_c2")))
       .groupBy("_c2")
@@ -4996,6 +4996,6 @@ object Random {
       .write
       .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/startapp_counts")
+      .save("/datascience/custom/startapp_counts_trans")
   }
 }
