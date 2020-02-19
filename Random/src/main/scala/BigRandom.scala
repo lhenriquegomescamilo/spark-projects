@@ -208,6 +208,36 @@ def getReport(
   }
 
 
+
+
+def getDataKeywords(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer
+  ) = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s.csv".format(day)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val df = spark.read
+      .format("csv")
+      .load(hdfs_files: _*)
+      .select("url_raw","kw","domain")
+    df  
+  }
+
+
  /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -217,6 +247,37 @@ def getReport(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val domain_filter =  "domain IN ('autocosmos', 'autoscerokm', 'demotores', 'olx')"
+
+    val query ="((array_contains(kw, 'hybrid') OR array_contains(kw, 'rimac') OR array_contains(kw, 'tesla')) or ((array_contains(kw, 'bmw') and array_contains(kw, 'i3')) or ((array_contains(kw, 'nissan') and array_contains(kw, 'leaf')) or ((array_contains(kw, 'renault') and array_contains(kw, 'twizy')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'model3')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'models')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'modelx')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'p900')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'spider')) or ((array_contains(kw, 'toyota') and array_contains(kw, 'prius')) or ((array_contains(kw, 'auto') and array_contains(kw, 'electrico')) or (array_contains(kw, 'vehiculo') and array_contains(kw, 'electrico')))))))))))))"
+
+    val df_old = getDataKeywords(spark,15,29)
+    .filter(domain_filter)
+    .withColumn("kw", split(col("kw"), " "))
+    .filter(query)
+    .withColumn("kw",getString(col("kw")))
+    
+    df_old.write
+          .format("csv")
+          .option("header",true)
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/misc/df_old_query")
+
+    val df_new = getDataKeywords(spark,15,29)
+    .filter(domain_filter)
+    .withColumn("kw", split(col("kw"), " "))
+    .filter(query)
+    .withColumn("kw",getString(col("kw")))          
+
+    df_new.write
+          .format("csv")
+          .option("header",true)
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/misc/df_new_query")
+
+
+
+    /**
     val df_old = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
@@ -251,6 +312,9 @@ def getReport(
         .option("header",true)
         .mode(SaveMode.Overwrite)
         .save("/datascience/misc/scrapper_overlap_new")    
+
+
+   */
 
     /**
     val country = "AR"
