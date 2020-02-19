@@ -4985,8 +4985,17 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    for ((s, j) <- (List("249889", "249887", "249891") zip List("679407", "679405", "679403"))) {
-      getMaidsLAL(spark, s, j)
-    }
+    spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/data/jobs/activator/prepackage_-_startapp_pp_2020011008_v_soda_*")
+      .withColumn("_c2", split(col("_c2"), ","))
+      .withColumn("_c2", explode(col("_c2")))
+      .groupBy("_c2")
+      .agg(approxCountDistinct("_c1", 0.03) as "device_unique")
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .save("/datascience/custom/startapp_counts")
   }
 }
