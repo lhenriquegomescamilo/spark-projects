@@ -233,6 +233,7 @@ def getSelectedKeywords(
     val df = spark.read
       .format("csv")
       .load(hdfs_files: _*)
+      .option("header", "True")
       .select("url_raw","kw","domain")
     df  
   }
