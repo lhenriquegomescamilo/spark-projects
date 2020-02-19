@@ -25,11 +25,11 @@ object TestScrapper {
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    /**    
+
     val df_old = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_nof/AR_nofilter_scrapper_test_15Dsince28*")
+    .load("/datascience/keywiser/test_nof/AR_st_15Dsince29*")
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -40,7 +40,7 @@ object TestScrapper {
     val df_new = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_nof/AR_nofilter_scrapper_test_15Dsince1*")
+    .load("/datascience/keywiser/test_nof/AR_st_15Dsince2*")
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -56,9 +56,9 @@ object TestScrapper {
     .option("delimiter","\t")
     .option("header",true)
     .mode("append") 
-    .save("/datascience/misc/nofilter_scrapper_results")
+    .save("/datascience/misc/st_results")
   
-    **/  
+     /**    
 
 
     val countries = "AR,BR,CL,CO,EC,MX,PE,US".split(",").toList
@@ -96,7 +96,7 @@ object TestScrapper {
     .mode("append") 
     .save("/datascience/misc/huge_scrapper_test_results")
     }
-
+    **/  
 
 
   }
