@@ -267,7 +267,7 @@ def getSelectedKeywords(
           .mode(SaveMode.Overwrite)
           .save("/datascience/misc/df_old_query")
 
-    val df_new = getSelectedKeywords(spark,15,29)
+    val df_new = getSelectedKeywords(spark,15,2)
     .filter(domain_filter)
     .withColumn("kw", split(col("kw"), " "))
     .filter(query)
