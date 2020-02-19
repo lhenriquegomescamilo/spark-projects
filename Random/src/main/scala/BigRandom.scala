@@ -210,7 +210,7 @@ def getReport(
 
 
 
-def getDataKeywords(
+def getSelectedKeywords(
       spark: SparkSession,
       nDays: Integer,
       since: Integer
@@ -220,14 +220,14 @@ def getDataKeywords(
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    val format = "yyyyMMdd"
+    val format = "yyyy-MM-dd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_keywords"
+    val path = "/datascience/selected_keywords"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s.csv".format(day)) //for each day from the list it returns the day path.
+      .map(day => path + "/%s.csv".format(day)) //for each day from the list it returns the day path.
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
     val df = spark.read
