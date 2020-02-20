@@ -256,11 +256,11 @@ object AggregateData {
       df_chkpt: DataFrame,
       today: String
   ) {
-    // aggregateKPIs(df_chkpt, today)
-    // aggregateSegments(df_chkpt, today, spark)
-    // aggregateUserAgent(df_chkpt, today)
-    // aggregateHour(df_chkpt, today)
-    // aggregateDay(df_chkpt, today)
+    aggregateKPIs(df_chkpt, today)
+    aggregateSegments(df_chkpt, today, spark)
+    aggregateUserAgent(df_chkpt, today)
+    aggregateHour(df_chkpt, today)
+    aggregateDay(df_chkpt, today)
     getGeoData(spark, df_chkpt, today)
   }
 
