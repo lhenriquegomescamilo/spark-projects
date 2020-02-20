@@ -47,7 +47,7 @@ import scala.util.Random.shuffle
 object ProcessRaw {
   def process_raw(spark: SparkSession) {
 
-    date = DateTime.now().toString("yyyyMMdd")
+    val date = DateTime.now().toString("yyyyMMdd")
     spark.read.format("csv")
           .option("sep","\t")
           .option("header","true")
