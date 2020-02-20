@@ -951,6 +951,22 @@ total
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    val typeMap = Map(
+      "coo" -> "web",
+      "web" -> "web",
+      "and" -> "android",
+      "android"->"android",
+      "ios" -> "ios",
+      "con" -> "TV",
+      "dra" -> "drawbridge",
+      "idfa" -> "ios",
+      "aaid"->"android",
+      "unknown"->"unknown") 
+    
+    val mapUDF = udf((dev_type: String) => typeMap(dev_type))
+    
+//Today
+val day_today = (java.time.LocalDate.now).toString.split("-").mkString("")
 
 
 //Argentina
