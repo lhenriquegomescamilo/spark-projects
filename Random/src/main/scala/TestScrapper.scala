@@ -28,8 +28,8 @@ object TestScrapper {
 
     val df_old = spark.read.format("csv")
     .option("delimiter","\t")
-    .option("header",false)
-    .load("/datascience/keywiser/test6/AR_st6_15Dsince29_*")
+    .option("header",true)
+    .load("/datascience/keywiser/test99/AR_old_15Dsince30_*")
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -39,8 +39,8 @@ object TestScrapper {
 
     val df_new = spark.read.format("csv")
     .option("delimiter","\t")
-    .option("header",false)
-    .load("/datascience/keywiser/test6/AR_st6_15Dsince2_*")
+    .option("header",true)
+    .load("/datascience/keywiser/test99/AR_new_15Dsince10_*")
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -56,7 +56,7 @@ object TestScrapper {
     .option("delimiter","\t")
     .option("header",true)
     .mode("append") 
-    .save("/datascience/misc/st6_results")
+    .save("/datascience/misc/st99")
   
     /**   
 
