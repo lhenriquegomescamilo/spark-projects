@@ -251,11 +251,16 @@ def getSelectedKeywords(
     def getString =
         udf((array: Seq[String]) => array.map(_.toString).mkString(","))
 
-    val domain_filter =  "domain IN ('autocosmos', 'autoscerokm', 'demotores', 'olx')"
+    //val domain_filter =  "domain IN ('autocosmos', 'autoscerokm', 'demotores', 'olx')"
 
-    val query ="((array_contains(kw, 'hybrid') OR array_contains(kw, 'rimac') OR array_contains(kw, 'tesla')) or ((array_contains(kw, 'bmw') and array_contains(kw, 'i3')) or ((array_contains(kw, 'nissan') and array_contains(kw, 'leaf')) or ((array_contains(kw, 'renault') and array_contains(kw, 'twizy')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'model3')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'models')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'modelx')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'p900')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'spider')) or ((array_contains(kw, 'toyota') and array_contains(kw, 'prius')) or ((array_contains(kw, 'auto') and array_contains(kw, 'electrico')) or (array_contains(kw, 'vehiculo') and array_contains(kw, 'electrico')))))))))))))"
+    val domain_filter = "domain IN ('bumeran', 'konzerta', 'laborum', 'multitrabajos', 'perfil', 'taringa', 'upsocl', 'zonajobs')"
 
-    val df_old = getSelectedKeywords(spark,15,29)
+    //val query ="((array_contains(kw, 'hybrid') OR array_contains(kw, 'rimac') OR array_contains(kw, 'tesla')) or ((array_contains(kw, 'bmw') and array_contains(kw, 'i3')) or ((array_contains(kw, 'nissan') and array_contains(kw, 'leaf')) or ((array_contains(kw, 'renault') and array_contains(kw, 'twizy')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'model3')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'models')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'modelx')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'p900')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'spider')) or ((array_contains(kw, 'toyota') and array_contains(kw, 'prius')) or ((array_contains(kw, 'auto') and array_contains(kw, 'electrico')) or (array_contains(kw, 'vehiculo') and array_contains(kw, 'electrico')))))))))))))"
+
+    val query = "(array_contains(kw, 'biogeografia') OR array_contains(kw, 'biologa') OR array_contains(kw, 'biologia') OR array_contains(kw, 'biologica') OR array_contains(kw, 'biologicas') OR array_contains(kw, 'biologico') OR array_contains(kw, 'biologicos') OR array_contains(kw, 'biologo') OR array_contains(kw, 'bioquimica') OR array_contains(kw, 'embriologia') OR array_contains(kw, 'etologia') OR array_contains(kw, 'fisiologia') OR array_contains(kw, 'microbiologia') OR array_contains(kw, 'neurociencia') OR array_contains(kw, 'primatologia') OR array_contains(kw, 'protozoologia') OR array_contains(kw, 'virologia'))"
+
+    //val df_old = getSelectedKeywords(spark,15,29)
+    val df_old = getSelectedKeywords(spark,15,31)    
     .filter(domain_filter)
     .withColumn("kw", split(col("kw"), " "))
     .filter(query)
@@ -265,9 +270,10 @@ def getSelectedKeywords(
           .format("csv")
           .option("header",true)
           .mode(SaveMode.Overwrite)
-          .save("/datascience/misc/df_old_query")
+          .save("/datascience/misc/df_old_query_103921")
 
-    val df_new = getSelectedKeywords(spark,15,2)
+    //val df_new = getSelectedKeywords(spark,15,2)
+    val df_new = getSelectedKeywords(spark,15,4)    
     .filter(domain_filter)
     .withColumn("kw", split(col("kw"), " "))
     .filter(query)
@@ -277,7 +283,7 @@ def getSelectedKeywords(
           .format("csv")
           .option("header",true)
           .mode(SaveMode.Overwrite)
-          .save("/datascience/misc/df_new_query")
+          .save("/datascience/misc/df_new_query_103921")
 
 
 
