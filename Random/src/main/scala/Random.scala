@@ -4985,120 +4985,74 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val files = List(
-      "/data/jobs/activator/files_-_xaa_2020116.tsv_part_00",
-      "/data/jobs/activator/files_-_xaa_2020116.tsv_part_01",
-      "/data/jobs/activator/files_-_xaa_2020116.tsv_part_02",
-      "/data/jobs/activator/files_-_xaa_2020123.tsv_part_00",
-      "/data/jobs/activator/files_-_xaa_2020123.tsv_part_01",
-      "/data/jobs/activator/files_-_xaa_2020123.tsv_part_02",
-      "/data/jobs/activator/files_-_xaa_2020123.tsv_part_03",
-      "/data/jobs/activator/files_-_xaa_2020127.tsv_part_00",
-      "/data/jobs/activator/files_-_xaa_2020127.tsv_part_01",
-      "/data/jobs/activator/files_-_xaa_2020129.tsv_part_00",
-      "/data/jobs/activator/files_-_xaa_2020129.tsv_part_01",
-      "/data/jobs/activator/files_-_xaa_2020129.tsv_part_02",
-      "/data/jobs/activator/files_-_xaa_2020212.tsv_2020211.tsv_part_00",
-      "/data/jobs/activator/files_-_xaa_2020212.tsv_2020211.tsv_part_01",
-      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_00",
-      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_01",
-      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_02",
-      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_03",
-      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_04",
-      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_05",
-      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_06",
-      "/data/jobs/activator/files_-_xaa_202026.tsv_part_00",
-      "/data/jobs/activator/files_-_xaa_202026.tsv_part_01",
-      "/data/jobs/activator/files_-_xaa_202026.tsv_part_02",
-      "/data/jobs/activator/files_-_xaa_202026.tsv_part_03",
-      "/data/jobs/activator/files_-_xaa_202026.tsv_part_04",
-      "/data/jobs/activator/files_-_xaa_202026.tsv_part_05",
-      "/data/jobs/activator/files_-_xaa_202026.tsv_part_06",
-      "/data/jobs/activator/files_-_xaa_202027.tsv_part_00",
-      "/data/jobs/activator/files_-_xaa_202027.tsv_part_01",
-      "/data/jobs/activator/files_-_xaa_202027.tsv_part_02",
-      "/data/jobs/activator/files_-_xaa_202027.tsv_part_03",
-      "/data/jobs/activator/files_-_xaa_202027.tsv_part_04",
-      "/data/jobs/activator/files_-_xaa_202027.tsv_part_05",
-      "/data/jobs/activator/files_-_xaa_202027.tsv_part_06",
-      "/data/jobs/activator/files_-_xab_20191031.tsv_part_00",
-      "/data/jobs/activator/files_-_xab_20191031.tsv_part_01",
-      "/data/jobs/activator/files_-_xab_20191031.tsv_part_02",
-      "/data/jobs/activator/files_-_xab_20191031.tsv_part_03",
-      "/data/jobs/activator/files_-_xab_20191113.tsv_part_00",
-      "/data/jobs/activator/files_-_xab_20191113.tsv_part_01",
-      "/data/jobs/activator/files_-_xab_20191113.tsv_part_02",
-      "/data/jobs/activator/files_-_xab_20191113.tsv_part_03",
-      "/data/jobs/activator/files_-_xab_20191113.tsv_part_04",
-      "/data/jobs/activator/files_-_xab_20191113.tsv_part_05",
-      "/data/jobs/activator/files_-_xab_20191113.tsv_part_06",
-      "/data/jobs/activator/files_-_xab_20191126.tsv_part_00",
-      "/data/jobs/activator/files_-_xab_20191126.tsv_part_01",
-      "/data/jobs/activator/files_-_xab_20191126.tsv_part_02",
-      "/data/jobs/activator/files_-_xab_20191126.tsv_part_03",
-      "/data/jobs/activator/files_-_xab_202025.tsv_202025.tsv_part_00",
-      "/data/jobs/activator/files_-_xab_202025.tsv_202025.tsv_part_01",
-      "/data/jobs/activator/files_-_xab_202025.tsv_202025.tsv_part_02",
-      "/data/jobs/activator/files_-_xab_202026.tsv_part_00",
-      "/data/jobs/activator/files_-_xab_202026.tsv_part_01",
-      "/data/jobs/activator/files_-_xab_202026.tsv_part_02",
-      "/data/jobs/activator/files_-_xab_202026.tsv_part_03",
-      "/data/jobs/activator/files_-_xab_202026.tsv_part_04",
-      "/data/jobs/activator/files_-_xab_202027.tsv_part_00",
-      "/data/jobs/activator/files_-_xab_202027.tsv_part_01",
-      "/data/jobs/activator/files_-_xab_202027.tsv_part_02",
-      "/data/jobs/activator/files_-_xab_202027.tsv_part_03",
-      "/data/jobs/activator/files_-_xab_202027.tsv_part_04",
-      "/data/jobs/activator/files_-_xab_202027.tsv_part_05",
-      "/data/jobs/activator/files_-_xac_20191113.tsv_part_00",
-      "/data/jobs/activator/files_-_xac_20191113.tsv_part_01",
-      "/data/jobs/activator/files_-_xac_20191113.tsv_part_02",
-      "/data/jobs/activator/files_-_xac_20191113.tsv_part_03",
-      "/data/jobs/activator/files_-_xac_20191113.tsv_part_04",
-      "/data/jobs/activator/files_-_xac_20191113.tsv_part_05",
-      "/data/jobs/activator/files_-_xac_20191113.tsv_part_06",
-      "/data/jobs/activator/files_-_xac_202027.tsv_part_00",
-      "/data/jobs/activator/files_-_xac_202027.tsv_part_01",
-      "/data/jobs/activator/files_-_xac_202027.tsv_part_02",
-      "/data/jobs/activator/files_-_xac_202027.tsv_part_03",
-      "/data/jobs/activator/files_-_xac_202027.tsv_part_04",
-      "/data/jobs/activator/files_-_xac_202027.tsv_part_05",
-      "/data/jobs/activator/files_-_xac_202027.tsv_part_06",
-      "/data/jobs/activator/files_-_xad_20191113.tsv_part_00",
-      "/data/jobs/activator/files_-_xad_20191113.tsv_part_01",
-      "/data/jobs/activator/files_-_xad_20191113.tsv_part_02",
-      "/data/jobs/activator/files_-_xad_20191113.tsv_part_03",
-      "/data/jobs/activator/files_-_xad_20191113.tsv_part_04",
-      "/data/jobs/activator/files_-_xad_202027.tsv_part_00",
-      "/data/jobs/activator/files_-_xad_202027.tsv_part_01",
-      "/data/jobs/activator/files_-_xad_202027.tsv_part_02",
-      "/data/jobs/activator/files_-_xad_202027.tsv_part_03",
-      "/data/jobs/activator/files_-_xad_202027.tsv_part_04",
-      "/data/jobs/activator/files_-_xad_202027.tsv_part_05",
-      "/data/jobs/activator/files_-_xad_202027.tsv_part_06",
-      "/data/jobs/activator/files_-_xae_202027.tsv_part_00",
-      "/data/jobs/activator/files_-_xae_202027.tsv_part_01",
-      "/data/jobs/activator/files_-_xae_202027.tsv_part_02"
+    val devices_piis = spark.read
+      .format("parquet")
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country = 'BR'")
+    devices_piis.cache()
+
+    val mails = devices_piis
+      .filter("ml_sh2 IS NOT NULL")
+      .withColumnRenamed("ml_sh2", "pii")
+      .withColumn("pii_type", lit("mail"))
+      .select("device_id", "pii_type", "pii")
+    val dnis = devices_piis
+      .filter("nid_sh2 IS NOT NULL")
+      .withColumnRenamed("nid_sh2", "pii")
+      .withColumn("pii_type", lit("nid"))
+      .select("device_id", "pii_type", "pii")
+
+    var br_piis = mails.unionAll(dnis)
+    br_piis.write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/br_piis")
+
+    val individual = false
+
+    val mapUDF = udf(
+      (device_type: String) =>
+        if (device_type == "RTG") "coo"
+        else if (device_type.toLowerCase.contains("android")) "and"
+        else if (device_type == "SHT") "sht"
+        else "ios"
     )
 
-    files
-      .map(
-        f =>
-          spark.read
-            .format("csv")
-            .option("sep", "\t")
-            .option("header", "true")
-            .load(f)
-            .withColumn("segments", split(col("segments"), ","))
-            .withColumn("segments", explode(col("segments")))
-      )
-      .reduce((df1, df2) => df1.unionAll(df2))
-      .groupBy("segments")
-      .agg(approxCountDistinct("device_id", 0.03) as "device_unique")
-      // .agg(approxCountDistinct("_c1", 0.03) as "device_unique")
-      .write
+    val sharethisMap = spark.read
+      .format("parquet")
+      .load("/datascience/sharethis/estid_map/")
+      .withColumnRenamed("estid", "device")
+      .withColumn("device", upper(col("device")))
+
+    val data = spark.read
       .format("csv")
+      .option("sep", ";")
+      .load("/data/providers/Tapad/Retargetly_ids_full_20190128_161746.bz2")
+      .repartition(300)
+      .withColumn("device", explode(split(col("_c2"), "\t")))
+      .withColumnRenamed(if (individual) "_c1" else "_c0", "tapad_id") // Here I will use the household id instead of the Individual id
+      .withColumn("device", split(col("device"), "="))
+      .withColumn("device_type", col("device").getItem(0))
+      .withColumn("device", col("device").getItem(1))
+      .withColumn("device_type", mapUDF(col("device_type")))
+      .select("tapad_id", "device", "device_type")
+
+    data.cache()
+
+    br_piis = spark.read.format("parquet").load("/datascience/custom/br_piis")
+
+    val br_cookies = data
+      .withColumnRenamed("device", "device_id")
+      .filter("device_type NOT IN ('and', 'ios')")
+      .join(br_piis, Seq("device_id"))
+      .select("tapad_id", "pii", "pii_type")
+
+    br_cookies
+      .join(data.filter("device_type IN ('and', 'ios')"), Seq("tapad_id"))
+      .select("device", "device_type", "pii", "pii_type")
+      .write
+      .format("parquet")
       .mode("overwrite")
-      .save("/datascience/custom/startapp_counts_trans")
+      .save("/datascience/custom/piis_br_maids")
   }
 }
