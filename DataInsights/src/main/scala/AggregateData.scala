@@ -231,7 +231,7 @@ object AggregateData {
       .save("/datascience/data_insights/aggregated/")
   }
 
-  def getGeoData(df_chkpt: DataFrame, today: String) = {
+  def getGeoData(spark: SparkSession, df_chkpt: DataFrame, today: String) = {
     val homes =
       spark.read.format("parquet").load("/datascience/data_insights/homes/")
 
@@ -261,7 +261,7 @@ object AggregateData {
     aggregateUserAgent(df_chkpt, today)
     aggregateHour(df_chkpt, today)
     aggregateDay(df_chkpt, today)
-    getGeoData(df_chkpt, today)
+    getGeoData(spark, df_chkpt, today)
   }
 
   def main(args: Array[String]) {
