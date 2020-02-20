@@ -52,6 +52,7 @@ object ProcessRaw {
           .option("sep","\t")
           .option("header","true")
           .load("/datascience/scraper/raw/to_process/*")
+          .selectExpr("*", "parse_url(url, 'HOST') as domain")
           .withColumn("day",lit(date))
           .write
           .format("parquet")
@@ -71,7 +72,7 @@ object ProcessRaw {
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
-      .appName("Process Dump")
+      .appName("Process Raw Dump")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
