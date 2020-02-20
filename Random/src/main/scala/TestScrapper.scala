@@ -25,7 +25,7 @@ object TestScrapper {
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-
+    /**   
     val df_old = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
@@ -56,9 +56,9 @@ object TestScrapper {
     .option("delimiter","\t")
     .option("header",true)
     .mode("append") 
-    .save("/datascience/misc/st_results")
+    .save("/datascience/misc/st2_results")
   
-     /**    
+     **/  
 
 
     val countries = "AR,BR,CL,CO,EC,MX,PE,US".split(",").toList
@@ -68,7 +68,7 @@ object TestScrapper {
      var df_old = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_stem/%s_huge_scrapper_test_15Dsince28*".format(country))
+    .load("/datascience/keywiser/test_all/%s_st3_15Dsince29_*".format(country))
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -79,7 +79,7 @@ object TestScrapper {
     var df_new = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_stem/%s_huge_scrapper_test_15Dsince1*".format(country))
+    .load("/datascience/keywiser/test_all/%s_st3_15Dsince2_*".format(country))
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -94,9 +94,9 @@ object TestScrapper {
     .option("delimiter","\t")
     .option("header",true)
     .mode("append") 
-    .save("/datascience/misc/huge_scrapper_test_results")
+    .save("/datascience/misc/st3_all_countries")
     }
-    **/  
+ 
 
 
   }
