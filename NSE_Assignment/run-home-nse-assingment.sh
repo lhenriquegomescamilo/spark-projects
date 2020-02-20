@@ -1,6 +1,6 @@
 
-
-  --class 'main.scala.NSEFromHomes'\
+spark-submit\
+  --class "main.scala.NSEFromHomes"\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g \
@@ -14,4 +14,3 @@
   --conf spark.yarn.maxAppAttempts=1 \
   --conf spark.sql.broadcastTimeout=3000000  \
   "/home/rely/spark-projects/NSE_Assignment/target/scala-2.11/geodevicer_2.11-1.0.jar" --path_geo_json
-
