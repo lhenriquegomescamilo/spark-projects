@@ -4988,10 +4988,12 @@ object Random {
     spark.read
       .format("csv")
       .option("sep", "\t")
+      .option("header", "true")
       .load("/data/jobs/activator/files_-_xac_*")
-      .withColumn("_c2", split(col("_c2"), ","))
-      .withColumn("_c2", explode(col("_c2")))
-      .groupBy("_c2")
+      .withColumn("segments", split(col("segments"), ","))
+      .withColumn("segments", explode(col("segments")))
+      .groupBy("segments")
+      .agg(approxCountDistinct("device_id", 0.03) as "device_unique")
       .agg(approxCountDistinct("_c1", 0.03) as "device_unique")
       .write
       .format("csv")
