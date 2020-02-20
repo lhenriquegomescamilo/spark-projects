@@ -236,9 +236,9 @@ object AggregateData {
       spark.read.format("parquet").load("/datascience/data_insights/homes/")
 
     df_chkpt
-      .select("device_id", "id_partner", "ID", "hour")
+      .select("device_id", "id_partner", "ID")
       .join(homes, Seq("device_id"))
-      .groupBy("id_partner", "ID", "day_month", "ESTATE", "country")
+      .groupBy("id_partner", "ID", "ESTATE", "country")
       .agg(
         approx_count_distinct(col("device_id"), 0.03).as("devices")
       )
@@ -256,11 +256,11 @@ object AggregateData {
       df_chkpt: DataFrame,
       today: String
   ) {
-    aggregateKPIs(df_chkpt, today)
-    aggregateSegments(df_chkpt, today, spark)
-    aggregateUserAgent(df_chkpt, today)
-    aggregateHour(df_chkpt, today)
-    aggregateDay(df_chkpt, today)
+    // aggregateKPIs(df_chkpt, today)
+    // aggregateSegments(df_chkpt, today, spark)
+    // aggregateUserAgent(df_chkpt, today)
+    // aggregateHour(df_chkpt, today)
+    // aggregateDay(df_chkpt, today)
     getGeoData(spark, df_chkpt, today)
   }
 
