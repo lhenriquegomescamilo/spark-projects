@@ -153,7 +153,14 @@ object DataInsights {
     val df_ua = get_data_user_agent(spark, 10, 1)
     df_ua.cache()
 
-    val partners = List("879", "753")
+    val partners =
+      """211, 215, 232, 233, 281, 346, 347, 507, 640, 644, 647, 682, 709, 753, 764, 
+                    875, 879, 881, 900, 943, 955, 956, 984, 986, 993, 994, 1036, 1038, 1039, 1040, 
+                    1041, 1042, 1055, 1122, 1157, 1159, 1179, 1239, 1251"""
+        .replace(" ", "")
+        .replace("\n", "")
+        .split(",")
+        .toList
     days.map(day => get_data(spark, day, df_ua, partners))
 
   }

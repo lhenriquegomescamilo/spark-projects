@@ -132,7 +132,7 @@ object AggregateData {
           sum(col("data_type_cnv")).as("conversions")
         )
         .withColumn("day", lit(today))
-        .withColumn("type", lit(agg_type+"_first_party"))
+        .withColumn("type", lit(agg_type + "_first_party"))
         .write
         .format("parquet")
         .partitionBy("day", "type", "id_partner")
@@ -231,6 +231,26 @@ object AggregateData {
       .save("/datascience/data_insights/aggregated/")
   }
 
+  def getGeoData(df_chkpt: DataFrame, today: String) = {
+    val homes =
+      spark.read.format("parquet").load("/datascience/data_insights/homes/")
+
+    df_chkpt
+      .select("device_id", "id_partner", "ID", "hour")
+      .join(homes, Seq("device_id"))
+      .groupBy("id_partner", "ID", "day_month", "ESTATE", "country")
+      .agg(
+        approx_count_distinct(col("device_id"), 0.03).as("devices")
+      )
+      .withColumn("day", lit(today))
+      .withColumn("type", lit("geo"))
+      .write
+      .format("parquet")
+      .partitionBy("day", "type", "id_partner")
+      .mode("overwrite")
+      .save("/datascience/data_insights/aggregated/")
+  }
+
   def get_aggregated_data(
       spark: SparkSession,
       df_chkpt: DataFrame,
@@ -241,6 +261,7 @@ object AggregateData {
     aggregateUserAgent(df_chkpt, today)
     aggregateHour(df_chkpt, today)
     aggregateDay(df_chkpt, today)
+    getGeoData(df_chkpt, today)
   }
 
   def main(args: Array[String]) {
@@ -259,9 +280,16 @@ object AggregateData {
 
     format = "yyyyMMdd"
     val today = DateTime.now.minusDays(since).toString(format)
-    val df_chkpt = getRawData(spark, ndays, since, List("879", "753"))
+    val partners =
+      "879, 753, 994, 709, 984, 1179, 1041, 1042, 1055, 507".split(", ").toList
+    val df_chkpt = getRawData(
+      spark,
+      ndays,
+      since,
+      partners
+    )
     val df_chkpt_previous =
-      getRawData(spark, ndays, since + 30, List("879", "753"))
+      getRawData(spark, ndays, since + 30, partners)
     get_aggregated_data(spark, df_chkpt, today)
     aggregateSegments(
       df_chkpt_previous,
