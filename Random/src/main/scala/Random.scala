@@ -4994,7 +4994,7 @@ object Random {
       .withColumn("segments", explode(col("segments")))
       .groupBy("segments")
       .agg(approxCountDistinct("device_id", 0.03) as "device_unique")
-      .agg(approxCountDistinct("_c1", 0.03) as "device_unique")
+      // .agg(approxCountDistinct("_c1", 0.03) as "device_unique")
       .write
       .format("csv")
       .mode("overwrite")
