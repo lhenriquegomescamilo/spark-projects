@@ -4989,7 +4989,7 @@ object Random {
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .load("/data/jobs/activator/files_-_xac_*")
+      .load("/data/jobs/activator/files_*")
       .withColumn("segments", split(col("segments"), ","))
       .withColumn("segments", explode(col("segments")))
       .groupBy("segments")
