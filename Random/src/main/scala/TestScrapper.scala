@@ -29,7 +29,7 @@ object TestScrapper {
     val df_old = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_stem/AR_st2_15Dsince29_*")
+    .load("/datascience/keywiser/test5/AR_st5_15Dsince30_*")
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -40,7 +40,7 @@ object TestScrapper {
     val df_new = spark.read.format("csv")
     .option("delimiter","\t")
     .option("header",false)
-    .load("/datascience/keywiser/test_stem/AR_st2_15Dsince2_*")
+    .load("/datascience/keywiser/test5/AR_st5_15Dsince3_*")
     .withColumnRenamed("_c1", "device_id")
     .withColumnRenamed("_c2", "segment_id")
     .groupBy("segment_id")
@@ -49,14 +49,14 @@ object TestScrapper {
     )    
 
     val country = "AR"
-    val df = df_old.join(df_new,Seq("segment_id"))
+    val df = df_old.join(df_new,Seq("segment_id"),"outer").na.fill(0)
     df.withColumn("country", lit(country))
     .write
     .format("csv")
     .option("delimiter","\t")
     .option("header",true)
     .mode("append") 
-    .save("/datascience/misc/st2_results")
+    .save("/datascience/misc/st5_results")
   
     /**   
 

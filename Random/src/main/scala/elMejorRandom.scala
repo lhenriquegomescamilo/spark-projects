@@ -951,26 +951,72 @@ total
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+    val typeMap = Map(
+      "coo" -> "web",
+      "web" -> "web",
+      "and" -> "android",
+      "android"->"android",
+      "ios" -> "ios",
+      "con" -> "TV",
+      "dra" -> "drawbridge",
+      "idfa" -> "ios",
+      "aaid"->"android",
+      "unknown"->"unknown") 
+    
+    val mapUDF = udf((dev_type: String) => typeMap(dev_type))
+    
+//Today
+val day_today = (java.time.LocalDate.now).toString.split("-").mkString("")
 
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","30","AR")
-              .withColumn("device_id",lower(col("device_id")))
-              .select("device_id","feature")
-              .distinct()
 
-
-val users = spark.read.format("csv").option("header",true)
-.option("delimiter","\t").load("/datascience/geo/Reports/CopaAmerica/UsersAndDate")          
-
-val joined = users.join(segments,Seq("device_id"))   
-
-joined
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
+//Argentina
+val arg = spark.read.format("csv")
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/CopaAmerica/UsersAndDateandSegments")
+.option("header",true)
+.load("/datascience/geo/NSEHomes/argentina_365d_home_21-1-2020-12h_xd")
+.select("device_type","device_id","GEOID","frequency")
+.withColumn("device_type",mapUDF(col("device_type")))
+.withColumn("country",lit("AR"))
+.withColumn("day",lit(day_today))
+
+//Chile es medio choto, porque no tiene vien el mapping de device_type
+val cl = spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/geo/NSEHomes/CL_90d_home_29-1-2020-12h_xd")
+.select("device_type","device_id","GEOID","frequency")
+.withColumn("device_type",mapUDF(col("device_type")))
+.withColumn("country",lit("CL"))
+.withColumn("day",lit(day_today))
+
+
+//Colombia
+val co = spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/geo/NSEHomes/CO_90d_home_18-2-2020-12h_xd")
+.select("device_type","device_id","GEOID","frequency")
+.withColumn("device_type",mapUDF(col("device_type")))
+.withColumn("country",lit("CO"))
+.withColumn("day",lit(day_today))
+
+//Mexico
+val mx = spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/geo/NSEHomes/mexico_200d_home_29-1-2020-12h_xd")
+.select("device_type","device_id","GEOID","frequency")
+.withColumn("device_type",mapUDF(col("device_type")))
+.withColumn("country",lit("MX"))
+.withColumn("day",lit(day_today))
+
+ val todo = List(arg,cl,co,mx).reduce(_.unionByName (_))
+.write
+.format("parquet")
+.mode(SaveMode.Overwrite)
+.partitionBy("day","country")
+.save("/datascience/data_insights/homes/")
+
 
 
 }
