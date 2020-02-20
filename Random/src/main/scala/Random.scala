@@ -4985,13 +4985,114 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .load("/data/jobs/activator/files_*")
-      .withColumn("segments", split(col("segments"), ","))
-      .withColumn("segments", explode(col("segments")))
+    val files = List(
+      "/data/jobs/activator/files_-_xaa_2020116.tsv_part_00",
+      "/data/jobs/activator/files_-_xaa_2020116.tsv_part_01",
+      "/data/jobs/activator/files_-_xaa_2020116.tsv_part_02",
+      "/data/jobs/activator/files_-_xaa_2020123.tsv_part_00",
+      "/data/jobs/activator/files_-_xaa_2020123.tsv_part_01",
+      "/data/jobs/activator/files_-_xaa_2020123.tsv_part_02",
+      "/data/jobs/activator/files_-_xaa_2020123.tsv_part_03",
+      "/data/jobs/activator/files_-_xaa_2020127.tsv_part_00",
+      "/data/jobs/activator/files_-_xaa_2020127.tsv_part_01",
+      "/data/jobs/activator/files_-_xaa_2020129.tsv_part_00",
+      "/data/jobs/activator/files_-_xaa_2020129.tsv_part_01",
+      "/data/jobs/activator/files_-_xaa_2020129.tsv_part_02",
+      "/data/jobs/activator/files_-_xaa_2020212.tsv_2020211.tsv_part_00",
+      "/data/jobs/activator/files_-_xaa_2020212.tsv_2020211.tsv_part_01",
+      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_00",
+      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_01",
+      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_02",
+      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_03",
+      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_04",
+      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_05",
+      "/data/jobs/activator/files_-_xaa_202025.tsv_202025.tsv_part_06",
+      "/data/jobs/activator/files_-_xaa_202026.tsv_part_00",
+      "/data/jobs/activator/files_-_xaa_202026.tsv_part_01",
+      "/data/jobs/activator/files_-_xaa_202026.tsv_part_02",
+      "/data/jobs/activator/files_-_xaa_202026.tsv_part_03",
+      "/data/jobs/activator/files_-_xaa_202026.tsv_part_04",
+      "/data/jobs/activator/files_-_xaa_202026.tsv_part_05",
+      "/data/jobs/activator/files_-_xaa_202026.tsv_part_06",
+      "/data/jobs/activator/files_-_xaa_202027.tsv_part_00",
+      "/data/jobs/activator/files_-_xaa_202027.tsv_part_01",
+      "/data/jobs/activator/files_-_xaa_202027.tsv_part_02",
+      "/data/jobs/activator/files_-_xaa_202027.tsv_part_03",
+      "/data/jobs/activator/files_-_xaa_202027.tsv_part_04",
+      "/data/jobs/activator/files_-_xaa_202027.tsv_part_05",
+      "/data/jobs/activator/files_-_xaa_202027.tsv_part_06",
+      "/data/jobs/activator/files_-_xab_20191031.tsv_part_00",
+      "/data/jobs/activator/files_-_xab_20191031.tsv_part_01",
+      "/data/jobs/activator/files_-_xab_20191031.tsv_part_02",
+      "/data/jobs/activator/files_-_xab_20191031.tsv_part_03",
+      "/data/jobs/activator/files_-_xab_20191113.tsv_part_00",
+      "/data/jobs/activator/files_-_xab_20191113.tsv_part_01",
+      "/data/jobs/activator/files_-_xab_20191113.tsv_part_02",
+      "/data/jobs/activator/files_-_xab_20191113.tsv_part_03",
+      "/data/jobs/activator/files_-_xab_20191113.tsv_part_04",
+      "/data/jobs/activator/files_-_xab_20191113.tsv_part_05",
+      "/data/jobs/activator/files_-_xab_20191113.tsv_part_06",
+      "/data/jobs/activator/files_-_xab_20191126.tsv_part_00",
+      "/data/jobs/activator/files_-_xab_20191126.tsv_part_01",
+      "/data/jobs/activator/files_-_xab_20191126.tsv_part_02",
+      "/data/jobs/activator/files_-_xab_20191126.tsv_part_03",
+      "/data/jobs/activator/files_-_xab_202025.tsv_202025.tsv_part_00",
+      "/data/jobs/activator/files_-_xab_202025.tsv_202025.tsv_part_01",
+      "/data/jobs/activator/files_-_xab_202025.tsv_202025.tsv_part_02",
+      "/data/jobs/activator/files_-_xab_202026.tsv_part_00",
+      "/data/jobs/activator/files_-_xab_202026.tsv_part_01",
+      "/data/jobs/activator/files_-_xab_202026.tsv_part_02",
+      "/data/jobs/activator/files_-_xab_202026.tsv_part_03",
+      "/data/jobs/activator/files_-_xab_202026.tsv_part_04",
+      "/data/jobs/activator/files_-_xab_202027.tsv_part_00",
+      "/data/jobs/activator/files_-_xab_202027.tsv_part_01",
+      "/data/jobs/activator/files_-_xab_202027.tsv_part_02",
+      "/data/jobs/activator/files_-_xab_202027.tsv_part_03",
+      "/data/jobs/activator/files_-_xab_202027.tsv_part_04",
+      "/data/jobs/activator/files_-_xab_202027.tsv_part_05",
+      "/data/jobs/activator/files_-_xac_20191113.tsv_part_00",
+      "/data/jobs/activator/files_-_xac_20191113.tsv_part_01",
+      "/data/jobs/activator/files_-_xac_20191113.tsv_part_02",
+      "/data/jobs/activator/files_-_xac_20191113.tsv_part_03",
+      "/data/jobs/activator/files_-_xac_20191113.tsv_part_04",
+      "/data/jobs/activator/files_-_xac_20191113.tsv_part_05",
+      "/data/jobs/activator/files_-_xac_20191113.tsv_part_06",
+      "/data/jobs/activator/files_-_xac_202027.tsv_part_00",
+      "/data/jobs/activator/files_-_xac_202027.tsv_part_01",
+      "/data/jobs/activator/files_-_xac_202027.tsv_part_02",
+      "/data/jobs/activator/files_-_xac_202027.tsv_part_03",
+      "/data/jobs/activator/files_-_xac_202027.tsv_part_04",
+      "/data/jobs/activator/files_-_xac_202027.tsv_part_05",
+      "/data/jobs/activator/files_-_xac_202027.tsv_part_06",
+      "/data/jobs/activator/files_-_xad_20191113.tsv_part_00",
+      "/data/jobs/activator/files_-_xad_20191113.tsv_part_01",
+      "/data/jobs/activator/files_-_xad_20191113.tsv_part_02",
+      "/data/jobs/activator/files_-_xad_20191113.tsv_part_03",
+      "/data/jobs/activator/files_-_xad_20191113.tsv_part_04",
+      "/data/jobs/activator/files_-_xad_202027.tsv_part_00",
+      "/data/jobs/activator/files_-_xad_202027.tsv_part_01",
+      "/data/jobs/activator/files_-_xad_202027.tsv_part_02",
+      "/data/jobs/activator/files_-_xad_202027.tsv_part_03",
+      "/data/jobs/activator/files_-_xad_202027.tsv_part_04",
+      "/data/jobs/activator/files_-_xad_202027.tsv_part_05",
+      "/data/jobs/activator/files_-_xad_202027.tsv_part_06",
+      "/data/jobs/activator/files_-_xae_202027.tsv_part_00",
+      "/data/jobs/activator/files_-_xae_202027.tsv_part_01",
+      "/data/jobs/activator/files_-_xae_202027.tsv_part_02"
+    )
+
+    files
+      .map(
+        f =>
+          spark.read
+            .format("csv")
+            .option("sep", "\t")
+            .option("header", "true")
+            .load(f)
+            .withColumn("segments", split(col("segments"), ","))
+            .withColumn("segments", explode(col("segments")))
+      )
+      .reduce((df1, df2) => df1.unionAll(df2))
       .groupBy("segments")
       .agg(approxCountDistinct("device_id", 0.03) as "device_unique")
       // .agg(approxCountDistinct("_c1", 0.03) as "device_unique")
