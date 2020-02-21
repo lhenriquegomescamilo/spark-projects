@@ -42,7 +42,7 @@ object NSEFromHomes {
   ): Map[String, String] = {
     // First we read the json file and store everything in a Map.
     val file =
-      "hdfs://rely-hdfs/datascience/geo/monthly_json/%s.json".format(path_geo_json)
+      "%s.json".format(path_geo_json)
     println("LOGGER JSON FILE: " + file)
     val df = spark.sqlContext.read.json(file)
     val columns = df.columns
