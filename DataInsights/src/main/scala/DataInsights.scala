@@ -93,6 +93,7 @@ object DataInsights {
       partners: List[String]
   ) {
 
+    println(day)
     val data_eventqueue = spark.read
       .format("csv")
       .option("sep", "\t")
@@ -128,6 +129,9 @@ object DataInsights {
       .partitionBy("day", "id_partner")
       .mode("overwrite")
       .save("/datascience/data_insights/raw")
+
+    println(day)
+    println("\n\n")
   }
 
   def main(args: Array[String]) {
@@ -161,7 +165,7 @@ object DataInsights {
         .replace("\n", "")
         .split(",")
         .toList
-    days.map(day => get_data(spark, day, df_ua, partners))
+    days.reverse.map(day => get_data(spark, day, df_ua, partners))
 
   }
 }
