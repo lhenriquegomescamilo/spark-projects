@@ -1,3 +1,6 @@
+#!/bin/bash
+
+for json in $(hdfs dfs -ls -C /datascience/geo/monthly_json); do
 /home/rely/spark/bin/spark-submit\
   --class "main.scala.NSEFromHomes"\
   --master yarn\
@@ -12,4 +15,5 @@
   --conf spark.kryo.registrator=org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator \
   --conf spark.yarn.maxAppAttempts=1 \
   --conf spark.sql.broadcastTimeout=3000000  \
-  "/home/rely/spark-projects/NSE_Assignment/target/scala-2.11/geodevicer_2.11-1.0.jar" --path_geo_json $1
+  "/home/rely/spark-projects/NSE_Assignment/target/scala-2.11/geodevicer_2.11-1.0.jar" --path_geo_json $json;
+done

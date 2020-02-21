@@ -208,8 +208,6 @@ def getReport(
   }
 
 
-
-
 def getSelectedKeywords(
       spark: SparkSession,
       nDays: Integer,
@@ -238,6 +236,72 @@ def getSelectedKeywords(
     df  
   }
 
+  def getDataKeywords(
+      spark: SparkSession,
+      country: String,
+      nDays: Integer,
+      since: Integer,
+      stemming: Integer
+  ): DataFrame = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, country)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val to_select =
+      if (stemming == 1) List("stemmed_keys", "device_id","domain")
+      else List("content_keys", "device_id","domain")
+
+    val columnName = to_select(0).toString
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .select(to_select.head, to_select.tail: _*)
+      .withColumnRenamed(columnName, "content_keywords")
+      .na
+      .drop()
+
+    df
+  }
+
+
+  def getJointKeys(
+      df_keys: DataFrame,
+      df: DataFrame,
+      verbose: Boolean
+  ): DataFrame = {
+
+    val df_joint = df
+      .join(broadcast(df_keys), Seq("content_keywords"))
+      .select("content_keywords", "device_id","domain")
+      .dropDuplicates()
+
+    /**
+    if verbose {
+      println(
+        "count del join con duplicados: %s"
+          .format(df_joint.select("device_id").distinct().count())
+      )
+    }
+    */   
+    val df_grouped = df_joint
+      .groupBy("device_id")
+      .agg(collect_list("content_keywords").as("kws"),collect_list("domain").as("domain"))
+      .withColumn("device_type", lit("web"))
+      .select("device_type", "device_id", "kws","domain")
+    df_grouped
+  }
 
  /*****************************************************/
   /******************     MAIN     *********************/
@@ -250,6 +314,44 @@ def getSelectedKeywords(
 
     def getString =
         udf((array: Seq[String]) => array.map(_.toString).mkString(","))
+
+    //103984
+    val keywords = "base|dato,c++,data|base,develop,golang,java,json,linux,php,programacion|lenguaje,sdk,simple|text,sql"
+        
+    val domain_filter =  "domain IN ('bumeran', 'konzerta', 'laborum', 'multitrabajos', 'zonajobs')"
+
+    /** Format all keywords from queries to join */
+    import spark.implicits._
+    val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
+    val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
+
+    val df_old = getDataKeywords(spark,"AR",15,31,0)
+    //.filter(domain_filter)
+
+    val data_old = getJointKeys(df_keys, df_old, false)
+    .withColumn("kws",getString(col("kws")))
+    .withColumn("domain",getString(col("domain")))   
+    
+    data_old.write
+          .format("csv")
+          .option("header",true)
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/misc/df_old_103984_NOF")
+
+    val df_new = getDataKeywords(spark,"AR",15,11,0)
+    //.filter(domain_filter)
+
+    val data_new = getJointKeys(df_keys, df_new, false)
+    .withColumn("kws",getString(col("kws")))
+    .withColumn("domain",getString(col("domain")))   
+    
+    data_new.write
+          .format("csv")
+          .option("header",true)
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/misc/df_new_103984_NOF")
+
+    /**
 
     //val domain_filter =  "domain IN ('autocosmos', 'autoscerokm', 'demotores', 'olx')"
 
@@ -285,7 +387,7 @@ def getSelectedKeywords(
           .mode(SaveMode.Overwrite)
           .save("/datascience/misc/df_new_query_103921")
 
-
+    */
 
     /**
     val df_old = spark.read.format("csv")

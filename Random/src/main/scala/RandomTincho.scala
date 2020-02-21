@@ -1620,8 +1620,8 @@ object RandomTincho {
 
     // Get the days to be loaded
     val format = "yyyyMMdd"
-    var start = DateTime.now.minusDays(2 + 15)
-    var end = DateTime.now.minusDays(2)
+    var start = DateTime.now.minusDays(11 + 15)
+    var end = DateTime.now.minusDays(11)
     var daysCount = Days.daysBetween(start, end).getDays()
     var days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
     val path = "/datascience/data_keywords"
@@ -1639,8 +1639,8 @@ object RandomTincho {
       .agg(approx_count_distinct(col("device_id"), 0.03).as("devices_new"))
 
 
-    start = DateTime.now.minusDays(25 + 15)
-    end = DateTime.now.minusDays(25)
+    start = DateTime.now.minusDays(31 + 15)
+    end = DateTime.now.minusDays(31)
     daysCount = Days.daysBetween(start, end).getDays()
     days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
@@ -1655,7 +1655,10 @@ object RandomTincho {
       .agg(approx_count_distinct(col("device_id"), 0.03).as("devices_old"))
 
 
-    data_old.join(data_new,Seq("domain"),"inner").write.format("csv").option("header","true").mode(SaveMode.Overwrite).save("/datascience/custom/domains_scrapper")
+    data_old.join(data_new,Seq("domain"),"inner")
+    .write.format("csv").option("header","true")
+    .mode(SaveMode.Overwrite)
+    .save("/datascience/custom/domains_scrapper_2102")
 
   }
 

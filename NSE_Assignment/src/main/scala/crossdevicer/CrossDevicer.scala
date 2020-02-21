@@ -117,5 +117,16 @@ object CrossDevicer {
       .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save(output_path)
+
+val output_path_push = "/datascience/geo/NSEHomes/%s_push".format(value_dictionary("output_file")
+    )
+    cross_deviced
+   .select("device_type","device_id","audience")
+    .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save(output_path_push)
   }
 }
