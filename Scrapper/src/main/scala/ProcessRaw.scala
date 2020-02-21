@@ -52,6 +52,7 @@ object ProcessRaw {
           .option("sep","\t")
           .option("header","true")
           .load("/datascience/scraper/raw/to_process/*")
+          .repartition(20)
           .selectExpr("*", "parse_url(url, 'HOST') as domain")
           .withColumn("day",lit(date))
           .orderBy(col("url").asc)

@@ -315,6 +315,37 @@ def getSelectedKeywords(
     def getString =
         udf((array: Seq[String]) => array.map(_.toString).mkString(","))
 
+    val df_keys = spark.read
+    .format("csv")
+    .option("header", "true")
+    .load("/datascience/misc/all_kws_tojoin.csv")
+
+    val df_old = getDataKeywords(spark,"AR",15,31,0)
+
+    val data_old = getJointKeys(df_keys, df_old, false)
+    .withColumn("kws",getString(col("kws")))
+    .withColumn("domain",getString(col("domain")))   
+    
+    data_old.write
+          .format("csv")
+          .option("header",true)
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/misc/df_old_all")
+
+    val df_new = getDataKeywords(spark,"AR",15,11,0)
+
+    val data_new = getJointKeys(df_keys, df_new, false)
+    .withColumn("kws",getString(col("kws")))
+    .withColumn("domain",getString(col("domain")))   
+    
+    data_new.write
+          .format("csv")
+          .option("header",true)
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/misc/df_new_all")
+
+    /**
+
     //103984
     val keywords = "base|dato,c++,data|base,develop,golang,java,json,linux,php,programacion|lenguaje,sdk,simple|text,sql"
         
@@ -350,6 +381,8 @@ def getSelectedKeywords(
           .option("header",true)
           .mode(SaveMode.Overwrite)
           .save("/datascience/misc/df_new_103984_NOF")
+
+    */
 
     /**
 
