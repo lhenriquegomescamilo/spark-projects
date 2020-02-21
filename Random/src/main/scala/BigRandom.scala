@@ -326,7 +326,7 @@ def getSelectedKeywords(
     val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
 
     val df_old = getDataKeywords(spark,"AR",15,31,0)
-    .filter(domain_filter)
+    //.filter(domain_filter)
 
     val data_old = getJointKeys(df_keys, df_old, false)
     .withColumn("kws",getString(col("kws")))
@@ -336,10 +336,10 @@ def getSelectedKeywords(
           .format("csv")
           .option("header",true)
           .mode(SaveMode.Overwrite)
-          .save("/datascience/misc/df_old_103984")
+          .save("/datascience/misc/df_old_103984_NOF")
 
     val df_new = getDataKeywords(spark,"AR",15,11,0)
-    .filter(domain_filter)
+    //.filter(domain_filter)
 
     val data_new = getJointKeys(df_keys, df_new, false)
     .withColumn("kws",getString(col("kws")))
@@ -349,7 +349,7 @@ def getSelectedKeywords(
           .format("csv")
           .option("header",true)
           .mode(SaveMode.Overwrite)
-          .save("/datascience/misc/df_new_103984")
+          .save("/datascience/misc/df_new_103984_NOF")
 
     /**
 
