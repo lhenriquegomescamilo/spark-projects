@@ -60,7 +60,7 @@ object ProcessRaw {
           .option("compression","gzip")
           .mode("append")
           .partitionBy("day")
-          .save("/datascience/scraper/raw/processed")
+          .save("/datascience/scraper/raw/processed/")
 
     // Remover files
     val conf = new Configuration()
@@ -68,7 +68,7 @@ object ProcessRaw {
     var fs = FileSystem.get(conf)
     fs.delete(new Path("/datascience/scraper/raw/to_process/*"), true)
     fs.close()
-    
+
     }
 
   /*****************************************************/
