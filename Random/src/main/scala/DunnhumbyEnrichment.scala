@@ -346,8 +346,8 @@ object DunnhumbyEnrichment {
         nextOption(map ++ Map('from -> value.toString), tail)
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value.toString), tail)
-      case "--partner" :: tail =>
-        nextOption(map ++ Map('partner -> true), tail)
+      case "--audiences" :: tail =>
+        nextOption(map ++ Map('audiences -> false), tail)
     }
   }
 
@@ -357,7 +357,7 @@ object DunnhumbyEnrichment {
     val from = if (options.contains('from)) options('from).toString.toInt else 1
     val nDays =
       if (options.contains('nDays)) options('nDays).toString.toInt else 1
-    val partner = if (options.contains('partner)) options('partner).toString.toBoolean else true
+    val partner = if (options.contains('audiences)) false else true
 
     val spark =
       SparkSession.builder
