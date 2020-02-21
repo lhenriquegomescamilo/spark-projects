@@ -51,9 +51,9 @@ object ProcessRaw {
     spark.read.format("csv")
           .option("sep","\t")
           .option("header","true")
-          .load("/datascience/scraper/raw/to_process/*")
+          .load("/datascience/scraper/raw/to_process/*.tsv")
           .repartition(20)
-          .selectExpr("*", "parse_url(url, 'HOST') as domain")
+          //.selectExpr("*", "parse_url(url, 'HOST') as domain")
           .withColumn("day",lit(date))
           .orderBy(col("url").asc)
           .write
