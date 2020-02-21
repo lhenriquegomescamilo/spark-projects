@@ -41,7 +41,7 @@ object EquifaxHomes {
     .option("header",true)
     .option("delimiter","\t") 
     .mode(SaveMode.Overwrite)
-    .save("/datascience/geo/NSEHomes/monthly/equifax/keys/%s_hashed_key".format(value_dictionary("output_file")))) 
+    .save("/datascience/geo/NSEHomes/monthly/equifax/keys/%s_hashed_key".format(value_dictionary("output_file"))) 
 
     //Aca levantamos lo que acabamos de crear y nos quedamos sólo con el device_id hash. 
     val homes_equifax = 
