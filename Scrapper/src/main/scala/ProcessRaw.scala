@@ -54,12 +54,13 @@ object ProcessRaw {
           .load("/datascience/scraper/raw/to_process/*")
           .selectExpr("*", "parse_url(url, 'HOST') as domain")
           .withColumn("day",lit(date))
+          .orderBy(col("url").asc)
           .write
           .format("parquet")
           .option("compression","gzip")
-          .mode("overwrite")
+          .mode("append")
           .partitionBy("day")
-          .save("/datascience/scraper/daily_dump/")
+          .save("/datascience/scraper/raw/processed")
 
     // Remover files
     val conf = new Configuration()
