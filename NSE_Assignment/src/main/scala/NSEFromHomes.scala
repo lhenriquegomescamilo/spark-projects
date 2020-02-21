@@ -262,25 +262,6 @@ object NSEFromHomes {
    CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
    
 
-   
-    val json_content = """{"filePath":"%s", "priority":15,
-                                     "queue":"datascience","description":"%s"}""" //,"as_view":%s
-      .format(
-        "/datascience/geo/NSEHomes/monthly/to_push/%s_push".format(value_dictionary("output_file")),
-        value_dictionary("description"))
-
-      .replace("\n", "")
-    println("DEVICER LOG:\n\t%s".format(json_content))
-
-    // Finally we store the json.
-    val conf = new Configuration()
-    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-    val fs = FileSystem.get(conf)
-    val os = fs.create(
-      new Path("/datascience/geo/NSEHomes/monthly/done/%s_outif.meta".format(value_dictionary("output_file")))
-    )
-    os.write(json_content.getBytes)
-    fs.close() 
 
 
     // Now we generate the content for the json file.
@@ -300,11 +281,17 @@ object NSEFromHomes {
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
     val os = fs.create(
-      new Path("/datascience/geo/NSEHomes/monthly/done/%s_inif.meta".format(value_dictionary("output_file"))) //"/datascience/ingester/ready/%s.meta".format(value_dictionary("output_file")))
+      new Path("/datascience/ingester/ready/%s.meta".format(value_dictionary("output_file")))//"
     )
     os.write(json_content.getBytes)
     fs.close() 
+
     }
-                                    
+    
+    //Here we move the json after it is processed
+    val srcPath = new Path(file.toString)
+    val destPath = new Path(file.toString.replace("/to_process/", "/done/"))
+    
+
     }
   }
