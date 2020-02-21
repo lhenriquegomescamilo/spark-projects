@@ -1719,7 +1719,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_keywords_for_equifax(spark)
+    analisis_domains(spark)
     
 
   }

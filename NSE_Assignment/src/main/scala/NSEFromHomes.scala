@@ -265,16 +265,12 @@ object NSEFromHomes {
     // Now we generate the content for the json file.
    if (value_dictionary("push")=="1") {
    
-    val json_content = """{"filePath":"%s", "priority":%s,
-                                     "queue":"%s", "jobId":%s, "description":"%s","as_view":%s}"""
+    val json_content = """{"filePath":"%s", "priority":15,
+                                     "queue":"datascience","description":"%s"}""" //,"as_view":%s
       .format(
-        "/datascience/audiences/crossdeviced/%s_xd".format(value_dictionary("output_file")),
-        value_dictionary("priority"),
-        value_dictionary("queue"),
-        value_dictionary("jobid"),
-        value_dictionary("description"),
-        value_dictionary("as_view")
-      )
+        "/datascience/geo/NSEHomes/monthly_push/%s_push".format(value_dictionary("output_file")),
+        value_dictionary("description"))
+
       .replace("\n", "")
     println("DEVICER LOG:\n\t%s".format(json_content))
 
@@ -283,7 +279,7 @@ object NSEFromHomes {
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     val fs = FileSystem.get(conf)
     val os = fs.create(
-      new Path("/datascience/devicer/processed/%s_test.meta".format(value_dictionary("output_file")))
+      new Path("/datascience/ingester/ready/%s.meta".format(value_dictionary("output_file")))
     )
     os.write(json_content.getBytes)
     fs.close() 
