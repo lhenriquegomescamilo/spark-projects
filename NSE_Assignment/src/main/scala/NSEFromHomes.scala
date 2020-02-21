@@ -11,6 +11,7 @@ import org.apache.hadoop.conf.Configuration
 import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
 import main.scala.nseassignation.NSEAssignation
+import main.scala.equifax.EquifaxHomes
 
 import org.apache.log4j.{Level, Logger}
 
@@ -261,7 +262,7 @@ object NSEFromHomes {
 
    CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
    
-
+   EquifaxHomes.create_hash_for_madids(spark,value_dictionary)
 
 
     // Now we generate the content for the json file.
@@ -289,8 +290,8 @@ object NSEFromHomes {
     }
     
     //Here we move the json after it is processed
-    val srcPath = new Path(file.toString)
-    val destPath = new Path(file.toString.replace("/to_process/", "/done/"))
+    val srcPath = new Path(path_geo_json.toString)
+    val destPath = new Path(path_geo_json.toString.replace("/to_process/", "/done/"))
     
 
     }
