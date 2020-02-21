@@ -58,7 +58,7 @@ object ProcessRaw {
           .orderBy(col("url").asc)
           .write
           .format("parquet")
-          .option("compression","gzip")
+          //.option("compression","gzip")
           .mode("append")
           .partitionBy("day")
           .save("/datascience/scraper/raw/processed/")
