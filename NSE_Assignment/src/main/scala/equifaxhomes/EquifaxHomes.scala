@@ -1,9 +1,13 @@
 package main.scala.equifaxhomes
 
+import main.scala.NSEFromHomes
+
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col, coalesce, udf}
-import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.SaveMode
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.joda.time.DateTime
 
 
 object EquifaxHomes {
@@ -41,7 +45,7 @@ object EquifaxHomes {
     .option("header",true)
     .option("delimiter","\t") 
     .mode(SaveMode.Overwrite)
-    .save("/datascience/geo/NSEHomes/monthly/equifax/keys/%s_hashed_key".format(value_dictionary("output_file")))) 
+    .save("/datascience/geo/NSEHomes/monthly/equifax/keys/%s_hashed_key".format(value_dictionary("output_file"))) 
 
     //Aca levantamos lo que acabamos de crear y nos quedamos sólo con el device_id hash. 
     val homes_equifax = 

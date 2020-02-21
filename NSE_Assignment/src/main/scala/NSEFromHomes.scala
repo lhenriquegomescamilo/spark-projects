@@ -11,7 +11,7 @@ import org.apache.hadoop.conf.Configuration
 import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
 import main.scala.nseassignation.NSEAssignation
-import main.scala.equifax.EquifaxHomes
+import main.scala.equifaxhomes.EquifaxHomes
 
 import org.apache.log4j.{Level, Logger}
 
