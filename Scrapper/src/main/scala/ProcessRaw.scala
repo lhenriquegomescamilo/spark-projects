@@ -65,7 +65,7 @@ object ProcessRaw {
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     var fs = FileSystem.get(conf)
-    fs.delete("/datascience/scraper/raw/to_process/*", true)
+    fs.delete(NewPath("/datascience/scraper/raw/to_process/*"), true)
 
     }
 
