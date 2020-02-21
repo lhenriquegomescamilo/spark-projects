@@ -410,7 +410,7 @@ def userAggregateFromPolygon(
                     .save(output_path_segments)
 
 
-      val output_path_horrible_users = "/datascience/geo/geo_processed/%s_output_path_users_data"
+      val output_path_horrible_users = "/datascience/geo/geo_processed/%s_users_data"
                                                             .format(value_dictionary("poi_output_file"))
 
       val joint_users_for_analysis = data.select("device_id",value_dictionary("audience_column_name"))

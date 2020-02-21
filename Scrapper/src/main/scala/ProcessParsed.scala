@@ -9,7 +9,6 @@ import org.apache.hadoop.fs.{ FileSystem, Path}
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-import org.joda.time.DateTime
 import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.spark.sql.functions.broadcast
 import org.apache.spark.sql.functions.{
@@ -44,30 +43,29 @@ import scala.util.Random.shuffle
 /**
   * The idea of this script is to Ingest Urls daily to local servers for Scrapper.
   */
-object ProcessRaw {
-  def process_raw(spark: SparkSession) {
+object ProcessParsed {
+  def process_parsed(spark: SparkSession) {
 
     val date = DateTime.now().toString("yyyyMMdd")
+    val hour = DateTime.now().getHourOfDay()
     spark.read.format("csv")
           .option("sep","\t")
           .option("header","true")
-          .load("/datascience/scraper/raw/to_process/*")
-          .selectExpr("*", "parse_url(url, 'HOST') as domain")
+          .load("/datascience/scraper/parsed/to_process/*")
           .withColumn("day",lit(date))
+          .withColumn("hour",lit(hour))
           .orderBy(col("url").asc)
           .write
           .format("parquet")
-          .option("compression","gzip")
           .mode("append")
-          .partitionBy("day")
-          .save("/datascience/scraper/raw/processed/")
+          .partitionBy("day","hour")
+          .save("/datascience/scraper/parsed/processed")
 
     // Remover files
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     var fs = FileSystem.get(conf)
-    fs.delete(new Path("/datascience/scraper/raw/to_process/*"), true)
-    fs.close()
+    fs.delete(new Path("/datascience/scraper/parsed/to_process/*"), true)
 
     }
 
@@ -79,12 +77,12 @@ object ProcessRaw {
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
-      .appName("Process Raw Dump")
+      .appName("Process Parsed Dump")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    process_raw(spark)
+    process_parsed(spark)
 
   }
 }

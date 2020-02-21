@@ -117,5 +117,19 @@ object CrossDevicer {
       .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save(output_path)
+
+
+    //And here we filter by min frequency and store the dataset for pushings
+    val output_path_push = "/datascience/geo/NSEHomes/monthly/to_push/%s_push".format(value_dictionary("output_file")
+    )
+    cross_deviced
+    .filter(col("frequency")>=value_dictionary("minFreq").toInt)
+    .select("device_type","device_id","audience")
+    .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save(output_path_push)
   }
 }
