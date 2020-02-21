@@ -51,11 +51,12 @@ object ProcessRaw {
     spark.read.format("csv")
           .option("sep","\t")
           .option("header","true")
-          .load("/datascience/scraper/raw/to_process/*")
+          .load("/datascience/scraper/raw/to_process/*.tsv")
+          .dropDuplicates()
           .repartition(20)
           .selectExpr("*", "parse_url(url, 'HOST') as domain")
           .withColumn("day",lit(date))
-          .orderBy(col("url").asc)
+          //.orderBy(col("domain").asc)
           .write
           .format("parquet")
           .option("compression","gzip")
@@ -67,7 +68,7 @@ object ProcessRaw {
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     var fs = FileSystem.get(conf)
-    fs.delete(new Path("/datascience/scraper/raw/to_process/*"), true)
+    val filesReady = fs.listStatus(new Path("/datascience/scraper/raw/to_process/")).map(f => fs.delete(new Path(f.getPath.toString), true)).toList
     fs.close()
 
     }

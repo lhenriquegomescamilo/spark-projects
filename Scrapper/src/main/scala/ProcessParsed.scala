@@ -52,6 +52,7 @@ object ProcessParsed {
           .option("sep","\t")
           .option("header","true")
           .load("/datascience/scraper/parsed/to_process/*")
+          .dropDuplicates()
           .withColumn("day",lit(date))
           .withColumn("hour",lit(hour))
           .orderBy(col("url").asc)
@@ -65,7 +66,8 @@ object ProcessParsed {
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     var fs = FileSystem.get(conf)
-    fs.delete(new Path("/datascience/scraper/parsed/to_process/*"), true)
+    val filesReady = fs.listStatus(new Path("/datascience/scraper/parsed/to_process/")).map(f => fs.delete(new Path(f.getPath.toString), true)).toList
+    fs.close()
 
     }
 
