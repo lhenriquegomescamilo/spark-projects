@@ -285,7 +285,13 @@ object NSEFromHomes {
     )
     os.write(json_content.getBytes)
     fs.close() 
+
     }
-                                    
+    
+    //Here we move the json after it is processed
+    val srcPath = new Path(file.toString)
+    val destPath = new Path(file.toString.replace("/to_process/", "/done/"))
+    
+
     }
   }
