@@ -67,7 +67,8 @@ object ProcessRaw {
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
     var fs = FileSystem.get(conf)
     fs.delete(new Path("/datascience/scraper/raw/to_process/*"), true)
-
+    fs.close()
+    
     }
 
   /*****************************************************/
