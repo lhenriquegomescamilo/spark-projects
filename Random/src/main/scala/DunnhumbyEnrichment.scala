@@ -259,8 +259,8 @@ object DunnhumbyEnrichment {
       )
       .withColumn("ml_sh2", removeDuplicates(col("ml_sh2")))
       .withColumn("nid_sh2", removeDuplicates(col("nid_sh2")))
-      .withColumn("ml_sh2", concat_ws(",", col("ml_sh2")))
-      .withColumn("nid_sh2", concat_ws(",", col("nid_sh2")))
+      .withColumn("ml_sh2", concat_ws(";", col("ml_sh2")))
+      .withColumn("nid_sh2", concat_ws(";", col("nid_sh2")))
 
     // Now we finally perform the join between the data that has been read,
     // and the PIIs for that country.
