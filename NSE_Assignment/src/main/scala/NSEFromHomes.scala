@@ -11,6 +11,7 @@ import org.apache.hadoop.conf.Configuration
 import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
 import main.scala.nseassignation.NSEAssignation
+import main.scala.equifax.EquifaxHomes
 
 import org.apache.log4j.{Level, Logger}
 
@@ -261,7 +262,7 @@ object NSEFromHomes {
 
    CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
    
-
+   EquifaxHomes.create_hash_for_madids(spark,value_dictionary)
 
 
     // Now we generate the content for the json file.
