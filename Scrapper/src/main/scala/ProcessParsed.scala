@@ -62,10 +62,11 @@ object ProcessParsed {
           .save("/datascience/scraper/parsed/processed")
 
     // Remover files
-    val conf = new Configuration()
-    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-    var fs = FileSystem.get(conf)
-    fs.delete(new Path("/datascience/scraper/parsed/to_process/*"), true)
+    // val conf = new Configuration()
+    // conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    // var fs = FileSystem.get(conf)
+    // val filesReady = fs.listStatus(new Path("/datascience/scraper/parsed/to_process/")).map(f => fs.delete(new Path(f.getPath.toString), true)).toList
+    // fs.close()
 
     }
 

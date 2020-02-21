@@ -55,7 +55,7 @@ object ProcessRaw {
           .repartition(20)
           .selectExpr("*", "parse_url(url, 'HOST') as domain")
           .withColumn("day",lit(date))
-          //.orderBy(col("url").desc)
+          .orderBy(col("domain").desc)
           .write
           .format("parquet")
           .option("compression","gzip")
@@ -64,11 +64,11 @@ object ProcessRaw {
           .save("/datascience/scraper/raw/processed/")
 
     // Remover files
-    val conf = new Configuration()
-    conf.set("fs.defaultFS", "hdfs://rely-hdfs")
-    var fs = FileSystem.get(conf)
-    fs.delete(new Path("/datascience/scraper/raw/to_process/*"), true)
-    fs.close()
+    // val conf = new Configuration()
+    // conf.set("fs.defaultFS", "hdfs://rely-hdfs")
+    // var fs = FileSystem.get(conf)
+    // val filesReady = fs.listStatus(new Path("/datascience/scraper/raw/to_process/")).map(f => fs.delete(new Path(f.getPath.toString), true)).toList
+    // fs.close()
 
     }
 
