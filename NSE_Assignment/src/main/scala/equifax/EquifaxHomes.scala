@@ -1,9 +1,13 @@
 package main.scala.equifaxhomes
 
+import main.scala.NSEFromHomes
+
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{upper, col, coalesce, udf}
-import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.SaveMode
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.joda.time.DateTime
 
 
 object EquifaxHomes {
