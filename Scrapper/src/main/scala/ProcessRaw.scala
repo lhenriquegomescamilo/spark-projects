@@ -55,7 +55,7 @@ object ProcessRaw {
           .repartition(20)
           .selectExpr("*", "parse_url(url, 'HOST') as domain")
           .withColumn("day",lit(date))
-          .orderBy(col("url").desc)
+          //.orderBy(col("url").desc)
           .write
           .format("parquet")
           .option("compression","gzip")
