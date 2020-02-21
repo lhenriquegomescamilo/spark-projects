@@ -268,11 +268,9 @@ object NSEFromHomes {
     val json_content = """{"filePath":"%s", "priority":15,
                                      "queue":"datascience","description":"%s"}""" //,"as_view":%s
       .format(
-        "/datascience/geo/NSEHomes/monthly_push/%s_push".format(value_dictionary("output_file"),
-        value_dictionary("queue"),
-        value_dictionary("jobid"),
-        value_dictionary("output_file")
-      )
+        "/datascience/geo/NSEHomes/monthly_push/%s_push".format(value_dictionary("output_file")),
+        value_dictionary("description"))
+
       .replace("\n", "")
     println("DEVICER LOG:\n\t%s".format(json_content))
 
