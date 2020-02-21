@@ -290,8 +290,8 @@ object NSEFromHomes {
     }
     
     //Here we move the json after it is processed
-    val srcPath = new Path(file.toString)
-    val destPath = new Path(file.toString.replace("/to_process/", "/done/"))
+    val srcPath = new Path(path_geo_json.toString)
+    val destPath = new Path(path_geo_json.toString.replace("/to_process/", "/done/"))
     
 
     }
