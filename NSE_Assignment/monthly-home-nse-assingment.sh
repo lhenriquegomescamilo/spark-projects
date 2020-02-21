@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for json in $(hdfs dfs -ls -C /datascience/geo/monthly_json); do
+for json in $(hdfs dfs -ls -C /datascience/geo/NSEHomes/monthly/to_process/); do
 /home/rely/spark/bin/spark-submit\
   --class "main.scala.NSEFromHomes"\
   --master yarn\
