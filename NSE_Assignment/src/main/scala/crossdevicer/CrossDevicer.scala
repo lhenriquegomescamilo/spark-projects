@@ -120,7 +120,7 @@ object CrossDevicer {
 
 
     //And here we filter by min frequency and store the dataset for pushings
-    val output_path_push = "/datascience/geo/NSEHomes/monthly_push/%s_push".format(value_dictionary("output_file")
+    val output_path_push = "/datascience/geo/NSEHomes/monthly/to_push/%s_push".format(value_dictionary("output_file")
     )
     cross_deviced
     .filter(col("frequency")>=value_dictionary("minFreq").toInt)
