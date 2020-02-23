@@ -35,6 +35,7 @@ object AggregateData {
       )
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
+    hdfs_files.foreach(println)
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
 
     format = "yyyy-MM-dd"
