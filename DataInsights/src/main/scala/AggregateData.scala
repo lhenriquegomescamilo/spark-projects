@@ -282,7 +282,13 @@ object AggregateData {
     format = "yyyyMMdd"
     val today = DateTime.now.minusDays(since).toString(format)
     val partners =
-      "879, 753, 994, 709, 984, 1179, 1041, 1042, 1055, 507".split(", ").toList
+      """211, 215, 232, 233, 281, 346, 347, 507, 640, 644, 647, 682, 709, 753, 764, 
+                    875, 879, 881, 900, 943, 955, 956, 984, 986, 993, 994, 1036, 1038, 1039, 1040, 
+                    1041, 1042, 1055, 1122, 1157, 1159, 1179, 1239, 1251"""
+        .replace(" ", "")
+        .replace("\n", "")
+        .split(",")
+        .toList
     val df_chkpt = getRawData(
       spark,
       ndays,
