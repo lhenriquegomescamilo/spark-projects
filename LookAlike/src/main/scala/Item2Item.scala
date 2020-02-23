@@ -744,10 +744,16 @@ object Item2Item {
                 .mkString(",") // toString
               )              
         )
-      
+
       // save
-      spark.createDataFrame(dataExpansion)
-        .toDF("device_id", "segments" )
+      var outputDF = spark.createDataFrame(dataExpansion).toDF("device_id", "segments" )
+      // if there is only a segment to expand (most common case)
+      if (expandInput.length == 1){
+        // it limits the number of rows to avoid large differences with 'size' parameter.
+        var limit = (expandInput.head("dst_segment_id").toString.toInt * 1.1).toInt
+        outputDF = outputDF.limit(limit)
+      }
+      outputDF
         .write
         .format("csv")
         .option("sep", "\t")
