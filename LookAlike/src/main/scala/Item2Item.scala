@@ -211,7 +211,18 @@ object Item2Item {
       else
         null
       }
+    /*
+    val usersSegmentsData = dataTriples
+      .filter(col("feature").isin(segments: _*))   // segment filtering
+      .filter(col("shareable") === true ) // only expand shareable devices
+      .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
+      .select("device_id", "device_type", "segment_idx", "count")
+      .rdd
+      .map(row => ((row(0), row(1)), (row(1), row(2))))
+      .groupByKey()  // group by (device_id, device_type)
+      .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
 
+    */
     println("LOOKALIKE LOG: Expansion")
     expand(spark,
            usersSegmentsData,
@@ -488,6 +499,10 @@ object Item2Item {
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read.option("basePath", path).parquet(hdfs_files: _*).select("device_id", "feature")
+    // val df = spark.read.option("basePath", path)
+    //.parquet(hdfs_files: _*)
+    //.select("device_id", "shareable", "device_type", "feature")
+
     // force count to 1 - if column doesn't exists, it creates it
     df.withColumn("count", lit(1))
   }
@@ -744,10 +759,16 @@ object Item2Item {
                 .mkString(",") // toString
               )              
         )
-      
+
       // save
-      spark.createDataFrame(dataExpansion)
-        .toDF("device_id", "segments" )
+      var outputDF = spark.createDataFrame(dataExpansion).toDF("device_id", "segments" )
+      // if there is only a segment to expand (most common case)
+      if (expandInput.length == 1){
+        // it limits the number of rows to avoid large differences with 'size' parameter.
+        var limit = (expandInput.head("dst_segment_id").toString.toInt * 1.1).toInt
+        outputDF = outputDF.limit(limit)
+      }
+      outputDF
         .write
         .format("csv")
         .option("sep", "\t")
