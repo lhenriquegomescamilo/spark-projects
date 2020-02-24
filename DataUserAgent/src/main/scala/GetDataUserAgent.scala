@@ -157,6 +157,7 @@ object GetDataUserAgent {
     // First we obtain the Spark session
     val spark = SparkSession.builder
       .appName("Get data for custom audiences")
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
       .getOrCreate()
 
     // Finally, we download the data
