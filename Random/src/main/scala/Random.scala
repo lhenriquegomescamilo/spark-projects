@@ -5037,22 +5037,49 @@ object Random {
       .withColumn("device_type", mapUDF(col("device_type")))
       .select("tapad_id", "device", "device_type")
 
-    data.cache()
+    //   data.cache()
 
-    br_piis = spark.read.format("parquet").load("/datascience/custom/br_piis")
+    //   br_piis = spark.read.format("parquet").load("/datascience/custom/br_piis")
 
-    val br_cookies = data
-      .withColumnRenamed("device", "device_id")
-      .filter("device_type NOT IN ('and', 'ios')")
-      .join(br_piis, Seq("device_id"))
-      .select("tapad_id", "pii", "pii_type")
+    //   val br_cookies = data
+    //     .withColumnRenamed("device", "device_id")
+    //     .filter("device_type NOT IN ('and', 'ios')")
+    //     .join(br_piis, Seq("device_id"))
+    //     .select("tapad_id", "pii", "pii_type")
 
-    br_cookies
-      .join(data.filter("device_type IN ('and', 'ios')"), Seq("tapad_id"))
-      .select("device", "device_type", "pii", "pii_type")
-      .write
+    //   br_cookies
+    //     .join(data.filter("device_type IN ('and', 'ios')"), Seq("tapad_id"))
+    //     .select("device", "device_type", "pii", "pii_type")
+    //     .write
+    //     .format("parquet")
+    //     .mode("overwrite")
+    //     .save("/datascience/custom/piis_br_maids")
+    val data = spark.read
       .format("parquet")
+      .load("/datascience/custom/piis_br_maids")
+      .cache()
+
+    val nids = data
+      .filter("pii_type = 'nid'")
+      .groupBy("device_type", "device")
+      .agg(collect_list("pii") as "nid_sh2")
+    val mails = data
+      .filter("pii_type = 'mail'")
+      .groupBy("device_type", "device")
+      .agg(collect_list("pii") as "ml_sh2")
+
+    nids
+      .join(mails, Seq("device_type", "device"), "outer")
+      .withColumn("nid_sh2", explode(col("nid_sh2")))
+      .withColumn("ml_sh2", explode(col("ml_sh2")))
+      .na
+      .fill("")
+      .withColumn("mob_sh2", lit(""))
+      .select("device_type", "device", "ml_sh2", "mob_sh2", "nid_sh2")
+      .write
+      .format("csv")
+      .option("sep", "\t")
       .mode("overwrite")
-      .save("/datascience/custom/piis_br_maids")
+      .save("/datascience/custom/maids_br_with_piis_to_push")
   }
 }
