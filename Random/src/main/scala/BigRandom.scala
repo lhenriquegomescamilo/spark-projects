@@ -379,8 +379,6 @@ val udfGetDomain = udf(
     df
   }
 
-
-
  /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -391,20 +389,22 @@ val udfGetDomain = udf(
     .getOrCreate()
 
 
-  val df_old = getDataURLS(spark, "AR", 15 , 36 )
+  //val df_old = getDataURLS(spark, "AR", 15 , 36 )
+  val df_old = getSelectedKeywords(spark, 15 , 36 )
   .filter("domain=='zonajobs'")
 
   //println(df_old.groupBy("domain").agg(sum(col("count")) as "total_hits").show())
 
-  println(df_old.drop("count").dropDuplicates().count())
+  println(df_old.drop("count","kw").dropDuplicates().count())
 
 
-  val df_new = getDataURLS(spark, "AR", 15 , 16 )
+  //val df_new = getDataURLS(spark, "AR", 15 , 16 )
+  val df_new = getSelectedKeywords(spark,  15 , 16 )
   .filter("domain=='zonajobs'")
 
   //println(df_new.groupBy("domain").agg(sum(col("count")) as "total_hits").show())
 
-  println(df_new.drop("count").dropDuplicates().count())
+  println(df_new.drop("count","kw").dropDuplicates().count())
 
 
     /**
