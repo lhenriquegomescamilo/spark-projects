@@ -49,8 +49,7 @@ object EquifaxHomes {
 
     //Aca levantamos lo que acabamos de crear y nos quedamos sólo con el device_id hash. 
 
-    val country_output_dict = Map
-    ("argentina" -> "AR",
+    val country_output_dict = Map("argentina" -> "AR",
       "CL" -> "CL", 
       "mexico" -> "MX",
       "CO"-> "CO",
@@ -69,6 +68,6 @@ object EquifaxHomes {
     .option("header",true)
     .option("delimiter","\t") 
     .mode(SaveMode.Overwrite)
-    .save("/datascience/geo/NSEHomes/monthly/equifax/to_push/%s/%s".format(date,actual_country)
+    .save("/datascience/geo/NSEHomes/monthly/equifax/to_push/%s/%s".format(date,actual_country))
   }
 }
