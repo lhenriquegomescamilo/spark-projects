@@ -1709,6 +1709,8 @@ object RandomTincho {
   }
 
   def enrichment_br(spark:SparkSession){
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since)
     val since = 1
