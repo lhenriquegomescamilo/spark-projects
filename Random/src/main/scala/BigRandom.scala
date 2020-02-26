@@ -379,6 +379,37 @@ val udfGetDomain = udf(
     df
   }
 
+ def getDataURLS(
+      spark: SparkSession,
+      country: String,
+      nDays: Integer,
+      since: Integer
+  ): DataFrame = {
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/url_ingester/data"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, country)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .withColumn("domain",udfGetDomain(col("url")))
+      .na
+      .drop()
+
+    df
+  }
+
 
 
  /*****************************************************/
@@ -391,20 +422,22 @@ val udfGetDomain = udf(
     .getOrCreate()
 
 
-  val df_old = getDataURLS(spark, "AR", 15 , 36 )
+  //val df_old = getDataURLS(spark, "AR", 15 , 36 )
+  val df_old = getSelectedKeywords(spark, 15 , 36 )
   .filter("domain=='zonajobs'")
 
   //println(df_old.groupBy("domain").agg(sum(col("count")) as "total_hits").show())
 
-  println(df_old.drop("count").dropDuplicates().count())
+  println(df_old.drop("count","kw").dropDuplicates().count())
 
 
-  val df_new = getDataURLS(spark, "AR", 15 , 16 )
+  //val df_new = getDataURLS(spark, "AR", 15 , 16 )
+  val df_old = getSelectedKeywords(spark,  15 , 36 )
   .filter("domain=='zonajobs'")
 
   //println(df_new.groupBy("domain").agg(sum(col("count")) as "total_hits").show())
 
-  println(df_new.drop("count").dropDuplicates().count())
+  println(df_new.drop("count","kw").dropDuplicates().count())
 
 
     /**
