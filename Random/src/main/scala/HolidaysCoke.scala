@@ -186,7 +186,7 @@ def get_safegraph_data(
     //val country = "CL"
     //val country = "AR"
 
-    val date = "20200217"
+    val date = "20200226"
     val root_path = "/datascience/geo/holidays/coca/"
     val file_path_travellers = "travellers_%s_".format(country) + date
     val path_travellers =  root_path + file_path_travellers
@@ -332,8 +332,8 @@ def get_safegraph_data(
     //val path_stay_old = "/datascience/geo/misc/stay_at_home_full_audience_CL"
     
     //PERU
-    val path_travellers_old = "/datascience/audiences/crossdeviced/travellers_PE_20200210_xd"
-    val path_stay_old = "/datascience/geo/holidays/coca/stay_home_PE_20200210"
+    val path_travellers_old = "/datascience/audiences/crossdeviced/travellers_PE_20200217_xd"
+    val path_stay_old = "/datascience/geo/holidays/coca/stay_home_PE_20200217"
 
     //ARGENTINA
     //val path_travellers_old = "/datascience/audiences/crossdeviced/travellers_AR_20200210_xd"
