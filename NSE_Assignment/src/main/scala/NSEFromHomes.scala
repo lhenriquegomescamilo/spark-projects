@@ -258,12 +258,19 @@ object NSEFromHomes {
 
     // Here we perform the operation
 
+    //This creates the probable homes
    HomeJobs.get_homejobs(spark, value_dictionary)
-   
-   NSEAssignation.nse_join(spark, value_dictionary)
 
+   //This reads the probable homes and assigns an NSE
+  if (value_dictionary("country")=="CL") {
+     NSEAssignationChile.nse_join(spark, value_dictionary)}
+  else {NSEAssignation.nse_join(spark, value_dictionary)}
+   
+   
+  //This crossdevices de MADIDS to get web cookies
    CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
    
+  //This creates a file to share with 3rd_parties, the homes from madids are hashed. A key is also created
    EquifaxHomes.create_hash_for_madids(spark,value_dictionary)
 
 
@@ -294,7 +301,7 @@ object NSEFromHomes {
     //Here we move the json after it is processed
     val conf = new Configuration()
     val fs = FileSystem.get(conf)
-    
+
     val srcPath = new Path(path_geo_json.toString)
     val destPath = new Path(path_geo_json.toString.replace("/to_process/", "/done/"))
     fs.rename(srcPath, destPath)
