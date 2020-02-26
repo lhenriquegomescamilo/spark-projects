@@ -4985,74 +4985,101 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val devices_piis = spark.read
-      .format("parquet")
-      .load("/datascience/pii_matching/pii_tuples/")
-      .filter("country = 'BR'")
-    devices_piis.cache()
+    // val devices_piis = spark.read
+    //   .format("parquet")
+    //   .load("/datascience/pii_matching/pii_tuples/")
+    //   .filter("country = 'BR'")
+    // devices_piis.cache()
 
-    val mails = devices_piis
-      .filter("ml_sh2 IS NOT NULL")
-      .withColumnRenamed("ml_sh2", "pii")
-      .withColumn("pii_type", lit("mail"))
-      .select("device_id", "pii_type", "pii")
-    val dnis = devices_piis
-      .filter("nid_sh2 IS NOT NULL")
-      .withColumnRenamed("nid_sh2", "pii")
-      .withColumn("pii_type", lit("nid"))
-      .select("device_id", "pii_type", "pii")
+    // val mails = devices_piis
+    //   .filter("ml_sh2 IS NOT NULL")
+    //   .withColumnRenamed("ml_sh2", "pii")
+    //   .withColumn("pii_type", lit("mail"))
+    //   .select("device_id", "pii_type", "pii")
+    // val dnis = devices_piis
+    //   .filter("nid_sh2 IS NOT NULL")
+    //   .withColumnRenamed("nid_sh2", "pii")
+    //   .withColumn("pii_type", lit("nid"))
+    //   .select("device_id", "pii_type", "pii")
 
-    var br_piis = mails.unionAll(dnis)
-    br_piis.write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/br_piis")
+    // var br_piis = mails.unionAll(dnis)
+    // br_piis.write
+    //   .format("parquet")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/br_piis")
 
-    val individual = false
+    // val individual = false
 
-    val mapUDF = udf(
-      (device_type: String) =>
-        if (device_type == "RTG") "coo"
-        else if (device_type.toLowerCase.contains("android")) "and"
-        else if (device_type == "SHT") "sht"
-        else "ios"
-    )
+    // val mapUDF = udf(
+    //   (device_type: String) =>
+    //     if (device_type == "RTG") "coo"
+    //     else if (device_type.toLowerCase.contains("android")) "and"
+    //     else if (device_type == "SHT") "sht"
+    //     else "ios"
+    // )
 
-    val sharethisMap = spark.read
-      .format("parquet")
-      .load("/datascience/sharethis/estid_map/")
-      .withColumnRenamed("estid", "device")
-      .withColumn("device", upper(col("device")))
+    // val sharethisMap = spark.read
+    //   .format("parquet")
+    //   .load("/datascience/sharethis/estid_map/")
+    //   .withColumnRenamed("estid", "device")
+    //   .withColumn("device", upper(col("device")))
 
+    // val data = spark.read
+    //   .format("csv")
+    //   .option("sep", ";")
+    //   .load("/data/providers/Tapad/Retargetly_ids_full_20190128_161746.bz2")
+    //   .repartition(300)
+    //   .withColumn("device", explode(split(col("_c2"), "\t")))
+    //   .withColumnRenamed(if (individual) "_c1" else "_c0", "tapad_id") // Here I will use the household id instead of the Individual id
+    //   .withColumn("device", split(col("device"), "="))
+    //   .withColumn("device_type", col("device").getItem(0))
+    //   .withColumn("device", col("device").getItem(1))
+    //   .withColumn("device_type", mapUDF(col("device_type")))
+    //   .select("tapad_id", "device", "device_type")
+
+    //   data.cache()
+
+    //   br_piis = spark.read.format("parquet").load("/datascience/custom/br_piis")
+
+    //   val br_cookies = data
+    //     .withColumnRenamed("device", "device_id")
+    //     .filter("device_type NOT IN ('and', 'ios')")
+    //     .join(br_piis, Seq("device_id"))
+    //     .select("tapad_id", "pii", "pii_type")
+
+    //   br_cookies
+    //     .join(data.filter("device_type IN ('and', 'ios')"), Seq("tapad_id"))
+    //     .select("device", "device_type", "pii", "pii_type")
+    //     .write
+    //     .format("parquet")
+    //     .mode("overwrite")
+    //     .save("/datascience/custom/piis_br_maids")
     val data = spark.read
-      .format("csv")
-      .option("sep", ";")
-      .load("/data/providers/Tapad/Retargetly_ids_full_20190128_161746.bz2")
-      .repartition(300)
-      .withColumn("device", explode(split(col("_c2"), "\t")))
-      .withColumnRenamed(if (individual) "_c1" else "_c0", "tapad_id") // Here I will use the household id instead of the Individual id
-      .withColumn("device", split(col("device"), "="))
-      .withColumn("device_type", col("device").getItem(0))
-      .withColumn("device", col("device").getItem(1))
-      .withColumn("device_type", mapUDF(col("device_type")))
-      .select("tapad_id", "device", "device_type")
-
-    data.cache()
-
-    br_piis = spark.read.format("parquet").load("/datascience/custom/br_piis")
-
-    val br_cookies = data
-      .withColumnRenamed("device", "device_id")
-      .filter("device_type NOT IN ('and', 'ios')")
-      .join(br_piis, Seq("device_id"))
-      .select("tapad_id", "pii", "pii_type")
-
-    br_cookies
-      .join(data.filter("device_type IN ('and', 'ios')"), Seq("tapad_id"))
-      .select("device", "device_type", "pii", "pii_type")
-      .write
       .format("parquet")
+      .load("/datascience/custom/piis_br_maids")
+      .cache()
+
+    val nids = data
+      .filter("pii_type = 'nid'")
+      .groupBy("device_type", "device")
+      .agg(collect_list("pii") as "nid_sh2")
+    val mails = data
+      .filter("pii_type = 'mail'")
+      .groupBy("device_type", "device")
+      .agg(collect_list("pii") as "ml_sh2")
+
+    nids
+      .join(mails, Seq("device_type", "device"), "outer")
+      .withColumn("nid_sh2", explode(col("nid_sh2")))
+      .withColumn("ml_sh2", explode(col("ml_sh2")))
+      .na
+      .fill("")
+      .withColumn("mob_sh2", lit(""))
+      .select("device_type", "device", "ml_sh2", "mob_sh2", "nid_sh2")
+      .write
+      .format("csv")
+      .option("sep", "\t")
       .mode("overwrite")
-      .save("/datascience/custom/piis_br_maids")
+      .save("/datascience/custom/maids_br_with_piis_to_push")
   }
 }

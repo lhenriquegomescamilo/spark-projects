@@ -100,7 +100,7 @@ object DataInsights {
       .option("header", "true")
       .load("/data/eventqueue/%s/*.tsv.gz".format(day))
       .filter("campaign_id is not null and event_type = 'tk'")
-      .filter(col("id_partner").isin(partners: _*))
+      .filter(col("id_partner").cast("int") < 1500)//.isin(partners: _*))
       .select(
         "time",
         "id_partner",

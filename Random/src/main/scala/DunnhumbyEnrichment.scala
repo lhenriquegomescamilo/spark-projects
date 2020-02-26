@@ -346,6 +346,8 @@ object DunnhumbyEnrichment {
         nextOption(map ++ Map('from -> value.toString), tail)
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value.toString), tail)
+      case "--audiences" :: tail =>
+        nextOption(map ++ Map('audiences -> false), tail)
     }
   }
 
@@ -355,6 +357,7 @@ object DunnhumbyEnrichment {
     val from = if (options.contains('from)) options('from).toString.toInt else 1
     val nDays =
       if (options.contains('nDays)) options('nDays).toString.toInt else 1
+    val partner = if (options.contains('audiences)) false else true
 
     val spark =
       SparkSession.builder
@@ -369,7 +372,8 @@ object DunnhumbyEnrichment {
       nDays,
       from,
       "'BR', 'CO'", // Countries for PIIs
-      "country IN ('BR', 'CO')" // Filter to be used for the pipeline data
+      "country IN ('BR', 'CO')", // Filter to be used for the pipeline data
+      partner
     )
     splitInPartners(spark, from)
   }

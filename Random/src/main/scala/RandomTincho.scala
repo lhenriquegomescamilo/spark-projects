@@ -1635,7 +1635,7 @@ object RandomTincho {
     val data_new = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .groupBy("domain")
+      .groupBy("content_keys")//groupBy("domain")
       .agg(approx_count_distinct(col("device_id"), 0.03).as("devices_new"))
 
 
@@ -1651,15 +1651,15 @@ object RandomTincho {
     val data_old = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .groupBy("domain")
+      .groupBy("content_keys")//groupBy("domain")
       .agg(approx_count_distinct(col("device_id"), 0.03).as("devices_old"))
 
 
     //data_old.join(data_new,Seq("domain"),"inner")
-    data_old.join(data_new,Seq("domain"),"outer").na.fill(0)
+    data_old.join(data_new,Seq("content_keys"),"outer").na.fill(0)
     .write.format("csv").option("header","true")
     .mode(SaveMode.Overwrite)
-    .save("/datascience/custom/domains_scrapper_2102_all_doms")
+    .save("/datascience/custom/domains_scrapper_2102_all_kws")
 
   }
 
