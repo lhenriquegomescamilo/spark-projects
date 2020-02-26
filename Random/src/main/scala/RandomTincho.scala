@@ -1709,10 +1709,12 @@ object RandomTincho {
   }
 
   def enrichment_br(spark:SparkSession){
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(since)
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     val since = 1
     val ndays = 30
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since)
     val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_triplets/segments/"
     val dfs = days.map(day => path + "day=%s/".format(day) + "country=BR")
