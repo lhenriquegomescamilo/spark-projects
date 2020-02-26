@@ -49,13 +49,14 @@ object EquifaxHomes {
 
     //Aca levantamos lo que acabamos de crear y nos quedamos sólo con el device_id hash. 
 
-    val country_output = Map
+    val country_output_dict = Map
     ("argentina" -> "AR",
       "CL" -> "CL", 
       "mexico" -> "MX",
       "CO"-> "CO",
       "PE"-> "PE")
 
+    val actual_country = country_output_dict(value_dictionary("country")).toString
  
     val today = (java.time.LocalDate.now)
     val date = today.format(DateTimeFormatter.ofPattern("yyyy-MM")).toString
@@ -68,6 +69,6 @@ object EquifaxHomes {
     .option("header",true)
     .option("delimiter","\t") 
     .mode(SaveMode.Overwrite)
-    .save("/datascience/geo/NSEHomes/monthly/equifax/to_push/%s/%s".format(date,country_output(value_dictionary("country"))))
+    .save("/datascience/geo/NSEHomes/monthly/equifax/to_push/%s/%s".format(date,actual_country)
   }
 }
