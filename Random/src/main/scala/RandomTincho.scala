@@ -1708,6 +1708,40 @@ object RandomTincho {
   
   }
 
+  def enrichment_br(spark:SparkSession){
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since)
+    val since = 1
+    val ndays = 30
+    val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments/"
+    val dfs = days.map(day => path + "day=%s/".format(day) + "country=BR")
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(
+        x =>
+          spark.read
+            .option("basePath", "/datascience/data_triplets/segments/")
+            .parquet(x)
+            .select("device_id","feature")
+      )
+
+    val segments = List(463, 105154, 105155, 105156, 32, 103977)
+
+    val triplets = dfs.reduce((df1, df2) => df1.union(df2)).filter(col("feature").isin(segments: _*)).select("device_id","feature")
+    
+    val pii = spark.read
+                  .load("/datascience/pii_matching/pii_tuples/")
+                  .filter("country = 'BR' and (nid_sh2 is not null or ml_sh2 is not  null)")
+                  .select("device_id","ml_sh2","nid_sh2")
+
+    val joint = pii.join(triplets,Seq("device_id"),"inner")
+
+    println(joint.select("ml_sh2").distinct.count)
+    println(joint.select("nid_sh2").distinct.count)
+  
+  
+  }
+
 
   def main(args: Array[String]) {
      
@@ -1720,7 +1754,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    analisis_domains(spark)
+    enrichment_br(spark)
     
 
   }
