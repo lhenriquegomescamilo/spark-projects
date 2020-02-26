@@ -51,6 +51,8 @@ object NSEFromHomes {
       .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
       .toList(0)
 
+      println("path_geo_json")
+      
     // Now we parse the Map assigning default values.
     val country =
       if (query.contains("country") && Option(query("country"))
@@ -289,6 +291,8 @@ object NSEFromHomes {
 
     }
     
+    println("al final")
+    println(path_geo_json)
     //Here we move the json after it is processed
     val srcPath = new Path(path_geo_json.toString)
     val destPath = new Path(path_geo_json.toString.replace("/to_process/", "/done/"))
