@@ -13,6 +13,7 @@ import main.scala.crossdevicer.CrossDevicer
 import main.scala.nseassignation.NSEAssignation
 import main.scala.nseassignationchile.NSEAssignationChile
 import main.scala.equifaxhomes.EquifaxHomes
+import main.scala.insighthomes.InsightHomes
 
 import org.apache.log4j.{Level, Logger}
 
@@ -274,6 +275,8 @@ object NSEFromHomes {
   //This creates a file to share with 3rd_parties, the homes from madids are hashed. A key is also created
    EquifaxHomes.create_hash_for_madids(spark,value_dictionary)
 
+  //This creates a kind of pipeline to read homes for insights
+   InsightHomes.create_homes_pipeline(spark,value_dictionary)
 
     // Now we generate the content for the json file.
    if (value_dictionary("push")=="1") {
