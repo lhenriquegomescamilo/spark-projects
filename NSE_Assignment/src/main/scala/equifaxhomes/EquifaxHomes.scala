@@ -8,7 +8,7 @@ import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.SaveMode
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.DateTime
-
+import java.time.format.{ DateTimeFormatter}
 
 object EquifaxHomes {
 
@@ -48,6 +48,18 @@ object EquifaxHomes {
     .save("/datascience/geo/NSEHomes/monthly/equifax/keys/%s_hashed_key".format(value_dictionary("output_file"))) 
 
     //Aca levantamos lo que acabamos de crear y nos quedamos sólo con el device_id hash. 
+
+    val country_output = Map
+    ("argentina" -> "AR",
+      "CL" -> "CL", 
+      "mexico" -> "MX",
+      "CO"-> "CO",
+      "PE"-> "PE")
+
+ 
+    val today = (java.time.LocalDate.now)
+    val date = today.format(DateTimeFormatter.ofPattern("yyyy-MM")).toString
+
     val homes_equifax = 
       homes_are_hashed
     .select("device_id_hash","latitude","longitude")
@@ -56,6 +68,6 @@ object EquifaxHomes {
     .option("header",true)
     .option("delimiter","\t") 
     .mode(SaveMode.Overwrite)
-    .save("/datascience/geo/NSEHomes/monthly/equifax/to_push/%s_a_veraz".format(value_dictionary("output_file")))
+    .save("/datascience/geo/NSEHomes/monthly/equifax/to_push/%s/%s".format(date,country_output(value_dictionary("country"))))
   }
 }
