@@ -399,7 +399,7 @@ val udfGetDomain = udf(
 
 
   //val df_new = getDataURLS(spark, "AR", 15 , 16 )
-  val df_new = getSelectedKeywords(spark,  15 , 36 )
+  val df_new = getSelectedKeywords(spark,  15 , 16 )
   .filter("domain=='zonajobs'")
 
   //println(df_new.groupBy("domain").agg(sum(col("count")) as "total_hits").show())
