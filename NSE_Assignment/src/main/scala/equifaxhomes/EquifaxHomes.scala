@@ -56,6 +56,6 @@ object EquifaxHomes {
     .option("header",true)
     .option("delimiter","\t") 
     .mode(SaveMode.Overwrite)
-    .save("/datascience/geo/NSEHomes/monthly/equifax/to_push".format(value_dictionary("output_file")))
+    .save("/datascience/geo/NSEHomes/monthly/equifax/to_push/%s_a_veraz".format(value_dictionary("output_file")))
   }
 }
