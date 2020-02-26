@@ -55,7 +55,7 @@ object NSEAssignation {
           .withColumn("latitude",col("latitude").cast("Double"))
           .withColumn("longitude",col("longitude").cast("Double"))
     
-    println("esto es pre procesamiento") 
+    //println("esto es pre procesamiento") 
     //homes.show(5)
     //Aplicando geometría a los puntos
 
@@ -68,7 +68,7 @@ object NSEAssignation {
           """)
               
     //safegraphDf.createOrReplaceTempView("user_homes")
-    println("esto es después de asignar geometría") 
+    //println("esto es después de asignar geometría") 
     //safegraphDf.show(5)
 
     safegraphDf
@@ -103,7 +103,7 @@ spatialDf.createOrReplaceTempView("poligonomagico")
 
 //Here we get the modeled homes
 val safegraphDf = get_processed_homes(spark,value_dictionary)
-println("esto es cuando traigo la función") 
+//println("esto es cuando traigo la función") 
 
 //safegraphDf.show(5)
 
@@ -115,7 +115,7 @@ val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
 .drop("pointshape","myshape")
 
-intersection.show(5)
+
 
  intersection.drop("geometry","latitude","longitude","geocode")
       .write
