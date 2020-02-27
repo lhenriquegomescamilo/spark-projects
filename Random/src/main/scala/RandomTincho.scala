@@ -1708,7 +1708,7 @@ object RandomTincho {
   
   }
 
-  def enrichment_br(spark:SparkSession){
+  def enrichment_target_data(spark:SparkSession){
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     val since = 1
@@ -1731,16 +1731,29 @@ object RandomTincho {
 
     val triplets = dfs.reduce((df1, df2) => df1.union(df2)).filter(col("feature").isin(segments: _*)).select("device_id","feature")
     
-    val pii = spark.read
+    val mails = spark.read
                   .load("/datascience/pii_matching/pii_tuples/")
-                  .filter("country = 'BR' and (nid_sh2 is not null or ml_sh2 is not  null)")
-                  .select("device_id","ml_sh2","nid_sh2")
+                  .filter("country = 'BR' and ml_sh2 is not  null")
+                  .select("device_id","ml_sh2")
+                  .withColumnRenamed("ml_sh2","pii")
 
-    val joint = pii.join(triplets,Seq("device_id"),"inner")
+    val nids = spark.read
+                  .load("/datascience/pii_matching/pii_tuples/")
+                  .filter("country = 'BR' and nid_sh2 is not null")
+                  .select("device_id","nid_sh2")
+                  .withColumnRenamed("nid_sh2","pii")
 
-    println(joint.select("ml_sh2").distinct.count)
-    println(joint.select("nid_sh2").distinct.count)
-  
+    val piis = mails.union(nids)
+
+    val joint = piis.join(triplets,Seq("device_id"),"inner")
+                                  .groupBy("pii")
+                                  .agg(collect_list(col("feature")).as("feature"))
+                                  .withColumn("feature", concat_ws(";", col("feature")))
+                                  .select("pii","feature")
+                                  .write
+                                  .format("parquet")
+                                  .mode(SaveMode.Overwrite)
+                                  .save("/datascience/custom/enrichment_target_data")
   
   }
 
@@ -1830,73 +1843,8 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    //report_havas(spark)
-    
-    val detergentes_nid = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
-                        .filter("device_type = 'nid'")
-                        .select("device_id")
-                        .withColumnRenamed("device_id","nid_sh2")
-                        .distinct()
+    enrichment_target_data(spark)
 
-    val detergentes_ml = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
-                            .filter("device_type = 'email'")
-                            .select("device_id")
-                            .withColumnRenamed("device_id","ml_sh2")
-                            .distinct()
-
-    val detergentes_mob = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
-                            .filter("device_type = 'phone'")
-                            .select("device_id")
-                            .withColumnRenamed("device_id","mb_sh2")
-                            .distinct()
-
-    val nids = spark.read.load("/datascience/pii_matching/pii_tuples/")
-                          .filter("country = 'AR' and nid_sh2 is not null")
-                          .select("device_id","nid_sh2")
-                          .distinct()
-
-    val mob = spark.read.load("/datascience/pii_matching/pii_tuples/")
-                      .filter("country = 'AR' and mb_sh2 is not null")
-                      .select("device_id","mb_sh2")
-                      .distinct()
-
-    val mls = spark.read.load("/datascience/pii_matching/pii_tuples/")
-                    .filter("country = 'AR' and ml_sh2 is not null")
-                    .select("device_id","ml_sh2")
-                    .distinct()
-
-    // Get pii data <device_id, pii>
-    val join_nids = detergentes_nid.join(nids,Seq("nid_sh2"),"inner").select("device_id","nid_sh2").withColumnRenamed("nid_sh2","pii")
-    val join_ml = detergentes_ml.join(mls,Seq("ml_sh2"),"inner").select("device_id","ml_sh2").withColumnRenamed("ml_sh2","pii")
-    val join_mob = detergentes_mob.join(mob,Seq("mb_sh2"),"inner").select("device_id","mb_sh2").withColumnRenamed("mb_sh2","pii")
-
-    val piis = join_nids.union(join_ml)
-                        .union(join_mob)
-                        .select("device_id")
-                        .distinct()
-
-
-    // Get Triplets data
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-    val since = 1
-    val ndays = 5
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(since)
-    val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_triplets/segments/"
-    val dfs = days.map(day => spark.read
-                                  .option("basePath", "/datascience/data_triplets/segments/")
-                                  .parquet(path + "day=%s/".format(day) + "country=AR")
-                                  .withColumn("day",lit(day)))
-
-    dfs.reduce((df1, df2) => df1.union(df2)).join(piis,Seq("device_id"),"inner")
-                                            .groupBy("day")
-                                            .agg(approx_count_distinct(col("device_id"), 0.02).as("devices"))
-                                            .write
-                                            .format("parquet")
-                                            .mode(SaveMode.Overwrite)
-                                            .save("/datascience/custom/havas_day")
 
 
   }
