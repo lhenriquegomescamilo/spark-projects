@@ -1766,17 +1766,17 @@ object RandomTincho {
 
     val nids = spark.read.load("/datascience/pii_matching/pii_tuples/")
                           .filter("country = 'AR' and nid_sh2 is not null")
-                          .select("nid_sh2")
+                          .select("device_id","nid_sh2")
                           .distinct()
 
     val mob = spark.read.load("/datascience/pii_matching/pii_tuples/")
                       .filter("country = 'AR' and mb_sh2 is not null")
-                      .select("mb_sh2")
+                      .select("device_id","mb_sh2")
                       .distinct()
 
     val mls = spark.read.load("/datascience/pii_matching/pii_tuples/")
                     .filter("country = 'AR' and ml_sh2 is not null")
-                    .select("ml_sh2")
+                    .select("device_id","ml_sh2")
                     .distinct()
 
     // Get pii data <device_id, pii>
