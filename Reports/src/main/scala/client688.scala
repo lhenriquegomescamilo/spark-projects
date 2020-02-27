@@ -38,7 +38,7 @@ object client688 {
     val columns = "device_id,ip,country,segments,first_party,timestamp".split(",").toList
 
 
-   val path = "/data/eventqueue/%s".format(date_current))
+   val path = "/data/eventqueue/%s".format(date_current)
      
    val df = spark.read.option("sep", "\t")
             .option("header", "true")
