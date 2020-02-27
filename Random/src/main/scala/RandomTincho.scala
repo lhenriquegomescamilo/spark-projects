@@ -1875,8 +1875,29 @@ object RandomTincho {
                         .select("device_id")
                         .distinct()
 
-    println(piis.count())
-    
+
+    // Get Triplets data
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    val since = 1
+    val ndays = 5
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since)
+    val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments/"
+    val dfs = days.map(day => spark.read
+                                  .option("basePath", "/datascience/data_triplets/segments/")
+                                  .parquet(path + "day=%s/".format(day) + "country=AR")
+                                  .withColumn("day",lit(day)))
+
+    dfs.reduce((df1, df2) => df1.union(df2)).join(piis,Seq("device_id"),"inner")
+                                            .groupBy("day")
+                                            .agg(approx_count_distinct(col("device_id"), 0.02).as("devices"))
+                                            .write
+                                            .format("parquet")
+                                            .mode(SaveMode.Overwrite)
+                                            .save("/datascience/custom/havas_day")
+
 
   }
 
