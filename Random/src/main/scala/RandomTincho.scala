@@ -1812,7 +1812,7 @@ object RandomTincho {
 
     val triplets = dfs.reduce((df1, df2) => df1.union(df2)).filter(col("feature").isin(segments: _*)).select("device_id","feature")
 
-    triplets.join(piis,Seq("device_id"),"inner").write.format("parquet").save("/datascience/custom/report_havas")
+    triplets.join(piis,Seq("device_id"),"inner").write.format("parquet").mode(SaveMode.Overwrite).save("/datascience/custom/report_havas")
 
   }
   def main(args: Array[String]) {
