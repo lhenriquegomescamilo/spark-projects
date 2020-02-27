@@ -62,6 +62,7 @@ homes
 .write
 .format("parquet")
 .mode("append")
+.partitionBy("day","country")
 .save("/datascience/data_insights/homes/")
   }
 }
