@@ -300,7 +300,7 @@ object Item2Item {
       var norm = if(colNorms.apply(j) > 0) colNorms.apply(j) else 1.0
       if (i!=j) localMartix.apply(i, j) / norm else diagonalValue
     }
-    println(s"Lookalike LOG: Similarity Matrix - elements non-zero per columns: %s".format(localMartix.colIter.map(col => col.numNonzeros ).toList.toString))
+    println(s"Lookalike LOG: Similarity Matrix - elements non-zero per segments to expand: %s".format(localMartix.colIter.map(col => col.numNonzeros ).toList.toString))
     localMartix = new DenseMatrix(nRows, nCols, values.toArray)
     localMartix
   }
@@ -326,7 +326,7 @@ object Item2Item {
     val hdfs_files = days
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    var df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     
     // backward compatibility (this can cause duplicate devices)
     if (!df.columns.contains("count"))
@@ -336,7 +336,6 @@ object Item2Item {
     if (!df.columns.contains("device_type"))
       df = df.withColumn("device_type", lit("web"))
 
-    
     df = df.select("device_id", "device_type", "activable", "feature", "count")
 
   }
