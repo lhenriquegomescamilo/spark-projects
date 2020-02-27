@@ -10,11 +10,15 @@ mkdir $TEMP_PATH
 
 
 cat $TEMP_PATH'AR/'*.csv > $TEMP_PATH"EQUIFAX_HOMES_AR_$fecha.csv"
+echo "AR compiled on "fecha
 cat $TEMP_PATH'CL/'*.csv > $TEMP_PATH"EQUIFAX_HOMES_CL_$fecha.csv"
+echo "CL compiled on "fecha
 cat $TEMP_PATH'CO/'*.csv > $TEMP_PATH"EQUIFAX_HOMES_CO_$fecha.csv"
+echo "CO compiled on "fecha
 cat $TEMP_PATH'PE/'*.csv > $TEMP_PATH"EQUIFAX_HOMES_PE_$fecha.csv"
+echo "PE compiled on "fecha
 cat $TEMP_PATH'MX/'*.csv > $TEMP_PATH"EQUIFAX_HOMES_MX_$fecha.csv"
-
+echo "MX compiled on "fecha
 #for pe in $(ls -1 $TEMP_PATH'country=PE/'); do mv $TEMP_PATH'country=PE/'$pe $TEMP_PATH"pii_$fecha"'_PE.csv'; done
 
 
