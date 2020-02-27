@@ -1782,7 +1782,7 @@ object RandomTincho {
     // Get pii data <device_id, pii>
     val join_nids = detergentes_nid.join(nids,Seq("nid_sh2"),"inner").select("device_id","nid_sh2").withColumnRenamed("nid_sh2","pii")
     val join_ml = detergentes_ml.join(mls,Seq("ml_sh2"),"inner").select("device_id","ml_sh2").withColumnRenamed("ml_sh2","pii")
-    val join_mob = detergentes_mob.join(mob,Seq("mb_sh2"),"inner").select("device_id","mb_sh2").withColumnRenamed("mob_sh2","pii")
+    val join_mob = detergentes_mob.join(mob,Seq("mb_sh2"),"inner").select("device_id","mb_sh2").withColumnRenamed("mb_sh2","pii")
 
     val piis = join_nids.union(join_ml)
                         .union(join_mob)
