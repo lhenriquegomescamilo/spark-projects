@@ -336,7 +336,7 @@ object Item2Item {
     if (!df.columns.contains("device_type"))
       df = df.withColumn("device_type", lit("web"))
 
-    df = df.select("device_id", "device_type", "activable", "feature", "count")
+    df.select("device_id", "device_type", "activable", "feature", "count")
 
   }
 
