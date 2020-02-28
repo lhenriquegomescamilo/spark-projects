@@ -49,6 +49,7 @@ object Ranlp {
             .option("sep", "\t")
             .load(path)
             .select("text")
+            .na. drop()
 
     val documentAssembler = new DocumentAssembler()               
                            .setInputCol("text")     
