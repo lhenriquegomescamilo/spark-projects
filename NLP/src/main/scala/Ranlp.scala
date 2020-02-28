@@ -192,8 +192,23 @@ val udfGetDomain = udf(
             .select("text")
 
 
+    import com.johnsnowlabs.nlp.{DocumentAssembler}
+    import com.johnsnowlabs.nlp.annotator.{PerceptronModel, PerceptronApproach, SentenceDetector, Tokenizer}
+    import org.apache.spark.ml.Pipeline
+
+    val documentAssembler = new DocumentAssembler()               
+                           .setInputCol("text")     
+                           .setOutputCol("document")     
+                           .setCleanupMode("shrink")
+
+    //val doc_df = documentAssembler.transform(spark_df)
+
+
+    //pipeline??
+    // POS perceptron model spanish?
+    
     val sentenceDetector = new SentenceDetector()
-    .setInputCols("text")
+    .setInputCols("document")
     .setOutputCol("sentence")
 
     val tokenizer = new Tokenizer()
@@ -205,17 +220,31 @@ val udfGetDomain = udf(
     import com.johnsnowlabs.nlp.training.POS
     val trainPOS = POS().readDataset(spark, "./src/main/resources/anc-pos-corpus")
 
+    /**
+    val spanish_pos_path =
+    val spanish_pos = PerceptronModel.load(spanish_pos_path)
+      .setInputCols(Array("sentence", "token"))
+      .setOutputCol("pos")
+
+    *//  
+
     val posTagger = new PerceptronApproach()
     .setInputCols(Array("sentence", "token"))
     .setOutputCol("pos")
     .setNIterations(2)
     .fit(trainPOS)
 
-    val df2 = sentenceDetector.transform(df)
-    val df3 = tokenizer.transform(df2)
-    val df4 = posTagger.transform(df3)
+    val pipeline = new Pipeline().setStages(Array(
+        documentAssembler,
+        sentenceDetector,
+        tokenizer,
+        posTagger
+    ))
 
-    df4.write.format("csv")
+    val doc = pipeline.fit(df).transform(df)
+
+
+    doc.write.format("csv")
       .option("header", "true")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
