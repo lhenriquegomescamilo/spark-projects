@@ -236,7 +236,7 @@ object Dataset {
     joint.write
       .format("parquet")
       .partitionBy("country", "day")
-      .mode("append")
+      .mode("overwrite")
       .save("/datascience/data_demo/datasets/")
   }
 
@@ -254,7 +254,7 @@ object Dataset {
       case "--nDays" :: value :: tail =>
         nextOption(map ++ Map('nDays -> value.toString), tail)
       case "--country" :: value :: tail =>
-        nextOption(map ++ Map('audiences -> value), tail)
+        nextOption(map ++ Map('country -> value), tail)
     }
   }
 
@@ -274,6 +274,7 @@ object Dataset {
       SparkSession.builder
         .appName("Spark devicer")
         .config("spark.sql.files.ignoreCorruptFiles", "true")
+        .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
