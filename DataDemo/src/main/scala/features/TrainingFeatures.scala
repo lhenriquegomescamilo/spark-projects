@@ -34,7 +34,7 @@ object Dataset {
     val hdfs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     val dataset_path =
       "/datascience/data_demo/datasets/country=%s".format(country)
-    val files = hdfs.listStatus(new Path(path))
+    val files = hdfs.listStatus(new Path(dataset_path))
     val last_dataset_path = files
       .map(_.getPath())
       .map(_.toString)
@@ -61,7 +61,7 @@ object Dataset {
       .save("/datascience/data_demo/training/user_agents")
 
     // Then we add the domain as a new URL for each user and store
-    val withDomain = processed
+    val withDomain = dataset_gt
       .withColumn(
         "domain",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
