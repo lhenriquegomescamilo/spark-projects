@@ -48,7 +48,10 @@ object TrainingFeatures {
       .load(last_dataset_path)
 
     // Now we perform the join
-    val dataset_gt = dataset.join(gt, Seq("device_id"), "inner").cache()
+    val dataset_gt = dataset
+      .join(gt, Seq("device_id"), "inner")
+      .withColumn("country", lit(country))
+      .cache()
 
     // First we store the user-agent
     dataset_gt
