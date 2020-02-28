@@ -149,7 +149,7 @@ object TrainingFeatures {
     val raw_data = spark.read
       .format("parquet")
       .load("/datascience/data_demo/training/raw/country=%s".format(country))
-      .withColumn("country", lit("country"))
+      .withColumn("country", lit(country))
 
     // Obtain an id for every URL. Here we filter out those URLs that have only one person visiting it.
     val windowUrl = Window.partitionBy("country").orderBy(col("url"))
