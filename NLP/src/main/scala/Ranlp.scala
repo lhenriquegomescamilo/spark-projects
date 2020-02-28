@@ -182,13 +182,7 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    package com.johnsnowlabs.nlp.annotators.pos.perceptron
-
-    import com.johnsnowlabs.nlp.annotators.common._
-    import com.johnsnowlabs.nlp.serialization.StructFeature
-    import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, HasPretrained, ParamsAndFeaturesReadable}
-    import org.apache.spark.ml.util.Identifiable
-
+    
     val path = "/datascience/scraper/temp_dump/2020-02-10_daily.csv"
     val df = spark.read
             .format("csv")
@@ -208,6 +202,8 @@ val udfGetDomain = udf(
     //.setContextChars(Array("(", ")", "?", "!"))
     //.setSplitChars(Array('-'))
 
+    import com.johnsnowlabs.nlp.training.POS
+    val trainPOS = POS().readDataset(spark, "./src/main/resources/anc-pos-corpus")
 
     val posTagger = new PerceptronApproach()
     .setInputCols(Array("sentence", "token"))
