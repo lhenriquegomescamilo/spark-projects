@@ -13,7 +13,7 @@ import org.apache.hadoop.conf.Configuration
   * The idea of this script is to generate the datasets that will be used to
   * train and predict the demographic attributes. It uses data from URLs and User Agents.
   */
-object Dataset {
+object TrainingFeatures {
 
   def generate_triplets(
       spark: SparkSession,
