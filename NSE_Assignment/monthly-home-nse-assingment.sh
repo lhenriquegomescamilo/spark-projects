@@ -6,9 +6,9 @@ for json in $(hdfs dfs -ls -C /datascience/geo/NSEHomes/monthly/to_process/); do
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g \
-  --executor-memory 8g \
-  --num-executors 10 \
-  --executor-cores 3 \
+  --executor-memory 10g \
+  --num-executors 12 \
+  --executor-cores 2 \
   --queue default \
   --jars geospark-1.2.0.jar,geospark-sql_2.3-1.2.0.jar\
   --conf spark.serializer=org.apache.spark.serializer.KryoSerializer\
