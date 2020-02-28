@@ -1,4 +1,4 @@
-package main.scala
+package main.scala.datasets
 import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
 import org.apache.spark.sql.functions._
 import org.joda.time.{Days, DateTime}
