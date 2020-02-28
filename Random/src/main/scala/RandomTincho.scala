@@ -1883,9 +1883,9 @@ object RandomTincho {
       .map(x =>  spark.read.format("csv").option("header","true").load(pathDone + x.getPath.toString.split("/").last))
       .toList
 
-    val dfs = filesDone.reduce((df1, df2) => df1.unionAll(df2)).select("Timestamp","IP_Address","Device_ID","Device_Type")
+    val df_union = dfs.reduce((df1, df2) => df1.unionAll(df2)).select("Timestamp","IP_Address","Device_ID","Device_Type")
 
-    dfs.write.format("csv").save("/datascience/custom/report_tapad_bridge")
+    df_union.write.format("csv").save("/datascience/custom/report_tapad_bridge")
 
   }
 
