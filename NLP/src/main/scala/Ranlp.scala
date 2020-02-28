@@ -19,6 +19,8 @@ import com.johnsnowlabs.nlp.annotators.sbd.pragmatic._
 import com.johnsnowlabs.nlp.util.io.ResourceHelper
 import com.johnsnowlabs.util.Benchmark
 
+import com.johnsnowlabs.nlp.{DocumentAssembler}
+import com.johnsnowlabs.nlp.annotator.{PerceptronModel, PerceptronApproach, SentenceDetector, Tokenizer}
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -190,11 +192,6 @@ val udfGetDomain = udf(
             .option("sep", "\t")
             .load(path)
             .select("text")
-
-
-    import com.johnsnowlabs.nlp.{DocumentAssembler}
-    import com.johnsnowlabs.nlp.annotator.{PerceptronModel, PerceptronApproach, SentenceDetector, Tokenizer}
-    import org.apache.spark.ml.Pipeline
 
     val documentAssembler = new DocumentAssembler()               
                            .setInputCol("text")     
