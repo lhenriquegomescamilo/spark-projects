@@ -65,6 +65,8 @@ object TrainingFeatures {
 
     // Then we add the domain as a new URL for each user and store
     val withDomain = dataset_gt
+      .withColumn("url", explode(col("urls")))
+      .drop("urls")
       .withColumn(
         "domain",
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
