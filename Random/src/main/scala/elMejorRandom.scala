@@ -960,7 +960,7 @@ val seg = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1",
 val geo = getDataPipeline(spark,"/datascience/geo/safegraph/","30","1","argentina")
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",upper(col("device_id")))
-val keywords = getDataPipeline(spark,"/datascience/data_keywords","30","1","argentina").withColumn("device_id",upper(col("device_id")))
+val keywords = getDataPipeline(spark,"/datascience/data_keywords","30","1","AR").withColumn("device_id",upper(col("device_id")))
 
 sergio.join(ua,Seq("device_id"))
 .repartition(1)
