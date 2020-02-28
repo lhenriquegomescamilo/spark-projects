@@ -214,8 +214,8 @@ val udfGetDomain = udf(
     //.setContextChars(Array("(", ")", "?", "!"))
     //.setSplitChars(Array('-'))
 
-    import com.johnsnowlabs.nlp.training.POS
-    val trainPOS = POS().readDataset(spark, "./src/main/resources/anc-pos-corpus")
+    //import com.johnsnowlabs.nlp.training.POS
+    //val trainPOS = POS().readDataset(spark, "./src/main/resources/anc-pos-corpus")
 
     /**
     val spanish_pos_path =
@@ -224,6 +224,8 @@ val udfGetDomain = udf(
       .setOutputCol("pos")
 
     */  
+
+    val trainPOS = PerceptronModel.pretrained("pos_ud_gsd", lang="es")
 
     val posTagger = new PerceptronApproach()
     .setInputCols(Array("sentence", "token"))
