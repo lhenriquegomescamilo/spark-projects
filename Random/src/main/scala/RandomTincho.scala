@@ -1871,7 +1871,21 @@ object RandomTincho {
                   .withColumn("madids",lower(col("madids")))
                   .distinct
                   .write.format("csv")
-                  .save("/datscience/custom/tapad_madids")
+                  .save("/datascience/custom/tapad_madids")
+
+  }
+  def report_tapad_bridge(spark:SparkSession){
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+    val path = "/data/providers/Bridge/"
+    val dfs = fs
+      .listStatus(new Path(path))
+      .map(x =>  spark.read.format("csv").option("header","true").load(pathDone + x.getPath.toString.split("/").last))
+      .toList
+
+    val dfs = filesDone.reduce((df1, df2) => df1.unionAll(df2)).select("Timestamp","IP_Address","Device_ID","Device_Type")
+
+    dfs.write.format("csv").save("/datascience/custom/report_tapad_bridge")
 
   }
 
@@ -1888,8 +1902,7 @@ object RandomTincho {
     
     report_tapad_madids(spark)
 
-
-
+    report_tapad_bridge(spark)
   }
 
 }
