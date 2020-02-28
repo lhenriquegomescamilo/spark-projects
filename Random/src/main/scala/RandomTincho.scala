@@ -1830,8 +1830,51 @@ object RandomTincho {
     val triplets = dfs.reduce((df1, df2) => df1.union(df2)).filter(col("feature").isin(segments: _*)).select("device_id","feature").distinct()
 
     triplets.join(piis,Seq("device_id"),"inner").write.format("parquet").mode(SaveMode.Overwrite).save("/datascience/custom/report_havas")
+  }
+
+  def report_tapad_madids(spark:SparkSession){
+
+    val madids_factual = spark.read.format("csv").option("sep","\t")
+                              .load("/datascience/devicer/processed/madids_factual/part-00000-3ac5df52-df3c-4bba-b64c-997007ce486d-c000.csv")
+                              .withColumnRenamed("_c1","madids")
+                              .select("madids")
+    val madids_startapp = spark.read.format("csv").option("sep","\t")
+                              .load("/datascience/devicer/processed/madids_startapp/part-00000-d1ed18a6-48a5-4e68-bb5a-a5c303704f45-c000.csv")
+                              .withColumnRenamed("_c1","madids")
+                              .select("madids")
+    // GEO
+    val madids_geo_ar = spark.read.format("csv").option("delimiter","\t")
+                              .load("/datascience/geo/NSEHomes/argentina_365d_home_21-1-2020-12h")
+                              .withColumnRenamed("_c0","madids")
+                              .select("madids")
+
+    val madids_geo_mx = spark.read.format("csv").option("delimiter","\t")
+                          .load("/datascience/geo/NSEHomes/mexico_200d_home_29-1-2020-12h")
+                          .withColumnRenamed("_c0","madids")
+                          .select("madids")
+
+    val madids_geo_cl = spark.read.format("csv").option("delimiter","\t")
+                                  .load("/datascience/geo/NSEHomes/CL_90d_home_29-1-2020-12h")
+                                  .withColumnRenamed("_c0","madids")
+                                  .select("madids")
+
+    val madids_geo_co = spark.read.format("csv").option("delimiter","\t")
+                              .load("/datascience/geo/NSEHomes/CO_90d_home_18-2-2020-12h")
+                              .withColumnRenamed("_c0","madids")
+                              .select("madids")
+
+    madids_factual.union(madids_startapp)
+                  .union(madids_geo_ar)
+                  .union(madids_geo_mx)
+                  .union(madids_geo_cl)
+                  .union(madids_geo_co)
+                  .withColumn("madids",lower(col("madids")))
+                  .distinct
+                  .write.format("csv")
+                  .save("/datscience/custom/tapad_madids")
 
   }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -1843,7 +1886,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    enrichment_target_data(spark)
+    report_tapad_madids(spark)
 
 
 
