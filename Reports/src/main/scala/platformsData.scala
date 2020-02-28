@@ -49,7 +49,8 @@ object platformsData {
       "batch",
       "xp",
       "retroactive",
-      "xd"
+      "xd",
+      "custom"
     )
 
     val devUDF = udf(
