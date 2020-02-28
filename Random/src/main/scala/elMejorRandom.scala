@@ -951,76 +951,47 @@ total
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val typeMap = Map(
-      "coo" -> "web",
-      "web" -> "web",
-      "and" -> "android",
-      "android"->"android",
-      "ios" -> "ios",
-      "con" -> "TV",
-      "dra" -> "drawbridge",
-      "idfa" -> "ios",
-      "aaid"->"android",
-      "unknown"->"unknown") 
-    
-    val mapUDF = udf((dev_type: String) => typeMap(dev_type))
-    
-//Today
-val day_today = (java.time.LocalDate.now).toString.split("-").mkString("")
+  //Acá levantamos al tipito
+val sergio = spark.read.format("csv").load("/datascience/audiences/crossdeviced/maid_sergio.csv_xd").select("_c1","_c2").distinct().toDF("device_id","device_type").select("device_id").withColumn("device_id",upper(col("device_id")))
 
+//acá buscamos en los pipelines
+val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1","AR").withColumn("device_id",upper(col("device_id")))
+val seg = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","AR").withColumn("device_id",upper(col("device_id")))
+val geo = getDataPipeline(spark,"/datascience/geo/safegraph/","30","1","argentina").withColumn("device_id",upper(col("device_id")))
+val keywords = getDataPipeline(spark,"/datascience/data_keywords","30","1","argentina").withColumn("device_id",upper(col("device_id")))
 
-//Argentina
-val ar = spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/NSEHomes/argentina_365d_home_21-1-2020-12h_xd")
-.select("device_type","device_id","GEOID","frequency")
-.withColumn("ESTATE",substring(col("GEOID"), 0, 2))
-.withColumn("device_type",mapUDF(col("device_type")))
-.withColumn("country",lit("AR"))
-.withColumn("day",lit(day_today))
-
-//Chile es medio choto, porque no tiene vien el mapping de device_type
-val cl = spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/NSEHomes/CL_90d_home_29-1-2020-12h_xd")
-.select("device_type","device_id","GEOID","frequency")
-.withColumn("ESTATE",substring(col("GEOID"), 0, 2))
-.withColumn("device_type",mapUDF(col("device_type")))
-.withColumn("country",lit("CL"))
-.withColumn("day",lit(day_today))
-
-
-//Colombia
-val co = spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/NSEHomes/CO_90d_home_18-2-2020-12h_xd")
-.select("device_type","device_id","GEOID","frequency")
-.withColumn("ESTATE",col("GEOID"))
-.withColumn("device_type",mapUDF(col("device_type")))
-.withColumn("country",lit("CO"))
-.withColumn("day",lit(day_today))
-
-//Mexico
-val mx = spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/NSEHomes/mexico_200d_home_29-1-2020-12h_xd")
-.select("device_type","device_id","GEOID","frequency")
-.withColumn("device_type",mapUDF(col("device_type")))
-.withColumn("ESTATE",substring(col("GEOID"), 0, 2))
-.withColumn("country",lit("MX"))
-.withColumn("day",lit(day_today))
-
- val todo = List(ar,cl,co,mx).reduce(_.unionByName (_))
+sergio.join(ua,Seq("device_id"))
+.repartition(1)
 .write
-.format("parquet")
 .mode(SaveMode.Overwrite)
-.partitionBy("day","country")
-.save("/datascience/data_insights/homes/")
+.format("csv")
+.option("header",true)
+.save("/datascience/misc/EquifaxReports/sergio_ua")
 
+sergio.join(seg,Seq("device_id"))
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/misc/EquifaxReports/sergio_triplets")
+
+sergio.join(geo,Seq("device_id"))
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/misc/EquifaxReports/sergio_geo")
+
+
+sergio.join(keywords,Seq("device_id"))
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/misc/EquifaxReports/sergio_keywords")
 
 
 }
