@@ -1880,7 +1880,7 @@ object RandomTincho {
     val path = "/data/providers/Bridge/"
     val dfs = fs
       .listStatus(new Path(path))
-      .map(x =>  spark.read.format("csv").option("header","true").load(pathDone + x.getPath.toString.split("/").last))
+      .map(x =>  spark.read.format("csv").option("header","true").load(path + x.getPath.toString.split("/").last))
       .toList
 
     val df_union = dfs.reduce((df1, df2) => df1.unionAll(df2)).select("Timestamp","IP_Address","Device_ID","Device_Type")
