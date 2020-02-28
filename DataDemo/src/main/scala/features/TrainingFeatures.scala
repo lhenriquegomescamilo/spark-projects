@@ -170,7 +170,7 @@ object TrainingFeatures {
       .load(
         "/datascience/data_demo/training/url_index/country=%s".format(country)
       )
-      .withColumn("country", lit("country"))
+      .withColumn("country", lit(country))
 
     // Get the index for the devices
     val windowUser = Window.partitionBy("country").orderBy(col("device_id"))
@@ -194,7 +194,7 @@ object TrainingFeatures {
         "/datascience/data_demo/training/device_index/country=%s"
           .format(country)
       )
-      .withColumn("country", lit("country"))
+      .withColumn("country", lit(country))
 
     raw_data
       .join(device_idx, Seq("device_id", "country"))
