@@ -13,7 +13,6 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.ml.Pipeline
 import com.johnsnowlabs.nlp._
-import com.johnsnowlabs.nlp.base._
 import com.johnsnowlabs.nlp.annotators._
 import com.johnsnowlabs.nlp.annotators.pos.perceptron._
 import com.johnsnowlabs.nlp.annotators.sbd.pragmatic._
@@ -183,19 +182,6 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    import com.johnsnowlabs.nlp.pretrained.pipelines.en.BasicPipeline
-
-    println(BasicPipeline().annotate("Please parse this sentence. Thanks"))
-
-    val annotations = BasicPipeline().annotate(Array("We are very happy about SparkNLP", "And this is just another sentence"))
-
-    annotations.foreach(println(_, "\n"))
-
-    import spark.implicits._
-
-    val data = Seq("hello, this is an example sentence").toDF("mainColumn")
-
-    println(BasicPipeline().annotate(data, "mainColumn").show())
 
   }
 }
