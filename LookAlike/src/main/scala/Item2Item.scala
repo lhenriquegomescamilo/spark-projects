@@ -188,15 +188,15 @@ object Item2Item {
     // Data aggregation
     val dataTriples = data
       .groupBy("device_id", "feature")
-      .agg(sum("count").cast("int").as("count"))
+      .agg(first("device_type").as("device_type"), first("activable").as("activable"), sum("count").cast("int").as("count"))
 
-    val usersSegmentsData = dataTriples
+    var usersSegmentsData = dataTriples
       .filter(col("feature").isin(segments: _*))   // segment filtering
       .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
-      .select("device_id", "segment_idx", "count")
+      .select("device_id", "device_type", "activable", "segment_idx", "count")
       .rdd
-      .map(row => (row(0), (row(1), row(2))))
-      .groupByKey()  // group by device_id
+      .map(row => ((row(0), row(1), row(2)), (row(3), row(4)))) // < <device_id, device_type, activable>, <segment_idx, count> >
+      .groupByKey()  // group by <device_id, device_type, activable>  Values: Iterable(<segment_idx, count>)
       .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
 
     // Generate similarities matrix
@@ -211,19 +211,13 @@ object Item2Item {
       else
         null
       }
-    /*
-    val usersSegmentsData = dataTriples
-      .filter(col("feature").isin(segments: _*))   // segment filtering
-      .filter(col("shareable") === true ) // only expand shareable devices
-      .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
-      .select("device_id", "device_type", "segment_idx", "count")
-      .rdd
-      .map(row => ((row(0), row(1)), (row(1), row(2))))
-      .groupByKey()  // group by (device_id, device_type)
-      .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
 
-    */
     println("LOOKALIKE LOG: Expansion")
+    // it applies "activable" filter for BR 
+    if((isOnDemand && country == "BR")){
+      usersSegmentsData = usersSegmentsData.filter(row => row._1._3  == 1)
+    }
+
     expand(spark,
            usersSegmentsData,
            expandInput,
@@ -236,177 +230,11 @@ object Item2Item {
   }
 
 
-  /*
-  * Run a test to get precision and recall metrics for the first kth expansions in a country of all standard segments.
-  */
-  def runTestTaxo(spark: SparkSession,
-                  country: String,
-                  nDays: Int = -1,
-                  nDaysSegment: Int = 0,
-                  simMatrixHits: String = "binary",
-                  simThreshold: Double = 0.05,
-                  predMatrixHits: String = "binary",
-                  k: Int = 1000) {
-    import spark.implicits._
-    val expandInput = getSegmentsToTest(k)
-    val metaInput: Map[String, String] = Map("country" -> country, "job_id" -> "")
-
-    val nSegmentToExpand = expandInput.length
-    val baseFeatureSegments = getBaseFeatureSegments()
-    val extraFeatureSegments = getExtraFeatureSegments()
-
-    val segmentsToExpand = expandInput.map(row=> row("segment_id").toString)
-
-    // 1) Read the data
-    val data = {
-      if (nDaysSegment <= nDays)
-        getDataTriplets(spark, country, nDays) 
-      else
-        getDataTriplets(spark, country, nDays)
-        .union(getDataTripletsSegmentsToExpand(spark, segmentsToExpand, country, nDaysSegment - nDays, nDays))
-    }
-
-    // Create segment index
-    var segments = segmentsToExpand // First: segments to expand
-    segments ++= baseFeatureSegments.toSet.diff(segments.toSet).toList // Then: segments used as features
-    segments ++= extraFeatureSegments.toSet.diff(segments.toSet).toList 
-
-    val segmentToIndex = segments.zipWithIndex.toMap
-    val dfSegmentIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
-
-    val baseSegmentsIdx = baseFeatureSegments.map(seg => segmentToIndex(seg))
-
-    // Data aggregation
-    val dataTriples = data
-      .groupBy("device_id", "feature")
-      .agg(sum("count").cast("int").as("count"))
-
-    val usersSegmentsData = dataTriples
-      .filter(col("feature").isin(segments: _*))   // segment filtering
-      .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
-      .select("device_id", "segment_idx", "count")
-      .rdd
-      .map(row => (row(0), (row(1), row(2))))
-      .groupByKey()  // group by device_id
-      .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
-
-      println("Data - Users")
-      println(usersSegmentsData.count())
-
-      // Generate similarities matrix
-      val simMatrix = getSimilarities(spark,
-                                      usersSegmentsData,
-                                      segments.size,
-                                      nSegmentToExpand,
-                                      simThreshold,
-                                      simMatrixHits,
-                                      true)
-      expand(spark,
-            usersSegmentsData,
-            expandInput,
-            segmentToIndex,
-            metaInput,
-            simMatrix,
-            predMatrixHits,
-            true)
-    
-  }
-
-  /*
-  * It generates an expansion from a splited audience in train/test.
-  */
-  def runTestOnDemmand(spark: SparkSession,
-                       country: String,
-                       segmentId: String,
-                       nDays: Int = -1,
-                       nDaysSegment: Int = 0,
-                       simMatrixHits: String = "binary",
-                       simThreshold: Double = 0.05,
-                       predMatrixHits: String = "binary",
-                       size: Int = 1000) {
-    import spark.implicits._
-
-    val metaInput: Map[String, String] = Map("country" -> country,
-                                             "output_name" -> "test_%s".format(segmentId),
-                                             "job_id" -> "")
-    var expandInput: List[Map[String, Any]] = List(Map("segment_id" -> segmentId,
-                                                       "dst_segment_id" -> segmentId,
-                                                       "size" -> size))
-
-    val baseFeatureSegments = getBaseFeatureSegments()
-    val extraFeatureSegments = getExtraFeatureSegments()
-
-    val nSegmentToExpand = expandInput.length
-
-    println("LOOKALIKE LOG: Test Ondemand  - Country: " + country + " - nSegments: " + nSegmentToExpand.toString + " - Output: " +  metaInput("output_name"))
-
-    var nDaysData = if(nDays != -1 ) nDays else if (List("AR", "MX") contains country) 15 else 30
-    
-    // Read data
-    println("LOOKALIKE LOG: Model training")
-    val data_triplets = getDataTriplets(spark, country, nDays)
-                        .filter($"feature" =!= segmentId)
-                        .select("device_id", "feature", "count")
-      
-    val data_test = spark.read.load("/datascience/custom/lookalike_ids")
-                     .select("device_id", "feature")
-                     .filter($"feature" === segmentId)
-                     .withColumn("count", lit(1))
-
-    val data = data_triplets.union(data_test)
-
-    // Create segment index
-    var segments = expandInput.map(row=> row("segment_id").toString) // First: segments to expand
-    segments ++= baseFeatureSegments.toSet.diff(segments.toSet).toList // Then: segments used as features
-    segments ++= extraFeatureSegments.toSet.diff(segments.toSet).toList 
-
-    val segmentToIndex = segments.zipWithIndex.toMap
-    val dfSegmentIndex = segments.zipWithIndex.toDF("feature", "segment_idx")
-
-    val baseSegmentsIdx = baseFeatureSegments.map(seg => segmentToIndex(seg))
-
-    // Data aggregation
-    val dataTriples = data
-      .groupBy("device_id", "feature")
-      .agg(sum("count").cast("int").as("count"))
-
-    val usersSegmentsData = dataTriples
-      .filter(col("feature").isin(segments: _*))   // segment filtering
-      .join(broadcast(dfSegmentIndex), Seq("feature")) // add segment column index
-      .select("device_id", "segment_idx", "count")
-      .rdd
-      .map(row => (row(0), (row(1), row(2))))
-      .groupByKey()  // group by device_id
-      .filter(row => row._2.map(t => t._1.toString.toInt).exists(baseSegmentsIdx.contains)) // Filter users who contains any base segments
-
-    // Generate similarities matrix
-    val simMatrix: Matrix = {
-      if(!existsTmpFiles(spark, metaInput)("scores"))
-        getSimilarities(spark,
-          usersSegmentsData,
-          segments.size,
-          nSegmentToExpand,
-          simThreshold,
-          simMatrixHits)
-      else
-        null
-      }
-
-    println("LOOKALIKE LOG: Expansion")
-    expand(spark,
-           usersSegmentsData,
-           expandInput,
-           segmentToIndex,
-           metaInput,
-           simMatrix,
-           predMatrixHits)  
-  }
-
   /**
   * It generates the items to items matrix to make predictions.
   */
   def getSimilarities(spark: SparkSession,
-                      data: RDD[(Any, Iterable[(Any, Any)])],
+                      data: RDD[((Any, Any, Any), Iterable[(Any, Any)])], // (<device_id, device_type, activable>, Iterable(<segment_idx, count>)
                       nSegments: Int,
                       nSegmentToExpand: Int,
                       simThreshold: Double = 0.05,
@@ -472,7 +300,7 @@ object Item2Item {
       var norm = if(colNorms.apply(j) > 0) colNorms.apply(j) else 1.0
       if (i!=j) localMartix.apply(i, j) / norm else diagonalValue
     }
-    println(s"Lookalike LOG: Similarity Matrix - elements non-zero per columns: %s".format(localMartix.colIter.map(col => col.numNonzeros ).toList.toString))
+    println(s"Lookalike LOG: Similarity Matrix - elements non-zero per segments to expand: %s".format(localMartix.colIter.map(col => col.numNonzeros ).toList.toString))
     localMartix = new DenseMatrix(nRows, nCols, values.toArray)
     localMartix
   }
@@ -498,13 +326,18 @@ object Item2Item {
     val hdfs_files = days
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*).select("device_id", "feature")
-    // val df = spark.read.option("basePath", path)
-    //.parquet(hdfs_files: _*)
-    //.select("device_id", "shareable", "device_type", "feature")
+    var df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+    
+    // backward compatibility (this can cause duplicate devices)
+    if (!df.columns.contains("count"))
+      df = df.withColumn("count", lit(1))
+    if (!df.columns.contains("activable"))
+      df = df.withColumn("activable", lit(1))
+    if (!df.columns.contains("device_type"))
+      df = df.withColumn("device_type", lit("web"))
 
-    // force count to 1 - if column doesn't exists, it creates it
-    df.withColumn("count", lit(1))
+    df.select("device_id", "device_type", "activable", "feature", "count")
+
   }
 
 
@@ -528,13 +361,12 @@ object Item2Item {
   * For each segment, it calculates a score value for all users and generates the expansion.
   */
   def expand(spark: SparkSession,
-              data: RDD[(Any, Iterable[(Any, Any)])],
+              data: RDD[((Any, Any, Any), Iterable[(Any, Any)])], // (<device_id, device_type, activable>, Iterable(<segment_idx, count>)
               expandInput: List[Map[String, Any]] ,
               segmentToIndex: Map[String, Int],
               metaParameters: Map[String, String],
               similartyMatrix: Matrix,
-              predMatrixHits: String = "binary",
-              isTest: Boolean = false) =  {
+              predMatrixHits: String = "binary") =  {
     import spark.implicits._
     import org.apache.spark.mllib.rdd.MLPairRDDFunctions.fromPairRDD
     import org.apache.spark.sql.expressions.Window
@@ -545,7 +377,7 @@ object Item2Item {
     val jobId = metaParameters("job_id")
     val isOnDemand = jobId.length > 0
     
-    val minUserSegments = if(isTest) 2 else 1
+    val minUserSegments = 1
 
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
 
@@ -553,16 +385,18 @@ object Item2Item {
     val indexTmpPath = getTmpPathNames(metaParameters)("indexed")
 
     if (!existsTmpFiles(spark, metaParameters)("indexed")){
+
       // generte data to store
       data
         .filter(row => row._2.size >= minUserSegments) // filter users
-        .zipWithIndex() // <device_id, device_idx>
-        .map(tup => (tup._2.toLong, 
-                    tup._1._1.toString,
-                    tup._1._2.map(t => t._1.toString.toInt).toArray,
-                    tup._1._2.map(t => t._2.toString.toInt).toArray )
-        ) // <device_idx, device_id, array segments, array counts>
-        .toDF("device_idx", "device_id", "segments", "counts")
+        .zipWithIndex() // <(<device_id, device_type, activable>, Iterable(<segment_idx, count>), device_idx>
+        .map(tup => (tup._2.toLong, // device_idx
+                     tup._1._1._1.toString, // device_id
+                     tup._1._1._2.toString, // device_type
+                     tup._1._2.map(t => t._1.toString.toInt).toArray, // segment_idx array 
+                     tup._1._2.map(t => t._2.toString.toInt).toArray ) // counts array
+        ) 
+        .toDF("device_idx", "device_id", "device_type", "segments", "counts")
             .write
             .mode(SaveMode.Overwrite)
             .format("parquet")
@@ -570,43 +404,22 @@ object Item2Item {
     } 
 
     // reload indexed data
-    var indexedData = spark.read.load(indexTmpPath).as[(Long, String, Array[Int], Array[Double])].rdd
+    var indexedData = spark.read.load(indexTmpPath).as[(Long, String, String, Array[Int], Array[Double])].rdd
+    // <device_idx, device_id, device_type, segment_idx array, counts array>
 
     var nSegments = segmentToIndex.size
-
-    //IndexedRow -> new (index: Long, vector: Vector) 
-    /*
-    var indexedRows: RDD[IndexedRow] = {
-      if (predMatrixHits == "count"){
-        println(s"User matrix: counts")
-        indexedData
-        .map(row => new IndexedRow(row._1, Vectors.sparse(nSegments, row._3, row._4).toDense.asInstanceOf[Vector]))
-      }
-      else if (predMatrixHits == "normalized"){
-        println(s"User matrix: normalized count")
-        indexedData
-          .map(row => (row._1, row._3, row._4, row._4.sum)) // sum counts by device id
-          .map(row => new IndexedRow(row._1,Vectors.sparse(nSegments, row._2, row._3.map(t => t/row._4)).toDense.asInstanceOf[Vector]))
-      }
-      else{
-        println(s"User matrix: binary")
-        indexedData
-        .map(row => (row._1, row._3, row._4, row._4.sum)) // sum counts by device id
-        .map(row => new IndexedRow(row._1,Vectors.sparse(nSegments, row._3, Array.fill(row._3.size)(1.0)).toDense.asInstanceOf[Vector]))
-      }
-    }*/
 
     var indexedRows: RDD[IndexedRow] = {
       if (predMatrixHits == "count"){
         println(s"User matrix: count")
         indexedData  
-          .map(row => (row._1, row._3, row._4, Math.sqrt(row._4.map(v => v*v).sum))) //<device_idx, array(segment_idx), array(counts), l2norm >
+          .map(row => (row._1, row._4, row._5, Math.sqrt(row._5.map(v => v*v).sum))) //<device_idx, array(segment_idx), array(counts), l2norm >
           .map(row => new IndexedRow(row._1,Vectors.sparse(nSegments, row._2, row._3.map(t => t/row._4)).toDense.asInstanceOf[Vector]))
       }
       else{
         println(s"User matrix: binary")
         indexedData
-        .map(row => (row._1, row._3, Array.fill(row._3.size)(1.0), Math.sqrt(row._3.size)))  //<device_idx, array(segment_idx), array(binary), l2norm >
+        .map(row => (row._1, row._4, Array.fill(row._4.size)(1.0), Math.sqrt(row._4.size)))  //<device_idx, array(segment_idx), array(binary), l2norm >
         .map(row => new IndexedRow(row._1,Vectors.sparse(nSegments, row._2, row._3.map(t => t/row._4)).toDense.asInstanceOf[Vector]))
       }
     }
@@ -638,6 +451,7 @@ object Item2Item {
 
     // reload scores
     val scoreMatrix = spark.read.load(scoresTmpPath).as[(Long, Vector)].rdd
+    //<device_idx, scores vector>
 
     // It gets the score thresholds to get at least k elements per segment.
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
@@ -676,20 +490,14 @@ object Item2Item {
       .filter(tup=> tup._2.reduce(_||_))
       // <device_idx, array(boolean))>
 
-    if(!isTest){
-      val devicesId = indexedData.map(t => (t._1, t._2)) // <device_idx, device_id>
-      val userPredictions = maskedScores.join(devicesId).map(tup => (tup._2._2, tup._2._1))
-      // <device_id, array(boolean)>
+    
+    // indexedData: <device_idx, device_id, device_type, segment_idx array, counts array>
+    val devicesInfo = indexedData.map(t => (t._1, (t._2, t._3))) // <device_idx, (device_id, "device_type")>
+    val userPredictions = maskedScores.join(devicesInfo).map(tup => (tup._2._2, tup._2._1))
+      // <(device_id, "device_type"), array(boolean)>
 
-      writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters, resultDescription)
-    }
-    else{ 
-      val maskedRelevant = indexedData.map(t => (t._1, selSegmentsIdx.map(segmentIdx => (t._3 contains segmentIdx)).toArray))
-      val defaultPrediction = selSegmentsIdx.map(segmentIdx => false).toArray
-      val userPredictions = maskedScores.rightOuterJoin(maskedRelevant).map(tup => (tup._2._2, tup._2._1.getOrElse(defaultPrediction) ))
-      writeTest(spark, userPredictions,  expandInput, segmentToIndex, metaParameters)
-    }
-
+    writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters, resultDescription)
+    
     // delete temp files
     fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
     fs.delete(new org.apache.hadoop.fs.Path(scoresTmpPath), true)
@@ -734,7 +542,7 @@ object Item2Item {
   * Generate output files
   */
   def writeOutput(spark: SparkSession,
-                  data: RDD[(String, Array[(Boolean)])],
+                  data: RDD[((String, String), Array[(Boolean)])], // <(device_id, "device_type"), array(boolean)>
                   expandInput: List[Map[String, Any]],
                   segmentToIndex: Map[String, Int],
                   metaParameters: Map[String, String],
@@ -752,22 +560,16 @@ object Item2Item {
       val dataExpansion = data
         .map(
             tup => 
-              (tup._1, // device_id
+              (tup._1._1, // device_id
               selSegmentsIdx
                 .filter(segmentIdx => tup._2.apply(segmentIdx)) // select segments to expand
                 .map(segmentIdx => dstSegmentIdMap(segmentIdx)) // get segment label
                 .mkString(",") // toString
               )              
         )
-
+      
+      var outputDF = spark.createDataFrame(dataExpansion).toDF("device_id", "segments")
       // save
-      var outputDF = spark.createDataFrame(dataExpansion).toDF("device_id", "segments" )
-      // if there is only a segment to expand (most common case)
-      if (expandInput.length == 1){
-        // it limits the number of rows to avoid large differences with 'size' parameter.
-        var limit = (expandInput.head("dst_segment_id").toString.toInt * 1.1).toInt
-        outputDF = outputDF.limit(limit)
-      }
       outputDF
         .write
         .format("csv")
@@ -780,19 +582,33 @@ object Item2Item {
     }
     else{ // on demand expansion
       val jobId = metaParameters("job_id")
+      val filePath = "/datascience/data_lookalike/expansion/ondemand/%s/".format(outputName)
 
       val dataExpansion = data
       .flatMap(
           tup => 
             (selSegmentsIdx
               .filter(segmentIdx => tup._2.apply(segmentIdx)) // select segments to expand
-              .map(segmentIdx => ("web", tup._1.toString, dstSegmentIdMap(segmentIdx))) // <device_type, device_id, segment>
+              .map(segmentIdx => (tup._1._2.toString, tup._1._1.toString, dstSegmentIdMap(segmentIdx))) // <device_type, device_id, segment>
             )   
       )
-      val filePath = "/datascience/data_lookalike/expansion/ondemand/%s/".format(outputName)
+
+      var outputDF = spark.createDataFrame(dataExpansion).toDF("device_type", "device_id", "segment")
+
+      // if there is only a segment to expand (most common case)
+      if (expandInput.length == 1){
+        // it limits the number of rows to avoid large differences with 'size' parameter.
+        var q = (expandInput.head("size").toString.toInt * 1.1).toInt
+        var limit = (q * 1.1).toInt
+        outputDF = outputDF.limit(limit)
+        println("Lookalike LOG: Extra limit of output devices = %s - size param = %s".format(limit, q))
+      }
+      else{
+        println("Lookalike LOG: segments to expand = %s - no extra limit".format(expandInput.length))
+      }
+  
       // save
-      spark.createDataFrame(dataExpansion)
-        .toDF("device_type", "device_id", "segment")
+      outputDF
         .write
         .format("csv")
         .option("sep", "\t")
@@ -839,82 +655,6 @@ object Item2Item {
     val os = fs.create(hadoopPath)
     os.write(json_content.getBytes)
     os.close()
-  }
-
-  /*
-  * It calculates precision, recall and F1 metrics.
-  */
-  def writeTest(spark: SparkSession,
-           data: RDD[(Array[(Boolean)], Array[(Boolean)])],
-           expandInput: List[Map[String, Any]] ,
-           segmentToIndex: Map[String, Int],
-           metaParameters: Map[String, String],         
-           minSegmentSupport: Int = 100){
-  import spark.implicits._ 
-
-  val country = metaParameters("country")
-
-  val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
-  val dstSegmentIdMap = expandInput.map(m => 
-                  segmentToIndex(m("segment_id").toString) -> m("dst_segment_id").toString).toMap
-
-  // <segmentIdx> -> (nP, nSelected, nTP)
-  var relevanCount = data
-    .flatMap(tup => selSegmentsIdx.map(
-        colIdx => (colIdx, (if(tup._1.apply(colIdx)) 1 else 0, 
-                            if(tup._2.apply(colIdx)) 1 else 0, 
-                            if(tup._1.apply(colIdx) && tup._2.apply(colIdx)) 1 else 0)
-                  ) 
-        )
-    )
-    .reduceByKey(
-      (a, b) => ((a._1 + b._1), (a._2 + b._2), (a._3 + b._3))
-    )
-    .collect
-    .toMap
-
-   // (segment_id, count, selected, prec, recall)
-    var metrics = selSegmentsIdx
-        .map(colIdx => (dstSegmentIdMap(colIdx).toString,
-                        relevanCount(colIdx)._1.toDouble, 
-                        relevanCount(colIdx)._2.toDouble,  
-                        if(relevanCount(colIdx)._2 > 0) 
-                          relevanCount(colIdx)._3.toDouble / relevanCount(colIdx)._2.toDouble
-                        else 0.0,
-                        if(relevanCount(colIdx)._1 > 0)
-                          relevanCount(colIdx)._3.toDouble / relevanCount(colIdx)._1.toDouble
-                        else 0.0
-                      )
-        ).toList
-
-    var dfMetrics = metrics
-      .toDF("segment", "nRelevant", "nSelected", "precision", "recall" )
-      .withColumn("f1", when($"precision" + $"recall" > 0.0, ($"precision" * $"recall") / ( $"precision" + $"recall") * 2.0).otherwise(0.0))
-      .filter($"nRelevant" >= minSegmentSupport)
-      .sort(desc("precision"))
-    
-    var dfAvgMetrics = dfMetrics
-      .select(
-        lit("Avg").as("segmentIdx"),
-        avg($"nRelevant").as("nRelevant"),
-        avg($"nSelected").as("nSelected"),
-        avg($"precision").as("precision"),
-        avg($"recall").as("recall"),
-        avg($"f1").as("f1")
-      )
-    var df = dfMetrics.union(dfAvgMetrics)
-    
-    df
-      .write
-      .format("csv")
-      .option("sep", ",")
-      .option("header", "true")
-      .mode(SaveMode.Overwrite)
-      .save(
-      "/datascience/data_lookalike/metrics/country=%s/".format(country)
-      )
-    
-    df.show(expandInput.length + 1, false)
   }
 
   /***
@@ -1009,43 +749,6 @@ object Item2Item {
     map
   }
 
-
-  /***
-  Get segments to use to expand in runTest.
-  ***/
-  def getSegmentsToTest(
-      size: Int
-  ): List[Map[String, Any]] = {
-
-    // 1) Segments to expand
-    val segments =
-      """26,32,36,59,61,82,85,92,104,118,129,131,141,144,145,147,149,150,152,154,155,158,160,165,166,177,178,210,213,218,224,225,226,230,245,
-      247,250,264,265,270,275,276,302,305,311,313,314,315,316,317,318,322,323,325,326,352,353,354,356,357,358,359,363,366,367,374,377,378,379,380,384,385,
-      386,389,395,396,397,398,399,401,402,403,404,405,409,410,411,412,413,418,420,421,422,429,430,432,433,434,440,441,446,447,450,451,453,454,456,457,458,
-      459,460,462,463,464,465,467,895,898,899,909,912,914,915,916,917,919,920,922,923,928,929,930,931,932,933,934,935,937,938,939,940,942,947,948,949,950,
-      951,952,953,955,956,957,1005,1116,1159,1160,1166,2064,2623,2635,2636,2660,2719,2720,2721,2722,2723,2724,2725,2726,2727,2733,2734,2735,2736,2737,2743,
-      3010,3011,3012,3013,3014,3015,3016,3017,3018,3019,3020,3021,3022,3023,3024,3025,3026,3027,3028,3029,3030,3031,3032,3033,3034,3035,3036,3037,3038,3039,
-      3040,3041,3042,3043,3044,3045,3046,3047,3048,3049,3050,3051,3055,3076,3077,3084,3085,3086,3087,3302,3303,3308,3309,3310,3388,3389,3418,3420,3421,3422,
-      3423,3450,3470,3472,3473,3564,3565,3566,3567,3568,3569,3570,3571,3572,3573,3574,3575,3576,3577,3578,3579,3580,3581,3582,3583,3584,3585,3586,3587,3588,
-      3589,3590,3591,3592,3593,3594,3595,3596,3597,3598,3599,3600,3730,3731,3732,3733,3779,3782,3843,3844,3913,3914,3915,4097,
-      5025,5310,5311,35360,35361,35362,35363"""
-        .replace("\n", "")
-        .split(",")
-        .toList
-
-    var expandInputs = List[Map[String, Any]]()
-
-    for (segmentId <- segments) {
-      val actual_map: Map[String, Any] = Map(
-        "segment_id" -> segmentId,
-        "dst_segment_id" -> segmentId,
-        "size" -> size
-      )
-
-      expandInputs = expandInputs ::: List(actual_map)
-    }
-    expandInputs
-  }
 
   /*
   * It reads the segments used to make predictions.
@@ -1168,8 +871,6 @@ object Item2Item {
         nextOption(map ++ Map('predHits -> value), tail)
       case "--filePath" :: value :: tail =>
         nextOption(map ++ Map('filePath -> value), tail)
-      case "--test" :: value :: tail =>
-        nextOption(map ++ Map('test -> value), tail)
       case "--testCountry" :: value :: tail =>
         nextOption(map ++ Map('testCountry -> value), tail)
       case "--testSize" :: value :: tail =>
@@ -1210,8 +911,6 @@ object Item2Item {
       if (options.contains('simHits)) options('simHits) else "binary"
     val predHits =
       if (options.contains('predHits)) options('predHits) else "binary"
-    val isTest =
-      if (options.contains('test)) true else false
     val testCountry =
       if (options.contains('testCountry)) options('testCountry) else "PE"
     val testSize =
@@ -1229,13 +928,7 @@ object Item2Item {
     val useStartapSegments = 
      if (options.contains('useStartapSegments)) options('useStartapSegments).toBoolean else false
 
-    if(isTest){
-      if(testSegmentId.length > 0)
-        runTestOnDemmand(spark, testCountry, testSegmentId, nDays, nDaysSegment, simHits, simThreshold, predHits, testSize)
-      else
-        runTestTaxo(spark, testCountry, nDays, nDaysSegment, simHits, simThreshold, predHits, testSize)
-    }
-    else if(filePath.length > 0)
+    if(filePath.length > 0)
       runExpand(spark, filePath, nDays, nDaysSegment, simHits, simThreshold, predHits,
                 useFactualSegments, useStartapSegments)
     else

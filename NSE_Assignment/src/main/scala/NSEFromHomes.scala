@@ -11,7 +11,9 @@ import org.apache.hadoop.conf.Configuration
 import main.scala.homejobs.HomeJobs
 import main.scala.crossdevicer.CrossDevicer
 import main.scala.nseassignation.NSEAssignation
+import main.scala.nseassignationchile.NSEAssignationChile
 import main.scala.equifaxhomes.EquifaxHomes
+import main.scala.insighthomes.InsightHomes
 
 import org.apache.log4j.{Level, Logger}
 
@@ -51,6 +53,8 @@ object NSEFromHomes {
       .map(fields => fields.getValuesMap[Any](fields.schema.fieldNames))
       .toList(0)
 
+      println("path_geo_json")
+      
     // Now we parse the Map assigning default values.
     val country =
       if (query.contains("country") && Option(query("country"))
@@ -256,14 +260,23 @@ object NSEFromHomes {
 
     // Here we perform the operation
 
+    //This creates the probable homes
    HomeJobs.get_homejobs(spark, value_dictionary)
-   
-   NSEAssignation.nse_join(spark, value_dictionary)
 
+   //This reads the probable homes and assigns an NSE
+  if (value_dictionary("country")=="CL") {
+     NSEAssignationChile.nse_join(spark, value_dictionary)}
+  else {NSEAssignation.nse_join(spark, value_dictionary)}
+   
+   
+  //This crossdevices de MADIDS to get web cookies
    CrossDevicer.cross_device(spark,value_dictionary,column_name = "device_id",header = "true")
    
+  //This creates a file to share with 3rd_parties, the homes from madids are hashed. A key is also created
    EquifaxHomes.create_hash_for_madids(spark,value_dictionary)
 
+  //This creates a kind of pipeline to read homes for insights
+   InsightHomes.create_homes_pipeline(spark,value_dictionary)
 
     // Now we generate the content for the json file.
    if (value_dictionary("push")=="1") {
@@ -290,9 +303,12 @@ object NSEFromHomes {
     }
     
     //Here we move the json after it is processed
+    val conf = new Configuration()
+    val fs = FileSystem.get(conf)
+
     val srcPath = new Path(path_geo_json.toString)
     val destPath = new Path(path_geo_json.toString.replace("/to_process/", "/done/"))
-    
+    fs.rename(srcPath, destPath)
 
     }
   }

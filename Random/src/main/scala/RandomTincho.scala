@@ -1708,6 +1708,186 @@ object RandomTincho {
   
   }
 
+  def enrichment_target_data(spark:SparkSession){
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    val since = 1
+    val ndays = 30
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since)
+    val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments/"
+    val dfs = days.map(day => path + "day=%s/".format(day) + "country=BR")
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(
+        x =>
+          spark.read
+            .option("basePath", "/datascience/data_triplets/segments/")
+            .parquet(x)
+            .select("device_id","feature")
+      )
+
+    val segments = List(463, 105154, 105155, 105156, 32, 103977)
+
+    val triplets = dfs.reduce((df1, df2) => df1.union(df2)).filter(col("feature").isin(segments: _*)).select("device_id","feature")
+    
+    val mails = spark.read
+                  .load("/datascience/pii_matching/pii_tuples/")
+                  .filter("country = 'BR' and ml_sh2 is not  null")
+                  .select("device_id","ml_sh2")
+                  .withColumnRenamed("ml_sh2","pii")
+
+    val nids = spark.read
+                  .load("/datascience/pii_matching/pii_tuples/")
+                  .filter("country = 'BR' and nid_sh2 is not null")
+                  .select("device_id","nid_sh2")
+                  .withColumnRenamed("nid_sh2","pii")
+
+    val piis = mails.union(nids)
+
+    val joint = piis.join(triplets,Seq("device_id"),"inner")
+                                  .groupBy("pii")
+                                  .agg(collect_list(col("feature")).as("feature"))
+                                  .withColumn("feature", concat_ws(";", col("feature")))
+                                  .select("pii","feature")
+                                  .write
+                                  .format("parquet")
+                                  .mode(SaveMode.Overwrite)
+                                  .save("/datascience/custom/enrichment_target_data")
+  
+  }
+
+  def report_havas(spark:SparkSession){
+    
+    val detergentes_nid = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
+                        .filter("device_type = 'nid'")
+                        .select("device_id")
+                        .withColumnRenamed("device_id","nid_sh2")
+                        .distinct()
+
+    val detergentes_ml = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
+                            .filter("device_type = 'email'")
+                            .select("device_id")
+                            .withColumnRenamed("device_id","ml_sh2")
+                            .distinct()
+
+    val detergentes_mob = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
+                            .filter("device_type = 'phone'")
+                            .select("device_id")
+                            .withColumnRenamed("device_id","mb_sh2")
+                            .distinct()
+
+    val nids = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                          .filter("country = 'AR' and nid_sh2 is not null")
+                          .select("device_id","nid_sh2")
+                          .distinct()
+
+    val mob = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'AR' and mb_sh2 is not null")
+                      .select("device_id","mb_sh2")
+                      .distinct()
+
+    val mls = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                    .filter("country = 'AR' and ml_sh2 is not null")
+                    .select("device_id","ml_sh2")
+                    .distinct()
+
+    // Get pii data <device_id, pii>
+    val join_nids = detergentes_nid.join(nids,Seq("nid_sh2"),"inner").select("device_id","nid_sh2").withColumnRenamed("nid_sh2","pii")
+    val join_ml = detergentes_ml.join(mls,Seq("ml_sh2"),"inner").select("device_id","ml_sh2").withColumnRenamed("ml_sh2","pii")
+    val join_mob = detergentes_mob.join(mob,Seq("mb_sh2"),"inner").select("device_id","mb_sh2").withColumnRenamed("mb_sh2","pii")
+
+    val piis = join_nids.union(join_ml)
+                        .union(join_mob)
+                        .select("device_id")
+                        .distinct()
+
+    println(piis.count())
+
+    // Get Triplets data
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    val since = 1
+    val ndays = 30
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since)
+    val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments/"
+    val dfs = days.map(day => path + "day=%s/".format(day) + "country=AR")
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(
+        x =>
+          spark.read
+            .option("basePath", "/datascience/data_triplets/segments/")
+            .parquet(x)
+            .select("device_id","feature")
+      )
+
+    val segments = List(129, 61, 141, 302, 144, 2, 3, 4, 5, 6, 7, 8, 9, 352, 35360, 35361, 35362, 35363, 20107,
+                      20108, 20109,20110,20111,20112,20113,20114,20115,20116,20117,20118,20119,20120,20121,20122,
+                      20123,20124,20125,20126)
+
+    val triplets = dfs.reduce((df1, df2) => df1.union(df2)).filter(col("feature").isin(segments: _*)).select("device_id","feature").distinct()
+
+    triplets.join(piis,Seq("device_id"),"inner").write.format("parquet").mode(SaveMode.Overwrite).save("/datascience/custom/report_havas")
+  }
+
+  def report_tapad_madids(spark:SparkSession){
+
+    val madids_factual = spark.read.format("csv").option("sep","\t")
+                              .load("/datascience/devicer/processed/madids_factual/part-00000-3ac5df52-df3c-4bba-b64c-997007ce486d-c000.csv")
+                              .withColumnRenamed("_c1","madids")
+                              .select("madids")
+    val madids_startapp = spark.read.format("csv").option("sep","\t")
+                              .load("/datascience/devicer/processed/madids_startapp/part-00000-d1ed18a6-48a5-4e68-bb5a-a5c303704f45-c000.csv")
+                              .withColumnRenamed("_c1","madids")
+                              .select("madids")
+    // GEO
+    val madids_geo_ar = spark.read.format("csv").option("delimiter","\t")
+                              .load("/datascience/geo/NSEHomes/argentina_365d_home_21-1-2020-12h")
+                              .withColumnRenamed("_c0","madids")
+                              .select("madids")
+
+    val madids_geo_mx = spark.read.format("csv").option("delimiter","\t")
+                          .load("/datascience/geo/NSEHomes/mexico_200d_home_29-1-2020-12h")
+                          .withColumnRenamed("_c0","madids")
+                          .select("madids")
+
+    val madids_geo_cl = spark.read.format("csv").option("delimiter","\t")
+                                  .load("/datascience/geo/NSEHomes/CL_90d_home_29-1-2020-12h")
+                                  .withColumnRenamed("_c0","madids")
+                                  .select("madids")
+
+    val madids_geo_co = spark.read.format("csv").option("delimiter","\t")
+                              .load("/datascience/geo/NSEHomes/CO_90d_home_18-2-2020-12h")
+                              .withColumnRenamed("_c0","madids")
+                              .select("madids")
+
+    madids_factual.union(madids_startapp)
+                  .union(madids_geo_ar)
+                  .union(madids_geo_mx)
+                  .union(madids_geo_cl)
+                  .union(madids_geo_co)
+                  .withColumn("madids",lower(col("madids")))
+                  .distinct
+                  .write.format("csv")
+                  .save("/datascience/custom/tapad_madids")
+
+  }
+  def report_tapad_bridge(spark:SparkSession){
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+    val path = "/data/providers/Bridge/"
+    val dfs = fs
+      .listStatus(new Path(path))
+      .map(x =>  spark.read.format("csv").option("header","true").load(path + x.getPath.toString.split("/").last))
+      .toList
+
+    val df_union = dfs.reduce((df1, df2) => df1.unionAll(df2)).select("Timestamp","IP_Address","Device_ID","Device_Type")
+
+    df_union.write.format("csv").save("/datascience/custom/report_tapad_bridge")
+
+  }
 
   def main(args: Array[String]) {
      
@@ -1720,9 +1900,9 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    analisis_domains(spark)
-    
+    report_tapad_madids(spark)
 
+    report_tapad_bridge(spark)
   }
 
 }
