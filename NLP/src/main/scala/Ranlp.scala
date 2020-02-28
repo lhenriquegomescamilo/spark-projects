@@ -182,6 +182,46 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val path = "/datascience/scraper/temp_dump/2020-02-10_daily.csv"
+    val df = spark.read
+            .format("csv")
+            .option("header", "True")
+            .option("sep", "\t")
+            .load(path)
+            .select("text")
+
+
+    val sentenceDetector = new SentenceDetector()
+    .setInputCols("text")
+    .setOutputCol("sentence")
+
+    val tokenizer = new Tokenizer()
+    .setInputCols("sentence")
+    .setOutputCol("token")
+    .setContextChars(Array("(", ")", "?", "!"))
+    .setSplitChars(Array('-'))
+
+
+    val posTagger = new PerceptronApproach()
+    .setInputCols(Array("sentence", "token"))
+    .setOutputCol("pos")
+    .setNIterations(2)
+    .fit(trainPOS)
+
+    val df2 = sentenceDetector.transform(df)
+    val df3 = tokenizer.transform(df2)
+    val df4 = posTagger.transform(df3)
+
+    df4.write.format("csv")
+      .option("header", "true")
+      .option("sep", "\t")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/testnlp.csv")
+
+
+
+
+
 
   }
 }
