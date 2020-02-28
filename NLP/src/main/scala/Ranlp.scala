@@ -226,7 +226,7 @@ val udfGetDomain = udf(
       .setInputCols(Array("sentence", "token"))
       .setOutputCol("pos")
 
-    *//  
+    */  
 
     val posTagger = new PerceptronApproach()
     .setInputCols(Array("sentence", "token"))
