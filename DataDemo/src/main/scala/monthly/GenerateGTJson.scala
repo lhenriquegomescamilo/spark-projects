@@ -183,8 +183,8 @@ object GenerateGTJson {
     )
 
     val content =
-      """{"xd": 0, "partnerId": "", "query": "country = 'BR' and (array_contains(all_segments, 24621) or (array_contains(all_segments, 2) AND id_partner = 916))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 2, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "country = 'BR' and (array_contains(all_segments, 24622) or (array_contains(all_segments, 3) AND id_partner = 916))"", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 3, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
+      """{"xd": 0, "partnerId": "", "query": "country = 'BR' and (array_contains(all_segments, 24621) or (array_contains(segments, 2) AND id_partner = 916))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 2, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "country = 'BR' and (array_contains(all_segments, 24622) or (array_contains(segments, 3) AND id_partner = 916))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 3, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
     os.write(content.getBytes)
     fs.close()
   }
@@ -203,19 +203,19 @@ object GenerateGTJson {
     val current_month = DateTime.now().toString("yyyyMM")
 
     // AR
-    generate_json_age_ar(spark, conf, current_month)
-    generate_json_genre_ar(spark, conf, current_month)
+    // generate_json_age_ar(spark, conf, current_month)
+    // generate_json_genre_ar(spark, conf, current_month)
 
-    // MX
-    generate_json_genre_mx(spark, conf, current_month)
+    // // MX
+    // generate_json_genre_mx(spark, conf, current_month)
 
-    // CL
-    generate_json_gender_cl(spark, conf, current_month)
-    generate_json_age_cl(spark, conf, current_month)
+    // // CL
+    // generate_json_gender_cl(spark, conf, current_month)
+    // generate_json_age_cl(spark, conf, current_month)
 
     // BR
     generate_json_gender_br(spark, conf, current_month)
-    generate_json_age_br(spark, conf, current_month)
+    // generate_json_age_br(spark, conf, current_month)
 
   }
 }
