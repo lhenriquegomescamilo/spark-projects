@@ -203,19 +203,19 @@ object GenerateGTJson {
     val current_month = DateTime.now().toString("yyyyMM")
 
     // AR
-    // generate_json_age_ar(spark, conf, current_month)
-    // generate_json_genre_ar(spark, conf, current_month)
+    generate_json_age_ar(spark, conf, current_month)
+    generate_json_genre_ar(spark, conf, current_month)
 
-    // // MX
-    // generate_json_genre_mx(spark, conf, current_month)
+    // MX
+    generate_json_genre_mx(spark, conf, current_month)
 
-    // // CL
-    // generate_json_gender_cl(spark, conf, current_month)
-    // generate_json_age_cl(spark, conf, current_month)
+    // CL
+    generate_json_gender_cl(spark, conf, current_month)
+    generate_json_age_cl(spark, conf, current_month)
 
     // BR
     generate_json_gender_br(spark, conf, current_month)
-    // generate_json_age_br(spark, conf, current_month)
+    generate_json_age_br(spark, conf, current_month)
 
   }
 }
