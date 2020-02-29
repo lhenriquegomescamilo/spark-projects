@@ -116,8 +116,8 @@ object GenerateGTJson {
     )
 
     val content =
-      """{"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136487))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 2, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136489))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 3, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
+      """{"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136487))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 2, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136489))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 3, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
     os.write(content.getBytes)
     fs.close()
   }
@@ -136,11 +136,11 @@ object GenerateGTJson {
     )
 
     val content =
-      """{"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136491))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 4, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136493))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 5, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136495))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 6, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136497))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 7, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136499))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 8, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
+      """{"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136491))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 4, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136493))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 5, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136495))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 6, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136497))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 7, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(all_segments, 136499))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 8, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
     os.write(content.getBytes)
     fs.close()
   }
@@ -159,12 +159,12 @@ object GenerateGTJson {
     )
 
     val content =
-      """{"xd": 0, "partnerId": "", "query": "(country = 'BR' and array_contains(all_segments, 24609))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 4, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'BR' and (array_contains(all_segments, 24610) or array_contains(all_segments, 24611)))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 5, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'BR' and (array_contains(all_segments, 24612) or array_contains(all_segments, 24613)))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 6, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'BR' and (array_contains(all_segments, 24614) or array_contains(all_segments, 24615)))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 7, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'BR' and (array_contains(all_segments, 24616) or array_contains(all_segments, 24617)))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 8, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'BR' and (array_contains(all_segments, 24618) or array_contains(all_segments, 24619)))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 9, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
+      """{"xd": 0, "partnerId": "", "query": "(country = 'BR' and array_contains(all_segments, 24609))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 4, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'BR' and (array_contains(all_segments, 24610) or array_contains(all_segments, 24611)))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 5, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'BR' and (array_contains(all_segments, 24612) or array_contains(all_segments, 24613)))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 6, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'BR' and (array_contains(all_segments, 24614) or array_contains(all_segments, 24615)))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 7, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'BR' and (array_contains(all_segments, 24616) or array_contains(all_segments, 24617)))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 8, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'BR' and (array_contains(all_segments, 24618) or array_contains(all_segments, 24619)))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 9, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
     os.write(content.getBytes)
     fs.close()
   }
@@ -183,8 +183,8 @@ object GenerateGTJson {
     )
 
     val content =
-      """{"xd": 0, "partnerId": "", "query": "country = 'BR' and (array_contains(all_segments, 24621) or (array_contains(all_segments, 2) AND id_partner = 916))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 2, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "country = 'BR' and (array_contains(all_segments, 24622) or (array_contains(all_segments, 3) AND id_partner = 916))"", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 3, "since": 1, "priority": 14, "common": "country = 'MX'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
+      """{"xd": 0, "partnerId": "", "query": "country = 'BR' and (array_contains(all_segments, 24621) or (array_contains(all_segments, 2) AND id_partner = 916))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 2, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "country = 'BR' and (array_contains(all_segments, 24622) or (array_contains(all_segments, 3) AND id_partner = 916))"", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 3, "since": 1, "priority": 14, "common": "country = 'BR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
     os.write(content.getBytes)
     fs.close()
   }
