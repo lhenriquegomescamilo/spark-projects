@@ -244,6 +244,7 @@ object TrainingFeatures {
       SparkSession.builder
         .appName("Spark devicer")
         .config("spark.sql.files.ignoreCorruptFiles", "true")
+        .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
