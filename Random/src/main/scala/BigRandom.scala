@@ -398,7 +398,6 @@ val udfGetDomain = udf(
       .repartition(10)
       .write
       .format("parquet")
-      .partitionBy("day", "country")
       .mode(SaveMode.Overwrite)
       .save(dir2)
 
