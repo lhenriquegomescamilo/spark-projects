@@ -388,6 +388,8 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    /**
+
     val df_old = getSelectedKeywords(spark, 15 , 42 )
     .groupBy("domain")
     .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_old"))
@@ -401,7 +403,29 @@ val udfGetDomain = udf(
     .mode(SaveMode.Overwrite)
     .save("/datascience/custom/domains_count_selectedkws")  
 
-    
+    */
+
+    val df_old_dump =  spark.read
+        .format("csv")
+        .option("header", "True")
+        .option("sep", "\t")
+        .load("/datascience/scraper/temp_dump2/")
+        .select("url")
+        .withColumn("domain",udfGetDomain(col("url")))
+        .na
+        .drop()
+        .groupBy("domain")
+        .agg(approx_count_distinct(col("url"), 0.03).as("count_old_dump"))
+
+    val df_old_sk = getSelectedKeywords(spark, 15 , 42 )
+    .groupBy("domain")
+    .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_old_sk"))
+   
+     df_old_dump.join(df_old_sk,Seq("domain"),"outer").na.fill(0)
+    .write.format("csv").option("header","true")
+    .mode(SaveMode.Overwrite)
+    .save("/datascience/misc/domains_count_comparison")  
+
     /**
     val dir = "/datascience/reports/custom/client_688/"
     val dir2 = "/datascience/reports/custom/client_688_2/"
