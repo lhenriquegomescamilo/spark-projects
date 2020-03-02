@@ -388,19 +388,34 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val df_old = getSelectedKeywords(spark, 15 , 42 )
+    .groupBy("domain")
+    .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_old"))
 
+    val df_new = getSelectedKeywords(spark,  15 , 22 )
+    .groupBy("domain")
+    .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_new"))
+   
+     df_old.join(df_new,Seq("domain"),"outer").na.fill(0)
+    .write.format("csv").option("header","true")
+    .mode(SaveMode.Overwrite)
+    .save("/datascience/custom/domains_count_selectedkws")  
+
+    
+    /**
     val dir = "/datascience/reports/custom/client_688/"
     val dir2 = "/datascience/reports/custom/client_688_2/"
 
     spark.read
       .format("parquet")
       .load(dir)
-      .repartition(10)
+      .repartition(1)
       .write
       .format("parquet")
-      .partitionBy("day", "country")
       .mode(SaveMode.Overwrite)
       .save(dir2)
+
+    */  
 
     /**
     val intervals = "2020-01-27,2020-01-28,2020-01-29,2020-01-30,2020-01-31,2020-02-01,2020-02-02,2020-02-03,2020-02-04,2020-02-05,2020-02-06,2020-02-07,2020-02-08,2020-02-09,2020-02-10".split(",").toList
