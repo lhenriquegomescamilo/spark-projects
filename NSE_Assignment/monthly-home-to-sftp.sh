@@ -2,7 +2,7 @@
 
 source /home/rely/.bashrc
 TEMP_PATH="/home/rely/tmp_data/equifax_homes/"
-fecha=$(date +"%Y-%m")
+fecha=$(date +"%Y-02")
 
 mkdir $TEMP_PATH
 /home/rely/hadoop/bin/hdfs dfs -copyToLocal /datascience/geo/NSEHomes/monthly/equifax/to_push/$fecha/{AR,CL,CO,PE,MX} $TEMP_PATH
