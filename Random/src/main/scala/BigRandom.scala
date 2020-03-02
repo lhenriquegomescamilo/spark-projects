@@ -391,8 +391,8 @@ val udfGetDomain = udf(
 
     val intervals = "2020-01-27,2020-01-28,2020-01-29,2020-01-30,2020-01-31,2020-02-01,2020-02-02,2020-02-03,2020-02-04,2020-02-05,2020-02-06,2020-02-07,2020-02-08,2020-02-09,2020-02-10".split(",").toList
 
-    var path = new Path("/datascience")
-    var destpath = new Path("/datascience")
+    var path = "/datascience"
+    var destpath = "/datascience"
 
     for (i <- intervals) {
         path = "/datascience/scraper/temp_dump/%s_daily.csv*".format(i)
