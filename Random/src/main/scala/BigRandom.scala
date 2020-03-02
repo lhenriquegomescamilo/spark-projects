@@ -395,7 +395,7 @@ val udfGetDomain = udf(
     spark.read
       .format("parquet")
       .load(dir)
-      .repartition(10)
+      .repartition(1)
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
