@@ -955,12 +955,12 @@ total
 val sergio = spark.read.format("csv").load("/datascience/audiences/crossdeviced/maid_sergio.csv_xd").select("_c1","_c2").distinct().toDF("device_id","device_type").select("device_id").withColumn("device_id",upper(col("device_id")))
 
 //acá buscamos en los pipelines
-val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1","AR").withColumn("device_id",upper(col("device_id")))
-val seg = getDataPipeline(spark,"/datascience/data_triplets/segments/","30","1","AR").withColumn("device_id",upper(col("device_id")))
-val geo = getDataPipeline(spark,"/datascience/geo/safegraph/","30","1","argentina")
+val ua = getDataPipeline(spark,"/datascience/data_useragents/","90","1","AR").withColumn("device_id",upper(col("device_id")))
+val seg = getDataPipeline(spark,"/datascience/data_triplets/segments/","90","1","AR").withColumn("device_id",upper(col("device_id")))
+val geo = getDataPipeline(spark,"/datascience/geo/safegraph/","90","1","argentina")
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",upper(col("device_id")))
-val keywords = getDataPipeline(spark,"/datascience/data_keywords","30","1","AR").withColumn("device_id",upper(col("device_id")))
+val keywords = getDataPipeline(spark,"/datascience/data_keywords","90","1","AR").withColumn("device_id",upper(col("device_id")))
 
 sergio.join(ua,Seq("device_id"))
 .repartition(1)
