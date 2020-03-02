@@ -152,6 +152,7 @@ val already_saved = spark.read.format("csv")
     already_saved
     .filter(col("frequency")>=value_dictionary("minFreq").toInt)
     .select("device_type","device_id","audience")
+    .repartition(10)
     .write
       .format("csv")
       .option("sep", "\t")
@@ -174,7 +175,7 @@ val validUserCount = already_saved
 
 val output_path_volume_table = "/datascience/geo/crossdeviced/%s_volume_count".format(value_dictionary("poi_output_file"))
 
-val volume = all_usercount.join(validUsercount).repartition(1)
+val volume = allUserCount.join(validUserCount).repartition(1)
 
 volume
 .repartition(1)
