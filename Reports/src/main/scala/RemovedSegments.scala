@@ -35,7 +35,9 @@ object RemovedSegments {
       date_current: String
   ): DataFrame = {
 
-    val columns = "country,device_id,removed_segments".split(",").toList
+    //val columns = "country,device_id,removed_segments".split(",").toList
+    val columns = "country,device_id,removed_segments,activable".split(",").toList
+
 
     val countries =
     "AR,BO,BR,CL,CO,CR,EC,GT,HN,MX,PE,PR,SV,US,UY,VE".split(",").toList
@@ -57,7 +59,7 @@ object RemovedSegments {
       .format("csv")
       .load("/data/eventqueue/%s".format(date_current))
       .filter("event_type != 'sync'")
-      .filter("activable = 1")
+      //.filter("activable = 1")
       .filter(col("removed_segments").isNotNull && col("country").isin(countries: _*) && col("event_type").isin(event_types: _*))        
       .select(columns.head, columns.tail: _*) // Here we select the columns to work with
 
