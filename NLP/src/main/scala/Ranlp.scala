@@ -129,13 +129,15 @@ object Ranlp {
 
     val doc = pipeline.fit(df).transform(df)
 
+    println(doc.take(4).show())
 
+    /**
     doc.write.format("csv")
       .option("header", "true")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/testnlp.csv")
-
+    */
 
 
 
