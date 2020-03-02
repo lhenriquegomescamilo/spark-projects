@@ -409,7 +409,7 @@ val udfGetDomain = udf(
         .format("csv")
         .option("header", "True")
         .option("sep", "\t")
-        .load("/datascience/scraper/temp_dump2/")
+        .load("/datascience/scraper/temp_dump2/*")
         .select("url")
         .withColumn("domain",udfGetDomain(col("url")))
         .na
