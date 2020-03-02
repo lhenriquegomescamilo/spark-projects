@@ -389,6 +389,20 @@ val udfGetDomain = udf(
     .getOrCreate()
 
 
+    val dir = "/datascience/reports/custom/client_688/"
+    val dir2 = "/datascience/reports/custom/client_688_2/"
+
+    spark.read
+      .format("parquet")
+      .load(dir)
+      .repartition(10)
+      .write
+      .format("parquet")
+      .partitionBy("day", "country")
+      .mode(SaveMode.Overwrite)
+      .save(dir2)
+
+    /**
     val intervals = "2020-01-27,2020-01-28,2020-01-29,2020-01-30,2020-01-31,2020-02-01,2020-02-02,2020-02-03,2020-02-04,2020-02-05,2020-02-06,2020-02-07,2020-02-08,2020-02-09,2020-02-10".split(",").toList
 
     var path = "/datascience"
@@ -409,6 +423,8 @@ val udfGetDomain = udf(
           .mode(SaveMode.Overwrite)
           .save(destpath)
 }  
+
+**/
 
 /**
   //val df_old = getDataURLS(spark, "AR", 15 , 36 )
