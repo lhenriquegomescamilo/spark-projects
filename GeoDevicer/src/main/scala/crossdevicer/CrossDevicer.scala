@@ -99,7 +99,6 @@ object CrossDevicer {
       .withColumn("device_type_xd",mapUDF(col("device_type_xd")))
 
 
-      
       val cross_deviced_agg = cross_deviced.groupBy(colNames.filter(y => y.toString !=  value_dictionary("poi_column_name").toString):_*) // ,"validUser","frequency"
       .agg(collect_set(value_dictionary("poi_column_name")) as value_dictionary("poi_column_name"))
       .withColumn(value_dictionary("poi_column_name"), concat_ws(",", col(value_dictionary("poi_column_name"))))
@@ -109,6 +108,8 @@ object CrossDevicer {
     cross_deviced_agg.explain(extended = true)
 
     // Finally, we store the result obtained.
+
+    //This is the data so we can filter it
     val output_path = "/datascience/geo/crossdeviced/%s_xd".format(
       value_dictionary("poi_output_file")
     )
@@ -120,6 +121,13 @@ object CrossDevicer {
       .mode(SaveMode.Overwrite)
       .save(output_path)
 
+
+
+
+ 
+
+
+//This is an equivalence table with the users and its expansion
 val output_path_eq_table = "/datascience/geo/crossdeviced/%s_xd_equivalence_table".format(
       value_dictionary("poi_output_file")
     )
@@ -129,5 +137,54 @@ val output_path_eq_table = "/datascience/geo/crossdeviced/%s_xd_equivalence_tabl
       .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save(output_path_eq_table)  
+
+
+//Now that the crossdeviced table is already saved, we use it for the following proceses
+val already_saved = spark.read.format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load(output_path)
+
+
+//This is the same data, but ready to push
+    val output_path_push = "/datascience/geo/crossdeviced/%s_push".format(value_dictionary("output_file")
+    )
+    already_saved
+    .filter(col("frequency")>=value_dictionary("minFreq").toInt)
+    .select("device_type","device_id","audience")
+    .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save(output_path_push)
+
+
+//We also generate a table with volume counts
+ val allUserCount = already_saved
+.withColumn(value_dictionary("poi_column_name"),split(col(value_dictionary("poi_column_name")),","))
+.withColumn(value_dictionary("poi_column_name"),explode(col(value_dictionary("poi_column_name"))))
+.groupBy("name").agg(approx_count_distinct("device_id", rsd = 0.03) as "total_devices")
+
+val validUserCount = already_saved
+.filter("validUser == true")
+.withColumn(value_dictionary("poi_column_name"),split(col(value_dictionary("poi_column_name")),","))
+.withColumn(value_dictionary("poi_column_name"),explode(col(value_dictionary("poi_column_name"))))
+.groupBy(value_dictionary("poi_column_name")).agg(approx_count_distinct("device_id", rsd = 0.03) as "valid_user_devices")
+
+val output_path_volume_table = "/datascience/geo/crossdeviced/%s_volume_count".format(value_dictionary("poi_output_file"))
+
+val volume = all_usercount.join(validUsercount).repartition(1)
+
+volume
+.repartition(1)
+.write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save(output_path_volume_table) 
+
+
   }
 }
