@@ -838,7 +838,7 @@ val useg  = spark.read.format("csv").option("header",true).option("delimiter",",
 
 //Aca levantamos un dataset que nos indica a que cluster pertenece según el feature
 
-val cluster =  spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/Reports/JCDecaux/all_clusters.csv")
+val cluster =  spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/Reports/JCDecaux/all_clusters_updated_13_02_20_II.csv")
 .select("segmentId","longname").distinct()
 
 //Acá tageamos a los usuarios, ya no necesitamos el segmentId original, lo tiramos y distinct
@@ -911,8 +911,8 @@ val total_24hs_count = raw.groupBy("WeekDay","DayPeriod","ID")
 
 
 //Y ahora guardamos todo:
-val today = (java.time.LocalDate.now)
-//val date = today.format(DateTimeFormatter.ofPattern("yyyy-MM-d")).toString
+val today = (java.time.LocalDate.now).toString
+//val date = today.format(DateTimeFormatter.ofPattern("yyyy-MM-d"))
 
 
 cluster_time_count
