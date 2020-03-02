@@ -831,7 +831,7 @@ def getDataTriplets(
 //Levantamos los pii
 
 //Aca tenemos los usuarios que devuelve el geodevicer
-val useg  = spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/geo_processed/JCDecauxOOH_updated_26_02_20_120d_mexico_26-2-2020-10h_aggregated").drop("day","country","id_partner","ID").toDF("device_id","segmentID").withColumn("device_id",lower(col("device_id")))
+val useg  = spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/geo_processed/JCDecauxOOH_updated_26_02_20_120d_mexico_26-2-2020-10h_users_data").drop("day","country","id_partner","ID").toDF("device_id","segmentID").withColumn("device_id",lower(col("device_id")))
 
 //Estos usuarios tienen las features, y en base a estas features queremos meterles un nombre de audiencia. Queremos taggear los usuarios en base a su info web. Un user puede pertenecer a múltiples clusters. Después vamos a tener que ir a los carteles y contar, pero vamos a eso después. Primero el taggeo
 
