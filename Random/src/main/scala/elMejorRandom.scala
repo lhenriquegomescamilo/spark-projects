@@ -783,6 +783,7 @@ def getDataTriplets(
         .toSeq
 
     
+    val today = (java.time.LocalDate.now).toString
 
     val triplets = getDataTriplets(spark, country, nDays, from)
       triplets
@@ -793,7 +794,7 @@ def getDataTriplets(
         .write
         .format("csv")
         .mode("overwrite")
-        .save("/datascience/geo/NSEHomes/NSE_GT_Equifax_%s_%s".format(nDays,country))
+        .save("/datascience/geo/NSEHomes/GroundTruth/NSE_GT_Equifax_%sD_%s_%s".format(nDays,country,today))
     }
 
 
@@ -951,49 +952,10 @@ total
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-  //Acá levantamos al tipito
-val sergio = spark.read.format("csv").load("/datascience/audiences/crossdeviced/maid_sergio.csv_xd").select("_c1","_c2").distinct().toDF("device_id","device_type").select("device_id").withColumn("device_id",upper(col("device_id")))
 
 //acá buscamos en los pipelines
-val ua = getDataPipeline(spark,"/datascience/data_useragents/","90","1","AR").withColumn("device_id",upper(col("device_id")))
-val seg = getDataPipeline(spark,"/datascience/data_triplets/segments/","90","1","AR").withColumn("device_id",upper(col("device_id")))
-val geo = getDataPipeline(spark,"/datascience/geo/safegraph/","90","1","argentina")
-.withColumnRenamed("ad_id","device_id")
-.withColumn("device_id",upper(col("device_id")))
-val keywords = getDataPipeline(spark,"/datascience/data_keywords","90","1","AR").withColumn("device_id",upper(col("device_id")))
-
-sergio.join(ua,Seq("device_id"))
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/misc/EquifaxReports/sergio_ua")
-
-sergio.join(seg,Seq("device_id"))
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/misc/EquifaxReports/sergio_triplets")
-
-sergio.join(geo,Seq("device_id"))
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/misc/EquifaxReports/sergio_geo")
-
-
-sergio.join(keywords,Seq("device_id"))
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/misc/EquifaxReports/sergio_keywords")
+getDataTripletsCSVNSE(spark,"AR",90,1)
+getDataTripletsCSVNSE(spark,"CL",90,1)
 
 
 }
