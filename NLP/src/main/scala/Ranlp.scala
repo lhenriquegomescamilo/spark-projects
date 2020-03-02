@@ -81,11 +81,19 @@ object Ranlp {
 
     */  
 
+
+    /**
+
+    PARTE DE POS CIMNENTADA MARCH 2
     val spanish_pos = PerceptronModel.pretrained("pos_ud_gsd", lang="es")
 
     val posTagger = spanish_pos
     .setInputCols(Array("sentence", "token"))
     .setOutputCol("pos")
+
+
+    */
+
 
     /**
 
@@ -98,6 +106,9 @@ object Ranlp {
     .setNIterations(2)
     .fit(trainPOS)
     */
+
+    /*
+
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
         sentenceDetector,
@@ -105,15 +116,28 @@ object Ranlp {
         posTagger
     ))
 
+
+    */
+
+
+    val pipeline = new Pipeline().setStages(Array(
+        documentAssembler,
+        sentenceDetector,
+        tokenizer
+    ))
+
+
     val doc = pipeline.fit(df).transform(df)
 
+    println(doc.show())
 
+    /**
     doc.write.format("csv")
       .option("header", "true")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/testnlp.csv")
-
+    */
 
 
 
