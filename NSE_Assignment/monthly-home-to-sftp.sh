@@ -21,10 +21,10 @@ echo "MX compiled on $fecha"
 #for pe in $(ls -1 $TEMP_PATH'country=PE/'); do mv $TEMP_PATH'country=PE/'$pe $TEMP_PATH"pii_$fecha"'_PE.csv'; done
 
 
-echo put $TEMP_PATH/equifax_nse_AR_$fecha.csv | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
-echo put $TEMP_PATH/equifax_nse_CL_$fecha.csv | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
-echo put $TEMP_PATH/equifax_nse_CO_$fecha.csv | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
-echo put $TEMP_PATH/equifax_nse_PE_$fecha.csv | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
-echo put $TEMP_PATH/equifax_nse_MX_$fecha.csv | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
+echo put $TEMP_PATH"equifax_nse_AR_$fecha.csv" | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
+echo put $TEMP_PATH"equifax_nse_CL_$fecha.csv" | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
+echo put $TEMP_PATH"equifax_nse_CO_$fecha.csv" | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
+echo put $TEMP_PATH"equifax_nse_PE_$fecha.csv" | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
+echo put $TEMP_PATH"equifax_nse_MX_$fecha.csv" | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
 #rm -r $TEMP_PATH
 #rm -r $TEMP_PATH/
