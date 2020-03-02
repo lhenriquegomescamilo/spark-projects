@@ -903,10 +903,10 @@ val total_time_count = raw.groupBy("WeekDay","DayPeriod","ID")
 .agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
 
 //Queremos lo mismo también no desagregado por el total de tiempo, si no el total de 24 hs
-val cluster_24hs_count = tagged_timed.groupBy("WeekDay","DayPeriod","ID","longname")
+val cluster_24hs_count = tagged_timed.groupBy("WeekDay","ID","longname")
 .agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
 
-val total_24hs_count = raw.groupBy("WeekDay","DayPeriod","ID")
+val total_24hs_count = raw.groupBy("WeekDay","ID")
 .agg(countDistinct("device_id") as "uniques",countDistinct("device_id") as "detections")
 
 
