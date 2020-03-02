@@ -21,6 +21,6 @@ echo "MX compiled on "fecha
 #for pe in $(ls -1 $TEMP_PATH'country=PE/'); do mv $TEMP_PATH'country=PE/'$pe $TEMP_PATH"pii_$fecha"'_PE.csv'; done
 
 
-echo put $TEMP_PATH/equifax_nse_$fecha.csv | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
-rm -r $TEMP_PATH
-rm -r $TEMP_PATH/
+echo put $TEMP_PATH/* | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
+#rm -r $TEMP_PATH
+#rm -r $TEMP_PATH/
