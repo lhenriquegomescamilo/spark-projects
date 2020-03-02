@@ -25,5 +25,5 @@ echo put $TEMP_PATH"EQUIFAX_HOMES_CL_$fecha.csv" | sftp -i /home/rely/.ssh/equif
 echo put $TEMP_PATH"EQUIFAX_HOMES_CO_$fecha.csv" | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
 echo put $TEMP_PATH"EQUIFAX_HOMES_PE_$fecha.csv" | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
 echo put $TEMP_PATH"EQUIFAX_HOMES_MX_$fecha.csv" | sftp -i /home/rely/.ssh/equifax.key equifax@input-01:/equifax_homes
-rm -r $TEMP_PATH
+#rm -r $TEMP_PATH
 #rm -r $TEMP_PATH/
