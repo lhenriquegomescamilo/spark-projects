@@ -129,7 +129,7 @@ object Ranlp {
 
     val doc = pipeline.fit(df).transform(df)
 
-    println(doc.take(4).show())
+    println(doc.show())
 
     /**
     doc.write.format("csv")
