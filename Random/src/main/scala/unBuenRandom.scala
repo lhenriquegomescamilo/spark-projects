@@ -921,7 +921,7 @@ cluster_time_count
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_%".format(today))
+.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_%s".format(today))
 
 total_time_count
 .repartition(1)
@@ -929,7 +929,7 @@ total_time_count
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/JCDecaux/total_time_count_%".format(today))
+.save("/datascience/geo/Reports/JCDecaux/total_time_count_%s".format(today))
 
 cluster_24hs_count
 .repartition(1)
@@ -937,7 +937,7 @@ cluster_24hs_count
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/JCDecaux/cluster_24hs_count_%".format(today))
+.save("/datascience/geo/Reports/JCDecaux/cluster_24hs_count_%s".format(today))
 
 total_24hs_count
 .repartition(1)
@@ -945,7 +945,7 @@ total_24hs_count
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/JCDecaux/total_24hs_count_%".format(today))
+.save("/datascience/geo/Reports/JCDecaux/total_24hs_count_%s".format(today))
 
 
 
