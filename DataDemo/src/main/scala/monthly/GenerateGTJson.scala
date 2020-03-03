@@ -55,6 +55,34 @@ object GenerateGTJson {
 
   }
 
+  def generate_json_nse_ar(
+      spark: SparkSession,
+      conf: Configuration,
+      current_month: String
+  ) {
+
+    var fs = FileSystem.get(conf)
+    var os = fs.create(
+      new Path(
+        "/datascience/devicer/to_process/AR_nse_%s.json".format(current_month)
+      )
+    )
+
+    val content =
+      """{"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20110))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 20110, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 35360))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 35360, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 35361))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 35361, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 35362))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 35362, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 35363))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 35363, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 210275))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 210275, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20107))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 20107, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20108))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 20108, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20109))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 20109, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
+    os.write(content.getBytes)
+    fs.close()
+
+  }
+
   def generate_json_genre_mx(
       spark: SparkSession,
       conf: Configuration,
@@ -145,6 +173,31 @@ object GenerateGTJson {
     fs.close()
   }
 
+  def generate_json_nse_cl(
+      spark: SparkSession,
+      conf: Configuration,
+      current_month: String
+  ) {
+
+    var fs = FileSystem.get(conf)
+    var os = fs.create(
+      new Path(
+        "/datascience/devicer/to_process/CL_nse_%s.json".format(current_month)
+      )
+    )
+
+    val content =
+      """{"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(segments, 136529))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 136529, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(segments, 136531))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 136531, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(segments, 136533))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 136533, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(segments, 136535))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 136535, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(segments, 144741))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 144741, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'CL' and array_contains(segments, 136537))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 136537, "since": 1, "priority": 14, "common": "country = 'CL'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
+    os.write(content.getBytes)
+    fs.close()
+
+  }
+
   def generate_json_age_br(
       spark: SparkSession,
       conf: Configuration,
@@ -205,6 +258,7 @@ object GenerateGTJson {
     // AR
     generate_json_age_ar(spark, conf, current_month)
     generate_json_genre_ar(spark, conf, current_month)
+    generate_json_nse_ar(spark, conf, current_month)
 
     // MX
     generate_json_genre_mx(spark, conf, current_month)
@@ -212,6 +266,7 @@ object GenerateGTJson {
     // CL
     generate_json_gender_cl(spark, conf, current_month)
     generate_json_age_cl(spark, conf, current_month)
+    generate_json_nse_cl(spark, conf, current_month)
 
     // BR
     generate_json_gender_br(spark, conf, current_month)

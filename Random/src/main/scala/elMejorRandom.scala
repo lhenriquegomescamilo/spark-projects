@@ -953,9 +953,27 @@ total
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-//acá buscamos en los pipelines
-getDataTripletsCSVNSE(spark,"AR",90,1)
-getDataTripletsCSVNSE(spark,"CL",90,1)
+val nse_ar_gt = spark.read.format("csv").load("/datascience/geo/NSEHomes/GroundTruth/NSE_GT_Equifax_90D_AR_2020-03-02").toDF("device_id","ingreso")
+.withColumn("device_id",lower(col("device_id"))).filter(col("ingreso").isin(List(20107,20108,20109,20110): _*))
+val ar_demo =  spark.read.format("parquet").load("/datascience/data_demo/datasets/country=AR/day=20200227").withColumn("device_id",lower(col("device_id")))
+
+nse_ar_gt.join(ar_demo,Seq("device_id"))
+.repartition(10)
+.write
+.mode(SaveMode.Overwrite)
+.format("parquet")
+.save("/datascience/misc/NSEIngresoGT_AR")
+
+val nse_cl_gt = spark.read.format("csv").load("/datascience/geo/NSEHomes/GroundTruth/NSE_GT_Equifax_90D_CL_2020-03-02").toDF("device_id","ingreso")
+.withColumn("device_id",lower(col("device_id"))).filter(col("ingreso").isin(List(136529, 136531, 136533, 136535, 144741, 136537): _*))
+val cl_demo =  spark.read.format("parquet").load("/datascience/data_demo/datasets/country=CL/day=20200229").withColumn("device_id",lower(col("device_id")))
+
+nse_cl_gt.join(cl_demo,Seq("device_id"))
+.repartition(10)
+.write
+.mode(SaveMode.Overwrite)
+.format("parquet")
+.save("/datascience/misc/NSEIngresoGT_CL")
 
 
 }
