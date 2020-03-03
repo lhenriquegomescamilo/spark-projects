@@ -409,15 +409,14 @@ val udfGetDomain = udf(
         .format("csv")
         .option("header", "True")
         .option("sep", "\t")
-        .load("/datascience/scraper/temp_dump2/*")
+        .load("/datascience/scraper/temp_dump2/*.csv")
         .select("url")
         .filter("url!='url'")
-        .na.drop()
-        .withColumn("domain",udfGetDomain(col("url")))
+        .selectExpr("*", "parse_url(url, 'HOST') as domain")
         .groupBy("domain")
         .agg(approx_count_distinct(col("url"), 0.03).as("count_old_dump"))
 
-    val df_old_sk = getSelectedKeywords(spark, 15 , 42 )
+    val df_old_sk = getSelectedKeywords(spark, 15 , 43 )
     .groupBy("domain")
     .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_old_sk"))
    
