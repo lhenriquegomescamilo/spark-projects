@@ -29,7 +29,7 @@ object CrawlerForms {
 
   def get_forms(spark: SparkSession,day:String) {
 
-    val udfForm = udf((html: String) => Jsoup.parse(html).select("form").select("input").attr("type").toString)
+    val udfForm = udf((html: String) => org.jsoup.Jsoup.parse(html).select("form").select("input").attr("type").toString)
 
     spark.read.load("/datascience/scraper/raw/processed/day=%s/".format(day))
               .withColumn("form",udfForm(col("html")))
