@@ -401,7 +401,7 @@ val udfGetDomain = udf(
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/")
+      .map(day => path + "/day=%s/".format(day))
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
     
