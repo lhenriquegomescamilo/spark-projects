@@ -388,6 +388,37 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+
+    val end = new DateTime(2020,02,10,0,0,0,0) 
+
+    val nDays = 15
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/url_ingester/data"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/"
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .select("url")
+      .filter($"url".contains("zonajobs"))
+      .dropDuplicates("url")
+
+    println(df.count())  
+
+
+
     /**
 
     val df_old = getSelectedKeywords(spark, 15 , 42 )
@@ -404,7 +435,7 @@ val udfGetDomain = udf(
     .save("/datascience/custom/domains_count_selectedkws")  
 
     */
-
+    /**
     val df_old_dump =  spark.read
         .format("csv")
         .option("header", "True")
@@ -426,6 +457,7 @@ val udfGetDomain = udf(
     .write.format("csv").option("header","true")
     .mode(SaveMode.Overwrite)
     .save("/datascience/misc/domains_count_comparison")  
+    */
 
     /**
     val dir = "/datascience/reports/custom/client_688/"
