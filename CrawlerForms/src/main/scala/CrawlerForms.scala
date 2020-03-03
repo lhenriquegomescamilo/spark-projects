@@ -1,7 +1,6 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-
 import org.joda.time.Days
 import org.apache.spark._
 import org.joda.time.DateTime
@@ -32,6 +31,7 @@ object CrawlerForms {
     val udfForm = udf((html: String) => org.jsoup.Jsoup.parse(html).select("form").select("input").attr("type").toString)
 
     spark.read.load("/datascience/scraper/raw/processed/day=%s/".format(day))
+              .filter("html is not null")
               .withColumn("form",udfForm(col("html")))
               .filter("form = 'email'")
               .select("url")
