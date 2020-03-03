@@ -388,15 +388,14 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-
-    val conf = spark.sparkContext.hadoopConfiguration
+       val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
 
-    val end = new DateTime(2020,02,10,0,0,0,0) 
+    val end = new DateTime(2020,2,10,0,0,0,0) 
 
     val nDays = 15
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
@@ -416,8 +415,6 @@ val udfGetDomain = udf(
       .dropDuplicates("url")
 
     println(df.count())  
-
-
 
     /**
 
@@ -457,7 +454,8 @@ val udfGetDomain = udf(
     .write.format("csv").option("header","true")
     .mode(SaveMode.Overwrite)
     .save("/datascience/misc/domains_count_comparison")  
-    */
+    **/
+
 
     /**
     val dir = "/datascience/reports/custom/client_688/"
