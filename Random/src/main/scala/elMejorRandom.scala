@@ -958,11 +958,10 @@ val nse_ar_gt = spark.read.format("csv").load("/datascience/geo/NSEHomes/GroundT
 val ar_demo =  spark.read.format("parquet").load("/datascience/data_demo/datasets/country=AR/day=20200227").withColumn("device_id",lower(col("device_id")))
 
 nse_ar_gt.join(ar_demo,Seq("device_id"))
-.repartition(1)
+.repartition(10)
 .write
 .mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
+.format("parquet")
 .save("/datascience/misc/NSEIngresoGT_AR")
 
 val nse_cl_gt = spark.read.format("csv").load("/datascience/geo/NSEHomes/GroundTruth/NSE_GT_Equifax_90D_CL_2020-03-02").toDF("device_id","ingreso")
@@ -970,11 +969,10 @@ val nse_cl_gt = spark.read.format("csv").load("/datascience/geo/NSEHomes/GroundT
 val cl_demo =  spark.read.format("parquet").load("/datascience/data_demo/datasets/country=CL/day=20200229").withColumn("device_id",lower(col("device_id")))
 
 nse_cl_gt.join(cl_demo,Seq("device_id"))
-.repartition(1)
+.repartition(10)
 .write
 .mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
+.format("parquet")
 .save("/datascience/misc/NSEIngresoGT_CL")
 
 
