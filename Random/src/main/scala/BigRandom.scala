@@ -393,8 +393,6 @@ val udfGetDomain = udf(
 
     // Get the days to be loaded
     val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-
     val end = new DateTime(2020,2,10,0,0,0,0) 
 
     val nDays = 15
