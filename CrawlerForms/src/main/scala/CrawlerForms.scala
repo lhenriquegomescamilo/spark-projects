@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.{ FileSystem, Path}
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
+import org.jsoup.Jsoup
 import org.joda.time.DateTime
 import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.spark.sql.functions.broadcast
