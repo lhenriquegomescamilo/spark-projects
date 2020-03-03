@@ -388,257 +388,288 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    /**
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
 
-    val df_old = getSelectedKeywords(spark, 15 , 42 )
-    .groupBy("domain")
-    .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_old"))
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = new DateTime(2020,2,10,0,0,0,0) 
 
-    val df_new = getSelectedKeywords(spark,  15 , 22 )
-    .groupBy("domain")
-    .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_new"))
-   
-     df_old.join(df_new,Seq("domain"),"outer").na.fill(0)
-    .write.format("csv").option("header","true")
-    .mode(SaveMode.Overwrite)
-    .save("/datascience/custom/domains_count_selectedkws")  
+    val nDays = 15
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/url_ingester/data"
 
-    */
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/")
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
-    val df_old_dump =  spark.read
-        .format("csv")
-        .option("header", "True")
-        .option("sep", "\t")
-        .load("/datascience/scraper/temp_dump2/*.csv")
-        .select("url")
-        .filter("url!='url'")
-        .selectExpr("*", "parse_url(url, 'HOST') as domain")
-        .groupBy("domain")
-        .agg(approx_count_distinct(col("url"), 0.03).as("count_old_dump"))
-
-    val df_old_sk = getSelectedKeywords(spark, 15 , 43 )
-    .select("url_raw")
-    .selectExpr("*", "parse_url(url_raw, 'HOST') as domain")
-    .groupBy("domain")
-    .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_old_sk"))
-   
-     df_old_dump.join(df_old_sk,Seq("domain"),"outer").na.fill(0)
-    .write.format("csv").option("header","true")
-    .mode(SaveMode.Overwrite)
-    .save("/datascience/misc/domains_count_comparison")  
-
-    /**
-    val dir = "/datascience/reports/custom/client_688/"
-    val dir2 = "/datascience/reports/custom/client_688_2/"
-
-    spark.read
-      .format("parquet")
-      .load(dir)
-      .repartition(1)
-      .write
-      .format("parquet")
-      .mode(SaveMode.Overwrite)
-      .save(dir2)
-
-    */  
-
-    /**
-    val intervals = "2020-01-27,2020-01-28,2020-01-29,2020-01-30,2020-01-31,2020-02-01,2020-02-02,2020-02-03,2020-02-04,2020-02-05,2020-02-06,2020-02-07,2020-02-08,2020-02-09,2020-02-10".split(",").toList
-
-    var path = "/datascience"
-    var destpath = "/datascience"
-
-    for (i <- intervals) {
-        path = "/datascience/scraper/temp_dump/%s_daily.csv*".format(i)
-        destpath = "/datascience/scraper/temp_dump2/%s_daily.csv".format(i)
-
-        var df = spark.read.option("sep", "\t")
-                .option("header", "true")
-                .format("csv")
-                .load(path)
-        df.write
-          .format("csv")
-          .option("header", "true")
-          .option("sep", "\t")
-          .mode(SaveMode.Overwrite)
-          .save(destpath)
-}  
-
-**/
-
-/**
-  //val df_old = getDataURLS(spark, "AR", 15 , 36 )
-  val df_old = getSelectedKeywords(spark, 15 , 36 )
-  .filter("domain=='zonajobs'")
-
-  //println(df_old.groupBy("domain").agg(sum(col("count")) as "total_hits").show())
-
-  println(df_old.drop("count","kw").dropDuplicates().count())
-
-
-  //val df_new = getDataURLS(spark, "AR", 15 , 16 )
-  val df_new = getSelectedKeywords(spark,  15 , 16 )
-  .filter("domain=='zonajobs'")
-
-  //println(df_new.groupBy("domain").agg(sum(col("count")) as "total_hits").show())
-
-  println(df_new.drop("count","kw").dropDuplicates().count())
-
-*/
-
-
-    /**
-
-    def getString =
-        udf((array: Seq[String]) => array.map(_.toString).mkString(","))
-
-    val df_keys = spark.read
-    .format("csv")
-    .option("header", "true")
-    .load("/datascience/misc/all_kws_tojoin.csv")
-
-    val df_old = getDataKeywords(spark,"AR",15,31,0)
-
-    val data_old = getJointKeys(df_keys, df_old, false)
-    .withColumn("kws",getString(col("kws")))
-    .withColumn("domain",getString(col("domain")))   
     
-    data_old.write
-          .format("csv")
-          .option("header",true)
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/misc/df_old_all")
-
-    val df_new = getDataKeywords(spark,"AR",15,11,0)
-
-    val data_new = getJointKeys(df_keys, df_new, false)
-    .withColumn("kws",getString(col("kws")))
-    .withColumn("domain",getString(col("domain")))   
-    
-    data_new.write
-          .format("csv")
-          .option("header",true)
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/misc/df_new_all")
-
-    */
-
-    /**
-
-    //103984
-    val keywords = "base|dato,c++,data|base,develop,golang,java,json,linux,php,programacion|lenguaje,sdk,simple|text,sql"
-        
-    val domain_filter =  "domain IN ('bumeran', 'konzerta', 'laborum', 'multitrabajos', 'zonajobs')"
-
-    /** Format all keywords from queries to join */
     import spark.implicits._
-    val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
-    val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .select("url")
+      .filter($"url".contains("zonajobs"))
+      .dropDuplicates("url")
 
-    val df_old = getDataKeywords(spark,"AR",15,31,0)
-    //.filter(domain_filter)
+    println(df.count())  
 
-    val data_old = getJointKeys(df_keys, df_old, false)
-    .withColumn("kws",getString(col("kws")))
-    .withColumn("domain",getString(col("domain")))   
+      /**
+
+      val df_old = getSelectedKeywords(spark, 15 , 42 )
+      .groupBy("domain")
+      .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_old"))
+
+      val df_new = getSelectedKeywords(spark,  15 , 22 )
+      .groupBy("domain")
+      .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_new"))
     
-    data_old.write
+      df_old.join(df_new,Seq("domain"),"outer").na.fill(0)
+      .write.format("csv").option("header","true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/domains_count_selectedkws")  
+
+      */
+
+
+      /**
+      val df_old_dump =  spark.read
           .format("csv")
+          .option("header", "True")
+          .option("sep", "\t")
+          .load("/datascience/scraper/temp_dump2/.csv")
+          .select("url")
+          .filter("url!='url'")
+          .selectExpr("*", "parse_url(url, 'HOST') as domain")
+          .groupBy("domain")
+          .agg(approx_count_distinct(col("url"), 0.03).as("count_old_dump"))
+
+      val df_old_sk = getSelectedKeywords(spark, 15 , 23 )
+      .select("url_raw")
+      .selectExpr("*", "parse_url(url_raw, 'HOST') as domain")
+      .groupBy("domain")
+      .agg(approx_count_distinct(col("url_raw"), 0.03).as("count_old_sk"))
+    
+      df_old_dump.join(df_old_sk,Seq("domain"),"outer").na.fill(0)
+      .write.format("csv").option("header","true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/domains_count_comparison")  
+      */
+
+
+      /**
+      val dir = "/datascience/reports/custom/client_688/"
+      val dir2 = "/datascience/reports/custom/client_688_2/"
+
+      spark.read
+        .format("parquet")
+        .load(dir)
+        .repartition(1)
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save(dir2)
+
+      */  
+
+          /**
+          val intervals = "2020-01-27,2020-01-28,2020-01-29,2020-01-30,2020-01-31,2020-02-01,2020-02-02,2020-02-03,2020-02-04,2020-02-05,2020-02-06,2020-02-07,2020-02-08,2020-02-09,2020-02-10".split(",").toList
+
+          var path = "/datascience"
+          var destpath = "/datascience"
+
+          for (i <- intervals) {
+              path = "/datascience/scraper/temp_dump/%s_daily.csv*".format(i)
+              destpath = "/datascience/scraper/temp_dump2/%s_daily.csv".format(i)
+
+              var df = spark.read.option("sep", "\t")
+                      .option("header", "true")
+                      .format("csv")
+                      .load(path)
+              df.write
+                .format("csv")
+                .option("header", "true")
+                .option("sep", "\t")
+                .mode(SaveMode.Overwrite)
+                .save(destpath)
+      }  
+
+      **/
+
+        /**
+          //val df_old = getDataURLS(spark, "AR", 15 , 36 )
+          val df_old = getSelectedKeywords(spark, 15 , 36 )
+          .filter("domain=='zonajobs'")
+
+          //println(df_old.groupBy("domain").agg(sum(col("count")) as "total_hits").show())
+
+          println(df_old.drop("count","kw").dropDuplicates().count())
+
+
+          //val df_new = getDataURLS(spark, "AR", 15 , 16 )
+          val df_new = getSelectedKeywords(spark,  15 , 16 )
+          .filter("domain=='zonajobs'")
+
+          //println(df_new.groupBy("domain").agg(sum(col("count")) as "total_hits").show())
+
+          println(df_new.drop("count","kw").dropDuplicates().count())
+
+      */
+
+
+      /**
+
+      def getString =
+          udf((array: Seq[String]) => array.map(_.toString).mkString(","))
+
+      val df_keys = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/misc/all_kws_tojoin.csv")
+
+      val df_old = getDataKeywords(spark,"AR",15,31,0)
+
+      val data_old = getJointKeys(df_keys, df_old, false)
+      .withColumn("kws",getString(col("kws")))
+      .withColumn("domain",getString(col("domain")))   
+      
+      data_old.write
+            .format("csv")
+            .option("header",true)
+            .mode(SaveMode.Overwrite)
+            .save("/datascience/misc/df_old_all")
+
+      val df_new = getDataKeywords(spark,"AR",15,11,0)
+
+      val data_new = getJointKeys(df_keys, df_new, false)
+      .withColumn("kws",getString(col("kws")))
+      .withColumn("domain",getString(col("domain")))   
+      
+      data_new.write
+            .format("csv")
+            .option("header",true)
+            .mode(SaveMode.Overwrite)
+            .save("/datascience/misc/df_new_all")
+
+      */
+
+      /**
+
+      //103984
+      val keywords = "base|dato,c++,data|base,develop,golang,java,json,linux,php,programacion|lenguaje,sdk,simple|text,sql"
+          
+      val domain_filter =  "domain IN ('bumeran', 'konzerta', 'laborum', 'multitrabajos', 'zonajobs')"
+
+      /** Format all keywords from queries to join */
+      import spark.implicits._
+      val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
+      val df_keys = trimmedList.toDF().withColumnRenamed("value", "content_keywords")
+
+      val df_old = getDataKeywords(spark,"AR",15,31,0)
+      //.filter(domain_filter)
+
+      val data_old = getJointKeys(df_keys, df_old, false)
+      .withColumn("kws",getString(col("kws")))
+      .withColumn("domain",getString(col("domain")))   
+      
+      data_old.write
+            .format("csv")
+            .option("header",true)
+            .mode(SaveMode.Overwrite)
+            .save("/datascience/misc/df_old_103984_NOF")
+
+      val df_new = getDataKeywords(spark,"AR",15,11,0)
+      //.filter(domain_filter)
+
+      val data_new = getJointKeys(df_keys, df_new, false)
+      .withColumn("kws",getString(col("kws")))
+      .withColumn("domain",getString(col("domain")))   
+      
+      data_new.write
+            .format("csv")
+            .option("header",true)
+            .mode(SaveMode.Overwrite)
+            .save("/datascience/misc/df_new_103984_NOF")
+
+      */
+
+      /**
+
+      //val domain_filter =  "domain IN ('autocosmos', 'autoscerokm', 'demotores', 'olx')"
+
+      val domain_filter = "domain IN ('bumeran', 'konzerta', 'laborum', 'multitrabajos', 'perfil', 'taringa', 'upsocl', 'zonajobs')"
+
+      //val query ="((array_contains(kw, 'hybrid') OR array_contains(kw, 'rimac') OR array_contains(kw, 'tesla')) or ((array_contains(kw, 'bmw') and array_contains(kw, 'i3')) or ((array_contains(kw, 'nissan') and array_contains(kw, 'leaf')) or ((array_contains(kw, 'renault') and array_contains(kw, 'twizy')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'model3')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'models')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'modelx')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'p900')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'spider')) or ((array_contains(kw, 'toyota') and array_contains(kw, 'prius')) or ((array_contains(kw, 'auto') and array_contains(kw, 'electrico')) or (array_contains(kw, 'vehiculo') and array_contains(kw, 'electrico')))))))))))))"
+
+      val query = "(array_contains(kw, 'biogeografia') OR array_contains(kw, 'biologa') OR array_contains(kw, 'biologia') OR array_contains(kw, 'biologica') OR array_contains(kw, 'biologicas') OR array_contains(kw, 'biologico') OR array_contains(kw, 'biologicos') OR array_contains(kw, 'biologo') OR array_contains(kw, 'bioquimica') OR array_contains(kw, 'embriologia') OR array_contains(kw, 'etologia') OR array_contains(kw, 'fisiologia') OR array_contains(kw, 'microbiologia') OR array_contains(kw, 'neurociencia') OR array_contains(kw, 'primatologia') OR array_contains(kw, 'protozoologia') OR array_contains(kw, 'virologia'))"
+
+      //val df_old = getSelectedKeywords(spark,15,29)
+      val df_old = getSelectedKeywords(spark,15,31)    
+      .filter(domain_filter)
+      .withColumn("kw", split(col("kw"), " "))
+      .filter(query)
+      .withColumn("kw",getString(col("kw")))
+      
+      df_old.write
+            .format("csv")
+            .option("header",true)
+            .mode(SaveMode.Overwrite)
+            .save("/datascience/misc/df_old_query_103921")
+
+      //val df_new = getSelectedKeywords(spark,15,2)
+      val df_new = getSelectedKeywords(spark,15,4)    
+      .filter(domain_filter)
+      .withColumn("kw", split(col("kw"), " "))
+      .filter(query)
+      .withColumn("kw",getString(col("kw")))          
+
+      df_new.write
+            .format("csv")
+            .option("header",true)
+            .mode(SaveMode.Overwrite)
+            .save("/datascience/misc/df_new_query_103921")
+
+      */
+
+      /**
+      val df_old = spark.read.format("csv")
+      .option("delimiter","\t")
+      .option("header",false)
+      .load("/datascience/keywiser/test/AR_big_scrapper_test_15Dsince27*")
+      .toDF("device_type", "device_id","segment")
+      .groupBy("device_id").agg(countDistinct("segment") as "segment_count")
+
+      println("old overlap mean:")
+      println(df_old.select(mean(col("segment_count"))).show())
+      
+
+      val df_new = spark.read.format("csv")
+      .option("delimiter","\t")
+      .option("header",false)
+      .load("/datascience/keywiser/test/AR_big_scrapper_test_15Dsince1*")
+      .toDF("device_type", "device_id","segment")
+      .groupBy("device_id").agg(countDistinct("segment") as "segment_count")
+
+      println("new overlap mean:")
+      println(df_new.select(mean(col("segment_count"))).show())
+
+      df_old.write
+          .format("csv")
+          .option("delimiter","\t")
           .option("header",true)
           .mode(SaveMode.Overwrite)
-          .save("/datascience/misc/df_old_103984_NOF")
+          .save("/datascience/misc/scrapper_overlap_old")
 
-    val df_new = getDataKeywords(spark,"AR",15,11,0)
-    //.filter(domain_filter)
-
-    val data_new = getJointKeys(df_keys, df_new, false)
-    .withColumn("kws",getString(col("kws")))
-    .withColumn("domain",getString(col("domain")))   
-    
-    data_new.write
+      df_new.write
           .format("csv")
+          .option("delimiter","\t")
           .option("header",true)
           .mode(SaveMode.Overwrite)
-          .save("/datascience/misc/df_new_103984_NOF")
+          .save("/datascience/misc/scrapper_overlap_new")    
+
 
     */
-
-    /**
-
-    //val domain_filter =  "domain IN ('autocosmos', 'autoscerokm', 'demotores', 'olx')"
-
-    val domain_filter = "domain IN ('bumeran', 'konzerta', 'laborum', 'multitrabajos', 'perfil', 'taringa', 'upsocl', 'zonajobs')"
-
-    //val query ="((array_contains(kw, 'hybrid') OR array_contains(kw, 'rimac') OR array_contains(kw, 'tesla')) or ((array_contains(kw, 'bmw') and array_contains(kw, 'i3')) or ((array_contains(kw, 'nissan') and array_contains(kw, 'leaf')) or ((array_contains(kw, 'renault') and array_contains(kw, 'twizy')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'model3')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'models')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'modelx')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'p900')) or ((array_contains(kw, 'tesla') and array_contains(kw, 'spider')) or ((array_contains(kw, 'toyota') and array_contains(kw, 'prius')) or ((array_contains(kw, 'auto') and array_contains(kw, 'electrico')) or (array_contains(kw, 'vehiculo') and array_contains(kw, 'electrico')))))))))))))"
-
-    val query = "(array_contains(kw, 'biogeografia') OR array_contains(kw, 'biologa') OR array_contains(kw, 'biologia') OR array_contains(kw, 'biologica') OR array_contains(kw, 'biologicas') OR array_contains(kw, 'biologico') OR array_contains(kw, 'biologicos') OR array_contains(kw, 'biologo') OR array_contains(kw, 'bioquimica') OR array_contains(kw, 'embriologia') OR array_contains(kw, 'etologia') OR array_contains(kw, 'fisiologia') OR array_contains(kw, 'microbiologia') OR array_contains(kw, 'neurociencia') OR array_contains(kw, 'primatologia') OR array_contains(kw, 'protozoologia') OR array_contains(kw, 'virologia'))"
-
-    //val df_old = getSelectedKeywords(spark,15,29)
-    val df_old = getSelectedKeywords(spark,15,31)    
-    .filter(domain_filter)
-    .withColumn("kw", split(col("kw"), " "))
-    .filter(query)
-    .withColumn("kw",getString(col("kw")))
-    
-    df_old.write
-          .format("csv")
-          .option("header",true)
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/misc/df_old_query_103921")
-
-    //val df_new = getSelectedKeywords(spark,15,2)
-    val df_new = getSelectedKeywords(spark,15,4)    
-    .filter(domain_filter)
-    .withColumn("kw", split(col("kw"), " "))
-    .filter(query)
-    .withColumn("kw",getString(col("kw")))          
-
-    df_new.write
-          .format("csv")
-          .option("header",true)
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/misc/df_new_query_103921")
-
-    */
-
-    /**
-    val df_old = spark.read.format("csv")
-    .option("delimiter","\t")
-    .option("header",false)
-    .load("/datascience/keywiser/test/AR_big_scrapper_test_15Dsince27*")
-    .toDF("device_type", "device_id","segment")
-    .groupBy("device_id").agg(countDistinct("segment") as "segment_count")
-
-    println("old overlap mean:")
-    println(df_old.select(mean(col("segment_count"))).show())
-    
-
-    val df_new = spark.read.format("csv")
-    .option("delimiter","\t")
-    .option("header",false)
-    .load("/datascience/keywiser/test/AR_big_scrapper_test_15Dsince1*")
-    .toDF("device_type", "device_id","segment")
-    .groupBy("device_id").agg(countDistinct("segment") as "segment_count")
-
-    println("new overlap mean:")
-    println(df_new.select(mean(col("segment_count"))).show())
-
-    df_old.write
-        .format("csv")
-        .option("delimiter","\t")
-        .option("header",true)
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/misc/scrapper_overlap_old")
-
-    df_new.write
-        .format("csv")
-        .option("delimiter","\t")
-        .option("header",true)
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/misc/scrapper_overlap_new")    
-
-
-   */
 
     /**
     val country = "AR"
