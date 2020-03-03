@@ -388,7 +388,7 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-       val conf = spark.sparkContext.hadoopConfiguration
+    val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
@@ -403,7 +403,7 @@ val udfGetDomain = udf(
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/"
+      .map(day => path + "/day=%s/")
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
 
@@ -433,7 +433,7 @@ val udfGetDomain = udf(
 
       */
 
-      
+
       /**
       val df_old_dump =  spark.read
           .format("csv")
