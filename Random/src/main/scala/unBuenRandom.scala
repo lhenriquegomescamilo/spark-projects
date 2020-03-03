@@ -831,7 +831,7 @@ def getDataTriplets(
 //Levantamos los pii
 
 //Aca tenemos los usuarios que devuelve el geodevicer
-val useg  = spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/geo_processed/JCDecauxOOH_updated_02_03_20_12d_mexico_3-3-2020-10h_users_data").drop("day","country","id_partner","ID").toDF("device_id","segmentID").withColumn("device_id",lower(col("device_id")))
+val useg  = spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/geo_processed/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h_users_data").drop("day","country","id_partner","ID").toDF("device_id","segmentID").withColumn("device_id",lower(col("device_id")))
 
 //Estos usuarios tienen las features, y en base a estas features queremos meterles un nombre de audiencia. Queremos taggear los usuarios en base a su info web. Un user puede pertenecer a múltiples clusters. Después vamos a tener que ir a los carteles y contar, pero vamos a eso después. Primero el taggeo
 
@@ -848,7 +848,7 @@ val tagged = useg.join(cluster,Seq("segmentId")).drop("segmentId").distinct()
 
 //Levantamos la tabla de equivalencias
 val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/crossdeviced/JCDecauxOOH_updated_02_03_20_12d_mexico_3-3-2020-10h_xd_equivalence_table")
+.load("/datascience/geo/crossdeviced/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h_xd_equivalence_table")
 .withColumn("device_id_origin",lower(col("device_id_origin")))
 .withColumn("device_id_xd",lower(col("device_id_xd")))
 .drop("device_type_origin","device_type_xd")
@@ -872,7 +872,7 @@ spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
 //extraemos los tiempos
 
 val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/raw_output/JCDecauxOOH_updated_02_03_20_12d_mexico_3-3-2020-10h")
+.load("/datascience/geo/raw_output/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h")
 .withColumn("device_id", lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
  .withColumn("Hour", date_format(col("Time"), "HH"))
