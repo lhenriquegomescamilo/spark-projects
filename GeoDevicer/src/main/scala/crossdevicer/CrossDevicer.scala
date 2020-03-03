@@ -147,7 +147,7 @@ val already_saved = spark.read.format("csv")
 
 
 //This is the same data, but ready to push
-    val output_path_push = "/datascience/geo/crossdeviced/%s_push".format(value_dictionary("output_file")
+    val output_path_push = "/datascience/geo/crossdeviced/%s_push".format(value_dictionary("poi_output_file")
     )
     already_saved
     .filter(col("frequency")>=value_dictionary("minFreq").toInt)
