@@ -1,7 +1,7 @@
 package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.SaveMode
+
 import org.joda.time.Days
 import org.apache.spark._
 import org.joda.time.DateTime
@@ -12,26 +12,6 @@ import org.apache.spark.sql.functions._
 import org.jsoup.Jsoup
 import org.joda.time.DateTime
 import org.apache.spark.sql.{SaveMode, DataFrame}
-import org.apache.spark.sql.functions.broadcast
-import org.apache.spark.sql.functions.{
-  upper,
-  count,
-  col,
-  abs,
-  udf,
-  regexp_replace,
-  split,
-  lit,
-  explode,
-  length,
-  to_timestamp,
-  from_unixtime,
-  date_format,
-  sum
-}
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.types.{
  StructType,
@@ -40,7 +20,7 @@ import org.apache.spark.sql.types.{
  IntegerType
 }
 import org.apache.spark.sql.{Column, Row}
-import scala.util.Random.shuffle
+
 
 /**
   * The idea of this script is to Ingest Urls daily to local servers for Scrapper.
@@ -62,7 +42,6 @@ object CrawlerForms {
               .mode("append")
               .partitionBy("day")
               .save("/datascience/forms/")
-        
     }
 
   /*****************************************************/
