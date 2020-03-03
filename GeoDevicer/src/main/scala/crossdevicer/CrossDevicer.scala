@@ -164,13 +164,13 @@ val already_saved = spark.read.format("csv")
  val allUserCount = already_saved
 .withColumn(value_dictionary("poi_column_name"),split(col(value_dictionary("poi_column_name")),","))
 .withColumn(value_dictionary("poi_column_name"),explode(col(value_dictionary("poi_column_name"))))
-.groupBy(value_dictionary("poi_column_name")).agg(approx_count_distinct("device_id", rsd = 0.03) as "total_devices")
+.groupBy(value_dictionary("poi_column_name")).agg(countDistinct("device_id") as "total_devices")
 
 val validUserCount = already_saved
 .filter("validUser == true")
 .withColumn(value_dictionary("poi_column_name"),split(col(value_dictionary("poi_column_name")),","))
 .withColumn(value_dictionary("poi_column_name"),explode(col(value_dictionary("poi_column_name"))))
-.groupBy(value_dictionary("poi_column_name")).agg(approx_count_distinct("device_id", rsd = 0.03) as "valid_user_devices")
+.groupBy(value_dictionary("poi_column_name")).agg(countDistinct("device_id") as "valid_user_devices")
 
 val output_path_volume_table = "/datascience/geo/crossdeviced/%s_volume_count".format(value_dictionary("poi_output_file"))
 
