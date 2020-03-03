@@ -30,6 +30,10 @@ object CrawlerForms {
 
     val udfForm = udf((html: String) => org.jsoup.Jsoup.parse(html).select("form").select("input").attr("type").toString)
 
+    // Config
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
     // Get the days to be loaded
     val format = "yyyyMMdd"
     val today = DateTime.now().toString(format)
@@ -43,7 +47,6 @@ object CrawlerForms {
     var hdfs_files = days
       .map(day => path + "/day=%s/".format(day)) 
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
-
 
     spark.read
       .option("basePath", path)
