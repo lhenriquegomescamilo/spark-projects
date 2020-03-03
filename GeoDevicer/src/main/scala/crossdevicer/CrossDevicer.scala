@@ -150,8 +150,7 @@ val already_saved = spark.read.format("csv")
     val output_path_push = "/datascience/geo/crossdeviced/%s_push".format(value_dictionary("poi_output_file")
     )
     already_saved
-    .filter(col("frequency")>=value_dictionary("minFreq").toInt)
-    .select("device_type","device_id","audience")
+    .select("device_type","device_id","audience") //.filter(col("frequency")>=value_dictionary("min_frequency_of_detection").toInt)
     .repartition(10)
     .write
       .format("csv")
