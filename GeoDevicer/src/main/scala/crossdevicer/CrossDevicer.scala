@@ -150,7 +150,7 @@ val already_saved = spark.read.format("csv")
     val output_path_push = "/datascience/geo/crossdeviced/%s_push".format(value_dictionary("poi_output_file")
     )
     already_saved
-    .select("device_type","device_id",value_dictionary("audience_column_name")) //.filter(col("frequency")>=value_dictionary("min_frequency_of_detection").toInt)
+    .select("device_type","device_id",value_dictionary("poi_column_name")) //.filter(col("frequency")>=value_dictionary("min_frequency_of_detection").toInt)
     .repartition(10)
     .write
       .format("csv")
@@ -164,7 +164,7 @@ val already_saved = spark.read.format("csv")
  val allUserCount = already_saved
 .withColumn(value_dictionary("poi_column_name"),split(col(value_dictionary("poi_column_name")),","))
 .withColumn(value_dictionary("poi_column_name"),explode(col(value_dictionary("poi_column_name"))))
-.groupBy("name").agg(approx_count_distinct("device_id", rsd = 0.03) as "total_devices")
+.groupBy(value_dictionary("poi_column_name")).agg(approx_count_distinct("device_id", rsd = 0.03) as "total_devices")
 
 val validUserCount = already_saved
 .filter("validUser == true")
