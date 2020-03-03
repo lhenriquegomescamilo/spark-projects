@@ -405,6 +405,7 @@ val udfGetDomain = udf(
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
     import sqlContext.implicits._
+    import spark.implicits._
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
