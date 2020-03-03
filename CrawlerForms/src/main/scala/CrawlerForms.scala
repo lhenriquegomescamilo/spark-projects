@@ -37,8 +37,8 @@ object CrawlerForms {
     // Get the days to be loaded
     val format = "yyyyMMdd"
     val today = DateTime.now().toString(format)
-    var start = DateTime.now.minusDays(1)
-    var end = DateTime.now.minusDays(1+7)
+    var start = DateTime.now.minusDays(1+7)
+    var end = DateTime.now.minusDays(1)
     var daysCount = Days.daysBetween(start, end).getDays()
     var days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
     val path = "/datascience/scraper/raw/processed"
