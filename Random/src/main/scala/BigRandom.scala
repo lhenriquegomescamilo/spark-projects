@@ -416,7 +416,7 @@ val udfGetDomain = udf(
         .groupBy("domain")
         .agg(approx_count_distinct(col("url"), 0.03).as("count_old_dump"))
 
-    val df_old_sk = getSelectedKeywords(spark, 15 , 43 )
+    val df_old_sk = getSelectedKeywords(spark, 15 , 23 )
     .select("url_raw")
     .selectExpr("*", "parse_url(url_raw, 'HOST') as domain")
     .groupBy("domain")
