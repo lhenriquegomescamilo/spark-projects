@@ -140,7 +140,8 @@ object Ranlp {
           )
     
     doc.withColumn("tmp", explode(col("pos"))).select("tmp.*")
-      .withColumn("metadata", getWord(col("metadata")))
+      .withColumn("keyword", getWord(col("metadata")))
+      .select("text","keyword","result")
       .write.format("csv")
       .option("header", "true")
       .option("sep", "\t")
