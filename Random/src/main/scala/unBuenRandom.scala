@@ -911,7 +911,7 @@ cluster_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_QUEEN_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_JACK_%s".format(today))
 
 all_day_long_count
 .repartition(1)
@@ -920,7 +920,7 @@ all_day_long_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_QUEEN_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_JACK_%s".format(today))
 
 total_time_count
 .repartition(1)
@@ -929,7 +929,7 @@ total_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/total_time_count_QUEEN_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/total_time_count_JACK_%s".format(today))
 
 all_day_total_time_count
 .repartition(1)
@@ -938,7 +938,7 @@ all_day_total_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_QUEEN_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_JACK_%s".format(today))
 
 
 }
