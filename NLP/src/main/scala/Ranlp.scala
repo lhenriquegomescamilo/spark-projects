@@ -42,13 +42,13 @@ object Ranlp {
     .getOrCreate()
 
     
-    val path = "/datascience/scraper/temp_dump/2020-02-10_daily.csv"
+    val path = "/datascience/scraper/temp_dump2/2020-02-10_daily.csv"
     val df = spark.read
             .format("csv")
             .option("header", "True")
             .option("sep", "\t")
             .load(path)
-            .select("text")
+            .select("url","text")
             .na. drop()
 
     val documentAssembler = new DocumentAssembler()               
@@ -82,17 +82,17 @@ object Ranlp {
     */  
 
 
-    /**
+    
 
-    PARTE DE POS CIMNENTADA MARCH 2
-    val spanish_pos = PerceptronModel.pretrained("pos_ud_gsd", lang="es")
+    //val spanish_pos = PerceptronModel.pretrained("pos_ud_gsd", lang="es")
 
+    val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
+
+    
     val posTagger = spanish_pos
     .setInputCols(Array("sentence", "token"))
     .setOutputCol("pos")
 
-
-    */
 
 
     /**
@@ -107,7 +107,7 @@ object Ranlp {
     .fit(trainPOS)
     */
 
-    /*
+    
 
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
@@ -117,7 +117,7 @@ object Ranlp {
     ))
 
 
-    */
+    /**
 
 
     val pipeline = new Pipeline().setStages(Array(
@@ -126,18 +126,36 @@ object Ranlp {
         tokenizer
     ))
 
-
+    */
     val doc = pipeline.fit(df).transform(df)
 
-    println(doc.show())
+    //println(doc.withColumn("tmp", explode(col("pos"))).select("tmp.*").show())
 
-    /**
-    doc.write.format("csv")
+    //println(doc.show())
+
+    def getWord =
+          udf(
+            (mapa: Map[String,String]) =>
+              mapa("word")
+          )
+    
+    def getString =
+    udf((array: Seq[String]) => array.map(_.toString).mkString(","))
+
+    doc.withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
+      .withColumn("keyword", getWord(col("metadata")))
+      .select("url","keyword","result")
+      .filter("result = 'NOUN' or result = 'PROPN'")
+      .groupBy("url")
+      .agg(collect_list("keyword").as("kws"))
+      .withColumn("kws",getString(col("kws")))
+      .select("url","kws")
+      .write.format("csv")
       .option("header", "true")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/testnlp.csv")
-    */
+      .save("/datascience/misc/testnlp2.csv")
+    
 
 
 
