@@ -830,7 +830,7 @@ def getDataTriplets(
 
 val today = (java.time.LocalDate.now).toString
 val useg  = spark.read.format("csv").option("header",true).option("delimiter",",")
-.load("/datascience/geo/geo_processed/JCDecauxOOH_120d_mexico_5-2-2020-13h_output_path_users_data/")
+.load("/datascience/geo/geo_processed/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h_users_data/")
 .drop("day","country","id_partner","ID")
 .toDF("device_id","segmentID")
 .withColumn("device_id",lower(col("device_id")))
@@ -847,7 +847,7 @@ val tagged = useg.join(cluster,Seq("segmentId")).drop("segmentId").distinct()
 //Con esto ya podríamos hacer conteo de usuarios por cartel, pero necesitamos por horario, así que vamos a des-crosdevicear, vamos a taggear a lo geo en base a esto
 //Levantamos la tabla de equivalencias
 val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/crossdeviced/JCDecauxOOH_120d_mexico_5-2-2020-13h_xd_equivalence_table")
+.load("/datascience/geo/crossdeviced/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h_xd_equivalence_table")
 .withColumn("device_id_origin",lower(col("device_id_origin")))
 .withColumn("device_id_xd",lower(col("device_id_xd")))
 .drop("device_type_origin","device_type_xd")
@@ -911,7 +911,7 @@ cluster_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_REGAL_%s".format(today))
 
 all_day_long_count
 .repartition(1)
@@ -920,7 +920,7 @@ all_day_long_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_REGAL_%s".format(today))
 
 total_time_count
 .repartition(1)
@@ -929,7 +929,7 @@ total_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/total_time_count_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/total_time_count_REGAL_%s".format(today))
 
 all_day_total_time_count
 .repartition(1)
@@ -938,7 +938,7 @@ all_day_total_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_REGAL_%s".format(today))
 
 
 }
