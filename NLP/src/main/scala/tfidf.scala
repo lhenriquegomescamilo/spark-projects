@@ -56,9 +56,10 @@ object tfidf {
       .agg(countDistinct("doc_id") as "df")
 
 
+    /*
     val calcIdfUdf = udf { df: Long => calcIdf(docCount, df) } 
 
-    //def calcIdf = IDF(t,D) = log[ (|D| + 1) / (DF(t,D) + 1) ] 
+    def calcIdf = IDF(t,D) = log[ (|D| + 1) / (DF(t,D) + 1) ] 
 
     def getAllPlatforms =
       udf((array: Seq[Integer]) => array.reduce((i1, i2) => i1 | i2).toInt)
@@ -72,7 +73,7 @@ object tfidf {
 
     //tfidf_docs.merge(df)  
 
-            
+      */      
 
 
 
