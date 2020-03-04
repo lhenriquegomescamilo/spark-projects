@@ -48,7 +48,7 @@ object Ranlp {
             .option("header", "True")
             .option("sep", "\t")
             .load(path)
-            .select("text")
+            .select("url","text")
             .na. drop()
 
     val documentAssembler = new DocumentAssembler()               
@@ -139,14 +139,22 @@ object Ranlp {
               mapa("word")
           )
     
-    doc.withColumn("tmp", explode(col("pos"))).select("text","tmp.*")
+    def getString =
+    udf((array: Seq[String]) => array.map(_.toString).mkString(","))
+
+    doc.withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
       .withColumn("keyword", getWord(col("metadata")))
-      .select("text","keyword","result")
+      .select("url","keyword","result")
+      .filter("result = 'NOUN' or result = 'PROPN'")
+      .groupBy("url")
+      .agg(collect_list("keyword").as("kws"))
+      .withColumn("kws",getString(col("kws")))
+      .select("url","kws")
       .write.format("csv")
       .option("header", "true")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/testnlp.csv")
+      .save("/datascience/misc/testnlp2.csv")
     
 
 
