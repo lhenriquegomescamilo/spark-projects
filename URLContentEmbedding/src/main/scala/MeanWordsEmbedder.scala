@@ -13,7 +13,7 @@ import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
 
 /**
-* MeanWordsEmbedders
+* MeanWordsEmbedder
 *
 * This class generates a vectorial representation of the scraped content of urls.
 * The data is read from html parsed by Newspaper3k python library. It extracts all words from headers and title of html.
@@ -26,22 +26,22 @@ import scala.collection.mutable.WrappedArray
 object MeanWordsEmbedder {
 
   // Path of parsed HTMLs to process.
-  private var INPUT_PATH = "/datascience/scraper/parsed/processed/"
+  private val INPUT_PATH = "/datascience/scraper/parsed/processed/"
 
   // Quality Filter: Minimum number of detected words in HTML by the pretrained embedding model.
-  private var MIN_UNIQUE_EMB_WORDS = 3
+  private val MIN_UNIQUE_EMB_WORDS = 3
 
   // Spanish pretrained embedding model (without stopwords, accents removed, lowered)
-  private var SP_EMBEDDING_PATH = "/datascience/scraper/embeddings/models/sp_nostopwords_embeddings_small.csv"
+  private val SP_EMBEDDING_PATH = "/datascience/scraper/embeddings/models/sp_mean_model_embeddings.csv"
 
   // List of spanish special characters used in language detection
-  private var SP_CHARACERS = List("á", "é", "í", "ó", "ú","ü", "ñ", "¿", "¡")
+  private val SP_CHARACTERS = List("á", "é", "í", "ó", "ú","ü", "ñ", "¿", "¡")
 
   // List of portuguese special characters used in language detection
-  private var PT_CHARACERS = List("á", "â", "ã", "à", "ç", "é", "ê", "í", "ó", "ô", "õ", "ú", "¿", "¡")
+  private val PT_CHARACTERS = List("á", "â", "ã", "à", "ç", "é", "ê", "í", "ó", "ô", "õ", "ú", "¿", "¡")
 
   // List of spanish stopwords used in language detection (lowered, accents removed)
-  private var SP_STOPWORDS = List("a", "al", "algo", "algunas", "algunos", "ante", "antes", "como", "con", "contra", "cual", "cuando",
+  private val SP_STOPWORDS = List("a", "al", "algo", "algunas", "algunos", "ante", "antes", "como", "con", "contra", "cual", "cuando",
                                   "de", "del", "desde", "donde", "durante", "e", "el", "ella", "ellas", "ellos", "en", "entre", "era",
                                   "erais", "eramos", "eran", "eras", "eres", "es", "esa", "esas", "ese", "eso", "esos", "esta", "estaba",
                                   "estabais", "estabamos", "estaban", "estabas", "estad", "estada", "estadas", "estado", "estados", "estais",
@@ -71,7 +71,7 @@ object MeanWordsEmbedder {
                                   "y", "ya", "yo")
 
   // List of portuguese stopwords used in language detection (lowered, accents removed)
-  private var PT_STOPWORDS = List("a", "ao", "aos", "aquela", "aquelas", "aquele", "aqueles", "aquilo", "as", "ate", "com", "como", "da", "das", "de", "dela", "delas", "dele",
+  private val PT_STOPWORDS = List("a", "ao", "aos", "aquela", "aquelas", "aquele", "aqueles", "aquilo", "as", "ate", "com", "como", "da", "das", "de", "dela", "delas", "dele",
                                   "deles", "depois", "do", "dos", "e", "ela",  "elas", "ele", "eles", "em", "entre", "era", "eram", "eramos", "essa", "essas", "esse", "esses",
                                   "esta", "estamos", "estao", "estas", "estava", "estavam", "estavamos", "este", "esteja", "estejam", "estejamos", "estes", "esteve", "estive",
                                   "estivemos", "estiver", "estivera", "estiveram", "estiveramos", "estiverem", "estivermos", "estivesse", "estivessem", "estivessemos", "estou",
@@ -86,7 +86,7 @@ object MeanWordsEmbedder {
                                   "tivesse", "tivessem", "tivessemos", "tu", "tua", "tuas", "um", "uma", "voce", "voces", "vos")
 
   // List of english stopwords used in language detection (lowered)
-  private var EN_STOPWORDS = List("a", "about", "above", "after", "again", "against", "ain", "all", "am", "an", "and", "any", "are", "aren", "aren't",
+  private val EN_STOPWORDS = List("a", "about", "above", "after", "again", "against", "ain", "all", "am", "an", "and", "any", "are", "aren", "aren't",
                                   "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can", "couldn",
                                   "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "during",
                                   "each", "few", "for", "from", "further", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't",
@@ -195,23 +195,45 @@ object MeanWordsEmbedder {
   * @return Dataframe <url, domain, content, words, lang>
   */
   def detectLanguage(spark: SparkSession,
-                    dfTokenized: DataFrame) = {  
-    val nuniqueCharSP = udf((text: String) => SP_CHARACERS.map(ch => if(text contains ch) 1 else 0 ).sum )
-    val nuniqueCharPT = udf((text: String) => PT_CHARACERS.map(ch => if(text contains ch) 1 else 0 ).sum )
+                    dfTokenized: DataFrame) =  { 
+    
+   // it creates local variables (it's needed for udf functions)
+   var sp_characters = SP_CHARACTERS
+   var pt_characters = PT_CHARACERS
+   var sp_stpowords = SP_STOPWORDS
+   var pt_stopwords = PT_STOPWORDS
+   var en_stopwords = EN_STOPWORDS                               )
 
-    val countStopwordsSP = udf((words: List[String]) => words.map(w => if(SP_STOPWORDS contains w ) 1 else 0 ).sum)
-    val countStopwordsPT = udf((words: List[String]) => words.map(w => if(PT_STOPWORDS contains w ) 1 else 0 ).sum)
-    val countStopwordsEN = udf((words: List[String]) => words.map(w => if(EN_STOPWORDS contains w ) 1 else 0 ).sum)
+   val nuniqueCharSP = udf((text: String) => sp_characters.map(ch => if(text contains ch) 1 else 0 ).sum )
+   val nuniqueCharPT = udf((text: String) => pt_characters.map(ch => if(text contains ch) 1 else 0 ).sum )
 
-    val predLanguage = udf((swSP: Int, swPT: Int, swEN: Int, chSP: Int, chPT: Int) =>
-      if(swSP + swPT + swEN + chSP + chPT == 0) null // no stopwords or accents
-      else if(swSP > swPT && swSP > swEN ) "sp" // largest number of stop words in Spanish
-      else if(swPT > swSP && swPT > swEN ) "pt" // largest number of stop words in Portuguese
-      else if(swEN > swSP && swEN > swPT ) "en" // largest number of stop words in English
-      else if(swSP == swPT && swSP > swEN ) { if(chPT > chSP) "pt" else "sp" } // Portuguese - Spanish tie, check accents (default Spanish)
-      else if(swEN == swSP && swEN > swPT ) { if(chSP > 0) "sp" else "en" } // English - Spanish tie, check accents
-      else if(swEN == swPT && swEN > swSP ) { if(chPT > 0) "pt" else "en" } // English - Portuguese tie, check accents
-      else if(chSP == 0 && chPT == 0) "en" // English - Spanish - Portuguese tie, check accents
+    val countStopwordsSP = udf((words: WrappedArray[String]) => words.map(w => if(sp_stpowords contains w ) 1 else 0 ).sum)
+    val countStopwordsPT = udf((words: WrappedArray[String]) => words.map(w => if(pt_stopwords contains w ) 1 else 0 ).sum)
+    val countStopwordsEN = udf((words: WrappedArray[String]) => words.map(w => if(en_stopwords contains w ) 1 else 0 ).sum)
+
+    val predLanguage = udf((swSP: Int, swPT: Int, swEN: Int, chSP: Int, chPT: Int) => 
+      // no stopwords or accents
+      if(swSP + swPT + swEN + chSP + chPT == 0) null 
+      
+      // largest number of stop words 
+      else if(swSP > swPT && swSP > swEN ) "sp" 
+      else if(swPT > swSP && swPT > swEN ) "pt" 
+      else if(swEN > swSP && swEN > swPT ) "en"
+    
+      // Portuguese - Spanish tie, check accents (default Spanish)
+      else if((swSP == swPT && swSP > swEN) && (chPT > chSP)) "pt" 
+      else if((swSP == swPT && swSP > swEN) && (chPT <= chSP)) "sp"
+    
+      // English - Spanish tie, check accents
+      else if((swEN == swSP && swEN > swPT) && (chSP > 0)) "sp" 
+      else if((swEN == swSP && swEN > swPT) && (chSP == 0)) "en" 
+      
+      // English - Portuguese tie, check accents
+      else if((swEN == swPT && swEN > swSP) && (chPT > 0)) "pt"
+      else if((swEN == swPT && swEN > swSP) && (chPT == 0)) "en"
+      
+      // English - Spanish - Portuguese tie, check accents
+      else if(chSP == 0 && chPT == 0) "en" 
       else if(chPT > chSP == 0) "pt" 
       else "sp"
     )
@@ -252,7 +274,7 @@ object MeanWordsEmbedder {
     val avgColumns = wordsEmbeddings.drop("word").columns.map(name => avg(col(name)).as(name)) 
     var df = dfTokenized
         .filter($"lang" === "sp") 
-        .select($"url", $"domain", explode($"tokens").as("word")).dropDuplicates
+        .select($"url", $"domain", explode($"words").as("word")).dropDuplicates
         .join(wordsEmbeddings, Seq("word"), "inner")
         .groupBy("url","domain")
         .agg(count(col("word")).as("n_words"), avgColumns: _*)
@@ -290,7 +312,7 @@ object MeanWordsEmbedder {
           .format("parquet")
           .mode("append")
           .partitionBy("lang", "day", "hour")
-          .save("/datascience/scraper/embedding/data/")
+          .save("/datascience/scraper/embeddings/")
 
   }
 
@@ -317,7 +339,7 @@ object MeanWordsEmbedder {
     val from = if (options.contains('from)) options('from) else 1
 
     val spark = SparkSession.builder
-        .appName("URL Content Embedding")
+        .appName("URL Mean Word Embeddings")
         .config("spark.sql.files.ignoreCorruptFiles", "true")
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()

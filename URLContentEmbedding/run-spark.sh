@@ -1,7 +1,7 @@
 #/bin/bash
 
 /home/rely/spark/bin/spark-submit \
-  --class "main.scala.ShareThisInput"\
+  --class "main.scala.MeanWordsEmbedder"\
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g\
@@ -11,4 +11,4 @@
   --queue spark\
   --conf spark.yarn.maxAppAttempts=1\
   --conf spark.locality.wait=0s \
-  /home/rely/spark-projects/ShareThisUSIngester/target/scala-2.11/sharethis-us-ingester_2.11-1.0.jar --nDays 1 --from 1
+  /home/rely/spark-projects/URLContentEmbedding/target/scala-2.11/url-mean-word-embeddings_2.11-1.0.jar --nDays 1 --from 1
