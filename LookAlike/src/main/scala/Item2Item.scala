@@ -329,15 +329,17 @@ object Item2Item {
     var df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
     
     // backward compatibility (this can cause duplicate devices)
-    if (!df.columns.contains("count"))
+    if (!df.columns.contains("count")){
       df = df.withColumn("count", lit(1))
-    if (!df.columns.contains("activable"))
+    }
+    if (!df.columns.contains("activable")){
       println("Lookalike LOG: WARNING - Data triplets without activable column - (country = %s - from = %s - nDays = %s) - setting default value  = 1".format(country, from, nDays))
       df = df.withColumn("activable", lit(1))
-    if (!df.columns.contains("device_type"))
+    }
+    if (!df.columns.contains("device_type")){
       println("Lookalike LOG: WARNING - Data triplets without device_type column - (country = %s - from = %s - nDays = %s) - setting default value = 'web'".format(country, from, nDays))
       df = df.withColumn("device_type", lit("web"))
-
+    }
     df.select("device_id", "device_type", "activable", "feature", "count")
 
   }
