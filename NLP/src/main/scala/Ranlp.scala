@@ -135,7 +135,7 @@ object Ranlp {
 
     def getWord =
           udf(
-            (mapa: Map) =>
+            (mapa: Map[String,String]) =>
               mapa("word")
           )
     
