@@ -862,7 +862,7 @@ val geo_tagged = tagged.withColumnRenamed("device_id","device_id_xd")
 //Ahora levantamos la raw_data. La necesitamos porque nos piden desagregación por franja horaria
 //extraemos los tiempos
 val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/raw_output/JCDecauxOOH_updated_11_02_20_120d_mexico_11-2-2020-11h")
+.load("/datascience/geo/raw_output/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h")
 .withColumn("device_id", lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
  .withColumn("Hour", date_format(col("Time"), "HH"))
@@ -911,7 +911,7 @@ cluster_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_REGAL_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_QUEEN_%s".format(today))
 
 all_day_long_count
 .repartition(1)
@@ -920,7 +920,7 @@ all_day_long_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_REGAL_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_QUEEN_%s".format(today))
 
 total_time_count
 .repartition(1)
@@ -929,7 +929,7 @@ total_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/total_time_count_REGAL_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/total_time_count_QUEEN_%s".format(today))
 
 all_day_total_time_count
 .repartition(1)
@@ -938,7 +938,7 @@ all_day_total_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_REGAL_%s".format(today))
+.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_QUEEN_%s".format(today))
 
 
 }
