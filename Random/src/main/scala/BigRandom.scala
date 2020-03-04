@@ -391,6 +391,34 @@ val udfGetDomain = udf(
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
+
+    val format = "yyyyMMdd"
+    val end = new DateTime(2020,2,10,0,0,0,0) 
+
+    val nDays = 15
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/url_ingester/data"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/".format(day))
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    
+    import spark.implicits._
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .select("url","count")
+      .filter($"url".contains("zonajobs"))
+      .dropDuplicates("url")
+
+    df.write.format("csv").option("header","true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/testzj")  
+
+
+    /*
     // Get the days to be loaded
     val format = "yyyyMMdd"
     val end = new DateTime(2020,2,10,0,0,0,0) 
@@ -414,7 +442,7 @@ val udfGetDomain = udf(
       .dropDuplicates("url")
 
     println(df.count())  
-
+    */
       /**
 
       val df_old = getSelectedKeywords(spark, 15 , 42 )

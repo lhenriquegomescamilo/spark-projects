@@ -133,8 +133,16 @@ object Ranlp {
 
     //println(doc.show())
 
+    def getWord =
+          udf(
+            (mapa: Map[String,String]) =>
+              mapa("word")
+          )
     
-    doc.withColumn("tmp", explode(col("pos"))).select("text","tmp.*").write.format("csv")
+    doc.withColumn("tmp", explode(col("pos"))).select("text","tmp.*")
+      .withColumn("keyword", getWord(col("metadata")))
+      .select("text","keyword","result")
+      .write.format("csv")
       .option("header", "true")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)

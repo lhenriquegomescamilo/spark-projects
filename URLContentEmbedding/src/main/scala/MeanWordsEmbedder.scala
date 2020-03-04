@@ -6,8 +6,6 @@ import org.joda.time.{Days, DateTime}
 import org.joda.time.format.DateTimeFormat
 import org.apache.hadoop.fs.{FileSystem, Path}
 
-
-import spark.implicits._
 import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
@@ -116,6 +114,7 @@ object MeanWordsEmbedder {
       nDays: Int = -1,
       nHours: Int = -1,
       from: Int = 1) = {
+    import spark.implicits._
 
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -123,25 +122,25 @@ object MeanWordsEmbedder {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = {
-    if (nDays != -1){
-        // days resolution
-        val endDate = DateTime.now.minusDays(from)
-        val days = (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString("yyyyMMdd"))
-        days
-        .map(day => INPUT_PATH + "/day=%s/".format(day))
-        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    }
-    else{
-        // hours resolution
-        val endDate = DateTime.now.minusHours(from)
-        val hours = (0 until nHours.toInt).map(endDate.minusHours(_)).map( tm => (tm.toString("yyyyMMdd"),tm.toString("hh") ))        
+      if (nDays != -1){
+          // days resolution
+          val endDate = DateTime.now.minusDays(from)
+          val days = (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString("yyyyMMdd"))
+          days
+          .map(day => INPUT_PATH + "/day=%s/".format(day))
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      }
+      else{
+          // hours resolution
+          val endDate = DateTime.now.minusHours(from)
+          val hours = (0 until nHours.toInt).map(endDate.minusHours(_)).map( tm => (tm.toString("yyyyMMdd"),tm.toString("hh") ))        
 
-        // Now we obtain the list of hdfs folders to be read
-        hours
-        .map(dayHourTuple => INPUT_PATH + "/day=%s/hour=%s/".format(dayHourTuple._1, dayHourTuple._2))
-        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+          // Now we obtain the list of hdfs folders to be read
+          hours
+          .map(dayHourTuple => INPUT_PATH + "/day=%s/hour=%s/".format(dayHourTuple._1, dayHourTuple._2))
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      }
     }
-
         
   
     val df = spark.read.option("basePath", INPUT_PATH).parquet(hdfs_files: _*)
@@ -167,7 +166,8 @@ object MeanWordsEmbedder {
   */
   def tokenize(spark: SparkSession,
                dfContent: DataFrame) = {
-    
+    import spark.implicits._
+
     val stripAccents = udf((text: String) => StringUtils.stripAccents(text))
 
     var df = dfContent.withColumn("tokenizer_input", stripAccents($"content"))
@@ -196,13 +196,13 @@ object MeanWordsEmbedder {
   */
   def detectLanguage(spark: SparkSession,
                     dfTokenized: DataFrame) =  { 
-    
+   import spark.implicits._
    // it creates local variables (it's needed for udf functions)
    var sp_characters = SP_CHARACTERS
-   var pt_characters = PT_CHARACERS
+   var pt_characters = PT_CHARACTERS
    var sp_stpowords = SP_STOPWORDS
    var pt_stopwords = PT_STOPWORDS
-   var en_stopwords = EN_STOPWORDS                               )
+   var en_stopwords = EN_STOPWORDS
 
    val nuniqueCharSP = udf((text: String) => sp_characters.map(ch => if(text contains ch) 1 else 0 ).sum )
    val nuniqueCharPT = udf((text: String) => pt_characters.map(ch => if(text contains ch) 1 else 0 ).sum )
@@ -264,7 +264,7 @@ object MeanWordsEmbedder {
   */
   def spanishEmbedding(spark: SparkSession,
                        dfTokenized: DataFrame) = {  
-
+    import spark.implicits._
     val wordsEmbeddings = spark.read
       .format("csv")
       .option("header","true")
@@ -287,7 +287,6 @@ object MeanWordsEmbedder {
   * Process parsed HTMLs and write results.
   */
   def proccess(spark: SparkSession, nDays: Int = -1, nHours: Int = -1, from: Int = 1){
-
 
     var df = {
       if(nDays != -1)
