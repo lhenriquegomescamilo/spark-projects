@@ -134,7 +134,7 @@ object Ranlp {
     //println(doc.show())
 
     
-    doc.collect().write.format("csv")
+    doc.select("text","pos.*").write.format("csv")
       .option("header", "true")
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
