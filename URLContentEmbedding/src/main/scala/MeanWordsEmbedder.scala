@@ -123,25 +123,25 @@ object MeanWordsEmbedder {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = {
-    if (nDays != -1){
-        // days resolution
-        val endDate = DateTime.now.minusDays(from)
-        val days = (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString("yyyyMMdd"))
-        days
-        .map(day => INPUT_PATH + "/day=%s/".format(day))
-        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    }
-    else{
-        // hours resolution
-        val endDate = DateTime.now.minusHours(from)
-        val hours = (0 until nHours.toInt).map(endDate.minusHours(_)).map( tm => (tm.toString("yyyyMMdd"),tm.toString("hh") ))        
+      if (nDays != -1){
+          // days resolution
+          val endDate = DateTime.now.minusDays(from)
+          val days = (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString("yyyyMMdd"))
+          days
+          .map(day => INPUT_PATH + "/day=%s/".format(day))
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      }
+      else{
+          // hours resolution
+          val endDate = DateTime.now.minusHours(from)
+          val hours = (0 until nHours.toInt).map(endDate.minusHours(_)).map( tm => (tm.toString("yyyyMMdd"),tm.toString("hh") ))        
 
-        // Now we obtain the list of hdfs folders to be read
-        hours
-        .map(dayHourTuple => INPUT_PATH + "/day=%s/hour=%s/".format(dayHourTuple._1, dayHourTuple._2))
-        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+          // Now we obtain the list of hdfs folders to be read
+          hours
+          .map(dayHourTuple => INPUT_PATH + "/day=%s/hour=%s/".format(dayHourTuple._1, dayHourTuple._2))
+          .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      }
     }
-
         
   
     val df = spark.read.option("basePath", INPUT_PATH).parquet(hdfs_files: _*)
@@ -202,7 +202,7 @@ object MeanWordsEmbedder {
    var pt_characters = PT_CHARACERS
    var sp_stpowords = SP_STOPWORDS
    var pt_stopwords = PT_STOPWORDS
-   var en_stopwords = EN_STOPWORDS                               )
+   var en_stopwords = EN_STOPWORDS
 
    val nuniqueCharSP = udf((text: String) => sp_characters.map(ch => if(text contains ch) 1 else 0 ).sum )
    val nuniqueCharPT = udf((text: String) => pt_characters.map(ch => if(text contains ch) 1 else 0 ).sum )
