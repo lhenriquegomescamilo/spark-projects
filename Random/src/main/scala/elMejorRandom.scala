@@ -983,41 +983,38 @@ nse_cl_gt.join(cl_demo,Seq("device_id"))
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+val nse_ar_gt = spark.read.format("csv").load("/datascience/geo/NSEHomes/GroundTruth/NSE_GT_Equifax_90D_AR_2020-03-02").toDF("device_id","ingreso")
+.withColumn("device_id",lower(col("device_id"))).filter(col("ingreso").isin(List(20107,20108,20109,20110): _*))
+val ar_demo =  spark.read.format("parquet").load("/datascience/data_demo/datasets/country=AR/day=20200227")
+.withColumn("device_id",lower(col("device_id")))
 
 
-spark.read.format("csv").option("header",true)
-.load("/datascience/geo/Reports/JCDecaux/tagged_time_2020-03-04").groupBy("WeekDay","DayPeriod","CALLE","longname")
-.agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
+nse_ar_gt.join(ar_demo,Seq("device_id"))
+.select("urls")
+.withColumn("urls",explode(col("urls")))
+.distinct()
+.repartition(1)
 .write
 .mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_CALLE")
+.format("parquet")
+.save("/datascience/misc/NSEIngresoGT_AR_urlist")
+
+val nse_cl_gt = spark.read.format("csv").load("/datascience/geo/NSEHomes/GroundTruth/NSE_GT_Equifax_90D_CL_2020-03-02").toDF("device_id","ingreso")
+.withColumn("device_id",lower(col("device_id"))).filter(col("ingreso").isin(List(136529, 136531, 136533, 136535, 144741, 136537): _*))
+val cl_demo =  spark.read.format("parquet").load("/datascience/data_demo/datasets/country=CL/day=20200229")
+.withColumn("device_id",lower(col("device_id")))
 
 
-
-val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/raw_output/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h")
-.withColumn("device_id", lower(col("device_id")))
-.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
- .withColumn("Hour", date_format(col("Time"), "HH"))
- .withColumn("Date", date_format(col("Time"), "MMM dd"))
- .withColumn("Day", date_format(col("Time"), "EEEE"))
- .withColumn("Month", date_format(col("Time"), "MMM"))
- .na.fill("0")
- .withColumn("WeekDay", when(col("Day").isin(List("Saturday", "Sunday"):_*), "WeekEnd").otherwise("WeekDay"))
- .withColumn("DayPeriod", when(col("Hour")>=0 && col("Hour")<6, "0 - EarlyMorning")
-     .otherwise(when(col("Hour")>=6 && col("Hour")<11, "1 - Morning")
-     .otherwise(when(col("Hour")>=11 && col("Hour")<14, "2 - Noon")
-     .otherwise(when(col("Hour")>=14 && col("Hour")<18, "3 - Evening")
-     .otherwise(when(col("Hour")>=18, "4 - Night"))))))
-.groupBy("WeekDay","DayPeriod","CALLE")
-.agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
+nse_cl_gt.join(cl_demo,Seq("device_id"))
+.select("urls")
+.withColumn("urls",explode(col("urls")))
+.distinct()
+.repartition(1)
 .write
 .mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/geo/Reports/JCDecaux/total_time_count_CALLE")
+.format("parquet")
+.save("/datascience/misc/NSEIngresoGT_CL_urlist")
+
 
 }
 
