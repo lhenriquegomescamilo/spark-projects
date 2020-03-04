@@ -839,7 +839,7 @@ val useg  = spark.read.format("csv").option("header",true).option("delimiter",",
 //Aca levantamos un dataset que nos indica a que cluster pertenece según el feature
 
 val cluster =  spark.read.format("csv").option("header",true).option("delimiter",",")
-.load("/datascience/geo/Reports/JCDecaux/all_clusters_updated_13_02_20_II.csv")
+.load("/datascience/geo/Reports/JCDecaux/all_clusters_updated_13_02_20.csv")
 .select("segmentId","longname").distinct()
 
 //Acá tageamos a los usuarios, ya no necesitamos el segmentId original, lo tiramos y distinct
@@ -847,7 +847,7 @@ val tagged = useg.join(cluster,Seq("segmentId")).drop("segmentId").distinct()
 //Con esto ya podríamos hacer conteo de usuarios por cartel, pero necesitamos por horario, así que vamos a des-crosdevicear, vamos a taggear a lo geo en base a esto
 //Levantamos la tabla de equivalencias
 val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/crossdeviced/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h_xd_equivalence_table")
+.load("/datascience/geo/crossdeviced/JCDecauxOOH_120d_mexico_5-2-2020-13h_xd_equivalence_table")
 .withColumn("device_id_origin",lower(col("device_id_origin")))
 .withColumn("device_id_xd",lower(col("device_id_xd")))
 .drop("device_type_origin","device_type_xd")
@@ -862,7 +862,7 @@ val geo_tagged = tagged.withColumnRenamed("device_id","device_id_xd")
 //Ahora levantamos la raw_data. La necesitamos porque nos piden desagregación por franja horaria
 //extraemos los tiempos
 val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/raw_output/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h")
+.load("/datascience/geo/raw_output/JCDecauxOOH_updated_11_02_20_120d_mexico_11-2-2020-11h")
 .withColumn("device_id", lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
  .withColumn("Hour", date_format(col("Time"), "HH"))
