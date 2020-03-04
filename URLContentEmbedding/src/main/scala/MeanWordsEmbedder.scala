@@ -6,8 +6,6 @@ import org.joda.time.{Days, DateTime}
 import org.joda.time.format.DateTimeFormat
 import org.apache.hadoop.fs.{FileSystem, Path}
 
-
-import spark.implicits._
 import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
@@ -116,6 +114,7 @@ object MeanWordsEmbedder {
       nDays: Int = -1,
       nHours: Int = -1,
       from: Int = 1) = {
+    import spark.implicits._
 
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
@@ -167,7 +166,8 @@ object MeanWordsEmbedder {
   */
   def tokenize(spark: SparkSession,
                dfContent: DataFrame) = {
-    
+    import spark.implicits._
+
     val stripAccents = udf((text: String) => StringUtils.stripAccents(text))
 
     var df = dfContent.withColumn("tokenizer_input", stripAccents($"content"))
@@ -196,7 +196,7 @@ object MeanWordsEmbedder {
   */
   def detectLanguage(spark: SparkSession,
                     dfTokenized: DataFrame) =  { 
-    
+   import spark.implicits._
    // it creates local variables (it's needed for udf functions)
    var sp_characters = SP_CHARACTERS
    var pt_characters = PT_CHARACERS
@@ -264,7 +264,7 @@ object MeanWordsEmbedder {
   */
   def spanishEmbedding(spark: SparkSession,
                        dfTokenized: DataFrame) = {  
-
+    import spark.implicits._
     val wordsEmbeddings = spark.read
       .format("csv")
       .option("header","true")
@@ -287,7 +287,6 @@ object MeanWordsEmbedder {
   * Process parsed HTMLs and write results.
   */
   def proccess(spark: SparkSession, nDays: Int = -1, nHours: Int = -1, from: Int = 1){
-
 
     var df = {
       if(nDays != -1)
