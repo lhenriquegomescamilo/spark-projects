@@ -29,7 +29,7 @@ object tfidf {
   /*****************************************************/
   def main(args: Array[String]) {
     val spark = SparkSession.builder
-    .appName("Ranlp")
+    .appName("TFIDF")
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
