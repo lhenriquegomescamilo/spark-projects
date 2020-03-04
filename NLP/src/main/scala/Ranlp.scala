@@ -139,7 +139,7 @@ object Ranlp {
               mapa("word")
           )
     
-    doc.withColumn("tmp", explode(col("pos"))).select("tmp.*")
+    doc.withColumn("tmp", explode(col("pos"))).select("text","tmp.*")
       .withColumn("keyword", getWord(col("metadata")))
       .select("text","keyword","result")
       .write.format("csv")
