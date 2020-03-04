@@ -828,7 +828,7 @@ def getDataTriplets(
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-//Levantamos los pii
+val today = (java.time.LocalDate.now).toString
 
 //Aca tenemos los usuarios que devuelve el geodevicer
 val useg  = spark.read.format("csv").option("header",true).option("delimiter",",").load("/datascience/geo/geo_processed/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h_users_data").drop("day","country","id_partner","ID").toDF("device_id","segmentID").withColumn("device_id",lower(col("device_id")))
@@ -846,7 +846,7 @@ val tagged = useg.join(cluster,Seq("segmentId")).drop("segmentId").distinct()
 
 //Con esto ya podríamos hacer conteo de usuarios por cartel, pero necesitamos por horario, así que vamos a des-crosdevicear, vamos a taggear a lo geo en base a esto
 
-//Levantamos la tabla de equivalencias
+//Levantamos la tabla de equivalencias entre XD y device original
 val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/crossdeviced/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h_xd_equivalence_table")
 .withColumn("device_id_origin",lower(col("device_id_origin")))
@@ -880,7 +880,8 @@ val raw = spark.read.format("csv").option("header",true).option("delimiter","\t"
  .withColumn("Day", date_format(col("Time"), "EEEE"))
  .withColumn("Month", date_format(col("Time"), "MMM"))
  .na.fill("0")
- .withColumn("WeekDay", when(col("Day").isin(List("Saturday", "Sunday"):_*), "WeekEnd").otherwise("WeekDay"))
+ .withColumn("WeekDay", when(col("Day").isin(List("Saturday", "Sunday"):_*), "WeekEnd")
+  .otherwise("WeekDay"))
  .withColumn("DayPeriod", when(col("Hour")>=0 && col("Hour")<6, "0 - EarlyMorning")
      .otherwise(when(col("Hour")>=6 && col("Hour")<11, "1 - Morning")
      .otherwise(when(col("Hour")>=11 && col("Hour")<14, "2 - Noon")
@@ -889,11 +890,17 @@ val raw = spark.read.format("csv").option("header",true).option("delimiter","\t"
 
 
 
-//Unimos el geotagged al raw 
+//Unimos el geotagged, que son los usuarois geo con las features,  al raw 
 val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
 
 tagged_timed.persist()
 
+tagged_timed
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/JCDecaux/tagged_time_%s".format(today))
 
 //Acá generamos por cluster y el total desagregado por horario
 val cluster_time_count = tagged_timed.groupBy("WeekDay","DayPeriod","ID","longname")
@@ -911,7 +918,7 @@ val total_24hs_count = raw.groupBy("WeekDay","ID")
 
 
 //Y ahora guardamos todo:
-val today = (java.time.LocalDate.now).toString
+
 //val date = today.format(DateTimeFormatter.ofPattern("yyyy-MM-d"))
 
 
