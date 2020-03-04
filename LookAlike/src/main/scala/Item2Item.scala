@@ -646,7 +646,7 @@ object Item2Item {
       )
       .replace("\n", "")
     println("Lookalike LOG:\n\t%s".format(json_content))
-
+/*
     // Finally we store the json.
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
@@ -659,6 +659,7 @@ object Item2Item {
     val os = fs.create(hadoopPath)
     os.write(json_content.getBytes)
     os.close()
+*/
   }
 
   /***
