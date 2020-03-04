@@ -199,7 +199,7 @@ object MeanWordsEmbedder {
    import spark.implicits._
    // it creates local variables (it's needed for udf functions)
    var sp_characters = SP_CHARACTERS
-   var pt_characters = PT_CHARACERS
+   var pt_characters = PT_CHARACTERS
    var sp_stpowords = SP_STOPWORDS
    var pt_stopwords = PT_STOPWORDS
    var en_stopwords = EN_STOPWORDS
