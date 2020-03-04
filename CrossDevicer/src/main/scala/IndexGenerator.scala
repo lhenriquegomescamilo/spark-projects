@@ -54,7 +54,7 @@ object IndexGenerator {
     val last_file = files
       .map(_.getPath())
       .map(_.toString)
-      // .filter(_.contains("Retargetly_ids_full"))
+      .filter(!_.contains("Retargetly_ids_full"))
       .filter(!_.contains("trigger"))
       .toList
       .sorted
