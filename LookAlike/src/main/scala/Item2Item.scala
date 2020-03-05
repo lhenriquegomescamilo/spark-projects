@@ -897,7 +897,7 @@ object Item2Item {
       case "--useStartapSegments" :: value :: tail =>
         nextOption(map ++ Map('useStartapSegments -> value), tail)
       case "--disableOutputMeta" :: value :: tail =>
-        nextOption(map ++ Map('useStartapSegments -> value), tail)
+        nextOption(map ++ Map('disableOutputMeta -> value), tail)
     }
   }
 
@@ -940,10 +940,6 @@ object Item2Item {
      if (options.contains('useStartapSegments)) options('useStartapSegments).toBoolean else false
 
     disableOutputMeta =  if (options.contains('disableOutputMeta)) options('disableOutputMeta).toBoolean else false
-
-    println("Lookalike LOG: disableOutputMeta = %s ".format(disableOutputMeta))
-    if (options.contains('disableOutputMeta))
-      println("Lookalike LOG: disableOutputMeta option string = %s ".format(options('disableOutputMeta)))
      
     if(filePath.length > 0)
       runExpand(spark, filePath, nDays, nDaysSegment, simHits, simThreshold, predHits,
