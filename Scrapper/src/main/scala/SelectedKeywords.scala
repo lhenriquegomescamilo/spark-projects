@@ -170,7 +170,7 @@ object SelectedKeywords {
       .repartition(1)
       .write
       .format("csv")
-      .options("header",true)
+      .option("header","true")
       .save("/datascience/custom/test_selected_keywords.csv")
 
     }
