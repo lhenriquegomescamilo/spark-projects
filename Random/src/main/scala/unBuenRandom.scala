@@ -833,7 +833,7 @@ val today = (java.time.LocalDate.now).toString
 val useg  = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/geo/geo_processed/JCDecauxOOH_updated_02_03_20_120d_mexico_4-3-2020-19h_users_data")
 .select("device_id","feature")
-.toDF("device_id","segmentID")
+.toDF("device_id","segmentId")
 .withColumn("device_id",lower(col("device_id")))
 //Estos usuarios tienen las features, y en base a estas features queremos meterles un nombre de audiencia. Queremos taggear los usuarios en base a su info web. Un user puede pertenecer a múltiples clusters. Después vamos a tener que ir a los carteles y contar, pero vamos a eso después. Primero el taggeo
 
