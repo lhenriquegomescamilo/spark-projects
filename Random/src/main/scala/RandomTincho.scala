@@ -1932,7 +1932,7 @@ object RandomTincho {
 
       val piis = join_nids.union(join_ml)
                           .union(join_mob)
-                          .select("device_id")b
+                          .select("device_id")
                           .distinct()
                           .withColumn("rand",rand()).withColumn("feature",udfFeature(col("rand")))
                           .withColumn("id_partner",lit(119))
