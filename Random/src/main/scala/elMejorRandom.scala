@@ -983,37 +983,126 @@ nse_cl_gt.join(cl_demo,Seq("device_id"))
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-val nse_ar_gt = spark.read.format("csv").load("/datascience/geo/NSEHomes/GroundTruth/NSE_GT_Equifax_90D_AR_2020-03-02").toDF("device_id","ingreso")
-.withColumn("device_id",lower(col("device_id"))).filter(col("ingreso").isin(List(20107,20108,20109,20110): _*))
-val ar_demo =  spark.read.format("parquet").load("/datascience/data_demo/datasets/country=AR/day=20200227")
-.withColumn("device_id",lower(col("device_id")))
+val today = (java.time.LocalDate.now).toString
+val descriptor = "concat_ids_feature"
 
+//Acá levantamos los segments
+ val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","60","MX")
+ 
+//Empezamos desde la tabla de equivalencias
+val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/crossdeviced/JCDecauxOOH_updated_02_03_20_120d_mexico_4-3-2020-19h_xd_equivalence_table")
+.withColumn("device_id_origin",lower(col("device_id_origin")))
+.withColumn("device_id_xd",lower(col("device_id_xd")))
+.drop("device_type_origin","device_type_xd")
 
-nse_ar_gt.join(ar_demo,Seq("device_id"))
-.select("urls")
-.withColumn("urls",explode(col("urls")))
+//Les buscamos a los segmentos originales
+val feature_for_raw = equiv.select("device_id_origin")
+.withColumnRenamed("device_id_origin","device_id")
+.join(segments,Seq("device_id"))
+.select("device_id","feature")
+
+//A los expandidos
+val feature_for_xd = equiv
+.withColumnRenamed("device_id_xd","device_id")
+.join(segments,Seq("device_id"))
+.drop("device_id")
+.withColumnRenamed("device_id_origin","device_id")
+.select("device_id","feature")
+
+//Acá tenemos todo junto, pero solo tenemos los GEO (los originales de donde vienen)
+val feature_for_all = List(feature_for_raw,feature_for_xd).reduce(_.unionByName (_))
 .distinct()
+.withColumnRenamed("feature","segmentId")
+
+//Ahora a esto los taggeamos
+//Aca levantamos un dataset que nos indica a que cluster pertenece según el feature
+val cluster =  spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/geo/Reports/JCDecaux/all_clusters_updated_13_02_20.csv")
+.select("segmentId","longname").distinct()
+
+//Acá tageamos a los usuarios, ya no necesitamos el segmentId original, lo tiramos y distinct
+val geo_tagged = feature_for_all.join(cluster,Seq("segmentId"))
+.drop("segmentId")
+.distinct()
+
+
+//Vamos al raw y les pegamos a cada usuario su segment ID en el momento de la detección
+//Ahora cada dispositivo geo lo tenemos taggeado, podemos ir a buscarlos al raw y ahí contar cuántos hay de cada cluster
+//Ahora levantamos la raw_data. La necesitamos porque nos piden desagregación por franja horaria
+//extraemos los tiempos
+val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/raw_output/JCDecauxOOH_updated_11_02_20_120d_mexico_11-2-2020-11h")
+.withColumn("device_id", lower(col("device_id")))
+.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+ .withColumn("Hour", date_format(col("Time"), "HH"))
+ .withColumn("Date", date_format(col("Time"), "MMM dd"))
+ .withColumn("Day", date_format(col("Time"), "EEEE"))
+ .withColumn("Month", date_format(col("Time"), "MMM"))
+ .na.fill("0")
+ .withColumn("WeekDay", when(col("Day").isin(List("Saturday", "Sunday"):_*), "WeekEnd").otherwise("WeekDay"))
+ .withColumn("DayPeriod", when(col("Hour")>=0 && col("Hour")<6, "0 - EarlyMorning")
+     .otherwise(when(col("Hour")>=6 && col("Hour")<11, "1 - Morning")
+     .otherwise(when(col("Hour")>=11 && col("Hour")<14, "2 - Noon")
+     .otherwise(when(col("Hour")>=14 && col("Hour")<18, "3 - Evening")
+     .otherwise(when(col("Hour")>=18, "4 - Night"))))))
+spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
+
+
+//Generamos los conteos
+
+val tagged_time_up = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/Reports/JCDecaux/tagged_timed")
+
+val cluster_time_count = tagged_time_up.groupBy("WeekDay","DayPeriod","ID","longname")
+.agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
+
+val all_day_long_count = tagged_time_up.groupBy("WeekDay","ID","longname")
+.agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
+.withColumn("DayPeriod",lit("24hs"))
+
+val total_time_count = raw.groupBy("WeekDay","DayPeriod","ID")
+.agg(countDistinct("device_id") as "total_uniques",count("timestamp") as "total_detections")
+
+val all_day_total_time_count = raw.groupBy("WeekDay","ID")
+.agg(countDistinct("device_id") as "total_uniques",count("timestamp") as "total_detections")
+.withColumn("DayPeriod",lit("24hs"))
+
+cluster_time_count
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
-.format("parquet")
-.save("/datascience/misc/NSEIngresoGT_AR_urlist")
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_%s_%s".format(descriptor,today))
 
-val nse_cl_gt = spark.read.format("csv").load("/datascience/geo/NSEHomes/GroundTruth/NSE_GT_Equifax_90D_CL_2020-03-02").toDF("device_id","ingreso")
-.withColumn("device_id",lower(col("device_id"))).filter(col("ingreso").isin(List(136529, 136531, 136533, 136535, 144741, 136537): _*))
-val cl_demo =  spark.read.format("parquet").load("/datascience/data_demo/datasets/country=CL/day=20200229")
-.withColumn("device_id",lower(col("device_id")))
-
-
-nse_cl_gt.join(cl_demo,Seq("device_id"))
-.select("urls")
-.withColumn("urls",explode(col("urls")))
-.distinct()
+all_day_long_count
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
-.format("parquet")
-.save("/datascience/misc/NSEIngresoGT_CL_urlist")
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_%s_%s".format(descriptor,today))
+
+total_time_count
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/geo/Reports/JCDecaux/total_time_count_%s_%s".format(descriptor,today))
+
+all_day_total_time_count
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_%s_%s".format(descriptor,today))
 
 
 }
