@@ -890,7 +890,7 @@ tagged_timed
 .save("/datascience/geo/Reports/JCDecaux/tagged_timed_%s".format(descriptor))
 
 val tagged_time_up = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/Reports/JCDecaux/tagged_timed")
+.load("/datascience/geo/Reports/JCDecaux/tagged_timed_%s".format(descriptor))
 
 val cluster_time_count = tagged_time_up.groupBy("WeekDay","DayPeriod","ID","longname")
 .agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
