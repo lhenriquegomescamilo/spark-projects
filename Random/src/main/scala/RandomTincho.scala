@@ -1959,9 +1959,9 @@ object RandomTincho {
     
     //dummy_havas(spark)
     spark.read.load("/datascience/custom/dummy_havas")
+              .repartition(1)
               .write
               .format("parquet")
-              .repartition(1)
               .mode(SaveMode.Overwrite)
               .save("/datascience/custom/dummy_havas_repartitioned")
 
