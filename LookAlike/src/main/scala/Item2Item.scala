@@ -39,6 +39,8 @@ import org.apache.spark.mllib.linalg.distributed.CoordinateMatrix
 
 object Item2Item {
 
+  private var disableOutputMeta = false
+
   /**
   It processes all input files from /datascience/data_lookalike/to_process/
   */
@@ -619,7 +621,10 @@ object Item2Item {
         .option("header", "false")
         .mode(SaveMode.Overwrite)
         .save(filePath)
-      writeOutputMetaFile(filePath, jobId, resultDescription)
+      if (!disableOutputMeta)
+        writeOutputMetaFile(filePath, jobId, resultDescription)
+      else
+        println("Lookalike LOG: .meta output disabled")
     }
     
   }
@@ -891,6 +896,8 @@ object Item2Item {
         nextOption(map ++ Map('useFactualSegments -> value), tail)
       case "--useStartapSegments" :: value :: tail =>
         nextOption(map ++ Map('useStartapSegments -> value), tail)
+      case "--disableOutputMeta" :: value :: tail =>
+        nextOption(map ++ Map('useStartapSegments -> value), tail)
     }
   }
 
@@ -932,6 +939,8 @@ object Item2Item {
     val useStartapSegments = 
      if (options.contains('useStartapSegments)) options('useStartapSegments).toBoolean else false
 
+     disableOutputMeta =  if (options.contains('disableOutputMeta)) options('disableOutputMeta).toBoolean else false
+     
     if(filePath.length > 0)
       runExpand(spark, filePath, nDays, nDaysSegment, simHits, simThreshold, predHits,
                 useFactualSegments, useStartapSegments)
