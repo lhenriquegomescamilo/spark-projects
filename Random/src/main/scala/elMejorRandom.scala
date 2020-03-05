@@ -982,19 +982,11 @@ nse_cl_gt.join(cl_demo,Seq("device_id"))
       SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-//Esto estoy mandando hoy 04-03-2020 y no me da lo mismo que me daba
 
-/*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-    Logger.getRootLogger.setLevel(Level.WARN)
 
-val descriptor = "old_reborn"
 val today = (java.time.LocalDate.now).toString
+val descriptor = "old_reborn"
 
 //Aca tenemos los usuarios que devuelve el geodevicer
 val useg  = spark.read.format("csv").option("header",true).option("delimiter",",")
@@ -1112,8 +1104,6 @@ total_24hs_count
 .format("csv")
 .option("header",true)
 .save("/datascience/geo/Reports/JCDecaux/total_24hs_count_%s_%s".format(descriptor,today))
-
-
 
 
 }
