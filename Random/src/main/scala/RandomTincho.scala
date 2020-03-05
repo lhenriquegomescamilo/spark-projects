@@ -1961,8 +1961,8 @@ object RandomTincho {
     spark.read.load("/datascience/custom/dummy_havas")
               .write
               .format("parquet")
-              .mode(SaveMode.Overwrite)
               .repartition(1)
+              .mode(SaveMode.Overwrite)
               .save("/datascience/custom/dummy_havas_repartitioned")
 
 
