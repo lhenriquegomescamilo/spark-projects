@@ -848,7 +848,7 @@ val tagged = useg.join(cluster,Seq("segmentId")).drop("segmentId").distinct()
 //Con esto ya podríamos hacer conteo de usuarios por cartel, pero necesitamos por horario, así que vamos a des-crosdevicear, vamos a taggear a lo geo en base a esto
 //Levantamos la tabla de equivalencias
 val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/JCDecauxOOH_updated_02_03_20_120d_mexico_4-3-2020-19h_users_data")
+.load("/datascience/geo/crossdeviced/JCDecauxOOH_updated_02_03_20_120d_mexico_4-3-2020-19h_xd_equivalence_table")
 .withColumn("device_id_origin",lower(col("device_id_origin")))
 .withColumn("device_id_xd",lower(col("device_id_xd")))
 .drop("device_type_origin","device_type_xd")
