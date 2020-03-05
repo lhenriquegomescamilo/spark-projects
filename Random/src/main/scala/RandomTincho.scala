@@ -1957,7 +1957,14 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    dummy_havas(spark)
+    //dummy_havas(spark)
+    spark.read.load("/datascience/custom/dummy_havas")
+              .write
+              .format("parquet")
+              .mode(SaveMode.Overwrite)
+              .repartition(1)
+              .save("/datascience/custom/dummy_havas_repartitioned")
+
 
   }
 
