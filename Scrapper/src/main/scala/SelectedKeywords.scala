@@ -4,8 +4,8 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.apache.spark._
-import spark.implicits._
 import org.apache.spark.ml.feature.RegexTokenizer
+import org.apache.spark.mllib.feature.Stemmer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
 import org.apache.hadoop.conf.Configuration
@@ -50,7 +50,7 @@ object SelectedKeywords {
   def tokenize( dfContent: DataFrame) = {
     val stripAccents = udf((text: String) => StringUtils.stripAccents(text))
 
-    var df = dfContent.withColumn("tokenizer_input", stripAccents($"content"))
+    var df = dfContent.withColumn("tokenizer_input", stripAccents(col("content")))
 
 
     val regexTokenizer = new RegexTokenizer()
@@ -124,6 +124,20 @@ object SelectedKeywords {
                           "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't",
                           "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves")
     
+    val day =  DateTime.now().minusDays(1).toString("yyyyMMdd")
+    val data_parsed = spark.read.format("parquet")
+                            .load("/datascience/scraper/parsed/processed/day=%s/".format(day))
+                            .na.fill("")
+                            .select(col("url"), col("domain"),
+                                    concat(col("title"), lit(" "),
+                                           col("description"), lit(" "),
+                                           col("keywords"), lit(" "),
+                                           col("og_title"), lit(" "),
+                                           col("og_description"), lit(" "),
+                                           col("twitter_title"),lit(" "),
+                                           col("twitter_description")).as("content")
+                                    )
+
     // Tokenize parsed data in list of words  
     var df = tokenize(data_parsed)
 
