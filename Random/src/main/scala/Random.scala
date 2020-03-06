@@ -5018,17 +5018,17 @@ object Random {
         atan2(col("greatCircleDistance1"), col("greatCircleDistance2")) * 6371 * 1000
       )
       .withColumn(
-        "timeDelta(s)",
+        "timeDelta",
         (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec))
       )
-      .withColumn("speed_km", col("distance") * 3.6 / col("timeDelta(s)"))
+      .withColumn("speed_km", col("distance") * 3.6 / col("timeDelta"))
       .select(
         "ad_id",
         "utc_timestamp",
         "latitude",
         "longitude",
         "distance",
-        "timeDelta(s)",
+        "timeDelta",
         "speed_km"
       )
       .withColumn("Vehicle", when(col("speed_km") > 15, 1).otherwise(0))
