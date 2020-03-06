@@ -156,7 +156,7 @@ object SelectedKeywords {
           .withColumn("tmp", explode(col("words")))
           .select("url","domain","tmp.*")
           .withColumnRenamed("result","kw")
-          .withColumn("kw",lower("kw"))
+          .withColumn("kw",lower(col("kw")))
           .withColumn("len",length(col("kw"))) // Filter longitude of words
           .filter("len > 2 and len < 18" )
           .withColumn("digit",udfDigit(col("kw")))
