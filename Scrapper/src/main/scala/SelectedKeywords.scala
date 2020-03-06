@@ -154,8 +154,8 @@ object SelectedKeywords {
               
     df.select("url","domain","words")
           .withColumn("kw",explode(col("words")))
-          .show()
-          
+          .printSchema
+
     df = df.select("url","domain","words")
           .withColumn("kw",explode(col("words"))) // Explode list of words
           .withColumn("len",length(col("kw"))) // Filter longitude of words
