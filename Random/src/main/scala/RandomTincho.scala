@@ -1959,7 +1959,7 @@ object RandomTincho {
     val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
 
     xd.join(pii,Seq("device_id"),"inner")
-      .select("madid","lat","lon","ml_sh2","nid_sh2","mb_sh")
+      .select("madid","lat","lon","ml_sh2","nid_sh2","mb_sh2")
       .repartition(1)
       .write
       .format("csv")
