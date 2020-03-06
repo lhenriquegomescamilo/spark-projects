@@ -1964,6 +1964,7 @@ object RandomTincho {
       .repartition(1)
       .write
       .format("csv")
+      .mode(SaveMode.Overwrite)
       .save("/datascience/custom/piis_madids_cl")
       
   }
