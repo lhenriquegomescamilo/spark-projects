@@ -156,7 +156,7 @@ object SelectedKeywords {
           .withColumn("tmp", explode(col("words")))
           .select("url","domain","tmp.*")
           .withColumnRenamed("result","kw")
-          .show()
+          .printSchema
 
     df = df.select("url","domain","words")
           .withColumn("tmp", explode(col("words")))
