@@ -5031,7 +5031,7 @@ object Random {
         "timeDelta(s)",
         "speed_km"
       )
-      .withColumn("Vehicle", when(col("speed_km)") > 15, 1).otherwise(0))
+      .withColumn("Vehicle", when(col("speed_km") > 15, 1).otherwise(0))
     
     spacelapse.write.format("parquet").save("/datascience/custom/devices_cruces_speed")
   }
