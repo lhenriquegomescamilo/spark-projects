@@ -150,11 +150,19 @@ object SelectedKeywords {
                         .setOutputCol("words")
                         .fit(df)
                         .transform(df)
-            
+
+                
     df = df.select("url","domain","words")
           .withColumn("tmp", explode(col("words")))
           .select("url","domain","tmp.*")
           .withColumnRenamed("result","kw")
+          .show()
+          
+    df = df.select("url","domain","words")
+          .withColumn("tmp", explode(col("words")))
+          .select("url","domain","tmp.*")
+          .withColumnRenamed("result","kw")
+          .show()
           //.withColumn("kw",explode(col("words"))) // Explode list of words
           .withColumn("len",length(col("kw"))) // Filter longitude of words
           .filter("len > 2 and len < 18" )
