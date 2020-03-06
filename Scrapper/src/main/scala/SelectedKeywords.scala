@@ -156,9 +156,12 @@ object SelectedKeywords {
           .withColumn("tmp", explode(col("words")))
           .select("url","domain","tmp.*")
           .withColumnRenamed("result","kw")
+          .withColumn("kw",lower("kw"))
           .withColumn("len",length(col("kw"))) // Filter longitude of words
           .filter("len > 2 and len < 18" )
-          .withColumn("digit",udfDigit(col("kw"))) 
+          .withColumn("digit",udfDigit(col("kw")))
+          .filter("digit = false")
+          .filter(!col("kw").isin(STOPWORDS: _*))
           .show()
 
     df = df.select("url","domain","words")
