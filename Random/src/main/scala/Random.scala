@@ -4985,35 +4985,54 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    // Ultimos 5 meses de data
-    val safegraph_data = spark.read
-      .option("basePath", "/datascience/geo/safegraph/")
-      .load("/datascience/geo/safegraph/day=2020*")
-      .unionAll(
-        spark.read
-          .option("basePath", "/datascience/geo/safegraph/")
-          .load("/datascience/geo/safegraph/day=20191*")
-      )
+    import org.apache.spark.sql.expressions.Window
 
-    val users_cruces = spark.read
-      .format("csv")
-      .load("/datascience/custom/devices_auto_cruces")
-      .withColumnRenamed("_c0", "ad_id")
-      .select("ad_id")
-      .unionAll(
-        spark.read
-          .format("csv")
-          .load("/datascience/custom/devices_peat_cruces")
-          .withColumnRenamed("_c0", "ad_id")
-          .select("ad_id")
-      )
-      .distinct()
+    val raw_data = spark.read.format("parquet").load("/datascience/custom/devices_cruces_raw_data_geo/")
 
-    safegraph_data
-      .join(users_cruces, Seq("ad_id"))
-      .write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/devices_cruces_raw_data_geo")
+    // Calculating the speed
+    val windowSpec = Window.partitionBy("ad_id").orderBy("utc_timestamp")
+
+    val spacelapse = raw_data
+      .withColumn("latituderad", toRadians(col("latitude")))
+      .withColumn("longituderad", toRadians(col("longitude")))
+      .withColumn(
+        "deltaLat",
+        col("latituderad") - lag("latituderad", 1).over(windowSpec)
+      )
+      .withColumn(
+        "deltaLong",
+        col("longituderad") - lag("longituderad", 1).over(windowSpec)
+      )
+      .withColumn("a1", pow(sin(col("deltaLat") / 2), 2))
+      .withColumn(
+        "a2",
+        cos(col("latituderad")) * cos(lag("latituderad", 1).over(windowSpec)) * col(
+          "deltaLong"
+        ) / 2
+      )
+      .withColumn("a", pow(col("a1") + col("a2"), 2))
+      .withColumn("greatCircleDistance1", (sqrt(col("a")) * 2))
+      .withColumn("greatCircleDistance2", (sqrt(lit(1) - col("a"))))
+      .withColumn(
+        "distance(m)",
+        atan2(col("greatCircleDistance1"), col("greatCircleDistance2")) * 6371 * 1000
+      )
+      .withColumn(
+        "timeDelta(s)",
+        (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec))
+      )
+      .withColumn("speed(km/h)", col("distance(m)") * 3.6 / col("timeDelta(s)"))
+      .select(
+        "ad_id",
+        "utc_timestamp",
+        "latitude",
+        "longitude",
+        "distance(m)",
+        "timeDelta(s)",
+        "speed(km/h)"
+      )
+      .withColumn("Vehicle", when(col("speed(km/h)") > 15, 1).otherwise(0))
+    
+    spacelapse.write.format("parquet").save("/datascience/custom/devices_cruces_speed")
   }
 }
