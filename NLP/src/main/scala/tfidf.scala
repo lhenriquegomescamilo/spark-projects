@@ -68,7 +68,9 @@ object tfidf {
       )
 
     val tokensWithIdf = tokensWithDf.withColumn("IDF", calcIdf(lit(docCount),col("DF")))
-
+    
+    //TF-IDF: score of a word in a document.
+    //The higher the score, the more relevant that word is in that particular document.
     val tfidf_docs = tokensWithTf
       .join(tokensWithIdf, Seq("token"), "left")
       .withColumn("tf_idf", col("tf") * col("idf"))
