@@ -4,7 +4,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.apache.spark._
-import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer}
+import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer, DocumentAssembler}
 import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
@@ -140,12 +140,17 @@ object SelectedKeywords {
 
     // Tokenize parsed data in list of words  
     //var df = tokenize(data_parsed)
-    var df = new Tokenizer().setInputCols("content")
-                            .setOutputCol("words")
-                            .setTargetPattern("[^a-zA-Z0-9]")
-                            .fit(data_parsed)
-                            .transform(data_parsed)
-                  
+    var df = new DocumentAssembler().setInputCol("content")
+                                    .setOutputCol("document")
+                                    .transform(data_parsed)
+
+
+    df = new Tokenizer().setInputCols("document")
+                        .setOutputCol("words")
+                        .setTargetPattern("[^a-zA-Z0-9]")
+                        .fit(df)
+                        .transform(df)
+              
 
     df = df.select("url","domain","words")
           .withColumn("kw",explode(col("words"))) // Explode list of words
