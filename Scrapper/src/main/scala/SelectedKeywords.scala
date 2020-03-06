@@ -153,7 +153,7 @@ object SelectedKeywords {
                         .transform(df)
               
     df.select("url","domain","words")
-          .withColumn("tmp", explode(col("chunk"))).select("tmp.*")
+          .withColumn("tmp", explode(col("words"))).select("tmp.*")
           //.withColumn("kw",explode(col("words")))
           .printSchema
 
