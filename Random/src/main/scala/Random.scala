@@ -5014,24 +5014,24 @@ object Random {
       .withColumn("greatCircleDistance1", (sqrt(col("a")) * 2))
       .withColumn("greatCircleDistance2", (sqrt(lit(1) - col("a"))))
       .withColumn(
-        "distance(m)",
+        "distance",
         atan2(col("greatCircleDistance1"), col("greatCircleDistance2")) * 6371 * 1000
       )
       .withColumn(
         "timeDelta(s)",
         (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec))
       )
-      .withColumn("speed(km/h)", col("distance(m)") * 3.6 / col("timeDelta(s)"))
+      .withColumn("speed_km", col("distance") * 3.6 / col("timeDelta(s)"))
       .select(
         "ad_id",
         "utc_timestamp",
         "latitude",
         "longitude",
-        "distance(m)",
+        "distance",
         "timeDelta(s)",
-        "speed(km/h)"
+        "speed_km"
       )
-      .withColumn("Vehicle", when(col("speed(km/h)") > 15, 1).otherwise(0))
+      .withColumn("Vehicle", when(col("speed_km)") > 15, 1).otherwise(0))
     
     spacelapse.write.format("parquet").save("/datascience/custom/devices_cruces_speed")
   }
