@@ -1945,6 +1945,27 @@ object RandomTincho {
 
 
   }
+  def get_piis_cl(spark:SparkSession){
+    val xd = spark.read
+                  .format("csv")
+                  .option("sep",",")
+                  .load("/datascience/audiences/crossdeviced/CL_90d_home_29-1-2020-12h_xd")
+                  .withColumnRenamed("_c0","madid")
+                  .withColumnRenamed("_c1","device_id")
+                  .withColumnRenamed("_c7","lat")
+                  .withColumnRenamed("_c8","lon")
+                  .select("madid","lat","lon","device_id")
+
+    val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
+
+    xd.join(pii,Seq("device_id"),"inner")
+      .select("madid","lat","lon","ml_sh2","nid_sh2","mb_sh")
+      .repartition(1)
+      .write
+      .format("csv")
+      .save("/datascience/custom/piis_madids_cl")
+      
+  }
 
   def main(args: Array[String]) {
      
@@ -1957,13 +1978,8 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    //dummy_havas(spark)
-    spark.read.load("/datascience/custom/dummy_havas")
-              .repartition(1)
-              .write
-              .format("parquet")
-              .mode(SaveMode.Overwrite)
-              .save("/datascience/custom/dummy_havas_repartitioned")
+    get_piis_cl(spark)
+    
 
 
   }
