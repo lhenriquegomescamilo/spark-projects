@@ -4,7 +4,8 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.apache.spark._
-import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer, DocumentAssembler}
+import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer}
+import com.johnsnowlabs.nlp.{DocumentAssembler}
 import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
