@@ -148,12 +148,14 @@ object SelectedKeywords {
 
     df = new Tokenizer().setInputCols("document")
                         .setOutputCol("words")
-                        .setTargetPattern("[a-zA-Z0-9]")
                         .fit(df)
                         .transform(df)
               
+    def getWord =udf((mapa: Map[String,String]) => mapa("word"))
+
     df.select("url","domain","words")
           .withColumn("tmp", explode(col("words"))).select("tmp.*")
+          .withColumn("keyword", getWord(col("metadata")))
           .show()
           //.withColumn("kw",explode(col("words")))
           //.printSchema
