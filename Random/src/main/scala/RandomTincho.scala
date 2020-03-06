@@ -1955,6 +1955,7 @@ object RandomTincho {
                   .withColumnRenamed("_c7","lat")
                   .withColumnRenamed("_c8","lon")
                   .select("madid","lat","lon","device_id")
+                  .dropDuplicates()
 
     val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
 
@@ -1963,6 +1964,7 @@ object RandomTincho {
       .repartition(1)
       .write
       .format("csv")
+      .mode(SaveMode.Overwrite)
       .save("/datascience/custom/piis_madids_cl")
       
   }

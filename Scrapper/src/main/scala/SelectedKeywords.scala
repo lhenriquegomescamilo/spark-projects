@@ -5,6 +5,7 @@ import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.apache.spark._
 import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer}
+import com.johnsnowlabs.nlp.{DocumentAssembler}
 import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
@@ -140,15 +141,28 @@ object SelectedKeywords {
 
     // Tokenize parsed data in list of words  
     //var df = tokenize(data_parsed)
-    var df = new Tokenizer().setInputCols("content")
-                            .setOutputCol("words")
-                            .setTargetPattern("[^a-zA-Z0-9]")
-                            .fit(data_parsed)
-                            .transform(data_parsed)
-                  
+    var df = new DocumentAssembler().setInputCol("content")
+                                    .setOutputCol("document")
+                                    .transform(data_parsed)
+
+
+    df = new Tokenizer().setInputCols("document")
+                        .setOutputCol("words")
+                        .fit(df)
+                        .transform(df)
+
+                
+    df.select("url","domain","words")
+          .withColumn("tmp", explode(col("words")))
+          .select("url","domain","tmp.*")
+          .withColumnRenamed("result","kw")
+          .show()
 
     df = df.select("url","domain","words")
-          .withColumn("kw",explode(col("words"))) // Explode list of words
+          .withColumn("tmp", explode(col("words")))
+          .select("url","domain","tmp.*")
+          .withColumnRenamed("result","kw")
+          //.withColumn("kw",explode(col("words"))) // Explode list of words
           .withColumn("len",length(col("kw"))) // Filter longitude of words
           .filter("len > 2 and len < 18" )
           .withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
