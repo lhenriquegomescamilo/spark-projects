@@ -156,7 +156,7 @@ object SelectedKeywords {
                       .setLanguage("Spanish")
                       .transform(df)
 
-    val stemmer = new Stemmer().setInputCols(Array("kw")).setOutputCol("stem_kw").setLanguage("Spanish")
+    val stemmer = new Stemmer().setInputCols("kw").setOutputCol("stem_kw").setLanguage("Spanish")
     df = stemmer.transform(df)
     
     // Format fields and save
