@@ -148,7 +148,7 @@ object SelectedKeywords {
 
     df = new Tokenizer().setInputCols("document")
                         .setOutputCol("words")
-                        .setTargetPattern("[^a-zA-Z0-9]")
+                        .setTargetPattern("[a-zA-Z0-9]")
                         .fit(df)
                         .transform(df)
               
