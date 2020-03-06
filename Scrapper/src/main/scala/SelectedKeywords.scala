@@ -139,7 +139,13 @@ object SelectedKeywords {
                                     )
 
     // Tokenize parsed data in list of words  
-    var df = tokenize(data_parsed)
+    //var df = tokenize(data_parsed)
+    var df = new Tokenizer().setInputCols("content")
+                            .setOutputCol("words")
+                            .setTargetPattern("[^a-zA-Z0-9]")
+                            .fit(data_parsed)
+                            .transform(data_parsed)
+                  
 
     df = df.select("url","domain","words")
           .withColumn("kw",explode(col("words"))) // Explode list of words
