@@ -150,19 +150,12 @@ object SelectedKeywords {
                         .setOutputCol("words")
                         .fit(df)
                         .transform(df)
-              
-    def getWord =udf((mapa: Map[String,String]) => mapa("word"))
-
-    df.select("url","domain","words")
-          .withColumn("tmp", explode(col("words"))).select("tmp.*")
-          .printSchema
-          //.withColumn("keyword", getWord(col("metadata")))
-          //.show()
-          //.withColumn("kw",explode(col("words")))
-          //.printSchema
-
+            
     df = df.select("url","domain","words")
-          .withColumn("kw",explode(col("words"))) // Explode list of words
+          .withColumn("tmp", explode(col("words")))
+          .select("url","domain","tmp.*")
+          .withColumnRenamed("result","kw")
+          //.withColumn("kw",explode(col("words"))) // Explode list of words
           .withColumn("len",length(col("kw"))) // Filter longitude of words
           .filter("len > 2 and len < 18" )
           .withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
