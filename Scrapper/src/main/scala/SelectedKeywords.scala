@@ -4,8 +4,8 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.apache.spark._
+import com.johnsnowlabs.nlp.annotators.Stemmer
 import org.apache.spark.ml.feature.RegexTokenizer
-import org.apache.spark.mllib.feature.Stemmer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
 import org.apache.hadoop.conf.Configuration
@@ -155,6 +155,9 @@ object SelectedKeywords {
                       .setOutputCol("stem_kw")
                       .setLanguage("Spanish")
                       .transform(df)
+
+    val stemmer = new Stemmer().setInputCols(Array("kw")).setOutputCol("stem_kw").setLanguage("Spanish")
+    df = stemmer.transform(df)
     
     // Format fields and save
     df.groupBy("url","domain")
