@@ -23,9 +23,6 @@ import scala.math.log
 object tfidf {
 
 
-
-
-
  /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -55,13 +52,15 @@ object tfidf {
         (explode(col("document")) as "token")
     val unfoldedDocs = df.select(columns: _*)
 
-
+    //TF: times token appears in document
     val tokensWithTf = unfoldedDocs.groupBy("doc_id", "token")
       .agg(count("document") as "TF")
 
+    //DF: number of documents where a token appears
     val tokensWithDf = unfoldedDocs.groupBy("token")
       .agg(countDistinct("doc_id") as "DF")
 
+    //IDF: logarithm of (Total number of documents divided by DF) . How common/rare a word is.
     def calcIdf =
       udf(
         (docCount: Int,DF: Long) =>
@@ -74,16 +73,6 @@ object tfidf {
       .join(tokensWithIdf, Seq("token"), "left")
       .withColumn("tf_idf", col("tf") * col("idf"))
       .join(df,Seq("doc_id"),"left")
-
-
- 
-
-
-
-  
-
-
-
 
 
   }
