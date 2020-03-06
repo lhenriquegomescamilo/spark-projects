@@ -151,11 +151,6 @@ object SelectedKeywords {
           .dropDuplicates() // Remove duplicate words
 
     // Stemmize Keywords
-    df =  new Stemmer().setInputCol("kw")
-                      .setOutputCol("stem_kw")
-                      .setLanguage("Spanish")
-                      .transform(df)
-
     val stemmer = new Stemmer().setInputCols("kw").setOutputCol("stem_kw").setLanguage("Spanish")
     df = stemmer.transform(df)
     
