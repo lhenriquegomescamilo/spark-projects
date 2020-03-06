@@ -155,8 +155,9 @@ object SelectedKeywords {
 
     df.select("url","domain","words")
           .withColumn("tmp", explode(col("words"))).select("tmp.*")
-          .withColumn("keyword", getWord(col("metadata")))
-          .show()
+          .printSchema
+          //.withColumn("keyword", getWord(col("metadata")))
+          //.show()
           //.withColumn("kw",explode(col("words")))
           //.printSchema
 
