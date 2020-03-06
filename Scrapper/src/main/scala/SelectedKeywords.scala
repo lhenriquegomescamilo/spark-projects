@@ -184,7 +184,6 @@ object SelectedKeywords {
       .appName("Selected Keywords")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
-      .config("spark.jars.packages", "com.johnsnowlabs.nlp:spark-nlp_2.11:2.4.2")
       .getOrCreate()
 
     selected_keywords(spark)
