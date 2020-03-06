@@ -5013,6 +5013,7 @@ object Random {
       .join(users_cruces, Seq("ad_id"))
       .write
       .format("parquet")
+      .mode("overwrite")
       .save("/datascience/custom/devices_cruces_raw_data_geo")
   }
 }
