@@ -828,12 +828,12 @@ def getDataTriplets(
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-val descriptor = "new_data"
+val descriptor = "after_xd_fixed"
 val today = (java.time.LocalDate.now).toString
 val useg  = spark.read.format("csv").option("header",true).option("delimiter",",")
-.load("/datascience/geo/geo_processed/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h_users_data/")
-.drop("day","country","id_partner","ID")
-.toDF("device_id","segmentID")
+.load("/datascience/geo/geo_processed/JCDecauxOOH_updated_02_03_20_120d_mexico_4-3-2020-19h_users_data")
+.select("device_id","feature")
+.toDF("device_id","segmentId")
 .withColumn("device_id",lower(col("device_id")))
 //Estos usuarios tienen las features, y en base a estas features queremos meterles un nombre de audiencia. Queremos taggear los usuarios en base a su info web. Un user puede pertenecer a múltiples clusters. Después vamos a tener que ir a los carteles y contar, pero vamos a eso después. Primero el taggeo
 
@@ -848,7 +848,7 @@ val tagged = useg.join(cluster,Seq("segmentId")).drop("segmentId").distinct()
 //Con esto ya podríamos hacer conteo de usuarios por cartel, pero necesitamos por horario, así que vamos a des-crosdevicear, vamos a taggear a lo geo en base a esto
 //Levantamos la tabla de equivalencias
 val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/crossdeviced/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h_xd_equivalence_table")
+.load("/datascience/geo/crossdeviced/JCDecauxOOH_updated_02_03_20_120d_mexico_4-3-2020-19h_xd_equivalence_table")
 .withColumn("device_id_origin",lower(col("device_id_origin")))
 .withColumn("device_id_xd",lower(col("device_id_xd")))
 .drop("device_type_origin","device_type_xd")
@@ -864,7 +864,7 @@ val geo_tagged = tagged.withColumnRenamed("device_id","device_id_xd")
 //Ahora levantamos la raw_data. La necesitamos porque nos piden desagregación por franja horaria
 //extraemos los tiempos
 val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/raw_output/JCDecauxOOH_updated_02_03_20_120d_mexico_3-3-2020-13h")
+.load("/datascience/geo/raw_output/JCDecauxOOH_updated_02_03_20_120d_mexico_4-3-2020-19h")
 .withColumn("device_id", lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
  .withColumn("Hour", date_format(col("Time"), "HH"))
@@ -890,7 +890,7 @@ tagged_timed
 .save("/datascience/geo/Reports/JCDecaux/tagged_timed_%s".format(descriptor))
 
 val tagged_time_up = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/Reports/JCDecaux/tagged_timed")
+.load("/datascience/geo/Reports/JCDecaux/tagged_timed_%s".format(descriptor))
 
 val cluster_time_count = tagged_time_up.groupBy("WeekDay","DayPeriod","ID","longname")
 .agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
@@ -913,7 +913,7 @@ cluster_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_%s_%s".format(today,descriptor))
+.save("/datascience/geo/Reports/JCDecaux/cluster_time_count_%s_%s".format(descriptor,today))
 
 all_day_long_count
 .repartition(1)
@@ -922,7 +922,7 @@ all_day_long_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_%s_%s".format(today,descriptor))
+.save("/datascience/geo/Reports/JCDecaux/all_day_long_count_%s_%s".format(descriptor,today))
 
 total_time_count
 .repartition(1)
@@ -931,7 +931,7 @@ total_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/total_time_count_%s_%s".format(today,descriptor))
+.save("/datascience/geo/Reports/JCDecaux/total_time_count_%s_%s".format(descriptor,today))
 
 all_day_total_time_count
 .repartition(1)
@@ -940,7 +940,7 @@ all_day_total_time_count
 .format("csv")
 .option("header",true)
 .option("delimiter","\t")
-.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_%s_%s".format(today,descriptor))
+.save("/datascience/geo/Reports/JCDecaux/all_day_total_time_count_%s_%s".format(descriptor,today))
 
 
 }

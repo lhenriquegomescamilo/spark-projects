@@ -1888,6 +1888,84 @@ object RandomTincho {
     df_union.write.format("csv").save("/datascience/custom/report_tapad_bridge")
 
   }
+  def dummy_havas(spark:SparkSession){
+
+    val udfFeature = udf((r: Double) => if (r > 0.5) 34316 else 34323)
+
+    val detergentes_nid = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
+                            .filter("device_type = 'nid'")
+                            .select("device_id")
+                            .withColumnRenamed("device_id","nid_sh2")
+                            .distinct()
+
+    val detergentes_ml = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
+                            .filter("device_type = 'email'")
+                            .select("device_id")
+                            .withColumnRenamed("device_id","ml_sh2")
+                            .distinct()
+
+    val detergentes_mob = spark.read.format("csv").option("header","true").load("/datascience/custom/limpiadores_detergentes.csv")
+                            .filter("device_type = 'phone'")
+                            .select("device_id")
+                            .withColumnRenamed("device_id","mb_sh2")
+                            .distinct()
+
+    val nids = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                          .filter("country = 'AR' and nid_sh2 is not null")
+                          .select("device_id","nid_sh2")
+                          .distinct()
+
+    val mob = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                      .filter("country = 'AR' and mb_sh2 is not null")
+                      .select("device_id","mb_sh2")
+                      .distinct()
+
+    val mls = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                    .filter("country = 'AR' and ml_sh2 is not null")
+                    .select("device_id","ml_sh2")
+                    .distinct()
+
+    // Get pii data <device_id, pii>
+      val join_nids = detergentes_nid.join(nids,Seq("nid_sh2"),"inner").select("device_id","nid_sh2").withColumnRenamed("nid_sh2","pii")
+      val join_ml = detergentes_ml.join(mls,Seq("ml_sh2"),"inner").select("device_id","ml_sh2").withColumnRenamed("ml_sh2","pii")
+      val join_mob = detergentes_mob.join(mob,Seq("mb_sh2"),"inner").select("device_id","mb_sh2").withColumnRenamed("mb_sh2","pii")
+
+      val piis = join_nids.union(join_ml)
+                          .union(join_mob)
+                          .select("device_id")
+                          .distinct()
+                          .withColumn("rand",rand()).withColumn("feature",udfFeature(col("rand")))
+                          .withColumn("id_partner",lit(119))
+                          .withColumn("device_type",lit("web"))
+                          .withColumn("activable",lit(1))
+                          .select("device_id","feature","id_partner","device_type","activable")
+                          .write.format("parquet")
+                          .mode(SaveMode.Overwrite)
+                          .save("/datascience/custom/dummy_havas")
+
+
+  }
+  def get_piis_cl(spark:SparkSession){
+    val xd = spark.read
+                  .format("csv")
+                  .option("sep",",")
+                  .load("/datascience/audiences/crossdeviced/CL_90d_home_29-1-2020-12h_xd")
+                  .withColumnRenamed("_c0","madid")
+                  .withColumnRenamed("_c1","device_id")
+                  .withColumnRenamed("_c7","lat")
+                  .withColumnRenamed("_c8","lon")
+                  .select("madid","lat","lon","device_id")
+
+    val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
+
+    xd.join(pii,Seq("device_id"),"inner")
+      .select("madid","lat","lon","ml_sh2","nid_sh2","mb_sh2")
+      .repartition(1)
+      .write
+      .format("csv")
+      .save("/datascience/custom/piis_madids_cl")
+      
+  }
 
   def main(args: Array[String]) {
      
@@ -1900,9 +1978,10 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    report_tapad_madids(spark)
+    get_piis_cl(spark)
+    
 
-    report_tapad_bridge(spark)
+
   }
 
 }

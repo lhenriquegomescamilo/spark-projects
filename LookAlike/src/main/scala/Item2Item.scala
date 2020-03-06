@@ -39,6 +39,11 @@ import org.apache.spark.mllib.linalg.distributed.CoordinateMatrix
 
 object Item2Item {
 
+  /* Number of decimals used to round scores. Higher value improves precision but reduces performance*/
+  var SCORE_DIGITS_ROUNDING = 5
+
+  var disableOutputMeta = false
+
   /**
   It processes all input files from /datascience/data_lookalike/to_process/
   */
@@ -465,7 +470,7 @@ object Item2Item {
       .flatMap(tup =>  selSegmentsIdx
                            .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))).filter(tup => tup._2 >0) // remove scores <= 0
               ) //<segment_idx, score>
-      .map(tup => ((tup._1,BigDecimal(tup._2).setScale(4, BigDecimal.RoundingMode.FLOOR).toDouble), 1L)) //<(segment_idx, rounded score) , 1L>
+      .map(tup => ((tup._1,BigDecimal(tup._2).setScale(SCORE_DIGITS_ROUNDING, BigDecimal.RoundingMode.FLOOR).toDouble), 1L)) //<(segment_idx, rounded score) , 1L>
       .reduceByKey(_ + _) // count by <segment_idx, rounded score>
       .map{ case ((segment_idx, score), cnt) => (segment_idx, (score, cnt)) } //<(segment_idx, (rounded score , count) >
       .groupByKey // group scores by segments
@@ -619,7 +624,10 @@ object Item2Item {
         .option("header", "false")
         .mode(SaveMode.Overwrite)
         .save(filePath)
-      writeOutputMetaFile(filePath, jobId, resultDescription)
+      if (!disableOutputMeta)
+        writeOutputMetaFile(filePath, jobId, resultDescription)
+      else
+        println("Lookalike LOG: .meta output disabled")
     }
     
   }
@@ -891,6 +899,8 @@ object Item2Item {
         nextOption(map ++ Map('useFactualSegments -> value), tail)
       case "--useStartapSegments" :: value :: tail =>
         nextOption(map ++ Map('useStartapSegments -> value), tail)
+      case "--disableOutputMeta" :: value :: tail =>
+        nextOption(map ++ Map('disableOutputMeta -> value), tail)
     }
   }
 
@@ -932,6 +942,8 @@ object Item2Item {
     val useStartapSegments = 
      if (options.contains('useStartapSegments)) options('useStartapSegments).toBoolean else false
 
+    disableOutputMeta =  if (options.contains('disableOutputMeta)) options('disableOutputMeta).toBoolean else false
+     
     if(filePath.length > 0)
       runExpand(spark, filePath, nDays, nDaysSegment, simHits, simThreshold, predHits,
                 useFactualSegments, useStartapSegments)
