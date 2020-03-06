@@ -39,6 +39,9 @@ import org.apache.spark.mllib.linalg.distributed.CoordinateMatrix
 
 object Item2Item {
 
+  /* Number of decimals used to round scores. Higher value improves precision but reduces performance*/
+  var SCORE_DIGITS_ROUNDING = 5
+
   var disableOutputMeta = false
 
   /**
@@ -467,7 +470,7 @@ object Item2Item {
       .flatMap(tup =>  selSegmentsIdx
                            .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))).filter(tup => tup._2 >0) // remove scores <= 0
               ) //<segment_idx, score>
-      .map(tup => ((tup._1,BigDecimal(tup._2).setScale(4, BigDecimal.RoundingMode.FLOOR).toDouble), 1L)) //<(segment_idx, rounded score) , 1L>
+      .map(tup => ((tup._1,BigDecimal(tup._2).setScale(SCORE_DIGITS_ROUNDING, BigDecimal.RoundingMode.FLOOR).toDouble), 1L)) //<(segment_idx, rounded score) , 1L>
       .reduceByKey(_ + _) // count by <segment_idx, rounded score>
       .map{ case ((segment_idx, score), cnt) => (segment_idx, (score, cnt)) } //<(segment_idx, (rounded score , count) >
       .groupByKey // group scores by segments
