@@ -168,9 +168,16 @@ object SelectedKeywords {
         finisher
     ))
 
-    val udfZip = udf((words: Seq[String], stemmed: Seq[String]) => words zip stemmed)  
+    val udfZip = udf((words: Seq[String], stemmed: Seq[String]) => words zip stemmed)
+    val udfGet = udf((words: Seq[String], index:Int) => words(index))
 
-    var df = pipeline.fit(data_parsed).transform(data_parsed).withColumn("zipped",udfZip(col("words"),col("stem_kw")))
+    var df = pipeline.fit(data_parsed).transform(data_parsed)
+                      .withColumn("zipped",udfZip(col("words"),col("stem_kw")))
+                      .withColumn("zipped", explode(col("zipped")))
+                      .withColumn("kw",udfGet(col("zipped"),0))
+                      .withColumn("stem_kw",udfGet(col("zipped"),1))
+                      .withColumn("words", lower(col("words")))
+                      .withColumn("stem_kw", lower(col("stem_kw")))
     df.show()
         
     /*
@@ -179,7 +186,7 @@ object SelectedKeywords {
                   .withColumn("words", lower(col("words")))
                   .withColumn("stem_kw", lower(col("stem_kw")))
                   .show()
-    */
+  */
     df = df.select("url","domain","words","stem_kw")
             .withColumnRenamed("words","kw")
             .withColumn("len",length(col("kw"))) // Filter longitude of words
