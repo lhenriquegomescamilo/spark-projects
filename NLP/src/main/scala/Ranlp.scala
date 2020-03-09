@@ -13,7 +13,7 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.ml.Pipeline
 import com.johnsnowlabs.nlp._
-import com.johnsnowlabs.nlp.annotator.{PerceptronModel, SentenceDetector, Tokenizer}
+import com.johnsnowlabs.nlp.annotator.{PerceptronModel, SentenceDetector, Tokenizer, Normalizer}
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
