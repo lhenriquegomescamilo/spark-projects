@@ -152,7 +152,7 @@ object SelectedKeywords {
                         .transform(df)
 
                 
-    df.select("url","domain","words")
+    df = df.select("url","domain","words")
           .withColumn("tmp", explode(col("words")))
           .select("url","domain","tmp.*")
           .withColumnRenamed("result","kw")
@@ -162,7 +162,10 @@ object SelectedKeywords {
           .withColumn("digit",udfDigit(col("kw")))
           .filter("digit = false")
           .filter(!col("kw").isin(STOPWORDS: _*))
-          .show()
+         
+    val stemmer = new Stemmer().setInputCols("kw").setOutputCol("stem_kw").setLanguage("Spanish")
+    df = stemmer.transform(df)
+    df.show()
 
     df = df.select("url","domain","words")
           .withColumn("tmp", explode(col("words")))
@@ -179,7 +182,7 @@ object SelectedKeywords {
     // Stemmize Keywords
     val stemmer = new Stemmer().setInputCols("kw").setOutputCol("stem_kw").setLanguage("Spanish")
     df = stemmer.transform(df)
-    
+    df.show()
     // Format fields and save
     df.groupBy("url","domain")
       .agg(collect_list(col("kw")).as("kw"),
