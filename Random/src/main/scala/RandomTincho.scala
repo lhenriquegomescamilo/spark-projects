@@ -2047,11 +2047,26 @@ object RandomTincho {
       .filter(col("segment").isin(segments: _*))
       .withColumn("tier",udfTier(col("segment")))
       .select("device_id","segment","tier")
+      .distinct()
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/users_report_uniques")
-
+  }
+  def get_pii_matching_user_report(spark:SparkSession){
+    val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
+    val df = spark.read
+                  .format("csv")
+                  .load("/datascience/custom/users_report_uniques")
+                  .withColumnRenamed("_c0","device_id")
+                  .withColumnRenamed("_c1","segment")
+                  .withColumnRenamed("_c2","tier")
+    
+    pii.join(df,Seq("device_id"),"inner")
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/report_user_unique_pii")
 
   }
 
@@ -2066,10 +2081,8 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    generate_users_for_report_uniques(spark)
+    get_pii_matching_user_report(spark)
     
-
-
   }
 
 }
