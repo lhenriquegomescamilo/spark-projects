@@ -6182,10 +6182,11 @@ object RandomTincho {
       .filter(col("segment").isin(segments: _*))
       .groupBy("segment").agg(sum(col("count")).as("count"))
       .withColumn("tier",tierUDF(col("count")))
-
-    df.filter("tier = 1").show()
-    df.filter("tier = 2").show()
-    df.filter("tier = 3").show()
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .partitionBy("country")
+      .save("/datascience/custom/users_tiers")
   }
 
   def main(args: Array[String]) {
