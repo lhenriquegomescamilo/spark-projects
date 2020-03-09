@@ -2035,7 +2035,7 @@ object RandomTincho {
     val udfTier = udf((segment: String) =>
         if (List("24621","24666","24692","1350","743").contains(segment)) "tier_1"
         else if (List("224","104619","99638","48334","432")
-                   .contains(hour)) "tier_2"
+                   .contains(segment)) "tier_2"
         else "tier_3"
     )
     val df = spark.read
