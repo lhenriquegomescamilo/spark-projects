@@ -141,13 +141,13 @@ object Ranlp {
     **/
 
     val normalizer = new Normalizer()
-    .setInputCols("token")
+    .setInputCols("pos")
     .setOutputCol("normalized")
     .setCleanupPatterns(Array("[^a-zA-Z0-9]"))
     .setLowercase(true)
 
     val finisher = new Finisher()
-    .setInputCols("pos")
+    .setInputCols("normalized")
     .setIncludeMetadata(true) // set to False to remove metadata
 
     val pipeline = new Pipeline().setStages(Array(
