@@ -2,6 +2,7 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.ml.Pipeline
 import org.joda.time.Days
 import org.apache.spark._
 import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer}
@@ -139,27 +140,34 @@ object SelectedKeywords {
                                            col("twitter_description")).as("content")
                                     )
 
-    // Tokenize parsed data in list of words  
+    // Tokenize parsed data in list of words
     //var df = tokenize(data_parsed)
-    var df = new DocumentAssembler().setInputCol("content")
-                                    .setOutputCol("document")
-                                    .transform(data_parsed)
+    var document = new DocumentAssembler().setInputCol("content")
+                                          .setOutputCol("document")
 
+    val tokenizer = new Tokenizer().setInputCols("document")
+                                    .setOutputCol("words")
+                  
+    val normalizer = new Normalizer().setInputCols(Array("words"))
+                                      .setOutputCol("normalized")
+                        
+    val stemmer = new Stemmer().setInputCols("normalized")
+                              .setOutputCol("stem_kw")
+                              .setLanguage("Spanish")
+                              
+    val finisher = new Finisher().setInputCols(Array("token","stem_kw"))
+                                .setIncludeMetadata(false)
+                                .transform(df)
 
-    df = new Tokenizer().setInputCols("document")
-                        .setOutputCol("words")
-                        .fit(df)
-                        .transform(df)
-    
-    df = new Stemmer().setInputCols("words")
-                      .setOutputCol("stem_kw")
-                      .setLanguage("Spanish")
-                      .transform(df)
-    
-    df = new Finisher().setInputCols("words")
-                      .setIncludeMetadata(false)
-                      .transform(df)
+    val pipeline = new Pipeline().setStages(Array(
+        document,
+        tokenizer,
+        normalizer,
+        stemmer,
+        finisher
+    ))
 
+    var df = pipeline.fit(df).transform(data_parsed)
     df.show()
     
     df = df.select("url","domain","words")
