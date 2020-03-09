@@ -1989,7 +1989,7 @@ object RandomTincho {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
+      .map(day => path + "/day=%s/country=AR".format(day)) //for each day from the list it returns the day path.
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
     
     val tierUDF = udf((count: Int) =>
@@ -2001,7 +2001,6 @@ object RandomTincho {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .filter("country = 'AR' or country = 'MX'")
       .select("feature","count")
       .withColumnRenamed("feature", "segment")
       .filter(col("segment").isin(segments: _*))
@@ -2012,6 +2011,40 @@ object RandomTincho {
       .mode(SaveMode.Overwrite)
       .partitionBy("tier")
       .save("/datascience/custom/users_tiers")
+  }
+
+  def generate_users_for_report_uniques(spark:SparkSession){
+    // 5 segments from each tier
+    val segments = List("24621","24666","24692","1350","743","224","104619","99638","48334","432",
+                        "1087","1341","99644","48398","463")
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/".format(day)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .filter("country = 'AR' or country = 'MX'")
+      .select("feature","count")
+      .withColumnRenamed("feature", "segment")
+      .filter(col("segment").isin(segments: _*))
+      .select("device_id","segment")
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/users_report_uniques")
+
+
   }
 
   def main(args: Array[String]) {
@@ -2025,7 +2058,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    report_user_uniques(spark)
+    generate_users_for_report_uniques(spark)
     
 
 
