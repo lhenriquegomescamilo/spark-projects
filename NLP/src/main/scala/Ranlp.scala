@@ -35,7 +35,7 @@ object Ranlp {
     .getOrCreate()
 
     
-    val path = "/datascience/scraper/temp_dump2/2020-02-10_daily.csv"
+    val path = "/datascience/scraper/dump/2020-02-10_daily.csv"
     val df = spark.read
             .format("csv")
             .option("header", "True")
