@@ -155,8 +155,7 @@ object SelectedKeywords {
                               .setOutputCol("stem_kw")
                               .setLanguage("Spanish")
                               
-    val finisher = new Finisher().setInputCols("token","stem_kw")
-                                .setOutputCols("finished_token", "finished_stemming")
+    val finisher = new Finisher().setInputCols(Array("token","stem_kw"))
                                 .setIncludeMetadata(false)
 
 
