@@ -241,7 +241,7 @@ def get_safegraph_data(
     .select("ad_id","id_type")
     .toDF("device_id","device_type")
 
-    val path_homes_xd = "/datascience/audiences/crossdeviced/PE_90d_home_14-1-2020-19h_xd"
+    val path_homes_xd = "datascience/geo/NSEHomes/PE_180d_home_27-2-2020--3h_xd"
     val homes_xd = spark.read.format("csv")
     .option("delimiter",",")
     .load(path_homes_xd)
@@ -339,8 +339,8 @@ def get_safegraph_data(
     val path_stay_old = "/datascience/geo/holidays/coca/stay_home_PE_20200302"
 
     //ARGENTINA
-    //val path_travellers_old = "/datascience/audiences/crossdeviced/travellers_AR_20200226_xd"
-    //val path_stay_old = "/datascience/geo/holidays/coca/stay_home_AR_20200226"
+    //val path_travellers_old = "/datascience/audiences/crossdeviced/travellers_AR_20200302_xd"
+    //val path_stay_old = "/datascience/geo/holidays/coca/stay_home_AR_20200302"
 
 
     //read old dataframes and concat
