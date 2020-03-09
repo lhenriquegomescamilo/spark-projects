@@ -128,6 +128,7 @@ def get_safegraph_data(
     val path_homes = "/datascience/geo/NSEHomes/argentina_180d_home_27-2-2020--3h"
  
     val typeMap_homes = Map(
+          "web" -> "web",
           "coo" -> "web",
           "and" -> "android",
           "maid" -> "android",
@@ -222,6 +223,7 @@ def get_safegraph_data(
     "coo" -> "web",
     "and" -> "android",
     "aaid" -> "android",
+    "web" -> "web",
         "android" -> "android",
     "unknown" -> "android",
     "ios" -> "ios",
