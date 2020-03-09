@@ -5,7 +5,7 @@ import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.apache.spark._
 import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer}
-import com.johnsnowlabs.nlp.{DocumentAssembler}
+import com.johnsnowlabs.nlp.{DocumentAssembler,Finisher}
 import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
@@ -151,16 +151,20 @@ object SelectedKeywords {
                         .fit(df)
                         .transform(df)
     
+    df = new Stemmer().setInputCols("words")
+                      .setOutputCol("stem_kw")
+                      .setLanguage("Spanish")
+                      .transform(df)
+    
+    df = new Finisher().setInputCols("words")
+                      .setIncludeMetadata(false)
+                      .transform(df)
+
+    df.show()
     
     df = df.select("url","domain","words")
             .withColumn("words", explode(col("words")))
     
-    df.show()
-    df = new Stemmer().setInputCols("words")
-                  .setOutputCol("stem_kw")
-                  .setLanguage("Spanish")
-                  .transform(df)
-    df.show()
 
     df = df.select("url","domain","stem_kw","tmp.*")
             .withColumnRenamed("result","kw")
