@@ -1983,7 +1983,7 @@ object RandomTincho {
 
     // Get the days to be loaded
     val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(1)
+    val end = DateTime.now.minusDays(0)
     val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_triplets/segments"
 
