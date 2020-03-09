@@ -1954,14 +1954,13 @@ object RandomTincho {
                   .withColumnRenamed("_c1","device_id")
                   .withColumnRenamed("_c7","lat")
                   .withColumnRenamed("_c8","lon")
-                  .filter("_c2 = 'coo'")
                   .select("madid","lat","lon","device_id")
 
     val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
 
     xd.join(pii,Seq("device_id"),"inner")
       .select("madid","lat","lon","ml_sh2","nid_sh2","mb_sh2")
-      .repartition(1)
+      .repartition(50)
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
