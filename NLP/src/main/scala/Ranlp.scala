@@ -13,14 +13,6 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.ml.Pipeline
 import com.johnsnowlabs.nlp._
-import com.johnsnowlabs.nlp.annotators._
-import com.johnsnowlabs.nlp.annotators.pos.perceptron._
-import com.johnsnowlabs.nlp.annotators.sbd.pragmatic._
-import com.johnsnowlabs.nlp.util.io.ResourceHelper
-import com.johnsnowlabs.util.Benchmark
-
-import com.johnsnowlabs.nlp.{DocumentAssembler}
-import com.johnsnowlabs.nlp.annotator.{PerceptronModel, PerceptronApproach, SentenceDetector, Tokenizer}
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -108,7 +100,7 @@ object Ranlp {
     */
 
     
-
+    /**
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
         sentenceDetector,
@@ -116,17 +108,6 @@ object Ranlp {
         posTagger
     ))
 
-
-    /**
-
-
-    val pipeline = new Pipeline().setStages(Array(
-        documentAssembler,
-        sentenceDetector,
-        tokenizer
-    ))
-
-    */
     val doc = pipeline.fit(df).transform(df)
 
     //println(doc.withColumn("tmp", explode(col("pos"))).select("tmp.*").show())
@@ -156,7 +137,23 @@ object Ranlp {
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/testnlp2.csv")
     
+    **/
 
+    val finisher = new Finisher()
+    .setInputCols("pos")
+    .setIncludeMetadata(true) // set to False to remove metadata
+
+    val pipeline = new Pipeline().setStages(Array(
+        documentAssembler,
+        sentenceDetector,
+        tokenizer,
+        posTagger,
+        finisher
+    ))
+
+    val doc = pipeline.fit(df).transform(df) 
+
+    println(doc.show())
 
 
 
