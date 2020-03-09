@@ -313,6 +313,16 @@ object MeanWordsEmbedder {
           .partitionBy("lang", "day", "hour")
           .save("/datascience/scraper/embeddings/")
 
+    df
+        .withColumn("day",lit(date))
+        .withColumn("hour",lit(hour))
+        .orderBy(col("url").asc)
+        .write
+        .format("parquet")
+        .mode("append")
+        .partitionBy("lang", "day", "hour")
+        .save("/datascience/scraper/embeddings/content/")
+
   }
 
   type OptionMap = Map[Symbol, Int]

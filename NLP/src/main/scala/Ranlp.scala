@@ -13,14 +13,7 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.ml.Pipeline
 import com.johnsnowlabs.nlp._
-import com.johnsnowlabs.nlp.annotators._
-import com.johnsnowlabs.nlp.annotators.pos.perceptron._
-import com.johnsnowlabs.nlp.annotators.sbd.pragmatic._
-import com.johnsnowlabs.nlp.util.io.ResourceHelper
-import com.johnsnowlabs.util.Benchmark
-
-import com.johnsnowlabs.nlp.{DocumentAssembler}
-import com.johnsnowlabs.nlp.annotator.{PerceptronModel, PerceptronApproach, SentenceDetector, Tokenizer}
+import com.johnsnowlabs.nlp.annotator.{PerceptronModel, SentenceDetector, Tokenizer, Normalizer}
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -42,7 +35,7 @@ object Ranlp {
     .getOrCreate()
 
     
-    val path = "/datascience/scraper/temp_dump2/2020-02-10_daily.csv"
+    val path = "/datascience/scraper/dump/2020-02-10_daily.csv"
     val df = spark.read
             .format("csv")
             .option("header", "True")
@@ -108,7 +101,7 @@ object Ranlp {
     */
 
     
-
+    /**
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
         sentenceDetector,
@@ -116,17 +109,6 @@ object Ranlp {
         posTagger
     ))
 
-
-    /**
-
-
-    val pipeline = new Pipeline().setStages(Array(
-        documentAssembler,
-        sentenceDetector,
-        tokenizer
-    ))
-
-    */
     val doc = pipeline.fit(df).transform(df)
 
     //println(doc.withColumn("tmp", explode(col("pos"))).select("tmp.*").show())
@@ -156,7 +138,30 @@ object Ranlp {
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/testnlp2.csv")
     
+    **/
 
+    val normalizer = new Normalizer()
+    .setInputCols("token")
+    .setOutputCol("normalized")
+    .setCleanupPatterns(Array("[^a-zA-Z0-9]"))
+    .setLowercase(true)
+
+    val finisher = new Finisher()
+    .setInputCols("pos")
+    .setIncludeMetadata(true) // set to False to remove metadata
+
+    val pipeline = new Pipeline().setStages(Array(
+        documentAssembler,
+        sentenceDetector,
+        tokenizer,
+        posTagger,
+        normalizer,
+        finisher
+    ))
+
+    val doc = pipeline.fit(df).transform(df) 
+
+    println(doc.show())
 
 
 
