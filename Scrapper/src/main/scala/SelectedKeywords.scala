@@ -171,13 +171,15 @@ object SelectedKeywords {
     var df = pipeline.fit(data_parsed).transform(data_parsed)
     df.printSchema
                   
-    df.show()
+
     
     df.withColumn("words", explode(col("words")))
                   .withColumn("stem_kw", explode(col("stem_kw")))
                   .withColumn("words", lower(col("words")))
                   .withColumn("stem_kw", lower(col("stem_kw")))
                   .filter(col("words").contains(col("stem_kw")))
+    df.show()
+    
     df = df.select("url","domain","words","stem_kw")
             .withColumnRenamed("words","kw")
             .withColumn("len",length(col("kw"))) // Filter longitude of words
