@@ -180,9 +180,7 @@ object SelectedKeywords {
           .dropDuplicates() // Remove duplicate words
 
     // Stemmize Keywords
-    val stemmer = new Stemmer().setInputCols("kw").setOutputCol("stem_kw").setLanguage("Spanish")
-    df = stemmer.transform(df)
-    df.show()
+   
     // Format fields and save
     df.groupBy("url","domain")
       .agg(collect_list(col("kw")).as("kw"),
