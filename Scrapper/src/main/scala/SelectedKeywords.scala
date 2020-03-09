@@ -156,9 +156,9 @@ object SelectedKeywords {
                               .setLanguage("Spanish")
                               
     val finisher = new Finisher().setInputCols(Array("words","stem_kw"))
+                                .setOutputCols(Array("words","stem_kw"))
                                 .setOutputAsArray(true)
                            
-
 
     val pipeline = new Pipeline().setStages(Array(
         document,
@@ -169,6 +169,9 @@ object SelectedKeywords {
     ))
 
     var df = pipeline.fit(data_parsed).transform(data_parsed)
+                      .withColumn("words", explode(col("words")))
+                      .withColumn("stem_kw", explode(col("stem_kw")))
+                      .filter(col("words").contains(col("stem_kw")))
     df.show()
     
     df = df.select("url","domain","words")
