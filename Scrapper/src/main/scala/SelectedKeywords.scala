@@ -150,9 +150,14 @@ object SelectedKeywords {
                         .setOutputCol("words")
                         .fit(df)
                         .transform(df)
+    
+    df = new Stemmer().setInputCols("words")
+                      .setOutputCol("stem_kw")
+                      .setLanguage("Spanish")
+                      .transform(df)
 
                 
-    df = df.select("url","domain","words")
+    df = df.select("url","domain","words","stem_kw")
           .withColumn("tmp", explode(col("words")))
           .select("url","domain","tmp.*")
           .withColumnRenamed("result","kw")
