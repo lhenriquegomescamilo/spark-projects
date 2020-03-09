@@ -83,7 +83,8 @@ object Ranlp {
 
     
     val posTagger = spanish_pos
-    .setInputCols(Array("sentence", "token"))
+    .setInputCols(Array("document", "token"))
+    //.setInputCols(Array("sentence", "token"))
     .setOutputCol("pos")
 
 
@@ -141,7 +142,7 @@ object Ranlp {
     **/
 
     val normalizer = new Normalizer()
-    .setInputCols("token")
+    .setInputCols("pos")
     .setOutputCol("normalized")
     .setCleanupPatterns(Array("[^a-zA-Z0-9]"))
     .setLowercase(true)
@@ -155,7 +156,6 @@ object Ranlp {
         sentenceDetector,
         tokenizer,
         posTagger,
-        normalizer,
         finisher
     ))
 
