@@ -169,37 +169,23 @@ object SelectedKeywords {
     ))
 
     var df = pipeline.fit(data_parsed).transform(data_parsed)
-                      .withColumn("words", explode(col("words")))
-                      .withColumn("stem_kw", explode(col("stem_kw")))
-                      .filter(col("words").contains(col("stem_kw")))
+    df.printSchema
+                  
     df.show()
     
-    df = df.select("url","domain","words")
-            .withColumn("words", explode(col("words")))
-    
-
-    df = df.select("url","domain","stem_kw","tmp.*")
-            .withColumnRenamed("result","kw")
-            .withColumn("kw",lower(col("kw")))
+    df.withColumn("words", explode(col("words")))
+                  .withColumn("stem_kw", explode(col("stem_kw")))
+                  .withColumn("words", lower(col("words")))
+                  .withColumn("stem_kw", lower(col("stem_kw")))
+                  .filter(col("words").contains(col("stem_kw")))
+    df = df.select("url","domain","words","stem_kw")
+            .withColumnRenamed("words","kw")
             .withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
-            .withColumn("digit",udfDigit(col("kw")))
+            .withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
             .filter("digit = false")
-            .filter(!col("kw").isin(STOPWORDS: _*))
-         
-    df = df.select("url","domain","words")
-          .withColumn("tmp", explode(col("words")))
-          .select("url","domain","tmp.*")
-          .withColumnRenamed("result","kw")
-          //.withColumn("kw",explode(col("words"))) // Explode list of words
-          .withColumn("len",length(col("kw"))) // Filter longitude of words
-          .filter("len > 2 and len < 18" )
-          .withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
-          .filter("digit = false")
-          .filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
-          .dropDuplicates() // Remove duplicate words
-
-    // Stemmize Keywords
+            .filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
+            .dropDuplicates() // Remove duplicate words
    
     // Format fields and save
     df.groupBy("url","domain")
