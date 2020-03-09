@@ -99,9 +99,9 @@ def get_safegraph_data(
     val df_homes = spark.read
     .format("csv")
     .option("sep","\t")
-    .option("header",true)
+    .option("header",false)
     .load(path_homes)
-    .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
+    .toDF("device_id","device_type","freq","else","lat_home","lon_home")
     .filter("lat_home != lon_home")
     .withColumn( "lat_home",((col("lat_home").cast("float"))))
     .withColumn( "lon_home",((col("lon_home").cast("float"))))
@@ -235,18 +235,18 @@ def get_safegraph_data(
     
     //PERUU
     val homes_madid = spark.read.format("csv")
-    .option("delimiter","\t")
-    .option("header",true)
+    .option("sep","\t")
+    .option("header",false)
     .load(path_homes)
-    .select("ad_id","id_type")
-    .toDF("device_id","device_type")
+    .toDF("device_id","device_type","freq","else","lat_home","lon_home")
+    .select("device_id","device_type")
 
-    val path_homes_xd = "datascience/geo/NSEHomes/PE_180d_home_27-2-2020--3h_xd"
+    val path_homes_xd = "/datascience/geo/NSEHomes/PE_180d_home_27-2-2020--3h_xd"
     val homes_xd = spark.read.format("csv")
-    .option("delimiter",",")
+    .option("sep","\t")
+    .option("header",true)
     .load(path_homes_xd)
-    .select("_c1","_c2")
-    .toDF("device_id","device_type")
+    .select("device_id","device_type")
 
     val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type"))) 
     
