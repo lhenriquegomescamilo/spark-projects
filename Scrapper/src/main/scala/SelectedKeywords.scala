@@ -174,7 +174,6 @@ object SelectedKeywords {
                   .withColumn("stem_kw", explode(col("stem_kw")))
                   .withColumn("words", lower(col("words")))
                   .withColumn("stem_kw", lower(col("stem_kw")))
-                  .filter(col("words").contains(col("stem_kw")))
                   .show()
 
     df = df.select("url","domain","words","stem_kw")
