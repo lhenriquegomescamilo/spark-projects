@@ -2042,7 +2042,7 @@ object RandomTincho {
       .option("basePath", path)
       .parquet(hdfs_files: _*)
       .filter("country = 'AR' or country = 'MX'")
-      .select("feature","count")
+      .select("device_id","feature","count")
       .withColumnRenamed("feature", "segment")
       .filter(col("segment").isin(segments: _*))
       .withColumn("tier",udfTier(col("segment")))
