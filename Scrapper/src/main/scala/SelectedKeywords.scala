@@ -152,7 +152,7 @@ object SelectedKeywords {
                         .transform(df)
     
     
-    df = df.select("url","domain","words","stem_kw")
+    df = df.select("url","domain","words")
             .withColumn("words", explode(col("words")))
     
     df.show()
