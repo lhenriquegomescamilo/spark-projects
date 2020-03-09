@@ -141,7 +141,7 @@ object Ranlp {
     **/
 
     val normalizer = new Normalizer()
-    .setInputCols("pos")
+    .setInputCols("token")
     .setOutputCol("normalized")
     .setCleanupPatterns(Array("[^a-zA-Z0-9]"))
     .setLowercase(true)
@@ -154,8 +154,8 @@ object Ranlp {
         documentAssembler,
         sentenceDetector,
         tokenizer,
-        posTagger,
         normalizer,
+        posTagger,
         finisher
     ))
 
