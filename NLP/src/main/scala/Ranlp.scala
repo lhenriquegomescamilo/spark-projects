@@ -140,6 +140,12 @@ object Ranlp {
     
     **/
 
+    val normalizer = new Normalizer()
+    .setInputCols("token")
+    .setOutputCol("normalized")
+    .setPatterns("[^a-zA-Z0-9]")
+    .setLowercase(true)
+
     val finisher = new Finisher()
     .setInputCols("pos")
     .setIncludeMetadata(true) // set to False to remove metadata
@@ -149,6 +155,7 @@ object Ranlp {
         sentenceDetector,
         tokenizer,
         posTagger,
+        normalizer,
         finisher
     ))
 
