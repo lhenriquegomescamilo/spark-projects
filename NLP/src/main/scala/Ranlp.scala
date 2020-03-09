@@ -143,7 +143,7 @@ object Ranlp {
     val normalizer = new Normalizer()
     .setInputCols("token")
     .setOutputCol("normalized")
-    .setPatterns("[^a-zA-Z0-9]")
+    .setCleanupPatterns("[^a-zA-Z0-9]")
     .setLowercase(true)
 
     val finisher = new Finisher()
