@@ -156,7 +156,7 @@ object SelectedKeywords {
                       .setLanguage("Spanish")
                       .transform(df)
 
-                
+    df.show()
     df = df.select("url","domain","words","stem_kw")
           .withColumn("tmp", explode(col("words")))
           .select("url","domain","tmp.*")
