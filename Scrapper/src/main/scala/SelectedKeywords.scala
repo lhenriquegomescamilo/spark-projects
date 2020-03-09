@@ -155,9 +155,10 @@ object SelectedKeywords {
                               .setOutputCol("stem_kw")
                               .setLanguage("Spanish")
                               
-    val finisher = new Finisher().setInputCols(Array("token","stem_kw"))
+    val finisher = new Finisher().setInputCols("token","stem_kw")
+                                .setOutputCols("finished_token", "finished_stemming")
                                 .setIncludeMetadata(false)
-                                .transform(df)
+
 
     val pipeline = new Pipeline().setStages(Array(
         document,
