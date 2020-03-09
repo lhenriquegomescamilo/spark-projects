@@ -83,8 +83,7 @@ object Ranlp {
 
     
     val posTagger = spanish_pos
-    .setInputCols(Array("document", "token"))
-    //.setInputCols(Array("sentence", "token"))
+    .setInputCols(Array("sentence", "token"))
     .setOutputCol("pos")
 
 
@@ -148,7 +147,7 @@ object Ranlp {
     .setLowercase(true)
 
     val finisher = new Finisher()
-    .setInputCols("pos")
+    .setInputCols("normalized")
     .setIncludeMetadata(true) // set to False to remove metadata
 
     val pipeline = new Pipeline().setStages(Array(
@@ -156,6 +155,7 @@ object Ranlp {
         sentenceDetector,
         tokenizer,
         posTagger,
+        normalizer,
         finisher
     ))
 
