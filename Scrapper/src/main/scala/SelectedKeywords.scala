@@ -151,27 +151,26 @@ object SelectedKeywords {
                         .fit(df)
                         .transform(df)
     
-    df = new Stemmer().setInputCols("words")
-                      .setOutputCol("stem_kw")
-                      .setLanguage("Spanish")
-                      .transform(df)
-
-    df.show()
+    
     df = df.select("url","domain","words","stem_kw")
-          .withColumn("tmp", explode(col("words")))
-          .select("url","domain","tmp.*")
-          .withColumnRenamed("result","kw")
-          .withColumn("kw",lower(col("kw")))
-          .withColumn("len",length(col("kw"))) // Filter longitude of words
-          .filter("len > 2 and len < 18" )
-          .withColumn("digit",udfDigit(col("kw")))
-          .filter("digit = false")
-          .filter(!col("kw").isin(STOPWORDS: _*))
-         
-    val stemmer = new Stemmer().setInputCols("kw").setOutputCol("stem_kw").setLanguage("Spanish")
-    df = stemmer.transform(df)
+            .withColumn("words", explode(col("words")))
+    
+    df.show()
+    df = new Stemmer().setInputCols("words")
+                  .setOutputCol("stem_kw")
+                  .setLanguage("Spanish")
+                  .transform(df)
     df.show()
 
+    df = df.select("url","domain","stem_kw","tmp.*")
+            .withColumnRenamed("result","kw")
+            .withColumn("kw",lower(col("kw")))
+            .withColumn("len",length(col("kw"))) // Filter longitude of words
+            .filter("len > 2 and len < 18" )
+            .withColumn("digit",udfDigit(col("kw")))
+            .filter("digit = false")
+            .filter(!col("kw").isin(STOPWORDS: _*))
+         
     df = df.select("url","domain","words")
           .withColumn("tmp", explode(col("words")))
           .select("url","domain","tmp.*")
