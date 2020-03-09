@@ -1954,8 +1954,8 @@ object RandomTincho {
                   .withColumnRenamed("_c1","device_id")
                   .withColumnRenamed("_c7","lat")
                   .withColumnRenamed("_c8","lon")
+                  .filter("_c2 = 'coo'")
                   .select("madid","lat","lon","device_id")
-                  .dropDuplicates()
 
     val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
 
