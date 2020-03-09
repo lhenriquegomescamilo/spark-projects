@@ -155,8 +155,9 @@ object SelectedKeywords {
                               .setOutputCol("stem_kw")
                               .setLanguage("Spanish")
                               
-    val finisher = new Finisher().setInputCols(Array("token","stem_kw"))
-                                .setIncludeMetadata(false)
+    val finisher = new Finisher().setInputCols(Array("words","stem_kw"))
+                                .setOutputAsArray(true)
+                           
 
 
     val pipeline = new Pipeline().setStages(Array(
