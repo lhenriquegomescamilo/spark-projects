@@ -168,7 +168,7 @@ object SelectedKeywords {
         finisher
     ))
 
-    var df = pipeline.fit(df).transform(data_parsed)
+    var df = pipeline.fit(data_parsed).transform(data_parsed)
     df.show()
     
     df = df.select("url","domain","words")
