@@ -2031,6 +2031,13 @@ object RandomTincho {
       .map(day => path + "/day=%s/".format(day)) //for each day from the list it returns the day path.
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
+
+    val udfTier = udf((segment: String) =>
+        if (List("24621","24666","24692","1350","743").contains(segment)) "tier_1"
+        else if (List("224","104619","99638","48334","432")
+                   .contains(hour)) "tier_2"
+        else "tier_3"
+    )
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
@@ -2038,7 +2045,8 @@ object RandomTincho {
       .select("feature","count")
       .withColumnRenamed("feature", "segment")
       .filter(col("segment").isin(segments: _*))
-      .select("device_id","segment")
+      .withColumn("tier",udfTier(col("segment")))
+      .select("device_id","segment","tier")
       .write
       .format("csv")
       .mode(SaveMode.Overwrite)
