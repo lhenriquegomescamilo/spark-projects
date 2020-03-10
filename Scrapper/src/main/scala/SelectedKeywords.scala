@@ -171,13 +171,15 @@ object SelectedKeywords {
     val udfZip = udf((words: Seq[String], stemmed: Seq[String]) => words zip stemmed)
     val udfGetWord = udf((words: Seq[String]) => words(1))
     val udfGetStem = udf((words: Seq[String] ) => words(2))
+    val udfTest = udf((words: Row ) => words.getAs[String]("_1"))
+    //row.getAs[Row]("struct").getAs[String]("level1")
 
     var df = pipeline.fit(data_parsed).transform(data_parsed)
                       .withColumn("zipped",udfZip(col("words"),col("stem_kw")))
                       .withColumn("zipped", explode(col("zipped")))
     df.show()
     df.printSchema                  
-    df = df.withColumn("kw",udfGetWord(col("zipped")))
+    df = df.withColumn("kw",udfTest(col("zipped")))
             .withColumn("stem_kw",udfGetStem(col("zipped")))
             .withColumn("words", lower(col("words")))
             .withColumn("stem_kw", lower(col("stem_kw")))
