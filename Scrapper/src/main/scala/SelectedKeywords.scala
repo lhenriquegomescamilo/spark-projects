@@ -180,7 +180,7 @@ object SelectedKeywords {
     df.show()
     df.printSchema                  
     df = df.withColumn("kw",udfTest(col("zipped")))
-            .withColumn("stem_kw",udfGetStem(col("zipped")))
+            .withColumn("stem_kw",udfTest(col("zipped")))
             .withColumn("words", lower(col("words")))
             .withColumn("stem_kw", lower(col("stem_kw")))
     df.show()
