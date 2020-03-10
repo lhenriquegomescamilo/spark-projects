@@ -51,7 +51,7 @@ val homes = spark.read.format("csv")
  .option("delimiter","\t")
 .option("header",true)
           .load(("/datascience/geo/NSEHomes/%s_xd".format(value_dictionary("output_file"))))
-.select("device_type","device_id","GEOID","frequency")
+.select("device_type","device_id","GEOID","frequency","latitude","longitude")
 .withColumn("ESTATE",substring(col("GEOID"), 0, 2)) //Esto es un hardcodeo medio feo, va a tomar los dos primeros dígitos del GEOID. En caso de Perú y Colombia, son los únicos que hay
 .withColumn("device_type",mapUDF(col("device_type")))
 .withColumn("country",lit(actual_country))
