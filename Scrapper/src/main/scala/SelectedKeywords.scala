@@ -2,10 +2,11 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.ml.Pipeline
 import org.joda.time.Days
 import org.apache.spark._
 import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer}
-import com.johnsnowlabs.nlp.{DocumentAssembler}
+import com.johnsnowlabs.nlp.{DocumentAssembler,Finisher}
 import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
@@ -139,44 +140,60 @@ object SelectedKeywords {
                                            col("twitter_description")).as("content")
                                     )
 
-    // Tokenize parsed data in list of words  
+    // Tokenize parsed data in list of words
     //var df = tokenize(data_parsed)
-    var df = new DocumentAssembler().setInputCol("content")
-                                    .setOutputCol("document")
-                                    .transform(data_parsed)
+    var document = new DocumentAssembler().setInputCol("content")
+                                          .setOutputCol("document")
 
+    val tokenizer = new Tokenizer().setInputCols("document")
+                                    .setOutputCol("words")
+                  
+    val normalizer = new Normalizer().setInputCols(Array("words"))
+                                      .setOutputCol("normalized")
+                        
+    val stemmer = new Stemmer().setInputCols("normalized")
+                              .setOutputCol("stem_kw")
+                              .setLanguage("Spanish")
+                              
+    val finisher = new Finisher().setInputCols(Array("words","stem_kw"))
+                                .setOutputCols(Array("words","stem_kw"))
+                                .setOutputAsArray(true)
+                           
 
-    df = new Tokenizer().setInputCols("document")
-                        .setOutputCol("words")
-                        .fit(df)
-                        .transform(df)
+    val pipeline = new Pipeline().setStages(Array(
+        document,
+        tokenizer,
+        normalizer,
+        stemmer,
+        finisher
+    ))
 
-                
-    df.select("url","domain","words")
-          .withColumn("tmp", explode(col("words")))
-          .select("url","domain","tmp.*")
-          .withColumnRenamed("result","kw")
-          .withColumn("len",length(col("kw"))) // Filter longitude of words
-          .filter("len > 2 and len < 18" )
-          .withColumn("digit",udfDigit(col("kw"))) 
-          .show()
+    val udfZip = udf((words: Seq[String], stemmed: Seq[String]) => words zip stemmed)
+    val udfGetWord = udf((words: Seq[String]) => words(1))
+    val udfGetStem = udf((words: Seq[String] ) => words(2))
+    val udfTest = udf((words: Row ) => words.getAs[String]("_1")(0))
+    //row.getAs[Row]("struct").getAs[String]("level1")
 
-    df = df.select("url","domain","words")
-          .withColumn("tmp", explode(col("words")))
-          .select("url","domain","tmp.*")
-          .withColumnRenamed("result","kw")
-          //.withColumn("kw",explode(col("words"))) // Explode list of words
-          .withColumn("len",length(col("kw"))) // Filter longitude of words
-          .filter("len > 2 and len < 18" )
-          .withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
-          .filter("digit = false")
-          .filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
-          .dropDuplicates() // Remove duplicate words
-
-    // Stemmize Keywords
-    val stemmer = new Stemmer().setInputCols("kw").setOutputCol("stem_kw").setLanguage("Spanish")
-    df = stemmer.transform(df)
-    
+    var df = pipeline.fit(data_parsed).transform(data_parsed)
+                      .withColumn("zipped",udfZip(col("words"),col("stem_kw")))
+                      .withColumn("zipped", explode(col("zipped")))
+    df.show()
+    df.printSchema                  
+    df = df.withColumn("kw",udfTest(col("zipped")))
+            .withColumn("stem_kw",udfTest(col("zipped")))
+            .withColumn("words", lower(col("words")))
+            .withColumn("stem_kw", lower(col("stem_kw")))
+    df.show()
+        
+    df = df.select("url","domain","words","stem_kw")
+            .withColumnRenamed("words","kw")
+            .withColumn("len",length(col("kw"))) // Filter longitude of words
+            .filter("len > 2 and len < 18" )
+            .withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
+            .filter("digit = false")
+            .filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
+            .dropDuplicates() // Remove duplicate words
+   
     // Format fields and save
     df.groupBy("url","domain")
       .agg(collect_list(col("kw")).as("kw"),

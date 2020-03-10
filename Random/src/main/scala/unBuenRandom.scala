@@ -500,7 +500,7 @@ val devuelta = spark.read.format("csv").option("header",true).load("/datascience
 
 def addValue = udf( (firstcolumn: Seq[String],secondcolumn: Seq[String])=> firstcolumn ++ secondcolumn)
 
-val devuelta_format = devuelta.na.fill("").withColumn("geonse",split(col("geonse")," ")).withColumn("audience",split(col("id_aud"),";")).withColumn("audience",addValue(col("geonse"),col("audience"))).withColumn("audience",concat_ws(",",col("audience"))).select("id","audience")
+val devuelta_format = devuelta.na.fill("").withColumn("geonse",split(col("geonse")," ")).withColumn("audience",split(col("id_aud"),";")).withColumn("audience",addValue(col("geonse"),col("audience"))).withColumn("audience",concat_ws(",",col("audience"))).select("JCDindex","audience")
 
 val typeMap2 = Map(
       "aaid" -> "android",
@@ -508,9 +508,9 @@ val typeMap2 = Map(
       "unknown" -> "unknown") 
 val mapUDF2 = udf((dev_type: String) => typeMap2(dev_type))
 
-val to_xd = devuelta_format.join(llave,Seq("id"))
+val to_xd = devuelta_format.join(llave,Seq("JCDindex"))
 .join(enviado.select("ad_id","id_type"),Seq("ad_id"))
-.drop("id")
+.drop("JCDindex")
 .select("id_type","ad_id","audience").withColumn("id_type",mapUDF2(col("id_type")))
 
 
@@ -828,10 +828,11 @@ def getDataTriplets(
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-val descriptor = "after_xd_fixed"
+val descriptor = "JCDecuax_Expanded_Ready"
 val today = (java.time.LocalDate.now).toString
+
 val useg  = spark.read.format("csv").option("header",true).option("delimiter",",")
-.load("/datascience/geo/geo_processed/JCDecauxOOH_updated_02_03_20_120d_mexico_4-3-2020-19h_users_data")
+.load("/datascience/geo/geo_processed/JCDecuax_Expanded_Ready_09-03_POIs_30d_mexico_9-3-2020-14h_users_data")
 .select("device_id","feature")
 .toDF("device_id","segmentId")
 .withColumn("device_id",lower(col("device_id")))
@@ -848,7 +849,7 @@ val tagged = useg.join(cluster,Seq("segmentId")).drop("segmentId").distinct()
 //Con esto ya podríamos hacer conteo de usuarios por cartel, pero necesitamos por horario, así que vamos a des-crosdevicear, vamos a taggear a lo geo en base a esto
 //Levantamos la tabla de equivalencias
 val equiv = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/crossdeviced/JCDecauxOOH_updated_02_03_20_120d_mexico_4-3-2020-19h_xd_equivalence_table")
+.load("/datascience/geo/crossdeviced/JCDecuax_Expanded_Ready_09-03_POIs_30d_mexico_9-3-2020-14h_xd_equivalence_table")
 .withColumn("device_id_origin",lower(col("device_id_origin")))
 .withColumn("device_id_xd",lower(col("device_id_xd")))
 .drop("device_type_origin","device_type_xd")
@@ -864,7 +865,7 @@ val geo_tagged = tagged.withColumnRenamed("device_id","device_id_xd")
 //Ahora levantamos la raw_data. La necesitamos porque nos piden desagregación por franja horaria
 //extraemos los tiempos
 val raw = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/raw_output/JCDecauxOOH_updated_02_03_20_120d_mexico_4-3-2020-19h")
+.load("/datascience/geo/raw_output/JCDecuax_Expanded_Ready_09-03_POIs_30d_mexico_9-3-2020-14h")
 .withColumn("device_id", lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
  .withColumn("Hour", date_format(col("Time"), "HH"))
@@ -878,9 +879,11 @@ val raw = spark.read.format("csv").option("header",true).option("delimiter","\t"
      .otherwise(when(col("Hour")>=11 && col("Hour")<14, "2 - Noon")
      .otherwise(when(col("Hour")>=14 && col("Hour")<18, "3 - Evening")
      .otherwise(when(col("Hour")>=18, "4 - Night"))))))
+
 spark.conf.set("spark.sql.session.timeZone",  "GMT-5")
 //Unimos el geotagged al raw 
-val tagged_timed = geo_tagged.join(raw,Seq("device_id"))
+val tagged_timed = geo_tagged.join(raw,Seq("device_id"),"right_outer").na.fill("No Cluster")
+
 tagged_timed
 .write
 .mode(SaveMode.Overwrite)
@@ -892,17 +895,17 @@ tagged_timed
 val tagged_time_up = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/Reports/JCDecaux/tagged_timed_%s".format(descriptor))
 
-val cluster_time_count = tagged_time_up.groupBy("WeekDay","DayPeriod","ID","longname")
+val cluster_time_count = tagged_time_up.groupBy("WeekDay","DayPeriod","JCDindex","longname")
 .agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
 
-val all_day_long_count = tagged_time_up.groupBy("WeekDay","ID","longname")
+val all_day_long_count = tagged_time_up.groupBy("WeekDay","JCDindex","longname")
 .agg(countDistinct("device_id") as "uniques",count("device_id") as "detections")
 .withColumn("DayPeriod",lit("24hs"))
 
-val total_time_count = raw.groupBy("WeekDay","DayPeriod","ID")
+val total_time_count = raw.groupBy("WeekDay","DayPeriod","JCDindex")
 .agg(countDistinct("device_id") as "total_uniques",count("timestamp") as "total_detections")
 
-val all_day_total_time_count = raw.groupBy("WeekDay","ID")
+val all_day_total_time_count = raw.groupBy("WeekDay","JCDindex")
 .agg(countDistinct("device_id") as "total_uniques",count("timestamp") as "total_detections")
 .withColumn("DayPeriod",lit("24hs"))
 
