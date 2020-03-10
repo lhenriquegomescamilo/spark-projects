@@ -2090,6 +2090,17 @@ object RandomTincho {
         .save("/datascience/custom/mails_tu_bri")
   }
 
+  def temp(spark:SparkSession){
+    val nids =  spark.read.load("/datascience/custom/report_user_unique_pii").select("nid_sh2").distinct
+    val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
+
+    nids.join(pii,Seq("nid_sh2"),"inner").write
+                                          .format("parquet")
+                                          .mode(SaveMode.Overwrite)
+                                          .save("/datascience/custom/devices_originales")
+
+  }
+
   def main(args: Array[String]) {
      
     // Setting logger config
@@ -2101,7 +2112,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    pedido_bri_tu(spark)
+    temp(spark)
     
   }
 
