@@ -180,13 +180,6 @@ object SelectedKeywords {
                       .withColumn("stem_kw", lower(col("stem_kw")))
     df.show()
         
-    /*
-    .withColumn("words", explode(col("words")))
-                  .withColumn("stem_kw", explode(col("stem_kw")))
-                  .withColumn("words", lower(col("words")))
-                  .withColumn("stem_kw", lower(col("stem_kw")))
-                  .show()
-  */
     df = df.select("url","domain","words","stem_kw")
             .withColumnRenamed("words","kw")
             .withColumn("len",length(col("kw"))) // Filter longitude of words
