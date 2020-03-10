@@ -2028,7 +2028,7 @@ object RandomTincho {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/".format(day)) //for each day from the list it returns the day path.
+      .map(day => path + "/day=%s/AR".format(day)) //for each day from the list it returns the day path.
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
 
@@ -2041,7 +2041,6 @@ object RandomTincho {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .filter("country = 'AR' or country = 'MX'")
       .select("device_id","feature","count")
       .withColumnRenamed("feature", "segment")
       .filter(col("segment").isin(segments: _*))
