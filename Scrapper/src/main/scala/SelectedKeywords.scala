@@ -174,10 +174,13 @@ object SelectedKeywords {
     var df = pipeline.fit(data_parsed).transform(data_parsed)
                       .withColumn("zipped",udfZip(col("words"),col("stem_kw")))
                       .withColumn("zipped", explode(col("zipped")))
-                      .withColumn("kw",udfGet(col("zipped"),lit("_1")))
-                      .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
-                      .withColumn("kw", lower(col("kw")))
-                      .withColumn("stem_kw", lower(col("stem_kw")))
+    df.show()
+    df = df.withColumn("kw",udfGet(col("zipped"),lit("_1")))
+          .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
+          .withColumn("kw", lower(col("kw")))
+          .withColumn("stem_kw", lower(col("stem_kw")))
+          
+    df.show()
         
     df = df.select("url","domain","kw","stem_kw")
             .withColumn("len",length(col("kw"))) // Filter longitude of words
