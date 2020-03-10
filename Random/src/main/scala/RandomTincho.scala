@@ -2069,6 +2069,22 @@ object RandomTincho {
         .save("/datascience/custom/report_user_unique_pii")
 
   }
+  def pedido_bri_tu(spark:SparkSession){
+    val df = spark.read
+                  .format("csv")
+                  .option("sep","\t")
+                  .load("/datascience/devicer/processed/piis_bri_transunion_grouped")
+                  .withColumnRenamed("_c1","device_id")
+                  .withColumnRenamed("_c2","segment")
+    val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
+    
+    pii.join(df,Seq("device_id"),"inner")
+        .repartition(1)
+        .write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/mails_tu_bri")
+  }
 
   def main(args: Array[String]) {
      
@@ -2081,7 +2097,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_pii_matching_user_report(spark)
+    pedido_bri_tu(spark)
     
   }
 
