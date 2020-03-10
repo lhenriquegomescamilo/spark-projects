@@ -179,16 +179,17 @@ object SelectedKeywords {
           .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
           .withColumn("kw", lower(col("kw")))
           .withColumn("stem_kw", lower(col("stem_kw")))
-          
+
     df.show()
         
     df = df.select("url","domain","kw","stem_kw")
+            .distinct
             .withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
             .withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
             .filter("digit = false")
             .filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
-            .dropDuplicates() // Remove duplicate words
+
     df.show()
     // Format fields and save
     df.groupBy("url","domain")
@@ -204,6 +205,7 @@ object SelectedKeywords {
       .repartition(1)
       .write
       .format("csv")
+      .mode(SaveMode.Overwrite)
       .option("header","true")
       .save("/datascience/custom/test_selected_keywords.csv")
 
