@@ -204,7 +204,7 @@ object DunnhumbyEnrichmentSegments {
       spark: SparkSession,
       nDays: Int,
       since: Int,
-      cmp_segments: List[String],
+      cmp_segments: List[Int],
       countries: String = "",
       filter: String = "",
       partner: Boolean = true,
