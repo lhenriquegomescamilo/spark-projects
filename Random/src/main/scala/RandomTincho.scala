@@ -2091,7 +2091,7 @@ object RandomTincho {
   }
 
   def temp(spark:SparkSession){
-    val nids =  spark.read.load("/datascience/custom/report_user_unique_pii").select("nid_sh2").distinct
+    val nids =  spark.read.load("/datascience/custom/report_user_unique_pii").select("nid_sh2","tier").distinct
     val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
 
     nids.join(pii,Seq("nid_sh2"),"inner").write
