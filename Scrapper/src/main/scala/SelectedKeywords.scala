@@ -183,13 +183,15 @@ object SelectedKeywords {
     df.show()
         
     df = df.select("url","domain","kw","stem_kw")
-            .distinct
-            .withColumn("len",length(col("kw"))) // Filter longitude of words
+            .distinct  // Remove duplicate words
+    df.show()            
+    df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
-            .withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
-            .filter("digit = false")
-            .filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
-
+    df.show()            
+    df= df.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
+          .filter("digit = false")
+    df.show()            
+    df = df.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
     df.show()
     // Format fields and save
     df.groupBy("url","domain")
