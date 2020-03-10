@@ -2076,9 +2076,13 @@ object RandomTincho {
                   .load("/datascience/devicer/processed/piis_bri_transunion_grouped")
                   .withColumnRenamed("_c1","device_id")
                   .withColumnRenamed("_c2","segment")
+                  .select("device_id","segment")
+
     val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
-    
+                    .filter("ml_sh2 is not null")
+
     pii.join(df,Seq("device_id"),"inner")
+        .select("device_id","ml_sh2","segment")
         .repartition(1)
         .write
         .format("csv")
