@@ -169,16 +169,18 @@ object SelectedKeywords {
     ))
 
     val udfZip = udf((words: Seq[String], stemmed: Seq[String]) => words zip stemmed)
-    val udfGet = udf((words: Seq[String], index:Int) => words(index))
+    val udfGetWord = udf((words: Seq[String]) => words._1))
+    val udfGetStem = udf((words: Seq[String] ) => words._2))
 
     var df = pipeline.fit(data_parsed).transform(data_parsed)
                       .withColumn("zipped",udfZip(col("words"),col("stem_kw")))
                       .withColumn("zipped", explode(col("zipped")))
-    df.show()                  
-                      // .withColumn("kw",udfGet(col("zipped"),lit(0)))
-                      // .withColumn("stem_kw",udfGet(col("zipped"),lit(1)))
-                      // .withColumn("words", lower(col("words")))
-                      // .withColumn("stem_kw", lower(col("stem_kw")))
+    df.show()
+    df.printSchema                  
+    df = df.withColumn("kw",udfGetWord(col("zipped")))
+            .withColumn("stem_kw",udfGetStem(col("zipped")))
+            .withColumn("words", lower(col("words")))
+            .withColumn("stem_kw", lower(col("stem_kw")))
     df.show()
         
     df = df.select("url","domain","words","stem_kw")
