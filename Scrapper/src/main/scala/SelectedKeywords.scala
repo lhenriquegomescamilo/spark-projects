@@ -186,7 +186,7 @@ object SelectedKeywords {
             .filter("digit = false")
             .filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
             .dropDuplicates() // Remove duplicate words
-   
+    df.show()
     // Format fields and save
     df.groupBy("url","domain")
       .agg(collect_list(col("kw")).as("kw"),
