@@ -181,8 +181,9 @@ object SelectedKeywords {
     df.printSchema                  
     df = df.withColumn("kw",udfTest(col("zipped")))
             .withColumn("stem_kw",udfTest(col("zipped")))
-            .withColumn("words", lower(col("words")))
-            .withColumn("stem_kw", lower(col("stem_kw")))
+      
+            // .withColumn("words", lower(col("words")))
+            // .withColumn("stem_kw", lower(col("stem_kw")))
     df.show()
         
     df = df.select("url","domain","words","stem_kw")
