@@ -171,7 +171,7 @@ object SelectedKeywords {
     val udfZip = udf((words: Seq[String], stemmed: Seq[String]) => words zip stemmed)
     val udfGetWord = udf((words: Seq[String]) => words(1))
     val udfGetStem = udf((words: Seq[String] ) => words(2))
-    val udfTest = udf((words: Row ) => words.getAs[String]("_1"))
+    val udfTest = udf((words: Row ) => words.getAs[String]("_1")(0))
     //row.getAs[Row]("struct").getAs[String]("level1")
 
     var df = pipeline.fit(data_parsed).transform(data_parsed)
