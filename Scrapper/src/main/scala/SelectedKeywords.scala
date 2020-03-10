@@ -147,6 +147,7 @@ object SelectedKeywords {
 
     val tokenizer = new Tokenizer().setInputCols("document")
                                     .setOutputCol("words")
+                                    .setTargetPattern("[a-zA-Z0-9]")
                   
     val normalizer = new Normalizer().setInputCols(Array("words"))
                                       .setOutputCol("normalized")
@@ -183,7 +184,7 @@ object SelectedKeywords {
     df.show()
         
     df = df.select("url","domain","kw","stem_kw")
-              // Remove duplicate words
+              
     df.show()            
     df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
@@ -192,6 +193,8 @@ object SelectedKeywords {
           .filter("digit = false")
     df.show()            
     df = df.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
+    df.show()
+    df = df.dropDuplicates()
     df.show()
     // Format fields and save
     df.groupBy("url","domain")
