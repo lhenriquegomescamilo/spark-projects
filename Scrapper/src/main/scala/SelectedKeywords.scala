@@ -183,7 +183,7 @@ object SelectedKeywords {
     df.show()
         
     df = df.select("url","domain","kw","stem_kw")
-            .distinct  // Remove duplicate words
+            .dropDuplicates()  // Remove duplicate words
     df.show()            
     df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
