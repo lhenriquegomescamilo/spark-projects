@@ -169,26 +169,17 @@ object SelectedKeywords {
     ))
 
     val udfZip = udf((words: Seq[String], stemmed: Seq[String]) => words zip stemmed)
-    val udfGetWord = udf((words: Seq[String]) => words(1))
-    val udfGetStem = udf((words: Seq[String] ) => words(2))
-    val udfTest = udf((words: Row ) => words.getAs[String]("_1"))
-    //row.getAs[Row]("struct").getAs[String]("level1")
+    val udfGet = udf((words: Row, index:String ) => words.getAs[String](index))
 
     var df = pipeline.fit(data_parsed).transform(data_parsed)
                       .withColumn("zipped",udfZip(col("words"),col("stem_kw")))
                       .withColumn("zipped", explode(col("zipped")))
-    df.show()
-    df.printSchema                  
-    df = df.withColumn("kw",udfTest(col("zipped")))
-            .withColumn("stem_kw",udfTest(col("zipped")))
-      
-            // .withColumn("words", lower(col("words")))
-            // .withColumn("stem_kw", lower(col("stem_kw")))
-    df.show()
-    df.printSchema                  
+                      .withColumn("kw",udfGet(col("zipped"),lit("_1")))
+                      .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
+                      .withColumn("kw", lower(col("kw")))
+                      .withColumn("stem_kw", lower(col("stem_kw")))
         
-    df = df.select("url","domain","words","stem_kw")
-            .withColumnRenamed("words","kw")
+    df = df.select("url","domain","kw","stem_kw")
             .withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
             .withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
