@@ -464,11 +464,9 @@ object Item2Item {
 
     // It gets the score thresholds to get at least k elements per segment.
     val selSegmentsIdx = expandInput.map(m => segmentToIndex(m("segment_id").toString))
+    val sizeMap = expandInput.map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
 
-    val sizeMap: Map[String,Int] = expandInput.filter(m => !m("is_score").toString.toBoolean).map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toInt).toMap
-    var minScoreMap: Map[String,Double] = expandInput.filter(m => m("is_score").toString.toBoolean).map(m => segmentToIndex(m("segment_id").toString) -> m("size").toString.toDouble).toMap
-
-    minScoreMap ++= scoreMatrix
+    val minScoreMap = scoreMatrix
       .flatMap(tup =>  selSegmentsIdx
                            .map(segmentIdx => (segmentIdx, tup._2.apply(segmentIdx))).filter(tup => tup._2 >0) // remove scores <= 0
               ) //<segment_idx, score>
@@ -488,11 +486,11 @@ object Item2Item {
 
     println("Lookalike LOG: threshold scores = %s".format(minScoreMap))
 
-    /*var resultDescription = if (minScoreMap.size > 0)
+    var resultDescription = if (minScoreMap.size > 0)
          "%d/%d segments with results".format(minScoreMap.size, selSegmentsIdx.size)
       else
         "no results found"
-    println("Lookalike LOG: %s".format(resultDescription))*/
+    println("Lookalike LOG: %s".format(resultDescription))
 
     var maskedScores = scoreMatrix
       .map(tup => (tup._1, selSegmentsIdx.map(segmentIdx => 
@@ -507,7 +505,7 @@ object Item2Item {
     val userPredictions = maskedScores.join(devicesInfo).map(tup => (tup._2._2, tup._2._1))
       // <(device_id, "device_type"), array(boolean)>
 
-    writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters)
+    writeOutput(spark, userPredictions, expandInput, segmentToIndex, metaParameters, resultDescription)
     
     // delete temp files
     fs.delete(new org.apache.hadoop.fs.Path(indexTmpPath), true)
@@ -697,14 +695,12 @@ object Item2Item {
               .length > 0) line("dstSegmentId").toString
             else segmentId
         
-        val size = line("size").toString
-        val is_score = line("size").toString matches """(^0?\.\d+$)|(^1\.0*$)"""
+        val size = line("size").toString.toInt
 
         val actual_map: Map[String, Any] = Map(
           "segment_id" -> segmentId,
           "dst_segment_id" -> dstSegmentId,
-          "size" -> size,
-          "is_score" -> is_score
+          "size" -> size
         )
         expandInputs = expandInputs ::: List(actual_map)
       }
