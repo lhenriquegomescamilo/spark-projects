@@ -2099,6 +2099,34 @@ object RandomTincho {
                                           .save("/datascience/custom/devices_originales")
 
   }
+  def reprocess_dumps(spark:SparkSession){
+    val files = List("2020-01-28_daily","2020-01-29_daily","2020-01-30_daily","2020-01-31_daily","2020-02-01_daily","2020-02-02_daily","2020-02-03_daily","2020-02-04_daily","2020-02-05_daily","2020-02-06_daily","2020-02-07_daily","2020-02-08_daily",
+                    "2020-02-09_daily","2020-02-10_daily")
+    
+    var date = ""
+    for(f <- files){
+        date = f.split("_")(0).replace("-","")
+        println(date)
+        spark.read
+            .format("csv")
+            .option("header","true")
+            .option("sep","\t")
+            .load("/datascience/scraper/dump/%s.csv".format(f))
+            .dropDuplicates()
+            .repartition(20)
+            .selectExpr("*", "parse_url(url, 'HOST') as domain")
+            .select("url","html","domain")
+            .withColumn("day",lit(date))
+            .write
+            .format("parquet")
+            .option("compression","gzip")
+            .mode("append")
+            .partitionBy("day")
+            .save("/datascience/scraper/raw/processed/")
+        
+}
+
+  }
 
   def main(args: Array[String]) {
      
@@ -2111,7 +2139,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    temp(spark)
+    reprocess_dumps(spark)
     
   }
 
