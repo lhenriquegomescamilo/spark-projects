@@ -336,23 +336,24 @@ object MeanWordsEmbedder {
     list match {
       case Nil => map
       case "--nDays" :: value :: tail =>
-        nextOption(map ++ Map('nDays -> value.toInt), tail)
+        nextOption(map ++ Map('nDays -> value, tail)
       case "--nHours" :: value :: tail =>
-        nextOption(map ++ Map('nDays -> value.toInt), tail)
+        nextOption(map ++ Map('nDays -> value, tail)
       case "--from" :: value :: tail =>
-        nextOption(map ++ Map('from -> value.toInt), tail)
+        nextOption(map ++ Map('from -> value, tail)
       case "--saveContent" :: value :: tail =>
-        nextOption(map ++ Map('from -> value.toBoolean), tail)
+        nextOption(map ++ Map('saveContent -> value), tail)
+        
     }
   }
 
   def main(args: Array[String]) {
     // Parse the parameters
     val options = nextOption(Map(), args.toList)
-    val nDays = if (options.contains('nDays)) options('nDays) else -1
-    val nHours = if (options.contains('nHours)) options('nHours) else -1
-    val from = if (options.contains('from)) options('from) else 1
-    val saveContent = if (options.contains('saveContent)) options('saveContent) else false
+    val nDays = if (options.contains('nDays)) options('nDays).toInt else -1
+    val nHours = if (options.contains('nHours)) options('nHours).toInt else -1
+    val from = if (options.contains('from)) options('from).toInt else 1
+    val saveContent = if (options.contains('saveContent)) options('saveContent).toBoolean else false
 
     val spark = SparkSession.builder
         .appName("URL Mean Word Embeddings")
@@ -361,11 +362,11 @@ object MeanWordsEmbedder {
         .getOrCreate()
 
     if (nDays != -1)
-      proccess(spark, nDays = nDays, from = from)
+      proccess(spark, nDays = nDays, from = from, saveContent = saveContent)
     else if(nHours != -1)
-      proccess(spark, nHours = nHours, from = from)
+      proccess(spark, nHours = nHours, from = from, saveContent = saveContent)
     else 
-      proccess(spark, nDays = 1, from = from)
+      proccess(spark, nDays = 1, from = from, saveContent = saveContent)
   }
 
 }
