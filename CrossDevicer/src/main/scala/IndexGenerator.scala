@@ -60,6 +60,8 @@ object IndexGenerator {
       .sorted
       .last
 
+    println(last_file)
+
     // Now we load the data and generate 3 columns: device, device_type, and tapad_id
     val mapUDF = udf(
       (device_type: String) =>
@@ -90,10 +92,10 @@ object IndexGenerator {
 
     data.cache()
 
-    val decodingUDF = udf((estid: String) => URLDecoder.decode(estid))
+    // val decodingUDF = udf((estid: String) => URLDecoder.decode(estid))
     val sharethisIndex = data
       .filter("device_type = 'sht'")
-      .withColumn("device", decodingUDF(col("device")))
+      // .withColumn("device", decodingUDF(col("device")))
       .withColumn("device", upper(col("device")))
       .join(sharethisMap, Seq("device"), "inner")
       .withColumn("device_id", explode(col("device_id")))
