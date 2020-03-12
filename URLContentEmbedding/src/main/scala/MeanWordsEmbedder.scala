@@ -289,7 +289,7 @@ object MeanWordsEmbedder {
   /**
   * Process parsed HTMLs and write results.
   */
-  def proccess(spark: SparkSession, nDays: Int = -1, nHours: Int = -1, from: Int = 1, saveContent = false){
+  def proccess(spark: SparkSession, nDays: Int = -1, nHours: Int = -1, from: Int = 1, saveContent: Boolean = false){
 
     var df = {
       if(nDays != -1)
