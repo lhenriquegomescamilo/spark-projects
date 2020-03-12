@@ -237,7 +237,7 @@ def get_safegraph_data(
     val df_safegraph = spark.read
       .option("header", "true")
       .parquet(hdfs_files: _*)
-      .withColumn("day",lit(day))
+      .withColumn("day",lit(days))
       
      df_safegraph                    
     
