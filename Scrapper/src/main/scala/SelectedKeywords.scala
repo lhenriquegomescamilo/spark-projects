@@ -178,28 +178,24 @@ object SelectedKeywords {
     var df = pipeline.fit(data_parsed).transform(data_parsed)
                       .withColumn("zipped",udfZip(col("words"),col("stem_kw")))
                       .withColumn("zipped", explode(col("zipped")))
-    df.show()
+
     df = df.withColumn("kw",udfGet(col("zipped"),lit("_1")))
           .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
           .withColumn("kw", lower(col("kw")))
           .withColumn("stem_kw", lower(col("stem_kw")))
 
-    df.show()
-        
     df = df.select("url","domain","kw","stem_kw")
-              
-    df.show()            
+           
     df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
-    df.show()            
+            
     df= df.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
           .filter("digit = false")
-    df.show()            
+           
     df = df.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
-    df.show()
+
     df = df.distinct()
-    df.show()
-    
+
     // Format fields and save
     df.groupBy("url","domain")
       .agg(collect_list(col("kw")).as("kw"),
@@ -211,12 +207,14 @@ object SelectedKeywords {
       .withColumn("country",lit(""))
       .withColumn("TFIDF",lit(""))
       .select("url_raw","hits","country","kw","TFIDF","domain","stem_kw")
+      .withColumn("day",lit(day))
       .repartition(1)
       .write
       .format("csv")
-      .mode(SaveMode.Overwrite)
       .option("header","true")
-      .save("/datascience/custom/test_selected_keywords.csv")
+      .mode(SaveMode.Overwrite)
+      .partitionBy("day")
+      .save("/datascience/scraper/selected_keywords")
 
     }
 
