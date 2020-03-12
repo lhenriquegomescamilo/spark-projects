@@ -12,7 +12,7 @@ for json in $(hdfs dfs -ls -C /datascience/geo/geodevicer_bot/to_process); do
   --num-executors 12 \
   --executor-cores 2 \
   --queue default \
-  --jars geospark-1.1.3.jar,geospark-sql_2.3-1.1.3.jar\
+  --jars geospark-1.1.3.jar,geospark-sql_2.3-1.1.3.jar,geospark-viz-1.1.3.jar\
   --conf spark.serializer=org.apache.spark.serializer.KryoSerializer\
   --conf spark.kryo.registrator=org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator \
   --conf spark.yarn.maxAppAttempts=1 \
