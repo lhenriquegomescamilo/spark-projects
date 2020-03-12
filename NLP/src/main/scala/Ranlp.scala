@@ -86,13 +86,15 @@ object Ranlp {
     
     val udfGet1 = udf((pos_type: Row, index:String ) => pos_type.getAs[String](index))
 
-    //val udfGet2 = udf((word: Row, index:String ) => word.getAs[String](index).get(1))    
+    val udfGet2 = udf((word: Row, index:String ) => word.getAs[String](index).get(1))    
     
     df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
     .withColumn("zipped", explode(col("zipped")))
     .withColumn("tag",udfGet1(col("zipped"),lit("_1")))
     .filter("tag = 'NOUN' or tag = 'PROPN'")
-    
+    .withColumn("token",udfGet2(col("zipped"),lit("_2")))
+
+
     println(df.show())
 
  //array<array<string>> type, however, '`finished_pos_metadata`' is of array<struct<_1:string,_2:string>> 
