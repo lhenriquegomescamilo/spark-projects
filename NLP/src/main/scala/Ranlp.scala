@@ -37,7 +37,7 @@ object Ranlp {
     
     val path = "/datascience/scraper/parsed/processed/day=20200312"
     val df = spark.read
-            .format("csv")
+            .format("parquet")
             .option("header", "True")
             .option("sep", "\t")
             .load(path)
