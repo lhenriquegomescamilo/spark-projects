@@ -230,7 +230,7 @@ def get_safegraph_data(
       .filter(
         path => fs.exists(new org.apache.hadoop.fs.Path(path))
       )
-      .map(day => day + "*.snappy.parquet")
+      .map(day => day + "*/*.snappy.parquet")
 
 
     // Finally we read, filter by country, rename the columns and return the data
