@@ -329,21 +329,21 @@ object MeanWordsEmbedder {
 
   }
 
-  type OptionMap = Map[Symbol, Int]
+  type OptionMap = Map[Symbol, String]
 
   def nextOption(map: OptionMap, list: List[String]): OptionMap = {
     def isSwitch(s: String) = (s(0) == '-')
     list match {
       case Nil => map
       case "--nDays" :: value :: tail =>
-        nextOption(map ++ Map('nDays -> value, tail)
+        nextOption(map ++ Map('nDays -> value), tail)
       case "--nHours" :: value :: tail =>
-        nextOption(map ++ Map('nDays -> value, tail)
+        nextOption(map ++ Map('nHours -> value), tail)
       case "--from" :: value :: tail =>
-        nextOption(map ++ Map('from -> value, tail)
+        nextOption(map ++ Map('from -> value), tail)
       case "--saveContent" :: value :: tail =>
         nextOption(map ++ Map('saveContent -> value), tail)
-        
+
     }
   }
 
