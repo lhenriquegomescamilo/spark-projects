@@ -5,6 +5,7 @@ import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.broadcast
+import scala.util.parsing.json._
 import org.apache.spark.sql.functions.{
   upper,
   count,
@@ -2123,7 +2124,7 @@ object RandomTincho {
       get_field(meta,field)
     })
     val hour = DateTime.now().getHourOfDay()
-
+    var date = ""
     for(f <- files){
         date = f.split("_")(0).replace("-","")
         println(date)
