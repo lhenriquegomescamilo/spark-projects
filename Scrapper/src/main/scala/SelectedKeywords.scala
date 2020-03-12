@@ -157,7 +157,7 @@ object SelectedKeywords {
     val normalizer = new Normalizer().setInputCols(Array("words"))
                                       .setOutputCol("normalized")
                                       .setLowercase(true)
-                                      .setCleanupPatterns("^A-Za-z")
+                                      .setCleanupPatterns(Array("^A-Za-z"))
                               
     val finisher = new Finisher().setInputCols(Array("words","stem_kw"))
                                 .setOutputCols(Array("words","stem_kw"))
