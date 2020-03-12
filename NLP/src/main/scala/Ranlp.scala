@@ -82,7 +82,7 @@ object Ranlp {
 
     var df = pipeline.fit(doc).transform(doc) 
 
-    val udfZip = udf((finished_pos: Seq[String], finished_pos_metadata: StructType(fields: Seq[String])) => finished_pos zip finished_pos_metadata)
+    val udfZip = udf((finished_pos: Seq[String], finished_pos_metadata: Seq[(String,String)]) => finished_pos zip finished_pos_metadata)
     
     val udfGet1 = udf((pos_type: Row, index:String ) => pos_type.getAs[String](index))
 
