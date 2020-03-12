@@ -17,6 +17,8 @@ import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
 import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
 import org.apache.log4j.{Level, Logger}
 
+import org.apache.hadoop.conf.Configuration
+
 /**
   Job Summary:
   * The goal of this job is to create an audiencie based on Points Of Interests (POIs). The method takes as input a time frame (be default, december 2018) and a dataset containing the POIs. This dataset should be already formatted in three columns segment|latitude|longitude (without the index) and with the latitude and longitude with point (".") as delimiter.
