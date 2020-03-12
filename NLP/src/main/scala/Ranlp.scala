@@ -36,7 +36,7 @@ object Ranlp {
 
     
     val path = "/datascience/scraper/parsed/processed/day=20200312"
-    val df = spark.read
+    val doc = spark.read
             .format("parquet")
             .option("header", "True")
             .option("sep", "\t")
@@ -80,9 +80,21 @@ object Ranlp {
         finisher
     ))
 
-    val doc = pipeline.fit(df).transform(df) 
+    var df = pipeline.fit(doc).transform(doc) 
 
-    println(doc.show())
+    val udfZip = udf((finished_pos: Seq[String], finished_pos_metadata: Seq[Seq[String]]) => finished_pos zip finished_pos_metadata)
+    
+    val udfGet1 = udf((pos_type: Row, index:String ) => pos_type.getAs[String](index))
+
+    //val udfGet2 = udf((word: Row, index:String ) => word.getAs[String](index).get(1))    
+    
+    df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
+    .withColumn("zipped", explode(col("zipped")))
+    .withColumn("tag",udfGet1(col("zipped"),lit("_1")))
+    .filter("result = 'NOUN' or result = 'PROPN'")
+    
+    println(df.show())
+
 
 
     
