@@ -172,7 +172,7 @@ val validUserCount = already_saved
 .withColumn(value_dictionary("poi_column_name"),explode(col(value_dictionary("poi_column_name"))))
 .groupBy(value_dictionary("poi_column_name")).agg(approx_count_distinct("device_id", rsd = 0.03) as "valid_user_devices")
 
-val output_path_volume_table = "/datascience/geo/geodevicer_bot/outputs/%s/volume_count".format(value_dictionary("poi_output_file"))
+val output_path_volume_table = "/datascience/geo/geodevicer_bot/outputs/volume_count/%s".format(value_dictionary("poi_output_file"))
 
 val volume = allUserCount
 .join(validUserCount,Seq(value_dictionary("poi_column_name")))
