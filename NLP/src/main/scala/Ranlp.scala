@@ -82,7 +82,7 @@ object Ranlp {
 
     var df = pipeline.fit(doc).transform(doc) 
 
-    val udfZip = udf((finished_pos: Seq[String], finished_pos_metadata: Seq[Seq[String]]) => finished_pos zip finished_pos_metadata)
+    val udfZip = udf((finished_pos: Seq[String], finished_pos_metadata: Seq[StructField[String]]) => finished_pos zip finished_pos_metadata)
     
     val udfGet1 = udf((pos_type: Row, index:String ) => pos_type.getAs[String](index))
 
@@ -95,7 +95,7 @@ object Ranlp {
     
     println(df.show())
 
-
+ //array<array<string>> type, however, '`finished_pos_metadata`' is of array<struct<_1:string,_2:string>> 
 
     
     /**
