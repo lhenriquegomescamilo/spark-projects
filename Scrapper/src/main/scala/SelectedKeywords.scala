@@ -127,6 +127,7 @@ object SelectedKeywords {
                           "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves")
     
     val day =  DateTime.now().minusDays(1).toString("yyyyMMdd")
+    val today =  DateTime.now().toString("yyyyMMdd")
     val data_parsed = spark.read.format("parquet")
                             .load("/datascience/scraper/parsed/processed/day=%s/".format(day))
                             .na.fill("")
@@ -206,7 +207,7 @@ object SelectedKeywords {
       .withColumn("country",lit(""))
       .withColumn("TFIDF",lit(""))
       .select("url_raw","hits","country","kw","TFIDF","domain","stem_kw")
-      .withColumn("day",lit(day))
+      .withColumn("day",lit(today))
       .repartition(1)
       .write
       .format("csv")
