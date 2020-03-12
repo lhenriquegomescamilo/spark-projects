@@ -147,6 +147,8 @@ object SelectedKeywords {
 
     val tokenizer = new Tokenizer().setInputCols("document")
                                     .setOutputCol("words")
+                                    .setTargetPattern("\\w")
+                                    //[^a-zA-Z0-9]
                   
     val normalizer = new Normalizer().setInputCols(Array("words"))
                                       .setOutputCol("normalized")
@@ -174,19 +176,28 @@ object SelectedKeywords {
     var df = pipeline.fit(data_parsed).transform(data_parsed)
                       .withColumn("zipped",udfZip(col("words"),col("stem_kw")))
                       .withColumn("zipped", explode(col("zipped")))
-                      .withColumn("kw",udfGet(col("zipped"),lit("_1")))
-                      .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
-                      .withColumn("kw", lower(col("kw")))
-                      .withColumn("stem_kw", lower(col("stem_kw")))
+    df.show()
+    df = df.withColumn("kw",udfGet(col("zipped"),lit("_1")))
+          .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
+          .withColumn("kw", lower(col("kw")))
+          .withColumn("stem_kw", lower(col("stem_kw")))
+
+    df.show()
         
     df = df.select("url","domain","kw","stem_kw")
-            .withColumn("len",length(col("kw"))) // Filter longitude of words
+              
+    df.show()            
+    df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
-            .withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
-            .filter("digit = false")
-            .filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
-            .dropDuplicates() // Remove duplicate words
-   
+    df.show()            
+    df= df.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
+          .filter("digit = false")
+    df.show()            
+    df = df.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
+    df.show()
+    df = df.dropDuplicates()
+    df.show()
+    
     // Format fields and save
     df.groupBy("url","domain")
       .agg(collect_list(col("kw")).as("kw"),
@@ -201,6 +212,7 @@ object SelectedKeywords {
       .repartition(1)
       .write
       .format("csv")
+      .mode(SaveMode.Overwrite)
       .option("header","true")
       .save("/datascience/custom/test_selected_keywords.csv")
 
