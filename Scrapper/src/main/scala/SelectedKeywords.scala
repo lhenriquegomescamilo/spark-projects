@@ -147,7 +147,7 @@ object SelectedKeywords {
 
     val tokenizer = new Tokenizer().setInputCols("document")
                                     .setOutputCol("words")
-                                    .setTargetPattern("\\w+")
+                                    .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
                                     //[^a-zA-Z0-9]
                   
     val normalizer = new Normalizer().setInputCols(Array("words"))
