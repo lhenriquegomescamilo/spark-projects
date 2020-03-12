@@ -84,15 +84,16 @@ object Ranlp {
 
     val udfZip = udf((finished_pos: Seq[String], finished_pos_metadata: Seq[(String,String)]) => finished_pos zip finished_pos_metadata)
     
-    val udfGet1 = udf((pos_type: Row, index:String ) => pos_type.getAs[String](index))
+    val udfGet1 = udf((word: Row, index:String ) => word.getAs[String](index))
 
-    val udfGet2 = udf((word: Row, index:String ) => word.getAs[String](index).get(1))    
+    val udfGet2 = udf((word: Row, index:String ) => word.getAs[(String,String)](index))    
     
     df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
     .withColumn("zipped", explode(col("zipped")))
     .withColumn("tag",udfGet1(col("zipped"),lit("_1")))
     .filter("tag = 'NOUN' or tag = 'PROPN'")
     .withColumn("token",udfGet2(col("zipped"),lit("_2")))
+    .withColumn("token",udfGet1(col("token"),lit("_2")))
 
 
     println(df.show())
