@@ -2146,7 +2146,7 @@ object RandomTincho {
             .orderBy(col("url").asc)
             .select("url","title","text","description","keywords",
                     "og_description","og_title","twitter_description",
-                    "twitter_title","timestamp","domain")
+                    "twitter_title","timestamp","domain","hour","day")
             .write
             .format("parquet")
             .mode("append")
