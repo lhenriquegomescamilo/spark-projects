@@ -203,6 +203,47 @@ def get_safegraph_data(
   }
 
 
+
+  def get_safegraph_all_country(
+      spark: SparkSession,
+      nDays: String,
+      since: String
+     
+  ) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+   
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+      
+
+    // Now we obtain the list of hdfs files to be read
+    val path = "/datascience/geo/safegraph/"
+    val hdfs_files = days
+      .map(day => path +  "day=%s/".format(day))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
+      .map(day => day + "*/*.snappy.parquet")
+
+
+    // Finally we read, filter by country, rename the columns and return the data
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .parquet(hdfs_files: _*)
+      .withColumn("day",lit(days.map(day => "%s".format(day))))
+      
+     df_safegraph                    
+    
+  }
+
+
   /*
 
 Funciones  para telecentro
@@ -945,46 +986,6 @@ nse_cl_gt.join(cl_demo,Seq("device_id"))
 .save("/datascience/misc/NSEIngresoGT_CL_pipe")
 
 
-*/*/
-
-
-  def getDataPipelineMarkII(
-      spark: SparkSession,
-      path: String,
-      nDays: String,
-      since: String) = {
-    // First we obtain the configuration to be allowed to watch if a file exists or not
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-
-    //specifying country
-    //val country_iso = "MX"
-      
-        // Get the days to be loaded
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since.toInt)
-    val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
-
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days
-      .map(day => path + "/day=%s/".format(day)) //
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
-
-    df
-  }
-
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-    Logger.getRootLogger.setLevel(Level.WARN)
-
-
-
 val today = (java.time.LocalDate.now).toString
 val descriptor = "old_reborn"
 
@@ -1104,6 +1105,64 @@ total_24hs_count
 .format("csv")
 .option("header",true)
 .save("/datascience/geo/Reports/JCDecaux/total_24hs_count_%s_%s".format(descriptor,today))
+
+
+
+*/*/
+
+
+  def getDataPipelineMarkII(
+      spark: SparkSession,
+      path: String,
+      nDays: String,
+      since: String) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    //specifying country
+    //val country_iso = "MX"
+      
+        // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/".format(day)) //
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+    df
+  }
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+val today = (java.time.LocalDate.now).toString
+
+val safegraph = get_safegraph_all_country(spark,"10","1")
+
+val the_data = safegraph
+.withColumn("provider",when(col("geo_hash")==="startapp","startapp").otherwise("safegraph"))
+.groupBy("day","country","provider")
+  .agg(countDistinct("ad_id") as "distinct_users", count("utc_timestamp") as "detections")
+
+the_data
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GeoCounts/Volume_%s".format(today))
+
+
 
 
 }
