@@ -148,10 +148,12 @@ object SelectedKeywords {
     val tokenizer = new Tokenizer().setInputCols("document")
                                     .setOutputCol("words")
                                     .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
+                                    .setTargetPattern("\\W")
                                     //[^a-zA-Z0-9]
                   
     val normalizer = new Normalizer().setInputCols(Array("words"))
                                       .setOutputCol("normalized")
+                                      .setLowercase(true)
                         
     val stemmer = new Stemmer().setInputCols("normalized")
                               .setOutputCol("stem_kw")
