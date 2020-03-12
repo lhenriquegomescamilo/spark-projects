@@ -8,7 +8,7 @@ import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_t
 import org.apache.spark.sql.SaveMode
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.apache.spark.sql.expressions.Window
-
+import org.apache.spark.sql.functions.input_file_name
 
 
 
@@ -237,7 +237,8 @@ def get_safegraph_data(
     val df_safegraph = spark.read
       .option("header", "true")
       .parquet(hdfs_files: _*)
-      .withColumn("day",lit(days.map(day => "%s".format(day))))
+      .withColumn("day",input_file_name)
+      .withColumn("day",split(col("day"),"/").getItem(6))
       
      df_safegraph                    
     
