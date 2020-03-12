@@ -1154,7 +1154,7 @@ val the_data = ssafegraph
 .groupBy("day","country","provider")
   .agg(countDistinct("ad_id") as "distinct_users", count("utc_timestamp") as "detections")
 
-the_data.
+the_data
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
