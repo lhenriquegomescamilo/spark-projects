@@ -91,7 +91,7 @@ object Ranlp {
     df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
     .withColumn("zipped", explode(col("zipped")))
     .withColumn("tag",udfGet1(col("zipped"),lit("_1")))
-    .filter("result = 'NOUN' or result = 'PROPN'")
+    .filter("tag = 'NOUN' or tag = 'PROPN'")
     
     println(df.show())
 
