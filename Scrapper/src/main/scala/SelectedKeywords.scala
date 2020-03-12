@@ -195,7 +195,7 @@ object SelectedKeywords {
     df.show()            
     df = df.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
     df.show()
-    df = df.dropDuplicates()
+    df = df.distinct()
     df.show()
     
     // Format fields and save
