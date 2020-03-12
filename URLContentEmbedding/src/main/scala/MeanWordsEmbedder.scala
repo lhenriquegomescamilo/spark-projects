@@ -27,7 +27,7 @@ object MeanWordsEmbedder {
   private val INPUT_PATH = "/datascience/scraper/parsed/processed/"
 
   // Quality Filter: Minimum number of detected words in HTML by the pretrained embedding model.
-  private val MIN_UNIQUE_EMB_WORDS = 3
+  private val MIN_UNIQUE_EMB_WORDS = 5
 
   // Spanish pretrained embedding model (without stopwords, accents removed, lowered)
   private val SP_EMBEDDING_PATH = "/datascience/scraper/embeddings/models/sp_mean_model_embeddings.csv"
@@ -146,12 +146,12 @@ object MeanWordsEmbedder {
     val df = spark.read.option("basePath", INPUT_PATH).parquet(hdfs_files: _*)
             .na.fill("")
             .select($"url", $"domain",
-                    concat($"title", lit(" "),
-                           $"description", lit(" "),
-                           $"keywords", lit(" "),
-                           $"og_title", lit(" "),
-                           $"og_description", lit(" "),
-                           $"twitter_title", lit(" "),
+                    concat($"title", lit("|"),
+                           $"description", lit("|"),
+                           $"keywords", lit("|"),
+                           $"og_title", lit("|"),
+                           $"og_description", lit("|"),
+                           $"twitter_title", lit("|"),
                            $"twitter_description").as("content"))
            .withColumn("content", lower($"content"))
     df
@@ -256,6 +256,8 @@ object MeanWordsEmbedder {
   *
   * Stop words are discarded by the pretrained model.
   *
+  * Domain is discarded from words.
+  *
   * Urls with less than MIN_UNIQUE_EMB_WORDS unique words in the pretrained model are discarded.
   * 
   * @param df: Dataframe <url, domain, content, words, lang>
@@ -275,6 +277,7 @@ object MeanWordsEmbedder {
     var df = dfTokenized
         .filter($"lang" === "sp") 
         .select($"url", $"domain", explode($"words").as("word")).dropDuplicates
+        .filter($"domain" =!= $"word")  // exclude domain from words
         .join(wordsEmbeddings, Seq("word"), "inner")
         .groupBy("url","domain")
         .agg(count(col("word")).as("n_words"), avgColumns: _*)
@@ -286,7 +289,7 @@ object MeanWordsEmbedder {
   /**
   * Process parsed HTMLs and write results.
   */
-  def proccess(spark: SparkSession, nDays: Int = -1, nHours: Int = -1, from: Int = 1){
+  def proccess(spark: SparkSession, nDays: Int = -1, nHours: Int = -1, from: Int = 1, saveContent = false){
 
     var df = {
       if(nDays != -1)
@@ -311,17 +314,18 @@ object MeanWordsEmbedder {
           .format("parquet")
           .mode("append")
           .partitionBy("lang", "day", "hour")
-          .save("/datascience/scraper/embeddings/")
+          .save("/datascience/scraper/embeddings/data/")
 
-    df
-        .withColumn("day",lit(date))
-        .withColumn("hour",lit(hour))
-        .orderBy(col("url").asc)
-        .write
-        .format("parquet")
-        .mode("append")
-        .partitionBy("lang", "day", "hour")
-        .save("/datascience/scraper/embeddings/content/")
+    if(saveContent)
+      df
+          .withColumn("day",lit(date))
+          .withColumn("hour",lit(hour))
+          .orderBy(col("url").asc)
+          .write
+          .format("parquet")
+          .mode("append")
+          .partitionBy("lang", "day", "hour")
+          .save("/datascience/scraper/embeddings/content/")
 
   }
 
@@ -337,6 +341,8 @@ object MeanWordsEmbedder {
         nextOption(map ++ Map('nDays -> value.toInt), tail)
       case "--from" :: value :: tail =>
         nextOption(map ++ Map('from -> value.toInt), tail)
+      case "--saveContent" :: value :: tail =>
+        nextOption(map ++ Map('from -> value.toBoolean), tail)
     }
   }
 
@@ -346,6 +352,7 @@ object MeanWordsEmbedder {
     val nDays = if (options.contains('nDays)) options('nDays) else -1
     val nHours = if (options.contains('nHours)) options('nHours) else -1
     val from = if (options.contains('from)) options('from) else 1
+    val saveContent = if (options.contains('saveContent)) options('saveContent) else false
 
     val spark = SparkSession.builder
         .appName("URL Mean Word Embeddings")
