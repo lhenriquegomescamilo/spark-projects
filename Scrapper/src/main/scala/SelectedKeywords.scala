@@ -147,15 +147,16 @@ object SelectedKeywords {
 
     val tokenizer = new Tokenizer().setInputCols("document")
                                     .setOutputCol("words")
-                                    .setTargetPattern("\\w")
+                                    .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
+                                    .setTargetPattern("\\w+")
                                     //[^a-zA-Z0-9]
                   
-    val normalizer = new Normalizer().setInputCols(Array("words"))
-                                      .setOutputCol("normalized")
-                        
     val stemmer = new Stemmer().setInputCols("normalized")
                               .setOutputCol("stem_kw")
-                              .setLanguage("Spanish")
+
+    val normalizer = new Normalizer().setInputCols(Array("words"))
+                                      .setOutputCol("normalized")
+                                      .setLowercase(true)
                               
     val finisher = new Finisher().setInputCols(Array("words","stem_kw"))
                                 .setOutputCols(Array("words","stem_kw"))
@@ -165,8 +166,8 @@ object SelectedKeywords {
     val pipeline = new Pipeline().setStages(Array(
         document,
         tokenizer,
+        stemmer
         normalizer,
-        stemmer,
         finisher
     ))
 
