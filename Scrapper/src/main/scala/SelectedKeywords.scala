@@ -166,8 +166,8 @@ object SelectedKeywords {
     val pipeline = new Pipeline().setStages(Array(
         document,
         tokenizer,
-        stemmer
         normalizer,
+        stemmer,
         finisher
     ))
 
