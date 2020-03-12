@@ -168,7 +168,7 @@ def userAggregateFromPolygon(
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .load("/datascience/geo/raw_output/%s".format(value_dictionary("poi_output_file")))
+      .load("/datascience/geo/geodevicer_bot/outputs/%s/raw_data".format(value_dictionary("poi_output_file")))
 
     // This function takes two lists: timestamps and distances. It checks that the user has been in a POI a number of minutes within the range:
     //                  umbralmin < n_minutes_in_poi < umbralmax
@@ -224,7 +224,7 @@ def userAggregateFromPolygon(
       .option("header", "true")
       .option("sep", "\t")
       .load(
-        "/datascience/geo/geo_processed/geodevicer_bot/outputs/%s/aggregated"
+        "/datascience/geo/geodevicer_bot/outputs/%s/aggregated"
           .format(value_dictionary("poi_output_file"))
       )
 
@@ -399,7 +399,7 @@ def userAggregateFromPolygon(
                               .agg(countDistinct(col("device_id")) as "unique_count" )
                               //.agg(count(col("device_id")) as "unique_count")  
 
-      val output_path_segments = "/datascience/geo/geo_processed/%s/w_segments"
+      val output_path_segments = "/datascience/geo/geodevicer_bot/outputs/%s/w_segments"
                                                             .format(value_dictionary("poi_output_file"))
 
        joint.write.format("csv")
