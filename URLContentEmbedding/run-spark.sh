@@ -6,7 +6,7 @@
   --deploy-mode cluster\
   --driver-memory 8g\
   --executor-memory 9g\
-  --num-executors 15\
+  --num-executors 10\
   --executor-cores 3\
   --queue spark\
   --conf spark.yarn.maxAppAttempts=1\

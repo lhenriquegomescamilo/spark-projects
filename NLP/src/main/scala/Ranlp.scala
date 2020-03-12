@@ -35,7 +35,7 @@ object Ranlp {
     .getOrCreate()
 
     
-    val path = "/datascience/scraper/dump/2020-02-10_daily.csv"
+    val path = "/datascience/scraper/parsed/processed/day=20200312"
     val df = spark.read
             .format("csv")
             .option("header", "True")
@@ -48,12 +48,6 @@ object Ranlp {
                            .setInputCol("text")     
                            .setOutputCol("document")     
                            .setCleanupMode("shrink")
-
-    //val doc_df = documentAssembler.transform(spark_df)
-
-
-    //pipeline??
-    // POS perceptron model spanish?
     
     val sentenceDetector = new SentenceDetector()
     .setInputCols("document")
@@ -62,43 +56,34 @@ object Ranlp {
     val tokenizer = new Tokenizer()
     .setInputCols("sentence")
     .setOutputCol("token")
-    //.setContextChars(Array("(", ")", "?", "!"))
-    //.setSplitChars(Array('-'))
-
-
-    /**
-    val spanish_pos_path =
-    val spanish_pos = PerceptronModel.load(spanish_pos_path)
-      .setInputCols(Array("sentence", "token"))
-      .setOutputCol("pos")
-
-    */  
-
-
+    .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
+    .setTargetPattern("^a-zA-Z0-9")
+    //.setTargetPattern("^A-Za-z")
     
-
-    //val spanish_pos = PerceptronModel.pretrained("pos_ud_gsd", lang="es")
-
     val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
 
-    
+
     val posTagger = spanish_pos
-    .setInputCols(Array("sentence", "normalized"))
-    .setOutputCol("pos")
-
-
-
-    /**
-
-    //import com.johnsnowlabs.nlp.training.POS
-    //val trainPOS = POS().readDataset(spark, "./src/main/resources/anc-pos-corpus")
-
-    val posTagger = new PerceptronApproach()
     .setInputCols(Array("sentence", "token"))
     .setOutputCol("pos")
-    .setNIterations(2)
-    .fit(trainPOS)
-    */
+
+
+    val finisher = new Finisher()
+    .setInputCols("pos")
+    .setIncludeMetadata(true) // set to False to remove metadata
+
+    val pipeline = new Pipeline().setStages(Array(
+        documentAssembler,
+        sentenceDetector,
+        tokenizer,
+        posTagger,
+        finisher
+    ))
+
+    val doc = pipeline.fit(df).transform(df) 
+
+    println(doc.show())
+
 
     
     /**
@@ -139,6 +124,8 @@ object Ranlp {
       .save("/datascience/misc/testnlp2.csv")
     
     **/
+    
+/*
 
     val normalizer = new Normalizer()
     .setInputCols("token")
@@ -163,7 +150,7 @@ object Ranlp {
 
     println(doc.show())
 
-
+**/
 
 
   }
