@@ -117,7 +117,7 @@ val intersection = spark.sql(
 
 
 
- intersection.drop("geometry","latitude","longitude","geocode")
+ intersection.drop("geometry","geocode")
       .write
       .format("csv")
       .option("sep", "\t")

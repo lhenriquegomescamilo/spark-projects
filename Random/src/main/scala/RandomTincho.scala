@@ -5,6 +5,7 @@ import org.apache.spark.sql.SaveMode
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.broadcast
+import scala.util.parsing.json._
 import org.apache.spark.sql.functions.{
   upper,
   count,
@@ -2028,7 +2029,7 @@ object RandomTincho {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s/".format(day)) //for each day from the list it returns the day path.
+      .map(day => path + "/day=%s/country=AR".format(day)) //for each day from the list it returns the day path.
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
 
@@ -2041,7 +2042,6 @@ object RandomTincho {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .filter("country = 'AR' or country = 'MX'")
       .select("device_id","feature","count")
       .withColumnRenamed("feature", "segment")
       .filter(col("segment").isin(segments: _*))
@@ -2069,6 +2069,92 @@ object RandomTincho {
         .save("/datascience/custom/report_user_unique_pii")
 
   }
+  def pedido_bri_tu(spark:SparkSession){
+    val df = spark.read
+                  .format("csv")
+                  .option("sep","\t")
+                  .load("/datascience/devicer/processed/piis_bri_transunion_grouped")
+                  .withColumnRenamed("_c1","device_id")
+                  .withColumnRenamed("_c2","segment")
+                  .select("device_id","segment")
+
+    val pii = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                    .filter("ml_sh2 is not null")
+
+    pii.join(df,Seq("device_id"),"inner")
+        .select("device_id","ml_sh2","segment")
+        .repartition(1)
+        .write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/mails_tu_bri")
+  }
+
+  def temp(spark:SparkSession){
+    val nids =  spark.read.load("/datascience/custom/report_user_unique_pii").select("nid_sh2","tier").distinct
+    val pii = spark.read.load("/datascience/pii_matching/pii_tuples/").select("device_id","nid_sh2").distinct
+
+    nids.join(pii,Seq("nid_sh2"),"inner").write
+                                          .format("parquet")
+                                          .mode(SaveMode.Overwrite)
+                                          .save("/datascience/custom/devices_originales")
+
+  }
+  def reprocess_dumps(spark:SparkSession){
+    val files = List("2020-01-31_daily","2020-02-01_daily","2020-02-02_daily","2020-02-03_daily","2020-02-04_daily","2020-02-05_daily","2020-02-06_daily","2020-02-07_daily","2020-02-08_daily",
+                    "2020-02-09_daily","2020-02-10_daily")
+    val udfParse = udf((meta: String,field:String) => {
+      def get_field(meta:String,field:String):String = {
+          var res = ""
+          try {
+              val json_parsed = JSON.parseFull(meta.replace("defaultdict(<class 'dict'>, ","").replace(")","").replace("'","\""))
+              if (json_parsed != None){
+                  res = json_parsed.get.asInstanceOf[Map[String,Any]](field).toString
+              }
+          } catch {
+                case e: Throwable => {
+                    println(e)
+                    res = ""
+        
+            }
+          }
+      
+          res
+      }
+      get_field(meta,field)
+    })
+    val hour = DateTime.now().getHourOfDay()
+    var date = ""
+    for(f <- files){
+        date = f.split("_")(0).replace("-","")
+        println(date)
+        spark.read
+            .format("csv")
+            .option("header","true")
+            .option("sep","\t")
+            .load("/datascience/scraper/dump/%s.csv".format(f))
+            .dropDuplicates()
+            .withColumn("description",udfParse(col("meta_data"),lit("description")))
+            .withColumn("keywords",udfParse(col("meta_data"),lit("keywords")))
+            .withColumn("og_description",udfParse(col("meta_data"),lit("og_description")))
+            .withColumn("og_title",udfParse(col("meta_data"),lit("og_title")))
+            .withColumn("twitter_description",udfParse(col("meta_data"),lit("twitter_description")))
+            .withColumn("twitter_title",udfParse(col("meta_data"),lit("twitter_title")))
+            .selectExpr("*", "parse_url(url, 'HOST') as domain")
+            .withColumn("day",lit(date))
+            .withColumn("hour",lit(hour))
+            .orderBy(col("url").asc)
+            .select("url","title","text","description","keywords",
+                    "og_description","og_title","twitter_description",
+                    "twitter_title","timestamp","domain","hour","day")
+            .write
+            .format("parquet")
+            .mode("append")
+            .partitionBy("day","hour")
+            .save("/datascience/scraper/parsed/processed")
+}
+
+  }
 
   def main(args: Array[String]) {
      
@@ -2081,7 +2167,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_pii_matching_user_report(spark)
+    reprocess_dumps(spark)
     
   }
 

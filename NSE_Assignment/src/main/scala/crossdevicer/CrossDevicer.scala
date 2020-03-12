@@ -75,7 +75,7 @@ object CrossDevicer {
       val cross_deviced = db_data      
       .join(        
         audience    
-        .select("device_id","device_type","NSE","GEOID","audience","frequency")                 
+        .select("device_id","device_type","NSE","GEOID","audience","frequency","latitude","longitude")                 
         .distinct(),        
         Seq("device_id"),
             "right_outer")      
@@ -86,7 +86,7 @@ object CrossDevicer {
       .na.fill("android",Seq("device_type"))
       .withColumn("device_type", mapUDF(col("device_type")))
       .filter(col("frequency")>value_dictionary("minFreq"))
-      .select("device_type","device_id","audience","frequency","NSE","GEOID") 
+      .select("device_type","device_id","audience","frequency","NSE","GEOID","latitude","longitude") 
       //.select("device_type","device_id","NSE","CVEGEO","frequency")
 
 /*
