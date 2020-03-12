@@ -329,7 +329,7 @@ object MeanWordsEmbedder {
 
   }
 
-  type OptionMap = Map[Symbol, Int]
+  type OptionMap = Map[Symbol, String]
 
   def nextOption(map: OptionMap, list: List[String]): OptionMap = {
     def isSwitch(s: String) = (s(0) == '-')
