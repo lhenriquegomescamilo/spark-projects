@@ -154,8 +154,8 @@ object SelectedKeywords {
     val stemmer = new Stemmer().setInputCols("normalized")
                               .setOutputCol("stem_kw")
 
-    val normalizer = new Normalizer().setInputCols(Array("words","stem_kw"))
-                                      .setOutputCols(Array("words","stem_kw"))
+    val normalizer = new Normalizer().setInputCols(Array("words"))
+                                      .setOutputCol("normalized")
                                       .setLowercase(true)
                               
     val finisher = new Finisher().setInputCols(Array("words","stem_kw"))
