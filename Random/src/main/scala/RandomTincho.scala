@@ -2100,10 +2100,30 @@ object RandomTincho {
 
   }
   def reprocess_dumps(spark:SparkSession){
-    val files = List("2020-01-28_daily","2020-01-29_daily","2020-01-30_daily","2020-01-31_daily","2020-02-01_daily","2020-02-02_daily","2020-02-03_daily","2020-02-04_daily","2020-02-05_daily","2020-02-06_daily","2020-02-07_daily","2020-02-08_daily",
+    val files = List("2020-01-27_daily","2020-01-28_daily","2020-01-29_daily","2020-01-30_daily","2020-01-31_daily","2020-02-01_daily","2020-02-02_daily","2020-02-03_daily","2020-02-04_daily","2020-02-05_daily","2020-02-06_daily","2020-02-07_daily","2020-02-08_daily",
                     "2020-02-09_daily","2020-02-10_daily")
-    
-    var date = ""
+    val udfParse = udf((meta: String,field:String) => {
+      def get_field(meta:String,field:String):String = {
+          var res = ""
+          try {
+              val json_parsed = JSON.parseFull(meta.replace("defaultdict(<class 'dict'>, ","").replace(")","").replace("'","\""))
+              if (json_parsed != None){
+                  res = json_parsed.get.asInstanceOf[Map[String,Any]](field).toString
+              }
+          } catch {
+                case e: Throwable => {
+                    println(e)
+                    res = ""
+        
+            }
+          }
+      
+          res
+      }
+      get_field(meta,field)
+    })
+    val hour = DateTime.now().getHourOfDay()
+
     for(f <- files){
         date = f.split("_")(0).replace("-","")
         println(date)
@@ -2112,18 +2132,24 @@ object RandomTincho {
             .option("header","true")
             .option("sep","\t")
             .load("/datascience/scraper/dump/%s.csv".format(f))
+            .withColumn("description",udfParse(col("meta_data"),lit("description")))
+            .withColumn("keywords",udfParse(col("meta_data"),lit("keywords")))
+            .withColumn("og_description",udfParse(col("meta_data"),lit("og_description")))
+            .withColumn("og_title",udfParse(col("meta_data"),lit("og_title")))
+            .withColumn("twitter_description",udfParse(col("meta_data"),lit("twitter_description")))
+            .withColumn("twitter_title",udfParse(col("meta_data"),lit("twitter_title")))
             .dropDuplicates()
-            .repartition(20)
-            .selectExpr("*", "parse_url(url, 'HOST') as domain")
-            .select("url","html","domain")
             .withColumn("day",lit(date))
+            .withColumn("hour",lit(hour))
+            .orderBy(col("url").asc)
+            .select("url","title","text","description","keywords",
+                    "og_description","og_title","twitter_description",
+                    "twitter_title","timestamp","domain")
             .write
             .format("parquet")
-            .option("compression","gzip")
             .mode("append")
-            .partitionBy("day")
-            .save("/datascience/scraper/raw/processed/")
-        
+            .partitionBy("day","hour")
+            .save("/datascience/scraper/parsed/processed")
 }
 
   }
