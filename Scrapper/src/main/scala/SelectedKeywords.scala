@@ -141,7 +141,6 @@ object SelectedKeywords {
                                     )
 
     // Tokenize parsed data in list of words
-    //var df = tokenize(data_parsed)
     var document = new DocumentAssembler().setInputCol("content")
                                           .setOutputCol("document")
 
@@ -211,7 +210,6 @@ object SelectedKeywords {
       .repartition(1)
       .write
       .format("csv")
-      .option("header","true")
       .mode(SaveMode.Overwrite)
       .partitionBy("day")
       .save("/datascience/scraper/selected_keywords")
