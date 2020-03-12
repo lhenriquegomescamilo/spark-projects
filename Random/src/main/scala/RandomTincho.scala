@@ -2101,7 +2101,7 @@ object RandomTincho {
 
   }
   def reprocess_dumps(spark:SparkSession){
-    val files = List("2020-01-31_daily","2020-02-01_daily","2020-02-02_daily","2020-02-03_daily","2020-02-04_daily","2020-02-05_daily","2020-02-06_daily","2020-02-07_daily","2020-02-08_daily",
+    val files = List("2020-02-03_daily","2020-02-04_daily","2020-02-05_daily","2020-02-06_daily","2020-02-07_daily","2020-02-08_daily",
                     "2020-02-09_daily","2020-02-10_daily")
     val udfParse = udf((meta: String,field:String) => {
       def get_field(meta:String,field:String):String = {
