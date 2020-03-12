@@ -41,7 +41,7 @@ object Aggregations {
     )
 
     // Path where we will store the results.
-    val output_path_anlytics = "/datascience/geo/geo_devicer_bot/outputs/%s/aggregated".format(value_dictionary("poi_output_file"))
+    val output_path_anlytics = "/datascience/geo/geodevicer_bot/outputs/%s/aggregated".format(value_dictionary("poi_output_file"))
 
     // Here we do the aggregation
     data
