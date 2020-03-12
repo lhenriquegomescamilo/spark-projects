@@ -1147,9 +1147,9 @@ total_24hs_count
 
 val today = (java.time.LocalDate.now).toString
 
-val safegraph = get_safegraph_all_country(spark,10,1)
+val safegraph = get_safegraph_all_country(spark,"10","1")
 
-val the_data = ssafegraph
+val the_data = safegraph
 .withColumn("provider",when(col("geo_hash")==="startapp","startapp").otherwise("safegraph"))
 .groupBy("day","country","provider")
   .agg(countDistinct("ad_id") as "distinct_users", count("utc_timestamp") as "detections")
