@@ -40,8 +40,7 @@ object Geodevicer {
       path_geo_json: String
   ): Map[String, String] = {
     // First we read the json file and store everything in a Map.
-    val file =
-      "hdfs://rely-hdfs/datascience/geo/geodevicer_bot/to_process/%s.json".format(path_geo_json)
+    val file =path_geo_json
     println("LOGGER JSON FILE: " + file)
     val df = spark.sqlContext.read.json(file)
     val columns = df.columns
