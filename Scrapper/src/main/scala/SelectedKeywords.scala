@@ -148,7 +148,7 @@ object SelectedKeywords {
     val tokenizer = new Tokenizer().setInputCols("document")
                                     .setOutputCol("words")
                                     .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
-                                    .setTargetPattern("\\w+")
+                                    .setTargetPattern("^A-Za-z")
                                     //[^a-zA-Z0-9]
                   
     val stemmer = new Stemmer().setInputCols("normalized")
@@ -157,6 +157,7 @@ object SelectedKeywords {
     val normalizer = new Normalizer().setInputCols(Array("words"))
                                       .setOutputCol("normalized")
                                       .setLowercase(true)
+                                      .setCleanupPatterns("^A-Za-z")
                               
     val finisher = new Finisher().setInputCols(Array("words","stem_kw"))
                                 .setOutputCols(Array("words","stem_kw"))
