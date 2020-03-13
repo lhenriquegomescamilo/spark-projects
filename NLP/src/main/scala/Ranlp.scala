@@ -102,7 +102,7 @@ object Ranlp {
     df.show()
     df = df.filter("tag = 'NOUN' or tag = 'PROPN'")
     df.show()
-    df = df.withColumn("token",udfGet2(col("token"),lit("_2")))
+    df = df.withColumn("token",udfGet2(col("zipped"),lit("_2")))
     df.printSchema
     df.show()
     df = df.withColumn("token",udfGet1(col("token"),lit("_2")))
