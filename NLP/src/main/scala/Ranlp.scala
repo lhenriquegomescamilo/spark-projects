@@ -108,7 +108,7 @@ object Ranlp {
     df = df.withColumn("token",udfGet1(col("token"),lit("_2")))
     df.show()
 
-    **/
+    
 
     /**
     val pipeline = new Pipeline().setStages(Array(
