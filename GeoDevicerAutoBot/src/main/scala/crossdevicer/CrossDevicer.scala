@@ -165,7 +165,6 @@ volume
 .repartition(1)
 .write
       .format("csv")
-      .option("sep", "\t")
       .option("header", "true")
       .mode(SaveMode.Overwrite)
       .save(output_path_volume_table) 
