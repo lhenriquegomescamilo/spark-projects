@@ -87,7 +87,7 @@ object Ranlp {
     
     val udfGet1 = udf((word: Row, index:String ) => word.getAs[String](index))
 
-    val udfGet2 = udf((word: Row, index:Int ) => word.get(index))    
+    val udfGet2 = udf((word: Row, index:String ) => word.getAs[(String,String)](index))    
     
     df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
     df.show()
@@ -98,7 +98,7 @@ object Ranlp {
     df = df.filter("tag = 'NOUN' or tag = 'PROPN'")
     df.show()
     df.printSchema
-    df = df.withColumn("token",udfGet2(col("zipped"),lit(1)))
+    df = df.withColumn("token",udfGet1(col("zipped"),lit("_2")))
     df.show()
     df = df.withColumn("token",udfGet1(col("token"),lit("_2")))
     df.show()
