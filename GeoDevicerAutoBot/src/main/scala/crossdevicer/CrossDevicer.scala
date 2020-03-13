@@ -139,27 +139,6 @@ val output_path_eq_table = "/datascience/geo/geodevicer_bot/outputs/%s/xd_equiva
       .save(output_path_eq_table)  
 
 
-//Now that the crossdeviced table is already saved, we use it for the following proceses
-val already_saved = spark.read.format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .load(output_path)
-
-
-//This is the same data, but ready to push
-    val output_path_push = "/datascience/geo/geodevicer_bot/outputs/%s/push".format(value_dictionary("poi_output_file")
-    )
-    already_saved
-    .select("device_type","device_id",value_dictionary("poi_column_name")) //.filter(col("frequency")>=value_dictionary("min_frequency_of_detection").toInt)
-    .repartition(10)
-    .write
-      .format("csv")
-      .option("sep", "\t")
-      .option("header", "true")
-      .mode(SaveMode.Overwrite)
-      .save(output_path_push)
-
-
 //We also generate a table with volume counts
  val allUserCount = already_saved
 .withColumn(value_dictionary("poi_column_name"),split(col(value_dictionary("poi_column_name")),","))
@@ -189,4 +168,30 @@ volume
 
 
   }
+
+def ready_to_push(
+      spark: SparkSession,
+      value_dictionary: Map[String, String]) {
+//Now that the crossdeviced table is already saved, we use it for the following proceses
+val already_saved = spark.read.format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load(output_path)
+
+
+//This is the same data, but ready to push
+    val output_path_push = "/datascience/geo/geodevicer_bot/outputs/push/%s".format(value_dictionary("poi_output_file")
+    )
+    already_saved
+    .select("device_type","device_id",value_dictionary("poi_column_name")) //.filter(col("frequency")>=value_dictionary("min_frequency_of_detection").toInt)
+    .repartition(10)
+    .write
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .mode(SaveMode.Overwrite)
+      .save(output_path_push)
+}
+
+
 }
