@@ -1109,6 +1109,25 @@ total_24hs_count
 .save("/datascience/geo/Reports/JCDecaux/total_24hs_count_%s_%s".format(descriptor,today))
 
 
+//
+val today = (java.time.LocalDate.now).toString
+
+val safegraph = get_safegraph_all_country(spark,"10","1")
+
+val the_data = safegraph
+.withColumn("provider",when(col("geo_hash")==="startapp","startapp").otherwise("safegraph"))
+.groupBy("day","country","provider")
+  .agg(countDistinct("ad_id") as "distinct_users", count("utc_timestamp") as "detections")
+
+the_data
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GeoCounts/Volume_%s".format(today))
+
+
+
 
 */*/
 
@@ -1148,22 +1167,20 @@ total_24hs_count
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-val today = (java.time.LocalDate.now).toString
+val safegraph = get_safegraph_data(spark,"7","1","argentina")
+.withColumnRenamed("ad_id","device_id")
 
-val safegraph = get_safegraph_all_country(spark,"10","1")
+val eze = spark.read.option("delimiter","\t").option("header",true).format("csv").load("/datascience/geo/raw_output/Ezeiza_60d_argentina_4-3-2020-18h")
+.select("device_id").distinct
 
-val the_data = safegraph
-.withColumn("provider",when(col("geo_hash")==="startapp","startapp").otherwise("safegraph"))
-.groupBy("day","country","provider")
-  .agg(countDistinct("ad_id") as "distinct_users", count("utc_timestamp") as "detections")
+val infected = eze.join(safegraph,Seq("device_id"))
 
-the_data
+infected     
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GeoCounts/Volume_%s".format(today))
-
+.save("/datascience/geo/POIs/EzeizaUsersLifePois")
 
 
 
