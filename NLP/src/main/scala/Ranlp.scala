@@ -58,9 +58,9 @@ object Ranlp {
     .setOutputCol("token")
     .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
     .setTargetPattern("^a-zA-Z0-9")
-    //.setTargetPattern("^A-Za-z")
 
-
+    // lo que no se bien es el tema de las ñ
+    //no estoy 100% seguro si está bien normalizar antes de POS tagger
     val normalizer = new Normalizer().setInputCols(Array("token"))
                                   .setOutputCol("normalized")
                                   .setLowercase(true)
@@ -92,12 +92,8 @@ object Ranlp {
     
     val udfGet1 = udf((word: Row, index:String ) => word.getAs[String](index))
 
-   // val udfGet2 = udf((word: Row, index:String ) => word.getAs[(String,String)](index))    
+    val udfGet2 = udf((word: Row) => word.get(2).asInstanceOf[Array[String]])    
     
-    df.show()
-
-    /**
-
     df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
     df.show()
     df = df.withColumn("zipped", explode(col("zipped")))
@@ -107,7 +103,7 @@ object Ranlp {
     df = df.filter("tag = 'NOUN' or tag = 'PROPN'")
     df.show()
     df.printSchema
-    df = df.withColumn("token",udfGet1(col("zipped"),lit("_2")))
+    df = df.withColumn("token",udfGet2(col("zipped")))
     df.show()
     df = df.withColumn("token",udfGet1(col("token"),lit("_2")))
     df.show()
