@@ -58,15 +58,19 @@ object Ranlp {
     .setOutputCol("token")
     .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
     .setTargetPattern("^a-zA-Z0-9")
-    //.setTargetPattern("^A-Za-z")
-    
+
+    // lo que no se bien es el tema de las ñ
+    //no estoy 100% seguro si está bien normalizar antes de POS tagger
+    val normalizer = new Normalizer().setInputCols(Array("token"))
+                                  .setOutputCol("normalized")
+                                  .setLowercase(true)
+                                  .setCleanupPatterns(Array("^a-zA-Z0-9"))
+
     val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
 
-
     val posTagger = spanish_pos
-    .setInputCols(Array("sentence", "token"))
+    .setInputCols(Array("sentence", "normalized"))
     .setOutputCol("pos")
-
 
     val finisher = new Finisher()
     .setInputCols("pos")
@@ -77,6 +81,7 @@ object Ranlp {
         documentAssembler,
         sentenceDetector,
         tokenizer,
+        normalizer,        
         posTagger,
         finisher
     ))
@@ -87,7 +92,7 @@ object Ranlp {
     
     val udfGet1 = udf((word: Row, index:String ) => word.getAs[String](index))
 
-   // val udfGet2 = udf((word: Row, index:String ) => word.getAs[(String,String)](index))    
+    val udfGet2 = udf((word: Row, index:String ) => word.getAs[Array[String]](index))
     
     df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
     df.show()
@@ -97,11 +102,13 @@ object Ranlp {
     df.show()
     df = df.filter("tag = 'NOUN' or tag = 'PROPN'")
     df.show()
+    df = df.withColumn("token",udfGet2(col("zipped"),lit("_2")))
     df.printSchema
-    df = df.withColumn("token",udfGet1(col("zipped"),lit("_2")))
     df.show()
     df = df.withColumn("token",udfGet1(col("token"),lit("_2")))
     df.show()
+
+    
 
     /**
     val pipeline = new Pipeline().setStages(Array(
