@@ -234,23 +234,33 @@ object OrganicSegments {
       getSegmentsData(spark, ndays, from).withColumn("prefix", lit(""))
     val modelledData =
       getModelledData(spark, ndays, from).withColumn("prefix", lit("m_"))
-    val df = organicData.unionAll(modelledData)
+      
+    val data_nse = spark.read.format("csv").option("header","true")
+                              .option("sep","\t")
+                              .load("/datascience/geo/NSEHomes/monthly/to_push/mexico_180d_home_27-2-2020--3h_push")
+                              .withColumn("audience",split(col("audience"), ","))
+                              .withColumn("audience",explode(col("audience")))
+                              .withColumnRenamed("audience","segment")
+                              .withColumn("day",lit("20200313"))
+                              .select("device_id", "day", "segment")
 
-    // Now we load and format the taxonomy
-    val taxo_general = spark.read
-      .format("csv")
-      .option("sep", ",")
-      .option("header", "True")
-      .load("/datascience/data_publicis/taxonomy_publicis.csv")
-      .select("Segment ID")
-      .rdd
-      .map(row => row(0).toString.toInt)
-      .collect()
-      .toArray
+    val df = organicData.unionAll(modelledData).unionAll(data_nse)
 
-    // Given the fact that this is a very small list, we can broadcast it
-    val sc = spark.sparkContext
-    val taxo_general_b = sc.broadcast(taxo_general)
+    // // Now we load and format the taxonomy
+    // val taxo_general = spark.read
+    //   .format("csv")
+    //   .option("sep", ",")
+    //   .option("header", "True")
+    //   .load("/datascience/data_publicis/taxonomy_publicis.csv")
+    //   .select("Segment ID")
+    //   .rdd
+    //   .map(row => row(0).toString.toInt)
+    //   .collect()
+    //   .toArray
+
+    // // Given the fact that this is a very small list, we can broadcast it
+    // val sc = spark.sparkContext
+    // val taxo_general_b = sc.broadcast(taxo_general)
 
     // This window will be used to keep the largest day per segment, per device_id
     val columns = List("device_id", "segment")
@@ -268,10 +278,12 @@ object OrganicSegments {
           )
           .toSeq
     )
-
+    
+    val segments = List("104014","104015","104016","104017","104018","104019","98946","3013","150","147")
+    
     val userSegments = df
       // Filter out the segments that are not part of the Publicis taxonomy
-      .filter(col("segment").isin(taxo_general_b.value: _*))
+      .filter(col("segment").isin(segments: _*))
       .withColumn("segment", col("segment").cast("string"))
       .withColumn("segment", concat(col("prefix"), col("segment")))
       // Keep the largest date per segment, per device_id
@@ -287,8 +299,9 @@ object OrganicSegments {
       .select("rtgtly_uid", "segids")
 
     // Last step is to store the data in the format required (.tsv.bz)
-    val pathToJson = "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
-      .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
+    // val pathToJson = "hdfs://rely-hdfs/datascience/data_publicis/memb/%s/dt=%s"
+    //   .format(runType, DateTime.now.minusDays(from).toString("yyyyMMdd"))
+    val pathToJson = "hdfs://rely-hdfs/datascience/custom/data_publicis"
 
     userSegments.write
       .format("json")
@@ -298,26 +311,26 @@ object OrganicSegments {
       .mode(SaveMode.Overwrite)
       .save(pathToJson)
 
-    // Finally we rename all the generated files to stick to the format requested.
-    val hdfs = FileSystem.get(sc.hadoopConfiguration)
-    val files = hdfs.listStatus(new Path(pathToJson))
-    val originalPath = files.map(_.getPath())
+    // // Finally we rename all the generated files to stick to the format requested.
+    // val hdfs = FileSystem.get(sc.hadoopConfiguration)
+    // val files = hdfs.listStatus(new Path(pathToJson))
+    // val originalPath = files.map(_.getPath())
 
-    originalPath.par
-      .filter(!_.toString.contains("_SUCCESS"))
-      .foreach(
-        e =>
-          hdfs.rename(
-            e,
-            new Path(
-              pathToJson + "/retargetly_MX_memb_%s_%s_%s.json.bz2".format(
-                runType,
-                e.toString.split("/").last.split("-")(1),
-                DateTime.now.minusDays(from).toString("yyyyMMdd")
-              )
-            )
-          )
-      )
+    // originalPath.par
+    //   .filter(!_.toString.contains("_SUCCESS"))
+    //   .foreach(
+    //     e =>
+    //       hdfs.rename(
+    //         e,
+    //         new Path(
+    //           pathToJson + "/retargetly_MX_memb_%s_%s_%s.json.bz2".format(
+    //             runType,
+    //             e.toString.split("/").last.split("-")(1),
+    //             DateTime.now.minusDays(from).toString("yyyyMMdd")
+    //           )
+    //         )
+    //       )
+    //   )
   }
   def main(args: Array[String]) {
     /// Configuracion spark
