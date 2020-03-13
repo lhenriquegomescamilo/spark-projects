@@ -254,7 +254,7 @@ val email =
             .getOrElse("")
             .toString
             .length > 0) query("email").toString
-      else "0"
+      else "julian@retargetly.com"
 
 
     
