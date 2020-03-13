@@ -125,6 +125,7 @@ object CrossDevicer {
     cross_deviced
     .filter(col("frequency")>=value_dictionary("minFreq").toInt)
     .select("device_type","device_id","audience")
+    .repartition(10)
     .write
       .format("csv")
       .option("sep", "\t")
