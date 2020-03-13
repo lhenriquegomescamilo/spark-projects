@@ -158,7 +158,7 @@ val validUserCount = already_saved
 val output_path_volume_table = "/datascience/geo/geodevicer_bot/outputs/volume_count/%s".format(value_dictionary("poi_output_file"))
 
 val volume = allUserCount
-.join(validUserCount,Seq(value_dictionary("poi_column_name")))
+.join(validUserCount,Seq(value_dictionary("poi_column_name")),"left_outer")
 .repartition(1)
 
 volume
