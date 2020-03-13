@@ -95,10 +95,13 @@ object Ranlp {
     df.show()
     df = df.withColumn("tag",udfGet1(col("zipped"),lit("_1")))
     df.show()
+    df = df.filter("tag = 'NOUN' or tag = 'PROPN'")
+    df.show()
     df.printSchema
-    df.filter("tag = 'NOUN' or tag = 'PROPN'")
-      .withColumn("token",udfGet2(col("zipped"),lit("_2")))
-      .withColumn("token",udfGet1(col("token"),lit("_2")))
+    df = df.withColumn("token",udfGet1(col("zipped"),lit("_2")))
+    df.show()
+    df = df.withColumn("token",udfGet1(col("token"),lit("_2")))
+    df.show()
 
     /**
     val pipeline = new Pipeline().setStages(Array(
