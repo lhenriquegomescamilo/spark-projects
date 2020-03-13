@@ -243,6 +243,7 @@ object OrganicSegments {
                               .withColumnRenamed("audience","segment")
                               .withColumn("day",lit("20200313"))
                               .select("device_id", "day", "segment")
+                              .withColumn("prefix", lit(""))
 
     val df = organicData.unionAll(modelledData).unionAll(data_nse)
 
