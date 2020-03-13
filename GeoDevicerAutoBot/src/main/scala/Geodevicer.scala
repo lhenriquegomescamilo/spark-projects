@@ -232,6 +232,22 @@ object Geodevicer {
             .toString
             .length > 0) query("repartition").toString
       else "10"
+
+//this is asks if the audience should be formated for pushing
+val push_audience =
+      if (query.contains("push_audience") && Option(query("push_audience"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("push_audience").toString
+      else "0"
+
+//this is asks if the audience should be sent monthly
+val monthly =
+      if (query.contains("monthly") && Option(query("monthly"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("monthly").toString
+      else "0"
     
 
     // Finally we construct the Map that is going to be returned
@@ -438,6 +454,12 @@ val atribute_day_name = DateTime.now.minusDays(value_dictionary("atribution_date
     // Here we join with web behaviour
     if (value_dictionary("web_days").toInt > 0)
       Aggregations.get_segments_from_triplets(spark, value_dictionary)
+
+// Here we format the final xd to push to the platform
+if (value_dictionary("crossdevice") != "false" 
+  && value_dictionary("crossdevice") != "0"
+  && value_dictionary("push_audience").toInt > 0)
+      CrossDevicer.ready_to_push(spark, value_dictionary)
 
 
  //Here we move the json after it is processed
