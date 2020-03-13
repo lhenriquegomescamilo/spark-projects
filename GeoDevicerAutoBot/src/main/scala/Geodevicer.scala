@@ -248,6 +248,15 @@ val monthly =
             .toString
             .length > 0) query("monthly").toString
       else "0"
+
+val email =
+  if (query.contains("email") && Option(query("email"))
+            .getOrElse("")
+            .toString
+            .length > 0) query("email").toString
+      else "julian@retargetly.com"
+
+
     
 
     // Finally we construct the Map that is going to be returned
@@ -275,7 +284,10 @@ val monthly =
       "transport_min_distance" -> transport_min_distance,
       "min_frequency_of_detection" -> min_frequency_of_detection,
     "filter_true_user" -> filter_true_user,
-    "repartition" -> repartition)
+    "repartition" -> repartition,
+    "push_audience"->push_audience,
+    "monthly"->monthly,
+    "email"->email)
 
     println("LOGGER PARAMETERS:")
     println(s"""
@@ -302,7 +314,11 @@ val monthly =
     "transport_min_distance" -> $transport_min_distance,
     "min_frequency_of_detection" -> $min_frequency_of_detection,
     "filter_true_user" -> $filter_true_user,
-    "repartition" -> $repartition""")
+    "repartition" -> $repartition,
+    "email"->$email,
+    "monthly"->$monthly,
+    "push_audience"->$push_audience """)
+
     value_dictionary
   }
 
