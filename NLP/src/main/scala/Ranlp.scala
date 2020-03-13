@@ -70,7 +70,8 @@ object Ranlp {
 
     val finisher = new Finisher()
     .setInputCols("pos")
-    .setIncludeMetadata(true) // set to False to remove metadata
+    .setIncludeMetadata(true)
+    .setOutputAsArray(true)
 
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
@@ -89,18 +90,16 @@ object Ranlp {
     val udfGet2 = udf((word: Row, index:String ) => word.getAs[(String,String)](index))    
     
     df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
-    .withColumn("zipped", explode(col("zipped")))
-    .withColumn("tag",udfGet1(col("zipped"),lit("_1")))
-    .filter("tag = 'NOUN' or tag = 'PROPN'")
-    .withColumn("token",udfGet2(col("zipped"),lit("_2")))
-    .withColumn("token",udfGet1(col("token"),lit("_2")))
+    df.show()
+    df = df.withColumn("zipped", explode(col("zipped")))
+    df.show()
+    df = df.withColumn("tag",udfGet1(col("zipped"),lit("_1")))
+    df.show()
+    df.printSchema
+    df.filter("tag = 'NOUN' or tag = 'PROPN'")
+      .withColumn("token",udfGet2(col("zipped"),lit("_2")))
+      .withColumn("token",udfGet1(col("token"),lit("_2")))
 
-
-    println(df.show())
-
- //array<array<string>> type, however, '`finished_pos_metadata`' is of array<struct<_1:string,_2:string>> 
-
-    
     /**
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
