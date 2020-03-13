@@ -2152,7 +2152,35 @@ object RandomTincho {
             .mode("append")
             .partitionBy("day","hour")
             .save("/datascience/scraper/parsed/processed")
-}
+  }
+
+  }
+
+  def licensing_publicis(spark:SparkSession){
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until 10).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments"
+
+
+    val segments = List("104014","104015","104016","104017","104018","104019","98946","3013","150","147")
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=MX".format(day)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .withColumnRenamed("feature","segment")
+      .filter(col("segment").isin(segments: _*))
+
+    df.groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.03).as("devices")).show()
 
   }
 
@@ -2167,7 +2195,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    reprocess_dumps(spark)
+    licensing_publicis(spark)
     
   }
 
