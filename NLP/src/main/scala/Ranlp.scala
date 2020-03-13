@@ -59,22 +59,21 @@ object Ranlp {
     .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
     .setTargetPattern("^a-zA-Z0-9")
     //.setTargetPattern("^A-Za-z")
-    
-    val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
 
 
-    val posTagger = spanish_pos
-    .setInputCols(Array("sentence", "token"))
-    .setOutputCol("pos")
-
-    val normalizer = new Normalizer().setInputCols(Array("pos"))
+    val normalizer = new Normalizer().setInputCols(Array("token"))
                                   .setOutputCol("normalized")
                                   .setLowercase(true)
                                   .setCleanupPatterns(Array("^a-zA-Z0-9"))
 
+    val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
+
+    val posTagger = spanish_pos
+    .setInputCols(Array("sentence", "normalized"))
+    .setOutputCol("pos")
 
     val finisher = new Finisher()
-    .setInputCols("normalized")
+    .setInputCols("pos")
     .setIncludeMetadata(true)
     .setOutputAsArray(true)
 
@@ -82,8 +81,8 @@ object Ranlp {
         documentAssembler,
         sentenceDetector,
         tokenizer,
+        normalizer,        
         posTagger,
-        normalizer,
         finisher
     ))
 
