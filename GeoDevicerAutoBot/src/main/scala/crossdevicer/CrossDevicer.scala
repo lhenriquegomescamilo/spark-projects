@@ -138,6 +138,10 @@ val output_path_eq_table = "/datascience/geo/geodevicer_bot/outputs/%s/xd_equiva
       .mode(SaveMode.Overwrite)
       .save(output_path_eq_table)  
 
+val already_saved = spark.read.format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load(output_path)
 
 //We also generate a table with volume counts
  val allUserCount = already_saved
@@ -173,6 +177,10 @@ def ready_to_push(
       spark: SparkSession,
       value_dictionary: Map[String, String]) {
 //Now that the crossdeviced table is already saved, we use it for the following proceses
+val output_path = "/datascience/geo/geodevicer_bot/outputs/%s/xd".format(
+      value_dictionary("poi_output_file")
+    )
+
 val already_saved = spark.read.format("csv")
       .option("sep", "\t")
       .option("header", "true")
