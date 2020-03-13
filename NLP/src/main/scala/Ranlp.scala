@@ -87,7 +87,7 @@ object Ranlp {
     
     val udfGet1 = udf((word: Row, index:String ) => word.getAs[String](index))
 
-    val udfGet2 = udf((word: Row, index:String ) => word.getAs[(String,String)](index))    
+   // val udfGet2 = udf((word: Row, index:String ) => word.getAs[(String,String)](index))    
     
     df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
     df.show()
