@@ -67,9 +67,14 @@ object Ranlp {
     .setInputCols(Array("sentence", "token"))
     .setOutputCol("pos")
 
+    val normalizer = new Normalizer().setInputCols(Array("pos"))
+                                  .setOutputCol("normalized")
+                                  .setLowercase(true)
+                                  .setCleanupPatterns(Array("^a-zA-Z0-9"))
+
 
     val finisher = new Finisher()
-    .setInputCols("pos")
+    .setInputCols("normalized")
     .setIncludeMetadata(true)
     .setOutputAsArray(true)
 
@@ -78,6 +83,7 @@ object Ranlp {
         sentenceDetector,
         tokenizer,
         posTagger,
+        normalizer,
         finisher
     ))
 
@@ -89,6 +95,10 @@ object Ranlp {
 
    // val udfGet2 = udf((word: Row, index:String ) => word.getAs[(String,String)](index))    
     
+    df.show()
+
+    /**
+
     df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
     df.show()
     df = df.withColumn("zipped", explode(col("zipped")))
@@ -102,6 +112,8 @@ object Ranlp {
     df.show()
     df = df.withColumn("token",udfGet1(col("token"),lit("_2")))
     df.show()
+
+    **/
 
     /**
     val pipeline = new Pipeline().setStages(Array(
