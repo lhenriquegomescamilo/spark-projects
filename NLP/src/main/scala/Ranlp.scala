@@ -15,6 +15,12 @@ import org.apache.spark.ml.Pipeline
 import com.johnsnowlabs.nlp._
 import com.johnsnowlabs.nlp.annotator.{PerceptronModel, SentenceDetector, Tokenizer, Normalizer}
 
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.ml.Pipeline
+
+import scala.math.log
+
+
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
@@ -104,7 +110,6 @@ object Ranlp {
     */
 
     
-    
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
         sentenceDetector,
@@ -113,10 +118,6 @@ object Ranlp {
     ))
 
     var df = pipeline.fit(doc).transform(doc)
-
-    //println(doc.withColumn("tmp", explode(col("pos"))).select("tmp.*").show())
-
-    //println(doc.show())
 
     def getWord =
           udf(
@@ -127,14 +128,53 @@ object Ranlp {
     def getString =
     udf((array: Seq[String]) => array.map(_.toString).mkString(","))
 
+    df.show()
      
-    df.withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
+    df = df.withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
       .withColumn("words", getWord(col("metadata")))
       .select("url","words","result")
       .filter("result = 'NOUN' or result = 'PROPN'")
+      .withColumn("words", lower(col("words")))
       .groupBy("url")
       .agg(collect_list("words").as("document"))
-      .show()
+      .select("url","document")
+      .withColumn("doc_id", monotonically_increasing_id())  
+
+    
+    df.show()
+
+    val docCount = df.count().toInt               
+            
+    val columns = df.columns.map(col) :+
+        (explode(col("document")) as "token")
+    val unfoldedDocs = df.select(columns: _*)
+
+    //TF: times token appears in document
+    val tokensWithTf = unfoldedDocs.groupBy("doc_id", "token")
+      .agg(count("document") as "TF")
+
+    //DF: number of documents where a token appears
+    val tokensWithDf = unfoldedDocs.groupBy("token")
+      .agg(countDistinct("doc_id") as "DF")
+
+    //IDF: logarithm of (Total number of documents divided by DF) . How common/rare a word is.
+    def calcIdf =
+      udf(
+        (docCount: Int,DF: Long) =>
+          log(docCount/DF)
+      )
+
+    val tokensWithIdf = tokensWithDf.withColumn("IDF", calcIdf(lit(docCount),col("DF")))
+    
+    //TF-IDF: score of a word in a document.
+    //The higher the score, the more relevant that word is in that particular document.
+    val tfidf_docs = tokensWithTf
+      .join(tokensWithIdf, Seq("token"), "left")
+      .withColumn("tf_idf", col("tf") * col("idf"))
+      .join(df,Seq("doc_id"),"left")
+
+    tfidf_docs.show()
+
 
     /*  
       .withColumn("kws",getString(col("kws")))
