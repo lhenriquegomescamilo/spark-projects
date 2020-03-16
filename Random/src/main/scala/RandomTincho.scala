@@ -2186,15 +2186,16 @@ object RandomTincho {
 
   def report_dh(spark:SparkSession){
     val pii = spark.read.load("/datascience/pii_matching/pii_tuples/").filter("country = 'BR'")
-    val nids = pii.filter("nid_sh2 is not null").select("nid_sh2")
+    val nids = pii.filter("nid_sh2 is not null").select("nid_sh2","device_id")
     val bridge = spark.read
                       .format("csv")
                       .option("header","true")
                       .load("/data/tmp/Bridge_Linkage_File_Retargetly_LATAM_ALL.csv")
                       .withColumnRenamed("email_sha256","ml_sh2")
-                      .select("ml_sh2")
+                      .withColumnRenamed("advertising_id","device_id")
+                      .select("ml_sh2","device_id")
 
-    val emails = pii.filter("ml_sh2 is not null").select("ml_sh2").union(bridge)
+    val emails = pii.filter("ml_sh2 is not null").select("ml_sh2","device_id").union(bridge)
     val all_piis = nids.withColumnRenamed("nid_sh2","pii").union(emails.withColumnRenamed("ml_sh2","pii"))
 
     val mapeo = Map("241141" -> "3862661122c5864e6b0872554dc76a60",
