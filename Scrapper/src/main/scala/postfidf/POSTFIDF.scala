@@ -278,7 +278,7 @@ def getTFIDF(df_clean: DataFrame ): DataFrame = {
     //The higher the score, the more relevant that word is in that particular document.
     val tfidf_docs = tokensWithTf
       .join(tokensWithIdf, Seq("token"), "left")
-      .withColumn("tf_idf", col("tf") * col("idf"))
+      .withColumn("TFIDF", col("tf") * col("idf"))
       .join(df,Seq("doc_id"),"left")
 
     tfidf_docs
@@ -307,6 +307,7 @@ def processText(db: DataFrame ): DataFrame = {
 
     val df_final = tfidf_docs
     .withColumn("stem_kw",lit(""))
+    .withColumnRenamed("token","kw")
     //column domain??
 
     df_final
