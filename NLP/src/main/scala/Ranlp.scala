@@ -58,22 +58,18 @@ object Ranlp {
     .setOutputCol("token")
     .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
     .setTargetPattern("^a-zA-Z0-9")
-/**
+
     // lo que no se bien es el tema de las ñ
-    //no estoy 100% seguro si está bien normalizar antes de POS tagger
-    val normalizer = new Normalizer().setInputCols(Array("token"))
-                                  .setOutputCol("normalized")
-                                  .setLowercase(true)
-                                  .setCleanupPatterns(Array("^a-zA-Z0-9"))
-
-
-    */
 
     val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
 
     val posTagger = spanish_pos
     .setInputCols(Array("sentence", "token"))
     .setOutputCol("pos")
+
+    /**
+
+    // LA FORMA QUE NO PUEDO HACER CAMINAR----------
 
     val finisher = new Finisher()
     .setInputCols("pos")
@@ -104,15 +100,11 @@ object Ranlp {
     df.show()
     df = df.filter("tag = 'NOUN' or tag = 'PROPN'")
     df.show()
-    df = df.withColumn("token",udfGet2(col("zipped"),lit("_2")))
-    df.printSchema
-    df.show()
-    df = df.withColumn("token",udfGet1(col("token"),lit("_2")))
-    df.show()
+
+    */
 
     
-
-    /**
+    
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
         sentenceDetector,
@@ -120,7 +112,7 @@ object Ranlp {
         posTagger
     ))
 
-    val doc = pipeline.fit(df).transform(df)
+    var df = pipeline.fit(doc).transform(doc)
 
     //println(doc.withColumn("tmp", explode(col("pos"))).select("tmp.*").show())
 
@@ -135,12 +127,16 @@ object Ranlp {
     def getString =
     udf((array: Seq[String]) => array.map(_.toString).mkString(","))
 
-    doc.withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
-      .withColumn("keyword", getWord(col("metadata")))
-      .select("url","keyword","result")
+     
+    df.withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
+      .withColumn("words", getWord(col("metadata")))
+      .select("url","words","result")
       .filter("result = 'NOUN' or result = 'PROPN'")
       .groupBy("url")
-      .agg(collect_list("keyword").as("kws"))
+      .agg(collect_list("words").as("document"))
+      .show()
+
+    /*  
       .withColumn("kws",getString(col("kws")))
       .select("url","kws")
       .write.format("csv")
@@ -151,32 +147,7 @@ object Ranlp {
     
     **/
     
-/*
 
-    val normalizer = new Normalizer()
-    .setInputCols("token")
-    .setOutputCol("normalized")
-    .setCleanupPatterns(Array("[^a-zA-Z0-9]"))
-    .setLowercase(true)
-
-    val finisher = new Finisher()
-    .setInputCols("pos")
-    .setIncludeMetadata(true) // set to False to remove metadata
-
-    val pipeline = new Pipeline().setStages(Array(
-        documentAssembler,
-        sentenceDetector,
-        tokenizer,
-        normalizer,
-        posTagger,
-        finisher
-    ))
-
-    val doc = pipeline.fit(df).transform(df) 
-
-    println(doc.show())
-
-**/
 
 
   }
