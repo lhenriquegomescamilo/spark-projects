@@ -127,8 +127,7 @@ object Ranlp {
     
     def getString =
     udf((array: Seq[String]) => array.map(_.toString).mkString(","))
-
-    df.show()
+    
      
     df = df.withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
       .withColumn("words", getWord(col("metadata")))
@@ -140,8 +139,6 @@ object Ranlp {
       .select("url","document")
       .withColumn("doc_id", monotonically_increasing_id())  
 
-    
-    df.show()
 
     val docCount = df.count().toInt               
             
@@ -173,21 +170,17 @@ object Ranlp {
       .withColumn("tf_idf", col("tf") * col("idf"))
       .join(df,Seq("doc_id"),"left")
 
-    tfidf_docs.show()
-
-
-    /*  
-      .withColumn("kws",getString(col("kws")))
-      .select("url","kws")
-      .write.format("csv")
-      .option("header", "true")
-      .option("sep", "\t")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/testnlp2.csv")
-    
-    **/
-    
-
+    tfidf_docs.groupBy("doc_id")
+    .agg(collect_list("token").as("kws"),collect_list("tfidf").as("tf_idf"))
+    .select("url","kws","tfidf")
+    .withColumn("kws",getString(col("kws")))
+    .withColumn("tfidf",getString(col("tfidf")))
+    .write.format("csv")
+    .option("header", "true")
+    .option("sep", "\t")
+    .mode(SaveMode.Overwrite)
+    .save("/datascience/misc/testnlp3.csv")
+  
 
 
   }
