@@ -2196,8 +2196,8 @@ object RandomTincho {
                     "241147" -> "b1530597217a23c1e76c022ca43261de",
                     "271165" -> "4a5594ff767d0a59b660987cd06f0176")
     val files = List("241141","241143","241145","241147","271165")    
-    var df = null
-    var local_piis = null
+    var df = None
+    var local_piis = None
 
     for(f <- files){
         df = spark.read.format("csv").option("header","true").load("/data/jobs/activator/%s".format(mapeo(f))).withColumnRenamed("ds_email_lower","ml_sh2").withColumnRenamed("nr_cpf","nid_sh2")
