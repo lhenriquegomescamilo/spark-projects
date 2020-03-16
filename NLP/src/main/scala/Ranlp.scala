@@ -127,7 +127,7 @@ object Ranlp {
     
     def getString =
     udf((array: Seq[String]) => array.map(_.toString).mkString(","))
-    
+
      
     df = df.withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
       .withColumn("words", getWord(col("metadata")))
@@ -171,7 +171,7 @@ object Ranlp {
       .join(df,Seq("doc_id"),"left")
 
     tfidf_docs.groupBy("doc_id")
-    .agg(collect_list("token").as("kws"),collect_list("tfidf").as("tf_idf"))
+    .agg(collect_list("token").as("kws"),collect_list("tf_idf").as("tfidf"))
     .select("url","kws","tfidf")
     .withColumn("kws",getString(col("kws")))
     .withColumn("tfidf",getString(col("tfidf")))
