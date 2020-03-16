@@ -1169,9 +1169,12 @@ the_data
 
 val safegraph = get_safegraph_data(spark,"7","1","argentina")
 .withColumnRenamed("ad_id","device_id")
+.withColumn("device_id",lower(col("device_id")))
 
-val eze = spark.read.option("delimiter","\t").option("header",true).format("csv").load("/datascience/geo/raw_output/Ezeiza_60d_argentina_4-3-2020-18h")
+val eze = spark.read.option("delimiter","\t").option("header",true).format("csv")
+.load("/datascience/geo/raw_output/Ezeiza_60d_argentina_4-3-2020-18h")
 .select("device_id").distinct
+.withColumn("device_id",lower(col("device_id")))
 
 val infected = eze.join(safegraph,Seq("device_id"))
 
