@@ -1199,7 +1199,7 @@ val eze = spark.read.option("delimiter","\t").option("header",true).format("csv"
 // 2)para levantar a los no infectados
 //Acá unimos el raw pelado con los devices que vimos en ezeiza, de ahí vamos a obtener las áreas y la horas donde circularon los infectados
 val moment = eze.join(raw,Seq("device_id"))
-.select("geo_hashito","hour")
+.select("geo_hash","hour")
 .distinct()
 
 //Esto lo podemos usar como filtro
