@@ -193,7 +193,6 @@ def get_safegraph_data(
       .option("header", "true")
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
-      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
       .withColumnRenamed("ad_id","device_id")
       .withColumnRenamed("id_type","device_type")
       .withColumn("device_id",upper(col("device_id")))
