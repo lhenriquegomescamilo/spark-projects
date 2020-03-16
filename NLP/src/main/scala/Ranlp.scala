@@ -170,7 +170,7 @@ object Ranlp {
       .withColumn("tf_idf", col("tf") * col("idf"))
       .join(df,Seq("doc_id"),"left")
 
-    tfidf_docs.groupBy("doc_id")
+    tfidf_docs.groupBy("url")
     .agg(collect_list("token").as("kws"),collect_list("tf_idf").as("tfidf"))
     .select("url","kws","tfidf")
     .withColumn("kws",getString(col("kws")))
