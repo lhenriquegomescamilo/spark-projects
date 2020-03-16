@@ -2207,15 +2207,18 @@ object RandomTincho {
     var local_piis = spark.emptyDataFrame
 
     for(f <- files){
-        df = spark.read.format("csv").option("header","true").load("/data/jobs/activator/%s".format(mapeo(f))).withColumnRenamed("ds_email_lower","ml_sh2").withColumnRenamed("nr_cpf","nid_sh2")
+        df = spark.read.format("csv").option("header","true").load("/data/jobs/activator/%s".format(mapeo(f)))
+                  .withColumnRenamed("ds_email_lower","ml_sh2")
+                  .withColumnRenamed("nr_cpf","nid_sh2")
+
         local_piis =  df.select("ml_sh2").withColumnRenamed("ml_sh2","pii").union(df.select("nid_sh2").withColumnRenamed("nid_sh2","pii"))
         
         println(f)
-        println("Total Lines: %s".format(df.count.toString))
+        println("Total Lines: %s".format(df.count))
         println("Total Emails uploaded: %s".format(df.select("ml_sh2").distinct.count))
         println("Total Nids uploaded: %s".format(df.select("nid_sh2").distinct.count))
         println("Nids Matched: %s".format(df.select("nid_sh2").join(nids,Seq("nid_sh2"),"inner").select("nid_sh2").distinct.count))
-        println("Emails Matched: %s".format(df.select("ml_sh2").join(nids,Seq("ml_sh2"),"inner").select("ml_sh2").distinct.count))
+        println("Emails Matched: %s".format(df.select("ml_sh2").join(emails,Seq("ml_sh2"),"inner").select("ml_sh2").distinct.count))
         println("Devices Found: %s".format(all_piis.join(local_piis,Seq("pii"),"inner").select("device_id").distinct.count))
         println("\n")
     
