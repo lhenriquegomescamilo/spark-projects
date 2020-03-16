@@ -58,7 +58,7 @@ object Ranlp {
     .setOutputCol("token")
     .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
     .setTargetPattern("^a-zA-Z0-9")
-
+/**
     // lo que no se bien es el tema de las ñ
     //no estoy 100% seguro si está bien normalizar antes de POS tagger
     val normalizer = new Normalizer().setInputCols(Array("token"))
@@ -66,10 +66,13 @@ object Ranlp {
                                   .setLowercase(true)
                                   .setCleanupPatterns(Array("^a-zA-Z0-9"))
 
+
+    */
+
     val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
 
     val posTagger = spanish_pos
-    .setInputCols(Array("sentence", "normalized"))
+    .setInputCols(Array("sentence", "token"))
     .setOutputCol("pos")
 
     val finisher = new Finisher()
@@ -80,8 +83,7 @@ object Ranlp {
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
         sentenceDetector,
-        tokenizer,
-        normalizer,        
+        tokenizer,       
         posTagger,
         finisher
     ))
