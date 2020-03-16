@@ -1166,23 +1166,55 @@ the_data
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-val safegraph = get_safegraph_data(spark,"7","1","argentina")
+
+//setting timezone depending on country
+spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+
+val today = (java.time.LocalDate.now).toString
+
+// Vamos a sacarle uno de precisión al geohash para que nos queden áreas de 2 dígitos, nos quedan 7 ≤ 153m × 153m
+//No, mejor dejemos los 8. Son áreas chicas. YA si comparten ese geo_hash estamos seguros de que estuvieron cerca, despuués podemos aumentarlo.
+
+//Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
+//Esto es safegraph pelado los uĺtimos X dáis
+
+val raw = get_safegraph_data(spark,"14","1","argentina")
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
+//.withColumn("geo_hashito",substring(col("geo_hash"), 0, 7)) 
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Hour", date_format(col("Time"), "HH"))
+.drop("Time")
+//A safegraph pelado hay que filtrarlo con lo de abajo
 
+//Sólo nos interesan las áreas y las horas que tengan infectados adentro, les joineamos los infectados
+//Levantamos los usarios que detectamos en Ezeiza los últimos 60 días
 val eze = spark.read.option("delimiter","\t").option("header",true).format("csv")
 .load("/datascience/geo/raw_output/Ezeiza_60d_argentina_4-3-2020-18h")
 .select("device_id").distinct
 .withColumn("device_id",lower(col("device_id")))
 
-val infected = eze.join(safegraph,Seq("device_id"))
+//Vamos a usar el Raw de dos maneras, 
+// para 1) buscar y marca los momentos donde vimos infectados y 
+// 2)para levantar a los no infectados
+//Acá unimos el raw pelado con los devices que vimos en ezeiza, de ahí vamos a obtener las áreas y la horas donde circularon los infectados
+val moment = eze.join(raw,Seq("device_id"))
+.select("geo_hashito","hour")
+.distinct()
 
-infected     
+//Esto lo podemos usar como filtro
+
+
+//Ahora podemos volver al raw y filtrar con esto. Sabemos que acá hay infectados
+val contagion = moment.join(raw,Seq("Hour","geo_hash"))
+//Esto ya nos da un "soft contagion", gente que pasó a 20 metros o menos de los infectados.
+
+contagion
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/POIs/EzeizaUsersLifePois")
+.save("/datascience/geo/Reports/GCBA/Coronavirus_Soft_Contagion_%s".format(today))
 
 
 
