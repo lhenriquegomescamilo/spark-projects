@@ -245,6 +245,8 @@ intersection
 }
 
 
+
+
  /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -291,9 +293,9 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/datascience/geo/startapp/2019*",
-        "/datascience/geo/POIs/LasCondesSantiagoChile.json",
-        "chile")
+        "/datascience/geo/NSEHomes/argentina_180d_home_27-2-2020--3h",
+        "/datascience/geo/POIs/Mc_Lista_de_locales_y_direcciones_ENERO_2020.json",
+        "argentina")
 
   }
 }
