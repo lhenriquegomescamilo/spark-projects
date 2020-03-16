@@ -2186,8 +2186,16 @@ object RandomTincho {
 
   def report_dh(spark:SparkSession){
     val pii = spark.read.load("/datascience/pii_matching/pii_tuples/").filter("country = 'BR'")
-    val nids = pii.filter("nid_sh2 is not null").select("nid_sh2")
-    val emails = pii.filter("ml_sh2 is not null").select("ml_sh2")
+    val nids = pii.filter("nid_sh2 is not null").select("nid_sh2","device_id")
+    val bridge = spark.read
+                      .format("csv")
+                      .option("header","true")
+                      .load("/data/tmp/Bridge_Linkage_File_Retargetly_LATAM_ALL.csv")
+                      .withColumnRenamed("email_sha256","ml_sh2")
+                      .withColumnRenamed("advertising_id","device_id")
+                      .select("ml_sh2","device_id")
+
+    val emails = pii.filter("ml_sh2 is not null").select("ml_sh2","device_id").union(bridge)
     val all_piis = nids.withColumnRenamed("nid_sh2","pii").union(emails.withColumnRenamed("ml_sh2","pii"))
 
     val mapeo = Map("241141" -> "3862661122c5864e6b0872554dc76a60",
@@ -2196,19 +2204,22 @@ object RandomTincho {
                     "241147" -> "b1530597217a23c1e76c022ca43261de",
                     "271165" -> "4a5594ff767d0a59b660987cd06f0176")
     val files = List("241141","241143","241145","241147","271165")    
-    var df = None
-    var local_piis = None
+    var df = spark.emptyDataFrame
+    var local_piis = spark.emptyDataFrame
 
     for(f <- files){
-        df = spark.read.format("csv").option("header","true").load("/data/jobs/activator/%s".format(mapeo(f))).withColumnRenamed("ds_email_lower","ml_sh2").withColumnRenamed("nr_cpf","nid_sh2")
+        df = spark.read.format("csv").option("header","true").load("/data/jobs/activator/%s".format(mapeo(f)))
+                  .withColumnRenamed("ds_email_lower","ml_sh2")
+                  .withColumnRenamed("nr_cpf","nid_sh2")
+
         local_piis =  df.select("ml_sh2").withColumnRenamed("ml_sh2","pii").union(df.select("nid_sh2").withColumnRenamed("nid_sh2","pii"))
         
         println(f)
-        println("Total Lines: %s".format(df.count.toString))
+        println("Total Lines: %s".format(df.count))
         println("Total Emails uploaded: %s".format(df.select("ml_sh2").distinct.count))
         println("Total Nids uploaded: %s".format(df.select("nid_sh2").distinct.count))
         println("Nids Matched: %s".format(df.select("nid_sh2").join(nids,Seq("nid_sh2"),"inner").select("nid_sh2").distinct.count))
-        println("Emails Matched: %s".format(df.select("ml_sh2").join(nids,Seq("ml_sh2"),"inner").select("ml_sh2").distinct.count))
+        println("Emails Matched: %s".format(df.select("ml_sh2").join(emails,Seq("ml_sh2"),"inner").select("ml_sh2").distinct.count))
         println("Devices Found: %s".format(all_piis.join(local_piis,Seq("pii"),"inner").select("device_id").distinct.count))
         println("\n")
     
