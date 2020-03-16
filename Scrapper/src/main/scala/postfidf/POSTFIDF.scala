@@ -160,6 +160,8 @@ def getPOS(docs: DataFrame ): DataFrame = {
     * This methods clean and parse keywords, removing stopwords, all digits and lowering them.
    **/    
 
+    // Define udfs to check if all chars are digits
+    def isAllDigits(x: String) = x forall Character.isDigit
     val udfDigit = udf((keyword: String) => if (isAllDigits(keyword)) true else false)
 
     // List of stopwords for spanish, english and portuguese(extraced from nltk library)
@@ -322,7 +324,7 @@ def processText(db: DataFrame ): DataFrame = {
     .getOrCreate()
 
     //main method
-    processText(db)
+    //processText(db)
 
 
 
