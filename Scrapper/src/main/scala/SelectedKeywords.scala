@@ -183,8 +183,9 @@ object SelectedKeywords {
           .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
           .withColumn("kw", lower(col("kw")))
           .withColumn("stem_kw", lower(col("stem_kw")))
+          .withColumn("TFIDF",lit("0"))
 
-    df = df.select("url","domain","kw","stem_kw")
+    df = df.select("url","domain","kw","stem_kw","TFIDF")
            
     df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
@@ -199,13 +200,14 @@ object SelectedKeywords {
     // Format fields and save
     df.groupBy("url","domain")
       .agg(collect_list(col("kw")).as("kw"),
-            collect_list(col("stem_kw")).as("stem_kw"))
+            collect_list(col("stem_kw")).as("stem_kw"),
+            collect_list(col("TFIDF")).as("TFIDF"))
       .withColumn("kw", concat_ws(" ", col("kw")))
       .withColumn("stem_kw", concat_ws(" ", col("stem_kw")))
+      .withColumn("TFIDF", concat_ws(" ", col("TFIDF")))
       .withColumnRenamed("url","url_raw")
       .withColumn("hits",lit(""))
       .withColumn("country",lit(""))
-      .withColumn("TFIDF",lit(""))
       .select("url_raw","hits","country","kw","TFIDF","domain","stem_kw")
       .withColumn("day",lit(today))
       .repartition(1)
