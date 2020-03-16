@@ -170,10 +170,8 @@ object Ranlp {
       .withColumn("tf_idf", col("tf") * col("idf"))
       .join(df,Seq("doc_id"),"left")
 
-    tfidf_docs.
-    .orderBy(desc("tf_idf"))  // el order va acá?
-    .groupBy("url")
-    .agg(collect_list("token").as("kws"),collect_list("tf_idf").as("tfidf"))  //es necesario?
+    tfidf_docs.groupBy("url")
+    .agg(collect_list("token").as("kws"),collect_list("tf_idf").as("tfidf"))
     .select("url","kws","tfidf")
     .withColumn("kws",getString(col("kws")))
     .withColumn("tfidf",getString(col("tfidf")))
