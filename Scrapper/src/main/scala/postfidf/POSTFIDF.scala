@@ -25,7 +25,7 @@ import scala.math.log
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object Ranlp {
+object POSTFIDF {
 
 
 
@@ -36,7 +36,7 @@ object Ranlp {
   /*****************************************************/
   def main(args: Array[String]) {
     val spark = SparkSession.builder
-    .appName("Ranlp")
+    .appName("POSTFIDF")
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
