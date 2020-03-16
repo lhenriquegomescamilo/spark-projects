@@ -20,6 +20,8 @@ import org.apache.spark.ml.Pipeline
 
 import scala.math.log
 
+import org.apache.commons.lang3.StringUtils
+
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -77,8 +79,6 @@ val tokenizer = new Tokenizer()
 .setOutputCol("token")
 .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
 .setTargetPattern("^a-zA-Z0-9")
-
-// lo que no se bien es el tema de las ñ
 
 val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
 
@@ -221,6 +221,8 @@ def getPOS(docs: DataFrame ): DataFrame = {
                           "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't",
                           "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves")
 
+val stripAccents = udf((kw: String) => StringUtils.stripAccents(kw))
+
 def cleanseKws(df_pos: DataFrame ): DataFrame = {
     var df_clean = df_pos
     .withColumn("kw", lower(col("kw")))  
@@ -231,6 +233,8 @@ def cleanseKws(df_pos: DataFrame ): DataFrame = {
           .filter("digit = false")
            
     df_clean = df_clean.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
+
+    df_clean = df_clean.withColumn("kw", stripAccents(col("kw"))) //remove accents ñ's, no se si el tokenizer ya lo hace.
 
     df_clean
 
