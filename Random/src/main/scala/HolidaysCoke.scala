@@ -242,7 +242,7 @@ def get_safegraph_data(
     .load(path_homes)
     .toDF("device_id","device_type","freq","else","lat_home","lon_home")
     .select("device_id","device_type")
-    .withColumn("device_type",mapUDF_homes(col("device_type")))  
+    .withColumn("device_type",mapUDF(col("device_type")))  
 
     val path_homes_xd = "/datascience/geo/NSEHomes/PE_180d_home_27-2-2020--3h_xd"
     val homes_xd = spark.read.format("csv")
@@ -250,7 +250,7 @@ def get_safegraph_data(
     .option("header",true)
     .load(path_homes_xd)
     .select("device_id","device_type")
-    .withColumn("device_type",mapUDF_homes(col("device_type")))  
+    .withColumn("device_type",mapUDF(col("device_type")))  
 
     val homes = List(homes_madid,homes_xd).reduce(_.unionByName (_)).withColumn("device_type",mapUDF(col("device_type"))) 
     
