@@ -296,7 +296,7 @@ def getTFIDF(df_clean: DataFrame ): DataFrame = {
 
 def processText(db: DataFrame ): DataFrame = {
     
-    val docs = db.select("url","text")
+    val docs = db.select("url","text","domain")
                 .na.drop()
 
     val df_pos = getPOS(docs)
@@ -306,10 +306,11 @@ def processText(db: DataFrame ): DataFrame = {
     val tfidf_docs = getTFIDF(df_clean)
 
     val df_final = tfidf_docs
-    .withColumn("stem_kw",lit(""))
     .withColumnRenamed("token","kw")
-    //column domain??
-
+    .withColumn("stem_kw",lit(""))
+    .join(docs,Seq("url"),"left")
+    .select("url","domain","kw","stem_kw")
+    
     df_final
 }  
 
