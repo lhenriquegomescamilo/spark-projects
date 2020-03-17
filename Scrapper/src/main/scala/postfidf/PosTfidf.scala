@@ -247,14 +247,14 @@ def cleanseKws(df_pos: DataFrame ): DataFrame = {
 def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     val docCount = df_clean.select("url").distinct.count
 
-    val unfoldedDocs = df_clean.withColumnRenamed("kw", "token").withColumn("count",lit(1))
+    val unfoldedDocs = df_clean.withColumn("count",lit(1))
 
     //TF: times token appears in document
-    val tokensWithTf = unfoldedDocs.groupBy("url", "token")
+    val tokensWithTf = unfoldedDocs.groupBy("url", "kw")
       .agg(count("count") as "TF")
 
     //DF: number of documents where a token appears
-    val tokensWithDf = unfoldedDocs.groupBy("token")
+    val tokensWithDf = unfoldedDocs.groupBy("kw")
       .agg(approx_count_distinct(col("url"), 0.02).as("DF"))
 
     //IDF: logarithm of (Total number of documents divided by DF) . How common/rare a word is.
@@ -269,7 +269,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     //TF-IDF: score of a word in a document.
     //The higher the score, the more relevant that word is in that particular document.
     val tfidf_docs = tokensWithTf
-      .join(tokensWithIdf, Seq("token"), "left")
+      .join(tokensWithIdf, Seq("kw"), "left")
       .withColumn("TFIDF", col("tf") * col("idf"))
       .join(df_clean,Seq("url"),"left")
 
@@ -298,7 +298,6 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
     val tfidf_docs = getTFIDF(df_clean,spark)
 
     val df_final = tfidf_docs
-    .withColumnRenamed("token","kw")
     .withColumn("stem_kw",col("kw"))
     .join(docs,Seq("url"),"left")
     .select("url","domain","kw","stem_kw","TFIDF")
