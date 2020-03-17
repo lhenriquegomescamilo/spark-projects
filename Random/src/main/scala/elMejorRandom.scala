@@ -1173,89 +1173,31 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
 
-//Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
+//Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geoh y por hora    
 //Esto es safegraph pelado los uĺtimos X dáis
 val raw = get_safegraph_data(spark,"17","1","argentina")
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
-//.withColumn("geo_hashito",substring(col("geo_hash"), 0, 7)) 
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Hour", date_format(col("Time"), "HH"))
-.drop("Time")
-//A safegraph pelado hay que filtrarlo con lo de abajo
+.withColumn("Day", date_format(col("Time"), "MM-dd"))
 
-//Sólo nos interesan las áreas y las horas que tengan infectados adentro, les joineamos los infectados
-//Levantamos los usarios que detectamos en Ezeiza los últimos 60 días
-val eze = spark.read.option("delimiter","\t").option("header",true).format("csv")
-.load("/datascience/geo/raw_output/Ezeiza_30d_argentina_17-3-2020-11h")
-.select("device_id").distinct
-.withColumn("device_id",lower(col("device_id")))
-
-raw.persist()
-eze.persist()
-
-//Soft Contagion. Vamos a quedarnos con gente que estuvo en el mismo grid que los infectados en la misma hora
-
-//Vamos a usar el Raw de dos maneras, 
-// para 1) buscar y marca los momentos donde vimos infectados y 
-// 2)para levantar a los no infectados
-//Acá unimos el raw pelado con los devices que vimos en ezeiza, de ahí vamos a obtener las áreas y la horas donde circularon los infectados
-val moment = eze.join(raw,Seq("device_id"))
-.select("geo_hash","hour")
-.distinct()
-
-//Esto lo podemos usar como filtro
+val geohash_travel = raw.groupBy("Day","device_id").agg(countDistinct("geo_hash") as "geo_hash",count("utc_timestamp") as "detections")
+val geohash_travel_agg =  geohash_travel.groupBy("Day").agg(count("device_id") as "devices",avg(col("detections")) as "detections_avg",avg(col("geo_hash")) as "geo_hash_avg")
 
 
-//Ahora podemos volver al raw y filtrar con esto. Sabemos que acá hay infectados
-val soft_contagion = moment.join(raw,Seq("Hour","geo_hash"))
-//Esto ya nos da un "soft contagion", gente que pasó a 20 metros o menos de los infectados.
 
-
-//Medium contagion. 
-//Similar al anterior, pero sólo nos quedamos con grids donde los infectados hayan estado quietos al menos 15 minutos
-//Vamos ahora a calcular una permanencia mínima en el grid. Al menos 15 minutos en el grid.
-
-val permanency = 15 //En minutos
-val hasUsedPoi = udf((timestamps: Seq[String]) =>
-        ((timestamps.slice(1, timestamps.length) zip timestamps).map(
-          t =>
-            (t._1.toInt - t._2.toInt < (permanency.toInt * 60)) ).exists(b=>b==true)
-            ))
-
-//Pedimos que tengan al menos dos detecciones en el area y después le preguntamos si estuvieron al menos X tiempo
-val moment_sesil = eze.join(raw,Seq("device_id"))
-.groupBy("geo_hash","Hour","device_id").agg(collect_list("utc_timestamp") as "timelist")
-.filter(size(col("timelist"))>1)
-.withColumn("sesil",hasUsedPoi(col("timelist")))
-.filter("sesil == true")
-.select("geo_hash","Hour").distinct()
-
-//Ahora podemos volver al raw y filtrar con esto. Sabemos que acá hay infectados
-//Y a estos ahora les hacemos ella misma pregunta de tiempo
-val medium_contagion = moment.join(raw,Seq("Hour","geo_hash"))
-.groupBy("geo_hash","Hour","device_id").agg(collect_list("utc_timestamp") as "timelist")
-.filter(size(col("timelist"))>1)
-.withColumn("sesil",hasUsedPoi(col("timelist")))
-.filter("sesil == true")
-.drop("timelist")
-
-//Hard contagion
-//Proximamente
-
-
-soft_contagion
+geohash_travel
 .write
 .mode(SaveMode.Overwrite)
 .format("parquet")
-.save("/datascience/geo/Reports/GCBA/Coronavirus/soft_contagion_%s".format(today))
+.save("/datascience/geo/Reports/GCBA/Coronavirus/geohash_travel_%s".format(today))
 
 
-medium_contagion
+geohash_travel_agg
 .write
 .mode(SaveMode.Overwrite)
 .format("parquet")
-.save("/datascience/geo/Reports/GCBA/Coronavirus/Coronavirus/medium_contagion_%s".format(today))
+.save("/datascience/geo/Reports/GCBA/Coronavirus/geohash_travel_agg_%s".format(today))
 
 
 
