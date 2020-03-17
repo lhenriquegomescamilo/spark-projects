@@ -234,9 +234,10 @@ def cleanseKws(df_pos: DataFrame ): DataFrame = {
                 .filter("kw is not null")
 
   df_clean.show()
+  df_clean.printSchema
   df_clean = df_clean.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
-        .filter("digit = false")
-        
+                      .filter("digit = false")
+
   df_clean.show()           
   df_clean = df_clean.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
   df_clean.show()
@@ -310,7 +311,6 @@ def processText(db: DataFrame ): DataFrame = {
                 .na.drop()
 
     val df_pos = getPOS(docs)
-    df_pos.show()
 
     val df_clean = cleanseKws(df_pos)
     df_clean.show()

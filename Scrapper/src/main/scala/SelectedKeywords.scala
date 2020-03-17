@@ -141,6 +141,7 @@ object SelectedKeywords {
                                            col("twitter_title"),lit(" "),
                                            col("twitter_description")).as("content")
                                     )
+    data_parsed.cache()
 
     // Tokenize parsed data in list of words
     var document = new DocumentAssembler().setInputCol("content")
