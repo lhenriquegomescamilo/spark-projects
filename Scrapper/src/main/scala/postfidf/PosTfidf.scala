@@ -1,4 +1,5 @@
 package main.scala
+package main.scala.postfidf
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
@@ -27,7 +28,7 @@ import org.apache.commons.lang3.StringUtils
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object POSTFIDF {
+object PosTfidf {
 
 
 /**
