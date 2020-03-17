@@ -203,7 +203,7 @@ object SelectedKeywords {
            
     df = df.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
 
-    df = df.dropDuplicates()
+    df = df.dropDuplicates(Array("url","kw"))
 
     // Format fields and save
     df.groupBy("url","domain")
