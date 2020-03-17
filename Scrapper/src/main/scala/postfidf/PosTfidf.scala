@@ -123,12 +123,7 @@ df.show()
 */
 
 
-val pipeline = new Pipeline().setStages(Array(
-    documentAssembler,
-    sentenceDetector,
-    tokenizer,
-    posTagger
-))  
+
 
 def getWord =
       udf(
@@ -140,14 +135,18 @@ def getString =
 udf((array: Seq[String]) => array.map(_.toString).mkString(","))    
 
 
-def getPOS(docs: DataFrame ): DataFrame = {
+def getPOS(docs: DataFrame ){
+  
     val df_pos = pipeline.fit(docs).transform(docs)
       .withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
       .withColumn("kw", getWord(col("metadata")))
       .select("url","kw","result")
       .filter("result = 'NOUN' or result = 'PROPN'")
 
-    df_pos
+    df_pos.write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/scraper/tmp/pos_chkpt")
 
   }
 
@@ -221,7 +220,7 @@ def getPOS(docs: DataFrame ): DataFrame = {
 
 
 
-def cleanseKws(df_pos: DataFrame ): DataFrame = {
+def cleanseKws(df_pos: DataFrame ){
   val stripAccents = udf((kw: String) => StringUtils.stripAccents(kw))
   var df_clean = df_pos
                 .withColumn("kw", lower(col("kw")))  
@@ -231,7 +230,10 @@ def cleanseKws(df_pos: DataFrame ): DataFrame = {
 
   df_clean = df_clean.withColumn("kw", stripAccents(col("kw"))) //remove accents ñ's, no se si el tokenizer ya lo hace.
   
-  df_clean
+  df_clean.write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/scraper/tmp/clean_chkpt")
 
   }
 
@@ -244,7 +246,7 @@ def cleanseKws(df_pos: DataFrame ): DataFrame = {
     * This Method calculates tdfidf manually for each keyword.
    **/          
 
-def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
+def getTFIDF(df_clean: DataFrame, spark:SparkSession ){
     val docCount = df_clean.select("url").distinct.count
 
     val unfoldedDocs = df_clean.withColumn("count",lit(1))
@@ -281,12 +283,14 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     val vNormalized = ($"tf_idf" - vMin) / (vMax - vMin) // v normalized to (0, 1) range
 
     val tfidf_threshold  = 0.5
-
-    tfidf_docs
-    .withColumn("TFIDF", vNormalized)
-    .filter("TFIDF>=%s".format(tfidf_threshold))
-    .select("url","kw","TFIDF")  
-
+    tfidf_docs.show()
+    tfidf_docs.withColumn("TFIDF", vNormalized)
+              .filter("TFIDF>=%s".format(tfidf_threshold))
+              .select("url","kw","TFIDF")
+              .write
+              .format("parquet")
+              .mode(SaveMode.Overwrite)
+              .save("/datascience/scraper/tmp/tfidf_chkpt")
 
   }
 
@@ -304,12 +308,15 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
     val docs = db.select("url","text","domain")
                 .na.drop()
 
-    val df_pos = getPOS(docs)
-
-    val df_clean = cleanseKws(df_pos)
-
-    val tfidf_docs = getTFIDF(df_clean,spark)
-
+    getPOS(docs)
+    val df_pos = spark.read.load("/datascience/scraper/tmp/pos_chkpt")
+    df_pos.show()
+    cleanseKws(df_pos)
+    val df_clean = spark.read.load("/datascience/scraper/tmp/clean_chkpt")
+    df_clean.show()
+    getTFIDF(df_clean,spark)
+    val tfidf_docs = spark.read.load("/datascience/scraper/tmp/tfidf_chkpt")
+    tfidf_docs.show()
     val df_final = tfidf_docs
     .withColumn("stem_kw",col("kw"))
     .join(docs,Seq("url"),"left")
@@ -328,8 +335,6 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    //main method
-    //processText(db)
 
   }
 }
