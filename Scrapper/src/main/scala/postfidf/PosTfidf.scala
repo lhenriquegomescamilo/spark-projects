@@ -1,4 +1,3 @@
-package main.scala
 package main.scala.postfidf
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.sql.functions._
