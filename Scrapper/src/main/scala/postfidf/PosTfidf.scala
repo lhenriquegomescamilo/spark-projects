@@ -225,17 +225,17 @@ val stripAccents = udf((kw: String) => StringUtils.stripAccents(kw))
 
 def cleanseKws(df_pos: DataFrame ): DataFrame = {
     var df_clean = df_pos
-    .withColumn("kw", lower(col("kw")))  
-    .withColumn("len",length(col("kw"))) // Filter longitude of words
-    .filter("len > 2 and len < 18" )
-            
+                  .withColumn("kw", lower(col("kw")))  
+                  .withColumn("len",length(col("kw"))) // Filter longitude of words
+                  .filter("len > 2 and len < 18" )
+    df_clean.show()
     df_clean = df_clean.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
           .filter("digit = false")
-           
+    df_clean.show()           
     df_clean = df_clean.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
-
+    df_clean.show()
     df_clean = df_clean.withColumn("kw", stripAccents(col("kw"))) //remove accents ñ's, no se si el tokenizer ya lo hace.
-
+    df_clean.show()
     df_clean
 
   }
