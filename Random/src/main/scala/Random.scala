@@ -4985,54 +4985,90 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    import org.apache.spark.sql.expressions.Window
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
-    val raw_data = spark.read.format("parquet").load("/datascience/custom/devices_cruces_raw_data_geo/")
+    //Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora
+    //Esto es safegraph pelado los uĺtimos X dáis
+    val raw = spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/geo/safegraph/")
+      .load(
+        "/datascience/geo/safegraph/day=202003*/country=argentina/"
+      )
+      .withColumnRenamed("ad_id", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+      .withColumn("geo_hashito", substring(col("geo_hash"), 0, 7))
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+      .withColumn("window", date_format(col("Time"), "mm"))
+      .withColumn(
+        "window",
+        when(col("window") > 40, 3)
+          .otherwise(when(col("window") > 20, 2).otherwise(1))
+      )
+      .withColumn("window", concat(col("Hour"), col("window")))
+      .drop("Time")
+    //A safegraph pelado hay que filtrarlo con lo de abajo
+    raw.persist()
 
-    // Calculating the speed
-    val windowSpec = Window.partitionBy("ad_id").orderBy("utc_timestamp")
+    //Sólo nos interesan las áreas y las horas que tengan infectados adentro, les joineamos los infectados
+    //Levantamos los usarios que detectamos en Ezeiza los últimos 60 días
+    val eze = spark.read
+      .option("delimiter", "\t")
+      .option("header", true)
+      .format("csv")
+      .load("/datascience/geo/raw_output/Ezeiza_30d_argentina_17-3-2020-11h")
+      .select("device_id")
+      .distinct
+      .withColumn("device_id", lower(col("device_id")))
 
-    val spacelapse = raw_data
-      .withColumn("latituderad", toRadians(col("latitude")))
-      .withColumn("longituderad", toRadians(col("longitude")))
-      .withColumn(
-        "deltaLat",
-        col("latituderad") - lag("latituderad", 1).over(windowSpec)
-      )
-      .withColumn(
-        "deltaLong",
-        col("longituderad") - lag("longituderad", 1).over(windowSpec)
-      )
-      .withColumn("a1", pow(sin(col("deltaLat") / 2), 2))
-      .withColumn(
-        "a2",
-        cos(col("latituderad")) * cos(lag("latituderad", 1).over(windowSpec)) * col(
-          "deltaLong"
-        ) / 2
-      )
-      .withColumn("a", pow(col("a1") + col("a2"), 2))
-      .withColumn("greatCircleDistance1", (sqrt(col("a")) * 2))
-      .withColumn("greatCircleDistance2", (sqrt(lit(1) - col("a"))))
-      .withColumn(
-        "distance",
-        atan2(col("greatCircleDistance1"), col("greatCircleDistance2")) * 6371 * 1000
-      )
-      .withColumn(
-        "timeDelta",
-        (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec))
-      )
-      .withColumn("speed_km", col("distance") * 3.6 / col("timeDelta"))
+    eze.persist()
+
+    eze
+      .join(raw, Seq("device_id"))
       .select(
-        "ad_id",
-        "utc_timestamp",
+        "device_id",
         "latitude",
         "longitude",
-        "distance",
-        "timeDelta",
-        "speed_km"
+        "geo_hash",
+        "utc_timestamp",
+        "geo_hash",
+        "window"
       )
-      .withColumn("Vehicle", when(col("speed_km") > 15, 1).otherwise(0))
-    
-    spacelapse.write.format("parquet").save("/datascience/custom/devices_cruces_speed")
+      .write
+      .format("parquet")
+      .save("/datascience/custom/geo_ezeiza_all_points")
+
+    //Soft Contagion. Vamos a quedarnos con gente que estuvo en el mismo grid que los infectados en la misma hora
+    //Vamos a usar el Raw de dos maneras,
+    // para 1) buscar y marca los momentos donde vimos infectados y
+    // 2)para levantar a los no infectados
+    //Acá unimos el raw pelado con los devices que vimos en ezeiza, de ahí vamos a obtener las áreas y la horas donde circularon los infectados
+    val moment = spark.read
+      .load("/datascience/custom/geo_ezeiza_all_points")
+      .select("geo_hashito", "window")
+      .distinct()
+      .cache()
+
+    moment.write
+      .format("parquet")
+      .save("/datascience/custom/geo_ezeiza_hashes_and_times")
+
+    raw
+      .join(broadcast(moment), Seq("geo_hashito", "window"))
+      .join(eze, Seq("device_id"), "left_anti")
+      .select(
+        "device_id",
+        "latitude",
+        "longitude",
+        "geo_hash",
+        "utc_timestamp",
+        "geo_hash",
+        "window"
+      )
+      .write
+      .format("parquet")
+      .save("/datascience/custom/geo_ezeiza_contacts_all_points")
   }
 }
