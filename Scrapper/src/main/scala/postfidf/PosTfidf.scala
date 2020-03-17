@@ -258,10 +258,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
 
     val docCount = df.count().toInt
 
-    val columns = df.columns.map(col) :+
-        (explode(col("document")) as "token")
-
-    val unfoldedDocs = df.select(columns: _*)
+    val unfoldedDocs = df.withColumn("token", explode(col("document")))
 
     //TF: times token appears in document
     val tokensWithTf = unfoldedDocs.groupBy("doc_id", "token")
