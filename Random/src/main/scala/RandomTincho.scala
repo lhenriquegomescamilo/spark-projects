@@ -2191,6 +2191,7 @@ object RandomTincho {
                       .format("csv")
                       .option("header","true")
                       .load("/data/tmp/Bridge_Linkage_File_Retargetly_LATAM_ALL.csv")
+                      .filter("country = 'br'")
                       .withColumnRenamed("email_sha256","ml_sh2")
                       .withColumnRenamed("advertising_id","device_id")
                       .select("ml_sh2","device_id")
@@ -2227,7 +2228,7 @@ object RandomTincho {
   }
 
 def get_numbers(spark:SparkSession){
-  val pii = spark.read.load("/datascience/pii_matching/pii_tuples/").filter("country = 'BR'")
+  val pii = spark.read.load("/datascience/pii_matching/pii_tuples/day=2020*").filter("country = 'BR'")
   val nids = pii.filter("nid_sh2 is not null").select("nid_sh2","device_id")
   val bridge = spark.read
                       .format("csv")
@@ -2238,7 +2239,7 @@ def get_numbers(spark:SparkSession){
                       .withColumnRenamed("advertising_id","device_id")
                       .select("ml_sh2","device_id")
 
-  val emails = pii.filter("ml_sh2 is not null").select("ml_sh2","device_id").union(bridge)
+  val emails = pii.filter("ml_sh2 is not null").select("ml_sh2","device_id")//.union(bridge)
   val all_piis = nids.withColumnRenamed("nid_sh2","pii").union(emails.withColumnRenamed("ml_sh2","pii"))
 
   println("Mails Uniques: %s".format(emails.select("ml_sh2").distinct.count))
