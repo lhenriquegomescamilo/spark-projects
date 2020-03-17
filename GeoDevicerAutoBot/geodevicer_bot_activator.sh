@@ -8,10 +8,10 @@ for json in $(hdfs dfs -ls -C /datascience/geo/geodevicer_bot/to_process); do
   --master yarn\
   --deploy-mode cluster\
   --driver-memory 8g \
-  --executor-memory 10g \
-  --num-executors 12 \
-  --executor-cores 2 \
-  --queue default \
+  --executor-memory 12g \
+  --num-executors 8 \
+  --executor-cores 4 \
+  --queue spark \
   --jars geospark-1.1.3.jar,geospark-sql_2.3-1.1.3.jar,geospark-viz-1.1.3.jar\
   --conf spark.serializer=org.apache.spark.serializer.KryoSerializer\
   --conf spark.kryo.registrator=org.datasyslab.geosparkviz.core.Serde.GeoSparkVizKryoRegistrator \

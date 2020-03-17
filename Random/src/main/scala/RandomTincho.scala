@@ -2101,7 +2101,7 @@ object RandomTincho {
 
   }
   def reprocess_dumps(spark:SparkSession){
-    val files = List("2020-01-31_daily","2020-02-01_daily","2020-02-02_daily","2020-02-03_daily","2020-02-04_daily","2020-02-05_daily","2020-02-06_daily","2020-02-07_daily","2020-02-08_daily",
+    val files = List("2020-02-03_daily","2020-02-04_daily","2020-02-05_daily","2020-02-06_daily","2020-02-07_daily","2020-02-08_daily",
                     "2020-02-09_daily","2020-02-10_daily")
     val udfParse = udf((meta: String,field:String) => {
       def get_field(meta:String,field:String):String = {
@@ -2152,9 +2152,103 @@ object RandomTincho {
             .mode("append")
             .partitionBy("day","hour")
             .save("/datascience/scraper/parsed/processed")
-}
+  }
 
   }
+
+  def licensing_publicis(spark:SparkSession){
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(0)
+    val days = (0 until 30).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments"
+
+
+    val segments = List("104014","104015","104016","104017","104018","104019","98946","3013","150","147")
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=MX".format(day)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .withColumnRenamed("feature","segment")
+      .filter(col("segment").isin(segments: _*))
+
+    df.groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.03).as("devices")).show()
+
+  }
+
+  def report_dh(spark:SparkSession){
+    val pii = spark.read.load("/datascience/pii_matching/pii_tuples/").filter("country = 'BR'")
+    val nids = pii.filter("nid_sh2 is not null").select("nid_sh2","device_id")
+    val bridge = spark.read
+                      .format("csv")
+                      .option("header","true")
+                      .load("/data/tmp/Bridge_Linkage_File_Retargetly_LATAM_ALL.csv")
+                      .filter("country = 'br'")
+                      .withColumnRenamed("email_sha256","ml_sh2")
+                      .withColumnRenamed("advertising_id","device_id")
+                      .select("ml_sh2","device_id")
+
+    val emails = pii.filter("ml_sh2 is not null").select("ml_sh2","device_id").union(bridge)
+    val all_piis = nids.withColumnRenamed("nid_sh2","pii").union(emails.withColumnRenamed("ml_sh2","pii"))
+
+    val mapeo = Map("241141" -> "3862661122c5864e6b0872554dc76a60",
+                    "241143" -> "62aafe9b6c0cbe3331381982616fab53",
+                    "241145" -> "67f6425c910c0a6f5feed81e1094b8be",
+                    "241147" -> "b1530597217a23c1e76c022ca43261de",
+                    "271165" -> "4a5594ff767d0a59b660987cd06f0176")
+    val files = List("241141","241143","241145","241147","271165")    
+    var df = spark.emptyDataFrame
+    var local_piis = spark.emptyDataFrame
+
+    for(f <- files){
+        df = spark.read.format("csv").option("header","true").load("/data/jobs/activator/%s".format(mapeo(f)))
+                  .withColumnRenamed("ds_email_lower","ml_sh2")
+                  .withColumnRenamed("nr_cpf","nid_sh2")
+
+        local_piis =  df.select("ml_sh2").withColumnRenamed("ml_sh2","pii").union(df.select("nid_sh2").withColumnRenamed("nid_sh2","pii"))
+        
+        println(f)
+        println("Total Lines: %s".format(df.count))
+        println("Total Emails uploaded: %s".format(df.select("ml_sh2").distinct.count))
+        println("Total Nids uploaded: %s".format(df.select("nid_sh2").distinct.count))
+        println("Nids Matched: %s".format(df.select("nid_sh2").join(nids,Seq("nid_sh2"),"inner").select("nid_sh2").distinct.count))
+        println("Emails Matched: %s".format(df.select("ml_sh2").join(emails,Seq("ml_sh2"),"inner").select("ml_sh2").distinct.count))
+        println("Devices Found: %s".format(all_piis.join(local_piis,Seq("pii"),"inner").select("device_id").distinct.count))
+        println("\n")
+    
+}
+  }
+
+def get_numbers(spark:SparkSession){
+  val pii = spark.read.load("/datascience/pii_matching/pii_tuples/day=2020*").filter("country = 'BR'")
+  val nids = pii.filter("nid_sh2 is not null").select("nid_sh2","device_id")
+  val mobs = pii.filter("mb_sh2 is not null").select("mb_sh2","device_id")
+  val bridge = spark.read
+                      .format("csv")
+                      .option("header","true")
+                      .load("/data/tmp/Bridge_Linkage_File_Retargetly_LATAM_ALL.csv")
+                      .filter("country = 'br'")
+                      .withColumnRenamed("email_sha256","ml_sh2")
+                      .withColumnRenamed("advertising_id","device_id")
+                      .select("ml_sh2","device_id")
+
+  val emails = pii.filter("ml_sh2 is not null").select("ml_sh2","device_id")//.union(bridge)
+  val all_piis = nids.withColumnRenamed("nid_sh2","pii").union(emails.withColumnRenamed("ml_sh2","pii"))
+
+  //println("Mails Uniques: %s".format(emails.select("ml_sh2").distinct.count))
+  //println("Nids Uniques: %s".format(nids.select("nid_sh2").distinct.count))
+  println("Nids Uniques: %s".format(mobs.select("mb_sh2").distinct.count))
+  
+}
+
 
   def main(args: Array[String]) {
      
@@ -2167,7 +2261,7 @@ object RandomTincho {
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    reprocess_dumps(spark)
+    get_numbers(spark)
     
   }
 

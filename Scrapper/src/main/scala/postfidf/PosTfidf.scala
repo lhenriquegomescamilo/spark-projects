@@ -1,74 +1,170 @@
-package main.scala
-import main.scala.postfidf.PosTfidf
-import org.apache.spark.sql.SparkSession
+package main.scala.postfidf
+import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.SaveMode
-import org.apache.spark.ml.Pipeline
-import org.joda.time.Days
-import org.apache.spark._
-import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer}
-import com.johnsnowlabs.nlp.{DocumentAssembler,Finisher}
-import org.apache.spark.ml.feature.RegexTokenizer
-import org.apache.commons.lang3.StringUtils
-import scala.collection.mutable.WrappedArray
-import org.apache.hadoop.conf.Configuration
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions._
-import org.joda.time.DateTime
-import org.apache.spark.sql.{SaveMode, DataFrame}
-import org.apache.spark.sql.functions.broadcast
-import org.apache.spark.sql.functions.{
-  upper,
-  count,
-  col,
-  abs,
-  udf,
-  regexp_replace,
-  split,
-  lit,
-  explode,
-  length,
-  to_timestamp,
-  from_unixtime,
-  date_format,
-  sum
-}
-import org.apache.hadoop.fs.Path
+import org.apache.spark.sql.types._
+
+import org.joda.time.{Days, DateTime}
+
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.{SaveMode, DataFrame}
+import org.apache.hadoop.conf.Configuration
+
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.types.{
- StructType,
- StructField,
- StringType,
- IntegerType
-}
-import org.apache.spark.sql.{Column, Row}
-import scala.util.Random.shuffle
+
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.ml.Pipeline
+import com.johnsnowlabs.nlp._
+import com.johnsnowlabs.nlp.annotator.{PerceptronModel, SentenceDetector, Tokenizer, Normalizer}
+
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.ml.Pipeline
+
+import scala.math.log
+
+import org.apache.commons.lang3.StringUtils
+
 
 /**
-  * The idea of this script is to Ingest Urls daily to local servers for Scrapper.
+  * The idea of this script is to run random stuff. Most of the times, the idea is
+  * to run quick fixes, or tests.
   */
-object SelectedKeywords {
-  def tokenize( dfContent: DataFrame) = {
-    val stripAccents = udf((text: String) => StringUtils.stripAccents(text))
-
-    var df = dfContent.withColumn("tokenizer_input", stripAccents(col("content")))
+object PosTfidf {
 
 
-    val regexTokenizer = new RegexTokenizer()
-    .setInputCol("tokenizer_input")
-    .setOutputCol("words")
-    .setPattern("[^a-zA-Z0-9]")
+/**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR LOADING DATA     //////////////////////
+    *
+    */
+   /**
+    * (Method Not used)
+   **/   
 
-    df = regexTokenizer.transform(df).drop("tokenizer_input")
-    df
+def getData(
+      spark: SparkSession,
+      date: String) = {
+
+    val path = "/datascience/scraper/parsed/processed/day=%s".format(date)
+
+    val doc = spark.read
+            .format("parquet")
+            .option("header", "True")
+            .option("sep", "\t")
+            .load(path)
+            .select("url","text")
+            .na.drop()
+
+    doc
   }
 
-  def selected_keywords(spark: SparkSession) {
-    // Define udfs to check if all chars are digits
-    def isAllDigits(x: String) = x forall Character.isDigit
-    val udfDigit = udf((keyword: String) => if (isAllDigits(keyword)) true else false)
+/**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\     PIPELINE FOR POS     //////////////////////
+    *
+    */
+   /**
+    * This series of methods build a pipeline for Part of Speech Tagging.
+   **/    
+
+val documentAssembler = new DocumentAssembler()               
+                        .setInputCol("text")     
+                        .setOutputCol("document")     
+                        .setCleanupMode("shrink")
+
+val sentenceDetector = new SentenceDetector()
+.setInputCols("document")
+.setOutputCol("sentence")
+
+val tokenizer = new Tokenizer()
+.setInputCols("sentence")
+.setOutputCol("token")
+.setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
+.setTargetPattern("^a-zA-Z0-9")
+
+val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
+
+val posTagger = spanish_pos
+.setInputCols(Array("sentence", "token"))
+.setOutputCol("pos")
+
+val pipeline = new Pipeline().setStages(Array(
+    documentAssembler,
+    sentenceDetector,
+    tokenizer,
+    posTagger
+))  
+
+/**
+
+// LA FORMA QUE NO PUEDO HACER CAMINAR----------
+
+val finisher = new Finisher()
+.setInputCols("pos")
+.setIncludeMetadata(true)
+.setOutputAsArray(true)
+
+val pipeline = new Pipeline().setStages(Array(
+    documentAssembler,
+    sentenceDetector,
+    tokenizer,       
+    posTagger,
+    finisher
+))
+
+var df = pipeline.fit(doc).transform(doc) 
+
+val udfZip = udf((finished_pos: Seq[String], finished_pos_metadata: Seq[(String,String)]) => finished_pos zip finished_pos_metadata)
+
+val udfGet1 = udf((word: Row, index:String ) => word.getAs[String](index))
+
+val udfGet2 = udf((word: Row, index:String ) => word.getAs[Array[String]](index))
+
+df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
+df.show()
+df = df.withColumn("zipped", explode(col("zipped")))
+df.show()
+df = df.withColumn("tag",udfGet1(col("zipped"),lit("_1")))
+df.show()
+df = df.filter("tag = 'NOUN' or tag = 'PROPN'")
+df.show()
+
+*/
+
+
+def getWord =
+      udf(
+        (mapa: Map[String,String]) =>
+          mapa("word")
+      )
+
+def getString =
+udf((array: Seq[String]) => array.map(_.toString).mkString(","))    
+
+
+def getPOS(docs: DataFrame ){
+  
+    val df_pos = pipeline.fit(docs).transform(docs)
+      .withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
+      .withColumn("kw", getWord(col("metadata")))
+      .select("url","kw","result")
+      .filter("result = 'NOUN' or result = 'PROPN'")
+
+    df_pos.write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/scraper/tmp/pos_chkpt")
+
+  }
+
+/**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR PARSING KEYWORDS     //////////////////////
+    *
+    */
+   /**
+    * This methods clean and parse keywords, removing stopwords, all digits and lowering them.
+   **/    
+
+
 
     // List of stopwords for spanish, english and portuguese(extraced from nltk library)
     val STOPWORDS = List("a", "al", "algo", "algunas", "algunos", "ante", "antes", "como", "con", "contra", "cual", "cuando",
@@ -126,121 +222,123 @@ object SelectedKeywords {
                           "these", "they", "this", "those", "through", "to", "too", "under", "until", "up", "ve", "very", "was", "wasn", "wasn't", "we",
                           "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't",
                           "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves")
+
+
+
+def cleanseKws(df_pos: DataFrame ){
+  val stripAccents = udf((kw: String) => StringUtils.stripAccents(kw))
+  var df_clean = df_pos
+                .withColumn("kw", lower(col("kw")))  
+                .withColumn("len",length(col("kw"))) // Filter longitude of words
+                .filter("len > 2 and len < 18" )
+                .filter("kw is not null")
+
+  df_clean = df_clean.withColumn("kw", stripAccents(col("kw"))) //remove accents ñ's, no se si el tokenizer ya lo hace.
+  
+  df_clean.write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/scraper/tmp/clean_chkpt")
+
+  }
+
+/**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\    TFIDF METHOD    //////////////////////
+    *
+    */
+   /**
+    * This Method calculates tdfidf manually for each keyword.
+   **/          
+
+def getTFIDF(df_clean: DataFrame, spark:SparkSession ){
+    val docCount = df_clean.select("url").distinct.count
+
+    val unfoldedDocs = df_clean.withColumn("count",lit(1))
+
+    //TF: times token appears in document
+    val tokensWithTf = unfoldedDocs.groupBy("url", "kw")
+      .agg(count("count") as "TF")
+
+    //DF: number of documents where a token appears
+    val tokensWithDf = unfoldedDocs.groupBy("kw")
+      .agg(approx_count_distinct(col("url"), 0.02).as("DF"))
+
+    //IDF: logarithm of (Total number of documents divided by DF) . How common/rare a word is.
+    def calcIdf =
+      udf(
+        (docCount: Int,DF: Long) =>
+          log(docCount/DF)
+      )
+
+    val tokensWithIdf = tokensWithDf.withColumn("IDF", calcIdf(lit(docCount),col("DF")))
     
-    val day =  DateTime.now().minusDays(1).toString("yyyyMMdd")
-    val today =  DateTime.now().toString("yyyyMMdd")
-    val data_parsed = spark.read.format("parquet")
-                            .load("/datascience/scraper/parsed/processed/day=%s/".format(day))
-                            .na.fill("")
-                            .select(col("url"), col("domain"),col("text"),
-                                    concat(col("title"), lit(" "),
-                                           col("description"), lit(" "),
-                                           col("keywords"), lit(" "),
-                                           col("og_title"), lit(" "),
-                                           col("og_description"), lit(" "),
-                                           col("twitter_title"),lit(" "),
-                                           col("twitter_description")).as("content")
-                                    )
-    data_parsed.cache()
-
-    // Tokenize parsed data in list of words
-    var document = new DocumentAssembler().setInputCol("content")
-                                          .setOutputCol("document")
-
-    val tokenizer = new Tokenizer().setInputCols("document")
-                                    .setOutputCol("words")
-                                    .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
-                                    .setTargetPattern("^A-Za-z")
-                                    //[^a-zA-Z0-9]
-                  
-    val stemmer = new Stemmer().setInputCols("normalized")
-                              .setOutputCol("stem_kw")
-
-    val normalizer = new Normalizer().setInputCols(Array("words"))
-                                      .setOutputCol("normalized")
-                                      .setLowercase(true)
-                                      .setCleanupPatterns(Array("^A-Za-z"))
-                              
-    val finisher = new Finisher().setInputCols(Array("words","stem_kw"))
-                                .setOutputCols(Array("words","stem_kw"))
-                                .setOutputAsArray(true)
-                           
-
-    val pipeline = new Pipeline().setStages(Array(
-        document,
-        tokenizer,
-        normalizer,
-        stemmer,
-        finisher
-    ))
-
-    val udfZip = udf((words: Seq[String], stemmed: Seq[String]) => words zip stemmed)
-    val udfGet = udf((words: Row, index:String ) => words.getAs[String](index))
-
-    var df_article = pipeline.fit(data_parsed).transform(data_parsed)
-                      .withColumn("zipped",udfZip(col("words"),col("stem_kw")))
-                      .withColumn("zipped", explode(col("zipped")))
-
-    df_article = df_article.withColumn("kw",udfGet(col("zipped"),lit("_1")))
-          .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
-          .withColumn("kw", lower(col("kw")))
-          .withColumn("stem_kw", lower(col("stem_kw")))
-          .withColumn("TFIDF",lit("0"))
-
-    df_article = df_article.select("url","domain","kw","stem_kw","TFIDF")
-
-    // Get pos tagging with TFIDF from text
-    val df_pos = PosTfidf.processText(data_parsed,spark)
-    
-    // Union both dataframes (selected keywords and pos tagging)
-    var df = df_pos.union(df_article)
-
-    df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
-            .filter("len > 2 and len < 18" )
-            
-    df = df.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
-          .filter("digit = false")
-           
-    df = df.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
-
-    df = df.dropDuplicates(Array("url","kw"))
-
-    // Format fields and save
-    df.groupBy("url","domain")
-      .agg(collect_list(col("kw")).as("kw"),
-            collect_list(col("stem_kw")).as("stem_kw"),
-            collect_list(col("TFIDF")).as("TFIDF"))
-      .withColumn("kw", concat_ws(" ", col("kw")))
-      .withColumn("stem_kw", concat_ws(" ", col("stem_kw")))
-      .withColumn("TFIDF", concat_ws(" ", col("TFIDF")))
-      .withColumnRenamed("url","url_raw")
-      .withColumn("hits",lit(""))
-      .withColumn("country",lit(""))
-      .select("url_raw","hits","country","kw","TFIDF","domain","stem_kw")
-      .withColumn("day",lit(today))
-      .repartition(1)
-      .write
-      .format("csv")
-      .mode(SaveMode.Overwrite)
-      .partitionBy("day")
-      .save("/datascience/scraper/selected_keywords")
-
+    //TF-IDF: score of a word in a document.
+    //The higher the score, the more relevant that word is in that particular document.
+    val tfidf_docs = tokensWithTf
+      .join(tokensWithIdf, Seq("kw"), "inner")
+      .withColumn("tf_idf", col("tf") * col("idf"))
+      
+    // Min-Max Normalization and filter by threshold
+    val (vMin, vMax) = tfidf_docs.agg(min(col("tf_idf")), max(col("tf_idf"))).first match {
+      case Row(x: Double, y: Double) => (x, y)
     }
 
-  /*****************************************************/
+    val vNormalized = (col("tf_idf") - vMin) / (vMax - vMin) // v normalized to (0, 1) range
+
+    val tfidf_threshold  = 0.5
+    tfidf_docs.show()
+    tfidf_docs.withColumn("TFIDF", vNormalized)
+              .filter("TFIDF>=%s".format(tfidf_threshold))
+              .select("url","kw","TFIDF")
+              .write
+              .format("parquet")
+              .mode(SaveMode.Overwrite)
+              .save("/datascience/scraper/tmp/tfidf_chkpt")
+
+  }
+
+/**
+    *
+    *         \\\\\\\\\\\\\\\\\\\\\    MAIN METHOD    //////////////////////
+    *
+    */
+   /**
+    * This Method processes text with POS (for Nouns and Proper Nouns) + TFIDF.
+   **/          
+
+def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
+    
+    val docs = db.select("url","text","domain")
+                .na.drop()
+
+    getPOS(docs)
+    val df_pos = spark.read.load("/datascience/scraper/tmp/pos_chkpt")
+    df_pos.show()
+    cleanseKws(df_pos)
+    val df_clean = spark.read.load("/datascience/scraper/tmp/clean_chkpt")
+    df_clean.show()
+    getTFIDF(df_clean,spark)
+    val tfidf_docs = spark.read.load("/datascience/scraper/tmp/tfidf_chkpt")
+    tfidf_docs.show()
+    val df_final = tfidf_docs
+    .withColumn("stem_kw",col("kw"))
+    .join(docs,Seq("url"),"left")
+    .select("url","domain","kw","stem_kw","TFIDF")
+    
+    df_final
+}  
+
+
+ /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
-  def main(Args: Array[String]) {
-    Logger.getRootLogger.setLevel(Level.WARN)
-
-    // First we obtain the Spark session
+  def main(args: Array[String]) {
     val spark = SparkSession.builder
-      .appName("Selected Keywords")
-      .config("spark.sql.files.ignoreCorruptFiles", "true")
-      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
-      .getOrCreate()
+    .appName("POSTFIDF")
+    .config("spark.sql.files.ignoreCorruptFiles", "true")
+    .getOrCreate()
 
-    selected_keywords(spark)
 
   }
 }

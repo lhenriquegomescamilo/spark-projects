@@ -15,6 +15,12 @@ import org.apache.spark.ml.Pipeline
 import com.johnsnowlabs.nlp._
 import com.johnsnowlabs.nlp.annotator.{PerceptronModel, SentenceDetector, Tokenizer, Normalizer}
 
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.ml.Pipeline
+
+import scala.math.log
+
+
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
@@ -36,8 +42,8 @@ object Ranlp {
 
     
     val path = "/datascience/scraper/parsed/processed/day=20200312"
-    val df = spark.read
-            .format("csv")
+    val doc = spark.read
+            .format("parquet")
             .option("header", "True")
             .option("sep", "\t")
             .load(path)
@@ -58,35 +64,52 @@ object Ranlp {
     .setOutputCol("token")
     .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
     .setTargetPattern("^a-zA-Z0-9")
-    //.setTargetPattern("^A-Za-z")
-    
-    val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
 
+    // lo que no se bien es el tema de las ñ
+
+    val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
 
     val posTagger = spanish_pos
     .setInputCols(Array("sentence", "token"))
     .setOutputCol("pos")
 
+    /**
+
+    // LA FORMA QUE NO PUEDO HACER CAMINAR----------
 
     val finisher = new Finisher()
     .setInputCols("pos")
-    .setIncludeMetadata(true) // set to False to remove metadata
+    .setIncludeMetadata(true)
+    .setOutputAsArray(true)
 
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
         sentenceDetector,
-        tokenizer,
+        tokenizer,       
         posTagger,
         finisher
     ))
 
-    val doc = pipeline.fit(df).transform(df) 
+    var df = pipeline.fit(doc).transform(doc) 
 
-    println(doc.show())
+    val udfZip = udf((finished_pos: Seq[String], finished_pos_metadata: Seq[(String,String)]) => finished_pos zip finished_pos_metadata)
+    
+    val udfGet1 = udf((word: Row, index:String ) => word.getAs[String](index))
 
+    val udfGet2 = udf((word: Row, index:String ) => word.getAs[Array[String]](index))
+    
+    df = df.withColumn("zipped",udfZip(col("finished_pos"),col("finished_pos_metadata")))
+    df.show()
+    df = df.withColumn("zipped", explode(col("zipped")))
+    df.show()
+    df = df.withColumn("tag",udfGet1(col("zipped"),lit("_1")))
+    df.show()
+    df = df.filter("tag = 'NOUN' or tag = 'PROPN'")
+    df.show()
+
+    */
 
     
-    /**
     val pipeline = new Pipeline().setStages(Array(
         documentAssembler,
         sentenceDetector,
@@ -94,11 +117,7 @@ object Ranlp {
         posTagger
     ))
 
-    val doc = pipeline.fit(df).transform(df)
-
-    //println(doc.withColumn("tmp", explode(col("pos"))).select("tmp.*").show())
-
-    //println(doc.show())
+    var df = pipeline.fit(doc).transform(doc)
 
     def getWord =
           udf(
@@ -109,48 +128,61 @@ object Ranlp {
     def getString =
     udf((array: Seq[String]) => array.map(_.toString).mkString(","))
 
-    doc.withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
-      .withColumn("keyword", getWord(col("metadata")))
-      .select("url","keyword","result")
+     
+    df = df.withColumn("tmp", explode(col("pos"))).select("url","tmp.*")
+      .withColumn("words", getWord(col("metadata")))
+      .select("url","words","result")
       .filter("result = 'NOUN' or result = 'PROPN'")
+      .withColumn("words", lower(col("words")))
       .groupBy("url")
-      .agg(collect_list("keyword").as("kws"))
-      .withColumn("kws",getString(col("kws")))
-      .select("url","kws")
-      .write.format("csv")
-      .option("header", "true")
-      .option("sep", "\t")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/testnlp2.csv")
+      .agg(collect_list("words").as("document"))
+      .select("url","document")
+      .withColumn("doc_id", monotonically_increasing_id())  
+
+
+    val docCount = df.count().toInt               
+            
+    val columns = df.columns.map(col) :+
+        (explode(col("document")) as "token")
+    val unfoldedDocs = df.select(columns: _*)
+
+    //TF: times token appears in document
+    val tokensWithTf = unfoldedDocs.groupBy("doc_id", "token")
+      .agg(count("document") as "TF")
+
+    //DF: number of documents where a token appears
+    val tokensWithDf = unfoldedDocs.groupBy("token")
+      .agg(countDistinct("doc_id") as "DF")
+
+    //IDF: logarithm of (Total number of documents divided by DF) . How common/rare a word is.
+    def calcIdf =
+      udf(
+        (docCount: Int,DF: Long) =>
+          log(docCount/DF)
+      )
+
+    val tokensWithIdf = tokensWithDf.withColumn("IDF", calcIdf(lit(docCount),col("DF")))
     
-    **/
-    
-/*
+    //TF-IDF: score of a word in a document.
+    //The higher the score, the more relevant that word is in that particular document.
+    val tfidf_docs = tokensWithTf
+      .join(tokensWithIdf, Seq("token"), "left")
+      .withColumn("tf_idf", col("tf") * col("idf"))
+      .join(df,Seq("doc_id"),"left")
 
-    val normalizer = new Normalizer()
-    .setInputCols("token")
-    .setOutputCol("normalized")
-    .setCleanupPatterns(Array("[^a-zA-Z0-9]"))
-    .setLowercase(true)
-
-    val finisher = new Finisher()
-    .setInputCols("pos")
-    .setIncludeMetadata(true) // set to False to remove metadata
-
-    val pipeline = new Pipeline().setStages(Array(
-        documentAssembler,
-        sentenceDetector,
-        tokenizer,
-        normalizer,
-        posTagger,
-        finisher
-    ))
-
-    val doc = pipeline.fit(df).transform(df) 
-
-    println(doc.show())
-
-**/
+    tfidf_docs.
+    .orderBy(desc("tf_idf"))  // el order va acá?
+    .groupBy("url")
+    .agg(collect_list("token").as("kws"),collect_list("tf_idf").as("tfidf"))  //es necesario?
+    .select("url","kws","tfidf")
+    .withColumn("kws",getString(col("kws")))
+    .withColumn("tfidf",getString(col("tfidf")))
+    .write.format("csv")
+    .option("header", "true")
+    .option("sep", "\t")
+    .mode(SaveMode.Overwrite)
+    .save("/datascience/misc/testnlp3.csv")
+  
 
 
   }
