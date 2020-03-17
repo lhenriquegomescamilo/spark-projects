@@ -1175,30 +1175,87 @@ val today = (java.time.LocalDate.now).toString
 
 //Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geoh y por hora    
 //Esto es safegraph pelado los uĺtimos X dáis
-val raw = get_safegraph_data(spark,"17","1","argentina")
+val raw = get_safegraph_data(spark,"35","1","argentina")
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "MM-dd"))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
 
-val geohash_travel = raw.groupBy("Day","device_id").agg(countDistinct("geo_hash") as "geo_hash",count("utc_timestamp") as "detections")
-val geohash_travel_agg =  geohash_travel.groupBy("Day").agg(count("device_id") as "devices",avg(col("detections")) as "detections_avg",avg(col("geo_hash")) as "geo_hash_avg")
-
-
-
-geohash_travel
-.write
-.mode(SaveMode.Overwrite)
-.format("parquet")
-.save("/datascience/geo/Reports/GCBA/Coronavirus/geohash_travel_%s".format(today))
+//Esto nos da todos los geocode donde estuvo un usuario, y además nos quedamos con un lat long representativo de cada uno
+val geo_hash_visits = raw.dropDuplicates("device_id","Day","geo_hash")
 
 
-geohash_travel_agg
-.write
-.mode(SaveMode.Overwrite)
-.format("parquet")
-.save("/datascience/geo/Reports/GCBA/Coronavirus/geohash_travel_agg_%s".format(today))
+//Path home ARG
+val path_homes = "/datascience/geo/NSEHomes/argentina_180d_home_27-2-2020--3h"
+val df_homes = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",false)
+    .load(path_homes)
+    .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
+    .filter("lat_home != lon_home")
+    .withColumn( "lat_home",((col("lat_home").cast("float"))))
+    .withColumn( "lon_home",((col("lon_home").cast("float"))))
+    .select("device_id","lat_home","lon_home")
+    
+      //Aramos el vs dataset
+    val device_vs_device = df_homes.join(geo_hash_visits,Seq("device_id"))
 
+    // Using vincenty formula to calculate distance between user/device location and ITSELF.
+    device_vs_device.createOrReplaceTempView("joint")
+    
+    val columns = device_vs_device.columns
+
+    val query =
+    """SELECT latitude,
+                longitude,
+                Day,
+                lat_home,
+                lon_home,
+                device_id,
+                geo_hash,
+                distance
+            FROM (
+            SELECT *,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude)) * COS(RADIANS(lat_home)) *
+            COS(RADIANS(longitude) - RADIANS(lon_home)) +
+            SIN(RADIANS(latitude)) * SIN(RADIANS(lat_home))))) as distance
+            FROM joint 
+            )
+            WHERE distance >= 0"""
+
+    val sqlDF = spark.sql(query)
+    
+    val distance_fom_home = spark.sql(query)
+    
+    val distance_fom_home_avg_user =  distance_fom_home
+    .groupBy("device_id","Day").agg(avg("distance") as "distance_avg",count("geo_hash") as "geo_hash_counts")
+    
+    val distance_fom_home_avg =  distance_fom_home_avg_user
+    .groupBy"Day").agg(avg("distance_avg") as "distance_avg",count("geo_hash_counts") as "geo_hash_avg",count("device_id") as "devices",count("geo_hash_counts") as "geo_hash_sum")
+    
+
+
+    distance_fom_home
+    .write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_from_home_%s".format(today))
+
+distance_fom_home_avg_user
+.repartition(1)
+    .write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_fom_home_avg_user_%s".format(today))
+
+
+distance_fom_home_avg
+.repartition(1)
+    .write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_fom_home_avg_%s".format(today))
 
 
 
