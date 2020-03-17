@@ -260,10 +260,6 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ){
     val tokensWithTf = unfoldedDocs.groupBy("url", "kw")
       .agg(count("count") as "TF")
 
-    //DF: number of documents where a token appears
-    val tokensWithDf = unfoldedDocs.groupBy("kw")
-      .agg(approx_count_distinct(col("url"), 0.02).as("DF"))
-
     //IDF: logarithm of (Total number of documents divided by DF) . How common/rare a word is.
     def calcIdf =
       udf(
@@ -271,12 +267,15 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ){
           log(docCount/DF)
       )
 
-    val tokensWithIdf = tokensWithDf.withColumn("IDF", calcIdf(lit(docCount),col("DF")))
+    //DF: number of documents where a token appears
+    val tokensWithDfIdf = unfoldedDocs.groupBy("kw")
+      .agg(approx_count_distinct(col("url"), 0.02).as("DF"))
+      .withColumn("IDF", calcIdf(lit(docCount),col("DF")))
     
     //TF-IDF: score of a word in a document.
     //The higher the score, the more relevant that word is in that particular document.
     val tfidf_docs = tokensWithTf
-      .join(tokensWithIdf, Seq("kw"), "inner")
+      .join(tokensWithDfIdf, Seq("kw"), "inner")
       .withColumn("tf_idf", col("tf") * col("idf"))
       
     // Min-Max Normalization and filter by threshold
