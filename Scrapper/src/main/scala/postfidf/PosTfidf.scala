@@ -222,25 +222,14 @@ def getPOS(docs: DataFrame ): DataFrame = {
 
 
 def cleanseKws(df_pos: DataFrame ): DataFrame = {
-  // Define udfs to check if all chars are digits
-  def isAllDigits(x: String) = x forall Character.isDigit
-  val udfDigit = udf((keyword: String) => if (isAllDigits(keyword)) true else false)
-  val stripAccents = udf((kw: String) => StringUtils.stripAccents(kw))
-
   var df_clean = df_pos
                 .withColumn("kw", lower(col("kw")))  
                 .withColumn("len",length(col("kw"))) // Filter longitude of words
                 .filter("len > 2 and len < 18" )
                 .filter("kw is not null")
 
-  df_clean.show()
-  // df_clean = df_clean.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
-  //                     .filter("digit = false")
-           
-  df_clean = df_clean.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
-  df_clean.show()
   df_clean = df_clean.withColumn("kw", stripAccents(col("kw"))) //remove accents ñ's, no se si el tokenizer ya lo hace.
-  df_clean.show()
+  
   df_clean
 
   }
@@ -272,7 +261,7 @@ def getTFIDF(df_clean: DataFrame ): DataFrame = {
 
     //DF: number of documents where a token appears
     val tokensWithDf = unfoldedDocs.groupBy("token")
-      .agg(countDistinct("doc_id") as "DF")
+      .agg(approx_count_distinct(col("doc_id"), 0.02).as("DF"))
 
     //IDF: logarithm of (Total number of documents divided by DF) . How common/rare a word is.
     def calcIdf =
