@@ -2224,6 +2224,7 @@ object RandomTincho {
         println("\n")
     
 }
+  }
 
 def get_numbers(spark:SparkSession){
   val pii = spark.read.load("/datascience/pii_matching/pii_tuples/").filter("country = 'BR'")
@@ -2243,6 +2244,11 @@ def get_numbers(spark:SparkSession){
   println("Nids Uniques: %s".format(nids.select("nid_sh2").distinct.count))
   
 }
+
+
+
+    
+  
 
   def main(args: Array[String]) {
      
