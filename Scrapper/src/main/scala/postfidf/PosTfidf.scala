@@ -285,10 +285,10 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ){
 
     val vNormalized = (col("tf_idf") - vMin) / (vMax - vMin) // v normalized to (0, 1) range
 
-    val tfidf_threshold  = 0.3
+    val tfidf_threshold  = 0
     tfidf_docs.show()
     tfidf_docs.withColumn("TFIDF", vNormalized)
-              .filter("TFIDF>=%s".format(tfidf_threshold))
+              .filter("TFIDF >= %s".format(tfidf_threshold))
               .select("url","kw","TFIDF")
               .write
               .format("parquet")
