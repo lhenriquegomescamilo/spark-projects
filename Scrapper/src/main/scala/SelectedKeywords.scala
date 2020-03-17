@@ -198,7 +198,7 @@ object SelectedKeywords {
     df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
             
-    df= df.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
+    df = df.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
           .filter("digit = false")
            
     df = df.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
