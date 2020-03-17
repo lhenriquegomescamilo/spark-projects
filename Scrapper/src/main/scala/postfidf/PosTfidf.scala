@@ -222,6 +222,7 @@ def getPOS(docs: DataFrame ): DataFrame = {
 
 
 def cleanseKws(df_pos: DataFrame ): DataFrame = {
+  val stripAccents = udf((kw: String) => StringUtils.stripAccents(kw))
   var df_clean = df_pos
                 .withColumn("kw", lower(col("kw")))  
                 .withColumn("len",length(col("kw"))) // Filter longitude of words
