@@ -191,7 +191,7 @@ object SelectedKeywords {
 
     // Get pos tagging with TFIDF from text
     val df_pos = PosTfidf.processText(data_parsed,spark)
-    df_pos.show()
+    
     // Union both dataframes (selected keywords and pos tagging)
     var df = df_pos.union(df_article)
 
@@ -203,7 +203,7 @@ object SelectedKeywords {
            
     df = df.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
 
-    df = df.dropDuplicates()
+    df = df.dropDuplicates(Array("url","kw"))
 
     // Format fields and save
     df.groupBy("url","domain")

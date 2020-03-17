@@ -245,26 +245,16 @@ def cleanseKws(df_pos: DataFrame ): DataFrame = {
    **/          
 
 def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
-    // Groupby and checkpoint
-    df_clean.groupBy("url")
-            .agg(collect_list("kw").as("document"))
-            .select("url","document")
-            .write.format("parquet")
-            .mode(SaveMode.Overwrite)
-            .save("/datascience/scraper/tmp/tfidf_chkpt")
+    val docCount = df_clean.select("url").distinct.count
 
-    val df = spark.read.load("/datascience/scraper/tmp/tfidf_chkpt")
-
-    val docCount = df.count().toInt
-
-    val unfoldedDocs = df.withColumn("token", explode(col("document")))
+    val unfoldedDocs = df_clean.withColumn("count",lit(1))
 
     //TF: times token appears in document
-    val tokensWithTf = unfoldedDocs.groupBy("url", "token")
-      .agg(count("document") as "TF")
+    val tokensWithTf = unfoldedDocs.groupBy("url", "kw")
+      .agg(count("count") as "TF")
 
     //DF: number of documents where a token appears
-    val tokensWithDf = unfoldedDocs.groupBy("token")
+    val tokensWithDf = unfoldedDocs.groupBy("kw")
       .agg(approx_count_distinct(col("url"), 0.02).as("DF"))
 
     //IDF: logarithm of (Total number of documents divided by DF) . How common/rare a word is.
@@ -279,11 +269,24 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     //TF-IDF: score of a word in a document.
     //The higher the score, the more relevant that word is in that particular document.
     val tfidf_docs = tokensWithTf
-      .join(tokensWithIdf, Seq("token"), "left")
-      .withColumn("TFIDF", col("tf") * col("idf"))
-      .join(df,Seq("url"),"left")
+      .join(tokensWithIdf, Seq("kw"), "left")
+      .withColumn("tf_idf", col("tf") * col("idf"))
+      .join(df_clean,Seq("url"),"left")
+      
+    // Min-Max Normalization and filter by threshold
+    val (vMin, vMax) = tfidf_docs.agg(min($"tf_idf"), max($"tf_idf")).first match {
+      case Row(x: Double, y: Double) => (x, y)
+    }
+
+    val vNormalized = ($"tf_idf" - vMin) / (vMax - vMin) // v normalized to (0, 1) range
+
+    val tfidf_threshold  = 0.5
 
     tfidf_docs
+    .withColumn("TFIDF", vNormalized)
+    .filter("TFIDF>=%s".format(tfidf_threshold))
+    .select("url","kw","TFIDF")  
+
 
   }
 
@@ -304,13 +307,11 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
     val df_pos = getPOS(docs)
 
     val df_clean = cleanseKws(df_pos)
-    df_clean.show()
 
     val tfidf_docs = getTFIDF(df_clean,spark)
 
     val df_final = tfidf_docs
-    .withColumnRenamed("token","kw")
-    .withColumn("stem_kw",lit(""))
+    .withColumn("stem_kw",col("kw"))
     .join(docs,Seq("url"),"left")
     .select("url","domain","kw","stem_kw","TFIDF")
     
@@ -329,11 +330,6 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
 
     //main method
     //processText(db)
-
-
-
-  
-
 
   }
 }
