@@ -245,23 +245,14 @@ def cleanseKws(df_pos: DataFrame ): DataFrame = {
    **/          
 
 def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
-    // Groupby and checkpoint
-    df_clean.groupBy("url")
-            .agg(collect_list("kw").as("document"))
-            .select("url","document")
-            .write.format("parquet")
-            .mode(SaveMode.Overwrite)
-            .save("/datascience/scraper/tmp/tfidf_chkpt")
+  
+    val docCount = df_clean.select("url").distinct.count
 
-    val df = spark.read.load("/datascience/scraper/tmp/tfidf_chkpt")
-
-    val docCount = df.count().toInt
-
-    val unfoldedDocs = df.withColumn("token", explode(col("document")))
+    val unfoldedDocs = df_clean.withColumnRenamed("kw", "token").withColumn("count",lit(1))
 
     //TF: times token appears in document
     val tokensWithTf = unfoldedDocs.groupBy("url", "token")
-      .agg(count("document") as "TF")
+      .agg(count("count") as "TF")
 
     //DF: number of documents where a token appears
     val tokensWithDf = unfoldedDocs.groupBy("token")
@@ -304,7 +295,7 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
     val df_pos = getPOS(docs)
 
     val df_clean = cleanseKws(df_pos)
-    
+
     val tfidf_docs = getTFIDF(df_clean,spark)
 
     val df_final = tfidf_docs
