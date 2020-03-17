@@ -900,10 +900,10 @@ val spacelapse = tipito
 .withColumn("a", pow(col("a1")+col("a2"),2))
 .withColumn("greatCircleDistance1",(sqrt(col("a"))*2))
 .withColumn("greatCircleDistance2",(sqrt(lit(1)-col("a"))))
-.withColumn("distance(m)",atan2(col("greatCircleDistance1"),col("greatCircleDistance2"))*6371*1000)
-.withColumn("timeDelta(s)", (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec)))
-.withColumn("speed(km/h)",col("distance(m)") *3.6/ col("timeDelta(s)") )
-.select("device_id","utc_timestamp","latitude","longitude","distance(m)","timeDelta(s)","speed(km/h)","provider")
+.withColumn("distance",atan2(col("greatCircleDistance1"),col("greatCircleDistance2"))*6371*1000)
+.withColumn("timeDelta", (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec)))
+.withColumn("speed(km/h)",col("distance") *3.6/ col("timeDelta") )
+.select("device_id","utc_timestamp","latitude","longitude","distance","timeDelta","speed(km/h)","provider")
 
 //Para el primer approach vamos a levantar la cantidad de usuarios que se mueven más de 50 km por hora y anotar cuánto mantuvieron esa velocidad
 
@@ -1194,19 +1194,19 @@ val spacelapse = tipito
 .withColumn("a", pow(col("a1")+col("a2"),2))
 .withColumn("greatCircleDistance1",(sqrt(col("a"))*2))
 .withColumn("greatCircleDistance2",(sqrt(lit(1)-col("a"))))
-.withColumn("distance(m)",atan2(col("greatCircleDistance1"),col("greatCircleDistance2"))*6371*1000)
-.withColumn("timeDelta(s)", (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec)))
-//.withColumn("speed(km/h)",col("distance(m)") *3.6/ col("timeDelta(s)") )
+.withColumn("distance",atan2(col("greatCircleDistance1"),col("greatCircleDistance2"))*6371*1000)
+.withColumn("timeDelta", (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec)))
+//.withColumn("speed(km/h)",col("distance") *3.6/ col("timeDelta") )
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "MM-dd"))
 
-.select("device_id","utc_timestamp","latitude","longitude","distance(m)","timeDelta(s)","Day")
-.groupBy("Day","device_id").agg(sum(col("distance(m)")) as "distance(m)",sum(col("timeDelta(s)")) as "timeDelta(s)")
+.select("device_id","utc_timestamp","latitude","longitude","distance","timeDelta","Day")
+.groupBy("Day","device_id").agg(sum(col("distance")) as "distance",sum(col("timeDelta")) as "timeDelta")
 
 //Esto nos da por usuario por día, la distancia recorrida. //Esto lo guardaría.
 //también quiero un promedio de esto
 
-val space_lapse_agg = spacelapse.groupBy("Day").agg(count("device_id") as "devices",avg(col("distance(m)")) as "distance_avg",avg(col("timeDelta(s)")) as "timeDelta_avg")
+val space_lapse_agg = spacelapse.groupBy("Day").agg(count("device_id") as "devices",avg(col("distance")) as "distance_avg",avg(col("timeDelta")) as "timeDelta_avg")
 
 
 spacelapse
