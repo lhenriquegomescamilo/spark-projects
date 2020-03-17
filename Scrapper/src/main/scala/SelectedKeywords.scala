@@ -1,4 +1,5 @@
 package main.scala
+import main.scala.postfidf.PosTfidf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
@@ -140,6 +141,7 @@ object SelectedKeywords {
                                            col("twitter_title"),lit(" "),
                                            col("twitter_description")).as("content")
                                     )
+    data_parsed.cache()
 
     // Tokenize parsed data in list of words
     var document = new DocumentAssembler().setInputCol("content")
@@ -186,7 +188,13 @@ object SelectedKeywords {
           .withColumn("TFIDF",lit("0"))
 
     df = df.select("url","domain","kw","stem_kw","TFIDF")
+
+    // Get pos tagging with TFIDF from text
+    df_pos = PosTfidf.processText(data_parsed)
            
+    // Union both dataframes (selected keywords and pos tagging)
+    df = df_pos.union(df)
+
     df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
             
@@ -195,18 +203,19 @@ object SelectedKeywords {
            
     df = df.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
 
-    df = df.distinct()
+    df = df.dropDuplicates()
 
     // Format fields and save
     df.groupBy("url","domain")
       .agg(collect_list(col("kw")).as("kw"),
-            collect_list(col("stem_kw")).as("stem_kw"))
+            collect_list(col("stem_kw")).as("stem_kw"),
+            collect_list(col("TFIDF")).as("TFIDF"))
       .withColumn("kw", concat_ws(" ", col("kw")))
       .withColumn("stem_kw", concat_ws(" ", col("stem_kw")))
+      .withColumn("TFIDF", concat_ws(" ", col("TFIDF")))
       .withColumnRenamed("url","url_raw")
       .withColumn("hits",lit(""))
       .withColumn("country",lit(""))
-      .withColumn("TFIDF",lit(""))
       .select("url_raw","hits","country","kw","TFIDF","domain","stem_kw")
       .withColumn("day",lit(today))
       .repartition(1)
