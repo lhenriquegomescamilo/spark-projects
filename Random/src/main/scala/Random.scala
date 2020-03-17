@@ -5037,6 +5037,7 @@ object Random {
       )
       .write
       .format("parquet")
+      .mode("overwrite")
       .save("/datascience/custom/geo_ezeiza_all_points")
 
     //Soft Contagion. Vamos a quedarnos con gente que estuvo en el mismo grid que los infectados en la misma hora
@@ -5052,6 +5053,7 @@ object Random {
 
     moment.write
       .format("parquet")
+      .mode("overwrite")
       .save("/datascience/custom/geo_ezeiza_hashes_and_times")
 
     raw
@@ -5063,11 +5065,11 @@ object Random {
         "longitude",
         "geo_hash",
         "utc_timestamp",
-        "geo_hash",
         "window"
       )
       .write
       .format("parquet")
+      .mode("overwrite")
       .save("/datascience/custom/geo_ezeiza_contacts_all_points")
   }
 }
