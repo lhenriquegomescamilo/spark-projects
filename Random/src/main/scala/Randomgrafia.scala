@@ -161,6 +161,26 @@ def getURLSegmentPred(
           .save("/datascience/custom/url_classifier/device_count/")
   }
 
+  def queryDeviceCountBySegmentPredicted(spark: SparkSession) {
+      var df_triplets = getDataTripletsURL(spark, 30,1)
+      df_triplets  = processURL(spark, df_triplets)
+      
+      var df_url_pred = getURLSegmentPred(spark, 30, 1)
+
+      df_triplets = df_triplets.join(df_url_pred, Seq("url"), "inner")
+      df_triplets = df_triplets
+                    .select(col("device_id"), col("day"), explode(col("iab_segments_pred")).as("iab_seg_pred"))
+
+      df_triplets.groupBy("iab_seg_pred")
+          .agg(approx_count_distinct(col("device_id"), 0.03).as("devices"),
+              first("day").as("day"))
+          .write
+          .mode("overwrite")
+          .format("parquet")
+          .partitionBy("day")
+          .save("/datascience/custom/url_classifier/segment_count/")
+  }
+
   def main(args: Array[String]) {
 
     val spark = SparkSession.builder
@@ -169,7 +189,7 @@ def getURLSegmentPred(
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    queryDeviceCountByURLPredicted(spark)
+    queryDeviceCountBySegmentPredicted(spark)
   }
 
 }
