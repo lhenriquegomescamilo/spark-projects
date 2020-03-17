@@ -285,7 +285,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ){
 
     val vNormalized = (col("tf_idf") - vMin) / (vMax - vMin) // v normalized to (0, 1) range
 
-    val tfidf_threshold  = 0.5
+    val tfidf_threshold  = 0.3
     tfidf_docs.show()
     tfidf_docs.withColumn("TFIDF", vNormalized)
               .filter("TFIDF>=%s".format(tfidf_threshold))
@@ -313,10 +313,10 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
 
     getPOS(docs)
     val df_pos = spark.read.load("/datascience/scraper/tmp/pos_chkpt")
-    df_pos.show()
+
     cleanseKws(df_pos)
     val df_clean = spark.read.load("/datascience/scraper/tmp/clean_chkpt")
-    df_clean.show()
+
     getTFIDF(df_clean,spark)
     val tfidf_docs = spark.read.load("/datascience/scraper/tmp/tfidf_chkpt")
     tfidf_docs.show()
