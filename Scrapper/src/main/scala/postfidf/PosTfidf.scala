@@ -249,7 +249,6 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     df_clean.groupBy("url")
             .agg(collect_list("kw").as("document"))
             .select("url","document")
-            .withColumn("doc_id", monotonically_increasing_id())
             .write.format("parquet")
             .mode(SaveMode.Overwrite)
             .save("/datascience/scraper/tmp/tfidf_chkpt")
@@ -261,12 +260,12 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     val unfoldedDocs = df.withColumn("token", explode(col("document")))
 
     //TF: times token appears in document
-    val tokensWithTf = unfoldedDocs.groupBy("doc_id", "token")
+    val tokensWithTf = unfoldedDocs.groupBy("url", "token")
       .agg(count("document") as "TF")
 
     //DF: number of documents where a token appears
     val tokensWithDf = unfoldedDocs.groupBy("token")
-      .agg(approx_count_distinct(col("doc_id"), 0.02).as("DF"))
+      .agg(approx_count_distinct(col("url"), 0.02).as("DF"))
 
     //IDF: logarithm of (Total number of documents divided by DF) . How common/rare a word is.
     def calcIdf =
@@ -282,7 +281,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     val tfidf_docs = tokensWithTf
       .join(tokensWithIdf, Seq("token"), "left")
       .withColumn("TFIDF", col("tf") * col("idf"))
-      .join(df,Seq("doc_id"),"left")
+      .join(df,Seq("url"),"left")
 
     tfidf_docs
 
