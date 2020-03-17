@@ -304,8 +304,10 @@ def processText(db: DataFrame ): DataFrame = {
                 .na.drop()
 
     val df_pos = getPOS(docs)
+    df_pos.show()
 
     val df_clean = cleanseKws(df_pos)
+    df_clean.show()
 
     val tfidf_docs = getTFIDF(df_clean)
 
