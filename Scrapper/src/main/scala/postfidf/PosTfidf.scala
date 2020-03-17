@@ -304,8 +304,7 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
     val df_pos = getPOS(docs)
 
     val df_clean = cleanseKws(df_pos)
-    df_clean.show()
-
+    
     val tfidf_docs = getTFIDF(df_clean,spark)
 
     val df_final = tfidf_docs
@@ -329,11 +328,6 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
 
     //main method
     //processText(db)
-
-
-
-  
-
 
   }
 }
