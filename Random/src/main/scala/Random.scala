@@ -5025,20 +5025,20 @@ object Random {
 
     eze.persist()
 
-    eze
-      .join(raw, Seq("device_id"))
-      .select(
-        "device_id",
-        "latitude",
-        "longitude",
-        "geo_hash",
-        "utc_timestamp",
-        "window"
-      )
-      .write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/geo_ezeiza_all_points")
+    // eze
+    //   .join(raw, Seq("device_id"))
+    //   .select(
+    //     "device_id",
+    //     "latitude",
+    //     "longitude",
+    //     "geo_hash",
+    //     "utc_timestamp",
+    //     "window"
+    //   )
+    //   .write
+    //   .format("parquet")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/geo_ezeiza_all_points")
 
     //Soft Contagion. Vamos a quedarnos con gente que estuvo en el mismo grid que los infectados en la misma hora
     //Vamos a usar el Raw de dos maneras,
@@ -5047,7 +5047,7 @@ object Random {
     //Acá unimos el raw pelado con los devices que vimos en ezeiza, de ahí vamos a obtener las áreas y la horas donde circularon los infectados
     val moment = spark.read
       .load("/datascience/custom/geo_ezeiza_all_points")
-      .select("geo_hashito", "window")
+      .select("geo_hash", "window")
       .distinct()
       .cache()
 
@@ -5057,7 +5057,7 @@ object Random {
       .save("/datascience/custom/geo_ezeiza_hashes_and_times")
 
     raw
-      .join(broadcast(moment), Seq("geo_hashito", "window"))
+      .join(broadcast(moment), Seq("geo_hash", "window"))
       .join(eze, Seq("device_id"), "left_anti")
       .select(
         "device_id",
