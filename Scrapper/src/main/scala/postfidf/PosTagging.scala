@@ -313,7 +313,7 @@ def processText(db: DataFrame ): DataFrame = {
     .withColumnRenamed("token","kw")
     .withColumn("stem_kw",lit(""))
     .join(docs,Seq("url"),"left")
-    .select("url","domain","kw","stem_kw")
+    .select("url","domain","kw","stem_kw","TFIDF")
     
     df_final
 }  
