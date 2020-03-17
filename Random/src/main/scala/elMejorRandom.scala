@@ -1238,6 +1238,7 @@ val medium_contagion = moment.join(raw,Seq("Hour","geo_hash"))
 .filter(size(col("timelist"))>1)
 .withColumn("sesil",hasUsedPoi(col("timelist")))
 .filter("sesil == true")
+.drop("timelist")
 
 //Hard contagion
 //Proximamente
@@ -1246,16 +1247,14 @@ val medium_contagion = moment.join(raw,Seq("Hour","geo_hash"))
 soft_contagion
 .write
 .mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
+.format("parquet")
 .save("/datascience/geo/Reports/GCBA/Coronavirus/soft_contagion_%s".format(today))
 
 
 medium_contagion
 .write
 .mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
+.format("parquet")
 .save("/datascience/geo/Reports/GCBA/Coronavirus/Coronavirus/medium_contagion_%s".format(today))
 
 
