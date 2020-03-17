@@ -244,16 +244,23 @@ def cleanseKws(df_pos: DataFrame ): DataFrame = {
     * This Method calculates tdfidf manually for each keyword.
    **/          
 
-def getTFIDF(df_clean: DataFrame ): DataFrame = {
-    val df = df_clean.groupBy("url")
-      .agg(collect_list("kw").as("document"))
-      .select("url","document")
-      .withColumn("doc_id", monotonically_increasing_id())  
+def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
+    // Groupby and checkpoint
+    df_clean.groupBy("url")
+            .agg(collect_list("kw").as("document"))
+            .select("url","document")
+            .withColumn("doc_id", monotonically_increasing_id())
+            .write.format("parquet")
+            .mode(SaveMode.Overwrite)
+            .save("/datascience/scraper/tmp/tfidf_chkpt")
 
-    val docCount = df.count().toInt               
-            
+    val df = spark.read.load("/datascience/scraper/tmp/tfidf_chkpt")
+
+    val docCount = df.count().toInt
+
     val columns = df.columns.map(col) :+
         (explode(col("document")) as "token")
+
     val unfoldedDocs = df.select(columns: _*)
 
     //TF: times token appears in document
@@ -293,7 +300,7 @@ def getTFIDF(df_clean: DataFrame ): DataFrame = {
     * This Method processes text with POS (for Nouns and Proper Nouns) + TFIDF.
    **/          
 
-def processText(db: DataFrame ): DataFrame = {
+def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
     
     val docs = db.select("url","text","domain")
                 .na.drop()
@@ -303,7 +310,7 @@ def processText(db: DataFrame ): DataFrame = {
     val df_clean = cleanseKws(df_pos)
     df_clean.show()
 
-    val tfidf_docs = getTFIDF(df_clean)
+    val tfidf_docs = getTFIDF(df_clean,spark)
 
     val df_final = tfidf_docs
     .withColumnRenamed("token","kw")

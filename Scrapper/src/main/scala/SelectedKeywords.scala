@@ -190,8 +190,8 @@ object SelectedKeywords {
     df_article = df_article.select("url","domain","kw","stem_kw","TFIDF")
 
     // Get pos tagging with TFIDF from text
-    val df_pos = PosTfidf.processText(data_parsed)
-           
+    val df_pos = PosTfidf.processText(data_parsed,spark)
+    df_pos.show()
     // Union both dataframes (selected keywords and pos tagging)
     var df = df_pos.union(df_article)
 
