@@ -1229,8 +1229,7 @@ val df_homes = spark.read.format("csv")
     val distance_fom_home_avg_user =  distance_fom_home
     .groupBy("device_id","Day").agg(avg("distance") as "distance_avg",count("geo_hash") as "geo_hash_counts")
     
-    val distance_fom_home_avg =  distance_fom_home_avg_user
-    .groupBy"Day").agg(avg("distance_avg") as "distance_avg",count("geo_hash_counts") as "geo_hash_avg",count("device_id") as "devices",count("geo_hash_counts") as "geo_hash_sum")
+    val distance_fom_home_avg =  distance_fom_home_avg_user.groupBy("Day").agg(avg("distance_avg") as "distance_avg",count("geo_hash_counts") as "geo_hash_avg",count("device_id") as "devices",count("geo_hash_counts") as "geo_hash_sum")
     
 
 
