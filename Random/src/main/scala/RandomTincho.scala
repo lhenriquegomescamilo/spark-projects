@@ -2244,11 +2244,6 @@ def get_numbers(spark:SparkSession){
   
 }
 
-
-
-    
-  }
-
   def main(args: Array[String]) {
      
     // Setting logger config
