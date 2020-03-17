@@ -52,7 +52,7 @@ def getData(
             .option("sep", "\t")
             .load(path)
             .select("url","text")
-            .na. drop()
+            .na.drop()
 
     doc
   }
@@ -318,7 +318,6 @@ def processText(db: DataFrame ): DataFrame = {
     
     df_final
 }  
-
 
 
  /*****************************************************/

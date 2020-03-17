@@ -176,23 +176,23 @@ object SelectedKeywords {
     val udfZip = udf((words: Seq[String], stemmed: Seq[String]) => words zip stemmed)
     val udfGet = udf((words: Row, index:String ) => words.getAs[String](index))
 
-    var df = pipeline.fit(data_parsed).transform(data_parsed)
+    var df_article = pipeline.fit(data_parsed).transform(data_parsed)
                       .withColumn("zipped",udfZip(col("words"),col("stem_kw")))
                       .withColumn("zipped", explode(col("zipped")))
 
-    df = df.withColumn("kw",udfGet(col("zipped"),lit("_1")))
+    df_article = df_article.withColumn("kw",udfGet(col("zipped"),lit("_1")))
           .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
           .withColumn("kw", lower(col("kw")))
           .withColumn("stem_kw", lower(col("stem_kw")))
           .withColumn("TFIDF",lit("0"))
 
-    df = df.select("url","domain","kw","stem_kw","TFIDF")
+    df_article = df_article.select("url","domain","kw","stem_kw","TFIDF")
 
     // Get pos tagging with TFIDF from text
     val df_pos = PosTfidf.processText(data_parsed)
            
     // Union both dataframes (selected keywords and pos tagging)
-    df = df_pos.union(df)
+    var df = df_pos.union(df_article)
 
     df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
