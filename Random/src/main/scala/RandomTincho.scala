@@ -2233,6 +2233,7 @@ def get_numbers(spark:SparkSession){
                       .format("csv")
                       .option("header","true")
                       .load("/data/tmp/Bridge_Linkage_File_Retargetly_LATAM_ALL.csv")
+                      .filter("country = 'br'")
                       .withColumnRenamed("email_sha256","ml_sh2")
                       .withColumnRenamed("advertising_id","device_id")
                       .select("ml_sh2","device_id")
