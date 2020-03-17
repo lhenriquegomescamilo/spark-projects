@@ -132,7 +132,7 @@ object SelectedKeywords {
     val data_parsed = spark.read.format("parquet")
                             .load("/datascience/scraper/parsed/processed/day=%s/".format(day))
                             .na.fill("")
-                            .select(col("url"), col("domain"),
+                            .select(col("url"), col("domain"),col("text"),
                                     concat(col("title"), lit(" "),
                                            col("description"), lit(" "),
                                            col("keywords"), lit(" "),
