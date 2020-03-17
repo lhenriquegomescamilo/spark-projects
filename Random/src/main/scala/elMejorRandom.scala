@@ -1169,10 +1169,13 @@ the_data
 
 //setting timezone depending on country
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
-    
+
+
+val today = today.format(DateTimeFormatter.ofPattern("yyyy-MM-d"))
+
 //Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
 //Esto es safegraph pelado los uĺtimos X dáis
-val raw = spark.read.format("parquet").load("/datascience/geo/safegraph/day=20200306/country=argentina/part-00058-e028741e-e912-4a6c-9a9c-6b870442b4a7.c000.snappy.parquet")
+val raw = get_safegraph_data(spark,"17","1","argentina")
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 //.withColumn("geo_hashito",substring(col("geo_hash"), 0, 7)) 
@@ -1254,6 +1257,7 @@ medium_contagion
 .format("csv")
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/Coronavirus/medium_contagion_%s".format(today))
+
 
 
 
