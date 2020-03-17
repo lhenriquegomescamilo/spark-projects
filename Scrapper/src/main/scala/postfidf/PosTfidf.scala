@@ -270,10 +270,23 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     //The higher the score, the more relevant that word is in that particular document.
     val tfidf_docs = tokensWithTf
       .join(tokensWithIdf, Seq("kw"), "left")
-      .withColumn("TFIDF", col("tf") * col("idf"))
+      .withColumn("tf_idf", col("tf") * col("idf"))
       .join(df_clean,Seq("url"),"left")
+      
+    // Min-Max Normalization and filter by threshold
+    val (vMin, vMax) = tfidf_docs.agg(min($"tf_idf"), max($"tf_idf")).first match {
+      case Row(x: Double, y: Double) => (x, y)
+    }
+
+    val vNormalized = ($"tf_idf" - vMin) / (vMax - vMin) // v normalized to (0, 1) range
+
+    val tfidf_threshold  = 0.5
 
     tfidf_docs
+    .withColumn("TFIDF", vNormalized)
+    .filter("TFIDF>=%s".format(tfidf_threshold))
+    .select("url","kw","TFIDF")  
+
 
   }
 
