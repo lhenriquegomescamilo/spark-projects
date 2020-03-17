@@ -17,7 +17,7 @@ import org.apache.spark.sql.functions.input_file_name
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object elMejorRandom {
+object elSegundoRandom {
   def get_tapad_home_cluster(spark:SparkSession){
 
 /*
