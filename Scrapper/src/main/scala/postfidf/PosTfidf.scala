@@ -234,11 +234,9 @@ def cleanseKws(df_pos: DataFrame ): DataFrame = {
                 .filter("kw is not null")
 
   df_clean.show()
-  df_clean.printSchema
-  df_clean = df_clean.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
-                      .filter("digit = false")
-
-  df_clean.show()           
+  // df_clean = df_clean.withColumn("digit",udfDigit(col("kw"))) // Filter words that are all digits
+  //                     .filter("digit = false")
+           
   df_clean = df_clean.filter(!col("kw").isin(STOPWORDS: _*)) // Filter stopwords
   df_clean.show()
   df_clean = df_clean.withColumn("kw", stripAccents(col("kw"))) //remove accents ñ's, no se si el tokenizer ya lo hace.
