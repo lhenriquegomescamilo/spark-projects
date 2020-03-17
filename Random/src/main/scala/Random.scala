@@ -5033,7 +5033,6 @@ object Random {
         "longitude",
         "geo_hash",
         "utc_timestamp",
-        "geo_hash",
         "window"
       )
       .write
