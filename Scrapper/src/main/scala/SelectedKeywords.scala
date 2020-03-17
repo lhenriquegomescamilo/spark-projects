@@ -183,8 +183,9 @@ object SelectedKeywords {
           .withColumn("stem_kw",udfGet(col("zipped"),lit("_2")))
           .withColumn("kw", lower(col("kw")))
           .withColumn("stem_kw", lower(col("stem_kw")))
+          .withColumn("TFIDF",lit("0"))
 
-    df = df.select("url","domain","kw","stem_kw")
+    df = df.select("url","domain","kw","stem_kw","TFIDF")
            
     df = df.withColumn("len",length(col("kw"))) // Filter longitude of words
             .filter("len > 2 and len < 18" )
