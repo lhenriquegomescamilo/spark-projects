@@ -310,7 +310,7 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
 
     val df_final = tfidf_docs
     .withColumnRenamed("token","kw")
-    .withColumn("stem_kw",lit(""))
+    .withColumn("stem_kw",col("kw"))
     .join(docs,Seq("url"),"left")
     .select("url","domain","kw","stem_kw","TFIDF")
     
