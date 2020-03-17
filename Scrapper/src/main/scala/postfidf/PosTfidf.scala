@@ -86,6 +86,13 @@ val posTagger = spanish_pos
 .setInputCols(Array("sentence", "token"))
 .setOutputCol("pos")
 
+val pipeline = new Pipeline().setStages(Array(
+    documentAssembler,
+    sentenceDetector,
+    tokenizer,
+    posTagger
+))  
+
 /**
 
 // LA FORMA QUE NO PUEDO HACER CAMINAR----------
@@ -121,8 +128,6 @@ df = df.filter("tag = 'NOUN' or tag = 'PROPN'")
 df.show()
 
 */
-
-
 
 
 def getWord =
@@ -276,11 +281,11 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ){
       .join(df_clean,Seq("url"),"left")
       
     // Min-Max Normalization and filter by threshold
-    val (vMin, vMax) = tfidf_docs.agg(min($"tf_idf"), max($"tf_idf")).first match {
+    val (vMin, vMax) = tfidf_docs.agg(min(col("tf_idf")), max(col("tf_idf"))).first match {
       case Row(x: Double, y: Double) => (x, y)
     }
 
-    val vNormalized = ($"tf_idf" - vMin) / (vMax - vMin) // v normalized to (0, 1) range
+    val vNormalized = (col("tf_idf") - vMin) / (vMax - vMin) // v normalized to (0, 1) range
 
     val tfidf_threshold  = 0.5
     tfidf_docs.show()
