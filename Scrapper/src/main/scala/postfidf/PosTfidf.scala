@@ -245,7 +245,6 @@ def cleanseKws(df_pos: DataFrame ): DataFrame = {
    **/          
 
 def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
-  
     val docCount = df_clean.select("url").distinct.count
 
     val unfoldedDocs = df_clean.withColumnRenamed("kw", "token").withColumn("count",lit(1))
@@ -272,7 +271,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     val tfidf_docs = tokensWithTf
       .join(tokensWithIdf, Seq("token"), "left")
       .withColumn("TFIDF", col("tf") * col("idf"))
-      .join(df,Seq("url"),"left")
+      .join(df_clean,Seq("url"),"left")
 
     tfidf_docs
 
