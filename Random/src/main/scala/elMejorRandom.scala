@@ -1171,7 +1171,7 @@ the_data
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 
-val today = today.format(DateTimeFormatter.ofPattern("yyyy-MM-d"))
+val today = (java.time.LocalDate.now).toString
 
 //Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
 //Esto es safegraph pelado los uĺtimos X dáis
