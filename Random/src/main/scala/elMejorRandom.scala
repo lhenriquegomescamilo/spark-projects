@@ -1170,15 +1170,12 @@ the_data
 //setting timezone depending on country
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
-val today = (java.time.LocalDate.now).toString
 
-// Vamos a sacarle uno de precisión al geohash para que nos queden áreas de 2 dígitos, nos quedan 7 ≤ 153m × 153m
-//No, mejor dejemos los 8. Son áreas chicas. YA si comparten ese geo_hash estamos seguros de que estuvieron cerca, despuués podemos aumentarlo.
+val today = (java.time.LocalDate.now).toString
 
 //Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
 //Esto es safegraph pelado los uĺtimos X dáis
-
-val raw = get_safegraph_data(spark,"14","1","argentina")
+val raw = get_safegraph_data(spark,"17","1","argentina")
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 //.withColumn("geo_hashito",substring(col("geo_hash"), 0, 7)) 
@@ -1190,9 +1187,14 @@ val raw = get_safegraph_data(spark,"14","1","argentina")
 //Sólo nos interesan las áreas y las horas que tengan infectados adentro, les joineamos los infectados
 //Levantamos los usarios que detectamos en Ezeiza los últimos 60 días
 val eze = spark.read.option("delimiter","\t").option("header",true).format("csv")
-.load("/datascience/geo/raw_output/Ezeiza_60d_argentina_4-3-2020-18h")
+.load("/datascience/geo/raw_output/Ezeiza_30d_argentina_17-3-2020-11h")
 .select("device_id").distinct
 .withColumn("device_id",lower(col("device_id")))
+
+raw.persist()
+eze.persist()
+
+//Soft Contagion. Vamos a quedarnos con gente que estuvo en el mismo grid que los infectados en la misma hora
 
 //Vamos a usar el Raw de dos maneras, 
 // para 1) buscar y marca los momentos donde vimos infectados y 
@@ -1206,15 +1208,56 @@ val moment = eze.join(raw,Seq("device_id"))
 
 
 //Ahora podemos volver al raw y filtrar con esto. Sabemos que acá hay infectados
-val contagion = moment.join(raw,Seq("Hour","geo_hash"))
+val soft_contagion = moment.join(raw,Seq("Hour","geo_hash"))
 //Esto ya nos da un "soft contagion", gente que pasó a 20 metros o menos de los infectados.
 
-contagion
+
+//Medium contagion. 
+//Similar al anterior, pero sólo nos quedamos con grids donde los infectados hayan estado quietos al menos 15 minutos
+//Vamos ahora a calcular una permanencia mínima en el grid. Al menos 15 minutos en el grid.
+
+val permanency = 15 //En minutos
+val hasUsedPoi = udf((timestamps: Seq[String]) =>
+        ((timestamps.slice(1, timestamps.length) zip timestamps).map(
+          t =>
+            (t._1.toInt - t._2.toInt < (permanency.toInt * 60)) ).exists(b=>b==true)
+            ))
+
+//Pedimos que tengan al menos dos detecciones en el area y después le preguntamos si estuvieron al menos X tiempo
+val moment_sesil = eze.join(raw,Seq("device_id"))
+.groupBy("geo_hash","Hour","device_id").agg(collect_list("utc_timestamp") as "timelist")
+.filter(size(col("timelist"))>1)
+.withColumn("sesil",hasUsedPoi(col("timelist")))
+.filter("sesil == true")
+.select("geo_hash","Hour").distinct()
+
+//Ahora podemos volver al raw y filtrar con esto. Sabemos que acá hay infectados
+//Y a estos ahora les hacemos ella misma pregunta de tiempo
+val medium_contagion = moment.join(raw,Seq("Hour","geo_hash"))
+.groupBy("geo_hash","Hour","device_id").agg(collect_list("utc_timestamp") as "timelist")
+.filter(size(col("timelist"))>1)
+.withColumn("sesil",hasUsedPoi(col("timelist")))
+.filter("sesil == true")
+
+//Hard contagion
+//Proximamente
+
+
+soft_contagion
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus_Soft_Contagion_%s".format(today))
+.save("/datascience/geo/Reports/GCBA/Coronavirus/soft_contagion_%s".format(today))
+
+
+medium_contagion
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/Coronavirus/medium_contagion_%s".format(today))
+
 
 
 
