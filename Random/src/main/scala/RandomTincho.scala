@@ -2248,6 +2248,25 @@ def get_numbers(spark:SparkSession){
   println("Nids Uniques: %s".format(mobs.select("mb_sh2").distinct.count))
   
 }
+def dataset_test_idx(spark:SparkSession){
+
+  val bridge = spark.read.format("csv")
+              .option("header","true")
+              .load("/data/tmp/Bridge_Linkage_File_Retargetly_LATAM_ALL.csv")
+              .filter("country = 'ar'")
+              .withColumnRenamed("advertising_id","device_id_bridge")
+              .withColumnRenamed("email_sha256","ml_sh2")
+              .withColumn("device_id_bridge",lower(col("device_id_bridge")))
+              .select("device_id_bridge","ml_sh2")
+
+  val pii_tuples = spark.read
+                        .load("/datascience/pii_matching/pii_tuples/")
+                        .filter("country = 'AR' and ml_sh2 is not null")
+
+  bridge.join(pii_tuples,Seq("ml_sh2"),"inner")
+        .write.format("parquet").save("/datascience/custom/test_idx")
+        
+}
 
 
   def main(args: Array[String]) {
@@ -2261,7 +2280,7 @@ def get_numbers(spark:SparkSession){
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
     
-    get_numbers(spark)
+    dataset_test_idx(spark)
     
   }
 

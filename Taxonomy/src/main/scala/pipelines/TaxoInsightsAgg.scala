@@ -15,7 +15,7 @@ import org.apache.log4j.{Level, Logger}
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object TaxoInsightsData {
+object TaxoInsightsAgg {
 
 
 /**
@@ -27,11 +27,10 @@ object TaxoInsightsData {
     * For loading data from data_demo/data_urls and data_triplets/segments
    **/   
 
-  def getData(
+  def getDataTaxo(
       spark: SparkSession,
       nDays: Integer,
-      since: Integer,
-      path: String
+      since: Integer
   ): DataFrame = {
 
     val conf = spark.sparkContext.hadoopConfiguration
@@ -43,6 +42,7 @@ object TaxoInsightsData {
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
 
     // Now we obtain the list of hdfs folders to be read
+    val path = "/datascience/taxo_insights/data"
     val hdfs_files = days
       .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
@@ -70,44 +70,19 @@ def processDay(
 
     val date_current = DateTime.now.minusDays(since).toString("yyyyMMdd")
 
-    val map_events = Map(
-          "batch" -> 0,
-          "data" -> 1,
-          "tk" -> 2,
-          "pv" -> 3,
-          "retroactive" -> 4)
-    val mapUDF_events = udf((event_type: String) => map_events(event_type))
-
-    // 1) Read Data URLS and transform
-    val path_urls = "/datascience/data_demo/data_urls"
-    val data_urls = getData(spark,nDays,since,path_urls)
-    .select("device_id","url","id_partner","event_type","segments","country")
-    .withColumn("segment", explode(col("segments")))
-    .selectExpr("*", "parse_url(url, 'HOST') as domain")
-    .withColumn("event_type",mapUDF_events(col("event_type"))) //este mapeo lo hago pero ya deberia estar hecho en data urls.
-    .select("device_id","domain","id_partner","event_type","segment","country")
-
-    // 2) Read Data Triplets and transform
-    val path_triplets = "/datascience/data_triplets/segments"
-    val data_triplets = getData(spark,nDays,since,path_triplets)
-    .filter("activable== 1")
-    .select("device_id","feature","id_partner","event_type","country")
-    .withColumnRenamed("feature", "segment")
-    .withColumn("domain",lit("not_url"))
-
-    // 3) Concat dfs and aggregate devices
-    val df = data_urls.union(data_triplets)
+    // 1) Read Data and sum counts
+    val df = getDataTaxo(spark,nDays,since)
     .groupBy("domain","event_type","segment","id_partner","event_type","country")
-    .agg(approx_count_distinct(col("device_id"), 0.02).as("devices_count"))
+    .agg(sum(col("devices_count")).as("total_devices"))
 
-    // 4) Order and Save
+    // 2) Order and Save
     df.orderBy("segment") //preguntar si esta bien
       .withColumn("day", lit(date_current))
       .write
       .format("parquet")
       .mode("append")
       .partitionBy("day", "country")
-      .save("/datascience/taxo_insights/data")
+      .save("/datascience/taxo_insights/agg")
       
 }  
 
@@ -134,7 +109,7 @@ def processDay(
 
     // Parse the parameters
     val options = nextOption(Map(), Args.toList)
-    val nDays = if (options.contains('nDays)) options('nDays) else 1
+    val nDays = if (options.contains('nDays)) options('nDays) else 30
     val since = if (options.contains('since)) options('since) else 1
 
     // Setting logger config
@@ -142,7 +117,7 @@ def processDay(
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
-      .appName("TaxoInsightsData")
+      .appName("TaxoInsightsAgg")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
