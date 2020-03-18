@@ -57,10 +57,10 @@ object GetDataUserAgent {
           countries.map("'%s'".format(_)).mkString(", ")
         )
       )
-      .select("device_id", "user_agent", "country", "url", "event_type")
+      .select("device_id", "user_agent", "country", "url", "event_type", "ip")
       .dropDuplicates("device_id")
       .rdd // Now we parse the user agents
-      .map(row => (row(0), row(2), parser.value.parse(row(1).toString), row(1), row(3), row(4)))
+      .map(row => (row(0), row(2), parser.value.parse(row(1).toString), row(1), row(3), row(4), row(5)))
       .map(
         row =>
           Row(
@@ -74,7 +74,8 @@ object GetDataUserAgent {
             row._3.os.minor.getOrElse(""),
             row._4,
             row._5,
-            row._6
+            row._6,
+            row._7
           )
       )
 
