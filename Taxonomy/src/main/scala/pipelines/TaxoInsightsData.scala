@@ -1,10 +1,9 @@
-package main.scala.pipelines.TaxoInsights
+package main.scala.pipelines
 import org.apache.spark.sql.{SaveMode, DataFrame, Row, SparkSession}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
 import org.joda.time.{Days, DateTime}
-import org.joda.time.format.DateTimeFormat
 
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.conf.Configuration
