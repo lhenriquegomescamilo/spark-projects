@@ -110,6 +110,11 @@ object SegmentTriplets {
       .withColumn("day", date_format(col("datetime"), "yyyyMMdd"))
       .drop("datetime")
 
+    /**
+      Update: 20200318
+      - Se agregan event_types para pipeline de Taxonomy/TaxoInsights
+      - Se mapean a ints con la intuicion de reducir espacio en disco. Debe evaluarse la eficiencia de esto.
+      */
     val map_events = Map(
           "batch" -> 0,
           "data" -> 1,
@@ -120,7 +125,7 @@ object SegmentTriplets {
 
     val grouped_data = df
       .select("device_id", "feature", "country", "day", "id_partner", "device_type", "activable", "event_type")
-      .withColumn("event_type",mapUDF_events(col("event_type")))  
+      .withColumn("event_type",mapUDF_events(col("event_type")))  //mapeo de event_types
       .distinct()
       .withColumn("count", lit(1))
     // .groupBy("device_id", "feature", "country", "day", "id_partner")
