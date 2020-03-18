@@ -104,10 +104,10 @@ def processDay(
 
     // 4) Order and Save
     df.orderBy("segment") //preguntar si esta bien
+      .withColumn("day", lit(date_current))
       .write
       .format("parquet")
       .mode("append")
-      .withColumn("day", lit(date_current))
       .partitionBy("day", "country")
       .save("/datascience/taxo_insights/data")
       
