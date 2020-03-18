@@ -110,8 +110,17 @@ object SegmentTriplets {
       .withColumn("day", date_format(col("datetime"), "yyyyMMdd"))
       .drop("datetime")
 
+    val map_events = Map(
+          "batch" -> 0,
+          "data" -> 1,
+          "tk" -> 2,
+          "pv" -> 3,
+          "retroactive" -> 4)
+    val mapUDF_events = udf((event_type: String) => map_events(event_type))
+
     val grouped_data = df
-      .select("device_id", "feature", "country", "day", "id_partner", "device_type", "activable")
+      .select("device_id", "feature", "country", "day", "id_partner", "device_type", "activable", "event_type")
+      .withColumn("event_type",mapUDF_events(col("event_type")))  
       .distinct()
       .withColumn("count", lit(1))
     // .groupBy("device_id", "feature", "country", "day", "id_partner")
