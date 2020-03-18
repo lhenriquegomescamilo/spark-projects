@@ -1181,7 +1181,7 @@ val raw = get_safegraph_data(spark,"36","1","argentina")
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
 
-raw.groupBy("Day").agg(count("utc_timestamp") as "detections", counDistinct("device_id") as "devices")
+raw.groupBy("Day").agg(count("utc_timestamp") as "detections", countDistinct("device_id") as "devices")
 .write
 .mode(SaveMode.Overwrite)
 .format("parquet")
