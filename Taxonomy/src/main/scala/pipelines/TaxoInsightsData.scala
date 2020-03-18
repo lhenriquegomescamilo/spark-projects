@@ -67,8 +67,7 @@ object TaxoInsightsData {
 def processDay(
       spark: SparkSession,
       nDays: Integer,
-      since: Integer
-  ): DataFrame = {
+      since: Integer){
 
     val date_current = DateTime.now.minusDays(since).toString("yyyyMMdd")
 
