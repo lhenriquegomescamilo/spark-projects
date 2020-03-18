@@ -5018,27 +5018,28 @@ object Random {
       .option("delimiter", "\t")
       .option("header", true)
       .format("csv")
-      .load("/datascience/geo/raw_output/Ezeiza_30d_argentina_17-3-2020-11h")
+      // .load("/datascience/geo/raw_output/Ezeiza_30d_argentina_17-3-2020-11h")
+      .load("/datascience/custom/geo_ezeiza_contacts_all_points")
       .select("device_id")
       .distinct
       .withColumn("device_id", lower(col("device_id")))
 
     eze.persist()
 
-    // eze
-    //   .join(raw, Seq("device_id"))
-    //   .select(
-    //     "device_id",
-    //     "latitude",
-    //     "longitude",
-    //     "geo_hash",
-    //     "utc_timestamp",
-    //     "window"
-    //   )
-    //   .write
-    //   .format("parquet")
-    //   .mode("overwrite")
-    //   .save("/datascience/custom/geo_ezeiza_all_points")
+    eze
+      .join(raw, Seq("device_id"))
+      .select(
+        "device_id",
+        "latitude",
+        "longitude",
+        "geo_hash",
+        "utc_timestamp",
+        "window"
+      )
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/geo_ezeiza_all_points_level2")
 
     //Soft Contagion. Vamos a quedarnos con gente que estuvo en el mismo grid que los infectados en la misma hora
     //Vamos a usar el Raw de dos maneras,
@@ -5046,7 +5047,7 @@ object Random {
     // 2)para levantar a los no infectados
     //Acá unimos el raw pelado con los devices que vimos en ezeiza, de ahí vamos a obtener las áreas y la horas donde circularon los infectados
     val moment = spark.read
-      .load("/datascience/custom/geo_ezeiza_all_points")
+      .load("/datascience/custom/geo_ezeiza_all_points_level2")
       .select("geo_hash", "window")
       .distinct()
       .cache()
@@ -5054,7 +5055,7 @@ object Random {
     moment.write
       .format("parquet")
       .mode("overwrite")
-      .save("/datascience/custom/geo_ezeiza_hashes_and_times")
+      .save("/datascience/custom/geo_ezeiza_hashes_and_times_level2")
 
     raw
       .join(broadcast(moment), Seq("geo_hash", "window"))
@@ -5070,6 +5071,6 @@ object Random {
       .write
       .format("parquet")
       .mode("overwrite")
-      .save("/datascience/custom/geo_ezeiza_contacts_all_points")
+      .save("/datascience/custom/geo_ezeiza_contacts_all_points_level2")
   }
 }
