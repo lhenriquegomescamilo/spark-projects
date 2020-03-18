@@ -5015,10 +5015,11 @@ object Random {
     //Sólo nos interesan las áreas y las horas que tengan infectados adentro, les joineamos los infectados
     //Levantamos los usarios que detectamos en Ezeiza los últimos 60 días
     val eze = spark.read
-      .option("delimiter", "\t")
-      .option("header", true)
-      .format("csv")
+      // .option("delimiter", "\t")
+      // .option("header", true)
+      // .format("csv")
       // .load("/datascience/geo/raw_output/Ezeiza_30d_argentina_17-3-2020-11h")
+      .format("parquet")
       .load("/datascience/custom/geo_ezeiza_contacts_all_points")
       .select("device_id")
       .distinct
