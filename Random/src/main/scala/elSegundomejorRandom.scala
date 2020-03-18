@@ -1175,52 +1175,17 @@ val today = (java.time.LocalDate.now).toString
 
 //Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
 //Esto es safegraph pelado los uĺtimos X dáis
-val raw = get_safegraph_data(spark,"35","1","argentina")
+val raw = get_safegraph_data(spark,"36","1","argentina")
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
-
-val tipito = raw
-.withColumn("latituderad",toRadians(col("latitude")))
-.withColumn("longituderad",toRadians(col("longitude")))
-
-
-val windowSpec = Window.partitionBy("device_id").orderBy("utc_timestamp")
-
-val spacelapse = tipito
-.withColumn("deltaLat", col("latituderad") - lag("latituderad", 1).over(windowSpec))
-.withColumn("deltaLong", col("longituderad") - lag("longituderad", 1).over(windowSpec))
-.withColumn("a1", pow(sin(col("deltaLat")/2),2))
-.withColumn("a2", cos(col("latituderad")) * cos(lag("latituderad", 1).over(windowSpec)) * col("deltaLong")/2)
-.withColumn("a", pow(col("a1")+col("a2"),2))
-.withColumn("greatCircleDistance1",(sqrt(col("a"))*2))
-.withColumn("greatCircleDistance2",(sqrt(lit(1)-col("a"))))
-.withColumn("distance",atan2(col("greatCircleDistance1"),col("greatCircleDistance2"))*6371*1000)
-.withColumn("timeDelta", (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec)))
-//.withColumn("speed(km/h)",col("distance") *3.6/ col("timeDelta") )
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "MM-dd"))
+.withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
 
-.select("device_id","utc_timestamp","latitude","longitude","distance","timeDelta","Day")
-.groupBy("Day","device_id").agg(sum(col("distance")) as "distance",sum(col("timeDelta")) as "timeDelta")
-
-//Esto nos da por usuario por día, la distancia recorrida. //Esto lo guardaría.
-//también quiero un promedio de esto
-
-val space_lapse_agg = spacelapse.groupBy("Day").agg(count("device_id") as "devices",avg(col("distance")) as "distance_avg",avg(col("timeDelta")) as "timeDelta_avg")
-
-
-spacelapse
+raw.groupBy("Day").agg(count("utc_timestamp") as "detections", countDistinct("device_id") as "devices")
 .write
 .mode(SaveMode.Overwrite)
 .format("parquet")
-.save("/datascience/geo/Reports/GCBA/Coronavirus/distance_traveled_%s".format(today))
-
-
-space_lapse_agg
-.write
-.mode(SaveMode.Overwrite)
-.format("parquet")
-.save("/datascience/geo/Reports/GCBA/Coronavirus/distance_traveled_agg_%s".format(today))
+.save("/datascience/geo/Reports/GCBA/Coronavirus/detecciones_usuarios_normalizador_%s".format(today))
 
 
 
