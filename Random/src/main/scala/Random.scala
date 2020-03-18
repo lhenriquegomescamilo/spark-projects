@@ -4985,97 +4985,28 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    //setting timezone depending on country
-    spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+    val today = DateTime.now
+    val ids = spark.read.load("/datascience/custom/devices_cl_idx_test").cache()
 
-    //Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora
-    //Esto es safegraph pelado los uĺtimos X dáis
-    val raw = spark.read
-      .format("parquet")
-      .option("basePath", "/datascience/geo/safegraph/")
-      .load(
-        "/datascience/geo/safegraph/day=202003*/country=argentina/"
-      )
-      .withColumnRenamed("ad_id", "device_id")
-      .withColumn("device_id", lower(col("device_id")))
-      .withColumn("geo_hashito", substring(col("geo_hash"), 0, 7))
-      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-      .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
-      .withColumn("window", date_format(col("Time"), "mm"))
-      .withColumn(
-        "window",
-        when(col("window") > 40, 3)
-          .otherwise(when(col("window") > 20, 2).otherwise(1))
-      )
-      .withColumn("window", concat(col("Hour"), col("window")))
-      .drop("Time")
-    //A safegraph pelado hay que filtrarlo con lo de abajo
-    raw.persist()
+    for (i <- (1 to 60)) {
+      val day = today.minusDays(i).toString("yyyyMMdd")
 
-    //Sólo nos interesan las áreas y las horas que tengan infectados adentro, les joineamos los infectados
-    //Levantamos los usarios que detectamos en Ezeiza los últimos 60 días
-    val eze = spark.read
-    // .option("delimiter", "\t")
-    // .option("header", true)
-    // .format("csv")
-    // .load("/datascience/geo/raw_output/Ezeiza_30d_argentina_17-3-2020-11h")
-      .format("parquet")
-      .load("/datascience/custom/geo_ezeiza_contacts_all_points_level2")
-      .select("device_id")
-      .distinct
-      .withColumn("device_id", lower(col("device_id")))
+      val data_eventqueue = spark.read
+        .format("parquet")
+        .option("basePath", "/datascience/data_audiences_streaming/")
+        .load(
+          "/datascience/data_audiences_streaming/hour=%s*/country=CL".format(
+            day
+          )
+        )
+        .filter("event_type IN ('data', 'pv', 'batch', 'tk')")
+        .join(ids, Seq("device_id"))
+        .select("device_id", "ip", "user_agent", "datetime")
+        .write
+        .format("parquet")
+        .mode("overwrite")
+        .save("/datascience/custom/idx_test_cl/day=%s".format(day))
+    }
 
-    // eze.persist()
-
-    eze
-      .join(raw, Seq("device_id"))
-      .select(
-        "device_id",
-        "latitude",
-        "longitude",
-        "geo_hash",
-        "utc_timestamp",
-        "window"
-      )
-      .write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/geo_ezeiza_all_points_level3")
-
-    //Soft Contagion. Vamos a quedarnos con gente que estuvo en el mismo grid que los infectados en la misma hora
-    //Vamos a usar el Raw de dos maneras,
-    // para 1) buscar y marca los momentos donde vimos infectados y
-    // 2)para levantar a los no infectados
-    //Acá unimos el raw pelado con los devices que vimos en ezeiza, de ahí vamos a obtener las áreas y la horas donde circularon los infectados
-    // val moment = spark.read
-    //   .load("/datascience/custom/geo_ezeiza_all_points_level2")
-    //   .select("geo_hash", "window")
-    //   .distinct()
-    //   .cache()
-
-    // moment.write
-    //   .format("parquet")
-    //   .mode("overwrite")
-    //   .save("/datascience/custom/geo_ezeiza_hashes_and_times_level2")
-
-    // val moment = spark.read
-    //   .format("parquet")
-    //   .load("/datascience/custom/geo_ezeiza_hashes_and_times_level2")
-
-    // raw
-    //   .join(moment, Seq("geo_hash", "window"))
-    //   .join(eze, Seq("device_id"), "left_anti")
-    //   .select(
-    //     "device_id",
-    //     "latitude",
-    //     "longitude",
-    //     "geo_hash",
-    //     "utc_timestamp",
-    //     "window"
-    //   )
-    //   .write
-    //   .format("parquet")
-    //   .mode("overwrite")
-    //   .save("/datascience/custom/geo_ezeiza_contacts_all_points_level2")
   }
 }
