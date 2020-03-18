@@ -5020,27 +5020,27 @@ object Random {
     // .format("csv")
     // .load("/datascience/geo/raw_output/Ezeiza_30d_argentina_17-3-2020-11h")
       .format("parquet")
-      .load("/datascience/custom/geo_ezeiza_contacts_all_points")
+      .load("/datascience/custom/geo_ezeiza_contacts_all_points_level2")
       .select("device_id")
       .distinct
       .withColumn("device_id", lower(col("device_id")))
 
     // eze.persist()
 
-    // eze
-    //   .join(raw, Seq("device_id"))
-    //   .select(
-    //     "device_id",
-    //     "latitude",
-    //     "longitude",
-    //     "geo_hash",
-    //     "utc_timestamp",
-    //     "window"
-    //   )
-    //   .write
-    //   .format("parquet")
-    //   .mode("overwrite")
-    //   .save("/datascience/custom/geo_ezeiza_all_points_level2")
+    eze
+      .join(raw, Seq("device_id"))
+      .select(
+        "device_id",
+        "latitude",
+        "longitude",
+        "geo_hash",
+        "utc_timestamp",
+        "window"
+      )
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/geo_ezeiza_all_points_level3")
 
     //Soft Contagion. Vamos a quedarnos con gente que estuvo en el mismo grid que los infectados en la misma hora
     //Vamos a usar el Raw de dos maneras,
@@ -5058,24 +5058,24 @@ object Random {
     //   .mode("overwrite")
     //   .save("/datascience/custom/geo_ezeiza_hashes_and_times_level2")
 
-    val moment = spark.read
-      .format("parquet")
-      .load("/datascience/custom/geo_ezeiza_hashes_and_times_level2")
+    // val moment = spark.read
+    //   .format("parquet")
+    //   .load("/datascience/custom/geo_ezeiza_hashes_and_times_level2")
 
-    raw
-      .join(moment, Seq("geo_hash", "window"))
-      .join(eze, Seq("device_id"), "left_anti")
-      .select(
-        "device_id",
-        "latitude",
-        "longitude",
-        "geo_hash",
-        "utc_timestamp",
-        "window"
-      )
-      .write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/geo_ezeiza_contacts_all_points_level2")
+    // raw
+    //   .join(moment, Seq("geo_hash", "window"))
+    //   .join(eze, Seq("device_id"), "left_anti")
+    //   .select(
+    //     "device_id",
+    //     "latitude",
+    //     "longitude",
+    //     "geo_hash",
+    //     "utc_timestamp",
+    //     "window"
+    //   )
+    //   .write
+    //   .format("parquet")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/geo_ezeiza_contacts_all_points_level2")
   }
 }
