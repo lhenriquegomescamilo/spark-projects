@@ -230,7 +230,7 @@ object SelectedKeywords {
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
-  def main(Args: Array[String]) {
+  def main(args: Array[String]) {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // First we obtain the Spark session
