@@ -78,7 +78,7 @@ val tokenizer = new Tokenizer()
 .setInputCols("sentence")
 .setOutputCol("token")
 .setContextChars(Array("(", ")", "?", "!",":","¡","¿"))
-.setTargetPattern("^a-zA-Z0-9")
+.setTargetPattern("^A-Za-z")
 
 val spanish_pos = PerceptronModel.load("/datascience/misc/pos_ud_gsd_es_2.4.0_2.4_1581891015986")
 
@@ -276,20 +276,18 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ){
     //The higher the score, the more relevant that word is in that particular document.
     val tfidf_docs = tokensWithTf
       .join(tokensWithDfIdf, Seq("kw"), "inner")
-      .withColumn("tf_idf", col("tf") * col("idf"))
+      .withColumn("TFIDF", col("tf") * col("idf"))
       
     // Min-Max Normalization and filter by threshold
-    val (vMin, vMax) = tfidf_docs.agg(min(col("tf_idf")), max(col("tf_idf"))).first match {
-      case Row(x: Double, y: Double) => (x, y)
-    }
+    // val (vMin, vMax) = tfidf_docs.agg(min(col("tf_idf")), max(col("tf_idf"))).first match {
+    //   case Row(x: Double, y: Double) => (x, y)
+    // }
 
-    val vNormalized = (col("tf_idf") - vMin) / (vMax - vMin) // v normalized to (0, 1) range
+    // val vNormalized = (col("tf_idf") - vMin) / (vMax - vMin) // v normalized to (0, 1) range
 
-    val tfidf_threshold  = 0
-    tfidf_docs.show()
-    tfidf_docs.withColumn("TFIDF", vNormalized)
-              .filter("TFIDF >= %s".format(tfidf_threshold))
-              .select("url","kw","TFIDF")
+//    val tfidf_threshold  = 0
+
+    tfidf_docs.select("url","kw","TFIDF")
               .write
               .format("parquet")
               .mode(SaveMode.Overwrite)
@@ -319,7 +317,7 @@ def processText(db: DataFrame, spark:SparkSession ): DataFrame = {
 
     getTFIDF(df_clean,spark)
     val tfidf_docs = spark.read.load("/datascience/scraper/tmp/tfidf_chkpt")
-    tfidf_docs.show()
+
     val df_final = tfidf_docs
     .withColumn("stem_kw",col("kw"))
     .join(docs,Seq("url"),"left")
