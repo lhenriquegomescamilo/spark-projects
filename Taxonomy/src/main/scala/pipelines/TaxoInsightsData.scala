@@ -108,9 +108,7 @@ def processDay(
       .withColumn("day", lit(DateTime.now.minusDays(since)))
       .partitionBy("day", "country")
       .save("/datascience/taxo_insights/data")
-
-  )
-
+      
 }  
 
   type OptionMap = Map[Symbol, Int]
