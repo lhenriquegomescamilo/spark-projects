@@ -31,7 +31,7 @@ object TaxoInsightsData {
   def getData(
       spark: SparkSession,
       nDays: Integer,
-      since: String,
+      since: Integer,
       path: String
   ): DataFrame = {
 
@@ -69,7 +69,9 @@ def processDay(
       nDays: Integer,
       since: Integer
   ): DataFrame = {
-    
+
+    val date_current = DateTime.now.minusDays(since).toString("yyyyMMdd")
+
     val map_events = Map(
           "batch" -> 0,
           "data" -> 1,
@@ -105,7 +107,7 @@ def processDay(
       .write
       .format("parquet")
       .mode("append")
-      .withColumn("day", lit(DateTime.now.minusDays(since)))
+      .withColumn("day", lit(date_current))
       .partitionBy("day", "country")
       .save("/datascience/taxo_insights/data")
       
