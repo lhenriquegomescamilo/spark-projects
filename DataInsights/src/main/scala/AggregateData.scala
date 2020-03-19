@@ -48,10 +48,32 @@ object AggregateData {
         "periodo",
         when(
           col("datediff") <= 1,
-          lit(Array("Last 1 day", "Last 7 day", "Last 30 day"))
+          lit(
+            Array(
+              "Last 1 day",
+              "Last 7 day",
+              "Last 14 day",
+              "Last 21 day",
+              "Last 30 day"
+            )
+          )
         ).otherwise(
-          when(col("datediff") <= 7, lit(Array("Last 7 day", "Last 30 day")))
-            .otherwise(lit(Array("Last 30 day")))
+          when(
+            col("datediff") <= 7,
+            lit(
+              Array("Last 7 day", "Last 14 day", "Last 21 day", "Last 30 day")
+            )
+          ).otherwise(
+              when(
+                col("datediff") <= 14,
+                lit(Array("Last 14 day", "Last 21 day", "Last 30 day"))
+              ).otherwise(
+                when(
+                  col("datediff") <= 21,
+                  lit(Array("Last 21 day", "Last 30 day"))
+                ).otherwise(lit(Array("Last 30 day")))
+              )
+            )
         )
       )
       .withColumn("periodo", explode(col("periodo")))
