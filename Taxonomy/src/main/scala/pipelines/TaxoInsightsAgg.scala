@@ -72,7 +72,7 @@ def processDay(
 
     // 1) Read Data and sum counts
     val df = getDataTaxo(spark,nDays,since)
-    .groupBy("domain","event_type","segment","id_partner","event_type","country")
+    .groupBy("domain","event_type","segment","id_partner","country")
     .agg(sum(col("devices_count")).as("total_devices"))
 
     // 2) Order and Save
