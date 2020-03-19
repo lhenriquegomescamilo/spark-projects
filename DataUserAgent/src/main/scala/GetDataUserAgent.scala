@@ -33,7 +33,7 @@ object GetDataUserAgent {
       .option("header", "true")
       .option("sep", "\t")
       .load("/data/eventqueue/%s/".format(day))
-      .select("device_id", "user_agent", "country", "url", "event_type")
+      .select("device_id", "user_agent", "country", "url", "event_type", "ip")
 
     // schema to be used for the parsed rdd
     val schema = new StructType()
