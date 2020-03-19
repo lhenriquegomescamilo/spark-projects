@@ -273,9 +273,15 @@ object IpgMaids {
   }
 
   def gzipOutput(spark: SparkSession, month: String) = {
+    val enriched = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/custom/IPG_maids_enriched")
+
     spark.read
       .format("csv")
       .load("/datascience/custom/IPG_maids/")
+      .join(enriched.select("_c0"), Seq("_c0")) // Keep only the maids that have been enriched
       .write
       .format("csv")
       .option("sep", ",")
@@ -283,11 +289,8 @@ object IpgMaids {
       .mode("overwrite")
       .save("/datascience/ipg/month=%s/IPG_maids_gz".format(month))
 
-    spark.read
-      .format("csv")
-      .option("sep", "\t")
-      .load("/datascience/custom/IPG_maids_enriched")
-      .select("_c1", "_c2")
+    enriched
+      .select("_c1", "_c2") // select salt and segments
       .write
       .format("csv")
       .option("sep", "\t")
