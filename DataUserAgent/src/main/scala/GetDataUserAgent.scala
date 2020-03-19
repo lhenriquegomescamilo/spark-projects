@@ -53,14 +53,26 @@ object GetDataUserAgent {
     // Here we filter the ros and
     val parsed = data
       .filter(
-        "event_type IN ('pv', 'campaign') AND length(user_agent)>0 AND country IN (%s)".format(
-          countries.map("'%s'".format(_)).mkString(", ")
-        )
+        "event_type IN ('pv', 'campaign') AND length(user_agent)>0 AND country IN (%s)"
+          .format(
+            countries.map("'%s'".format(_)).mkString(", ")
+          )
       )
       .select("device_id", "user_agent", "country", "url", "event_type", "ip")
       .dropDuplicates("device_id")
       .rdd // Now we parse the user agents
-      .map(row => (row(0), row(2), parser.value.parse(row(1).toString), row(1), row(3), row(4), row(5)))
+      .map(
+        row =>
+          (
+            row(0),
+            row(2),
+            parser.value.parse(row(1).toString),
+            row(1),
+            row(3),
+            row(4),
+            row(5)
+          )
+      )
       .map(
         row =>
           Row(
@@ -89,7 +101,7 @@ object GetDataUserAgent {
     df.write
       .format("parquet")
       .partitionBy("day", "country")
-      .mode("append")
+      .mode("overwrite")
       .save(
         "/datascience/data_useragents/"
       )
@@ -158,7 +170,8 @@ object GetDataUserAgent {
     // First we obtain the Spark session
     val spark = SparkSession.builder
       .appName("Get data for custom audiences")
-        .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
     // Finally, we download the data
