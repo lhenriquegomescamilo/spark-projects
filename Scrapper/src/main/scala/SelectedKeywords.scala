@@ -65,7 +65,7 @@ object SelectedKeywords {
     df
   }
 
-  def selected_keywords(spark: SparkSession) {
+  def selected_keywords(spark: SparkSession,since:Int) {
     // Define udfs to check if all chars are digits
     def isAllDigits(x: String) = x forall Character.isDigit
     val udfDigit = udf((keyword: String) => if (isAllDigits(keyword)) true else false)
@@ -127,8 +127,8 @@ object SelectedKeywords {
                           "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't",
                           "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves")
     
-    val day =  DateTime.now().minusDays(1).toString("yyyyMMdd")
-    val today =  DateTime.now().toString("yyyyMMdd")
+    val day =  DateTime.now().minusDays(1+since).toString("yyyyMMdd")
+    val today =  DateTime.now().minusDays(since).toString("yyyyMMdd")
     val data_parsed = spark.read.format("parquet")
                             .load("/datascience/scraper/parsed/processed/day=%s/".format(day))
                             .na.fill("")
@@ -230,7 +230,7 @@ object SelectedKeywords {
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
-  def main(Args: Array[String]) {
+  def main(args: Array[String]) {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     // First we obtain the Spark session
@@ -240,7 +240,8 @@ object SelectedKeywords {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    selected_keywords(spark)
+    val since = if (args.length > 0) args(0).toInt else 0
+    selected_keywords(spark,since)
 
   }
 }

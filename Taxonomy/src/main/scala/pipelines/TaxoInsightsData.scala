@@ -94,10 +94,11 @@ def processDay(
     .select("device_id","feature","id_partner","event_type","country")
     .withColumnRenamed("feature", "segment")
     .withColumn("domain",lit("not_url"))
-
+    .select("device_id","domain","id_partner","event_type","segment","country")
+    
     // 3) Concat dfs and aggregate devices
     val df = data_urls.union(data_triplets)
-    .groupBy("domain","event_type","segment","id_partner","event_type","country")
+    .groupBy("domain","event_type","segment","id_partner","country")
     .agg(approx_count_distinct(col("device_id"), 0.02).as("devices_count"))
 
     // 4) Order and Save
