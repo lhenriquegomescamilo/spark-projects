@@ -56,22 +56,22 @@ object TapadIndexProcessor {
         .format("csv")
         .load("/datascience/custom/tapad_index_20200107")
         .select("_c0", "_c1")
-        .rename("_c0", "tapad_jan")
-        .rename("_c1", "device_id")
+        .withColumnRenamed("_c0", "tapad_jan")
+        .withColumnRenamed("_c1", "device_id")
     val february =
       spark.read
         .format("csv")
         .load("/datascience/custom/tapad_index_20200203")
         .select("_c0", "_c1")
-        .rename("_c0", "tapad_feb")
-        .rename("_c1", "device_id")
+        .withColumnRenamed("_c0", "tapad_feb")
+        .withColumnRenamed("_c1", "device_id")
     val march =
       spark.read
         .format("csv")
         .load("/datascience/custom/tapad_index_20200306")
         .select("_c0", "_c1")
-        .rename("_c0", "tapad_mar")
-        .rename("_c1", "device_id")
+        .withColumnRenamed("_c0", "tapad_mar")
+        .withColumnRenamed("_c1", "device_id")
 
     january
       .join(february, Seq("device_id"))
