@@ -108,7 +108,7 @@ object USHomes {
       )
       .filter("zipplus4 != ''")
       .groupBy("zipplus4")
-      .agg(approxCountDistinct("estid") as "device_unique")
+      .agg(approxCountDistinct("estid", 0.02) as "device_unique")
       .write
       .format("csv")
       .mode("overwrite")
