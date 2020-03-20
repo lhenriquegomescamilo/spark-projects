@@ -391,7 +391,46 @@ val udfGetDomain = udf(
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
+    def getData(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer,
+      path: String
+  ): DataFrame = {
 
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day)) //for each day from the list it returns the day path.
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+
+    df
+  }  
+
+  val path_urls = "/datascience/data_demo/data_urls"
+  val data_urls = getData(spark,15,1,path_urls)
+  .select("device_id","url","id_partner","event_type","segments","country")
+  .filter("id_partner==1395")
+  .filter("country=='CL'")
+  .withColumn("segment", explode(col("segments")))
+  .groupBy("segment")
+  .agg(approx_count_distinct(col("device_id"), 0.02).as("device_unique"))
+      df.write.format("csv").option("header","true")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/tl13")  
+
+    /**
     val format = "yyyyMMdd"
     val end = new DateTime(2020,2,10,0,0,0,0) 
 
@@ -416,6 +455,8 @@ val udfGetDomain = udf(
     df.write.format("csv").option("header","true")
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/testzj")  
+
+    **/
 
 
     /*
