@@ -23,7 +23,7 @@ object TapadIndexProcessor {
       .format("csv")
       .option("sep", ";")
       .load("/data/providers/Tapad/2020-03-06")
-    //   .repartition(300)
+      //   .repartition(300)
       .withColumn("device", explode(split(col("_c2"), "\t")))
       .withColumnRenamed("_c1", "tapad_id")
       .withColumn("device", split(col("device"), "="))
@@ -50,7 +50,47 @@ object TapadIndexProcessor {
       .getOrCreate()
 
     // Finally, we download the data
-    parseIndex(spark)
+    // parseIndex(spark)
+    val january =
+      spark.read
+        .format("csv")
+        .load("/datascience/custom/tapad_index_20200107")
+        .select("_c0", "_c1")
+        .rename("_c0", "tapad_jan")
+        .rename("_c1", "device_id")
+    val february =
+      spark.read
+        .format("csv")
+        .load("/datascience/custom/tapad_index_20200203")
+        .select("_c0", "_c1")
+        .rename("_c0", "tapad_feb")
+        .rename("_c1", "device_id")
+    val march =
+      spark.read
+        .format("csv")
+        .load("/datascience/custom/tapad_index_20200306")
+        .select("_c0", "_c1")
+        .rename("_c0", "tapad_mar")
+        .rename("_c1", "device_id")
+
+    january
+      .join(february, Seq("device_id"))
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/tapad_change_jan_feb")
+    february
+      .join(march, Seq("device_id"))
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/tapad_change_feb_mar")
+    january
+      .join(march, Seq("device_id"))
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/tapad_change_jan_mar")
   }
 
 }
