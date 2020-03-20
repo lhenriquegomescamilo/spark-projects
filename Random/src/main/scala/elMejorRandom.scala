@@ -1229,7 +1229,7 @@ val df_homes = spark.read.format("csv")
     val distance_fom_home_avg_user =  distance_fom_home
     .groupBy("device_id","Day").agg(avg("distance") as "distance_avg",count("geo_hash") as "geo_hash_counts")
     
-    val distance_fom_home_avg =  distance_fom_home_avg_user.groupBy("Day").agg(avg("distance_avg") as "distance_avg",count("geo_hash_counts") as "geo_hash_avg",count("device_id") as "devices",count("geo_hash_counts") as "geo_hash_sum")
+    val distance_fom_home_avg =  distance_fom_home_avg_user.groupBy("Day").agg(avg("distance_avg") as "distance_avg",count("geo_hash_counts") as "geo_hash_avg",count("device_id") as "devices",sum("geo_hash_counts") as "geo_hash_sum")
     
 
 
@@ -1255,6 +1255,53 @@ distance_fom_home_avg
     .format("csv")
     .option("header",true)
     .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_fom_home_avg_%s".format(today))
+
+
+//Y acá empiezo a calcular la distancia recorrida por usuario. 
+val tipito = raw
+.withColumn("latituderad",toRadians(col("latitude")))
+.withColumn("longituderad",toRadians(col("longitude")))
+
+
+val windowSpec = Window.partitionBy("device_id").orderBy("utc_timestamp")
+
+val spacelapse = tipito
+.withColumn("deltaLat", col("latituderad") - lag("latituderad", 1).over(windowSpec))
+.withColumn("deltaLong", col("longituderad") - lag("longituderad", 1).over(windowSpec))
+.withColumn("a1", pow(sin(col("deltaLat")/2),2))
+.withColumn("a2", cos(col("latituderad")) * cos(lag("latituderad", 1).over(windowSpec)) * col("deltaLong")/2)
+.withColumn("a", pow(col("a1")+col("a2"),2))
+.withColumn("greatCircleDistance1",(sqrt(col("a"))*2))
+.withColumn("greatCircleDistance2",(sqrt(lit(1)-col("a"))))
+.withColumn("distance(m)",atan2(col("greatCircleDistance1"),col("greatCircleDistance2"))*6371*1000)
+.withColumn("timeDelta(s)", (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec)))
+//.withColumn("speed(km/h)",col("distance(m)") *3.6/ col("timeDelta(s)") )
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "MM-dd"))
+
+.select("device_id","utc_timestamp","latitude","longitude","distance(m)","timeDelta(s)","Day")
+.groupBy("Day","device_id").agg(sum(col("distance(m)")) as "distance(m)",sum(col("timeDelta(s)")) as "timeDelta(s)")
+
+//Esto nos da por usuario por día, la distancia recorrida. //Esto lo guardaría.
+//también quiero un promedio de esto
+
+val space_lapse_agg = spacelapse.groupBy("Day").agg(count("device_id") as "devices",avg(col("distance(m)")) as "distance_avg",avg(col("timeDelta(s)")) as "timeDelta_avg")
+
+
+spacelapse
+    .write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_traveled_%s".format(today))
+
+space_lapse_agg
+    .write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_traveled_agg_%s".format(today))
+
 
 
 
