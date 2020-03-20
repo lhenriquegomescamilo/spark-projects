@@ -426,7 +426,7 @@ val udfGetDomain = udf(
   .withColumn("segment", explode(col("segments")))
   .groupBy("segment")
   .agg(approx_count_distinct(col("device_id"), 0.02).as("device_unique"))
-      df.write.format("csv").option("header","true")
+      .write.format("csv").option("header","true")
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/tl13")  
 
