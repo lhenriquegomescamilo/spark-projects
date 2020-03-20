@@ -1173,21 +1173,35 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
 
-//Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
-//Esto es safegraph pelado los uĺtimos X dáis
-val raw = get_safegraph_data(spark,"36","1","argentina")
-.withColumnRenamed("ad_id","device_id")
-.withColumn("device_id",lower(col("device_id")))
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
-
-raw.groupBy("Day").agg(count("utc_timestamp") as "detections", countDistinct("device_id") as "devices")
+spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/geo/raw_output/coronavirus_places_specific_30d_argentina_20-3-2020-14h")
+.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+.groupBy("Day","categoria").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
+.orderBy(asc("Day"))
+.repartition(1)
 .write
 .mode(SaveMode.Overwrite)
-.format("parquet")
-.save("/datascience/geo/Reports/GCBA/Coronavirus/detecciones_usuarios_normalizador_%s".format(today))
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/Critical_Places_20_03")
 
-
+spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/geo/raw_output/coronavirus_places_specific_30d_argentina_20-3-2020-14h")
+.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+.groupBy("Day","audience").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
+.orderBy(asc("Day"))
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/Critical_Places_Specific_20_03")
 
 
 }
