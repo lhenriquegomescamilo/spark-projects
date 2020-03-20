@@ -22,7 +22,7 @@ object TapadIndexProcessor {
     val data = spark.read
       .format("csv")
       .option("sep", ";")
-      .load("/data/providers/Tapad/Retargetly_ids_full_20200203_083610.bz2")
+      .load("/data/providers/Tapad/Retargetly_ids_full_20200107_162119.bz2")
       .repartition(300)
       .withColumn("device", explode(split(col("_c2"), "\t")))
       .withColumnRenamed("_c1", "tapad_id")
@@ -35,7 +35,7 @@ object TapadIndexProcessor {
     data.write
       .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/tapad_index_20200203")
+      .save("/datascience/custom/tapad_index_20200107")
   }
 
   def main(args: Array[String]) {
