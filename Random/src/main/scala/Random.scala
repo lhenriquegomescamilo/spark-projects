@@ -4985,28 +4985,13 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val today = DateTime.now
-    val ids = spark.read.load("/datascience/custom/devices_cl_idx_test").cache()
-
-    for (i <- (1 to 60)) {
-      val day = today.minusDays(i).toString("yyyyMMdd")
-
-      val data_eventqueue = spark.read
+    println(
+      spark.read
         .format("parquet")
-        .option("basePath", "/datascience/data_audiences_streaming/")
-        .load(
-          "/datascience/data_audiences_streaming/hour=%s*/country=CL".format(
-            day
-          )
-        )
-        .filter("event_type IN ('data', 'pv', 'batch', 'tk')")
-        .join(ids, Seq("device_id"))
-        .select("device_id", "ip", "user_agent", "datetime")
-        .write
-        .format("parquet")
-        .mode("overwrite")
-        .save("/datascience/custom/idx_test_cl/day=%s".format(day))
-    }
+        .load("/datascience/custom/tapad_change_feb_mar")
+        .filter("tapad_mar != tapad_feb")
+        .count()
+    )
 
   }
 }
