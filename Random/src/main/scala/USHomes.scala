@@ -107,11 +107,11 @@ object USHomes {
         )
       )
       .filter("zipplus4 != ''")
-      .select("zipplus4")
-      .distinct()
+      .groupBy("zipplus4")
+      .agg(approxCountDistinct("estid") as "device_unique")
       .write
       .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/all_zip4")
+      .save("/datascience/custom/device_unique_per_zip4")
   }
 }
