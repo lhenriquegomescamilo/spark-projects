@@ -5000,7 +5000,7 @@ object Random {
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
       .map(day => path + "/hour=%s*".format(day))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
