@@ -4986,7 +4986,7 @@ object Random {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     val nDays = 60
-    val from = 1
+    val from = 61
     val path = "/datascience/data_triplets/segments/"//"/datascience/data_audiences_streaming/"
 
     val conf = spark.sparkContext.hadoopConfiguration
@@ -4999,7 +4999,7 @@ object Random {
       (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/hour=%s*".format(day))
+      .map(day => path + "/day=%s".format(day))
       // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read
       .option("basePath", path)
