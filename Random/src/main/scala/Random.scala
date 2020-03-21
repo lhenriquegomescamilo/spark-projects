@@ -4987,7 +4987,7 @@ object Random {
 
     val nDays = 60
     val from = 1
-    val path = "/datascience/data_audiences_streaming/"//"/datascience/data_triplets/segments/"
+    val path = "/datascience/data_triplets/segments/"//"/datascience/data_audiences_streaming/"
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -5005,16 +5005,16 @@ object Random {
       .option("basePath", path)
       .parquet(hdfs_files: _*)
       .filter("event_type IN ('pv', 'batch', 'data')")
-      .select("device_id") //, "day")
+      .select("device_id", "day")
       .distinct()
 
     df
-      // .groupBy("device_id")
-      // .agg(approxCountDistinct("day", 0.03) as "days")
-      // .filter("days < 2")
+      .groupBy("device_id")
+      .agg(approxCountDistinct("day", 0.03) as "days")
+      .filter("days < 2")
       .write
       .format("parquet")
       .mode("overwrite")
-      .save("/datascience/custom/new_devices")
+      .save("/datascience/custom/old_devices")
   }
 }
