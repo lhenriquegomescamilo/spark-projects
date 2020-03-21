@@ -3083,7 +3083,7 @@ object RandomTincho {
         nDays: Int = 30,
         from: Int = 1,
         path: String = "/datascience/data_triplets/segments/"
-    ) = {
+    ): DataFrame = {
       // First we obtain the configuration to be allowed to watch if a file exists or not
       val conf = spark.sparkContext.hadoopConfiguration
       val fs = FileSystem.get(conf)
@@ -3103,6 +3103,7 @@ object RandomTincho {
         .select("device_id", "feature")
       // force count to 1 - if column doesn't exists, it creates it
       // df.withColumn("count", lit(1))
+      df
     }
 
     val devices = spark.read
