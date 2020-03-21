@@ -4985,13 +4985,27 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    println(
-      spark.read
-        .format("parquet")
-        .load("/datascience/custom/tapad_change_feb_mar")
-        .filter("tapad_mar != tapad_feb")
-        .count()
-    )
+    val nDays = 60
+    val from = 61
 
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // read files from dates
+    val format = "yyyyMMdd"
+    val endDate = DateTime.now.minusDays(from)
+    val days =
+      (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s".format(day))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .filter("evn")
+      .select("device_id", "day")
+      
+    df.groupBy("device_id").agg(approxCountDistinct("day", 0.03) as "days").filter("days < 2").write.format("parquet").mode("overwrite").save("/datascience/custom/old_devices")
   }
 }

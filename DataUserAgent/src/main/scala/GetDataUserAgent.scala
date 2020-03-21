@@ -84,10 +84,10 @@ object GetDataUserAgent {
             row._3.os.family,
             row._3.os.major.getOrElse(""),
             row._3.os.minor.getOrElse(""),
-            row._4,
-            row._5,
-            row._6,
-            row._7
+            row._4, // user_agent
+            row._5, // url
+            row._6, // event_type
+            row._7  // ip
           )
       )
 

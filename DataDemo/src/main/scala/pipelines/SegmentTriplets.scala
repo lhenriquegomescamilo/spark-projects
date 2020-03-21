@@ -135,7 +135,7 @@ object SegmentTriplets {
       .orderBy("device_id")
       .write
       .format("parquet")
-      .mode("append")
+      .mode("overwrite")
       .partitionBy("day", "country")
       .save("/datascience/data_triplets/segments")
   }
@@ -212,6 +212,7 @@ object SegmentTriplets {
     val spark = SparkSession.builder
       .appName("Get triplets: keywords and segments")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
+      .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
     // Parseo de parametros
