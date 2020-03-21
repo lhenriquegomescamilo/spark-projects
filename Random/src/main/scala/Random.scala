@@ -5004,7 +5004,7 @@ object Random {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .filter("event_type IN ('pv', 'batch', 'data')")
+      // .filter("event_type IN ('pv', 'batch', 'data')")
       .select("device_id", "day")
       .distinct()
 
