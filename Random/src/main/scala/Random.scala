@@ -4987,7 +4987,7 @@ object Random {
 
     val nDays = 60
     val from = 1
-    val path = "/datascience/data_triplets/segments/"
+    val path = "/datascience/data_audiences_streaming/"//"/datascience/data_triplets/segments/"
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
