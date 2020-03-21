@@ -1194,14 +1194,14 @@ spark.read.format("csv")
 .load("/datascience/geo/raw_output/coronavirus_places_specific_30d_argentina_20-3-2020-14h")
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-.groupBy("Day","audience").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
+.groupBy("Day","categoria","audience").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
 .orderBy(asc("Day"))
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/Critical_Places_Specific_20_03")
+.save("/datascience/geo/Reports/GCBA/Coronavirus/Critical__Places__Specific_20_03")
 
 
 }
