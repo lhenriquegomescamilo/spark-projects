@@ -3106,50 +3106,50 @@ object RandomTincho {
       df
     }
 
-    val devices = spark.read
-      .format("csv")
-      .load(
-        "/datascience/audiences/crossdeviced/madids_travellers.csv_xd/"
-      )
-      .select("_c1")
-      .distinct()
-      .withColumnRenamed("_c1", "device_id")
-      .withColumn("device_id", lower(col("device_id")))
+    // val devices = spark.read
+    //   .format("csv")
+    //   .load(
+    //     "/datascience/audiences/crossdeviced/madids_travellers.csv_xd/"
+    //   )
+    //   .select("_c1")
+    //   .distinct()
+    //   .withColumnRenamed("_c1", "device_id")
+    //   .withColumn("device_id", lower(col("device_id")))
 
-    val original_devices = spark.read
-      .format("csv")
-      .load("/datascience/misc/madids_travellers.csv")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumn("device_id", lower(col("device_id")))
+    // val original_devices = spark.read
+    //   .format("csv")
+    //   .load("/datascience/misc/madids_travellers.csv")
+    //   .withColumnRenamed("_c0", "device_id")
+    //   .withColumn("device_id", lower(col("device_id")))
 
-    val piis = spark.read
-      .format("parquet")
-      .load("/datascience/pii_matching/pii_tuples/")
-      .filter("country = 'AR'")
-      .select("device_id", "ml_sh2", "nid_sh2")
-      .withColumn("device_id", lower(col("device_id")))
-    devices
-      .unionAll(original_devices)
-      .join(piis, Seq("device_id"))
-      .groupBy("device_id")
-      .agg(collect_set("ml_sh2") as "mails", collect_set("nid_sh2") as "nids")
-      .withColumn("mails", concat_ws(";", col("mails")))
-      .withColumn("nids", concat_ws(";", col("nids")))
-      .write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/equifax_aeropuertos_with_piis")
-
-    // val dev_piis =
-    //   spark.read.load("/datascience/custom/equifax_aeropuertos_with_piis")
-    // val data_triplets = getDataTriplets2(spark, "AR", 1, 30)
-
-    // dev_piis
-    //   .join(data_triplets, Seq("device_id"), "left")
+    // val piis = spark.read
+    //   .format("parquet")
+    //   .load("/datascience/pii_matching/pii_tuples/")
+    //   .filter("country = 'AR'")
+    //   .select("device_id", "ml_sh2", "nid_sh2")
+    //   .withColumn("device_id", lower(col("device_id")))
+    // devices
+    //   .unionAll(original_devices)
+    //   .join(piis, Seq("device_id"))
+    //   .groupBy("device_id")
+    //   .agg(collect_set("ml_sh2") as "mails", collect_set("nid_sh2") as "nids")
+    //   .withColumn("mails", concat_ws(";", col("mails")))
+    //   .withColumn("nids", concat_ws(";", col("nids")))
     //   .write
     //   .format("parquet")
     //   .mode("overwrite")
     //   .save("/datascience/custom/equifax_aeropuertos_with_piis")
+
+    val dev_piis =
+      spark.read.load("/datascience/custom/equifax_aeropuertos_with_piis")
+    val data_triplets = getDataTriplets2(spark, "AR", 1, 30)
+
+    dev_piis
+      .join(data_triplets, Seq("device_id"), "left")
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/equifax_aeropuertos_with_piis")
   }
 
 }
