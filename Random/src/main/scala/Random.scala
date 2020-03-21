@@ -4985,36 +4985,45 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val nDays = 60
-    val from = 61
-    val path = "/datascience/data_triplets/segments/"//"/datascience/data_audiences_streaming/"
+    // val nDays = 60
+    // val from = 61
+    // val path = "/datascience/data_triplets/segments/"//"/datascience/data_audiences_streaming/"
 
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
+    // val conf = spark.sparkContext.hadoopConfiguration
+    // val fs = FileSystem.get(conf)
 
-    // read files from dates
-    val format = "yyyyMMdd"
-    val endDate = DateTime.now.minusDays(from)
-    val days =
-      (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days
-      .map(day => path + "/day=%s".format(day))
-      // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    val df = spark.read
-      .option("basePath", path)
-      .parquet(hdfs_files: _*)
-      // .filter("event_type IN ('pv', 'batch', 'data')")
-      .select("device_id", "day")
-      .distinct()
+    // // read files from dates
+    // val format = "yyyyMMdd"
+    // val endDate = DateTime.now.minusDays(from)
+    // val days =
+    //   (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
+    // // Now we obtain the list of hdfs folders to be read
+    // val hdfs_files = days
+    //   .map(day => path + "/day=%s".format(day))
+    //   // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    // val df = spark.read
+    //   .option("basePath", path)
+    //   .parquet(hdfs_files: _*)
+    //   // .filter("event_type IN ('pv', 'batch', 'data')")
+    //   .select("device_id", "day")
+    //   .distinct()
 
-    df
-      .groupBy("device_id")
-      .agg(approxCountDistinct("day", 0.03) as "days")
-      .filter("days < 2")
+    // df
+    //   .groupBy("device_id")
+    //   .agg(approxCountDistinct("day", 0.03) as "days")
+      // .filter("days < 2")
+      // .write
+      // .format("parquet")
+      // .mode("overwrite")
+      // .save("/datascience/custom/old_devices")
+
+    val old_d = spark.read.format("parquet").load("/datascience/custom/old_devices")
+    val new_d = spark.read.format("parquet").load("/datascience/custom/new_devices")
+
+    old_d.join(new_d, Seq("device_id"), "left_anti")
       .write
       .format("parquet")
       .mode("overwrite")
-      .save("/datascience/custom/old_devices")
+      .save("/datascience/custom/to_remove")
   }
 }
