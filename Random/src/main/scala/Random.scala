@@ -4986,7 +4986,8 @@ object Random {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     val nDays = 60
-    val from = 61
+    val from = 1
+    val path = "/datascience/data_triplets/segments/"
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
@@ -4998,14 +4999,22 @@ object Random {
       (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/day=%s".format(day))
+      .map(day => path + "/hour=%s*".format(day))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .filter("evn")
-      .select("device_id", "day")
-      
-    df.groupBy("device_id").agg(approxCountDistinct("day", 0.03) as "days").filter("days < 2").write.format("parquet").mode("overwrite").save("/datascience/custom/old_devices")
+      .filter("event_type IN ('pv', 'batch', 'data')")
+      .select("device_id") //, "day")
+      .distinct()
+
+    df
+      // .groupBy("device_id")
+      // .agg(approxCountDistinct("day", 0.03) as "days")
+      // .filter("days < 2")
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/new_devices")
   }
 }
