@@ -254,6 +254,7 @@ object TermSearch {
     .withColumn("segmentId", explode(col("segments")))
     .join(taxo,Seq("segmentId"))
     .groupBy("domain","device_id","day").agg(collect_list("name").as("behaviour"))
+    .withColumn("behaviour", concat_ws(",", col("behaviour")))
     
 
     val path2 = "/datascience/misc/covid_final"
