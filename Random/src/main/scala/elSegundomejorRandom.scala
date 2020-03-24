@@ -1173,35 +1173,35 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
 
-spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/raw_output/coronavirus_places_specific_30d_argentina_20-3-2020-14h")
-.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-.groupBy("Day","categoria").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
-.orderBy(asc("Day"))
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/Critical_Places_20_03")
+val safegraph = get_safegraph_data(spark,"30","1","argentina")
 
-spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/raw_output/coronavirus_places_specific_30d_argentina_20-3-2020-14h")
-.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-.groupBy("Day","categoria","audience").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
-.orderBy(asc("Day"))
+safegraph.persist()
+
+//Nos quedamos con una lat long por geohash
+val geohash = safegraph.withColumn("geo_hashote",substring(col("geo_hash"), 0, 7)) .dropDuplicates("geo_hashote")
+.select("geo_hashote","latitude","longitude")
+
+//Queremos saber detecciones totoales por día ya que estamos
+val total_counts = safegraph
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "MM-dd"))
+.groupBy("Day").agg(count("latitude") as "detections", countDistinct("ad_id") as "devices")
+
+geohash
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/Critical__Places__Specific_20_03")
+.save("/datascience/geo/Reports/GCBA/Coronavirus/GeoHashes_%s".format(today))
+
+total_counts
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/Normalizador_%s".format(today))
 
 
 }
