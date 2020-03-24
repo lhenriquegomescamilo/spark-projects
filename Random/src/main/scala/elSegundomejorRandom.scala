@@ -1173,37 +1173,41 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
 
-val safegraph = get_safegraph_data(spark,"30","1","argentina")
 
-//Nos quedamos con una lista de geohashes por usuario y cantida de cada uno
-val geo_user = safegraph
-.withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "MM-dd"))
-.groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
+//tenemos barrios con geohash de 7 cifras
+val barrios = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/geo/Reports/GCBA/Coronavirus/")
+.withColumnRenamed("geo_hashote","geo_hash_7")
 
 
-geo_user
-.write
-.mode(SaveMode.Overwrite)
-.format("parquet")
-.save("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_list_by_user_%s".format(today))
+val tipo2 = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_list_by_user_2020-03-24")
+.join(barrios,Seq("geo_hash_7"))
+.groupBy("COMUNA","BARRIO","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("COMUNA","BARRIO","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 
-
-
-geo_user
-.withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5))
-.withColumn("geo_hash_6",substring(col("geo_hash_7"), 0, 6))
-.groupBy("device_id","Day").agg(
-    countDistinct("geo_hash_7") as "geo_hash_7",
-    countDistinct("geo_hash_6") as "geo_hash_6",
-    countDistinct("geo_hash_5") as "geo_hash_5")
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_per_user_per_day_%s".format(today))
+.save("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_barrio_tipo2_03-24")
+
+
+
+
+val hash_user = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_for_user_2020-03-23")
+val barrio_user = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_list_by_user_2020-03-24")
+.join(barrios,Seq("geo_hash_7")).select("COMUNA","BARRIO","device_id").distinct()
+
+barrio_user.join(hash_user,Seq("device_id"))
+.groupBy("COMUNA","BARRIO","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_barrio_tipo3_03-24")
 
 
 }
