@@ -3087,11 +3087,9 @@ object RandomTincho {
   val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
 
   // Select sample of 1000 users
-  val moment =  raw.withColumn("rand",rand())
-                    .withColumn("feature",udfFeature(col("rand")))
-                    .filter("feature = 1").limit(1000)
-                    .select("device_id","geo_hash", "window")
+  val moment =  raw.select("device_id","geo_hash", "window")
                     .distinct
+                    .limit(1000)
   moment.cache()
 
   // Group raw data 
