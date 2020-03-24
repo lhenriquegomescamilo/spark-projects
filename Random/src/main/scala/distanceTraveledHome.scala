@@ -208,7 +208,7 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
 
-val raw = get_safegraph_data(spark,"35","1","argentina")
+val raw = get_safegraph_data(spark,"30","1","argentina")
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -298,7 +298,7 @@ val spacelapse = tipito
 //.withColumn("speed(km/h)",col("distance(m)") *3.6/ col("timeDelta(s)") )
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-.select("device_id","utc_timestamp","latitude","longitude","distance","timeDelta","Day")
+.select("device_id","utc_timestamp","latitude","longitude","distance","timeDelta","Day","geo_hash")
 
 //spacelapse
 
