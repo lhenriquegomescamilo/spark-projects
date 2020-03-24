@@ -3153,7 +3153,7 @@ object RandomTincho {
             .withColumnRenamed("ad_id", "device_id")
             .select("device_id")
             .distinct
-            .limit(3000)
+            .limit(10000)
       )
 
     val users = dfs.reduce((df1, df2) => df1.union(df2)).select("device_id").distinct
@@ -3178,7 +3178,6 @@ object RandomTincho {
           .mode(SaveMode.Overwrite)
           .save("/datascience/custom/coronavirus_seed")
 
-                  
   }
 
   def main(args: Array[String]) {
@@ -3192,7 +3191,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    //generate_seed(spark)
+    generate_seed(spark)
     get_coronavirus(spark)
   }
 }
