@@ -199,7 +199,7 @@ object TermSearch {
 
     //MainProcess(spark)
 
-
+    /**
     val path = "/datascience/misc/covid_users"
 
     val df =spark.read.format("parquet")
@@ -237,7 +237,35 @@ object TermSearch {
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/covid_final")
 
+    **/
 
+    val taxo = spark.read.format("csv")
+    .option("header",true)
+    .load("/datascience/geo/Reports/Equifax/DataMixta/RelyTaxonomy_06_02_2020.csv")
+    .filter(col("clusterParent").isin(0,1,2))
+    .select("segmentId","name")
+
+    val path = "/datascience/misc/covid_users"
+    val df =spark.read.format("parquet")
+    .load(path)
+    .selectExpr("*", "parse_url(url, 'HOST') as domain")
+    .withColumn("segments", split(col("segments"), " "))
+    .withColumn("segmentId", explode(col("segments")))
+    .join(taxo,Seq("segmentId"))
+    .groupBy("domain","device_id","day").agg(collect_list("name").as("behaviour"))
+    
+
+    val path2 = "/datascience/misc/covid_final"
+    val df2 =spark.read.format("csv")
+    .load(path2)
+  
+
+    df.join(df2,Seq("device_id","day"))
+    .select("device_id","domain","day","url_count_total","ratio","behaviour")
+    .write.format("csv")
+      .option("header",true)
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/covid_final_2")
     
 
 
