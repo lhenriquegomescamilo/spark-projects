@@ -3156,11 +3156,29 @@ object RandomTincho {
             .limit(3000)
       )
 
-    dfs.reduce((df1, df2) => df1.union(df2))
-        .write
-        .format("parquet")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/custom/coronavirus_seed")
+    val users = dfs.reduce((df1, df2) => df1.union(df2)).select("device_id").distinct
+    
+    spark.read.format("parquet").option("basePath", "/datascience/geo/safegraph/").load("/datascience/geo/safegraph/day=202003*/country=argentina/")
+          .withColumnRenamed("ad_id", "device_id")
+          .withColumn("device_id", lower(col("device_id")))
+          .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+          .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+          .withColumn("window", date_format(col("Time"), "mm"))
+          .withColumn("window",
+            when(col("window") > 40, 3)
+              .otherwise(when(col("window") > 20, 2).otherwise(1))
+          )
+          .withColumn("window", concat(col("Hour"), col("window")))
+          .drop("Time")
+          .join(users,Seq("device_id"),"inner")
+          .select("device_id","geo_hash", "window")
+          .distinct
+          .write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/coronavirus_seed")
+
+                  
   }
 
   def main(args: Array[String]) {
@@ -3174,6 +3192,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
+    generate_seed(spark)
     get_coronavirus(spark)
   }
 }
