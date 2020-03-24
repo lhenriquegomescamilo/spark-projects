@@ -3130,6 +3130,36 @@ object RandomTincho {
       .save("/datascience/custom/coronavirus_contacts_per_day")
 
   }
+  def generate_seed(spark:SparkSession){
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(0)
+
+    val days = (0 until 24).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/geo/safegraph/"
+    val dfs = days
+      .map(day => path + "day=%s/".format(day) + "country=argentina")
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(
+        x =>
+          spark.read
+            .option("basePath", "/datascience/data_triplets/segments/")
+            .parquet(x)
+            .withColumnRenamed("ad_id", "device_id")
+            .select("device_id")
+            .distinct
+            .limit(3000)
+      )
+
+    dfs.reduce((df1, df2) => df1.union(df2))
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/coronavirus_seed")
+  }
 
   def main(args: Array[String]) {
 
@@ -3142,7 +3172,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    get_coronavirus(spark)
+    generate_seed(spark)
 
   }
 
