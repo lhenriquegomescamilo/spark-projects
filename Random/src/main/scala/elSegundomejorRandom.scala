@@ -1192,8 +1192,8 @@ geo_user
 
 
 geo_user
-.withColumn("geo_hash_5",substring(col("geo_hash"), 0, 5))
-.withColumn("geo_hash_6",substring(col("geo_hash"), 0, 6))
+.withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5))
+.withColumn("geo_hash_6",substring(col("geo_hash_7"), 0, 6))
 .groupBy("device_id","Day").agg(
     countDistinct("geo_hash_7") as "geo_hash_7",
     countDistinct("geo_hash_6") as "geo_hash_6",
