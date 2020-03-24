@@ -3146,7 +3146,7 @@ object RandomTincho {
       .map(
         x =>
           spark.read
-            .option("basePath", "/datascience/data_triplets/segments/")
+            .option("basePath", path)
             .parquet(x)
             .withColumnRenamed("ad_id", "device_id")
             .select("device_id")
@@ -3173,7 +3173,5 @@ object RandomTincho {
       .getOrCreate()
 
     generate_seed(spark)
-
   }
-
 }
