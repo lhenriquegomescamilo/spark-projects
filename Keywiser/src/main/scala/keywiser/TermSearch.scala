@@ -247,6 +247,7 @@ object TermSearch {
 
     val path = "/datascience/misc/covid_users"
     val df =spark.read.format("parquet")
+    .option("header",true)
     .load(path)
     .selectExpr("*", "parse_url(url, 'HOST') as domain")
     .withColumn("segments", split(col("segments"), " "))
@@ -257,6 +258,7 @@ object TermSearch {
 
     val path2 = "/datascience/misc/covid_final"
     val df2 =spark.read.format("csv")
+    .option("header",true)
     .load(path2)
   
 
