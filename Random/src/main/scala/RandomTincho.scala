@@ -3089,17 +3089,18 @@ object RandomTincho {
 
     // Select sample of 1000 users
     val initial_seed = spark.read
-      .load("/datascience/custom/initial_seed")
+      .load("/datascience/custom/coronavirus_seed")
       .select("device_id", "geo_hash", "window")
 
+    // Get the distinct moments to filter the raw data
     val moments = initial_seed.select("geo_hash", "window").distinct()
 
     // Group raw data
-    val grouped = raw
-      .groupBy("geo_hash", "window")
-      .agg(collect_list(col("device_id")).as("devices"))
+    // val grouped = raw
+    //   .groupBy("geo_hash", "window")
+    //   .agg(collect_list(col("device_id")).as("devices"))
 
-    // Join raw data with the sample of users, and calculate len
+    // Join raw data with the moments and store
     raw
       .join(moments, Seq("geo_hash", "window"))
       .write
