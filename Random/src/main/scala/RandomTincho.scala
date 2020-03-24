@@ -3084,7 +3084,7 @@ object RandomTincho {
     .withColumn("window", concat(col("Hour"), col("window")))
     .drop("Time")
 
-  val udfFeature = udf((r: Double) => if (r > 0.5) true else false)
+  val udfFeature = udf((r: Double) => if (r > 0.3) true else false)
 
   // Select sample of 1000 users
   val moment =  raw.withColumn("rand",rand())
@@ -3104,6 +3104,19 @@ object RandomTincho {
                       .write
                       .format("parquet")
                       .save("/datascience/custom/coronavirus_contacts")
+
+
+  // Calculate it by day
+  val udfDay = udf((d: String) => d.substring(6,8))
+
+  spark.read.load("/datascience/custom/coronavirus_contacts")
+        .withColumn("devices",explode(col("devices")))
+        .withColumn("day",udfDay(col("window"))).groupBy("device_id","day")
+        .agg(collect_set(col("devices")).as("devices"))
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/coronavirus_contacts_by_day")
                     
 }
 
