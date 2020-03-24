@@ -1175,41 +1175,35 @@ val today = (java.time.LocalDate.now).toString
 
 val safegraph = get_safegraph_data(spark,"30","1","argentina")
 
-safegraph.persist()
-
-
-val one_day_safegraph_new = get_safegraph_data(spark,"3","1","argentina")
+//Nos quedamos con una lista de geohashes por usuario y cantida de cada uno
+val geo_user = safegraph
+.withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "MM-dd"))
-.withColumn("Hour", date_format(col("Time"), "HH"))
-.withColumn("geo_hashote",substring(col("geo_hash"), 0, 6))
-.groupBy("Day","Hour","geo_hashote").agg(count("device_id") as "detections")
+.groupBy("device_id","Day","geo_hash_7").agg(count("Time"))
 
 
-val one_day_safegraph_old = get_safegraph_data(spark,"3","14","argentina")
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "MM-dd"))
-.withColumn("Hour", date_format(col("Time"), "HH"))
-.withColumn("geo_hashote",substring(col("geo_hash"), 0, 6))
-.groupBy("Day","Hour","geo_hashote").agg(count("device_id") as "detections")
+geo_user
+.write
+.mode(SaveMode.Overwrite)
+.format("parquet")
+.save("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_list_by_user_%s".format(today))
 
 
-one_day_safegraph_new
+
+geo_user
+.withColumn("geo_hash_5",substring(col("geo_hash"), 0, 5))
+.withColumn("geo_hash_6",substring(col("geo_hash"), 0, 6))
+.groupBy("device_id","Day").agg(
+    countDistinct("geo_hash_7") as "geo_hash_7",
+    countDistinct("geo_hash_6") as "geo_hash_6",
+    countDistinct("geo_hash_5") as "geo_hash_5")
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/one_day_safegraph_new_%s".format(today))
-
-
-one_day_safegraph_old
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/one_day_safegraph_old_%s".format(today))
+.save("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_per_user_per_day_%s".format(today))
 
 
 }
