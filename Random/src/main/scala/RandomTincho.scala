@@ -3138,7 +3138,9 @@ object RandomTincho {
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(0)
 
-    val days = (0 until 24).map(start.minusDays(_)).map(_.toString(format))
+    //val days = (0 until 24).map(start.minusDays(_)).map(_.toString(format))
+    val days = List("20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200313","20200312","20200311","20200310",
+                    "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
     val path = "/datascience/geo/safegraph/"
     val dfs = days
       .map(day => path + "day=%s/".format(day) + "country=argentina")
