@@ -3084,12 +3084,12 @@ object RandomTincho {
     .withColumn("window", concat(col("Hour"), col("window")))
     .drop("Time")
 
-  val udfFeature = udf((r: Double) => if (r > 0.3) true else false)
+  val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
 
   // Select sample of 1000 users
   val moment =  raw.withColumn("rand",rand())
                     .withColumn("feature",udfFeature(col("rand")))
-                    .filter(col("feature")).limit(1000)
+                    .filter("feature = 1").limit(1000)
                     .select("device_id","geo_hash", "window")
                     .distinct
   moment.cache()
