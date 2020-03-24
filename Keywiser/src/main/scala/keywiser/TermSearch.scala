@@ -97,7 +97,7 @@ object TermSearch {
       df_selected: DataFrame): DataFrame = {
 
     val df_urls_terms = df_selected.join(broadcast(df_keys), Seq("kw"))
-      .select("url","day")
+      .select("url")
       .withColumn("search_terms", lit(1))  
 
     df_urls_terms
