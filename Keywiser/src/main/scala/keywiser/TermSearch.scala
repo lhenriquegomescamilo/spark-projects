@@ -12,6 +12,8 @@ import org.apache.hadoop.conf.Configuration
 
 import org.apache.log4j.{Level, Logger}
 
+import scala.collection.mutable.ListBuffer
+
 /**
   * The idea of this script is to generate audiences based on keywords obtained from url content. 
   */
