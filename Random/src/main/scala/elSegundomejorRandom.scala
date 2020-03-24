@@ -1178,14 +1178,14 @@ val safegraph = get_safegraph_data(spark,"30","1","argentina")
 safegraph.persist()
 
 //Nos quedamos con una lat long por geohash
-val geohash = safegraph.withColumn("geo_hashote",substring(col("geo_hash"), 0, 7)) .dropDuplicates("geo_hashote")
+val geohash = safegraph.withColumn("geo_hashote",substring(col("geo_hash"), 0, 7)).dropDuplicates("geo_hashote")
 .select("geo_hashote","latitude","longitude")
 
 //Queremos saber detecciones totoales por día ya que estamos
 val total_counts = safegraph
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "MM-dd"))
-.groupBy("Day").agg(count("latitude") as "detections", countDistinct("ad_id") as "devices")
+.groupBy("Day").agg(count("latitude") as "detections", countDistinct("device_id") as "devices")
 
 geohash
 .repartition(1)
@@ -1202,6 +1202,36 @@ total_counts
 .format("csv")
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/Normalizador_%s".format(today))
+
+
+val one_day_safegraph_new = get_safegraph_data(spark,"3","1","argentina")
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "MM-dd"))
+.withColumn("geo_hashote",substring(col("geo_hash"), 0, 6))
+.groupBy("Day","geo_hashote").agg(count("device_id") as "detections")
+
+val one_day_safegraph_old = get_safegraph_data(spark,"3","14","argentina")
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "MM-dd"))
+.withColumn("geo_hashote",substring(col("geo_hash"), 0, 6))
+.groupBy("Day","geo_hashote").agg(count("device_id") as "detections")
+
+one_day_safegraph_new
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/one_day_safegraph_new_%s".format(today))
+
+
+one_day_safegraph_old
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/one_day_safegraph_old_%s".format(today))
 
 
 }
