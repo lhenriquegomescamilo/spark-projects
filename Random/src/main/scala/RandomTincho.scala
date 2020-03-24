@@ -34,6 +34,7 @@ import org.apache.spark.sql.types.{
 }
 import org.apache.spark.sql.{Column, Row}
 import scala.util.Random.shuffle
+import org.apache.spark.sql.expressions.Window
 
 object RandomTincho {
 
@@ -3063,6 +3064,62 @@ object RandomTincho {
       .save("/datascience/custom/test_idx")
 
   }
+  def get_coronavirus(spark:SparkSession){
+
+  val windowSpec = Window.partitionBy("ad_id").orderBy("utc_timestamp")
+
+  val raw = spark.read
+    .format("parquet")
+    .option("basePath", "/datascience/geo/safegraph/")
+    .load("/datascience/geo/safegraph/day=202003*/country=argentina/")
+    .withColumnRenamed("ad_id", "device_id")
+    .withColumn("device_id", lower(col("device_id")))
+    .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+    .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+    .withColumn("window", date_format(col("Time"), "mm"))
+    .withColumn("window",
+      when(col("window") > 40, 3)
+        .otherwise(when(col("window") > 20, 2).otherwise(1))
+    )
+    .withColumn("window", concat(col("Hour"), col("window")))
+    .drop("Time")
+
+  val udfFeature = udf((r: Double) => if (r > 0.3) true else false)
+
+  // Select sample of 1000 users
+  val moment =  raw.withColumn("rand",rand())
+                    .withColumn("feature",udfFeature(col("rand")))
+                    .filter(col("feature")).limit(1000)
+                    .select("device_id","geo_hash", "window")
+                    .distinct
+  moment.cache()
+
+  // Group raw data 
+  val grouped = raw.groupBy("geo_hash", "window")
+                    .agg(collect_list(col("device_id")).as("devices"))
+
+
+  // Join raw data with the sample of users, and calculate len
+  val joint = grouped.join(broadcast(moment), Seq("geo_hash", "window"))
+                      .write
+                      .format("parquet")
+                      .mode(SaveMode.Overwrite)
+                      .save("/datascience/custom/coronavirus_contacts")
+
+
+  // Calculate it by day
+  val udfDay = udf((d: String) => d.substring(6,8))
+
+  spark.read.load("/datascience/custom/coronavirus_contacts")
+        .withColumn("devices",explode(col("devices")))
+        .withColumn("day",udfDay(col("window"))).groupBy("device_id","day")
+        .agg(collect_set(col("devices")).as("devices"))
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/coronavirus_contacts_by_day")
+                    
+}
 
   def main(args: Array[String]) {
 
@@ -3075,82 +3132,8 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    // dataset_test_idx(spark)
+    get_coronavirus(spark)
 
-    def getDataTriplets2(
-        spark: SparkSession,
-        country: String,
-        nDays: Int = 30,
-        from: Int = 1,
-        path: String = "/datascience/data_triplets/segments/"
-    ): DataFrame = {
-      // First we obtain the configuration to be allowed to watch if a file exists or not
-      val conf = spark.sparkContext.hadoopConfiguration
-      val fs = FileSystem.get(conf)
-
-      // read files from dates
-      val format = "yyyyMMdd"
-      val endDate = DateTime.now.minusDays(from)
-      val days =
-        (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
-      // Now we obtain the list of hdfs folders to be read
-      val hdfs_files = days
-        .map(day => path + "/day=%s/country=%s".format(day, country))
-        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      val df = spark.read
-        .option("basePath", path)
-        .parquet(hdfs_files: _*)
-        .select("device_id", "feature")
-      // force count to 1 - if column doesn't exists, it creates it
-      // df.withColumn("count", lit(1))
-      df
-    }
-
-    // val devices = spark.read
-    //   .format("csv")
-    //   .load(
-    //     "/datascience/audiences/crossdeviced/madids_travellers.csv_xd/"
-    //   )
-    //   .select("_c1")
-    //   .distinct()
-    //   .withColumnRenamed("_c1", "device_id")
-    //   .withColumn("device_id", lower(col("device_id")))
-
-// val original_devices = spark.read
-//   .format("csv")
-//   .load("/datascience/misc/madids_travellers.csv")
-//   .withColumnRenamed("_c0", "device_id")
-//   .withColumn("device_id", lower(col("device_id")))
-
-    // val piis = spark.read
-    //   .format("parquet")
-    //   .load("/datascience/pii_matching/pii_tuples/")
-    //   .filter("country = 'AR'")
-    //   .select("device_id", "ml_sh2", "nid_sh2")
-    //   .withColumn("device_id", lower(col("device_id")))
-    // devices
-    //   .unionAll(original_devices)
-    //   .join(piis, Seq("device_id"))
-    //   .groupBy("device_id")
-    //   .agg(collect_set("ml_sh2") as "mails", collect_set("nid_sh2") as "nids")
-    //   .withColumn("mails", concat_ws(";", col("mails")))
-    //   .withColumn("nids", concat_ws(";", col("nids")))
-    //   .write
-    //   .format("parquet")
-    //   .mode("overwrite")
-    //   .save("/datascience/custom/equifax_aeropuertos_with_piis")
-
-    // val dev_piis =
-    //   spark.read.load("/datascience/custom/equifax_aeropuertos_with_piis")
-    // val data_triplets = getDataTriplets2(spark, "AR", 1, 30)
-
-    // dev_piis
-    //   .join(data_triplets, Seq("device_id"), "left")
-    //   .write
-    //   .format("parquet")
-    //   .mode("overwrite")
-    //   .save("/datascience/custom/equifax_aeropuertos_with_segments")
-    
   }
 
 }
