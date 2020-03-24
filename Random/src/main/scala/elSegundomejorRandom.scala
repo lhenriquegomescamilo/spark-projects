@@ -1180,7 +1180,7 @@ val geo_user = safegraph
 .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "MM-dd"))
-.groupBy("device_id","Day","geo_hash_7").agg(count("Time"))
+.groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
 
 
 geo_user
