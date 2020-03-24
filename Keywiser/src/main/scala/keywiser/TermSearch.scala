@@ -197,7 +197,47 @@ object TermSearch {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    MainProcess(spark)
+    //MainProcess(spark)
+
+
+    val path = "/datascience/misc/covid_users"
+
+    val df =spark.read.format("parquet")
+    .load(path)
+
+    //write and reload:
+    df.groupBy("device_id","day","search_terms").agg(approx_count_distinct(col("url"), 0.02).as("url_count"))
+      .write.format("csv")
+      .option("header",true)
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/covid_users_flag")
+
+    val db = spark.read.format("csv")
+    .option("header",true)
+    .load("/datascience/misc/covid_users_flag")
+
+    db.groupBy("device_id","day").agg(sum(col("url_count")).as("url_count_total"))
+      .select("device_id","day","url_count_total")
+      .write.format("csv")
+      .option("header",true)
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/covid_users_count_total")
+
+    val count_total =  spark.read.format("csv")
+    .option("header",true)
+    .load("/datascience/misc/covid_users_count_total")
+
+    val df_joint = db.join(count_total,Seq("device_id","day"))
+    .filter("search_terms==1")
+    .withColumn("ratio",col("url_count")/col("url_count_total"))
+    .select("device_id","day","url_count","url_count_total","ratio")
+
+    df_joint.write.format("csv")
+      .option("header",true)
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/covid_final")
+
+
     
 
 
