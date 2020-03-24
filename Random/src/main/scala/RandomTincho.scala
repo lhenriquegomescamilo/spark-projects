@@ -3111,7 +3111,7 @@ object RandomTincho {
     val joint = spark.read.load("/datascience/custom/coronavirus_contacts")
 
     // Calculate it by day
-    val udfDay = udf((d: String) => d.substring(6, 8))
+    val udfDay = udf((d: String) => d.substring(0, 8))
 
     // spark.read
     //   .load("/datascience/custom/coronavirus_contacts")
@@ -3192,7 +3192,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    generate_seed(spark)
+    //generate_seed(spark)
     get_coronavirus(spark)
   }
 }
