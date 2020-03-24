@@ -1175,12 +1175,12 @@ val today = (java.time.LocalDate.now).toString
 
 
 //tenemos barrios con geohash de 7 cifras
-/*
+
 val barrios = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
 .withColumnRenamed("geo_hashote","geo_hash_7")
 
-
+/*
 val tipo2 = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_list_by_user_2020-03-24")
 .join(barrios,Seq("geo_hash_7"))
 .groupBy("COMUNA","BARRIO","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
