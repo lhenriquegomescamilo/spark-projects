@@ -3174,6 +3174,6 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    generate_seed(spark)
+    get_coronavirus(spark)
   }
 }
