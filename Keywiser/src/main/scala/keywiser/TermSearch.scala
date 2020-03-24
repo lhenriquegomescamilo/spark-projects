@@ -81,7 +81,7 @@ object TermSearch {
       .option("basePath", path)
       .parquet(hdfs_files: _*)
       .filter("share_data = 1")
-      .select("url", "segments", "country", "day")
+      .select("device_id","url", "segments", "country", "day")
       .withColumn("segments", concat_ws(",", col("segments")))
     data_urls
   }
