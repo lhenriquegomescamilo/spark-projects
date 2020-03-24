@@ -3095,7 +3095,7 @@ object RandomTincho {
   moment.cache()
 
   // Group raw data 
-  val grouped = raw.groupBy(Seq("geo_hash", "window"))
+  val grouped = raw.groupBy("geo_hash", "window")
                     .agg(collect_list(col("device_id")).as("devices"))
 
 
