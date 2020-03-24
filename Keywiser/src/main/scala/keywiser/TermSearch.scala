@@ -212,7 +212,7 @@ object TermSearch {
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/covid_users_flag")
 
-    val db = spark.read.format("parquet")
+    val db = spark.read.format("csv")
     .option("header",true)
     .load("/datascience/misc/covid_users_flag")
 
@@ -223,7 +223,7 @@ object TermSearch {
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/covid_users_count_total")
 
-    val count_total =  spark.read.format("parquet")
+    val count_total =  spark.read.format("csv")
     .option("header",true)
     .load("/datascience/misc/covid_users_count_total")
 
