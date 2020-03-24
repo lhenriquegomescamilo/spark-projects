@@ -3064,59 +3064,71 @@ object RandomTincho {
       .save("/datascience/custom/test_idx")
 
   }
-  def get_coronavirus(spark:SparkSession){
+  def get_coronavirus(spark: SparkSession) {
 
-  val windowSpec = Window.partitionBy("ad_id").orderBy("utc_timestamp")
+    val windowSpec = Window.partitionBy("ad_id").orderBy("utc_timestamp")
 
-  val raw = spark.read
-    .format("parquet")
-    .option("basePath", "/datascience/geo/safegraph/")
-    .load("/datascience/geo/safegraph/day=202003*/country=argentina/")
-    .withColumnRenamed("ad_id", "device_id")
-    .withColumn("device_id", lower(col("device_id")))
-    .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-    .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
-    .withColumn("window", date_format(col("Time"), "mm"))
-    .withColumn("window",
-      when(col("window") > 40, 3)
-        .otherwise(when(col("window") > 20, 2).otherwise(1))
-    )
-    .withColumn("window", concat(col("Hour"), col("window")))
-    .drop("Time")
+    val raw = spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/geo/safegraph/")
+      .load("/datascience/geo/safegraph/day=202003*/country=argentina/")
+      .withColumnRenamed("ad_id", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+      .withColumn("window", date_format(col("Time"), "mm"))
+      .withColumn(
+        "window",
+        when(col("window") > 40, 3)
+          .otherwise(when(col("window") > 20, 2).otherwise(1))
+      )
+      .withColumn("window", concat(col("Hour"), col("window")))
+      .drop("Time")
 
-  val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
+    val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
 
-  // Select sample of 1000 users
-  val moment =  raw.select("device_id","geo_hash", "window")
-                    .distinct
-                    .limit(1000)
+    // Select sample of 1000 users
+    val initial_seed = spark.read
+      .load("/datascience/custom/initial_seed")
+      .select("device_id", "geo_hash", "window")
 
-  // Group raw data 
-  val grouped = raw.groupBy("geo_hash", "window")
-                    .agg(collect_list(col("device_id")).as("devices"))
+    val moments = initial_seed.select("geo_hash", "window").distinct()
 
+    // Group raw data
+    val grouped = raw
+      .groupBy("geo_hash", "window")
+      .agg(collect_list(col("device_id")).as("devices"))
 
-  // Join raw data with the sample of users, and calculate len
-  val joint = grouped.join(moment, Seq("geo_hash", "window"))
-                      .write
-                      .format("parquet")
-                      .mode(SaveMode.Overwrite)
-                      .save("/datascience/custom/coronavirus_contacts")
+    // Join raw data with the sample of users, and calculate len
+    raw
+      .join(moments, Seq("geo_hash", "window"))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/coronavirus_contacts")
 
+    val joint = spark.read.load("/datascience/custom/coronavirus_contacts")
 
-  // Calculate it by day
-  val udfDay = udf((d: String) => d.substring(6,8))
+    // Calculate it by day
+    val udfDay = udf((d: String) => d.substring(6, 8))
 
-  spark.read.load("/datascience/custom/coronavirus_contacts")
-        .withColumn("devices",explode(col("devices")))
-        .withColumn("day",udfDay(col("window"))).groupBy("device_id","day")
-        .agg(collect_set(col("devices")).as("devices"))
-        .write
-        .format("parquet")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/custom/coronavirus_contacts_by_day")
-                    
-}
+    // spark.read
+    //   .load("/datascience/custom/coronavirus_contacts")
+    //   .withColumn("devices", explode(col("devices")))
+    joint
+      .join(
+        initial_seed.withColumnRenamed("device_id", "original_id"),
+        Seq("geo_hash", "window")
+      )
+      .withColumn("day", udfDay(col("window")))
+      .groupBy("original_id", "day")
+      .agg(collect_set(col("device_id")).as("devices"))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/coronavirus_contacts_per_day")
+
+  }
 
   def main(args: Array[String]) {
 
