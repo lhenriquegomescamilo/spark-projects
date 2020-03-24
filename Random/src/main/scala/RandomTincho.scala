@@ -3090,7 +3090,6 @@ object RandomTincho {
   val moment =  raw.select("device_id","geo_hash", "window")
                     .distinct
                     .limit(1000)
-  moment.cache()
 
   // Group raw data 
   val grouped = raw.groupBy("geo_hash", "window")
@@ -3098,7 +3097,7 @@ object RandomTincho {
 
 
   // Join raw data with the sample of users, and calculate len
-  val joint = grouped.join(broadcast(moment), Seq("geo_hash", "window"))
+  val joint = grouped.join(moment, Seq("geo_hash", "window"))
                       .write
                       .format("parquet")
                       .mode(SaveMode.Overwrite)
