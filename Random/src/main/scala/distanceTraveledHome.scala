@@ -313,7 +313,7 @@ val spacelapse = tipito
 spacelapse
     .write
     .mode(SaveMode.Overwrite)
-    .format("csv")
+    .format("parquet")
     .option("header",true)
     .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_traveled_%s".format(today))
 
