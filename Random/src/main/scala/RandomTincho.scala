@@ -3103,6 +3103,7 @@ object RandomTincho {
   val joint = grouped.join(broadcast(moment), Seq("geo_hash", "window"))
                       .write
                       .format("parquet")
+                      .mode(SaveMode.Overwrite)
                       .save("/datascience/custom/coronavirus_contacts")
 
 
