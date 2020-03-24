@@ -1175,6 +1175,7 @@ val today = (java.time.LocalDate.now).toString
 
 
 //tenemos barrios con geohash de 7 cifras
+/*
 val barrios = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
 .withColumnRenamed("geo_hashote","geo_hash_7")
@@ -1191,16 +1192,17 @@ val tipo2 = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Cor
 .format("csv")
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_barrio_tipo2_03-24")
-
+*/
 
 
 
 val hash_user = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_for_user_2020-03-23")
 val barrio_user = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_list_by_user_2020-03-24")
-.join(barrios,Seq("geo_hash_7")).select("COMUNA","BARRIO","device_id").distinct()
+.join(barrios,Seq("geo_hash_7")).select("BARRIO","device_id").distinct()
+.withColumn("device_id",lower(col("device_id")))
 
 barrio_user.join(hash_user,Seq("device_id"))
-.groupBy("COMUNA","BARRIO","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.groupBy("BARRIO","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 
 .repartition(1)
 .write

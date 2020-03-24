@@ -269,10 +269,10 @@ val sqlDF = spark.sql(query)
 val distance_fom_home = spark.sql(query)
 //Guardamos este raw sobre el que luego haremos operaciones para obtener métricas de distancia al hgoar
 distance_fom_home
-     .write
+  .write
   .mode(SaveMode.Overwrite)
   .format("parquet")
-  .save("/datascience/geo/Reports/GCBA/Coronavirus/from_home_%s".format(today))//
+  .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_fom_home_%s".format(today))//
 
 
 ////////////////////////////////////////////////Distancia recorrida por día
