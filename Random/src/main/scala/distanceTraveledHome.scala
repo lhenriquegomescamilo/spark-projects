@@ -18,34 +18,8 @@ import org.apache.spark.sql.functions.input_file_name
   * to run quick fixes, or tests.
   */
 object distanceTraveledHome {
-  def get_tapad_home_cluster(spark:SparkSession){
+  
 
-/*
-val code = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/argentina_365d_home_21-8-2019-0h").withColumn("device_id",upper(col("ad_id")))
-
-
-val poly = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/radios_argentina_2010_geodevicer_5d_argentina_14-8-2019-17h").withColumn("device_id",upper(col("device_id")))
-*/
-val codepoly = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geospark_debugging/homes_AR_180_code_and_poly_for_crossdevice")
-
-val home_index = spark.read.format("csv").option("delimiter","\t").load("/data/crossdevice/2019-09-10/")
-.withColumn("tmp",split(col("_c2"),"="))
-.select(col("_c0"),col("tmp").getItem(1).as("_c2")).drop("tmp").filter(col("_c2").isNotNull).toDF("house_cluster","device_id").withColumn("device_id",upper(col("device_id")))
-
-
-codepoly.join(home_index,Seq("device_id"))
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/geo/geospark_debugging/homes_AR_180_code_and_poly_home_cluster")
-
-
-
-  }
 
 def getDataPipeline(
       spark: SparkSession,
@@ -194,28 +168,7 @@ def get_safegraph_data(
     
   }
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-    Logger.getRootLogger.setLevel(Level.WARN)
-
-
-spark.conf.set("spark.sql.session.timeZone", "GMT-3")
-
-val today = (java.time.LocalDate.now).toString
-
-val raw = get_safegraph_data(spark,"30","1","argentina")
-.withColumnRenamed("ad_id","device_id")
-.withColumn("device_id",lower(col("device_id")))
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-
-//Vamos a usarlo para calcular velocidad y distancia al hogar
-raw.persist()
+/*
 
 
 /////////////////Distancia al hogar
@@ -266,13 +219,13 @@ val sqlDF = spark.sql(query)
 
 
 //Acá tenemos la distancia de cada usuario cada vez que cambio de geohash    
-val distance_fom_home = spark.sql(query)
+val distance_from_home = spark.sql(query)
 //Guardamos este raw sobre el que luego haremos operaciones para obtener métricas de distancia al hgoar
 distance_fom_home
   .write
   .mode(SaveMode.Overwrite)
   .format("parquet")
-  .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_fom_home_%s".format(today))//
+  .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_from_home_%s".format(today))//
 
 
 ////////////////////////////////////////////////Distancia recorrida por día
@@ -316,6 +269,58 @@ spacelapse
     .format("parquet")
     .option("header",true)
     .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_traveled_%s".format(today))
+
+
+
+*/
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+
+val country = "mexico"
+
+val timezone = Map("argentina" -> "GMT-3",
+                       "mexico" -> "GMT-5",
+                       "CL"->"GMT-3",
+                       "CO"-> "GMT-5",
+                       "PE"-> "GMT-5")
+    
+    //setting timezone depending on country
+spark.conf.set("spark.sql.session.timeZone", timezone(country))
+
+spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+
+val today = (java.time.LocalDate.now).toString
+
+val raw = get_safegraph_data(spark,"30","1",country)
+.withColumnRenamed("ad_id","device_id")
+.withColumn("device_id",lower(col("device_id")))
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+.withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
+
+//Vamos a usarlo para calcular velocidad y distancia al hogar
+raw.persist()
+
+val geo_hash_visits = raw
+.groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
+.withColumn("country",lit(country))
+
+geo_hash_visits
+ .write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .option("header",true)
+    .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country))
+
 
 
 
