@@ -172,7 +172,8 @@ object TermSearch {
     val df_keys = trimmedList.toDF().withColumnRenamed("value", "kw")
 
     // get data from selected keywords
-    val df_selected = getSelectedKeywords(spark,10,1)
+    //val df_selected = getSelectedKeywords(spark,10,1) //al 24/03
+    val df_selected = getSelectedKeywords(spark,10,10) 
 
     // get data urls containing the aforementioned search terms
     val df_urls_terms_skws = getUrlsWithTerms(df_keys,df_selected)
@@ -180,61 +181,69 @@ object TermSearch {
     //add more urls from druid
     val df_urls_druid =spark.read.format("csv")
     .option("header",true)
-    .load("/datascience/misc/urls_coronadruid.csv") .select("url")
+    .load("/datascience/misc/urls_coronadruid_10.csv") //.load("/datascience/misc/urls_coronadruid.csv")
+    .select("url")
     .withColumn("search_terms", lit(1)) 
 
     // concat both previous url sources
     val df_urls_terms = df_urls_terms_skws.union(df_urls_druid)
 
     // get data from data urls
-    val data_urls = getDataUrls(spark,"AR",7,1)    
+    //val data_urls = getDataUrls(spark,"AR",7,1)  //al 24/03   
+    val data_urls = getDataUrls(spark,"AR",7,10)
 
     // get final df
     val df_final = getUsers(df_urls_terms,data_urls)
 
+    //val path = "/datascience/misc/covid_users"
+    val path = "/datascience/misc/covid_users_10"
     df_final.write
       .format("parquet")
       .partitionBy("day")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/covid_users")
+      .save(path)
 
     // part 2
-    val path = "/datascience/misc/covid_users"
-
     val df =spark.read.format("parquet")
     .load(path)
 
     //write and reload:
+    //val path2 = "/datascience/misc/covid_users_flag"
+    val path2 = "/datascience/misc/covid_users_flag_10"
     df.groupBy("device_id","day","search_terms").agg(approx_count_distinct(col("url"), 0.02).as("url_count"))
       .write.format("csv")
       .option("header",true)
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/covid_users_flag")
+      .save(path2)
 
     val db = spark.read.format("csv")
     .option("header",true)
-    .load("/datascience/misc/covid_users_flag")
+    .load(path2)
 
+    //val path3 = "/datascience/misc/covid_users_count_total"
+    val path3 = "/datascience/misc/covid_users_count_total_10"
     db.groupBy("device_id","day").agg(sum(col("url_count")).as("url_count_total"))
       .select("device_id","day","url_count_total")
       .write.format("csv")
       .option("header",true)
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/covid_users_count_total")
+      .save(path3)
 
     val count_total =  spark.read.format("csv")
     .option("header",true)
-    .load("/datascience/misc/covid_users_count_total")
+    .load(path3)
 
     val df_joint = db.join(count_total,Seq("device_id","day"))
     .filter("search_terms==1")
     .withColumn("ratio",col("url_count")/col("url_count_total"))
     .select("device_id","day","url_count","url_count_total","ratio")
 
+    //val path4 = "/datascience/misc/covid_final"
+    val path4 = "/datascience/misc/covid_final_10"
     df_joint.write.format("csv")
       .option("header",true)
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/covid_final")
+      .save(path4)
 
     // part 3  
 
@@ -244,10 +253,9 @@ object TermSearch {
     .filter(col("clusterParent").isin(0,1,2))
     .select("segmentId","name")
 
-    val path2 = "/datascience/misc/covid_users"
     val df2 =spark.read.format("parquet")
     .option("header",true)
-    .load(path2)
+    .load(path)
     .withColumn("domain", udfGetDomain(col("url")))
     .withColumn("segments", split(col("segments"), ","))
     .withColumn("segmentId", explode(col("segments")))
@@ -255,19 +263,16 @@ object TermSearch {
     .groupBy("domain","device_id","day").agg(collect_list("name").as("behaviour"))
     .withColumn("behaviour", concat_ws(",", col("behaviour")))
     
-
-    val path3 = "/datascience/misc/covid_final"
     val df3 =spark.read.format("csv")
     .option("header",true)
-    .load(path3)
+    .load(path4)
   
-
     df2.join(df3,Seq("device_id","day"))
     .select("device_id","domain","day","url_count_total","ratio","behaviour")
     .write.format("csv")
       .option("header",true)
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/covid_final_2")
+      .save("/datascience/misc/covid_final_2_10") //.save("/datascience/misc/covid_final_2")
 
   }
 
