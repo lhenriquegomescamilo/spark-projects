@@ -1318,23 +1318,19 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
 
-//Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geoh y por hora    
-//Esto es safegraph pelado los uĺtimos X dáis
-val raw = get_safegraph_data(spark,"15","1","mexico")
-.withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7)) 
-//.withColumn("device_id",lower(col("device_id")))
-//.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-//.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+// Mexico
+val geohashes_by_user = spark.read.format("parquet")
+.load("/datascience/geo/Reports/GCBA/Coronavirus/2020-03-25/geohashes_by_user_mexico")
 
-raw.select("geo_hash_7","latitude","longitude").distinct()
+val travel_hash_country = geohashes_by_user.groupBy("country","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+
+travel_hash_country
 .repartition(1)
 .write
-    .mode(SaveMode.Overwrite)
-    .format("csv")
-    .option("header",true)
-    .save("/datascience/geo/geohashes/Mexico/%s".format(today))
-
-
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/2020-03-25/MX_Country_geohashes_travel")
 
 
 }
