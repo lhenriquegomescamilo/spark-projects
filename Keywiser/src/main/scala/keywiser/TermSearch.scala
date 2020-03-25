@@ -72,6 +72,10 @@ object TermSearch {
       since: Integer
   ): DataFrame = {
 
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+    
     val format = "yyyy-MM-dd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
