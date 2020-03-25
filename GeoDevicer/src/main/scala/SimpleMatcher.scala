@@ -259,6 +259,7 @@ intersection
       .config("geospark.global.index","true")
        .config("geospark.join.gridtype", "kdbtree")
        .config("geospark.join.spatitionside","left")
+       .config("spark.sql.shuffle.partitions", 2000)
        .appName("myGeoSparkSQLdemo").getOrCreate()
      
 GeoSparkSQLRegistrator.registerAll(spark)
@@ -294,7 +295,7 @@ match_sample_to_polygons(spark,
 
       match_sample_to_polygons(spark,
         "/datascience/geo/geohashes/Mexico/2020-03-25",
-        "/datascience/geo/POIs/MXestatal.json",
+        "/datascience/geo/POIs/MX_DF_municipal.json",
         "mexico")
 
   }
