@@ -78,7 +78,7 @@ object normalizadorGeo {
 
 val today = (java.time.LocalDate.now).toString
 
-get_safegraph_all_country(spark,"30","1")
+get_safegraph_all_country(spark,"25","1")
 .groupBy("day","country").agg(countDistinct("device_id") as "devices",count("utc_timestamp") as "detections")
 .repartition(1)
 .write
