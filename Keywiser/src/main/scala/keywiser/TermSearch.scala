@@ -79,9 +79,8 @@ object TermSearch {
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
-      .map(day => path + "/%s.csv".format(day)) //for each day from the list it returns the day path.
-      
-    println(hdfs_files)
+      .map(day => path + "/%s.csv".format(day)) //for each day from the list it returns the day path.  
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path))) //analogue to "os.exists"
 
     val df = spark.read.format("csv")
       .option("header",true)
