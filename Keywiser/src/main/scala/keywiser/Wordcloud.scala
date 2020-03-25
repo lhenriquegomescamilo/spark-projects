@@ -138,14 +138,15 @@ object Wordcloud {
     val db_DF = db.withColumn("flag", lit(1))
     .groupBy("kw","day")
     .agg(sum(col("flag")).as("DF"))
+    .filter("DF>1000")
 
     val path2 = "/datascience/misc/covid_wc_df"
-    db_df.write.format("csv")
+    db_DF.write.format("csv")
       .option("header",true)
       .mode(SaveMode.Overwrite)
       .save(path2)
 
-    val db_df_y = spark.read.format("csv")
+    val db_DF_y = spark.read.format("csv")
     .option("header",true)
     .load(path2)       
 
@@ -163,7 +164,7 @@ object Wordcloud {
     .option("header",true)
     .load(path3)           
 
-    val dg = db_df_y.join(db_sum_y,Seq("kw","day"))
+    val dg = db_DF_y.join(db_sum_y,Seq("kw","day"))
     .withColumn("score",col("TFIDF_sum")/col("DF"))
 
     val path4 = "/datascience/misc/covid_wc_final"
