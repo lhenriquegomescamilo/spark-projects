@@ -1157,14 +1157,7 @@ the_data
     df
   }
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-    Logger.getRootLogger.setLevel(Level.WARN)
+/*
 
 
 //setting timezone depending on country
@@ -1301,6 +1294,45 @@ space_lapse_agg
     .format("csv")
     .option("header",true)
     .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_traveled_agg_%s".format(today))
+
+
+
+
+
+*/
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+
+//setting timezone depending on country
+spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+
+
+val today = (java.time.LocalDate.now).toString
+
+//Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geoh y por hora    
+//Esto es safegraph pelado los uĺtimos X dáis
+val raw = get_safegraph_data(spark,"15","1","mexico")
+.withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7)) 
+//.withColumn("device_id",lower(col("device_id")))
+//.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+//.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+
+raw.select("geo_hash_7","latitude","longitude").distinct()
+.repartition(1)
+.write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/geohashes/Mexico/%s".format(today))
 
 
 
