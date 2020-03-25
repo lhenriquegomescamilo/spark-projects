@@ -220,6 +220,7 @@ safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
+.drop("myshape","geometry","pointshape")
 //.select("ad_id","id_type","name") //"utc_timestamp",
 
             
