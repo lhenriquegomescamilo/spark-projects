@@ -3201,12 +3201,12 @@ object RandomTincho {
 
     dfs.reduce((df1, df2) => df1.union(df2))
                                 .select("device_id","day")
-                                .distinct
                                 .groupBy("day")
-                                .count()
+                                .agg(approx_count_distinct(col("device_id"), 0.02).as("devices_unique"))
+                                .agg(count(col("device_id")).as("devices_count"))
                                 .write
                                 .format("parquet")
                                 .mode(SaveMode.Overwrite)
-                                .save("/datascience/custom/users_safegraph_coronavirus_count")
+                                .save("/datascience/custom/users_safegraph_coronavirus")
   }
 }
