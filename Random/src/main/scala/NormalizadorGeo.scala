@@ -55,6 +55,9 @@ object normalizadorGeo {
       .withColumn("input",input_file_name)
       .withColumn("day",split(col("input"),"/").getItem(6))
       .withColumn("country",split(col("input"),"/").getItem(7))
+      .withColumnRenamed("ad_id","device_id")
+      .withColumnRenamed("id_type","device_type")
+      .withColumn("device_id",lower(col("device_id")))
       
      df_safegraph                    
     
