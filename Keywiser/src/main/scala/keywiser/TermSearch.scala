@@ -75,7 +75,7 @@ object TermSearch {
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
-    
+
     val format = "yyyy-MM-dd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
@@ -301,13 +301,14 @@ object TermSearch {
     .groupBy("domain","device_id","day").agg(collect_list("name").as("behaviour"))
     .withColumn("behaviour", concat_ws(",", col("behaviour")))
     .groupBy("device_id","day","behaviour").agg(collect_list("domain").as("domains")) //new
-    
+    .withColumn("domains", concat_ws(",", col("domains")))
+
     val df3 =spark.read.format("csv")
     .option("header",true)
     .load(path4)
   
     df2.join(df3,Seq("device_id","day"))
-    .select("device_id","domain","day","url_count_total","ratio","behaviour")
+    .select("device_id","domains","day","url_count_total","ratio","behaviour")
     .write.format("csv")
       .option("header",true)
       .mode(SaveMode.Overwrite)
