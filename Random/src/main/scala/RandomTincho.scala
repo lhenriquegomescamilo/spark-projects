@@ -3111,7 +3111,7 @@ object RandomTincho {
     val joint = spark.read.load("/datascience/custom/coronavirus_contacts")
 
     // Calculate it by day
-    val udfDay = udf((d: String) => d.substring(6, 8))
+    val udfDay = udf((d: String) => d.substring(0, 8))
 
     // spark.read
     //   .load("/datascience/custom/coronavirus_contacts")
@@ -3130,6 +3130,55 @@ object RandomTincho {
       .save("/datascience/custom/coronavirus_contacts_per_day")
 
   }
+  def generate_seed(spark:SparkSession){
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(0)
+
+    //val days = (0 until 24).map(start.minusDays(_)).map(_.toString(format))
+    val days = List("20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200313","20200312","20200311","20200310",
+                    "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
+    val path = "/datascience/geo/safegraph/"
+    val dfs = days
+      .map(day => path + "day=%s/".format(day) + "country=argentina")
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(
+        x =>
+          spark.read
+            .option("basePath", path)
+            .parquet(x)
+            .withColumnRenamed("ad_id", "device_id")
+            .select("device_id")
+            .distinct
+            .limit(10000)
+      )
+
+    val users = dfs.reduce((df1, df2) => df1.union(df2)).select("device_id").distinct
+    
+    spark.read.format("parquet").option("basePath", "/datascience/geo/safegraph/").load("/datascience/geo/safegraph/day=202003*/country=argentina/")
+          .withColumnRenamed("ad_id", "device_id")
+          .withColumn("device_id", lower(col("device_id")))
+          .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+          .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+          .withColumn("window", date_format(col("Time"), "mm"))
+          .withColumn("window",
+            when(col("window") > 40, 3)
+              .otherwise(when(col("window") > 20, 2).otherwise(1))
+          )
+          .withColumn("window", concat(col("Hour"), col("window")))
+          .drop("Time")
+          .join(users,Seq("device_id"),"inner")
+          .select("device_id","geo_hash", "window")
+          .distinct
+          .write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/coronavirus_seed")
+
+  }
 
   def main(args: Array[String]) {
 
@@ -3142,8 +3191,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
+    generate_seed(spark)
     get_coronavirus(spark)
-
   }
-
 }

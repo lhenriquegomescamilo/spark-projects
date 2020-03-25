@@ -1195,7 +1195,7 @@ val tipo2 = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Cor
 */
 
 
-
+/*
 val hash_user = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_for_user_2020-03-23")
 val barrio_user = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_list_by_user_2020-03-24")
 .join(barrios,Seq("geo_hash_7")).select("BARRIO","device_id").distinct()
@@ -1210,7 +1210,33 @@ barrio_user.join(hash_user,Seq("device_id"))
 .format("csv")
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_barrio_tipo3_03-24")
+*/
 
+//Alternativa 1
+//Path home ARG
+
+//Nos quedamos con los usuarios de los homes que viven en caba
+val homes = spark.read.format("parquet").load("/datascience/data_insights/homes/day=2020-03/country=AR")
+val geocode_barrios = spark.read.format("csv").option("header",true).load("/datascience/geo/Reports/GCBA/Coronavirus/Geocode_Barrios_CABA.csv")
+
+val homes_barrio = homes.select("device_id","GEOID").join(geocode_barrios,Seq("GEOID")).drop("GEOID")
+
+
+val hashes_users = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_list_by_user_2020-03-24")
+.withColumn("device_id",lower(col("device_id")))
+.groupBy("device_id","Day").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.join(homes_barrio,Seq("device_id"))
+
+
+
+hashes_users
+.groupBy("BARRIO","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_barrio_tipo1_03-24")
 
 }
 
