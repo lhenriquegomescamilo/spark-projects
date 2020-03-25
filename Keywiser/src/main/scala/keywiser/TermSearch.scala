@@ -66,6 +66,34 @@ object TermSearch {
     *
     */
 
+  def getSelectedKeywordsOLD(
+      spark: SparkSession,
+      nDays: Integer,
+      since: Integer
+  ): DataFrame = {
+
+    val format = "yyyy-MM-dd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/selected_keywords"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/%s.csv".format(day)) //for each day from the list it returns the day path.
+      
+    println(hdfs_files)
+
+    val df = spark.read.format("csv")
+      .option("header",true)
+      .load(hdfs_files: _*)
+
+      .withColumnRenamed("url_raw","url")
+      .select("url","kw")
+      .withColumn("kw", split(col("kw"), " "))
+      .withColumn("kw", explode(col("kw")))     
+  }
+
+
   def getSelectedKeywords(
       spark: SparkSession,
       nDays: Integer,
@@ -173,15 +201,17 @@ object TermSearch {
 
     // get data from selected keywords
     //val df_selected = getSelectedKeywords(spark,10,1) //al 24/03
-    val df_selected = getSelectedKeywords(spark,10,10) 
-
+    //val df_selected = getSelectedKeywords(spark,10,10) 
+    val df_selected = getSelectedKeywordsOLD(spark,10,38)
+    
     // get data urls containing the aforementioned search terms
     val df_urls_terms_skws = getUrlsWithTerms(df_keys,df_selected)
 
     //add more urls from druid
     val df_urls_druid =spark.read.format("csv")
     .option("header",true)
-    .load("/datascience/misc/urls_coronadruid_10.csv") //.load("/datascience/misc/urls_coronadruid.csv")
+    .load("/datascience/misc/urls_coronadruid_old.csv")
+    //.load("/datascience/misc/urls_coronadruid_10.csv") //.load("/datascience/misc/urls_coronadruid.csv")
     .select("url")
     .withColumn("search_terms", lit(1)) 
 
@@ -190,13 +220,15 @@ object TermSearch {
 
     // get data from data urls
     //val data_urls = getDataUrls(spark,"AR",7,1)  //al 24/03   
-    val data_urls = getDataUrls(spark,"AR",7,10)
+    //val data_urls = getDataUrls(spark,"AR",7,10)
+    val data_urls = getDataUrls(spark,"AR",7,38)
 
     // get final df
     val df_final = getUsers(df_urls_terms,data_urls)
 
     //val path = "/datascience/misc/covid_users"
-    val path = "/datascience/misc/covid_users_10"
+    //val path = "/datascience/misc/covid_users_10"
+    val path = "/datascience/misc/covid_users_old"
     df_final.write
       .format("parquet")
       .partitionBy("day")
@@ -209,7 +241,8 @@ object TermSearch {
 
     //write and reload:
     //val path2 = "/datascience/misc/covid_users_flag"
-    val path2 = "/datascience/misc/covid_users_flag_10"
+    //val path2 = "/datascience/misc/covid_users_flag_10"
+    val path2 = "/datascience/misc/covid_users_flag_old"
     df.groupBy("device_id","day","search_terms").agg(approx_count_distinct(col("url"), 0.02).as("url_count"))
       .write.format("csv")
       .option("header",true)
@@ -221,7 +254,8 @@ object TermSearch {
     .load(path2)
 
     //val path3 = "/datascience/misc/covid_users_count_total"
-    val path3 = "/datascience/misc/covid_users_count_total_10"
+    //val path3 = "/datascience/misc/covid_users_count_total_10"
+    val path3 = "/datascience/misc/covid_users_count_total_old"    
     db.groupBy("device_id","day").agg(sum(col("url_count")).as("url_count_total"))
       .select("device_id","day","url_count_total")
       .write.format("csv")
@@ -239,7 +273,8 @@ object TermSearch {
     .select("device_id","day","url_count","url_count_total","ratio")
 
     //val path4 = "/datascience/misc/covid_final"
-    val path4 = "/datascience/misc/covid_final_10"
+    //val path4 = "/datascience/misc/covid_final_10"
+    val path4 = "/datascience/misc/covid_final_old"    
     df_joint.write.format("csv")
       .option("header",true)
       .mode(SaveMode.Overwrite)
@@ -272,7 +307,8 @@ object TermSearch {
     .write.format("csv")
       .option("header",true)
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/covid_final_2_10") //.save("/datascience/misc/covid_final_2")
+      .save("/datascience/misc/covid_final_2_old")
+      //.save("/datascience/misc/covid_final_2_10") //.save("/datascience/misc/covid_final_2")
 
   }
 
