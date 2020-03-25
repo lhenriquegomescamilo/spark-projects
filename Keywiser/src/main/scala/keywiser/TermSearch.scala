@@ -153,7 +153,7 @@ object TermSearch {
     val data_urls = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .filter("share_data = 1")
+      //.filter("share_data = 1")
       .select("device_id","url", "segments", "country", "day")
       .withColumn("segments", concat_ws(",", col("segments")))
     data_urls
