@@ -55,6 +55,8 @@ object normalizadorGeo {
       .withColumn("input",input_file_name)
       .withColumn("day",split(col("input"),"/").getItem(6))
       .withColumn("country",split(col("input"),"/").getItem(7))
+      .withColumn("country",substring(col("country"), 9, 10))
+      .withColumn("day",substring(col("day"), 5, 8))
       .withColumnRenamed("ad_id","device_id")
       .withColumnRenamed("id_type","device_type")
       .withColumn("device_id",lower(col("device_id")))
@@ -76,7 +78,7 @@ object normalizadorGeo {
 
 val today = (java.time.LocalDate.now).toString
 
-get_safegraph_all_country(spark,"3","1")
+get_safegraph_all_country(spark,"30","1")
 .groupBy("day","country").agg(countDistinct("device_id") as "devices",count("utc_timestamp") as "detections")
 .repartition(1)
 .write
