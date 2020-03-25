@@ -138,7 +138,7 @@ object Wordcloud {
     val db_DF = db.withColumn("flag", lit(1))
     .groupBy("kw","day")
     .agg(sum(col("flag")).as("DF"))
-    .filter("DF>1000")
+    .filter("DF>10000")
 
     val path2 = "/datascience/misc/covid_wc_df"
     db_DF.write.format("csv")
