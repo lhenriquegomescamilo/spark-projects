@@ -91,6 +91,8 @@ object TermSearch {
       .select("url","kw")
       .withColumn("kw", split(col("kw"), " "))
       .withColumn("kw", explode(col("kw")))     
+
+    df  
   }
 
 
