@@ -23,8 +23,8 @@ object GenerateGTJson {
     )
 
     val content =
-      """{"xd": 0, "partnerId": "", "query": "(country = 'AR' and event_type IN ('retroactive') and array_contains(segments, 20125))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 2, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and event_type IN ('retroactive') and array_contains(segments, 20126))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 3, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
+      """{"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20125))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 2, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20126))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 3, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
     os.write(content.getBytes)
     fs.close()
 
@@ -44,12 +44,12 @@ object GenerateGTJson {
     )
 
     val content =
-      """{"xd": 0, "partnerId": "", "query": "(country = 'AR' and event_type IN ('xd', 'retroactive') and array_contains(segments, 20115))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 8, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and event_type IN ('retroactive') and array_contains(segments, 20116))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 9, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and event_type IN ('retroactive') and array_contains(segments, 20114))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 7, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and event_type IN ('retroactive') and array_contains(segments, 20112))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 5, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and event_type IN ('retroactive') and array_contains(segments, 20113))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 6, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
-    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and event_type IN ('retroactive') and array_contains(segments, 20111))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 4, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
+      """{"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20115))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 8, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20116))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 9, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20114))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 7, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20112))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 5, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20113))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 6, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}
+    {"xd": 0, "partnerId": "", "query": "(country = 'AR' and array_contains(segments, 20111))", "ndays": 30, "queue": "datascience", "pipeline": 0, "segmentId": 4, "since": 1, "priority": 14, "common": "country = 'AR'", "as_view": 119, "push": 0, "xdFilter": "index_type = 'coo'"}"""
     os.write(content.getBytes)
     fs.close()
 
@@ -261,12 +261,12 @@ object GenerateGTJson {
     generate_json_nse_ar(spark, conf, current_month)
 
     // MX
-    generate_json_genre_mx(spark, conf, current_month)
+    // generate_json_genre_mx(spark, conf, current_month)
 
     // CL
-    generate_json_gender_cl(spark, conf, current_month)
-    generate_json_age_cl(spark, conf, current_month)
-    generate_json_nse_cl(spark, conf, current_month)
+    // generate_json_gender_cl(spark, conf, current_month)
+    // generate_json_age_cl(spark, conf, current_month)
+    // generate_json_nse_cl(spark, conf, current_month)
 
     // BR
     generate_json_gender_br(spark, conf, current_month)

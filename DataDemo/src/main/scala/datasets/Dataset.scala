@@ -219,7 +219,6 @@ object Dataset {
           "device_id",
           "url"
         )
-        .select("device_id", "url")
         .distinct()
         .groupBy("device_id")
         .agg(collect_list("url") as "urls")
