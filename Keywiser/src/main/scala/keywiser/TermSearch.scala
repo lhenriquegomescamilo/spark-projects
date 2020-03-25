@@ -167,7 +167,7 @@ object TermSearch {
     import spark.implicits._
     
     // make df from list of search terms
-    val keywords = "coronavirus,covid-19,covid19,cov19,cov-19,pandemia,contagio,contagiarse,respiradores,lavandina,infectados"
+    val keywords = "coronavirus,covid,covid-19,covid19,cov19,cov-19,pandemia,contagio,contagiarse,respiradores,barbijo,infectados"
     val trimmedList: List[String] = keywords.split(",").map(_.trim).toList
     val df_keys = trimmedList.toDF().withColumnRenamed("value", "kw")
 
