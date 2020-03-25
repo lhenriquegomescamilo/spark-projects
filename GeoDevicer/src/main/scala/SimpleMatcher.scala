@@ -178,8 +178,7 @@ var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
 // Assign name and geometry columns to DataFrame
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin)
-.drop("rddshape")
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,* FROM rawSpatialDf""".stripMargin).drop("rddshape","geometry")
 
 spatialDf.createOrReplaceTempView("poligonomagico")
 spatialDf.show(2)
@@ -221,7 +220,7 @@ safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-.select("ad_id","id_type","name") //"utc_timestamp",
+//.select("ad_id","id_type","name") //"utc_timestamp",
 
             
 //intersection.show(5)
