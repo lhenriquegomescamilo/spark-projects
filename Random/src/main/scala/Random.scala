@@ -5017,17 +5017,18 @@ object Random {
     // .mode("overwrite")
     // .save("/datascience/custom/old_devices")
 
-    val old_d =
-      spark.read.format("parquet").load("/datascience/custom/old_devices")
-    val new_d =
-      spark.read.format("parquet").load("/datascience/custom/new_devices")
+    // val old_d =
+    //   spark.read.format("parquet").load("/datascience/custom/old_devices")
+    // val new_d =
+    //   spark.read.format("parquet").load("/datascience/custom/new_devices")
 
-    // old_d.join(new_d, Seq("device_id"), "left_anti")
-    spark.read
-      .load("/datascience/custom/to_remove")
-      .write
-      .format("csv")
-      .mode("overwrite")
-      .save("/datascience/custom/to_remove_csv")
+    // // old_d.join(new_d, Seq("device_id"), "left_anti")
+    // spark.read
+    //   .load("/datascience/custom/to_remove")
+    //   .write
+    //   .format("csv")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/to_remove_csv")
+    println(spark.read.format("csv").option("sep", "\t").load("/datascience/devicer/processed/MX_genero_202003_grouped").count())
   }
 }
