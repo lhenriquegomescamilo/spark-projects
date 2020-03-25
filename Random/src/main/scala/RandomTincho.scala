@@ -3203,10 +3203,10 @@ object RandomTincho {
                                 .select("device_id","day")
                                 .distinct
                                 .groupBy("day")
-                                .agg(approx_count_distinct(col("device_id"), 0.02).as("devices"))
+                                .count()
                                 .write
                                 .format("parquet")
                                 .mode(SaveMode.Overwrite)
-                                .save("/datascience/custom/users_safegraph_coronavirus")
+                                .save("/datascience/custom/users_safegraph_coronavirus_count")
   }
 }
