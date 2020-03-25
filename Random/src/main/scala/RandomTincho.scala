@@ -3111,7 +3111,7 @@ object RandomTincho {
     val joint = spark.read.load("/datascience/custom/coronavirus_contacts")
 
     // Calculate it by day
-    val udfDay = udf((d: String) => d.substring(6, 8))
+    val udfDay = udf((d: String) => d.substring(0, 8))
 
     // spark.read
     //   .load("/datascience/custom/coronavirus_contacts")
@@ -3153,7 +3153,7 @@ object RandomTincho {
             .withColumnRenamed("ad_id", "device_id")
             .select("device_id")
             .distinct
-            .limit(3000)
+            .limit(10000)
       )
 
     val users = dfs.reduce((df1, df2) => df1.union(df2)).select("device_id").distinct
@@ -3178,7 +3178,6 @@ object RandomTincho {
           .mode(SaveMode.Overwrite)
           .save("/datascience/custom/coronavirus_seed")
 
-                  
   }
 
   def main(args: Array[String]) {

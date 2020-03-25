@@ -5011,19 +5011,23 @@ object Random {
     // df
     //   .groupBy("device_id")
     //   .agg(approxCountDistinct("day", 0.03) as "days")
-      // .filter("days < 2")
-      // .write
-      // .format("parquet")
-      // .mode("overwrite")
-      // .save("/datascience/custom/old_devices")
+    // .filter("days < 2")
+    // .write
+    // .format("parquet")
+    // .mode("overwrite")
+    // .save("/datascience/custom/old_devices")
 
-    val old_d = spark.read.format("parquet").load("/datascience/custom/old_devices")
-    val new_d = spark.read.format("parquet").load("/datascience/custom/new_devices")
+    val old_d =
+      spark.read.format("parquet").load("/datascience/custom/old_devices")
+    val new_d =
+      spark.read.format("parquet").load("/datascience/custom/new_devices")
 
-    old_d.join(new_d, Seq("device_id"), "left_anti")
+    // old_d.join(new_d, Seq("device_id"), "left_anti")
+    spark.read
+      .load("/datascience/custom/to_remove")
       .write
-      .format("parquet")
+      .format("csv")
       .mode("overwrite")
-      .save("/datascience/custom/to_remove")
+      .save("/datascience/custom/to_remove_csv")
   }
 }
