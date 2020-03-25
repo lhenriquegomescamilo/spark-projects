@@ -187,10 +187,10 @@ spatialDf.show(2)
 
 //Esto para levantar csv
 val df_safegraph = spark.read.format("csv")
-                  .option("header",false)
-                  .option("delimiter","\t")
+                  .option("header",true)
+                  //.option("delimiter","\t")
                   .load(data_path) 
-                  .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
+                  //.toDF("ad_id","id_type","freq","geocode","latitude","longitude")
                   .withColumn("latitude",col("latitude").cast("Double"))
                   .withColumn("longitude",col("longitude").cast("Double"))
                                     .na.drop()//"/datascience/geo/startapp/2019*"
@@ -293,9 +293,9 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/datascience/geo/NSEHomes/argentina_180d_home_27-2-2020--3h",
-        "/datascience/geo/POIs/Mc_Lista_de_locales_y_direcciones_ENERO_2020.json",
-        "argentina")
+        "/datascience/geo/geohashes/Mexico/2020-03-25",
+        "/datascience/geo/POIs/municipal.json",
+        "mexico")
 
   }
 }
