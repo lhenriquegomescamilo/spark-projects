@@ -9,7 +9,7 @@ import org.apache.spark.sql.SaveMode
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.input_file_name
-
+import org.apache.spark.sql.functions.{stddev_samp, stddev_pop}
 
 
 
@@ -1322,7 +1322,10 @@ val today = (java.time.LocalDate.now).toString
 val geohashes_by_user = spark.read.format("parquet")
 .load("/datascience/geo/Reports/GCBA/Coronavirus/2020-03-25/geohashes_by_user_mexico")
 
-val travel_hash_country = geohashes_by_user.groupBy("country","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+val travel_hash_country = 
+  geohashes_by_user
+.groupBy("country","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("country","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 
 travel_hash_country
 .repartition(1)
