@@ -1157,14 +1157,7 @@ the_data
     df
   }
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-    Logger.getRootLogger.setLevel(Level.WARN)
+/*
 
 
 //setting timezone depending on country
@@ -1303,6 +1296,41 @@ space_lapse_agg
     .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_traveled_agg_%s".format(today))
 
 
+
+
+
+*/
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+
+//setting timezone depending on country
+spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+
+
+val today = (java.time.LocalDate.now).toString
+
+// Mexico
+val geohashes_by_user = spark.read.format("parquet")
+.load("/datascience/geo/Reports/GCBA/Coronavirus/2020-03-25/geohashes_by_user_mexico")
+
+val travel_hash_country = geohashes_by_user.groupBy("country","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+
+travel_hash_country
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/2020-03-25/MX_Country_geohashes_travel")
 
 
 }
