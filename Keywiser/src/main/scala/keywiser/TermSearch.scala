@@ -208,7 +208,7 @@ object TermSearch {
    
     val df_selected1 = getSelectedKeywordsOLD(spark,12,25)
     val df_selected2 = getSelectedKeywords(spark,25,0)
-    df_selected = df_selected1.union(df_selected2)
+    val df_selected = df_selected1.union(df_selected2)
 
 
     // get data urls containing the aforementioned search terms
