@@ -178,8 +178,7 @@ var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
 // Assign name and geometry columns to DataFrame
-var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,_c1 as name FROM rawSpatialDf""".stripMargin)
-.drop("rddshape")
+var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,* FROM rawSpatialDf""".stripMargin).drop("rddshape","geometry")
 
 spatialDf.createOrReplaceTempView("poligonomagico")
 spatialDf.show(2)
@@ -187,10 +186,10 @@ spatialDf.show(2)
 
 //Esto para levantar csv
 val df_safegraph = spark.read.format("csv")
-                  .option("header",false)
-                  .option("delimiter","\t")
+                  .option("header",true)
+                  //.option("delimiter","\t")
                   .load(data_path) 
-                  .toDF("ad_id","id_type","freq","geocode","latitude","longitude")
+                  //.toDF("ad_id","id_type","freq","geocode","latitude","longitude")
                   .withColumn("latitude",col("latitude").cast("Double"))
                   .withColumn("longitude",col("longitude").cast("Double"))
                                     .na.drop()//"/datascience/geo/startapp/2019*"
@@ -221,7 +220,8 @@ safegraphDf.createOrReplaceTempView("data")
 
 val intersection = spark.sql(
       """SELECT  *   FROM poligonomagico,data   WHERE ST_Contains(poligonomagico.myshape, data.pointshape)""")
-.select("ad_id","id_type","name") //"utc_timestamp",
+.drop("myshape","geometry","pointshape")
+//.select("ad_id","id_type","name") //"utc_timestamp",
 
             
 //intersection.show(5)
@@ -293,9 +293,9 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/datascience/geo/NSEHomes/argentina_180d_home_27-2-2020--3h",
-        "/datascience/geo/POIs/Mc_Lista_de_locales_y_direcciones_ENERO_2020.json",
-        "argentina")
+        "/datascience/geo/geohashes/Mexico/2020-03-25",
+        "/datascience/geo/POIs/municipal.json",
+        "mexico")
 
   }
 }
