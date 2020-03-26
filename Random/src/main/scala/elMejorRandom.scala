@@ -1322,40 +1322,24 @@ val hashes = spark.read.format("csv")
              .option("header",true)
              .load("/datascience/geo/geohashes/Mexico/2020-03-25") 
 
-hashes.persist()
-
-hashes.withColumn("geo_hash_6",substring(col("geo_hash_7"), 0, 6))
-                  .drop("geo_hash_7")
-                  .dropDuplicates("geo_hash_6")
-                  .write
+hashes
+.dropDuplicates("geo_hash_7")
+.write
     .mode(SaveMode.Overwrite)
     .format("csv")
     .option("header",true)
-    .save("/datascience/geo/geohashes/Mexico/precision_6") 
+    .save("/datascience/geo/geohashes/Mexico/precision_7") 
 
 
-hashes.withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5))
-                  .drop("geo_hash_7")
-                  .dropDuplicates("geo_hash_5")
-                  .write
-    .mode(SaveMode.Overwrite)
-    .format("csv")
-    .option("header",true)
-    .save("/datascience/geo/geohashes/Mexico/precision_5") 
 
-
-val hashes_6 = spark.read.format("csv")
+val hashes_7 = spark.read.format("csv")
              .option("header",true)
-             .load("/datascience/geo/geohashes/Mexico/precision_6") 
+             .load("/datascience/geo/geohashes/Mexico/precision_7") 
 
 
-val hashes_5 = spark.read.format("csv")
-             .option("header",true)
-             .load("/datascience/geo/geohashes/Mexico/precision_5") 
+println("precison_7",hashes_7.select("geo_hash_7").distinct().count())
+println("precison_7???",hashes.count())
 
-println("precison_7",hashes.select("geo_hash_7").distinct().count())
-println("precison_6",hashes_6.select("geo_hash_6").distinct().count())
-println("precison_5",hashes_5.select("geo_hash_5").distinct().count())
 
 
 
