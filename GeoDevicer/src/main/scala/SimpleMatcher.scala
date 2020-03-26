@@ -175,13 +175,12 @@ val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocati
 
 //Transform the polygon to DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
-.repartition(50)
-[, 'geometry', 'NAM', 'FNA', 'PROVCODE', 'PROVINCIA']
 .withColumnRenamed("_c1","IN1")
 .withColumnRenamed("_c2","NAM")
 .withColumnRenamed("_c3","FNA")
 .withColumnRenamed("_c4","PROVCODE")
 .withColumnRenamed("_c5","PROVINCIA")
+.repartition(50)
 //.withColumnRenamed("_c1","CVEGEO")
 //.withColumnRenamed("_c2","NOM_ENT")
 //.withColumnRenamed("_c3","NOM_MUN")
