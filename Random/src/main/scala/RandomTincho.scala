@@ -3191,13 +3191,13 @@ object RandomTincho {
                         .option("header",true)
                         .option("delimiter",",")
                         .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-                        .withColumnRenamed("geo_hashote","geo_hash")
+                        .withColumnRenamed("geo_hashote","geo_hash_join")
     
     val contacts = spark.read
                         .load("/datascience/custom/coronavirus_contacts")
-                        .withColumn("geo_hash",udfGeo(col("geo_hash")))
+                        .withColumn("geo_hash_join",udfGeo(col("geo_hash")))
 
-    val joint = contacts.join(broadcast(barrios),Seq("geo_hash"),"inner")
+    val joint = contacts.join(broadcast(barrios),Seq("geo_hash_join"),"inner")
 
     // Calculate it by day
     val udfDay = udf((d: String) => d.substring(0, 8))
