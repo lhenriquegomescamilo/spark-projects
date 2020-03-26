@@ -3249,8 +3249,10 @@ object RandomTincho {
     val barrios = spark.read
                         .format("csv")
                         .option("header","true")
+                        .option("sep","\t")
                         .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
                         .withColumnRenamed("geo_hash_7","geo_hash_join")
+
     coronavirus_barrios(spark,"mexico",barrios,"NOM_MUN")
 
   }
