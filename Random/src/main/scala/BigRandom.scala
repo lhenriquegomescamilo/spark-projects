@@ -199,7 +199,7 @@ def getReport(
       .select("seg_id","device_id")
       .join(broadcast(data), Seq("device_id"))
       .groupBy("name","device_id")
-      .agg(collect_list("seg_id") as "segments")
+      .agg(collect_list("seg_id") c)
       .withColumn("segments", concat_ws(",", col("segments")))     
       .write
       .format("parquet")
@@ -391,6 +391,20 @@ val udfGetDomain = udf(
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
+    val df =spark.read.format("csv")
+    .option("header",true)
+    .load("/datascience/misc/covid_end_%s")
+
+    df.select("device_id","day","url_count_total","ratio")
+    .dropDuplicates("device_id","day")
+    .write
+    .format("parquet")
+    .partitionBy("day")
+    .mode("append")
+    .save("/datascience/misc/covid_unduplicated_march")
+
+
+/***
     def getData(
       spark: SparkSession,
       nDays: Integer,
@@ -429,6 +443,9 @@ val udfGetDomain = udf(
       .write.format("csv").option("header","true")
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/tl13")  
+
+
+    **/
 
     /**
     val format = "yyyyMMdd"
