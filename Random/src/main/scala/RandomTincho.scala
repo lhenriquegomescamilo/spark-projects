@@ -3173,18 +3173,18 @@ object RandomTincho {
 
   }
 
-  def coronavirus_barrios(spark:SparkSession,country:String){
+  def coronavirus_barrios(spark:SparkSession,country:String, barrios:DataFrame, name:String){
     val udfGeo = udf((d: String) => d.substring(0, 7))
     
     val initial_seed = spark.read
       .load("/datascience/custom/coronavirus_seed_%s".format(country))
       .select("device_id", "geo_hash", "window")
 
-    val barrios =  spark.read.format("csv")
-                        .option("header",true)
-                        .option("delimiter",",")
-                        .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-                        .withColumnRenamed("geo_hashote","geo_hash_join")
+    // val barrios =  spark.read.format("csv")
+    //                     .option("header",true)
+    //                     .option("delimiter",",")
+    //                     .load("/datascience/geo/Reports/GCBA/Coronavirus/")
+    //                     .withColumnRenamed("geo_hashote","geo_hash_join")
     
     val contacts = spark.read
                         .load("/datascience/custom/coronavirus_contacts_%s".format(country))
@@ -3201,7 +3201,7 @@ object RandomTincho {
         Seq("geo_hash", "window")
       )
       .withColumn("day", udfDay(col("window")))
-      .groupBy("original_id", "day","BARRIO")
+      .groupBy("original_id", "day",name)
       .agg(collect_set(col("device_id")).as("devices"))
       .write
       .format("parquet")
@@ -3243,9 +3243,14 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
     
-    generate_seed(spark,"mexico")
-    get_coronavirus(spark,"mexico")
-    get_users_coronavirus(spark,"mexico")
+    // generate_seed(spark,"mexico")
+    // get_coronavirus(spark,"mexico")
+    // get_users_coronavirus(spark,"mexico")
+    val barrios = spark.read
+                        .format(csv)
+                        .option("header","true")
+                        .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
+    coronavirus_barrios(spark,"mexico",barrios,"NOM_MUN")
 
   }
 }
