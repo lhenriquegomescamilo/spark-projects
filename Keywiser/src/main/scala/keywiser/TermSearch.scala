@@ -216,13 +216,13 @@ object TermSearch {
     // get data urls containing the aforementioned search terms
     val df_urls_terms_skws = getUrlsWithTerms(df_keys,df_selected)
 
-
-    val filename = "marchfiltered"
+    val country = "MX"
+    val filename = "march_%s_filtered".format(country)
 
     //add more urls from druid
     val df_urls_druid =spark.read.format("csv")
     .option("header",true)
-    .load("/datascience/misc/urls_coronadruid_march.csv") 
+    .load("/datascience/misc/urls_coronadruid_%s_march.csv".format(country)) 
     .select("url")
     .withColumn("search_terms", lit(1)) 
 
@@ -245,7 +245,7 @@ object TermSearch {
     //val data_urls = getDataUrls(spark,"AR",7,1)  //al 24/03   
     //val data_urls = getDataUrls(spark,"AR",7,10)
     //val data_urls = getDataUrls(spark,"AR",7,38)
-    val data_urls = getDataUrls(spark,"AR",25,0)
+    val data_urls = getDataUrls(spark,country,25,0)
 
     // get final df
     val df_final = getUsers(df_urls_terms,data_urls)
