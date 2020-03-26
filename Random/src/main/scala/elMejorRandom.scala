@@ -1318,6 +1318,18 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
 
+val hashes = spark.read.format("csv")
+             .option("header",true)
+             .load("/datascience/geo/geohashes/Mexico/2020-03-25") 
+
+val hashes_6 = spark.read.format("csv")
+             .option("header",true)
+             .load("/datascience/geo/geohashes/Mexico/precision_6") 
+
+
+val hashes_5 = spark.read.format("csv")
+             .option("header",true)
+             .load("/datascience/geo/geohashes/Mexico/precision_5") 
 
 println("precison_7",hashes.select("geo_hash_7").distinct().count())
 println("precison_6",hashes_6.select("geo_hash_6").distinct().count())
