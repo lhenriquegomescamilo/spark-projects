@@ -3064,14 +3064,14 @@ object RandomTincho {
       .save("/datascience/custom/test_idx")
 
   }
-  def get_coronavirus(spark: SparkSession) {
+  def get_coronavirus(spark: SparkSession,country:String) {
 
     val windowSpec = Window.partitionBy("ad_id").orderBy("utc_timestamp")
 
     val raw = spark.read
       .format("parquet")
       .option("basePath", "/datascience/geo/safegraph/")
-      .load("/datascience/geo/safegraph/day=202003*/country=argentina/")
+      .load("/datascience/geo/safegraph/day=202003*/country=%s/".format(country))
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -3089,16 +3089,12 @@ object RandomTincho {
 
     // Select sample of 1000 users
     val initial_seed = spark.read
-      .load("/datascience/custom/coronavirus_seed")
+      .load("/datascience/custom/coronavirus_seed_%s".format(country))
       .select("device_id", "geo_hash", "window")
 
     // Get the distinct moments to filter the raw data
     val moments = initial_seed.select("geo_hash", "window").distinct()
 
-    // Group raw data
-    // val grouped = raw
-    //   .groupBy("geo_hash", "window")
-    //   .agg(collect_list(col("device_id")).as("devices"))
 
     // Join raw data with the moments and store
     raw
@@ -3106,16 +3102,13 @@ object RandomTincho {
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts")
+      .save("/datascience/custom/coronavirus_contacts_%s".format(country))
 
-    val joint = spark.read.load("/datascience/custom/coronavirus_contacts")
+    val joint = spark.read.load("/datascience/custom/coronavirus_contacts_%s".format(country))
 
     // Calculate it by day
     val udfDay = udf((d: String) => d.substring(0, 8))
 
-    // spark.read
-    //   .load("/datascience/custom/coronavirus_contacts")
-    //   .withColumn("devices", explode(col("devices")))
     joint
       .join(
         initial_seed.withColumnRenamed("device_id", "original_id"),
@@ -3127,10 +3120,10 @@ object RandomTincho {
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_per_day")
+      .save("/datascience/custom/coronavirus_contacts_per_day_%s".format(country))
 
   }
-  def generate_seed(spark:SparkSession){
+  def generate_seed(spark:SparkSession,country:String){
     val sc = spark.sparkContext
     val conf = sc.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
@@ -3139,11 +3132,11 @@ object RandomTincho {
     val start = DateTime.now.minusDays(0)
 
     //val days = (0 until 24).map(start.minusDays(_)).map(_.toString(format))
-    val days = List("20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200313","20200312","20200311","20200310",
+    val days = List("20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200314","20200313","20200312","20200311","20200310",
                     "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
     val path = "/datascience/geo/safegraph/"
     val dfs = days
-      .map(day => path + "day=%s/".format(day) + "country=argentina")
+      .map(day => path + "day=%s/".format(day) + "country=%s".format(country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
       .map(
         x =>
@@ -3158,7 +3151,7 @@ object RandomTincho {
 
     val users = dfs.reduce((df1, df2) => df1.union(df2)).select("device_id").distinct
     
-    spark.read.format("parquet").option("basePath", "/datascience/geo/safegraph/").load("/datascience/geo/safegraph/day=202003*/country=argentina/")
+    spark.read.format("parquet").option("basePath", "/datascience/geo/safegraph/").load("/datascience/geo/safegraph/day=202003*/country=%s/".format(country))
           .withColumnRenamed("ad_id", "device_id")
           .withColumn("device_id", lower(col("device_id")))
           .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -3176,15 +3169,15 @@ object RandomTincho {
           .write
           .format("parquet")
           .mode(SaveMode.Overwrite)
-          .save("/datascience/custom/coronavirus_seed")
+          .save("/datascience/custom/coronavirus_seed_%s".format(country))
 
   }
 
-  def coronavirus_barrios(spark:SparkSession){
+  def coronavirus_barrios(spark:SparkSession,country:String){
     val udfGeo = udf((d: String) => d.substring(0, 7))
     
     val initial_seed = spark.read
-      .load("/datascience/custom/coronavirus_seed")
+      .load("/datascience/custom/coronavirus_seed_%s".format(country))
       .select("device_id", "geo_hash", "window")
 
     val barrios =  spark.read.format("csv")
@@ -3194,7 +3187,7 @@ object RandomTincho {
                         .withColumnRenamed("geo_hashote","geo_hash_join")
     
     val contacts = spark.read
-                        .load("/datascience/custom/coronavirus_contacts")
+                        .load("/datascience/custom/coronavirus_contacts_%s".format(country))
                         .withColumn("geo_hash_join",udfGeo(col("geo_hash")))
 
     val joint = contacts.join(broadcast(barrios),Seq("geo_hash_join"),"inner")
@@ -3213,7 +3206,28 @@ object RandomTincho {
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_barrios")
+      .save("/datascience/custom/coronavirus_contacts_barrios_%s".format(country))
+
+
+  }
+
+  // Funcion que busca todos los usuarios del pais para normalizar
+  def get_users_coronavirus(spark:SparkSession,country:String){
+    val days = List("20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200314","20200313","20200312","20200311","20200310",
+                    "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
+    val path = "/datascience/geo/safegraph/"
+    val dfs = days
+      .map(day => spark.read.load(path + "day=%s/".format(day) + "country=%s".format(country)).withColumnRenamed("ad_id", "device_id").withColumn("day",lit(day)).select("device_id","day"))
+
+    dfs.reduce((df1, df2) => df1.union(df2))
+                                .select("device_id","day")
+                                .groupBy("day")
+                                .agg(approx_count_distinct(col("device_id"), 0.02).as("devices_unique"),
+                                    count(col("device_id")).as("devices_count"))
+                                .write
+                                .format("parquet")
+                                .mode(SaveMode.Overwrite)
+                                .save("/datascience/custom/users_safegraph_coronavirus_%s".format(country))
 
 
   }
@@ -3229,22 +3243,9 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
     
-    coronavirus_barrios(spark)
-    
-    // val days = List("20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200313","20200312","20200311","20200310",
-    //                 "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
-    // val path = "/datascience/geo/safegraph/"
-    // val dfs = days
-    //   .map(day => spark.read.load(path + "day=%s/".format(day) + "country=argentina").withColumnRenamed("ad_id", "device_id").withColumn("day",lit(day)).select("device_id","day"))
+    generate_seed(spark,"mexico")
+    get_coronavirus(spark,"mexico")
+    get_users_coronavirus(spark,"mexico")
 
-    // dfs.reduce((df1, df2) => df1.union(df2))
-    //                             .select("device_id","day")
-    //                             .groupBy("day")
-    //                             .agg(approx_count_distinct(col("device_id"), 0.02).as("devices_unique"),
-    //                                 count(col("device_id")).as("devices_count"))
-    //                             .write
-    //                             .format("parquet")
-    //                             .mode(SaveMode.Overwrite)
-    //                             .save("/datascience/custom/users_safegraph_coronavirus")
   }
 }
