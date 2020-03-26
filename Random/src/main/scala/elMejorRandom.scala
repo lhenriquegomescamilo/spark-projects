@@ -1316,31 +1316,20 @@ space_lapse_agg
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 
-val today = (java.time.LocalDate.now).toString
-
-val hashes = spark.read.format("csv")
-             .option("header",true)
-             .load("/datascience/geo/geohashes/Mexico/2020-03-25") 
-
-hashes
-.dropDuplicates("geo_hash_7")
+spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/geo/raw_output/tablero_25-03-20_5d_argentina_26-3-2020-16h")
+.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+.groupBy("Day","audience").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
+.orderBy(asc("Day"))
+.repartition(1)
 .write
-    .mode(SaveMode.Overwrite)
-    .format("csv")
-    .option("header",true)
-    .save("/datascience/geo/geohashes/Mexico/precision_7") 
-
-
-
-val hashes_7 = spark.read.format("csv")
-             .option("header",true)
-             .load("/datascience/geo/geohashes/Mexico/precision_7") 
-
-
-println("precison_7",hashes_7.select("geo_hash_7").distinct().count())
-println("precison_7???",hashes.count())
-
-
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/2020-03-26/Critical_Places")
 
 
 }
