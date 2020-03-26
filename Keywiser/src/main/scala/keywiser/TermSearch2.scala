@@ -246,7 +246,8 @@ object TermSearch2 {
       .save(path)
 
     // part 2
-    val df =spark.read.format("parquet")
+    val df =spark.read.format("csv")
+    .option("header",true)
     .load(path)
 
     //write and reload:
