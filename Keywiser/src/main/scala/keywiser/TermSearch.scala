@@ -292,7 +292,8 @@ object TermSearch {
     .select("device_id","day","url_count_total","ratio")
 
     val path4 = "/datascience/misc/covid_final_%s".format(filename)    
-    df_joint.write.format("csv")
+    df_joint.dropDuplicates("device_id","day") // ESTE DROP ELIMINA SI HUBIESE DUPLICADOS POR DIA.
+    .write.format("csv")
       .option("header",true)
       .mode(SaveMode.Overwrite)
       .save(path4)
