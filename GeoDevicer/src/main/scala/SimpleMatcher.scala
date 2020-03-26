@@ -301,7 +301,7 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/datascience/geo/geohashes/Mexico/2020-03-25",
+        "/datascience/geo/geohashes/Mexico/precision_7",
         "/datascience/geo/POIs/MX_DF_municipal.json",
         "mexico")
 
