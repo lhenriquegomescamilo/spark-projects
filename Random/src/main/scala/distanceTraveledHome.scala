@@ -285,6 +285,8 @@ spacelapse
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
+//Esta función obtiene los geohashes los últimos 30 días y mira una desagregacióon por barrio para Argentina. 
+
 val country = "argentina"
 
 val timezone = Map("argentina" -> "GMT-3",
@@ -300,7 +302,7 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
 
-val raw = get_safegraph_data(spark,"30","1",country)
+val raw = get_safegraph_data(spark,"5","1",country)
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -323,12 +325,13 @@ geo_hash_visits
     .option("header",true)
     .save(output_file)
 
+
+
 //Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
 
 val barrios = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
 .withColumnRenamed("geo_hashote","geo_hash_7")
-
 
 
 //Alternativa 1
