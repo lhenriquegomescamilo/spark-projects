@@ -347,7 +347,7 @@ val udfGetDomain = udf(
 
     val df =spark.read.format("csv")
     .option("header",true)
-    .load("/datascience/misc/covid_end_%s")
+    .load("/datascience/misc/covid_end_march")
 
     df.select("device_id","day","url_count_total","ratio")
     .dropDuplicates("device_id","day")
