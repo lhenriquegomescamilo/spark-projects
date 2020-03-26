@@ -190,12 +190,13 @@ var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
 
 
+
 // Assign name and geometry columns to DataFrame
 var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,* FROM rawSpatialDf""".stripMargin).drop("rddshape","geometry")
 
 spatialDf.createOrReplaceTempView("poligonomagico")
 
-
+spatialDf.show(2)
 
 //Esto para levantar csv
 val df_safegraph = spark.read.format("csv")
