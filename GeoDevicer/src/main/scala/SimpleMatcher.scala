@@ -174,14 +174,20 @@ val skipSyntaxInvalidGeometries = true // Optional
 val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocation,allowTopologyInvalidGeometris, skipSyntaxInvalidGeometries)
 
 //Transform the polygon to DF
-var rawSpatialDf = Adapter.toDf(spatialRDD,spark).repartition(30)
+var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
+.withColumnRenamed("_c1","CVEGEO")
+.withColumnRenamed("_c2","NOM_ENT")
+.withColumnRenamed("_c3","NOM_MUN")
+.repartition(50)
+
 rawSpatialDf.createOrReplaceTempView("rawSpatialDf")
+
 
 // Assign name and geometry columns to DataFrame
 var spatialDf = spark.sql("""       select ST_GeomFromWKT(geometry) as myshape,* FROM rawSpatialDf""".stripMargin).drop("rddshape","geometry")
 
 spatialDf.createOrReplaceTempView("poligonomagico")
-spatialDf.show(2)
+
 
 
 //Esto para levantar csv
@@ -192,7 +198,8 @@ val df_safegraph = spark.read.format("csv")
                   //.toDF("ad_id","id_type","freq","geocode","latitude","longitude")
                   .withColumn("latitude",col("latitude").cast("Double"))
                   .withColumn("longitude",col("longitude").cast("Double"))
-                                    .na.drop()//"/datascience/geo/startapp/2019*"
+                                    .na.drop()
+                                    .repartition(50)//"/datascience/geo/startapp/2019*"
                 //.toDF("ad_id","timestamp","country","longitude","latitude","some")
 
 
@@ -259,7 +266,7 @@ intersection
       .config("geospark.global.index","true")
        .config("geospark.join.gridtype", "kdbtree")
        .config("geospark.join.spatitionside","left")
-       .config("spark.sql.shuffle.partitions", 2000)
+       //.config("spark.sql.shuffle.partitions", 2000)
        .appName("myGeoSparkSQLdemo").getOrCreate()
      
 GeoSparkSQLRegistrator.registerAll(spark)
