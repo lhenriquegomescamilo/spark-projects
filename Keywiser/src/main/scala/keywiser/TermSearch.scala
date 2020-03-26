@@ -213,21 +213,33 @@ object TermSearch {
     val df_selected2 = getSelectedKeywords(spark,25,0)
     val df_selected = df_selected1.union(df_selected2)
 
-
     // get data urls containing the aforementioned search terms
     val df_urls_terms_skws = getUrlsWithTerms(df_keys,df_selected)
 
-    val filename = "march"
+
+    val filename = "marchfiltered"
 
     //add more urls from druid
     val df_urls_druid =spark.read.format("csv")
     .option("header",true)
-    .load("/datascience/misc/urls_coronadruid_%s.csv".format(filename)) 
+    .load("/datascience/misc/urls_coronadruid_march.csv") 
     .select("url")
     .withColumn("search_terms", lit(1)) 
 
+
+    //filter by these domains
+    val domains_string = "eluniversal,cronista,unotv,perfil,excelsior,ambito,minutouno,lavoz,elespectador,las2orillas,record,elheraldo,t13,13,losandes,larepublica,eldia,revistaforum,latina,semana,lacapital,elhorizonte,elsol,diariodecuyo,quepasasalta,diariodocentrodomundo,lared"
+    val domains: List[String] = domains_string.split(",").map(_.trim).toList 
+
+    val query_domains = domains
+      .map(dom => "domain LIKE '%" + dom + "%'")
+      .mkString(" OR ")
+
     // concat both previous url sources
     val df_urls_terms = df_urls_terms_skws.union(df_urls_druid)
+    .withColumn("domain", udfGetDomain(col("url")))
+    .filter(query_domains)
+    
 
     // get data from data urls
     //val data_urls = getDataUrls(spark,"AR",7,1)  //al 24/03   
@@ -276,13 +288,16 @@ object TermSearch {
     val df_joint = db.join(count_total,Seq("device_id","day"))
     .filter("search_terms==1")
     .withColumn("ratio",col("url_count")/col("url_count_total"))
-    .select("device_id","day","url_count","url_count_total","ratio")
+    //.select("device_id","day","url_count","url_count_total","ratio")
+    .select("device_id","day","url_count_total","ratio")
 
     val path4 = "/datascience/misc/covid_final_%s".format(filename)    
     df_joint.write.format("csv")
       .option("header",true)
       .mode(SaveMode.Overwrite)
       .save(path4)
+
+/**
 
     // part 3  
     val taxo = spark.read.format("csv")
@@ -314,6 +329,8 @@ object TermSearch {
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/covid_end_%s".format(filename))
       //.save("/datascience/misc/covid_final_2_10") //.save("/datascience/misc/covid_final_2")
+
+  */
 
   }
 
