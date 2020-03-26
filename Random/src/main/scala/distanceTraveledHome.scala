@@ -377,7 +377,9 @@ val tipo2 = spark.read.format("parquet")
 
 //Alternativa 3
 val output_file_tipo_3 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_barrio_tipo3_%s".format(today,country)
-val hash_user = spark.read.format("parquet").load(output_file)
+
+val hash_user = spark.read.format("parquet").load(output_file).withColumn("device_id",lower(col("device_id")))
+
 val barrio_user = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_list_by_user_2020-03-24")
 .withColumn("device_id",lower(col("device_id")))
 .join(barrios,Seq("geo_hash_7")).select("COMUNA","BARRIO","device_id").distinct()
