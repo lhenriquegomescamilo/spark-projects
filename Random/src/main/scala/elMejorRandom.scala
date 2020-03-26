@@ -1318,22 +1318,45 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
 
-// Mexico
-val geohashes_by_user = spark.read.format("parquet")
-.load("/datascience/geo/Reports/GCBA/Coronavirus/2020-03-25/geohashes_by_user_mexico")
+val hashes = spark.read.format("csv")
+             .option("header",true)
+             .load("/datascience/geo/geohashes/Mexico/2020-03-25") 
 
-val travel_hash_country = 
-  geohashes_by_user
-.groupBy("country","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("country","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+hashes.persist()
 
-travel_hash_country
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/2020-03-25/MX_Country_geohashes_travel")
+hashes.withColumn("geo_hash_6",substring(col("geo_hash_7"), 0, 5))
+                  .drop("geo_hash_7")
+                  .dropDuplicates("geo_hash_6")
+                  .write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/geohashes/Mexico/precision_6") 
+
+
+hashes.withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5))
+                  .drop("geo_hash_7")
+                  .dropDuplicates("geo_hash_5")
+                  .write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/geohashes/Mexico/precision_5") 
+
+
+val hashes_6 = spark.read.format("csv")
+             .option("header",true)
+             .load("/datascience/geo/geohashes/Mexico/precision_6") 
+
+
+val hashes_5 = spark.read.format("csv")
+             .option("header",true)
+             .load("/datascience/geo/geohashes/Mexico/precision_5") 
+
+println("precison_7",hashes.select("geo_hash_7").distinct().count())
+println("precison_6",hashes_6.select("geo_hash_7").distinct().count())
+println("precison_5",hashes_5.select("geo_hash_7").distinct().count())
+
 
 
 }
