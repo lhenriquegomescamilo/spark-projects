@@ -3180,6 +3180,44 @@ object RandomTincho {
 
   }
 
+  def coronavirus_barrios(spark:SparkSession){
+    val udfGeo = udf((d: String) => d.substring(0, 7))
+    
+    val initial_seed = spark.read
+      .load("/datascience/custom/coronavirus_seed")
+      .select("device_id", "geo_hash", "window")
+
+    val barrios =  spark.read.format("csv")
+                        .option("header",true)
+                        .option("delimiter",",")
+                        .load("/datascience/geo/Reports/GCBA/Coronavirus/")
+                        .withColumnRenamed("geo_hashote","geo_hash")
+    
+    val contacts = spark.read
+                        .load("/datascience/custom/coronavirus_contacts")
+                        .withColumn("geo_hash",udfGeo(col("geo_hash")))
+
+    val joint = contacts.join(broadcast(barrios),Seq("geo_hash"),"inner")
+
+    // Calculate it by day
+    val udfDay = udf((d: String) => d.substring(0, 8))
+
+    joint
+      .join(
+        initial_seed.withColumnRenamed("device_id", "original_id"),
+        Seq("geo_hash", "window")
+      )
+      .withColumn("day", udfDay(col("window")))
+      .groupBy("original_id", "day","BARRIO")
+      .agg(collect_set(col("device_id")).as("devices"))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/coronavirus_contacts_barrios")
+
+
+  }
+
   def main(args: Array[String]) {
 
     // Setting logger config
@@ -3190,23 +3228,23 @@ object RandomTincho {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
+    
+    coronavirus_barrios(spark)
+    
+    // val days = List("20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200313","20200312","20200311","20200310",
+    //                 "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
+    // val path = "/datascience/geo/safegraph/"
+    // val dfs = days
+    //   .map(day => spark.read.load(path + "day=%s/".format(day) + "country=argentina").withColumnRenamed("ad_id", "device_id").withColumn("day",lit(day)).select("device_id","day"))
 
-    //generate_seed(spark)
-    //get_coronavirus(spark)
-    val days = List("20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200313","20200312","20200311","20200310",
-                    "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
-    val path = "/datascience/geo/safegraph/"
-    val dfs = days
-      .map(day => spark.read.load(path + "day=%s/".format(day) + "country=argentina").withColumnRenamed("ad_id", "device_id").withColumn("day",lit(day)).select("device_id","day"))
-
-    dfs.reduce((df1, df2) => df1.union(df2))
-                                .select("device_id","day")
-                                .groupBy("day")
-                                .agg(approx_count_distinct(col("device_id"), 0.02).as("devices_unique"),
-                                    count(col("device_id")).as("devices_count"))
-                                .write
-                                .format("parquet")
-                                .mode(SaveMode.Overwrite)
-                                .save("/datascience/custom/users_safegraph_coronavirus")
+    // dfs.reduce((df1, df2) => df1.union(df2))
+    //                             .select("device_id","day")
+    //                             .groupBy("day")
+    //                             .agg(approx_count_distinct(col("device_id"), 0.02).as("devices_unique"),
+    //                                 count(col("device_id")).as("devices_count"))
+    //                             .write
+    //                             .format("parquet")
+    //                             .mode(SaveMode.Overwrite)
+    //                             .save("/datascience/custom/users_safegraph_coronavirus")
   }
 }
