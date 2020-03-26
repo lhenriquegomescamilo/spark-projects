@@ -222,7 +222,7 @@ object TermSearch2 {
     //add more urls from druid
     val df_urls_druid =spark.read.format("csv")
     .option("header",true)
-    .load("/datascience/misc/urls_coronadruid_%s.csv".format(filename)) 
+    .load("/datascience/misc/urls_coronadruid_march.csv") 
     .select("url")
     .withColumn("search_terms", lit(1)) 
 
