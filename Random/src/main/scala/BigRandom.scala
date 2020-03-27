@@ -342,10 +342,19 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/misc/covid_BR_to_push")
+    .toDF("device_type","device_id","segment")
+    .groupBy("segment")
+    .agg(approx_count_distinct(col("device_id"), 0.02).as("devices"))
+    
+    println(df.show())
+/**
     val countries = "BR,CL,CO,MX,PE".split(",").toList
 
     for (country <- countries) {
-   /**     
+        
     spark.read.format("csv")
     .option("header",false)
     .load("/datascience/misc/covid_last_%s".format(country))
@@ -359,10 +368,7 @@ val udfGetDomain = udf(
      .mode("overwrite")
      .save("/datascience/misc/covid_%s_to_push".format(country))
 
- */    
-
-
-
+ 
     spark.read.format("csv")
      .load("/datascience/audiences/crossdeviced/covid_last_%s_xd".format(country))
      .withColumnRenamed("_c1", "device_id")
@@ -380,6 +386,9 @@ val udfGetDomain = udf(
 
 
 }
+
+*/    
+
     /**
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)

@@ -331,7 +331,7 @@ val hash_user = spark.read.format("parquet").load(output_file).withColumn("devic
 
 hash_user
 .groupBy("Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.groupBy("Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std",count("device_id") as "devices")
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
