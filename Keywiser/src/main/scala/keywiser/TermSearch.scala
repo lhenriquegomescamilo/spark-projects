@@ -216,7 +216,7 @@ object TermSearch {
     // get data urls containing the aforementioned search terms
     val df_urls_terms_skws = getUrlsWithTerms(df_keys,df_selected)
 
-    val country = "CO"
+    val country = "PE"
     val filename = "march_%s_filtered".format(country)
 
     //add more urls from druid
