@@ -1,6 +1,6 @@
 package main.scala.aggregators
 
-import main.scala.Geodevicer
+import main.scala.geodevicer.Geodevicer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.Window

@@ -232,24 +232,10 @@ object Coronavirus {
     var sparkSession: SparkSession = SparkSession
       .builder()
       .appName("Coronavirus Daily Data")
-      .config("spark.serializer", classOf[KryoSerializer].getName)
-      .config("geospark.global.index", "true")
-      .config("geospark.join.gridtype", "kdbtree")
-      .config("geospark.join.spatitionside", "right")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
-      .config(
-        "spark.kryo.registrator",
-        classOf[GeoSparkKryoRegistrator].getName
-      )
-      .appName("GeoSparkSQL-demo")
       .getOrCreate()
-
-    GeoSparkSQLRegistrator.registerAll(sparkSession)
-
-    // Initialize the variables
-    val geosparkConf = new GeoSparkConf(sparkSession.sparkContext.getConf)
-
+    
     get_data_pois(spark)
 
   }
