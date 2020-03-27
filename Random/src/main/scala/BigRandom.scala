@@ -345,7 +345,7 @@ val udfGetDomain = udf(
     val countries = "BR,CL,CO,MX,PE".split(",").toList
 
     for (country <- countries) {
-      
+   /**     
     spark.read.format("csv")
     .option("header",false)
     .load("/datascience/misc/covid_last_%s".format(country))
@@ -359,10 +359,10 @@ val udfGetDomain = udf(
      .mode("overwrite")
      .save("/datascience/misc/covid_%s_to_push".format(country))
 
-     
+ */    
 
 
-  /**
+
     spark.read.format("csv")
      .load("/datascience/audiences/crossdeviced/covid_last_%s_xd".format(country))
      .withColumnRenamed("_c1", "device_id")
@@ -377,7 +377,7 @@ val udfGetDomain = udf(
      .option("sep", "\t")
      .mode("append")
      .save("/datascience/misc/covid_%s_to_push".format(country))
-*/
+
 
 }
     /**
