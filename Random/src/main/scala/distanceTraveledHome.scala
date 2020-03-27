@@ -339,8 +339,31 @@ hash_user
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
-//Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
 
+//QUeremos un cálculo por municipio:
+//Desagregado por entidad y municipio
+val entidad = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+
+//Alternativa 2
+val output_file_partido = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_partido_%s".format(today,country)
+val partido = spark.read.format("parquet")
+.load(output_file)
+.join(entidad,Seq("geo_hash_7"))
+.groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("NOM_ENT","CVEGEO","NOM_MUN","Day").agg(
+  count("device_id") as "devices",
+  avg("geo_hash_7") as "geo_hash_7_avg",
+  stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save(output_file_partido)
+
+
+//Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
 val barrios = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
 .withColumnRenamed("geo_hashote","geo_hash_7")
@@ -387,25 +410,7 @@ val tipo2 = spark.read.format("parquet")
 .save(output_file_tipo_2)
 
 
-//Alternativa 3
-//Este no se usa. Ojo que está buggeado además.
-/*
-val output_file_tipo_3 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_barrio_tipo3_%s".format(today,country)
 
-val hash_user = spark.read.format("parquet").load(output_file).withColumn("device_id",lower(col("device_id")))
-
-val barrio_user = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/geohashes_list_by_user_2020-03-24")
-.withColumn("device_id",lower(col("device_id")))
-.join(barrios,Seq("geo_hash_7")).select("COMUNA","BARRIO","device_id").distinct()
-
-barrio_user.join(hash_user,Seq("device_id"))
-.groupBy("COMUNA","BARRIO","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save(output_file_tipo_3)
 */
 
 
