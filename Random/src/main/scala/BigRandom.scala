@@ -333,6 +333,30 @@ val udfGetDomain = udf(
     df
   }
 
+def getDataPipeline(
+      spark: SparkSession,
+      path: String,
+      nDays: String,
+      since: String,
+      country: String) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+      
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since.toInt)
+    val days = (0 until nDays.toInt).map(end.minusDays(_)).map(_.toString(format))
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day,country)) //
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    val df = spark.read.option("basePath", path).parquet(hdfs_files: _*)
+
+    df
+  }
+
  /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -342,14 +366,44 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val countries = "BR,CL,CO,MX,PE".split(",").toList
+
+    for (country <- countries) {
+
+    val path_triplets = "/datascience/data_triplets/segments/"
+
+
+    var triplets = getDataPipeline(spark,path_triplets,"25","2","%s".format(country))
+              .select("device_id","feature")
+
+    var df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/misc/covid_%s_to_push".format(country))
+    .toDF("device_type","device_id","segment")
+
+    var aff = df.join(triplets,Seq("device_id"))
+    .groupBy("segment","feature").agg(approx_count_distinct(col("device_id"), 0.02).as("score"))
+
+    aff.write
+     .format("csv")
+     .mode("overwrite")
+     .save("/datascience/misc/covid_%s_aff".format(country))
+
+    }
+
+
+    /**
+
     val df = spark.read.format("csv")
     .option("sep", "\t")
-    .load("/datascience/misc/covid_BR_to_push")
+    .load("/datascience/misc/covid_MX_to_push")
     .toDF("device_type","device_id","segment")
     .groupBy("segment")
     .agg(approx_count_distinct(col("device_id"), 0.02).as("devices"))
     
     println(df.show())
+
+    **/
 /**
     val countries = "BR,CL,CO,MX,PE".split(",").toList
 
