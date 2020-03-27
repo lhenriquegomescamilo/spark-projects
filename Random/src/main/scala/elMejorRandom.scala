@@ -1342,8 +1342,8 @@ val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes
 val tipo2 = spark.read.format("parquet")
 .load(output_file)
 .join(provincias,Seq("geo_hash_7"))
-.groupBy("PROVCODE","PROVINCIA","IN1","FNA","NAM","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("PROVCODE","PROVINCIA","IN1","FNA","NAM").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.groupBy("PROVCODE","PROVINCIA","IN1","FNA","NAM","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("PROVCODE","PROVINCIA","IN1","FNA","NAM","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
