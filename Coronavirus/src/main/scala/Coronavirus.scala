@@ -42,9 +42,9 @@ object Coronavirus {
   def get_data_pois(spark:SparkSession){
 
     // Path fijos con los pois de los distintos paises
-    val files = List(("tablero_25-03-20_5d_argentina_26-3-2020-16h.json","AR"),
-                      ("Critical_Places_MX_30d_mexico_27-3-2020-11h.json","MX"))
-                      
+    val files = List(("tablero_25-03-20_5d_argentina_26-3-2020-16h","AR"),
+                      ("Critical_Places_MX_30d_mexico_27-3-2020-11h","MX"))
+
     val path_geo_jsons = "/datascience/geo/geo_json/"
     
     val timezone = Map("AR" -> "GMT-3",
@@ -59,7 +59,7 @@ object Coronavirus {
       spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
       // Run geo
-      Geodevicer.run_geodevicer(spark,path_geo_jsons+filename)
+      Geodevicer.run_geodevicer(spark,path_geo_jsons+filename+".json")
       // Process results and save
       spark.read.format("csv")
                 .option("header",true)
