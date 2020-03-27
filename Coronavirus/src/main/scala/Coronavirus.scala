@@ -229,8 +229,8 @@ object Coronavirus {
   def main(args: Array[String]) {
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    var sparkSession: SparkSession = SparkSession
-      .builder()
+    
+    val spark = SparkSession.builder
       .appName("Coronavirus Daily Data")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
