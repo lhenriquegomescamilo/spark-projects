@@ -3232,7 +3232,7 @@ object RandomTincho {
   }
 
   def urgente_sebas(spark:SparkSession){
-    val pii_tuples = spark.load("/datascience/pii_matching/pii_tuples/")
+    val pii_tuples = spark.read.load("/datascience/pii_matching/pii_tuples/")
                           .filter("country = 'BR'")
 
     println("Emails: %s".format(pii_tuples.filter("ml_sh2 is not null")
