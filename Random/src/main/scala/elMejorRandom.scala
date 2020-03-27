@@ -1337,7 +1337,6 @@ spark.read.format("csv")
 .format("csv")
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/Critical_Places")
-
 }
 
 
