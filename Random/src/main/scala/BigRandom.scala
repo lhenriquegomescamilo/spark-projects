@@ -345,12 +345,12 @@ val udfGetDomain = udf(
     val countries = "BR,CL,CO,MX,PE".split(",").toList
 
     for (country <- countries) {
-    /**  
+      
     spark.read.format("csv")
     .option("header",false)
     .load("/datascience/misc/covid_last_%s".format(country))
     .toDF("device_id","category")
-     .withColumn("segment", when(col("category")===3, 302875).otherwise(when(col("category")===2, 302877).otherwise(when(col("category")===1, 302879).otherwise(302881))))
+     .withColumn("segment", when(col("category")===3, 303353).otherwise(when(col("category")===2, 303357).otherwise(when(col("category")===1, 303359).otherwise(303361))))
      .withColumn("device_type", lit("web"))
      .select("device_type", "device_id", "segment")
      .write
@@ -359,14 +359,16 @@ val udfGetDomain = udf(
      .mode("overwrite")
      .save("/datascience/misc/covid_%s_to_push".format(country))
 
-     */
+     
 
+
+  /**
     spark.read.format("csv")
      .load("/datascience/audiences/crossdeviced/covid_last_%s_xd".format(country))
      .withColumnRenamed("_c1", "device_id")
      .withColumnRenamed("_c2", "device_type")
      .withColumnRenamed("_c4", "category")
-     .withColumn("segment", when(col("category")===3, 302875).otherwise(when(col("category")===2, 302877).otherwise(when(col("category")===1, 302879).otherwise(302881))))
+     .withColumn("segment", when(col("category")===3, 303353).otherwise(when(col("category")===2, 303357).otherwise(when(col("category")===1, 303359).otherwise(303361))))
      .withColumn("device_type", when(col("device_type")==="and", "android").otherwise(when(col("device_type")==="ios", "ios").otherwise("web")))
      .select("device_type", "device_id", "segment")
      .distinct()
@@ -375,7 +377,7 @@ val udfGetDomain = udf(
      .option("sep", "\t")
      .mode("append")
      .save("/datascience/misc/covid_%s_to_push".format(country))
-
+*/
 
 }
     /**
