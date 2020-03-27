@@ -366,7 +366,7 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
+    val countries = "BR,CL,CO,MX,PE".split(",").toList
     val path_triplets = "/datascience/data_triplets/segments/"
 
     for (country <- countries) {    
