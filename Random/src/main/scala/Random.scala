@@ -4994,9 +4994,9 @@ object Random {
     //   )
     //   .withColumnRenamed("ad_id", "device_id")
     //   .withColumn("device_id", lower(col("device_id")))
-    //   .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-    //   .withColumn("day", date_format(col("Time"), "YYYY-MM-dd"))
-    //   .drop("Time")
+    // .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+    // .withColumn("day", date_format(col("Time"), "YYYY-MM-dd"))
+    // .drop("Time")
 
     // val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
 
@@ -5017,6 +5017,8 @@ object Random {
     //   .mode(SaveMode.Overwrite)
     //   .save("/datascience/custom/coronavirus_contacts_airport_%s".format(country))
 
+    val w2 = Window.partitionBy("device_id").orderBy(col("day_airport"))
+
     val airport = spark.read
       .format("csv")
       .option("sep", "\t")
@@ -5025,17 +5027,34 @@ object Random {
         "/datascience/geo/raw_output/puntos_contagio_30d_mexico_26-3-2020-14h"
       )
       .filter("audience = 'Aeropuerto CDMX'")
-      .select("device_id")
-      .distinct()
-    val all_points = spark.read
-      .format("parquet")
-      .load("/datascience/custom/coronavirus_contacts_airport_mexico")
-      .dropDuplicates("device_id", "day", "geo_hash")
-    all_points
+      .withColumnRenamed("latitude_user", "latitude")
+      .withColumnRenamed("longitude_user", "longitude")
+      .withColumn("geo_hash", lit("airport"))
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("day_airport", date_format(col("Time"), "YYYY-MM-dd"))
+      .select("device_id", "day_airport")
+      .withColumn("row", row_number.over(w2))
+      .where($"row" === 1)
+      .drop("row")
+
+    val points = spark.read
+      .format("csv")
+      .load("/datascience/custom/all_points_airport_mx_")
+      .withColumnRenamed("_c4", "latitude")
+      .withColumnRenamed("_c5", "longitude")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumnRenamed("_c7", "day")
+      .withColumnRenamed("_c9", "geo_hash")
+      .select("device_id", "latitude", "longitude", "day", "geo_hash")
+
+    points
       .join(airport, Seq("device_id"))
+      .filter("day >= day_airport")
+      .dropDuplicates("geo_hash", "day")
       .write
       .format("csv")
+      .option("header", "true")
       .mode("overwrite")
-      .save("/datascience/custom/all_points_airport_mx")
+      .save("/datascience/custom/all_points_airport_mx_final")
   }
 }
