@@ -339,7 +339,7 @@ hash_user
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
-//Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
+//Desagregado por entidad y municipio
 val entidad = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
 
@@ -348,7 +348,7 @@ val entidad = spark.read.format("csv").option("header",true).option("delimiter",
 val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_municipio_%s".format(today,country)
 val tipo2 = spark.read.format("parquet")
 .load(output_file)
-.join(barrios,Seq("geo_hash_7"))
+.join(entidad,Seq("geo_hash_7"))
 .groupBy("NOM_ENT","CVEGEO","NOM_MUN","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
 .groupBy("NOM_ENT","CVEGEO","NOM_MUN","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 .repartition(1)
