@@ -4984,51 +4984,30 @@ object Random {
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
+    val country = "mexico"
 
-    // val nDays = 60
-    // val from = 61
-    // val path = "/datascience/data_triplets/segments/"//"/datascience/data_audiences_streaming/"
+    val raw = spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/geo/safegraph/")
+      .load(
+        "/datascience/geo/safegraph/day=202003*/country=%s/".format(country)
+      )
+      .withColumnRenamed("ad_id", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("day", date_format(col("Time"), "YYYY-MM-dd"))
+      .drop("Time")
 
-    // val conf = spark.sparkContext.hadoopConfiguration
-    // val fs = FileSystem.get(conf)
+    val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
 
-    // // read files from dates
-    // val format = "yyyyMMdd"
-    // val endDate = DateTime.now.minusDays(from)
-    // val days =
-    //   (0 until nDays.toInt).map(endDate.minusDays(_)).map(_.toString(format))
-    // // Now we obtain the list of hdfs folders to be read
-    // val hdfs_files = days
-    //   .map(day => path + "/day=%s".format(day))
-    //   // .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-    // val df = spark.read
-    //   .option("basePath", path)
-    //   .parquet(hdfs_files: _*)
-    //   // .filter("event_type IN ('pv', 'batch', 'data')")
-    //   .select("device_id", "day")
-    //   .distinct()
-
-    // df
-    //   .groupBy("device_id")
-    //   .agg(approxCountDistinct("day", 0.03) as "days")
-    // .filter("days < 2")
-    // .write
-    // .format("parquet")
-    // .mode("overwrite")
-    // .save("/datascience/custom/old_devices")
-
-    // val old_d =
-    //   spark.read.format("parquet").load("/datascience/custom/old_devices")
-    // val new_d =
-    //   spark.read.format("parquet").load("/datascience/custom/new_devices")
-
-    // // old_d.join(new_d, Seq("device_id"), "left_anti")
-    // spark.read
-    //   .load("/datascience/custom/to_remove")
-    //   .write
-    //   .format("csv")
-    //   .mode("overwrite")
-    //   .save("/datascience/custom/to_remove_csv")
-    println(spark.read.format("csv").option("sep", "\t").load("/datascience/devicer/processed/MX_genero_202003_grouped").count())
+    // Select sample of 1000 users
+    val initial_seed = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load(
+        "/datascience/geo/raw_output/puntos_contagio_30d_mexico_26-3-2020-14h"
+      )
+      .select("device_id")
   }
 }
