@@ -44,6 +44,7 @@ object Coronavirus {
     // Path fijos con los pois de los distintos paises
     val files = List(("tablero_25-03-20_5d_argentina_26-3-2020-16h.json","AR"),
                       ("Critical_Places_MX_30d_mexico_27-3-2020-11h.json","MX"))
+                      
     val path_geo_jsons = "/datascience/geo/geo_json/"
     
     val timezone = Map("AR" -> "GMT-3",
