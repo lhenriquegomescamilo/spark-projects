@@ -1312,7 +1312,7 @@ space_lapse_agg
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-val country = "argentina"
+val country = "mexico"
 val today = (java.time.LocalDate.now).toString
 val timezone = Map("argentina" -> "GMT-3",
                        "mexico" -> "GMT-5",
@@ -1326,7 +1326,7 @@ spark.conf.set("spark.sql.session.timeZone", timezone(country))
 spark.read.format("csv")
 .option("delimiter","\t")
 .option("header",true)
-.load("/datascience/geo/raw_output/tablero_25-03-20_30d_argentina_27-3-2020-15h")
+.load("/datascience/geo/raw_output/Critical_Places_MX_30d_mexico_27-3-2020-11h")
 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
 .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
 .groupBy("Day","audience").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
@@ -1336,7 +1336,7 @@ spark.read.format("csv")
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/%s/Critical_Places".format(today))
+.save("/datascience/geo/Reports/GCBA/Coronavirus/%s/Critical_Places_%".format(today,country))
 }
 
 
