@@ -5035,7 +5035,7 @@ object Random {
       .withColumn("day_airport", date_format(col("Time"), "YYYY-MM-dd"))
       .select("device_id", "day_airport")
       .withColumn("row", row_number.over(w2))
-      .where($"row" === 1)
+      .where(col("row") === 1)
       .drop("row")
 
     val points = spark.read
