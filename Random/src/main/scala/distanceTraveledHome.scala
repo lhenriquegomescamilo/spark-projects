@@ -339,7 +339,7 @@ hash_user
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
-
+///////////Partidos
 //QUeremos un cálculo por municipio:
 //Desagregado por entidad y municipio
 val entidad = spark.read.format("csv").option("header",true).option("delimiter",",")
@@ -362,7 +362,7 @@ val partido = spark.read.format("parquet")
 .option("header",true)
 .save(output_file_partido)
 
-
+///////////////barrios
 //Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
 val barrios = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
@@ -411,7 +411,7 @@ val tipo2 = spark.read.format("parquet")
 
 
 
-*/
+
 
 
 }
