@@ -1336,7 +1336,7 @@ spark.read.format("csv")
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/%s/Critical_Places")
+.save("/datascience/geo/Reports/GCBA/Coronavirus/%s/Critical_Places".format(today))
 }
 
 
