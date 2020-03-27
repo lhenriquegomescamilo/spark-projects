@@ -5031,7 +5031,7 @@ object Random {
       .withColumnRenamed("latitude_user", "latitude")
       .withColumnRenamed("longitude_user", "longitude")
       .withColumn("geo_hash", lit("airport"))
-      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
       .withColumn("day_airport", date_format(col("Time"), "YYYY-MM-dd"))
       .select("device_id", "day_airport")
       .withColumn("row", row_number.over(w2))
