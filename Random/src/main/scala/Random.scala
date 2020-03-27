@@ -5009,5 +5009,12 @@ object Random {
         "/datascience/geo/raw_output/puntos_contagio_30d_mexico_26-3-2020-14h"
       )
       .select("device_id")
+
+    raw
+      .join(initial_seed, Seq("device_id"))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/coronavirus_contacts_%s".format(country))
   }
 }
