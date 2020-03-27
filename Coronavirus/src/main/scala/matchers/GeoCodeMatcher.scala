@@ -1,6 +1,6 @@
 package main.scala.matchers
 
-import main.scala.Geodevicer
+import main.scala.geodevicer.Geodevicer
 
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{FileSystem, Path}

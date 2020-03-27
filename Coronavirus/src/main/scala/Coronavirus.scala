@@ -58,7 +58,7 @@ object Coronavirus {
       spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
       // Run geo
-      Geodevicer.run_geodevicer(path_geo_jsons+filename)
+      Geodevicer.run_geodevicer(spark,path_geo_jsons+filename)
       // Process results and save
       spark.read.format("csv")
                 .option("header",true)
@@ -230,7 +230,7 @@ object Coronavirus {
 
     Logger.getRootLogger.setLevel(Level.WARN)
     
-    val spark = SparkSession.builder
+    var spark = SparkSession.builder
       .appName("Coronavirus Daily Data")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
