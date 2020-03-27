@@ -66,11 +66,11 @@ object Coronavirus {
                 .option("delimiter","\t")
                 .load("/datascience/geo/raw_output/%s".format(filename))
                 .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-                .withColumn("country", lit(country))
                 .withColumn("day", date_format(col("Time"), "dd-MM-YY"))
                 .groupBy("day","audience").agg(countDistinct("device_id") as "devices",
                                                 count("timestamp") as "detections")
                 .orderBy(asc("Day"))
+                .withColumn("country", lit(country))
                 .write
                 .format("parquet")
                 .partitionBy("day","country")
@@ -80,7 +80,7 @@ object Coronavirus {
 
   }
 
-    def get_coronavirus(spark: SparkSession,country:String,day:String) {
+  def get_coronavirus(spark: SparkSession,country:String,day:String) {
 
     val windowSpec = Window.partitionBy("ad_id").orderBy("utc_timestamp")
 
