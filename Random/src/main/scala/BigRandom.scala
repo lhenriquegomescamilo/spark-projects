@@ -342,6 +342,17 @@ val udfGetDomain = udf(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val countries = "BR,CL,CO,MX,PE".split(",").toList
+
+    for (country <- countries) {
+    val path = "/datascience/misc/covid_last_%s".format(country) 
+
+    val df =spark.read.format("parquet").load(path)
+    df.write.format("csv")
+          .option("header",false)
+          .save(path)
+}
+    /**
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
@@ -356,7 +367,7 @@ val udfGetDomain = udf(
     .partitionBy("day")
     .mode("append")
     .save("/datascience/misc/covid_unduplicated_march")
-
+*/
 
 /***
     def getData(
