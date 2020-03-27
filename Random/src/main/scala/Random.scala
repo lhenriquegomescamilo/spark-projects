@@ -5046,7 +5046,8 @@ object Random {
       .withColumnRenamed("_c0", "device_id")
       .withColumnRenamed("_c7", "day")
       .withColumnRenamed("_c9", "geo_hash")
-      .select("device_id", "latitude", "longitude", "day", "geo_hash")
+      .withColumnRenamed("_c1", "timestamp")
+      .select("device_id", "latitude", "longitude", "day", "geo_hash", "timestamp")
 
     points
       .join(airport, Seq("device_id"))
