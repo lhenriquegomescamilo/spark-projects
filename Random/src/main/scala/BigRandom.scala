@@ -346,7 +346,9 @@ val udfGetDomain = udf(
 
     for (country <- countries) {
 
-    spark.read.load("/datascience/misc/covid_last_%s".format(country))
+    spark.read.format("csv")
+    .option("header",false)
+    .load("/datascience/misc/covid_last_%s".format(country))
     .toDF("device_id","category")
      .withColumn("segment", when(col("category")===3, 302875).otherwise(when(col("category")===2, 302877).otherwise(when(col("category")===1, 302879).otherwise(302881))))
      .withColumn("device_type", lit("web"))
