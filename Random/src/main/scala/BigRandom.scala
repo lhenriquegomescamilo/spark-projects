@@ -345,12 +345,19 @@ val udfGetDomain = udf(
     val countries = "BR,CL,CO,MX,PE".split(",").toList
 
     for (country <- countries) {
-    val path = "/datascience/misc/covid_max_%s".format(country) 
-    val path2 = "/datascience/misc/covid_last_%s".format(country)
-    val df =spark.read.format("parquet").load(path)
-    df.write.format("csv")
-          .option("header",false)
-          .save(path2)
+
+    spark.read.format("csv")
+    .option("header",false)
+    .load("/datascience/misc/covid_last_%s".format(country))
+    .toDF("device_id","category")
+     .withColumn("segment", when(col("category")===3, 302875).otherwise(when(col("category")===2, 302877).otherwise(when(col("category")===1, 302879).otherwise(302881))))
+     .withColumn("device_type", lit("web"))
+     .select("device_type", "device_id", "segment")
+     .write
+     .format("csv")
+     .option("sep", "\t")
+     .mode("overwrite")
+     .save("/datascience/misc/covid_%s_to_push".format(country))
 }
     /**
     val conf = spark.sparkContext.hadoopConfiguration
