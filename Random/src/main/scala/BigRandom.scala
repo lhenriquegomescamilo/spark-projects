@@ -366,13 +366,10 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    val countries = "BR,CL,CO,MX,PE".split(",").toList
-
-    for (country <- countries) {
-
+    val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
     val path_triplets = "/datascience/data_triplets/segments/"
 
-
+    for (country <- countries) {    
     var triplets = getDataPipeline(spark,path_triplets,"25","2","%s".format(country))
               .select("device_id","feature")
 
