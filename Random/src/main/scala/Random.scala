@@ -5015,6 +5015,6 @@ object Random {
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_%s".format(country))
+      .save("/datascience/custom/coronavirus_contacts_airport_%s".format(country))
   }
 }
