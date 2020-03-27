@@ -4986,35 +4986,56 @@ object Random {
     Logger.getRootLogger.setLevel(Level.WARN)
     val country = "mexico"
 
-    val raw = spark.read
-      .format("parquet")
-      .option("basePath", "/datascience/geo/safegraph/")
-      .load(
-        "/datascience/geo/safegraph/day=202003*/country=%s/".format(country)
-      )
-      .withColumnRenamed("ad_id", "device_id")
-      .withColumn("device_id", lower(col("device_id")))
-      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-      .withColumn("day", date_format(col("Time"), "YYYY-MM-dd"))
-      .drop("Time")
+    // val raw = spark.read
+    //   .format("parquet")
+    //   .option("basePath", "/datascience/geo/safegraph/")
+    //   .load(
+    //     "/datascience/geo/safegraph/day=202003*/country=%s/".format(country)
+    //   )
+    //   .withColumnRenamed("ad_id", "device_id")
+    //   .withColumn("device_id", lower(col("device_id")))
+    //   .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+    //   .withColumn("day", date_format(col("Time"), "YYYY-MM-dd"))
+    //   .drop("Time")
 
-    val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
+    // val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
 
-    // Select sample of 1000 users
-    val initial_seed = spark.read
+    // // Select sample of 1000 users
+    // val initial_seed = spark.read
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .option("header", "true")
+    //   .load(
+    //     "/datascience/geo/raw_output/puntos_contagio_30d_mexico_26-3-2020-14h"
+    //   )
+    //   .select("device_id")
+
+    // raw
+    //   .join(initial_seed, Seq("device_id"))
+    //   .write
+    //   .format("parquet")
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/custom/coronavirus_contacts_airport_%s".format(country))
+
+    val airport = spark.read
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
       .load(
         "/datascience/geo/raw_output/puntos_contagio_30d_mexico_26-3-2020-14h"
       )
+      .filter("audience = 'Aeropuerto CDMX'")
       .select("device_id")
-
-    raw
-      .join(initial_seed, Seq("device_id"))
-      .write
+      .distinct()
+    val all_points = spark.read
       .format("parquet")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_airport_%s".format(country))
+      .load("/datascience/custom/coronavirus_contacts_airport_mexico")
+      .dropDuplicates("device_id", "day", "geo_hash")
+    all_points
+      .join(airport, Seq("device_id"))
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .save("/datascience/custom/all_points_airport_mx")
   }
 }
