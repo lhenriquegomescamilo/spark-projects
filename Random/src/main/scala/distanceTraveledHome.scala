@@ -306,7 +306,7 @@ val raw = get_safegraph_data(spark,"30","1",country)
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+.withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
 .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
 
 //Vamos a usarlo para calcular velocidad y distancia al hogar
@@ -327,7 +327,17 @@ geo_hash_visits
 
 
 //Queremos un cálculo general por país
+val hash_user = spark.read.format("parquet").load(output_file).withColumn("device_id",lower(col("device_id")))
 
+hash_user
+.groupBy("Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
 //Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
 
