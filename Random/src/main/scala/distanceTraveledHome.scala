@@ -302,7 +302,7 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
 
-val raw = get_safegraph_data(spark,"5","1",country)
+val raw = get_safegraph_data(spark,"30","1",country)
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -325,6 +325,8 @@ geo_hash_visits
     .option("header",true)
     .save(output_file)
 
+
+//Queremos un cálculo general por país
 
 
 //Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
@@ -376,6 +378,8 @@ val tipo2 = spark.read.format("parquet")
 
 
 //Alternativa 3
+//Este no se usa. Ojo que está buggeado además.
+/*
 val output_file_tipo_3 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_barrio_tipo3_%s".format(today,country)
 
 val hash_user = spark.read.format("parquet").load(output_file).withColumn("device_id",lower(col("device_id")))
@@ -392,7 +396,7 @@ barrio_user.join(hash_user,Seq("device_id"))
 .format("csv")
 .option("header",true)
 .save(output_file_tipo_3)
-
+*/
 
 
 }
