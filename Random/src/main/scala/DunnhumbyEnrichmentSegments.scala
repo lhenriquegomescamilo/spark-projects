@@ -385,7 +385,7 @@ object DunnhumbyEnrichmentSegments {
       spark,
       nDays,
       from,
-      List(242571, 232187),
+      List(224913),
       "'BR', 'CO'", // Countries for PIIs
       "country IN ('BR', 'CO')", // Filter to be used for the pipeline data
       partner
