@@ -305,13 +305,13 @@ object Geodevicer {
     }
   }
 
-  def run_geodevicer(path_geo_json:String){
+  def run_geodevicer(spark:SparkSession,path_geo_json:String){
      val value_dictionary = get_variables(spark, path_geo_json)
 
     if (value_dictionary("polygon_input") == "1") {
 
       //acá deberíamos activar geospark
-      spark = SparkSession
+      var spark_geo = SparkSession
         .builder()
         .config("spark.sql.files.ignoreCorruptFiles", "true")
         .config("spark.network.timeout","1000s") //agreado por recomendacion de los de geospark
@@ -327,16 +327,16 @@ object Geodevicer {
         .appName("GeoSpark Matcher")
         .getOrCreate()
 
-      GeoSparkSQLRegistrator.registerAll(spark)
+      GeoSparkSQLRegistrator.registerAll(spark_geo)
 
-      PolygonMatcher.match_Polygon(spark, value_dictionary)
+      PolygonMatcher.match_Polygon(spark_geo, value_dictionary)
 
       // If we need to calculate the aggregations, we do so as well.
       if (value_dictionary("analytics_df") == "1")
-        Aggregations.userAggregateFromPolygon(spark, value_dictionary)
+        Aggregations.userAggregateFromPolygon(spark_geo, value_dictionary)
 
       if (value_dictionary("map_df") == "1")
-        Aggregations.PolygonAggregate(spark, value_dictionary)
+        Aggregations.PolygonAggregate(spark_geo, value_dictionary)
 
     } else {
 
@@ -534,8 +534,6 @@ value_dictionary("crossdevice") != "false" &&  value_dictionary("crossdevice") !
       )
 */
 
-
-    
     // Here we join with web behaviour
     if (value_dictionary("web_days").toInt > 0)
       Aggregations.get_segments_from_triplets(spark, value_dictionary)
