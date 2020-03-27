@@ -1312,24 +1312,45 @@ space_lapse_agg
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-//setting timezone depending on country
+val country = "argentina"
+
+val timezone = Map("argentina" -> "GMT-3",
+                       "mexico" -> "GMT-5",
+                       "CL"->"GMT-3",
+                       "CO"-> "GMT-5",
+                       "PE"-> "GMT-5")
+    
+    //setting timezone depending on country
+spark.conf.set("spark.sql.session.timeZone", timezone(country))
+
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
+val today = (java.time.LocalDate.now).toString
 
-spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/raw_output/tablero_25-03-20_5d_argentina_26-3-2020-16h")
-.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-.groupBy("Day","audience").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
-.orderBy(asc("Day"))
+val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
+
+//Alternativa 1
+//Path home ARG
+
+val provincias = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+.withColumnRenamed("geo_hashote","geo_hash_7")
+.drop("latitude","longitude")
+
+val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_provincia_%s".format(today,country)
+
+val tipo2 = spark.read.format("parquet")
+.load(output_file)
+.join(provincias,Seq("geo_hash_7"))
+.groupBy("PROVCODE","PROVINCIA","IN1","FNA","NAM","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("PROVCODE","PROVINCIA","IN1","FNA","NAM").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/2020-03-26/Critical_Places")
+.save(output_file_tipo_2)
+
 
 
 }
