@@ -345,12 +345,12 @@ val udfGetDomain = udf(
     val countries = "BR,CL,CO,MX,PE".split(",").toList
 
     for (country <- countries) {
-    val path = "/datascience/misc/covid_last_%s".format(country) 
-
+    val path = "/datascience/misc/covid_max_%s".format(country) 
+    val path2 = "/datascience/misc/covid_last_%s".format(country)
     val df =spark.read.format("parquet").load(path)
     df.write.format("csv")
           .option("header",false)
-          .save(path)
+          .save(path2)
 }
     /**
     val conf = spark.sparkContext.hadoopConfiguration
