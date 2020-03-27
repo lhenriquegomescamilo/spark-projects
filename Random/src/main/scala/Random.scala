@@ -5018,45 +5018,59 @@ object Random {
     //   .mode(SaveMode.Overwrite)
     //   .save("/datascience/custom/coronavirus_contacts_airport_%s".format(country))
 
-    val w2 = Window.partitionBy("device_id").orderBy(col("day_airport"))
+    // val w2 = Window.partitionBy("device_id").orderBy(col("day_airport"))
 
-    val airport = spark.read
+    // val airport = spark.read
+    //   .format("csv")
+    //   .option("sep", "\t")
+    //   .option("header", "true")
+    //   .load(
+    //     "/datascience/geo/raw_output/puntos_contagio_30d_mexico_26-3-2020-14h"
+    //   )
+    //   .filter("audience = 'Aeropuerto CDMX'")
+    //   .withColumnRenamed("latitude_user", "latitude")
+    //   .withColumnRenamed("longitude_user", "longitude")
+    //   .withColumn("geo_hash", lit("airport"))
+    //   .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+    //   .withColumn("day_airport", date_format(col("Time"), "YYYY-MM-dd"))
+    //   .select("device_id", "day_airport")
+    //   .withColumn("row", row_number.over(w2))
+    //   .where(col("row") === 1)
+    //   .drop("row")
+
+    // val points = spark.read
+    //   .format("csv")
+    //   .load("/datascience/custom/all_points_airport_mx_")
+    //   .withColumnRenamed("_c4", "latitude")
+    //   .withColumnRenamed("_c5", "longitude")
+    //   .withColumnRenamed("_c0", "device_id")
+    //   .withColumnRenamed("_c7", "day")
+    //   .withColumnRenamed("_c9", "geo_hash")
+    //   .withColumnRenamed("_c1", "timestamp")
+    //   .select("device_id", "latitude", "longitude", "day", "geo_hash", "timestamp")
+
+    // points
+    //   .join(airport, Seq("device_id"))
+    //   .filter("day >= day_airport")
+    //   .dropDuplicates("geo_hash", "day")
+    //   .write
+    //   .format("csv")
+    //   .option("header", "true")
+    //   .mode("overwrite")
+    //   .save("/datascience/custom/all_points_airport_mx_final")
+
+    spark.read
       .format("csv")
       .option("sep", "\t")
-      .option("header", "true")
       .load(
-        "/datascience/geo/raw_output/puntos_contagio_30d_mexico_26-3-2020-14h"
+        "/datascience/data_lookalike/expansion/ondemand/jobId=coronaviusAR/"
       )
-      .filter("audience = 'Aeropuerto CDMX'")
-      .withColumnRenamed("latitude_user", "latitude")
-      .withColumnRenamed("longitude_user", "longitude")
-      .withColumn("geo_hash", lit("airport"))
-      .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-      .withColumn("day_airport", date_format(col("Time"), "YYYY-MM-dd"))
-      .select("device_id", "day_airport")
-      .withColumn("row", row_number.over(w2))
-      .where(col("row") === 1)
-      .drop("row")
-
-    val points = spark.read
-      .format("csv")
-      .load("/datascience/custom/all_points_airport_mx_")
-      .withColumnRenamed("_c4", "latitude")
-      .withColumnRenamed("_c5", "longitude")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c7", "day")
-      .withColumnRenamed("_c9", "geo_hash")
-      .withColumnRenamed("_c1", "timestamp")
-      .select("device_id", "latitude", "longitude", "day", "geo_hash", "timestamp")
-
-    points
-      .join(airport, Seq("device_id"))
-      .filter("day >= day_airport")
-      .dropDuplicates("geo_hash", "day")
+      .groupBy("_c0", "_c1")
+      .agg(collect_set("_c2") as "segments")
+      .withColumn("segments", col("segments").getItem(0))
       .write
       .format("csv")
-      .option("header", "true")
-      .mode("overwrite")
-      .save("/datascience/custom/all_points_airport_mx_final")
+      .option("sep", "\t")
+      .save("/datascience/custom/coronavirus_ar_lal")
   }
 }
