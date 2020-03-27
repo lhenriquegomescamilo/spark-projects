@@ -3238,17 +3238,17 @@ object RandomTincho {
     println("Emails: %s".format(pii_tuples.filter("ml_sh2 is not null")
               .select("ml_sh2")
               .distinct
-              .count)
+              .count))
 
     println("Moblies: %s".format(pii_tuples.filter("mb_sh2 is not null")
               .select("mb_sh2")
               .distinct
-              .count)
+              .count))
 
     println("Nids: %s".format(pii_tuples.filter("nid_sh2 is not null")
               .select("nid_sh2")
               .distinct
-              .count)
+              .count))
 
   }
 
