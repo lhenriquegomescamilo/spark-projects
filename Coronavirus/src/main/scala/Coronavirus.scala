@@ -1,15 +1,41 @@
 package main.scala
 import main.scala.geodevicer.Geodevicer
 import org.apache.spark.sql.SparkSession
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.joda.time.DateTime
-import org.apache.spark.sql.functions.{round, broadcast, col, abs, upper}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
-import org.apache.spark.serializer.KryoSerializer
-import org.apache.spark.serializer.KryoRegistrator
-import org.datasyslab.geospark.serde.GeoSparkKryoRegistrator
-import org.datasyslab.geosparksql.utils.{Adapter, GeoSparkSQLRegistrator}
+import org.joda.time.Days
+import org.joda.time.DateTime
+import org.apache.spark.sql.functions.broadcast
+import scala.util.parsing.json._
+import org.apache.spark.sql.functions.{
+  upper,
+  count,
+  col,
+  abs,
+  udf,
+  regexp_replace,
+  split,
+  lit,
+  explode,
+  length,
+  to_timestamp,
+  from_unixtime,
+  date_format,
+  sum
+}
+import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.types.{
+  StructType,
+  StructField,
+  StringType,
+  IntegerType
+}
+import org.apache.spark.sql.{Column, Row}
+import scala.util.Random.shuffle
+import org.apache.spark.sql.expressions.Window
 
 object Coronavirus {
 
