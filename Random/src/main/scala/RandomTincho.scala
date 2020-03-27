@@ -3274,6 +3274,12 @@ object RandomTincho {
     //                     .withColumnRenamed("geo_hash_7","geo_hash_join")
 
     // coronavirus_barrios(spark,"mexico",barrios,"NOM_MUN")
-    urgente_sebas(spark)
+    //urgente_sebas(spark)
+    println(spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/geo/safegraph/")
+      .load("/datascience/geo/safegraph/*/country=BR/")
+      .select("ad_id")
+      .distinct.count)
   }
 }
