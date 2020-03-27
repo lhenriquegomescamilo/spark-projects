@@ -1313,7 +1313,7 @@ space_lapse_agg
 
 
 val country = "argentina"
-
+val today = (java.time.LocalDate.now).toString
 val timezone = Map("argentina" -> "GMT-3",
                        "mexico" -> "GMT-5",
                        "CL"->"GMT-3",
@@ -1323,35 +1323,20 @@ val timezone = Map("argentina" -> "GMT-3",
     //setting timezone depending on country
 spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
-spark.conf.set("spark.sql.session.timeZone", "GMT-3")
-
-val today = (java.time.LocalDate.now).toString
-
-val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
-
-//Alternativa 1
-//Path home ARG
-
-val provincias = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
-.withColumnRenamed("geo_hashote","geo_hash_7")
-.drop("latitude","longitude")
-
-val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_provincia_%s".format(today,country)
-
-val tipo2 = spark.read.format("parquet")
-.load(output_file)
-.join(provincias,Seq("geo_hash_7"))
-.groupBy("PROVCODE","PROVINCIA","IN1","FNA","NAM","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("PROVCODE","PROVINCIA","IN1","FNA","NAM").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+spark.read.format("csv")
+.option("delimiter","\t")
+.option("header",true)
+.load("/datascience/geo/raw_output/tablero_25-03-20_30d_argentina_27-3-2020-15h")
+.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+.withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
+.groupBy("Day","audience").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
+.orderBy(asc("Day"))
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save(output_file_tipo_2)
-
-
+.save("/datascience/geo/Reports/GCBA/Coronavirus/%s/Critical_Places")
 
 }
 
