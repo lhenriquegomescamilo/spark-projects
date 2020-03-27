@@ -3208,7 +3208,6 @@ object RandomTincho {
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/coronavirus_contacts_barrios_%s".format(country))
 
-
   }
 
   // Funcion que busca todos los usuarios del pais para normalizar
@@ -3232,6 +3231,27 @@ object RandomTincho {
 
   }
 
+  def urgente_sebas(spark:SparkSession){
+    val pii_tuples = spark.read.load("/datascience/pii_matching/pii_tuples/")
+                          .filter("country = 'BR'")
+
+    println("Emails: %s".format(pii_tuples.filter("ml_sh2 is not null")
+              .select("ml_sh2")
+              .distinct
+              .count))
+
+    println("Moblies: %s".format(pii_tuples.filter("mb_sh2 is not null")
+              .select("mb_sh2")
+              .distinct
+              .count))
+
+    println("Nids: %s".format(pii_tuples.filter("nid_sh2 is not null")
+              .select("nid_sh2")
+              .distinct
+              .count))
+
+  }
+
   def main(args: Array[String]) {
 
     // Setting logger config
@@ -3246,14 +3266,20 @@ object RandomTincho {
     // generate_seed(spark,"mexico")
     // get_coronavirus(spark,"mexico")
     // get_users_coronavirus(spark,"mexico")
-    val barrios = spark.read
-                        .format("csv")
-                        .option("header","true")
-                        .option("sep","\t")
-                        .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
-                        .withColumnRenamed("geo_hash_7","geo_hash_join")
+    // val barrios = spark.read
+    //                     .format("csv")
+    //                     .option("header","true")
+    //                     .option("sep","\t")
+    //                     .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
+    //                     .withColumnRenamed("geo_hash_7","geo_hash_join")
 
-    coronavirus_barrios(spark,"mexico",barrios,"NOM_MUN")
-
+    // coronavirus_barrios(spark,"mexico",barrios,"NOM_MUN")
+    //urgente_sebas(spark)
+    println(spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/geo/safegraph/")
+      .load("/datascience/geo/safegraph/*/country=BR/")
+      .select("ad_id")
+      .distinct.count)
   }
 }
