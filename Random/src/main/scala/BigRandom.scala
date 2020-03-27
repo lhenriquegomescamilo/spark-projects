@@ -343,9 +343,9 @@ val udfGetDomain = udf(
     .getOrCreate()
 
     val df = spark.read.format("csv")
-    .toDF("device_type","device_id","segment")
     .option("sep", "\t")
     .load("/datascience/misc/covid_BR_to_push")
+    .toDF("device_type","device_id","segment")
     .groupBy("segment")
     .agg(approx_count_distinct(col("device_id"), 0.02).as("devices"))
     
