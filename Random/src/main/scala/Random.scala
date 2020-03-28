@@ -5061,7 +5061,7 @@ object Random {
           .format(country)
       )
 
-    val joint = spark.read
+    val level1 = spark.read
       .load(
         "/datascience/custom/all_points_airport_mx_level1_"
       )
