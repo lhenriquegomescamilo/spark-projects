@@ -5009,43 +5009,61 @@ object Random {
     val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
 
     // Select sample of 1000 users
-    val initial_seed = spark.read
-      .format("csv")
-      .load("/datascience/custom/all_points_airport_mx")
-      .withColumnRenamed("_c3", "geo_hash")
-      .withColumnRenamed("_c0", "device_id")
-      .withColumnRenamed("_c1", "utc_timestamp")
-      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-      .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
-      .withColumn("window", date_format(col("Time"), "mm"))
-      .withColumn(
-        "window",
-        when(col("window") > 40, 3)
-          .otherwise(when(col("window") > 20, 2).otherwise(1))
+    // val initial_seed = spark.read
+    //   .format("csv")
+    //   .load("/datascience/custom/all_points_airport_mx")
+    //   .withColumnRenamed("_c3", "geo_hash")
+    //   .withColumnRenamed("_c0", "device_id")
+    //   .withColumnRenamed("_c1", "utc_timestamp")
+    //   .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+    //   .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+    //   .withColumn("window", date_format(col("Time"), "mm"))
+    //   .withColumn(
+    //     "window",
+    //     when(col("window") > 40, 3)
+    //       .otherwise(when(col("window") > 20, 2).otherwise(1))
+    //   )
+    //   .withColumn("window", concat(col("Hour"), col("window")))
+    //   .drop("Time")
+    //   .select("device_id", "geo_hash", "window")
+    //   .distinct()
+
+    // // Get the distinct moments to filter the raw data
+    // val moments = initial_seed.select("geo_hash", "window").distinct()
+
+    // // Join raw data with the moments and store
+    // raw
+    //   .join(moments, Seq("geo_hash", "window"))
+    //   .select("device_id", "geo_hash", "window")
+    //   .write
+    //   .format("parquet")
+    //   .mode(SaveMode.Overwrite)
+    //   .save(
+    //     "/datascience/custom/all_points_airport_mx_level1"
+    //       .format(country)
+    //   )
+
+    val joint = spark.read
+      .load(
+        "/datascience/custom/all_points_airport_mx_level1"
       )
-      .withColumn("window", concat(col("Hour"), col("window")))
-      .drop("Time")
-      .select("device_id", "geo_hash", "window")
+      .select("device_id")
       .distinct()
 
-    // Get the distinct moments to filter the raw data
-    val moments = initial_seed.select("geo_hash", "window").distinct()
-
-    // Join raw data with the moments and store
     raw
-      .join(moments, Seq("geo_hash", "window"))
+      .join(joint, Seq("device_id"))
       .select("device_id", "geo_hash", "window")
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
       .save(
-        "/datascience/custom/all_points_airport_mx_level1"
+        "/datascience/custom/all_points_airport_mx_level1_"
           .format(country)
       )
 
-    val level1 = spark.read
+    val joint = spark.read
       .load(
-        "/datascience/custom/all_points_airport_mx_level1"
+        "/datascience/custom/all_points_airport_mx_level1_"
       )
       .select("device_id", "geo_hash", "window")
 
@@ -5068,7 +5086,7 @@ object Random {
       )
       .select("device_id", "geo_hash", "window")
 
-    println(level1.select("device_id").distinct().count())
+    // println(level1.select("device_id").distinct().count())
     println(level2.select("device_id").distinct().count())
   }
 }
