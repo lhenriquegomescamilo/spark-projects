@@ -3350,10 +3350,10 @@ object RandomTincho {
           .mode(SaveMode.Overwrite)
           .save("/datascience/custom/tmp_geohashes")
 
-    val udfCut = udf((d: String) => d.toString.substring(0, 5))
+    //val udfCut = udf((d: String) => d.toString.substring(0, 5))
 
     val raw = spark.read.load("/datascience/custom/tmp_geohashes")
-                    .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
+                   // .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
     
 
     // Generate one lat/lon per geohash
