@@ -1,13 +1,10 @@
 package main.scala
-import main.scala.postfidf.PosTfidf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.ml.Pipeline
 import org.joda.time.Days
 import org.apache.spark._
-import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer}
-import com.johnsnowlabs.nlp.{DocumentAssembler,Finisher}
 import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
@@ -60,7 +57,7 @@ object TapadFull {
       .toList
 
 
-    val mapping = Map("android" -> "HARDWARE_ANDROID_AD_ID", "ios" -> "HARDWARE_IDFA")
+    val mapping = Map("android" -> "HARDWARE_ANDROID_AD_ID", "ios" -> "HARDWARE_IDFA", "AAID" ->"HARDWARE_ANDROID_AD_ID", "IDFA" -> "HARDWARE_IDFA")
     val udfDeviceType = udf((device_type: String) => mapping(device_type))
 
     val df_union = dfs.reduce((df1, df2) => df1.unionAll(df2))
@@ -73,6 +70,7 @@ object TapadFull {
     df_union.write
             .format("csv")
             .option("sep","\t")
+            .mode(SaveMode.Overwrite)
             .save("/datascience/data_tapad/full_report/%s".format(today))
   }
 

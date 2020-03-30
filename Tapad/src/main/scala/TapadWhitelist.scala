@@ -1,13 +1,10 @@
 package main.scala
-import main.scala.postfidf.PosTfidf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.ml.Pipeline
 import org.joda.time.Days
 import org.apache.spark._
-import com.johnsnowlabs.nlp.annotators.{Normalizer, Stemmer, Tokenizer}
-import com.johnsnowlabs.nlp.{DocumentAssembler,Finisher}
 import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.commons.lang3.StringUtils
 import scala.collection.mutable.WrappedArray
