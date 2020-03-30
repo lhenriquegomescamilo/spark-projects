@@ -1311,7 +1311,6 @@ space_lapse_agg
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-
 val country = "argentina"
 
 val timezone = Map("argentina" -> "GMT-3",
@@ -1335,15 +1334,18 @@ val one_geohash_user = get_safegraph_data(spark,nDays,"1",country)
 val entidad = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
 
+val output_file = "/datascience/geo/geo_processed/geohashes_user_location_%sD_%s_%s".format(nDays,country,today)
+
 one_geohash_user
 .join(entidad,Seq("geo_hash_7"))
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save(output_file_partido)
+.save(output_file)
 
-val output_file = "/datascience/geo/geo_processed/geohashes_user_location_%sD_%s_%s".format(nDays,country,today)
+
+
 
 
 
@@ -1351,3 +1353,4 @@ val output_file = "/datascience/geo/geo_processed/geohashes_user_location_%sD_%s
 
 
   
+}
