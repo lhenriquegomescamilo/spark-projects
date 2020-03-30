@@ -371,6 +371,7 @@ def getDataPipeline(
     var df = spark.read.format("csv")
     .option("sep", "\t")
     .load("/datascience/misc/covid_%s_to_push".format(country))  
+    .toDF("device_type","device_id","segment")
     
     var db = df.withColumn("count", lit(1))
     .groupBy("device_id").agg(sum(col("count")) as "total")
