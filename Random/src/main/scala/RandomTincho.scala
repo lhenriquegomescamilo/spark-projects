@@ -3319,7 +3319,7 @@ object RandomTincho {
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    val udfGeoHash = udf((lat: Float, lon:Float) => encode(Point(lat,lon)).toString)
+    //val udfGeoHash = udf((lat: Float, lon:Float) => encode(Point(lat,lon)).toString)
 
     // Get Data Raw
     spark.read
