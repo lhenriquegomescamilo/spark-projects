@@ -1332,8 +1332,10 @@ val one_geohash_user = get_safegraph_data(spark,nDays,"1",country)
 .select("device_id","device_type","geo_hash_7")
 //.distinct()
 
-val entidad = spark.read.format("csv").option("header",true).option("delimiter",",")
+val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+.withColumnRenamed("geo_hashote","geo_hash_7")
+.filter(col("PROVCODE")==="02")
 
 val output_file = "/datascience/geo/geo_processed/geohashes_user_location_%sD_%s_%s".format(nDays,country,today)
 
