@@ -366,10 +366,10 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    val countries = "BR,CL,CO,MX,PE".split(",").toList
+    val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
     for (country <- countries) {    
     println(country)  
-    println(spark.read.load("/datascience/custom/coronavirus_%s_lal".format(country)))
+    println(spark.read.format("csv").option("sep", "\t").load("/datascience/custom/coronavirus_%s_lal".format(country)))
     }
     /**
 
