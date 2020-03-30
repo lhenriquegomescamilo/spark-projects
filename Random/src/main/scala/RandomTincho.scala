@@ -3035,9 +3035,16 @@ object RandomTincho {
       .filter("ml_sh2 is not null")
       .select("ml_sh2", "device_id","device_type")
       .union(bridge)
-    val all_piis = nids
+    
+    nids
       .withColumnRenamed("nid_sh2", "pii")
       .union(emails.withColumnRenamed("ml_sh2", "pii"))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/all_piis_dh_fede")
+
+    val all_piis = spark.read.load("/datascience/custom/all_piis_dh_fede")
 
     val mapeo = Map(
       "241141" -> "3862661122c5864e6b0872554dc76a60",
@@ -3419,8 +3426,8 @@ object RandomTincho {
     //                 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
     //                 .withColumnRenamed("geo_hashote","geo_hash_join")
     // coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
-    //report_dh_fede(spark)
-    generate_kepler(spark,"CO")
+    report_dh_fede(spark)
+    //generate_kepler(spark,"CO")
     
    
 
