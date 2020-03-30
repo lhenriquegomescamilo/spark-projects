@@ -3327,7 +3327,7 @@ object RandomTincho {
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    val udfString = udf((d: Int) => d.toString)
+    val udfString = udf((d: Int) => d.toString.substring(0, 5))
     // Get Data Raw
     spark.read
           .option("basePath", path)
@@ -3355,7 +3355,6 @@ object RandomTincho {
     val raw = spark.read.load("/datascience/custom/tmp_geohashes")
                    // .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
     
-
     // Generate one lat/lon per geohash
     raw.select("geohash","latitude","longitude")
         .dropDuplicates("geohash")
@@ -3394,7 +3393,7 @@ object RandomTincho {
                         approx_count_distinct(col("device_id"), 0.02).as("device_unique")
                     )
     joint.write
-        .format("parquet")
+        .format("csv")
         .mode(SaveMode.Overwrite)
         .save("/datascience/custom/kepler_%s".format(country))
   }
