@@ -3379,7 +3379,7 @@ object RandomTincho {
 
     val users_airport = spark.read.load("/datascience/custom/users_airport_%s".format(country))
 
-    val udfCut = udf((d: Int) => d.toString.substring(0, 5))
+    val udfCut = udf((d: String) => d.toString.substring(0, 5))
 
     val joint = raw.join(users_airport,Seq("device_id"),"inner")
                     .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
