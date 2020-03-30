@@ -1337,8 +1337,9 @@ val tipito_eze =
 val cordoba = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
 .withColumnRenamed("geo_hashote","geo_hash_7")
-.withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5)) 
-.filter(col("PROVCODE")==="14")
+.withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5))
+ .filter(col("PROVCODE")==="14")
+ .distinct()
 
 tipito_eze.join(cordoba,Seq("geo_hash_5"))
 .write
