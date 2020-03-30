@@ -372,7 +372,7 @@ def getDataPipeline(
     .option("sep", "\t")
     .load("/datascience/misc/covid_%s_to_push".format(country))  
     
-    var db = df.withColumn("count" lit(1))
+    var db = df.withColumn("count", lit(1))
     .groupBy("device_id").agg(sum(col("count")) as "total")
     .filter("total>1")
     
