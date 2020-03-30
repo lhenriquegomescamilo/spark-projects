@@ -3382,7 +3382,7 @@ object RandomTincho {
     val udfCut = udf((d: Int) => d.toString.substring(0, 5))
 
     val joint = raw.join(users_airport,Seq("device_id"),"inner")
-                    .withColumn("geohash",udfCut(col("geo_hash"))) // cut geohash to 5 digits
+                    .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
                     .filter("timestamp_raw > timestamp_airport") // filter timestamp
                     .groupBy("geohash")
                     .agg(first(col("latitude")).as("lat"),
