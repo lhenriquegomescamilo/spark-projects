@@ -347,7 +347,7 @@ val entidad = spark.read.format("csv").option("header",true).option("delimiter",
 
 //Acá por provincia
 val output_file_provincia = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_provincia_%s".format(today,country)
-val partido = spark.read.format("parquet")
+val provincia = spark.read.format("parquet")
 .load(output_file)
 .join(entidad,Seq("geo_hash_7"))
 .groupBy("PROVCODE","PROVINCIA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
