@@ -340,8 +340,9 @@ hash_user
 ///////////Partidos
 //QUeremos un cálculo por municipio:
 //Desagregado por entidad y municipio
-val entidad = spark.read.format("csv").option("header",true).option("delimiter",",")
+val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+.withColumnRenamed("geo_hashote","geo_hash_7")
 
 //Alternativa 2
 val output_file_partido = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_partido_%s".format(today,country)
