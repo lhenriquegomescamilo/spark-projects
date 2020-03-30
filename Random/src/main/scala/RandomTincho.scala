@@ -3020,7 +3020,7 @@ object RandomTincho {
     val pii = spark.read
       .load("/datascience/pii_matching/pii_tuples/")
       .filter("country = 'BR'")
-    val nids = pii.filter("nid_sh2 is not null").select("nid_sh2", "device_id")
+    val nids = pii.filter("nid_sh2 is not null").select("nid_sh2", "device_id","device_type")
     val bridge = spark.read
       .format("csv")
       .option("header", "true")
@@ -3028,11 +3028,11 @@ object RandomTincho {
       .filter("country = 'br'")
       .withColumnRenamed("email_sha256", "ml_sh2")
       .withColumnRenamed("advertising_id", "device_id")
-      .select("ml_sh2", "device_id")
+      .select("ml_sh2", "device_id","device_type")
 
     val emails = pii
       .filter("ml_sh2 is not null")
-      .select("ml_sh2", "device_id")
+      .select("ml_sh2", "device_id","device_type")
       .union(bridge)
     val all_piis = nids
       .withColumnRenamed("nid_sh2", "pii")
