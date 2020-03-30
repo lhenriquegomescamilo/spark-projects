@@ -70,6 +70,7 @@ object TapadFull {
     df_union.write
             .format("csv")
             .option("sep","\t")
+            .mode(SaveMode.Overwrite)
             .save("/datascience/data_tapad/full_report/%s".format(today))
   }
 
