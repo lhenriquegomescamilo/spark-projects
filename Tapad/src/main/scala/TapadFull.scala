@@ -74,7 +74,6 @@ object TapadFull {
             .format("csv")
             .option("sep","\t")
             .save("/datascience/data_tapad/full_report/%s".format(today))
-    
   }
 
 
@@ -94,7 +93,7 @@ object TapadFull {
 
     val format = "yyyyMMdd"
     val date = DateTime.now.minusDays(1).toString(format)
-    full_madid_report(spark,date)
+    full_madid_report(spark)
 
   }
 }
