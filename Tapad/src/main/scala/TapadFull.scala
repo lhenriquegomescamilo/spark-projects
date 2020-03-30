@@ -57,7 +57,7 @@ object TapadFull {
       .toList
 
 
-    val mapping = Map("android" -> "HARDWARE_ANDROID_AD_ID", "ios" -> "HARDWARE_IDFA")
+    val mapping = Map("android" -> "HARDWARE_ANDROID_AD_ID", "ios" -> "HARDWARE_IDFA", "AAID" ->"HARDWARE_ANDROID_AD_ID")
     val udfDeviceType = udf((device_type: String) => mapping(device_type))
 
     val df_union = dfs.reduce((df1, df2) => df1.unionAll(df2))
