@@ -1312,8 +1312,8 @@ space_lapse_agg
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-val country = "mexico"
-val today = (java.time.LocalDate.now).toString
+val country = "argentina"
+
 val timezone = Map("argentina" -> "GMT-3",
                        "mexico" -> "GMT-5",
                        "CL"->"GMT-3",
@@ -1323,20 +1323,30 @@ val timezone = Map("argentina" -> "GMT-3",
     //setting timezone depending on country
 spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
-spark.read.format("csv")
-.option("delimiter","\t")
-.option("header",true)
-.load("/datascience/geo/raw_output/Critical_Places_MX_30d_mexico_27-3-2020-11h")
-.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-.withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
-.groupBy("Day","audience").agg(countDistinct("device_id") as "devices",count("timestamp") as "detections")
-.orderBy(asc("Day"))
-.repartition(1)
+val today = (java.time.LocalDate.now).toString
+val nDays = "5"
+
+val one_geohash_user = get_safegraph_data(spark,nDays,"1",country)
+.withColumn("device_id",lower(col("device_id")))
+.withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
+.select("device_id","device_type","geo_hash_7")}
+//.distinct()
+
+val entidad = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+
+one_geohash_user
+.join(entidad,Seq("geo_hash_7"))
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/%s/Critical_Places_%s".format(today,country))
+.save(output_file_partido)
+
+val output_file = "/datascience/geo/geo_processed/geohashes_user_location_%sD_%s_%s".format(nDays,country,today)
+
+
+
 }
 
 

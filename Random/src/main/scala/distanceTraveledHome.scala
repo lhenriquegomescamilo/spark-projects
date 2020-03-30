@@ -298,8 +298,6 @@ val timezone = Map("argentina" -> "GMT-3",
     //setting timezone depending on country
 spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
-spark.conf.set("spark.sql.session.timeZone", "GMT-3")
-
 val today = (java.time.LocalDate.now).toString
 
 val raw = get_safegraph_data(spark,"30","1",country)
@@ -378,7 +376,7 @@ val geocode_barrios = spark.read.format("csv").option("header",true).load("/data
 
 val homes_barrio = homes.select("device_id","GEOID").join(geocode_barrios,Seq("GEOID")).drop("GEOID")
 
-val output_file_tipo_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_barrio_tipo1_%s".format(today,country)
+val output_file_tipo_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_CLASE1_%s".format(today,country)
 
 spark.read.format("parquet")
 .load(output_file)
@@ -396,7 +394,7 @@ spark.read.format("parquet")
 
 
 //Alternativa 2
-val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_barrio_tipo2_%s".format(today,country)
+val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_CLASE2_%s".format(today,country)
 val tipo2 = spark.read.format("parquet")
 .load(output_file)
 .join(barrios,Seq("geo_hash_7"))
