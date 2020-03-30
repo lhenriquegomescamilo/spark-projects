@@ -2,6 +2,7 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
+import org.chobeat.scalageohash.GeoHash
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.broadcast
@@ -3246,11 +3247,73 @@ object RandomTincho {
 
   }
 
+  def generate_kepler(spark:SparkSession,country:String){
+    
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(0)
+    val path = "/datascience/geo/safegraph/"
+    val days = (0 until 20).map(start.minusDays(_)).map(_.toString(format))
+
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    val udfGeoHash = udf((lat: Float, lon:Float) => GeoHash.encodeGeohash(lat, lon, 7).toString)
+
+
+    // Get Data Raw
+    val raw = spark.read
+          .option("basePath", path)
+          .parquet(hdfs_files: _*)
+          .withColumnRenamed("ad_id", "device_id")
+          .withColumn("device_id", lower(col("device_id")))
+          //.withColumn("timestamp_raw", to_timestamp(from_unixtime(col("utc_timestamp"))))
+          .withColumnRenamed("utc_timestamp", "timestamp_raw")
+          .withColumn("geohash",udfGeoHash(col("latitude"),col("longitude")))
+          .select("device_id","timestamp_raw","geohash")
+
+    // Get users from airport and take the oldeset timestamp
+    val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").asc)
+    
+    spark.read
+        .load("/datascience/custom/users_airport_co") //cambiar cuando este
+        .withColumn("rn", row_number.over(w))
+        .where(col("rn") === 1)
+        .drop("rn")
+        .withColumnRenamed("timestamp","timestamp_airport")
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/users_airport_%s".format(country))
+
+    val users_airport = spark.read.load("/datascience/custom/users_airport_%s".format(country))
+
+    val udfGeoHash = udf((d: String) => d.substring(0, 5))
+
+    val joint = raw.join(users_airport,Seq("device_id"),"inner")
+                    .withColumn("geohash",udfGeoHash(col("geo_hash"))) // cut geohash to 5 digits
+                    .filter("timestamp_raw > timestamp_airport") // filter timestamp
+                    .groupBy("geohash")
+                    .agg(first(col("latitude")).as("lat"),
+                        first(col("longitude")).as("lon"),
+                        first(col("timestamp_raw")).as("timestamp"),
+                        approx_count_distinct(col("device_id"), 0.02).as("device_unique")
+                    )
+    joint.write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/kepler_%s".format(country))
+  }
+
   def main(args: Array[String]) {
 
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
-
+ 
     val spark = SparkSession.builder
       .appName("Random de Tincho")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
@@ -3268,13 +3331,16 @@ object RandomTincho {
     //                     .withColumnRenamed("geo_hash_7","geo_hash_join")
 
       
-    generate_seed(spark,"argentina")
-    get_coronavirus(spark,"argentina")
-    val barrios =  spark.read.format("csv")
-                    .option("header",true)
-                    .option("delimiter",",")
-                    .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-                    .withColumnRenamed("geo_hashote","geo_hash_join")
-    coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
+    // generate_seed(spark,"argentina")
+    // get_coronavirus(spark,"argentina")
+    // val barrios =  spark.read.format("csv")
+    //                 .option("header",true)
+    //                 .option("delimiter",",")
+    //                 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
+    //                 .withColumnRenamed("geo_hashote","geo_hash_join")
+    // coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
+    generate_kepler(spark,"colombia")
+   
+
   }
 }
