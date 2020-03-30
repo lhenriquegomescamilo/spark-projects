@@ -2,7 +2,7 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
-import org.chobeat.scalageohash.GeoHash
+import com.github.davidallsopp.geohash.GeoHash._
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.broadcast
@@ -3262,8 +3262,7 @@ object RandomTincho {
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    val udfGeoHash = udf((lat: Float, lon:Float) => GeoHash.encodeGeohash(lat, lon, 7).toString)
-
+    val udfGeoHash = udf((lat: Float, lon:Float) => encode(lat,lon).toString)
 
     // Get Data Raw
     val raw = spark.read
