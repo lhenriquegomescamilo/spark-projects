@@ -367,6 +367,13 @@ def getDataPipeline(
     .getOrCreate()
 
     val countries = "BR,CL,CO,MX,PE".split(",").toList
+    for (country <- countries) {    
+    println(country)  
+    println(spark.read.load("/datascience/custom/coronavirus_%s_lal".format(country)))
+    }
+    /**
+
+    val countries = "BR,CL,CO,MX,PE".split(",").toList
     val path_triplets = "/datascience/data_triplets/segments/"
 
     for (country <- countries) {    
@@ -388,7 +395,7 @@ def getDataPipeline(
 
     }
 
-
+  */
     /**
 
     val df = spark.read.format("csv")
