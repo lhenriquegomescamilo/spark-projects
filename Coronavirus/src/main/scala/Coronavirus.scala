@@ -134,10 +134,10 @@ object Coronavirus {
       .withColumn("day", udfDay(col("window")))
       .groupBy("original_id", "day")
       .agg(collect_set(col("device_id")).as("devices"))
-      .write
-      .format("parquet")
       .withColumn("day",lit(day))
       .withColumn("country",lit(country))
+      .write
+      .format("parquet")
       .partitionBy("day","country")
       .mode(SaveMode.Overwrite)
       .save("/datascience/coronavirus/coronavirus_contacts_per_day/")
