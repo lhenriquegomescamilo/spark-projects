@@ -1314,7 +1314,7 @@ space_lapse_agg
 //Argentina
 //setting timezone depending on country
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
-    
+    val today = (java.time.LocalDate.now).toString
 //Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
 //Esto es safegraph pelado los uĺtimos X dáis
 val raw = get_safegraph_data(spark,"30","1","argentina")
