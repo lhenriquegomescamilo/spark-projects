@@ -1330,8 +1330,8 @@ val eze = spark.read.option("delimiter","\t").option("header",true).format("csv"
 //Unimos los usuarios de ezeiza con la raw y nos quedamos con un timestamp por geohash
 val tipito_eze = eze.join(raw,Seq("device_id"))
 .withColumn("geo_hash_5",substring(col("geo_hash"), 0, 5)) 
-.dropDuplicates("geo_hash_5","utc_timestamp")
-.select("geo_hash_5","utc_timestamp","latitude","longitude")
+.dropDuplicates("geo_hash_5","utc_timestamp","device_id")
+.select("geo_hash_5","utc_timestamp","latitude","longitude","device_id")
 
 val cordoba = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
