@@ -366,13 +366,22 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+
+    val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
+    for (country <- countries) {    
+    println(country)  
+    println(spark.read.format("csv").option("sep", "\t").load("/datascience/misc/covid_%s_to_remove".format(country)).count())
+    }
+
+    /**
+
     val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
     for (country <- countries) {    
     var df = spark.read.format("csv")
     .option("sep", "\t")
     .load("/datascience/misc/covid_%s_to_push".format(country))  
     .toDF("device_type","device_id","segment")
-    
+
     var db = df.withColumn("count", lit(1))
     .groupBy("device_id").agg(sum(col("count")) as "total")
     .filter("total>1")
@@ -386,6 +395,7 @@ def getDataPipeline(
 
     }
 
+*/
 
  /**
     val path_triplets = "/datascience/data_triplets/segments/"  
