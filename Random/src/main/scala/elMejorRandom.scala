@@ -1312,20 +1312,22 @@ space_lapse_agg
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-val country = "argentina"
+val country = "mexico"
 val today = (java.time.LocalDate.now).toString
 val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
 
+//Desagregado por entidad y municipio
 val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
-.withColumnRenamed("geo_hashote","geo_hash_7")
+.load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
 
-val output_file_provincia = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_provincia_%s".format(today,country)
-val partido = spark.read.format("parquet")
+
+//Acá lo agregamos por estado
+val output_file_estado = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_estado_%s".format(today,country)
+val tipo2 = spark.read.format("parquet")
 .load(output_file)
 .join(entidad,Seq("geo_hash_7"))
-.groupBy("PROVCODE","PROVINCIA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("PROVCODE","PROVINCIA","Day").agg(
+.groupBy("NOM_ENT","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("NOM_ENT",,"Day").agg(
   count("device_id") as "devices",
   avg("geo_hash_7") as "geo_hash_7_avg",
   stddev_pop("geo_hash_7") as "geo_hash_7_std")
@@ -1334,7 +1336,7 @@ val partido = spark.read.format("parquet")
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save(output_file_provincia)
+.save(output_file_estado)
 
 
 }
