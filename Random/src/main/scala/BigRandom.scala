@@ -369,7 +369,7 @@ def getDataPipeline(
     val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
     for (country <- countries) {    
     println(country)  
-    println(spark.read.format("csv").option("sep", "\t").load("/datascience/custom/coronavirus_%s_lal".format(country)))
+    println(spark.read.format("csv").option("sep", "\t").load("/datascience/custom/coronavirus_%s_lal".format(country)).count())
     }
     /**
 
