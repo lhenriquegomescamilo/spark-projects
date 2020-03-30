@@ -1327,7 +1327,7 @@ val tipo2 = spark.read.format("parquet")
 .load(output_file)
 .join(entidad,Seq("geo_hash_7"))
 .groupBy("NOM_ENT","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("NOM_ENT",,"Day").agg(
+.groupBy("NOM_ENT","Day").agg(
   count("device_id") as "devices",
   avg("geo_hash_7") as "geo_hash_7_avg",
   stddev_pop("geo_hash_7") as "geo_hash_7_std")
