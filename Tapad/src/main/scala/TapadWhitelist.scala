@@ -46,15 +46,16 @@ import scala.util.Random.shuffle
 
 object TapadWhitelist {
   def whitelist_madids_report(spark: SparkSession,date:String){
+    val current_month = DateTime.now().toString("yyyyMM")
 
     val today = DateTime.now.toString("yyyyMMdd")
     val madids_factual = spark.read.format("csv").option("sep","\t")
-                              .load("/datascience/devicer/processed/madids_factual_%s/".format(date))
+                              .load("/datascience/devicer/processed/madids_factual_%s/".format(current_month))
                               .withColumnRenamed("_c1","madids")
                               .select("madids")
 
     val madids_startapp = spark.read.format("csv").option("sep","\t")
-                              .load("/datascience/devicer/processed/madids_startapp_%s/".format(date))
+                              .load("/datascience/devicer/processed/madids_startapp_%s/".format(current_month))
                               .withColumnRenamed("_c1","madids")
                               .select("madids")
     // GEO
