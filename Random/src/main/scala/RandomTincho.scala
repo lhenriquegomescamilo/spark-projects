@@ -3319,28 +3319,51 @@ object RandomTincho {
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    //val udfGeoHash = udf((lat: Float, lon:Float) => encode(Point(lat,lon)).toString)
+    val udfGeoHash = udf((lat: Float, lon:Float) => encode(Point(lat,lon)).toString)
 
     // Get Data Raw
-    val raw = spark.read
+    spark.read
           .option("basePath", path)
           .parquet(hdfs_files: _*)
           .withColumnRenamed("ad_id", "device_id")
           .withColumn("device_id", lower(col("device_id")))
           //.withColumn("timestamp_raw", to_timestamp(from_unixtime(col("utc_timestamp"))))
-          .withColumnRenamed("utc_timestamp", "timestamp_raw")
-         // .withColumn("geohash",udfGeoHash(col("latitude"),col("longitude")))
-          .select("device_id","timestamp_raw","geohash")
+          .withColumnRenamed("utc_timestamp", "timestamp_raw") 
+          .withColumn(
+            "geohash",
+            ((abs(col("latitude").cast("float")) * 10)
+              .cast("int") * 10000) + (abs(
+              col("longitude").cast("float") * 100
+            ).cast("int"))
+          )
+          .select("device_id","timestamp_raw","geohash","latitude","longitude")
+          .write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/tmp_geohashes")
+
+    val raw = spark.read.load("/datascience/custom/tmp_geohashes")
+
+    // Generate one lat/lon per geohash
+    raw.select("geohash","latitude","longitude")
+        .dropDuplicates("geohash")
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datscience/custom/unique_geohashes_%s".format(country))
 
     // Get users from airport and take the oldeset timestamp
     val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").asc)
     
-    spark.read
-        .load("/datascience/custom/users_airport_co") //cambiar cuando este
+    spark.read.format("csv")
+        .option("header",true)
+        .option("delimiter","\t")
+        .load("/datascience/geo/raw_output/airportsCO_30d_CO_30-3-2020-16h")
         .withColumn("rn", row_number.over(w))
         .where(col("rn") === 1)
         .drop("rn")
         .withColumnRenamed("timestamp","timestamp_airport")
+        .select("device_id","timestamp_airport","audience")
         .write
         .format("parquet")
         .mode(SaveMode.Overwrite)
@@ -3348,10 +3371,10 @@ object RandomTincho {
 
     val users_airport = spark.read.load("/datascience/custom/users_airport_%s".format(country))
 
-    val udfGeoHash = udf((d: String) => d.substring(0, 5))
+    val udfCut = udf((d: Int) => d.toString.substring(0, 5))
 
     val joint = raw.join(users_airport,Seq("device_id"),"inner")
-                    .withColumn("geohash",udfGeoHash(col("geo_hash"))) // cut geohash to 5 digits
+                    .withColumn("geohash",udfCut(col("geo_hash"))) // cut geohash to 5 digits
                     .filter("timestamp_raw > timestamp_airport") // filter timestamp
                     .groupBy("geohash")
                     .agg(first(col("latitude")).as("lat"),
@@ -3395,7 +3418,8 @@ object RandomTincho {
     //                 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
     //                 .withColumnRenamed("geo_hashote","geo_hash_join")
     // coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
-    report_dh_fede(spark)
+    //report_dh_fede(spark)
+    
    
 
   }
