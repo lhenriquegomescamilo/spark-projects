@@ -340,7 +340,7 @@ hash_user
 .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
 //Desagregado por entidad y municipio
-val entidad = spark.read.format("csv").option("header",true).option("delimiter",",")
+val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
 
 
