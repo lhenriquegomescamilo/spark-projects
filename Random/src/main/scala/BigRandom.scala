@@ -366,12 +366,31 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+
+    val path_triplets = "/datascience/data_triplets/segments/"  
+    var triplets = getDataPipeline(spark,path_triplets,"25","2","%s".format("AR"))
+              .select("device_id","feature")
+
+    var df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/misc/covid_%s_to_push".format("ar"))
+    .toDF("device_type","device_id","segment")
+
+    var aff = df.join(triplets,Seq("device_id"))
+    .groupBy("segment","feature").agg(approx_count_distinct(col("device_id"), 0.02).as("score"))
+
+    aff.write
+     .format("csv")
+     .mode("overwrite")
+     .save("/datascience/misc/covid_%s_aff".format("AR"))    
+
+    /**
     val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
     for (country <- countries) {    
     println(country)  
     println(spark.read.format("csv").option("sep", "\t").load("/datascience/custom/coronavirus_%s_lal".format(country)).count())
     }
-    /**
+    
 
     val countries = "BR,CL,CO,MX,PE".split(",").toList
     val path_triplets = "/datascience/data_triplets/segments/"
