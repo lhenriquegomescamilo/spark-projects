@@ -63,6 +63,7 @@ object TapadFull {
     val df_union = dfs.reduce((df1, df2) => df1.unionAll(df2))
                       .select("Timestamp","IP_Address","Device_ID","Device_Type")
                       .withColumn("Timestamp",unix_timestamp(col("Timestamp")))
+                      .filter("Device_Type is not null")
                       .withColumn("Device_Type",udfDeviceType(col("Device_Type")))
                       .withColumn("Platform",lit(""))
                       .select("Timestamp","Device_ID","IP_Address","Device_Type","platform")
