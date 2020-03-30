@@ -2,7 +2,6 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SaveMode
-import com.sanoma.cda.geo.GeoHash._
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.broadcast
@@ -3349,7 +3348,7 @@ object RandomTincho {
 
     val users_airport = spark.read.load("/datascience/custom/users_airport_%s".format(country))
 
-    //val udfGeoHash = udf((d: String) => d.substring(0, 5))
+    val udfGeoHash = udf((d: String) => d.substring(0, 5))
 
     val joint = raw.join(users_airport,Seq("device_id"),"inner")
                     .withColumn("geohash",udfGeoHash(col("geo_hash"))) // cut geohash to 5 digits
