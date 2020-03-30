@@ -3028,6 +3028,7 @@ object RandomTincho {
       .filter("country = 'br'")
       .withColumnRenamed("email_sha256", "ml_sh2")
       .withColumnRenamed("advertising_id", "device_id")
+      .withColumnRenamed("platform", "device_type")
       .select("ml_sh2", "device_id","device_type")
 
     val emails = pii
