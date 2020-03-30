@@ -1328,8 +1328,7 @@ val eze = spark.read.option("delimiter","\t").option("header",true).format("csv"
 .withColumn("device_id",lower(col("device_id")))
 
 //Unimos los usuarios de ezeiza con la raw y nos quedamos con un timestamp por geohash
-val tipito_eze = 
-.join(raw,Seq("device_id"))
+val tipito_eze = eze.join(raw,Seq("device_id"))
 .withColumn("geo_hash_5",substring(col("geo_hash"), 0, 5)) 
 .dropDuplicates("geo_hash_5","utc_timestamp")
 .select("geo_hash_5","utc_timestamp","latitude","longitude")
