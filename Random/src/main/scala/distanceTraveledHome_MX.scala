@@ -301,7 +301,7 @@ spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
 
 val today = (java.time.LocalDate.now).toString
-
+/*
 val raw = get_safegraph_data(spark,"30","1",country)
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
@@ -315,9 +315,10 @@ raw.persist()
 val geo_hash_visits = raw
 .groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
 .withColumn("country",lit(country))
-
+*/
 val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
 
+/*
 geo_hash_visits
  .write
     .mode(SaveMode.Overwrite)
@@ -338,7 +339,7 @@ hash_user
 .format("csv")
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
-
+*/
 //Desagregado por entidad y municipio
 val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
