@@ -4987,91 +4987,106 @@ object Random {
     Logger.getRootLogger.setLevel(Level.WARN)
     val country = "mexico"
 
-    // val raw = spark.read
-    //   .format("parquet")
-    //   .option("basePath", "/datascience/geo/safegraph/")
-    //   .load(
-    //     "/datascience/geo/safegraph/day=202003*/country=%s/".format(country)
-    //   )
-    //   .withColumnRenamed("ad_id", "device_id")
-    //   .withColumn("device_id", lower(col("device_id")))
-    // .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-    // .withColumn("day", date_format(col("Time"), "YYYY-MM-dd"))
-    // .drop("Time")
+    val raw = spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/geo/safegraph/")
+      .load(
+        "/datascience/geo/safegraph/day=202003*/country=%s/".format(country)
+      )
+      .withColumnRenamed("ad_id", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+      .withColumn("window", date_format(col("Time"), "mm"))
+      .withColumn(
+        "window",
+        when(col("window") > 40, 3)
+          .otherwise(when(col("window") > 20, 2).otherwise(1))
+      )
+      .withColumn("window", concat(col("Hour"), col("window")))
+      .drop("Time")
 
-    // val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
+    val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
 
-    // // Select sample of 1000 users
+    // Select sample of 1000 users
     // val initial_seed = spark.read
     //   .format("csv")
-    //   .option("sep", "\t")
-    //   .option("header", "true")
-    //   .load(
-    //     "/datascience/geo/raw_output/puntos_contagio_30d_mexico_26-3-2020-14h"
+    //   .load("/datascience/custom/all_points_airport_mx")
+    //   .withColumnRenamed("_c3", "geo_hash")
+    //   .withColumnRenamed("_c0", "device_id")
+    //   .withColumnRenamed("_c1", "utc_timestamp")
+    //   .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+    //   .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+    //   .withColumn("window", date_format(col("Time"), "mm"))
+    //   .withColumn(
+    //     "window",
+    //     when(col("window") > 40, 3)
+    //       .otherwise(when(col("window") > 20, 2).otherwise(1))
     //   )
-    //   .select("device_id")
+    //   .withColumn("window", concat(col("Hour"), col("window")))
+    //   .drop("Time")
+    //   .select("device_id", "geo_hash", "window")
+    //   .distinct()
 
+    // // Get the distinct moments to filter the raw data
+    // val moments = initial_seed.select("geo_hash", "window").distinct()
+
+    // // Join raw data with the moments and store
     // raw
-    //   .join(initial_seed, Seq("device_id"))
+    //   .join(moments, Seq("geo_hash", "window"))
+    //   .select("device_id", "geo_hash", "window")
     //   .write
     //   .format("parquet")
     //   .mode(SaveMode.Overwrite)
-    //   .save("/datascience/custom/coronavirus_contacts_airport_%s".format(country))
-
-    // val w2 = Window.partitionBy("device_id").orderBy(col("day_airport"))
-
-    // val airport = spark.read
-    //   .format("csv")
-    //   .option("sep", "\t")
-    //   .option("header", "true")
-    //   .load(
-    //     "/datascience/geo/raw_output/puntos_contagio_30d_mexico_26-3-2020-14h"
+    //   .save(
+    //     "/datascience/custom/all_points_airport_mx_level1"
+    //       .format(country)
     //   )
-    //   .filter("audience = 'Aeropuerto CDMX'")
-    //   .withColumnRenamed("latitude_user", "latitude")
-    //   .withColumnRenamed("longitude_user", "longitude")
-    //   .withColumn("geo_hash", lit("airport"))
-    //   .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-    //   .withColumn("day_airport", date_format(col("Time"), "YYYY-MM-dd"))
-    //   .select("device_id", "day_airport")
-    //   .withColumn("row", row_number.over(w2))
-    //   .where(col("row") === 1)
-    //   .drop("row")
 
-    // val points = spark.read
-    //   .format("csv")
-    //   .load("/datascience/custom/all_points_airport_mx_")
-    //   .withColumnRenamed("_c4", "latitude")
-    //   .withColumnRenamed("_c5", "longitude")
-    //   .withColumnRenamed("_c0", "device_id")
-    //   .withColumnRenamed("_c7", "day")
-    //   .withColumnRenamed("_c9", "geo_hash")
-    //   .withColumnRenamed("_c1", "timestamp")
-    //   .select("device_id", "latitude", "longitude", "day", "geo_hash", "timestamp")
-
-    // points
-    //   .join(airport, Seq("device_id"))
-    //   .filter("day >= day_airport")
-    //   .dropDuplicates("geo_hash", "day")
-    //   .write
-    //   .format("csv")
-    //   .option("header", "true")
-    //   .mode("overwrite")
-    //   .save("/datascience/custom/all_points_airport_mx_final")
-
-    spark.read
-      .format("csv")
-      .option("sep", "\t")
+    val joint = spark.read
       .load(
-        "/datascience/data_lookalike/expansion/ondemand/jobId=coronaviusAR/"
+        "/datascience/custom/all_points_airport_mx_level1"
       )
-      .groupBy("_c0", "_c1")
-      .agg(collect_set("_c2") as "segments")
-      .withColumn("segments", col("segments").getItem(0))
+      .select("device_id")
+      .distinct()
+
+    raw
+      .join(joint, Seq("device_id"))
+      .select("device_id", "geo_hash", "window")
       .write
-      .format("csv")
-      .option("sep", "\t")
-      .mode("overwrite")
-      .save("/datascience/custom/coronavirus_ar_lal")
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/custom/all_points_airport_mx_level1_"
+          .format(country)
+      )
+
+    val level1 = spark.read
+      .load(
+        "/datascience/custom/all_points_airport_mx_level1_"
+      )
+      .select("device_id", "geo_hash", "window")
+
+    val moments_level1 = level1.select("geo_hash", "window").distinct()
+
+    // Join raw data with the moments and store
+    raw
+      .join(moments_level1, Seq("geo_hash", "window"))
+      .select("device_id", "geo_hash", "window")
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/custom/all_points_airport_mx_level2"
+      )
+
+    val level2 = spark.read
+      .load(
+        "/datascience/custom/all_points_airport_mx_level2"
+      )
+      .select("device_id", "geo_hash", "window")
+
+    // println(level1.select("device_id").distinct().count())
+    println(level2.select("device_id").distinct().count())
   }
 }
