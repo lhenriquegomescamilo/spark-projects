@@ -3418,7 +3418,7 @@ object RandomTincho {
     //                 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
     //                 .withColumnRenamed("geo_hashote","geo_hash_join")
     // coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
-    //report_dh_fede(spark)
+    report_dh_fede(spark)
     
    
 
