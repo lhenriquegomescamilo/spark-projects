@@ -3067,8 +3067,8 @@ object RandomTincho {
           .join(local_piis, Seq("pii"), "inner")
           .select("device_id","device_type")
           .distinct
-          .write
           .repartition(1)
+          .write
           .format("csv")
           .mode(SaveMode.Overwrite)
           .save("/datascience/custom/dh_devices_%s".format(f))        
@@ -3330,7 +3330,7 @@ object RandomTincho {
           .withColumn("device_id", lower(col("device_id")))
           //.withColumn("timestamp_raw", to_timestamp(from_unixtime(col("utc_timestamp"))))
           .withColumnRenamed("utc_timestamp", "timestamp_raw")
-          .withColumn("geohash",udfGeoHash(col("latitude"),col("longitude")))
+         // .withColumn("geohash",udfGeoHash(col("latitude"),col("longitude")))
           .select("device_id","timestamp_raw","geohash")
 
     // Get users from airport and take the oldeset timestamp
