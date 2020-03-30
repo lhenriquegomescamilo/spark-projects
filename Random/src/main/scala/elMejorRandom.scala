@@ -1329,11 +1329,13 @@ val nDays = "5"
 val one_geohash_user = get_safegraph_data(spark,nDays,"1",country)
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
-.select("device_id","device_type","geo_hash_7")}
+.select("device_id","device_type","geo_hash_7")
 //.distinct()
 
 val entidad = spark.read.format("csv").option("header",true).option("delimiter",",")
 .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+
+val output_file = "/datascience/geo/geo_processed/geohashes_user_location_%sD_%s_%s".format(nDays,country,today)
 
 one_geohash_user
 .join(entidad,Seq("geo_hash_7"))
@@ -1341,10 +1343,7 @@ one_geohash_user
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save(output_file_partido)
-
-val output_file = "/datascience/geo/geo_processed/geohashes_user_location_%sD_%s_%s".format(nDays,country,today)
-
+.save(output_file)
 
 
 }
