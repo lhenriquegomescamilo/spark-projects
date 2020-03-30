@@ -3035,9 +3035,16 @@ object RandomTincho {
       .filter("ml_sh2 is not null")
       .select("ml_sh2", "device_id","device_type")
       .union(bridge)
-    val all_piis = nids
+    
+    nids
       .withColumnRenamed("nid_sh2", "pii")
       .union(emails.withColumnRenamed("ml_sh2", "pii"))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/all_piis_dh_fede")
+
+    val all_piis = spark.read.load("/datascience/custom/all_piis_dh_fede")
 
     val mapeo = Map(
       "241141" -> "3862661122c5864e6b0872554dc76a60",
@@ -3320,8 +3327,7 @@ object RandomTincho {
       .map(day => path + "/day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    //val udfGeoHash = udf((lat: Float, lon:Float) => encode(Point(lat,lon)).toString)
-
+    val udfString = udf((d: Int) => d.toString)
     // Get Data Raw
     spark.read
           .option("basePath", path)
@@ -3337,6 +3343,7 @@ object RandomTincho {
               col("longitude").cast("float") * 100
             ).cast("int"))
           )
+          .withColumn("geohash",udfString(col("geohash")))
           .select("device_id","timestamp_raw","geohash","latitude","longitude")
           .write
           .format("parquet")
@@ -3351,7 +3358,7 @@ object RandomTincho {
         .write
         .format("parquet")
         .mode(SaveMode.Overwrite)
-        .save("/datscience/custom/unique_geohashes_%s".format(country))
+        .save("/datascience/custom/unique_geohashes_%s".format(country))
 
     // Get users from airport and take the oldeset timestamp
     val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").asc)
@@ -3375,7 +3382,7 @@ object RandomTincho {
     val udfCut = udf((d: Int) => d.toString.substring(0, 5))
 
     val joint = raw.join(users_airport,Seq("device_id"),"inner")
-                    .withColumn("geohash",udfCut(col("geo_hash"))) // cut geohash to 5 digits
+                    .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
                     .filter("timestamp_raw > timestamp_airport") // filter timestamp
                     .groupBy("geohash")
                     .agg(first(col("latitude")).as("lat"),
