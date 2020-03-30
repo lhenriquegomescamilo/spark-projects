@@ -1313,35 +1313,28 @@ space_lapse_agg
 
 
 val country = "argentina"
-
-val timezone = Map("argentina" -> "GMT-3",
-                       "mexico" -> "GMT-5",
-                       "CL"->"GMT-3",
-                       "CO"-> "GMT-5",
-                       "PE"-> "GMT-5")
-    
-    //setting timezone depending on country
-spark.conf.set("spark.sql.session.timeZone", timezone(country))
-
 val today = (java.time.LocalDate.now).toString
+val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
 
-//Gente de provincia de buenos aires
-val homes = spark.read.format("parquet").load("/datascience/data_insights/homes/day=20200220/country=AR")
-.filter(col("ESTATE") === "06")
-.select("device_type","device_id","frequency")
+val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+.withColumnRenamed("geo_hashote","geo_hash_7")
 
-
-//Gente que en algún momento vimos en caba
-val touch_caba = spark.read.format("csv").option("header",true).load("/datascience/geo/geo_processed/geohashes_user_location_180D_argentina_2020-03-30")
-.select("device_id").distinct()
-
-
-homes.join(touch_caba,Seq("device_id"))
+val output_file_provincia = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_provincia_%s".format(today,country)
+val partido = spark.read.format("parquet")
+.load(output_file)
+.join(entidad,Seq("geo_hash_7"))
+.groupBy("PROVCODE","PROVINCIA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("PROVCODE","PROVINCIA","Day").agg(
+  count("device_id") as "devices",
+  avg("geo_hash_7") as "geo_hash_7_avg",
+  stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Viven_PROV_Trabajan_GCBA_%s".format(today))
+.save(output_file_provincia)
 
 
 }
