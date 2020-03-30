@@ -1311,33 +1311,41 @@ space_lapse_agg
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
+//Argentina
+//setting timezone depending on country
+spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+    
+//Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
+//Esto es safegraph pelado los uĺtimos X dáis
+val raw = get_safegraph_data(spark,"30","1","argentina")
+.withColumn("device_id",lower(col("device_id")))
 
-val country = "mexico"
-val today = (java.time.LocalDate.now).toString
-val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
+//Sólo nos interesan las áreas y las horas que tengan infectados adentro, les joineamos los infectados
+//Levantamos los usarios que detectamos en Ezeiza los últimos 60 días
+val eze = spark.read.option("delimiter","\t").option("header",true).format("csv")
+.load("/datascience/geo/raw_output/Ezeiza_30d_argentina_17-3-2020-11h")
+.select("device_id").distinct
+.withColumn("device_id",lower(col("device_id")))
 
-//Desagregado por entidad y municipio
-val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
+//Unimos los usuarios de ezeiza con la raw y nos quedamos con un timestamp por geohash
+val tipito_eze = 
+.join(raw,Seq("device_id"))
+.withColumn("geo_hash_5",substring(col("geo_hash"), 0, 5)) 
+.dropDuplicates("geo_hash_5","utc_timestamp")
+.select("geo_hash_5","utc_timestamp","latitude","longitude")
 
+val cordoba = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+.withColumnRenamed("geo_hashote","geo_hash_7")
+.withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5)) 
+.filter(col("PROVCODE")==="14")
 
-//Acá lo agregamos por estado
-val output_file_estado = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_estado_%s".format(today,country)
-val tipo2 = spark.read.format("parquet")
-.load(output_file)
-.join(entidad,Seq("geo_hash_7"))
-.groupBy("NOM_ENT","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("NOM_ENT","Day").agg(
-  count("device_id") as "devices",
-  avg("geo_hash_7") as "geo_hash_7_avg",
-  stddev_pop("geo_hash_7") as "geo_hash_7_std")
-.repartition(1)
+tipito_eze.join(cordoba,Seq("geo_hash_5"))
 .write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save(output_file_estado)
-
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/hash_ezeiza_cordoba".format(today))
 
 }
 
