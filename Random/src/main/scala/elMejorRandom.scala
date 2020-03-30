@@ -1314,7 +1314,7 @@ space_lapse_agg
 //Argentina
 //setting timezone depending on country
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
-    
+    val today = (java.time.LocalDate.now).toString
 //Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
 //Esto es safegraph pelado los uĺtimos X dáis
 val raw = get_safegraph_data(spark,"30","1","argentina")
@@ -1328,8 +1328,7 @@ val eze = spark.read.option("delimiter","\t").option("header",true).format("csv"
 .withColumn("device_id",lower(col("device_id")))
 
 //Unimos los usuarios de ezeiza con la raw y nos quedamos con un timestamp por geohash
-val tipito_eze = 
-.join(raw,Seq("device_id"))
+val tipito_eze = eze.join(raw,Seq("device_id"))
 .withColumn("geo_hash_5",substring(col("geo_hash"), 0, 5)) 
 .dropDuplicates("geo_hash_5","utc_timestamp")
 .select("geo_hash_5","utc_timestamp","latitude","longitude")
@@ -1337,8 +1336,10 @@ val tipito_eze =
 val cordoba = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
 .withColumnRenamed("geo_hashote","geo_hash_7")
-.withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5)) 
-.filter(col("PROVCODE")==="14")
+.withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5))
+ .filter(col("PROVCODE")==="14")
+ .select("geo_hash_5")
+ .distinct()
 
 tipito_eze.join(cordoba,Seq("geo_hash_5"))
 .write
