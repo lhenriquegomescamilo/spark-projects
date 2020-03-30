@@ -1338,6 +1338,7 @@ val cordoba = spark.read.format("csv").option("header",true).option("delimiter",
 .withColumnRenamed("geo_hashote","geo_hash_7")
 .withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5))
  .filter(col("PROVCODE")==="14")
+ .select("geo_hash_5")
  .distinct()
 
 tipito_eze.join(cordoba,Seq("geo_hash_5"))
