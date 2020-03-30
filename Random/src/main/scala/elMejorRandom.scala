@@ -1324,7 +1324,7 @@ val timezone = Map("argentina" -> "GMT-3",
 spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
 val today = (java.time.LocalDate.now).toString
-val nDays = "5"
+val nDays = "180"
 
 val one_geohash_user = get_safegraph_data(spark,nDays,"1",country)
 .withColumn("device_id",lower(col("device_id")))
@@ -1336,6 +1336,7 @@ val entidad = spark.read.format("csv").option("header",true).option("delimiter",
 .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
 .withColumnRenamed("geo_hashote","geo_hash_7")
 .filter(col("PROVCODE")==="02")
+.drop("latitude","longitude")
 
 val output_file = "/datascience/geo/geo_processed/geohashes_user_location_%sD_%s_%s".format(nDays,country,today)
 
