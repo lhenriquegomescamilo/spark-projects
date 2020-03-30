@@ -3350,7 +3350,11 @@ object RandomTincho {
           .mode(SaveMode.Overwrite)
           .save("/datascience/custom/tmp_geohashes")
 
+    val udfCut = udf((d: String) => d.toString.substring(0, 5))
+
     val raw = spark.read.load("/datascience/custom/tmp_geohashes")
+                    .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
+    
 
     // Generate one lat/lon per geohash
     raw.select("geohash","latitude","longitude")
@@ -3379,10 +3383,9 @@ object RandomTincho {
 
     val users_airport = spark.read.load("/datascience/custom/users_airport_%s".format(country))
 
-    val udfCut = udf((d: String) => d.toString.substring(0, 5))
-
     val joint = raw.join(users_airport,Seq("device_id"),"inner")
-                    .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
+                    .withColumn("timestamp_raw", col("timestamp_raw").cast(IntegerType))
+                    .withColumn("timestamp_airport", col("timestamp_airport").cast(IntegerType))
                     .filter("timestamp_raw > timestamp_airport") // filter timestamp
                     .groupBy("geohash")
                     .agg(first(col("latitude")).as("lat"),
