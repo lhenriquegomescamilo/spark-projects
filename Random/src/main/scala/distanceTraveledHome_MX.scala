@@ -347,7 +347,7 @@ val entidad = spark.read.format("csv").option("header",true).option("delimiter",
 
 //Acá lo agregamos por estado
 val output_file_estado = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_estado_%s".format(today,country)
-val tipo2 = spark.read.format("parquet")
+val estado = spark.read.format("parquet")
 .load(output_file)
 .join(entidad,Seq("geo_hash_7"))
 .groupBy("NOM_ENT","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
@@ -365,7 +365,7 @@ val tipo2 = spark.read.format("parquet")
 
 //Acá lo agregamos por municipio
 val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_municipio_%s".format(today,country)
-val tipo2 = spark.read.format("parquet")
+val municipio = spark.read.format("parquet")
 .load(output_file)
 .join(entidad,Seq("geo_hash_7"))
 .groupBy("NOM_ENT","CVEGEO","NOM_MUN","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
