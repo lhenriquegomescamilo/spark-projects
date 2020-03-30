@@ -1351,4 +1351,3 @@ val output_file = "/datascience/geo/geo_processed/geohashes_user_location_%sD_%s
 
 
   
-}
