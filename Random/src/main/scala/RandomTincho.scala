@@ -3344,6 +3344,7 @@ object RandomTincho {
               col("longitude").cast("float") * 100
             ).cast("int"))
           )
+          .withColumn("geohash",col("geohash").cast(String))
           .select("device_id","timestamp_raw","geohash","latitude","longitude")
           .write
           .format("parquet")
