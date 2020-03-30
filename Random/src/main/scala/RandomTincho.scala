@@ -3358,7 +3358,7 @@ object RandomTincho {
         .write
         .format("parquet")
         .mode(SaveMode.Overwrite)
-        .save("/datscience/custom/unique_geohashes_%s".format(country))
+        .save("/datascience/custom/unique_geohashes_%s".format(country))
 
     // Get users from airport and take the oldeset timestamp
     val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").asc)
@@ -3426,8 +3426,8 @@ object RandomTincho {
     //                 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
     //                 .withColumnRenamed("geo_hashote","geo_hash_join")
     // coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
-    report_dh_fede(spark)
-    //generate_kepler(spark,"CO")
+    //report_dh_fede(spark)
+    generate_kepler(spark,"CO")
     
    
 
