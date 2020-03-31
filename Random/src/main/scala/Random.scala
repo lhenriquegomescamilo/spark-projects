@@ -4990,7 +4990,12 @@ object Random {
       val originals = spark.read
         .format("csv")
         .option("sep", "\t")
-        .load("/datascience/misc/covid_%s_to_push".format(country))
+        .load(
+          "/datascience/misc/covid_%s_to_push".format(
+            if (country == "AR") "ar"
+            else country
+          )
+        )
         .withColumnRenamed("_c1", "device_id")
         .select("device_id")
         .distinct()
