@@ -32,7 +32,7 @@ object keywordIngestion {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     /// Leemos la data de keywords de ndays hacia atras
-    val format = "yyyy-MM-dd"
+    val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since + ndays)
     val end = DateTime.now.minusDays(since)
 
@@ -46,10 +46,10 @@ object keywordIngestion {
       .filter(
         day =>
           fs.exists(
-            new Path("/datascience/selected_keywords/%s.csv".format(day))
+            new Path("/datascience/scraper/selected_keywords/day=%s".format(day))
           )
       )
-      .map(day => "/datascience/selected_keywords/%s.csv".format(day))
+      .map(day => "/datascience/scraper/selected_keywords/day=%s".format(day))
 
     dfs.foreach(println)
 
