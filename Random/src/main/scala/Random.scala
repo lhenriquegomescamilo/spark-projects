@@ -5020,6 +5020,7 @@ object Random {
           "segments",
           getRandomElement(col("segments"))
         )
+        .withColumn("segments", when(col("segments")==="302875", "302881").otherwise(when(col("segments")==="302877", "302879").otherwise(when(col("segments")==="302879", "302877").otherwise())))
         .write
         .format("csv")
         .option("sep", "\t")
