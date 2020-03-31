@@ -4985,6 +4985,11 @@ object Random {
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
+    import scala.util.Random
+
+    val getRandomElement = udf(
+      (segments: Seq[String]) => Random.shuffle(segments.toList)(0)
+    )
 
     for (country <- List("AR", "BR", "CL", "CO", "MX", "PE")) {
       val originals = spark.read
@@ -5013,7 +5018,7 @@ object Random {
         .join(originals, Seq("device_id"), "left_anti")
         .withColumn(
           "segments",
-          col("segments").getItem(0)
+          getRandomElement(col("segments"))
         )
         .write
         .format("csv")
