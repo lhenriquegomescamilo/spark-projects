@@ -5018,19 +5018,25 @@ object Random {
         .withColumnRenamed("_c1", "device_id")
         .join(originals, Seq("device_id"), "left_anti")
         .withColumn(
-          "segments",
+          "segment",
           getRandomElement(col("segments"))
         )
         .withColumn(
-          "segments",
-          when(col("segments") === "302877", getRandomElement(col("segments")))
-            .otherwise(col("segments"))
+          "segment",
+          when(col("segment") === "302877", getRandomElement(col("segments")))
+            .otherwise(col("segment"))
         )
         .withColumn(
-          "segments",
-          when(col("segments") === "302875", "302881").otherwise(
-            when(col("segments") === "302877", "302879").otherwise(
-              when(col("segments") === "302879", "302877").otherwise("302875")
+          "segment",
+          when(col("segment") === "302877", getRandomElement(col("segments")))
+            .otherwise(col("segment"))
+        )
+        .drop("segments")
+        .withColumn(
+          "segment",
+          when(col("segment") === "302875", "302881").otherwise(
+            when(col("segment") === "302877", "302879").otherwise(
+              when(col("segment") === "302879", "302877").otherwise("302875")
             )
           )
         )
