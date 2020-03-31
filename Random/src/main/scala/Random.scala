@@ -4985,67 +4985,26 @@ object Random {
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    // import
 
-    val getRandomElement = udf(
-      (segments: Seq[String]) =>
-        scala.util.Random.shuffle(segments.toList).toList(0).toString
-    )
-
-    for (country <- List("AR", "BR", "CL", "CO", "MX", "PE")) {
-      val originals = spark.read
-        .format("csv")
-        .option("sep", "\t")
-        .load(
-          "/datascience/misc/covid_%s_to_push".format(
-            if (country == "AR") "ar"
-            else country
-          )
-        )
-        .withColumnRenamed("_c1", "device_id")
-        .select("device_id")
-        .distinct()
-
-      spark.read
-        .format("csv")
-        .option("sep", "\t")
-        .load(
-          "/datascience/data_lookalike/expansion/ondemand/jobId=coronavius%s/"
-            .format(country)
-        )
-        .groupBy("_c0", "_c1")
-        .agg(collect_set("_c2") as "segments")
-        .withColumnRenamed("_c1", "device_id")
-        .join(originals, Seq("device_id"), "left_anti")
-        .withColumn(
-          "segment",
-          getRandomElement(col("segments"))
-        )
-        .withColumn(
-          "segment",
-          when(col("segment") === "302877", getRandomElement(col("segments")))
-            .otherwise(col("segment"))
-        )
-        .withColumn(
-          "segment",
-          when(col("segment") === "302877", getRandomElement(col("segments")))
-            .otherwise(col("segment"))
-        )
-        .drop("segments")
-        .withColumn(
-          "segment",
-          when(col("segment") === "302875", "302881").otherwise(
-            when(col("segment") === "302877", "302879").otherwise(
-              when(col("segment") === "302879", "302877").otherwise("302875")
-            )
-          )
-        )
-        .write
-        .format("csv")
-        .option("sep", "\t")
-        .mode("overwrite")
-        .save("/datascience/custom/coronavirus_%s_lal2".format(country))
-    }
-
+    spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/geo/safegraph")
+      .load("/datascience/geo/safegraph/day=202003*/country=CL/")
+      .withColumn(
+        "geohash",
+        ((abs(col("latitude").cast("float")) * 1000)
+          .cast("long") * 100000) + (abs(
+          col("longitude").cast("float") * 1000
+        ).cast("long"))
+      )
+      .groupBy("ad_id")
+      .agg(
+        approxCountDistinct("geohash") as "geohashes",
+        count("geohash") as "occurrences"
+      )
+      .write
+      .format("parquet")
+      .mode("overwrite")
+      .save("/datascience/custom/cl_geo_movement")
   }
 }
