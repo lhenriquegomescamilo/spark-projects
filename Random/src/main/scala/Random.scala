@@ -5018,6 +5018,7 @@ object Random {
         .write
         .format("csv")
         .option("sep", "\t")
+        .mode("overwrite")
         .save("/datascience/custom/coronavirus_%s_lal2".format(country))
     }
 
