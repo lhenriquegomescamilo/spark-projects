@@ -367,6 +367,37 @@ def getDataPipeline(
     .getOrCreate()
 
 
+    val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
+    for (country <- countries) {    
+    println(country)  
+    println(spark.read.format("csv").option("sep", "\t").load("/datascience/misc/covid_%s_to_remove".format(country)).count())
+    }
+
+    /**
+
+    val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
+    for (country <- countries) {    
+    var df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/misc/covid_%s_to_push".format(country))  
+    .toDF("device_type","device_id","segment")
+
+    var db = df.withColumn("count", lit(1))
+    .groupBy("device_id").agg(sum(col("count")) as "total")
+    .filter("total>1")
+    
+    df.join(db,Seq("device_id"))
+    .select("device_type", "device_id", "segment")
+    .write
+    .format("csv")
+    .option("sep", "\t")
+    .save("/datascience/misc/covid_%s_to_remove".format(country))    
+
+    }
+
+*/
+
+ /**
     val path_triplets = "/datascience/data_triplets/segments/"  
     var triplets = getDataPipeline(spark,path_triplets,"25","2","%s".format("AR"))
               .select("device_id","feature")
@@ -383,6 +414,9 @@ def getDataPipeline(
      .format("csv")
      .mode("overwrite")
      .save("/datascience/misc/covid_%s_aff".format("AR"))    
+
+    */
+
 
     /**
     val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
@@ -454,6 +488,7 @@ def getDataPipeline(
      .withColumn("segment", when(col("category")===3, 303353).otherwise(when(col("category")===2, 303357).otherwise(when(col("category")===1, 303359).otherwise(303361))))
      .withColumn("device_type", when(col("device_type")==="and", "android").otherwise(when(col("device_type")==="ios", "ios").otherwise("web")))
      .select("device_type", "device_id", "segment")
+     //.dropDuplicates("device_id")
      .distinct()
      .write
      .format("csv")

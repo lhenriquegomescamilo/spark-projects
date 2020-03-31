@@ -82,8 +82,6 @@ object Coronavirus {
 
   def get_coronavirus(spark: SparkSession,country:String,day:String) {
 
-    val windowSpec = Window.partitionBy("ad_id").orderBy("utc_timestamp")
-
     val raw = spark.read
       .format("parquet")
       .option("basePath", "/datascience/geo/safegraph/")
@@ -105,7 +103,7 @@ object Coronavirus {
 
     // Select sample of 1000 users
     val initial_seed = spark.read
-      .load("/datascience/custom/coronavirus_seed_%s".format(country))
+      .load("/datascience/coronavirus/coronavirus_seed/day=%s/country=%s".format(day,country))
       .select("device_id", "geo_hash", "window")
 
     // Get the distinct moments to filter the raw data
@@ -115,12 +113,15 @@ object Coronavirus {
     // Join raw data with the moments and store
     raw
       .join(moments, Seq("geo_hash", "window"))
+      .withColumn("day",lit(day))
+      .withColumn("country",lit(country))
       .write
       .format("parquet")
+      .partitionBy("day","country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_%s".format(country))
+      .save("/datascience/coronavirus/coronavirus_contacts/")
 
-    val joint = spark.read.load("/datascience/custom/coronavirus_contacts_%s".format(country))
+    val joint = spark.read.load("/datascience/coronavirus/coronavirus_contacts/day=%s/country=%s".format(day,country))
 
     // Calculate it by day
     val udfDay = udf((d: String) => d.substring(0, 8))
@@ -133,13 +134,16 @@ object Coronavirus {
       .withColumn("day", udfDay(col("window")))
       .groupBy("original_id", "day")
       .agg(collect_set(col("device_id")).as("devices"))
+      .withColumn("day",lit(day))
+      .withColumn("country",lit(country))
       .write
       .format("parquet")
+      .partitionBy("day","country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_per_day_%s".format(country))
+      .save("/datascience/coronavirus/coronavirus_contacts_per_day/")
 
   }
-  def generate_seed(spark:SparkSession,country:String){
+  def generate_seed(spark:SparkSession,country:String,day:String){
     val sc = spark.sparkContext
     val conf = sc.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
@@ -147,9 +151,10 @@ object Coronavirus {
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(0)
 
-    //val days = (0 until 24).map(start.minusDays(_)).map(_.toString(format))
-    val days = List("20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200314","20200313","20200312","20200311","20200310",
-                    "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
+    // Get sample of 10K seed users per day
+    val days = (0 until 10).map(start.minusDays(_)).map(_.toString(format))
+    //val days = List("20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200314","20200313","20200312","20200311","20200310",
+                    //"20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
     val path = "/datascience/geo/safegraph/"
     val dfs = days
       .map(day => path + "day=%s/".format(day) + "country=%s".format(country))
@@ -166,8 +171,15 @@ object Coronavirus {
       )
 
     val users = dfs.reduce((df1, df2) => df1.union(df2)).select("device_id").distinct
-    
-    spark.read.format("parquet").option("basePath", "/datascience/geo/safegraph/").load("/datascience/geo/safegraph/day=202003*/country=%s/".format(country))
+
+    // Now calculate all the moments for the seed users
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    spark.read
+          .option("basePath", path)
+          .parquet(hdfs_files: _*)
           .withColumnRenamed("ad_id", "device_id")
           .withColumn("device_id", lower(col("device_id")))
           .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -181,19 +193,22 @@ object Coronavirus {
           .drop("Time")
           .join(users,Seq("device_id"),"inner")
           .select("device_id","geo_hash", "window")
+          .withColumn("day",lit(day))
+          .withColumn("country",lit(country))
           .distinct
           .write
           .format("parquet")
+          .partitionBy("day","country")
           .mode(SaveMode.Overwrite)
-          .save("/datascience/custom/coronavirus_seed_%s".format(country))
+          .save("/datascience/custom/coronavirus_seed/")
 
   }
 
-  def coronavirus_barrios(spark:SparkSession,country:String, barrios:DataFrame, name:String){
+  def coronavirus_barrios(spark:SparkSession,country:String, barrios:DataFrame, name:String, day:String){
     val udfGeo = udf((d: String) => d.substring(0, 7))
     
     val initial_seed = spark.read
-      .load("/datascience/custom/coronavirus_seed_%s".format(country))
+      .load("/datascience/custom/coronavirus_seed/day=%s/country=%s".format(day,country))
       .select("device_id", "geo_hash", "window")
 
     // val barrios_gcba =  spark.read.format("csv")
@@ -203,7 +218,7 @@ object Coronavirus {
     //                     .withColumnRenamed("geo_hashote","geo_hash_join")
     
     val contacts = spark.read
-                        .load("/datascience/custom/coronavirus_contacts_%s".format(country))
+                        .load("/datascience/custom/coronavirus_contacts/day=%s/country=%s".format(day,country))
                         .withColumn("geo_hash_join",udfGeo(col("geo_hash")))
 
     val joint = contacts.join(broadcast(barrios),Seq("geo_hash_join"),"inner")
@@ -219,10 +234,13 @@ object Coronavirus {
       .withColumn("day", udfDay(col("window")))
       .groupBy("original_id", "day",name)
       .agg(collect_set(col("device_id")).as("devices"))
+      .withColumn("day",lit(day))
+      .withColumn("country",lit(country))
       .write
       .format("parquet")
+      .partitionBy("day","country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_barrios_%s".format(country))
+      .save("/datascience/custom/coronavirus_contacts_barrios")
 
   }
 
@@ -237,7 +255,16 @@ object Coronavirus {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
     
-    get_data_pois(spark)
+    
+    //get_data_pois(spark)
+    generate_seed(spark,"argentina","20200330")
+    get_coronavirus(spark,"argentina","20200330")
+    val barrios_ar =  spark.read.format("csv")
+                        .option("header",true)
+                        .option("delimiter",",")
+                        .load("/datascience/geo/Reports/GCBA/Coronavirus/")
+                        .withColumnRenamed("geo_hashote","geo_hash_join")
+    coronavirus_barrios(spark,"argentina",barrios_ar,"BARRIO","20200330")
 
   }
 }

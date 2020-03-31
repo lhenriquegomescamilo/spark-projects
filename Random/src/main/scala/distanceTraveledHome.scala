@@ -340,16 +340,35 @@ hash_user
 ///////////Partidos
 //QUeremos un cálculo por municipio:
 //Desagregado por entidad y municipio
-val entidad = spark.read.format("csv").option("header",true).option("delimiter",",")
+val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
 .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+.withColumnRenamed("geo_hashote","geo_hash_7")
 
-//Alternativa 2
+
+//Acá por provincia
+val output_file_provincia = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_provincia_%s".format(today,country)
+val provincia = spark.read.format("parquet")
+.load(output_file)
+.join(entidad,Seq("geo_hash_7"))
+.groupBy("PROVCODE","PROVINCIA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("PROVCODE","PROVINCIA","Day").agg(
+  count("device_id") as "devices",
+  avg("geo_hash_7") as "geo_hash_7_avg",
+  stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save(output_file_provincia)
+
+//Acá por partido
 val output_file_partido = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_partido_%s".format(today,country)
 val partido = spark.read.format("parquet")
 .load(output_file)
 .join(entidad,Seq("geo_hash_7"))
 .groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("NOM_ENT","CVEGEO","NOM_MUN","Day").agg(
+.groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","Day").agg(
   count("device_id") as "devices",
   avg("geo_hash_7") as "geo_hash_7_avg",
   stddev_pop("geo_hash_7") as "geo_hash_7_std")

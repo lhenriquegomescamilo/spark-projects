@@ -46,6 +46,8 @@ import scala.util.Random.shuffle
 
 object GetMadids {
   def madids_startapp( spark: SparkSession,date: String){
+    
+
     val conf = new Configuration()
     conf.set("fs.defaultFS", "hdfs://rely-hdfs")
 
@@ -86,8 +88,7 @@ object GetMadids {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    val format = "yyyyMMdd"
-    val date = DateTime.now.toString(format)
+    val date = DateTime.now().toString("yyyyMM")
     madids_factual(spark,date)
     madids_startapp(spark,date)
 

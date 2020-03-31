@@ -3016,6 +3016,72 @@ object RandomTincho {
     }
   }
 
+  def report_dh_fede(spark: SparkSession) {
+    val pii = spark.read
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country = 'BR'")
+    val nids = pii.filter("nid_sh2 is not null").select("nid_sh2", "device_id","device_type")
+    val bridge = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/data/tmp/Bridge_Linkage_File_Retargetly_LATAM_ALL.csv")
+      .filter("country = 'br'")
+      .withColumnRenamed("email_sha256", "ml_sh2")
+      .withColumnRenamed("advertising_id", "device_id")
+      .withColumnRenamed("platform", "device_type")
+      .select("ml_sh2", "device_id","device_type")
+
+    val emails = pii
+      .filter("ml_sh2 is not null")
+      .select("ml_sh2", "device_id","device_type")
+      .union(bridge)
+    
+    nids
+      .withColumnRenamed("nid_sh2", "pii")
+      .union(emails.withColumnRenamed("ml_sh2", "pii"))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/all_piis_dh_fede")
+
+    val all_piis = spark.read.load("/datascience/custom/all_piis_dh_fede")
+
+    val mapeo = Map(
+      "241141" -> "3862661122c5864e6b0872554dc76a60",
+      "241143" -> "62aafe9b6c0cbe3331381982616fab53",
+      "241145" -> "67f6425c910c0a6f5feed81e1094b8be",
+      "241147" -> "b1530597217a23c1e76c022ca43261de",
+      "271165" -> "4a5594ff767d0a59b660987cd06f0176"
+    )
+    val files = List("241141", "241143", "241145", "241147", "271165")
+    var df = spark.emptyDataFrame
+    var local_piis = spark.emptyDataFrame
+
+    for (f <- files) {
+      df = spark.read
+        .format("csv")
+        .option("header", "true")
+        .load("/data/jobs/activator/%s".format(mapeo(f)))
+        .withColumnRenamed("ds_email_lower", "ml_sh2")
+        .withColumnRenamed("nr_cpf", "nid_sh2")
+
+      local_piis = df
+        .select("ml_sh2")
+        .withColumnRenamed("ml_sh2", "pii")
+        .union(df.select("nid_sh2").withColumnRenamed("nid_sh2", "pii"))
+
+      all_piis
+          .join(local_piis, Seq("pii"), "inner")
+          .select("device_id","device_type")
+          .distinct
+          .repartition(1)
+          .write
+          .format("csv")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/dh_devices_%s".format(f))        
+    }
+  }
+
   def get_numbers(spark: SparkSession) {
     val pii = spark.read
       .load("/datascience/pii_matching/pii_tuples/day=2020*")
@@ -3246,11 +3312,97 @@ object RandomTincho {
 
   }
 
+  def generate_kepler(spark:SparkSession,country:String){
+    
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(0)
+    val path = "/datascience/geo/safegraph/"
+    val days = (0 until 20).map(start.minusDays(_)).map(_.toString(format))
+
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    val udfString = udf((d: Int) => d.toString.take(5))
+    // Get Data Raw
+    spark.read
+          .option("basePath", path)
+          .parquet(hdfs_files: _*)
+          .withColumnRenamed("ad_id", "device_id")
+          .withColumn("device_id", lower(col("device_id")))
+          //.withColumn("timestamp_raw", to_timestamp(from_unixtime(col("utc_timestamp"))))
+          .withColumnRenamed("utc_timestamp", "timestamp_raw") 
+          .withColumn(
+            "geohash",
+            ((abs(col("latitude").cast("float")) * 10)
+              .cast("int") * 10000) + (abs(
+              col("longitude").cast("float") * 100
+            ).cast("int"))
+          )
+          .withColumn("geohash",udfString(col("geohash")))
+          .select("device_id","timestamp_raw","geohash","latitude","longitude")
+          .write
+          .format("parquet")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/tmp_geohashes")
+
+    //val udfCut = udf((d: String) => d.toString.substring(0, 5))
+
+    val raw = spark.read.load("/datascience/custom/tmp_geohashes")
+                   // .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
+    
+    // Generate one lat/lon per geohash
+    raw.select("geohash","latitude","longitude")
+        .dropDuplicates("geohash")
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/unique_geohashes_%s".format(country))
+
+    // Get users from airport and take the oldeset timestamp
+    val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").asc)
+    
+    spark.read.format("csv")
+        .option("header",true)
+        .option("delimiter","\t")
+        .load("/datascience/geo/raw_output/airportsCO_30d_CO_30-3-2020-16h")
+        .withColumn("rn", row_number.over(w))
+        .where(col("rn") === 1)
+        .drop("rn")
+        .withColumnRenamed("timestamp","timestamp_airport")
+        .select("device_id","timestamp_airport","audience")
+        .write
+        .format("parquet")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/users_airport_%s".format(country))
+
+    val users_airport = spark.read.load("/datascience/custom/users_airport_%s".format(country))
+
+    val joint = raw.join(users_airport,Seq("device_id"),"inner")
+                    .withColumn("timestamp_raw", col("timestamp_raw").cast(IntegerType))
+                    .withColumn("timestamp_airport", col("timestamp_airport").cast(IntegerType))
+                    .filter("timestamp_raw > timestamp_airport") // filter timestamp
+                    .groupBy("geohash")
+                    .agg(first(col("latitude")).as("lat"),
+                        first(col("longitude")).as("lon"),
+                        first(col("timestamp_raw")).as("timestamp"),
+                        approx_count_distinct(col("device_id"), 0.02).as("device_unique")
+                    )
+    joint.write
+        .format("csv")
+        .mode(SaveMode.Overwrite)
+        .save("/datascience/custom/kepler_%s".format(country))
+  }
+
   def main(args: Array[String]) {
 
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
-
+ 
     val spark = SparkSession.builder
       .appName("Random de Tincho")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
@@ -3268,13 +3420,18 @@ object RandomTincho {
     //                     .withColumnRenamed("geo_hash_7","geo_hash_join")
 
       
-    generate_seed(spark,"argentina")
-    get_coronavirus(spark,"argentina")
-    val barrios =  spark.read.format("csv")
-                    .option("header",true)
-                    .option("delimiter",",")
-                    .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-                    .withColumnRenamed("geo_hashote","geo_hash_join")
-    coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
+    // generate_seed(spark,"argentina")
+    // get_coronavirus(spark,"argentina")
+    // val barrios =  spark.read.format("csv")
+    //                 .option("header",true)
+    //                 .option("delimiter",",")
+    //                 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
+    //                 .withColumnRenamed("geo_hashote","geo_hash_join")
+    // coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
+    //report_dh_fede(spark)
+    generate_kepler(spark,"CO")
+    
+   
+
   }
 }
