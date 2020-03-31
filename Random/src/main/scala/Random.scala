@@ -5011,9 +5011,15 @@ object Random {
         .agg(collect_set("_c2") as "segments")
         .withColumnRenamed("_c1", "device_id")
         .join(originals, Seq("device_id"), "left_anti")
+        .withColumn("element", floor(rand() * size(col("segments"))))
         .withColumn(
           "segments",
-          col("segments").getItem(floor(rand() * size(col("segments"))))
+          col("segments").getItem(
+            when(col("element") === 3, 3).otherwise(
+              when(col("element") === 2, 2)
+                .otherwise(when(col("element") === 1, 1).otherwise(0))
+            )
+          )
         )
         .write
         .format("csv")
