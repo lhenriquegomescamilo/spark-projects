@@ -5024,8 +5024,6 @@ object Random {
 
   //   val moments_level1 = level1.select("geo_hash", "window").distinct()
 
-
-    
   // }
 
   /*****************************************************/
@@ -5051,9 +5049,11 @@ object Random {
 
     val selectSegment = udf(
       (segments: Seq[String]) =>
-        if (segments.contains("303359")) "303359"
-        else if (segments.contains("303357")) "303357"
-        else segments.last
+        if (segments.contains("303353"))
+          segments.filter(s => s != "303353").mkString(",")
+        else if (segments.contains("303361"))
+          segments.filter(s => s != "303361").mkString(",")
+        else segments.filter(s => s != "303359").mkString(",")
     )
 
     for (path <- paths) {
