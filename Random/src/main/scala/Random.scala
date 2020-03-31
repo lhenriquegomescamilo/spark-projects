@@ -4985,10 +4985,11 @@ object Random {
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    // import 
+    // import
 
     val getRandomElement = udf(
-      (segments: Seq[String]) => scala.util.Random.shuffle(segments.toList).toList(0).toString
+      (segments: Seq[String]) =>
+        scala.util.Random.shuffle(segments.toList).toList(0).toString
     )
 
     for (country <- List("AR", "BR", "CL", "CO", "MX", "PE")) {
@@ -5020,7 +5021,14 @@ object Random {
           "segments",
           getRandomElement(col("segments"))
         )
-        .withColumn("segments", when(col("segments")==="302875", "302881").otherwise(when(col("segments")==="302877", "302879").otherwise(when(col("segments")==="302879", "302877").otherwise())))
+        .withColumn(
+          "segments",
+          when(col("segments") === "302875", "302881").otherwise(
+            when(col("segments") === "302877", "302879").otherwise(
+              when(col("segments") === "302879", "302877").otherwise("302875")
+            )
+          )
+        )
         .write
         .format("csv")
         .option("sep", "\t")
