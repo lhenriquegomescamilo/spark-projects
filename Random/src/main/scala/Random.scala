@@ -4974,6 +4974,60 @@ object Random {
       .save(outputPath)
   }
 
+  def getContacts(spark: SparkSession) = {
+    val country = "argentina"
+
+    val raw = spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/geo/safegraph/")
+      .load(
+        "/datascience/geo/safegraph/day=202003*/country=%s/".format(country)
+      )
+      .withColumnRenamed("ad_id", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+      .withColumn("window", date_format(col("Time"), "mm"))
+      .withColumn(
+        "window",
+        when(col("window") > 40, 3)
+          .otherwise(when(col("window") > 20, 2).otherwise(1))
+      )
+      .withColumn("window", concat(col("Hour"), col("window")))
+      .drop("Time")
+
+    val initial_seed = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load(
+        "/datascience/geo/raw_output/puntos_contagio_30d_mexico_26-3-2020-14h"
+      )
+      .select("device_id")
+
+    raw
+      .select("device_id", "geo_hash", "window")
+      .join(initial_seed, Seq("device_id"))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save(
+        "/datascience/custom/all_points_airport_cba_seed"
+          .format(country)
+      )
+
+    val all_points_seed = spark.read
+      .load(
+        "/datascience/custom/all_points_airport_cba_seed"
+      )
+      .select("device_id", "geo_hash", "window")
+
+    val moments_level1 = level1.select("geo_hash", "window").distinct()
+
+
+    
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -4997,8 +5051,8 @@ object Random {
 
     val selectSegment = udf(
       (segments: Seq[String]) =>
-        if (segments.contains("302879")) "302879"
-        else if (segments.contains("302877")) "302877"
+        if (segments.contains("303359")) "303359"
+        else if (segments.contains("303357")) "303357"
         else segments.last
     )
 
