@@ -5014,12 +5014,7 @@ object Random {
         .withColumn("element", floor(rand() * size(col("segments"))))
         .withColumn(
           "segments",
-          col("segments").getItem(
-            when(col("element") === 3, 3).otherwise(
-              when(col("element") === 2, 2)
-                .otherwise(when(col("element") === 1, 1).otherwise(0))
-            )
-          )
+          col("segments").getItem(0)
         )
         .write
         .format("csv")
