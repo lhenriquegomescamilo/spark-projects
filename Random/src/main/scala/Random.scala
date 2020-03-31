@@ -4986,25 +4986,42 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    spark.read
-      .format("parquet")
-      .option("basePath", "/datascience/geo/safegraph")
-      .load("/datascience/geo/safegraph/day=202003*/country=CL/")
-      .withColumn(
-        "geohash",
-        ((abs(col("latitude").cast("float")) * 1000)
-          .cast("long") * 100000) + (abs(
-          col("longitude").cast("float") * 1000
-        ).cast("long"))
-      )
-      .groupBy("ad_id")
-      .agg(
-        approxCountDistinct("geohash") as "geohashes",
-        count("geohash") as "occurrences"
-      )
-      .write
-      .format("parquet")
-      .mode("overwrite")
-      .save("/datascience/custom/cl_geo_movement")
+    val paths = List(
+      "/datascience/misc/covid_ar_to_push_pure",
+      "/datascience/misc/covid_BR_to_push",
+      "/datascience/misc/covid_CL_to_push",
+      "/datascience/misc/covid_CO_to_push",
+      "/datascience/misc/covid_MX_to_push",
+      "/datascience/misc/covid_PE_to_push"
+    )
+
+    val selectSegment = udf(
+      (segments: Seq[String]) =>
+        if (segments.contains("302879")) "302879"
+        else if (segments.contains("302877")) "302877"
+        else segments.last
+    )
+
+    for (path <- paths) {
+      spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .load(path)
+        .groupBy("_c0", "_c1")
+        .agg(collect_set("_c2") as "_c2")
+        .filter("size(_c2)>1")
+        .withColumn("_c2", selectSegment(col("_c2")))
+        .select("_c0", "_c1", "_c2")
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode("overwrite")
+        .save(
+          "/datascience/custom/" + path
+            .split("/")
+            .last
+            .substring(0, 8) + "_to_delete_pure"
+        )
+    }
   }
 }
