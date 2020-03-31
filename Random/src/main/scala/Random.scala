@@ -4985,10 +4985,10 @@ object Random {
         .getOrCreate()
 
     Logger.getRootLogger.setLevel(Level.WARN)
-    import scala.util.Random
+    // import 
 
     val getRandomElement = udf(
-      (segments: Seq[String]) => Random.shuffle(segments.toList)(0)
+      (segments: Seq[String]) => scala.util.Random.shuffle(segments.toList)(0)
     )
 
     for (country <- List("AR", "BR", "CL", "CO", "MX", "PE")) {
