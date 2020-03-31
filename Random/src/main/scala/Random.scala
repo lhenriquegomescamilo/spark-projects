@@ -4988,7 +4988,7 @@ object Random {
     // import 
 
     val getRandomElement = udf(
-      (segments: Seq[String]) => scala.util.Random.shuffle(segments.toList)(0)
+      (segments: Seq[String]) => scala.util.Random.shuffle(segments.toList).toList(0).toString
     )
 
     for (country <- List("AR", "BR", "CL", "CO", "MX", "PE")) {
