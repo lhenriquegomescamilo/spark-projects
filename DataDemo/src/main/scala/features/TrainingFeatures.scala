@@ -46,12 +46,23 @@ object TrainingFeatures {
     val dataset = spark.read
       .format("parquet")
       .load(last_dataset_path)
+      .withColumn("urls", split(col("urls"), "\u0001"))
 
     // Now we perform the join
     val dataset_gt = dataset
       .join(gt, Seq("device_id"), "inner")
       .withColumn("country", lit(country))
       .cache()
+
+    // Save the gt
+    dataset_gt
+      .select("device_id", "label", "country")
+      .distinct()
+      .write
+      .format("parquet")
+      .partitionBy("country")
+      .mode("overwrite")
+      .save("/datascience/data_demo/training/labels")
 
     // First we store the user-agent
     dataset_gt

@@ -222,6 +222,7 @@ object Dataset {
         .distinct()
         .groupBy("device_id")
         .agg(collect_list("url") as "urls")
+        .withColumn("urls", concat_ws("\u0001", col("urls")))
 
     val joint = user_agents
       .join(urls, Seq("device_id"), "left")
