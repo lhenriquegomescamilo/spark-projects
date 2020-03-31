@@ -5011,7 +5011,6 @@ object Random {
         .agg(collect_set("_c2") as "segments")
         .withColumnRenamed("_c1", "device_id")
         .join(originals, Seq("device_id"), "left_anti")
-        .withColumn("element", floor(rand() * size(col("segments"))))
         .withColumn(
           "segments",
           col("segments").getItem(0)
