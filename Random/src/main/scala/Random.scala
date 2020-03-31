@@ -5023,6 +5023,11 @@ object Random {
         )
         .withColumn(
           "segments",
+          when(col("segments") === "302877", getRandomElement(col("segments")))
+            .otherwise(col("segments"))
+        )
+        .withColumn(
+          "segments",
           when(col("segments") === "302875", "302881").otherwise(
             when(col("segments") === "302877", "302879").otherwise(
               when(col("segments") === "302879", "302877").otherwise("302875")
