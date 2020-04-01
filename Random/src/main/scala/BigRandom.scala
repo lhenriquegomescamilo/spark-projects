@@ -368,16 +368,12 @@ def getDataPipeline(
 
 
     val getSeg = udf((lista: Seq[Integer]) =>
-     if (lista.length == 1) lista.last.toInt
-     else
-      {if (lista.contains(303353)) 303353.toInt
-        else if(lista.contains(303361)) 303361.toInt
-        else if(lista.contains(303357)) 303357.toInt
-        else lista.last.toInt}
-        )   
+    if (lista.contains(303353)) 303353
+    else if(lista.contains(303361)) 303361
+    else if(lista.contains(303357)) 303357
+    else lista.last.toInt
     
-    //val countries = "AR,BR,CL,CO,MX,PE".split(",").toList
-    val countries = "BR".split(",").toList
+    val countries = "AR,BR,CL,CO,MX,PE".split(",").toList
     
     for (country <- countries) {    
 
@@ -387,18 +383,19 @@ def getDataPipeline(
      else
       "/datascience/misc/covid_%s_to_push".format(country)
 
-    var df = spark.read.format("csv")
+    spark.read.format("csv")
     .option("sep", "\t")
     .load(path)  
     .toDF("device_type","device_id","segment")
     .groupBy("device_type","device_id")
     .agg(collect_list("segment").as("segment"))
-    .withColumn("segment",getSeg(col("segment")))
-
-    println(df.limit(3).show())  
-    
-    println(df.groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices")).show())   
-
+    .withColumn("segment",getSeg(col("segment"))) 
+    .select("device_type", "device_id", "segment")
+    .write
+    .format("csv")
+    .option("sep", "\t")
+    .mode("overwrite")
+    .save("/datascience/misc/covid_%s_to_push_new_pure".format(country))
 
     }
 
