@@ -367,7 +367,7 @@ def getDataPipeline(
     .getOrCreate()
 
 
-    val getSeg = udf((lista: List[Integer]) =>
+    val getSeg = udf((lista: Seq[Integer]) =>
      if (lista.length == 1) lista.last.toInt
      else
       {if (lista.contains(303353)) 303353.toInt
