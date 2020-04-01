@@ -17,7 +17,7 @@ import org.apache.spark.sql.functions.input_file_name
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object distanceTraveledHomeMX {
+object distanceTraveled_CO {
   
 
 
@@ -287,7 +287,7 @@ spacelapse
 
 //Esta función obtiene los geohashes los últimos 30 días y mira una desagregacióon por barrio para Argentina. 
 
-val country = "mexico"
+val country = "CO"
 
 val timezone = Map("argentina" -> "GMT-3",
                        "mexico" -> "GMT-5",
@@ -298,8 +298,6 @@ val timezone = Map("argentina" -> "GMT-3",
     //setting timezone depending on country
 spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
-
-
 val today = (java.time.LocalDate.now).toString
 
 val raw = get_safegraph_data(spark,"30","1",country)
@@ -307,7 +305,13 @@ val raw = get_safegraph_data(spark,"30","1",country)
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
-.withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
+.withColumn(
+"geo_hash_7",
+((abs(col("latitude").cast("float")) * 1000)
+.cast("long") * 100000) + (abs(
+col("longitude").cast("float") * 1000
+).cast("long"))
+)
 
 //Vamos a usarlo para calcular velocidad y distancia al hogar
 raw.persist()
@@ -317,7 +321,6 @@ val geo_hash_visits = raw
 .withColumn("country",lit(country))
 
 val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
-
 
 geo_hash_visits
  .write
@@ -340,18 +343,22 @@ hash_user
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
+///////////Partidos
+//QUeremos un cálculo por municipio:
 //Desagregado por entidad y municipio
+/*
 val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/MX_municipal_Updated_mexico_sjoin_polygon")
+.load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+.withColumnRenamed("geo_hashote","geo_hash_7")
 
 
-//Acá lo agregamos por estado
-val output_file_estado = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_estado_%s".format(today,country)
-val estado = spark.read.format("parquet")
+//Acá por provincia
+val output_file_provincia = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_provincia_%s".format(today,country)
+val provincia = spark.read.format("parquet")
 .load(output_file)
 .join(entidad,Seq("geo_hash_7"))
-.groupBy("NOM_ENT","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("NOM_ENT","Day").agg(
+.groupBy("PROVCODE","PROVINCIA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("PROVCODE","PROVINCIA","Day").agg(
   count("device_id") as "devices",
   avg("geo_hash_7") as "geo_hash_7_avg",
   stddev_pop("geo_hash_7") as "geo_hash_7_std")
@@ -360,25 +367,75 @@ val estado = spark.read.format("parquet")
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save(output_file_estado)
+.save(output_file_provincia)
 
-
-//Acá lo agregamos por municipio
-val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_municipio_%s".format(today,country)
-val municipio = spark.read.format("parquet")
+//Acá por partido
+val output_file_partido = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_partido_%s".format(today,country)
+val partido = spark.read.format("parquet")
 .load(output_file)
 .join(entidad,Seq("geo_hash_7"))
-.groupBy("NOM_ENT","CVEGEO","NOM_MUN","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("NOM_ENT","CVEGEO","NOM_MUN","Day").agg(
+.groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","Day").agg(
   count("device_id") as "devices",
   avg("geo_hash_7") as "geo_hash_7_avg",
   stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save(output_file_partido)
+
+///////////////barrios
+//Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
+val barrios = spark.read.format("csv").option("header",true).option("delimiter",",")
+.load("/datascience/geo/Reports/GCBA/Coronavirus/")
+.withColumnRenamed("geo_hashote","geo_hash_7")
+
+
+//Alternativa 1
+//Path home ARG
+
+//Nos quedamos con los usuarios de los homes que viven en caba
+val homes = spark.read.format("parquet").load("/datascience/data_insights/homes/day=2020-03/country=AR")
+val geocode_barrios = spark.read.format("csv").option("header",true).load("/datascience/geo/Reports/GCBA/Coronavirus/Geocode_Barrios_CABA.csv")
+
+val homes_barrio = homes.select("device_id","GEOID").join(geocode_barrios,Seq("GEOID")).drop("GEOID")
+
+val output_file_tipo_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_CLASE1_%s".format(today,country)
+
+spark.read.format("parquet")
+.load(output_file)
+.withColumn("device_id",lower(col("device_id")))
+.groupBy("device_id","Day").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.join(homes_barrio,Seq("device_id"))
+.groupBy("BARRIO","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std",count("device_id") as "devices")
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save(output_file_tipo_1)
+
+
+
+//Alternativa 2
+val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_CLASE2_%s".format(today,country)
+val tipo2 = spark.read.format("parquet")
+.load(output_file)
+.join(barrios,Seq("geo_hash_7"))
+.groupBy("COMUNA","BARRIO","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("COMUNA","BARRIO","Day").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
 .save(output_file_tipo_2)
+
+
+*/
+
 
 
 }

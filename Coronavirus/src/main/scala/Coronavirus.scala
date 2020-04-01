@@ -134,7 +134,9 @@ object Coronavirus {
       .withColumn("day", udfDay(col("window")))
       .groupBy("original_id", "day")
       .agg(collect_set(col("device_id")).as("devices"))
-      .withColumn("day",lit(day))
+      .withColumn("contacts", size(col("devices"))-1) // Calculate number of contacts for each device
+      .groupBy("day")
+      .agg(mean("contacts") as "contacts")
       .withColumn("country",lit(country))
       .write
       .format("parquet")
@@ -200,7 +202,7 @@ object Coronavirus {
           .format("parquet")
           .partitionBy("day","country")
           .mode(SaveMode.Overwrite)
-          .save("/datascience/custom/coronavirus_seed/")
+          .save("/datascience/coronavirus/coronavirus_seed/")
 
   }
 
@@ -208,17 +210,11 @@ object Coronavirus {
     val udfGeo = udf((d: String) => d.substring(0, 7))
     
     val initial_seed = spark.read
-      .load("/datascience/custom/coronavirus_seed/day=%s/country=%s".format(day,country))
+      .load("/datascience/coronavirus/coronavirus_seed/day=%s/country=%s".format(day,country))
       .select("device_id", "geo_hash", "window")
-
-    // val barrios_gcba =  spark.read.format("csv")
-    //                     .option("header",true)
-    //                     .option("delimiter",",")
-    //                     .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-    //                     .withColumnRenamed("geo_hashote","geo_hash_join")
     
     val contacts = spark.read
-                        .load("/datascience/custom/coronavirus_contacts/day=%s/country=%s".format(day,country))
+                        .load("/datascience/coronavirus/coronavirus_contacts/day=%s/country=%s".format(day,country))
                         .withColumn("geo_hash_join",udfGeo(col("geo_hash")))
 
     val joint = contacts.join(broadcast(barrios),Seq("geo_hash_join"),"inner")
@@ -234,16 +230,18 @@ object Coronavirus {
       .withColumn("day", udfDay(col("window")))
       .groupBy("original_id", "day",name)
       .agg(collect_set(col("device_id")).as("devices"))
+      .withColumn("contacts", size(col("devices"))-1) // Calculate number of contacts for each device
+      .groupBy(name)
+      .agg(mean("contacts") as "contacts")
       .withColumn("day",lit(day))
       .withColumn("country",lit(country))
       .write
       .format("parquet")
       .partitionBy("day","country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_barrios")
+      .save("/datascience/coronavirus/coronavirus_contacts_barrios")
 
   }
-
 
   def main(args: Array[String]) {
 
@@ -255,16 +253,48 @@ object Coronavirus {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
     
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    val since = 1
+    val ndays = 15
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since + ndays)
+    val end = DateTime.now.minusDays(since)
+
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
     
-    //get_data_pois(spark)
-    generate_seed(spark,"argentina","20200330")
-    get_coronavirus(spark,"argentina","20200330")
     val barrios_ar =  spark.read.format("csv")
                         .option("header",true)
                         .option("delimiter",",")
                         .load("/datascience/geo/Reports/GCBA/Coronavirus/")
                         .withColumnRenamed("geo_hashote","geo_hash_join")
-    coronavirus_barrios(spark,"argentina",barrios_ar,"BARRIO","20200330")
+
+    val barrios_mx = spark.read
+                          .format("csv")
+                          .option("sep","\t")
+                          .option("header","true")
+                          .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
+
+
+    for (day <- days){
+      println(day)
+      println("\tAR")
+      // AR
+      generate_seed(spark,"argentina",day)
+      get_coronavirus(spark,"argentina",day)  
+      coronavirus_barrios(spark,"argentina",barrios_ar,"BARRIO",day)
+      println("\tMX")
+
+      // MX
+      generate_seed(spark,"mexico",day)
+      get_coronavirus(spark,"mexico",day)  
+      coronavirus_barrios(spark,"mexico",barrios_mx,"NOM_MUN",day)
+
+    }
+
+    
 
   }
 }

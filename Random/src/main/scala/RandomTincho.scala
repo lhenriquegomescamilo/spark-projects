@@ -3198,7 +3198,7 @@ object RandomTincho {
     val start = DateTime.now.minusDays(0)
 
     //val days = (0 until 24).map(start.minusDays(_)).map(_.toString(format))
-    val days = List("20200326","20200325","20200324","20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200314","20200313","20200312","20200311","20200310",
+    val days = List("20200331","20200330","20200329","20200328","20200327","20200326","20200325","20200324","20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200314","20200313","20200312","20200311","20200310",
                     "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
     val path = "/datascience/geo/safegraph/"
     val dfs = days
@@ -3261,12 +3261,12 @@ object RandomTincho {
         Seq("geo_hash", "window")
       )
       .withColumn("day", udfDay(col("window")))
-      .groupBy("original_id", "day",name)
+      .groupBy("original_id", "day",name,"FNA")
       .agg(collect_set(col("device_id")).as("devices"))
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_barrios_%s".format(country))
+      .save("/datascience/custom/coronavirus_contacts_partidos_%s".format(country))
 
   }
 
@@ -3318,51 +3318,6 @@ object RandomTincho {
     val conf = sc.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(0)
-    val path = "/datascience/geo/safegraph/"
-    val days = (0 until 20).map(start.minusDays(_)).map(_.toString(format))
-
-    val hdfs_files = days
-      .map(day => path + "/day=%s/country=%s".format(day, country))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-
-    val udfString = udf((d: Int) => d.toString.take(5))
-    // Get Data Raw
-    spark.read
-          .option("basePath", path)
-          .parquet(hdfs_files: _*)
-          .withColumnRenamed("ad_id", "device_id")
-          .withColumn("device_id", lower(col("device_id")))
-          //.withColumn("timestamp_raw", to_timestamp(from_unixtime(col("utc_timestamp"))))
-          .withColumnRenamed("utc_timestamp", "timestamp_raw") 
-          .withColumn(
-            "geohash",
-            ((abs(col("latitude").cast("float")) * 10)
-              .cast("int") * 10000) + (abs(
-              col("longitude").cast("float") * 100
-            ).cast("int"))
-          )
-          .withColumn("geohash",udfString(col("geohash")))
-          .select("device_id","timestamp_raw","geohash","latitude","longitude")
-          .write
-          .format("parquet")
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/custom/tmp_geohashes")
-
-    //val udfCut = udf((d: String) => d.toString.substring(0, 5))
-
-    val raw = spark.read.load("/datascience/custom/tmp_geohashes")
-                   // .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
-    
-    // Generate one lat/lon per geohash
-    raw.select("geohash","latitude","longitude")
-        .dropDuplicates("geohash")
-        .write
-        .format("parquet")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/custom/unique_geohashes_%s".format(country))
-
     // Get users from airport and take the oldeset timestamp
     val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").asc)
     
@@ -3375,6 +3330,7 @@ object RandomTincho {
         .drop("rn")
         .withColumnRenamed("timestamp","timestamp_airport")
         .select("device_id","timestamp_airport","audience")
+        .withColumn("device_id", lower(col("device_id")))
         .write
         .format("parquet")
         .mode(SaveMode.Overwrite)
@@ -3382,20 +3338,122 @@ object RandomTincho {
 
     val users_airport = spark.read.load("/datascience/custom/users_airport_%s".format(country))
 
-    val joint = raw.join(users_airport,Seq("device_id"),"inner")
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(0)
+    val path = "/datascience/geo/safegraph/"
+    val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    // Get Data Raw and join with users from airport
+    val joint = spark.read
+                    .option("basePath", path)
+                    .parquet(hdfs_files: _*)
+                    .withColumnRenamed("ad_id", "device_id")
+                    .withColumn("device_id", lower(col("device_id")))
+                    .withColumnRenamed("utc_timestamp", "timestamp_raw") 
+                    .withColumn(
+                      "geohash",
+                      ((abs(col("latitude").cast("float")) * 10)
+                        .cast("int") * 10000) + (abs(
+                        col("longitude").cast("float") * 100
+                      ).cast("int"))
+                    )
+                    .select("device_id","timestamp_raw","geohash","latitude","longitude")
+                    .join(users_airport,Seq("device_id"),"inner")
                     .withColumn("timestamp_raw", col("timestamp_raw").cast(IntegerType))
                     .withColumn("timestamp_airport", col("timestamp_airport").cast(IntegerType))
                     .filter("timestamp_raw > timestamp_airport") // filter timestamp
                     .groupBy("geohash")
-                    .agg(first(col("latitude")).as("lat"),
-                        first(col("longitude")).as("lon"),
+                    .agg(first(col("latitude")).as("latitude"),
+                        first(col("longitude")).as("longitude"),
                         first(col("timestamp_raw")).as("timestamp"),
                         approx_count_distinct(col("device_id"), 0.02).as("device_unique")
                     )
-    joint.write
-        .format("csv")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/custom/kepler_%s".format(country))
+    joint.repartition(1)
+          .write
+          .format("csv")
+          .option("header","true")
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/kepler_%s".format(country))
+  }
+
+    def get_monthly_data_homes(spark:SparkSession, country:String): DataFrame = {
+      val sc = spark.sparkContext
+      val conf = sc.hadoopConfiguration
+      val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+      
+      val format = "yyyy-MM"
+      val start = DateTime.now.minusDays(0)
+      val path = "/datascience/data_insights/homes/"
+
+      val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+
+      val hdfs_files = days
+        .map(day => path + "day=%s/country=%s".format(day, country))
+        .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+      val data = spark.read
+                      .option("basePath", path)
+                      .parquet(hdfs_files: _*)
+                      .filter("device_type != 'web'") // get only madids
+                      .withColumnRenamed("device_id","madid")
+                      .select("madid")
+      data
+
+  }
+
+  def report_etermax(spark:SparkSession){
+    val current_month = DateTime.now().toString("yyyyMM")
+
+     val madids_etermax = spark.read.format("csv")
+                              .load("/datascience/data_tapad/madids_etermax.csv")
+                              .withColumnRenamed("_c0","madids")
+                              .withColumn("madids",lower(col("madids")))
+
+    val madids_factual = spark.read.format("csv").option("sep","\t")
+                              .load("/datascience/devicer/processed/madids_factual_%s/".format(current_month))
+                              .withColumnRenamed("_c1","madids")
+                              .select("madids")
+
+    val madids_startapp = spark.read.format("csv").option("sep","\t")
+                              .load("/datascience/devicer/processed/madids_startapp_%s/".format(current_month))
+                              .withColumnRenamed("_c1","madids")
+                              .select("madids")
+    // GEO
+    val madids_geo_ar = spark.read.format("csv").option("delimiter","\t")
+                              .load("/datascience/geo/NSEHomes/argentina_365d_home_21-1-2020-12h")
+                              .withColumnRenamed("_c0","madids")
+                              .select("madids")
+
+    val madids_geo_mx = spark.read.format("csv").option("delimiter","\t")
+                          .load("/datascience/geo/NSEHomes/mexico_200d_home_29-1-2020-12h")
+                          .withColumnRenamed("_c0","madids")
+                          .select("madids")
+
+    val madids_geo_cl = spark.read.format("csv").option("delimiter","\t")
+                                  .load("/datascience/geo/NSEHomes/CL_90d_home_29-1-2020-12h")
+                                  .withColumnRenamed("_c0","madids")
+                                  .select("madids")
+
+    val madids_geo_co = spark.read.format("csv").option("delimiter","\t")
+                              .load("/datascience/geo/NSEHomes/CO_90d_home_18-2-2020-12h")
+                              .withColumnRenamed("_c0","madids")
+                              .select("madids")
+
+    val rest = madids_factual.union(madids_startapp)
+              .union(madids_geo_ar)
+              .union(madids_geo_mx)
+              .union(madids_geo_cl)
+              .union(madids_geo_co)
+              .withColumn("madids",lower(col("madids")))
+
+    println("Devices Unicos Etermax:  %s".format(madids_etermax.select("madids").distinct.count))
+    println("Devices Totales Etermax:  %s".format(madids_etermax.select("madids").count))
+    println("Devices En comun:  %s".format(madids_etermax.join(rest,Seq("madids"),"inner").select("madids").distinct.count))
+
   }
 
   def main(args: Array[String]) {
@@ -3422,16 +3480,15 @@ object RandomTincho {
       
     // generate_seed(spark,"argentina")
     // get_coronavirus(spark,"argentina")
-    // val barrios =  spark.read.format("csv")
-    //                 .option("header",true)
-    //                 .option("delimiter",",")
-    //                 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-    //                 .withColumnRenamed("geo_hashote","geo_hash_join")
-    // coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
-    //report_dh_fede(spark)
-    generate_kepler(spark,"CO")
-    
-   
+    //  val barrios =  spark.read
+    //                       .format("csv")
+    //                       .option("sep","\t")
+    //                       .option("header","true")
+    //                       .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+    //                       .withColumnRenamed("geo_hashote","geo_hash_join")
+    // coronavirus_barrios(spark,"argentina",barrios,"NAM")
+    //generate_kepler(spark,"CO")
 
+    report_etermax(spark)
   }
 }

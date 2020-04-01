@@ -366,12 +366,153 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val df = spark.read.format("parquet")
+    .load("/datascience/custom/cl_geo_movement")
+    .filter("geohashes<=3 AND occurrences>5")
+    .withColumnRenamed("ad_id", "device_id")
+    .withColumn("device_type", lit("android"))
+    .withColumn("segment", lit(302479))
+    .select("device_type", "device_id", "segment")
 
+    println(df.show()) 
+
+    df.write.format("csv")
+    .option("sep", "\t")
+    .mode("overwrite")
+    .save("/datascience/custom/cl_geo_movement_to_push")
+
+    val df_xd = spark.read.format("csv")
+        .load("/datascience/audiences/crossdeviced/cl_geo_movement_csv_xd")
+        .withColumnRenamed("_c1", "device_id")
+        .withColumnRenamed("_c2", "device_type")
+        .withColumnRenamed("_c4", "category")
+        .withColumn("segment", lit(302479))
+        .withColumn("device_type", when(col("device_type")==="and", "android").otherwise(when(col("device_type")==="ios", "ios").otherwise("web")))
+        .select("device_type", "device_id", "segment")
+        .distinct()
+
+    println(df_xd.show())
+    df_xd.write
+    .format("csv")
+    .option("sep", "\t")
+    .mode("append")
+    .save("/datascience/misc/cl_geo_movement_to_push")
+
+
+
+/**
+    spark.read.format("parquet")
+    .load("/datascience/custom/cl_geo_movement")
+    .filter("geohashes<=3 AND occurrences>5")
+    .withColumn("type", lit("android"))
+    .write.format("csv")
+    .option("sep", "\t")
+    .mode("overwrite")
+    .save("/datascience/custom/cl_geo_movement_csv")
+
+  **/  
+
+/**
+    val getSeg = udf((lista: Seq[Integer]) =>
+    if (lista.contains(303353)) 303353
+    else if(lista.contains(303361)) 303361
+    else if(lista.contains(303357)) 303357
+    else lista.last.toInt)
+    
+    val countries = "AR,BR,CL,CO,MX,PE".split(",").toList
+
+    for (country <- countries) {    
+
+    var df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/misc/covid_%s_to_push_new_pure".format(country))  
+    .toDF("device_type","device_id","segment")
+    .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_original"))  
+    
+    println(country)
+    println(df.orderBy(asc("segment")).show())
+
+    }   
+
+*/
+    /**
+    for (country <- countries) {    
+
+    //path (AR segment ids were modified)
+    var path = if (country == "AR")
+      "/datascience/misc/covid_%s_to_push_pure".format(country.toLowerCase())
+     else
+      "/datascience/misc/covid_%s_to_push".format(country)
+
+    spark.read.format("csv")
+    .option("sep", "\t")
+    .load(path)  
+    .toDF("device_type","device_id","segment")
+    .groupBy("device_type","device_id")
+    .agg(collect_list("segment").as("segment"))
+    .withColumn("segment",getSeg(col("segment"))) 
+    .select("device_type", "device_id", "segment")
+    .write
+    .format("csv")
+    .option("sep", "\t")
+    .mode("overwrite")
+    .save("/datascience/misc/covid_%s_to_push_new_pure".format(country))
+
+    }
+
+    */
+
+    
+
+    /**
+    val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
+    for (country <- countries) {    
+
+    println(country)  
+    
+    var df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/misc/covid_%s_to_push".format(country))  
+    .toDF("device_type","device_id","segment")
+    .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_original"))    
+
+    println("TO PUSH COUNT")
+    println(df.show())
+  
+    var db = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/misc/covid_%s_to_remove".format(country))
+    .toDF("device_type","device_id","segment")    
+    .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_to_remove"))
+
+    println("COUNT WHEN REMOVED")
+    println(df.join(db,Seq("segment")).withColumn("Result", col("devices_original")-col("devices_to_remove")).show())
+
+    var dc = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/data_lookalike/expansion/ondemand/jobId=coronavius%s".format(country.toUpperCase()))
+    .toDF("device_type","device_id","segment")
+    .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("LALS"))    
+
+    println("LAL COUNT")
+    println(dc.show())
+       
+    }
+
+    */
+
+    //'/datascience/data_lookalike/expansion/ondemand/jobId=coronavius{}
+
+
+    /**
     val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
     for (country <- countries) {    
     println(country)  
+    println("volumen")
     println(spark.read.format("csv").option("sep", "\t").load("/datascience/misc/covid_%s_to_remove".format(country)).count())
     }
+
+    **/    
 
     /**
 
@@ -389,7 +530,7 @@ def getDataPipeline(
     df.join(db,Seq("device_id"))
     .select("device_type", "device_id", "segment")
     .write
-    .format("csv")
+    .format("csv")  
     .option("sep", "\t")
     .save("/datascience/misc/covid_%s_to_remove".format(country))    
 

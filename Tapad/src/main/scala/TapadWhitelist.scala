@@ -45,6 +45,32 @@ import scala.util.Random.shuffle
 
 
 object TapadWhitelist {
+
+  def get_monthly_data_homes(spark:SparkSession, country:String): DataFrame = {
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    
+    val format = "yyyy-MM"
+    val start = DateTime.now.minusDays(0)
+    val path = "/datascience/data_insights/homes/"
+
+    val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+
+    val hdfs_files = days
+      .map(day => path + "day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    val data = spark.read
+                    .option("basePath", path)
+                    .parquet(hdfs_files: _*)
+                    .filter("device_type != 'web'") // get only madids
+                    .withColumnRenamed("device_id","madid")
+                    .select("madid")
+    data
+
+  }
+
   def whitelist_madids_report(spark: SparkSession,date:String){
     val current_month = DateTime.now().toString("yyyyMM")
 
@@ -59,26 +85,13 @@ object TapadWhitelist {
                               .withColumnRenamed("_c1","madids")
                               .select("madids")
     // GEO
-    val madids_geo_ar = spark.read.format("csv").option("delimiter","\t")
-                              .load("/datascience/geo/NSEHomes/argentina_365d_home_21-1-2020-12h")
-                              .withColumnRenamed("_c0","madids")
-                              .select("madids")
+    val madids_geo_ar = get_monthly_data_homes(spark,"AR")
 
-    val madids_geo_mx = spark.read.format("csv").option("delimiter","\t")
-                          .load("/datascience/geo/NSEHomes/mexico_200d_home_29-1-2020-12h")
-                          .withColumnRenamed("_c0","madids")
-                          .select("madids")
+    val madids_geo_mx = get_monthly_data_homes(spark,"MX")
 
-    val madids_geo_cl = spark.read.format("csv").option("delimiter","\t")
-                                  .load("/datascience/geo/NSEHomes/CL_90d_home_29-1-2020-12h")
-                                  .withColumnRenamed("_c0","madids")
-                                  .select("madids")
+    val madids_geo_cl = get_monthly_data_homes(spark,"CL")
 
-    val madids_geo_co = spark.read.format("csv").option("delimiter","\t")
-                              .load("/datascience/geo/NSEHomes/CO_90d_home_18-2-2020-12h")
-                              .withColumnRenamed("_c0","madids")
-                              .select("madids")
-
+    val madids_geo_co = get_monthly_data_homes(spark,"CO")
 
     // Etermax
     val madids_etermax = spark.read.format("csv")

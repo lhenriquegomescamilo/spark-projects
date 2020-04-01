@@ -195,7 +195,7 @@ def get_safegraph_data(
       .dropDuplicates("ad_id", "latitude", "longitude")
       .withColumnRenamed("ad_id","device_id")
       .withColumnRenamed("id_type","device_type")
-      .withColumn("device_id",upper(col("device_id")))
+      .withColumn("device_id",lower(col("device_id")))
 
      df_safegraph                    
     
@@ -1311,43 +1311,31 @@ space_lapse_agg
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-//Argentina
-//setting timezone depending on country
-spark.conf.set("spark.sql.session.timeZone", "GMT-3")
-    val today = (java.time.LocalDate.now).toString
-//Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geohashito y por hora    
-//Esto es safegraph pelado los uĺtimos X dáis
-val raw = get_safegraph_data(spark,"30","1","argentina")
-.withColumn("device_id",lower(col("device_id")))
 
-//Sólo nos interesan las áreas y las horas que tengan infectados adentro, les joineamos los infectados
-//Levantamos los usarios que detectamos en Ezeiza los últimos 60 días
-val eze = spark.read.option("delimiter","\t").option("header",true).format("csv")
-.load("/datascience/geo/raw_output/Ezeiza_30d_argentina_17-3-2020-11h")
-.select("device_id").distinct
-.withColumn("device_id",lower(col("device_id")))
+val today = (java.time.LocalDate.now).toString
 
-//Unimos los usuarios de ezeiza con la raw y nos quedamos con un timestamp por geohash
-val tipito_eze = eze.join(raw,Seq("device_id"))
-.withColumn("geo_hash_5",substring(col("geo_hash"), 0, 5)) 
-.dropDuplicates("geo_hash_5","utc_timestamp","device_id")
-.select("geo_hash_5","utc_timestamp","latitude","longitude","device_id")
+val country_list = List("AR","BR","CL","CO","EC","MX","PE","PY","UY")
 
-val cordoba = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
-.withColumnRenamed("geo_hashote","geo_hash_7")
-.withColumn("geo_hash_5",substring(col("geo_hash_7"), 0, 5))
- .filter(col("PROVCODE")==="14")
- .select("geo_hash_5")
- .distinct()
+for( country <- country_list) 
+        { 
+            println(country)
 
-tipito_eze.join(cordoba,Seq("geo_hash_5"))
-.write
-    .mode(SaveMode.Overwrite)
-    .format("csv")
-    .option("header",true)
-    .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/hash_ezeiza_cordoba".format(today))
+get_safegraph_data(spark,"30","1",country)
+  .withColumn("geo_hash_7",
+  ((abs(col("latitude").cast("float")) * 1000)
+  .cast("long") * 100000) + (abs(
+  col("longitude").cast("float") * 1000
+  ).cast("long")))
+  .select("geo_hash_7","latitude","longitude")
+  .dropDuplicates("geo_hash_7")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("header",true)
+      .save("/datascience/geo/geohashes/%s/precision_custom/".format(country)) 
+        } 
 
+      
 }
 
 
