@@ -366,7 +366,46 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+
+    val getSeg = udf((list: List[Integer]) =>
+     if (list.length == 1)
+     list.get(0)
+     else
+      {if (list.contains(303353)) 303353
+        else if(list.contains(303361)) 303361
+        else if(list.contains(303357)) 303357
+        else list.last}
+        )   
     
+    //val countries = "AR,BR,CL,CO,MX,PE".split(",").toList
+    val countries = "AR".split(",").toList
+    
+    for (country <- countries) {    
+
+    //path (AR segment ids were modified)
+    val path = if (country == "AR")
+      "/datascience/misc/covid_%s_to_push_pure".format(country.toLowerCase())
+     else
+      "/datascience/misc/covid_%s_to_push".format(country)
+
+    var df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load(path)  
+    .toDF("device_type","device_id","segment")
+    .groupBy("device_type","device_id")
+    .agg(collect_list("segment").as("segment"))
+    .withColumn("segment",getSeg(col("segment")))
+
+    println(df.limit(3).show())  
+    
+    println(df.groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices")).show())   
+
+
+    }
+
+    
+
+    /**
     val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
     for (country <- countries) {    
 
