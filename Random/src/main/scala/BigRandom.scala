@@ -366,6 +366,39 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val xd = spark.read.format("parquet")
+    .load("/datascience/custom/cl_geo_movement")
+    .filter("geohashes<=3 AND occurrences>5")
+    .withColumn("device_type", lit("android"))
+    .withColumn("segment", lit(302479))
+    .select("device_type", "device_id", "segment")
+
+    println(df.show()) 
+
+    df.write.format("csv")
+    .option("sep", "\t")
+    .mode("overwrite")
+    .save("/datascience/custom/cl_geo_movement_to_push")
+
+    val df_xd = spark.read.format("csv")
+        .load("/datascience/audiences/crossdeviced/cl_geo_movement_csv_xd")
+        .withColumnRenamed("_c1", "device_id")
+        .withColumnRenamed("_c2", "device_type")
+        .withColumnRenamed("_c4", "category")
+        .withColumn("device_type", when(col("device_type")==="and", "android").otherwise(when(col("device_type")==="ios", "ios").otherwise("web")))
+        .select("device_type", "device_id", "segment")
+        .distinct()
+
+    println(df_xd.show())
+    df.write
+    .format("csv")
+    .option("sep", "\t")
+    .mode("append")
+    .save("/datascience/misc/cl_geo_movement_to_push")
+
+
+
+/**
     spark.read.format("parquet")
     .load("/datascience/custom/cl_geo_movement")
     .filter("geohashes<=3 AND occurrences>5")
@@ -374,6 +407,8 @@ def getDataPipeline(
     .option("sep", "\t")
     .mode("overwrite")
     .save("/datascience/custom/cl_geo_movement_csv")
+
+  **/  
 
 /**
     val getSeg = udf((lista: Seq[Integer]) =>
