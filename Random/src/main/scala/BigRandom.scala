@@ -379,7 +379,7 @@ def getDataPipeline(
     .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_original"))    
 
     println("TO PUSH COUNT")
-    println(df)
+    println(df.show())
   
     var db = spark.read.format("csv")
     .option("sep", "\t")
@@ -388,7 +388,7 @@ def getDataPipeline(
     .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_to_remove"))
 
     println("COUNT WHEN REMOVED")
-    println(df.join(db,Seq("segment")).withColumn("Result", col("devices_original")-col("devices_to_remove")))
+    println(df.join(db,Seq("segment")).withColumn("Result", col("devices_original")-col("devices_to_remove")).show())
 
     var dc = spark.read.format("csv")
     .option("sep", "\t")
@@ -397,8 +397,7 @@ def getDataPipeline(
     .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("LALS"))    
 
     println("LAL COUNT")
-
-    println(dc)
+    println(dc.show())
        
     }
 

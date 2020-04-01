@@ -3318,51 +3318,6 @@ object RandomTincho {
     val conf = sc.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(0)
-    val path = "/datascience/geo/safegraph/"
-    val days = (0 until 20).map(start.minusDays(_)).map(_.toString(format))
-
-    val hdfs_files = days
-      .map(day => path + "/day=%s/country=%s".format(day, country))
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-
-    val udfString = udf((d: Int) => d.toString.take(5))
-    // Get Data Raw
-    spark.read
-          .option("basePath", path)
-          .parquet(hdfs_files: _*)
-          .withColumnRenamed("ad_id", "device_id")
-          .withColumn("device_id", lower(col("device_id")))
-          //.withColumn("timestamp_raw", to_timestamp(from_unixtime(col("utc_timestamp"))))
-          .withColumnRenamed("utc_timestamp", "timestamp_raw") 
-          .withColumn(
-            "geohash",
-            ((abs(col("latitude").cast("float")) * 10)
-              .cast("int") * 10000) + (abs(
-              col("longitude").cast("float") * 100
-            ).cast("int"))
-          )
-          .withColumn("geohash",udfString(col("geohash")))
-          .select("device_id","timestamp_raw","geohash","latitude","longitude")
-          .write
-          .format("parquet")
-          .mode(SaveMode.Overwrite)
-          .save("/datascience/custom/tmp_geohashes")
-
-    //val udfCut = udf((d: String) => d.toString.substring(0, 5))
-
-    val raw = spark.read.load("/datascience/custom/tmp_geohashes")
-                   // .withColumn("geohash",udfCut(col("geohash"))) // cut geohash to 5 digits
-    
-    // Generate one lat/lon per geohash
-    raw.select("geohash","latitude","longitude")
-        .dropDuplicates("geohash")
-        .write
-        .format("parquet")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/custom/unique_geohashes_%s".format(country))
-
     // Get users from airport and take the oldeset timestamp
     val w = Window.partitionBy(col("device_id")).orderBy(col("timestamp").asc)
     
@@ -3382,7 +3337,31 @@ object RandomTincho {
 
     val users_airport = spark.read.load("/datascience/custom/users_airport_%s".format(country))
 
-    val joint = raw.join(users_airport,Seq("device_id"),"inner")
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(0)
+    val path = "/datascience/geo/safegraph/"
+    val days = (0 until 20).map(start.minusDays(_)).map(_.toString(format))
+
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    // Get Data Raw and join with users from airport
+    val joint = spark.read
+                    .option("basePath", path)
+                    .parquet(hdfs_files: _*)
+                    .withColumnRenamed("ad_id", "device_id")
+                    .withColumn("device_id", lower(col("device_id")))
+                    .withColumnRenamed("utc_timestamp", "timestamp_raw") 
+                    .withColumn(
+                      "geohash",
+                      ((abs(col("latitude").cast("float")) * 10)
+                        .cast("int") * 10000) + (abs(
+                        col("longitude").cast("float") * 100
+                      ).cast("int"))
+                    )
+                    .select("device_id","timestamp_raw","geohash","latitude","longitude")
+                    .join(users_airport,Seq("device_id"),"inner")
                     .withColumn("timestamp_raw", col("timestamp_raw").cast(IntegerType))
                     .withColumn("timestamp_airport", col("timestamp_airport").cast(IntegerType))
                     .filter("timestamp_raw > timestamp_airport") // filter timestamp
@@ -3392,10 +3371,11 @@ object RandomTincho {
                         first(col("timestamp_raw")).as("timestamp"),
                         approx_count_distinct(col("device_id"), 0.02).as("device_unique")
                     )
-    joint.write
-        .format("csv")
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/custom/kepler_%s".format(country))
+    joint.repartition(1)
+          .write
+          .format("csv")  
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/kepler_%s".format(country))
   }
 
   def main(args: Array[String]) {
@@ -3430,8 +3410,5 @@ object RandomTincho {
     // coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
     //report_dh_fede(spark)
     generate_kepler(spark,"CO")
-    
-   
-
   }
 }
