@@ -200,7 +200,7 @@ object Coronavirus {
           .format("parquet")
           .partitionBy("day","country")
           .mode(SaveMode.Overwrite)
-          .save("/datascience/custom/coronavirus_seed/")
+          .save("/datascience/coronavirus/coronavirus_seed/")
 
   }
 
@@ -210,12 +210,6 @@ object Coronavirus {
     val initial_seed = spark.read
       .load("/datascience/custom/coronavirus_seed/day=%s/country=%s".format(day,country))
       .select("device_id", "geo_hash", "window")
-
-    // val barrios_gcba =  spark.read.format("csv")
-    //                     .option("header",true)
-    //                     .option("delimiter",",")
-    //                     .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-    //                     .withColumnRenamed("geo_hashote","geo_hash_join")
     
     val contacts = spark.read
                         .load("/datascience/custom/coronavirus_contacts/day=%s/country=%s".format(day,country))
@@ -240,7 +234,7 @@ object Coronavirus {
       .format("parquet")
       .partitionBy("day","country")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_barrios")
+      .save("/datascience/coronavirus/coronavirus_contacts_barrios")
 
   }
 
