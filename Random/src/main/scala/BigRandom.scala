@@ -383,7 +383,7 @@ def getDataPipeline(
     for (country <- countries) {    
 
     //path (AR segment ids were modified)
-    val path = if (country == "AR")
+    var path = if (country == "AR")
       "/datascience/misc/covid_%s_to_push_pure".format(country.toLowerCase())
      else
       "/datascience/misc/covid_%s_to_push".format(country)
@@ -440,7 +440,7 @@ def getDataPipeline(
        
     }
 
-    
+    */
 
     //'/datascience/data_lookalike/expansion/ondemand/jobId=coronavius{}
 
