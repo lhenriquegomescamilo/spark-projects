@@ -134,7 +134,9 @@ object Coronavirus {
       .withColumn("day", udfDay(col("window")))
       .groupBy("original_id", "day")
       .agg(collect_set(col("device_id")).as("devices"))
-      .withColumn("day",lit(day))
+      .withColumn("contacts", size(col("devices"))-1) // Calculate number of contacts for each device
+      .groupBy("day")
+      .agg(mean("contacts") as "contacts")
       .withColumn("country",lit(country))
       .write
       .format("parquet")
@@ -284,7 +286,7 @@ object Coronavirus {
       get_coronavirus(spark,"argentina",day)  
       coronavirus_barrios(spark,"argentina",barrios_ar,"BARRIO",day)
       println("\tMX")
-      
+
       // MX
       generate_seed(spark,"mexico",day)
       get_coronavirus(spark,"mexico",day)  
