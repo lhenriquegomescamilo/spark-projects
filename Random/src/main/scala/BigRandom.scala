@@ -377,7 +377,7 @@ def getDataPipeline(
         )   
     
     //val countries = "AR,BR,CL,CO,MX,PE".split(",").toList
-    val countries = "AR".split(",").toList
+    val countries = "BR".split(",").toList
     
     for (country <- countries) {    
 
