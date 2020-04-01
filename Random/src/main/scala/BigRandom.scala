@@ -374,7 +374,7 @@ def getDataPipeline(
     else lista.last.toInt)
     
     val countries = "AR,BR,CL,CO,MX,PE".split(",").toList
-    
+
     for (country <- countries) {    
 
     var df = spark.read.format("csv")
@@ -382,9 +382,9 @@ def getDataPipeline(
     .load("/datascience/misc/covid_%s_to_push_new_pure".format(country))  
     .toDF("device_type","device_id","segment")
     .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_original"))  
-    .sortBy("segment")
+    
     println(country)
-    println(df.show())
+    println(df.orderBy(asc("segment")).show())
 
     }   
 
