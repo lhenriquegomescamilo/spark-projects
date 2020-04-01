@@ -384,6 +384,7 @@ def getDataPipeline(
     var db = spark.read.format("csv")
     .option("sep", "\t")
     .load("/datascience/misc/covid_%s_to_remove".format(country))
+    .toDF("device_type","device_id","segment")    
     .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_to_remove"))
 
     println("COUNT WHEN REMOVED")
