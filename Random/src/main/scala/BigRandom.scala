@@ -371,7 +371,7 @@ def getDataPipeline(
     if (lista.contains(303353)) 303353
     else if(lista.contains(303361)) 303361
     else if(lista.contains(303357)) 303357
-    else lista.last.toInt
+    else lista.last.toInt)
     
     val countries = "AR,BR,CL,CO,MX,PE".split(",").toList
     
