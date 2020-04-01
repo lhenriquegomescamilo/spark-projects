@@ -1322,7 +1322,7 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 val today = (java.time.LocalDate.now).toString
 
 val raw = get_safegraph_data(spark,"30","1","AR")
-.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
 
 
@@ -1336,7 +1336,7 @@ day_data
     .save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Detecciones_Por_Dia".format(today))
 
 val raw_small = get_safegraph_data(spark,"5","15","AR")
-.withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
 
 val one_day_data = raw_small
