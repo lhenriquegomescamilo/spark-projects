@@ -377,6 +377,21 @@ def getDataPipeline(
     
     for (country <- countries) {    
 
+    var df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/misc/covid_%s_to_push_new_pure".format(country))  
+    .toDF("device_type","device_id","segment")
+    .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_original"))  
+    .sortBy("segment")
+    println(country)
+    println(df.show())
+
+    }   
+
+
+    /**
+    for (country <- countries) {    
+
     //path (AR segment ids were modified)
     var path = if (country == "AR")
       "/datascience/misc/covid_%s_to_push_pure".format(country.toLowerCase())
@@ -398,6 +413,8 @@ def getDataPipeline(
     .save("/datascience/misc/covid_%s_to_push_new_pure".format(country))
 
     }
+
+    */
 
     
 
