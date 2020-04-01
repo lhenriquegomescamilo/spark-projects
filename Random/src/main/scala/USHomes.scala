@@ -88,25 +88,17 @@ object USHomes {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    // getApproximatePlacePerId(spark)
-    // getHomes(spark)
-    // getEstidMap(
-    //   spark = spark
-    // )
+    getApproximatePlacePerId(spark)
+    getHomes(spark)
+    getEstidMap(
+      spark = spark
+    )
 
     spark.read
       .format("parquet")
       .load(
-        "/data/providers/sharethis/processed/"
+        "/datascience/custom/us_homes"
       )
-      .withColumn(
-        "zipplus4",
-        concat(
-          col("de_geo_pulseplus_postal_code"),
-          col("de_geo_pulseplus_postal_ext")
-        )
-      )
-      .filter("zipplus4 != ''")
       .groupBy("zipplus4")
       .agg(approxCountDistinct("estid", 0.02) as "device_unique")
       .write

@@ -5038,44 +5038,35 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val paths = List(
-      "/datascience/misc/covid_ar_to_push_pure",
-      "/datascience/misc/covid_BR_to_push",
-      "/datascience/misc/covid_CL_to_push",
-      "/datascience/misc/covid_CO_to_push",
-      "/datascience/misc/covid_MX_to_push",
-      "/datascience/misc/covid_PE_to_push"
-    )
+    val id1 = 1
+    val id2 = 2
+    val id3 = 3
 
-    val selectSegment = udf(
-      (segments: Seq[String]) =>
-        if (segments.contains("303353"))
-          segments.filter(s => s != "303353").mkString(",")
-        else if (segments.contains("303361"))
-          segments.filter(s => s != "303361").mkString(",")
-        else segments.filter(s => s != "303359").mkString(",")
-    )
-
-    for (path <- paths) {
+    for ((country, path) <- List("AR", "MX") zip List(
+           "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_argentina",
+           "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_mexico"
+         ))
       spark.read
-        .format("csv")
-        .option("sep", "\t")
+        .format("parquet")
         .load(path)
-        .groupBy("_c0", "_c1")
-        .agg(collect_set("_c2") as "_c2")
-        .filter("size(_c2)>1")
-        .withColumn("_c2", selectSegment(col("_c2")))
-        .select("_c0", "_c1", "_c2")
+        .groupBy("device_id")
+        .agg(approxCountDistinct("geo_hash_7", 0.02) as "cuadras")
         .write
-        .format("csv")
-        .option("sep", "\t")
-        .mode("overwrite")
-        .save(
-          "/datascience/custom/" + path
-            .split("/")
-            .last
-            .substring(0, 8) + "_to_delete_pure"
-        )
-    }
+        .format("parquet")
+        .save("/datascience/custom/cuadras_per_user_%s".format(country))
+
+    spark.read
+      .load("/datascience/custom/cuadras_per_user_%s".format(country))
+      .withColumn("device_type", lit("android"))
+      .withColumn(
+        "segment",
+        when(col("cuadras") < 3, id1)
+          .otherwise(when(col("segment") < 40, id2).otherwise(id3))
+      )
+      .select("device_type", "device_id", "segment")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .save("/datascience/custom/cuadras_per_user_%s_csv".format(country))
   }
 }
