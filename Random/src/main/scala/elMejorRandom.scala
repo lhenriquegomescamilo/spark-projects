@@ -1341,7 +1341,7 @@ val raw_small = get_safegraph_data(spark,"5","15","AR")
 
 val one_day_data = raw_small
 .groupBy("Day","device_id").agg(count("utc_timestamp") as "detections")
-.groupBy("Day","detections").agg(count("devices") as "devices_total")
+.groupBy("Day","detections").agg(count("device_id") as "devices_total")
 
 one_day_data
 .write
