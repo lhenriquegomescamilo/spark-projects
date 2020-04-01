@@ -3340,7 +3340,7 @@ object RandomTincho {
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(0)
     val path = "/datascience/geo/safegraph/"
-    val days = (0 until 20).map(start.minusDays(_)).map(_.toString(format))
+    val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
 
     val hdfs_files = days
       .map(day => path + "/day=%s/country=%s".format(day, country))
@@ -3373,7 +3373,8 @@ object RandomTincho {
                     )
     joint.repartition(1)
           .write
-          .format("csv")  
+          .format("csv")
+          .option("header","true")
           .mode(SaveMode.Overwrite)
           .save("/datascience/custom/kepler_%s".format(country))
   }
