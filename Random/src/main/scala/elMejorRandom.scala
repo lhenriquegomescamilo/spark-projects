@@ -1311,78 +1311,29 @@ space_lapse_agg
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-/*
-1- Total de Devices que tenemos en AR con data GEO.
-2- Total que tenemos de Devices en AR con data para poder hacer estudios de movimiento (si podemos dar total de puntos diarios, excelente).
-3- Si tenemos timestamp, y cuando devices por día tenemos con este dato y cuando por día!
-4- por ultimo cuantos del total de estos usuarios son de Caba y Provincia! del total
-*/
 
-spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 val today = (java.time.LocalDate.now).toString
 
-val raw1 = get_safegraph_data(spark,"30","1","AR")
-.select("utc_timestamp","device_id")
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+val country_list = List("AR","BR","CL","CO","EC","MX","PE","PY","UY")
 
+for( country <- country_list) 
+        { 
+            println(country)
 
-val raw2 = get_safegraph_data(spark,"30","1","argentina")
-.select("utc_timestamp","device_id")
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-
-
-val raw = List(raw1,raw2).reduce(_.unionByName (_))
-
-val day_data = raw.groupBy("Day").agg(countDistinct("device_id") as "devices",count("utc_timestamp") as "detections")
-
-day_data
-.repartition(1)
-.write
-    .mode(SaveMode.Overwrite)
-    .format("csv")
-    .option("header",true)
-    .save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Detecciones_Por_Dia".format(today))
-
-val raw_small_1 = get_safegraph_data(spark,"5","15","AR")
-.select("utc_timestamp","device_id")
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-
-val raw_small_2 = get_safegraph_data(spark,"5","15","argentina")
-.select("utc_timestamp","device_id")
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-
-val raw_small = List(raw_small_1,raw_small_2).reduce(_.unionByName (_))
-
-val one_day_data = raw_small
-.groupBy("Day","device_id").agg(count("utc_timestamp") as "detections")
-.groupBy("Day","detections").agg(count("device_id") as "devices_total")
-
-one_day_data
-.repartition(1)
-.write
-    .mode(SaveMode.Overwrite)
-    .format("csv")
-    .option("header",true)
-    .save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Detecciones_Frecuencia".format(today))
-
-
-val hash_user = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_argentina")
-val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t").load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon").filter(col("PROVCODE")==="06"||col("PROVCODE")==="02")
-.withColumnRenamed("geo_hashote","geo_hash_7")
-.select("geo_hash_7","PROVCODE")
-
-
-hash_user.join(entidad,Seq("geo_hash_7")).groupBy("Day","PROVCODE").agg(countDistinct("device_id") as "devices")
-    .repartition(1)
-    .write
-    .mode(SaveMode.Overwrite)
-    .format("csv")
-    .option("header",true)
-    .save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Devices_Provincia".format(today))
+get_safegraph_data(spark,"30","1",country)
+  .withColumn("geo_hash_7",
+  ((abs(col("latitude").cast("float")) * 1000)
+  .cast("long") * 100000) + (abs(
+  col("longitude").cast("float") * 1000
+  ).cast("long")))
+  .select("geo_hash_7","latitude","longitude")
+  .dropDuplicates("geo_hash_7")
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("header",true)
+      .save("/datascience/geo/geohashes/%s/precision_custom/".format(country)) 
+        } 
 
       
 }
