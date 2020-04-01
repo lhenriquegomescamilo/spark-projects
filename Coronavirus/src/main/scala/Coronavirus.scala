@@ -208,11 +208,11 @@ object Coronavirus {
     val udfGeo = udf((d: String) => d.substring(0, 7))
     
     val initial_seed = spark.read
-      .load("/datascience/custom/coronavirus_seed/day=%s/country=%s".format(day,country))
+      .load("/datascience/coronavirus/coronavirus_seed/day=%s/country=%s".format(day,country))
       .select("device_id", "geo_hash", "window")
     
     val contacts = spark.read
-                        .load("/datascience/custom/coronavirus_contacts/day=%s/country=%s".format(day,country))
+                        .load("/datascience/coronavirus/coronavirus_contacts/day=%s/country=%s".format(day,country))
                         .withColumn("geo_hash_join",udfGeo(col("geo_hash")))
 
     val joint = contacts.join(broadcast(barrios),Seq("geo_hash_join"),"inner")
@@ -237,7 +237,6 @@ object Coronavirus {
       .save("/datascience/coronavirus/coronavirus_contacts_barrios")
 
   }
-
 
   def main(args: Array[String]) {
 
