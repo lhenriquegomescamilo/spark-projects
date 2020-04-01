@@ -5045,7 +5045,7 @@ object Random {
     for ((country, path) <- List("AR", "MX") zip List(
            "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_argentina",
            "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_mexico"
-         ))
+         )) {
       spark.read
         .format("parquet")
         .load(path)
@@ -5055,18 +5055,19 @@ object Random {
         .format("parquet")
         .save("/datascience/custom/cuadras_per_user_%s".format(country))
 
-    spark.read
-      .load("/datascience/custom/cuadras_per_user_%s".format(country))
-      .withColumn("device_type", lit("android"))
-      .withColumn(
-        "segment",
-        when(col("cuadras") < 3, id1)
-          .otherwise(when(col("segment") < 40, id2).otherwise(id3))
-      )
-      .select("device_type", "device_id", "segment")
-      .write
-      .format("csv")
-      .option("sep", "\t")
-      .save("/datascience/custom/cuadras_per_user_%s_csv".format(country))
+      spark.read
+        .load("/datascience/custom/cuadras_per_user_%s".format(country))
+        .withColumn("device_type", lit("android"))
+        .withColumn(
+          "segment",
+          when(col("cuadras") < 3, id1)
+            .otherwise(when(col("segment") < 40, id2).otherwise(id3))
+        )
+        .select("device_type", "device_id", "segment")
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .save("/datascience/custom/cuadras_per_user_%s_csv".format(country))
+    }
   }
 }
