@@ -51,14 +51,14 @@ object TapadWhitelist {
     val conf = sc.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     
-    val format = "yyyyMMdd"
+    val format = "yyyy-MM"
     val start = DateTime.now.minusDays(0)
     val path = "/datascience/data_insights/homes/"
 
     val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
 
     val hdfs_files = days
-      .map(day => path + "/day=%s/country=%s".format(day, country))
+      .map(day => path + "day=%s/country=%s".format(day, country))
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
     val data = spark.read

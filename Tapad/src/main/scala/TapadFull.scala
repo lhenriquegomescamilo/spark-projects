@@ -47,7 +47,7 @@ import scala.util.Random.shuffle
 object TapadFull {
   
   def full_madid_report(spark:SparkSession){
-    val date_bridge = DateTime.now.minusDays(2).toString("MM_yyyy") // Use previous month date
+    val date_bridge = DateTime.now.minusDays(30).toString("MM_yyyy") // Use previous month date
     val today = DateTime.now.toString("yyyyMMdd")
     
     val mapping = Map("android" -> "HARDWARE_ANDROID_AD_ID", "ios" -> "HARDWARE_IDFA", "AAID" ->"HARDWARE_ANDROID_AD_ID", "IDFA" -> "HARDWARE_IDFA")
