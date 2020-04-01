@@ -175,10 +175,17 @@ val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocati
 
 //Transform the polygon to DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
+.withColumnRenamed("_c1","CVEGEO")
+.withColumnRenamed("_c2","NOM_ENT")
+.withColumnRenamed("_c3","NOM_MUN")
+
+
+/*
+
 .withColumnRenamed("_c1","CO_FRAC_RA")
 .withColumnRenamed("_c2","BARRIO")
 
-/*
+
 .withColumnRenamed("_c1","IN1")
 .withColumnRenamed("_c2","NAM")
 .withColumnRenamed("_c3","FNA")
@@ -203,6 +210,7 @@ spatialDf.createOrReplaceTempView("poligonomagico")
 spatialDf.show(2)
 
 //Esto para levantar csv
+/*
 val df_safegraph = spark.read.format("csv")
                   .option("header",true)
                   //.option("delimiter","\t")
@@ -213,18 +221,21 @@ val df_safegraph = spark.read.format("csv")
                                     .na.drop()
                                     .repartition(50)//"/datascience/geo/startapp/2019*"
                 //.toDF("ad_id","timestamp","country","longitude","latitude","some")
-
+*/
 
 //Esto para levantar parquet
-/*
+
 val df_safegraph = spark.read.format("parquet")
                   .load(data_path) 
                   .withColumn("latitude",col("latitude").cast("Double"))
                   .withColumn("longitude",col("longitude").cast("Double"))
-                  .na.drop()//"/datascience/geo/startapp/2019*"
+                  .na.drop()
+                  .select("geo_hash_7","latitude","longitude")
+                  .dropDuplicates("geo_hash_7")
+                  //"/datascience/geo/startapp/2019*"
                 //.toDF("ad_id","timestamp","country","longitude","latitude","some")
   
-*/               
+               
 
 df_safegraph.createOrReplaceTempView("data")
 
@@ -313,9 +324,9 @@ match_sample_to_polygons(spark,
 
 
       match_sample_to_polygons(spark,
-        "/datascience/geo/geohashes/Argentina/precision7.csv",
-        "/datascience/geo/POIs/PALERMO_LUGANO_radio.json",
-        "argentina")
+        "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-31/geohashes_by_user_mexico",
+        "/home/data/retargetly/dataset/GeoData/Shapefiles/shapefiles_mexico/municipal/MX_municipal_Updated.json",
+        "mexico")
 
   }
 }
