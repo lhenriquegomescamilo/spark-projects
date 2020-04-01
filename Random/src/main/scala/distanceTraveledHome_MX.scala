@@ -342,7 +342,7 @@ hash_user
 
 //Desagregado por entidad y municipio
 val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
+.load("/datascience/geo/geo_processed/MX_municipal_Updated_mexico_sjoin_polygon")
 
 
 //Acá lo agregamos por estado
