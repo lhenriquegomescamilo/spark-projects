@@ -369,6 +369,7 @@ def getDataPipeline(
     val df = spark.read.format("parquet")
     .load("/datascience/custom/cl_geo_movement")
     .filter("geohashes<=3 AND occurrences>5")
+    .withColumnRenamed("ad_id", "device_id")
     .withColumn("device_type", lit("android"))
     .withColumn("segment", lit(302479))
     .select("device_type", "device_id", "segment")
