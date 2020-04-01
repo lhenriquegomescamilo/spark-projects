@@ -3371,11 +3371,11 @@ object RandomTincho {
                         first(col("timestamp_raw")).as("timestamp"),
                         approx_count_distinct(col("device_id"), 0.02).as("device_unique")
                     )
-    joint.write
-        .format("csv")
-        .repartition(1)
-        .mode(SaveMode.Overwrite)
-        .save("/datascience/custom/kepler_%s".format(country))
+    joint.repartition(1)
+          .write
+          .format("csv")  
+          .mode(SaveMode.Overwrite)
+          .save("/datascience/custom/kepler_%s".format(country))
   }
 
   def main(args: Array[String]) {
