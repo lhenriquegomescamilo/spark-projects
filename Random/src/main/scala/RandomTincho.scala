@@ -3347,7 +3347,7 @@ object RandomTincho {
       .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
     // Get Data Raw and join with users from airport
-    val join = spark.read
+    val joint = spark.read
                     .option("basePath", path)
                     .parquet(hdfs_files: _*)
                     .withColumnRenamed("ad_id", "device_id")
