@@ -1321,10 +1321,17 @@ space_lapse_agg
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 val today = (java.time.LocalDate.now).toString
 
-val raw = get_safegraph_data(spark,"30","1","AR")
+val raw1 = get_safegraph_data(spark,"30","1","AR")
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+.select("utc_timestamp","device_id")
 
+val raw2 = get_safegraph_data(spark,"30","1","argentina")
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+.select("utc_timestamp","device_id")
+
+val raw = List(raw1,raw2).reduce(_.unionByName (_))
 
 val day_data = raw.groupBy("Day").agg(countDistinct("device_id") as "devices",count("utc_timestamp") as "detections")
 
@@ -1336,9 +1343,15 @@ day_data
     .option("header",true)
     .save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Detecciones_Por_Dia".format(today))
 
-val raw_small = get_safegraph_data(spark,"5","15","AR")
+val raw_small_1 = get_safegraph_data(spark,"5","15","AR")
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+
+val raw_small_2 = get_safegraph_data(spark,"5","15","argentina")
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+
+val raw = List(raw_small_1,raw_small_2).reduce(_.unionByName (_))
 
 val one_day_data = raw_small
 .groupBy("Day","device_id").agg(count("utc_timestamp") as "detections")
