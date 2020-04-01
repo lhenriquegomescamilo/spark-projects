@@ -51,7 +51,7 @@ object TapadWhitelist {
     val conf = sc.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     
-    val format = "yyyyMMdd"
+    val format = "yyyy-MM"
     val start = DateTime.now.minusDays(0)
     val path = "/datascience/data_insights/homes/"
 
