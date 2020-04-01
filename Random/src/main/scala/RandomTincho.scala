@@ -3380,7 +3380,67 @@ object RandomTincho {
           .save("/datascience/custom/kepler_%s".format(country))
   }
 
+    def get_monthly_data_homes(spark:SparkSession, country:String): DataFrame = {
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    
+    val format = "yyyy-MM"
+    val start = DateTime.now.minusDays(0)
+    val path = "/datascience/data_insights/homes/"
+
+    val days = (0 until 30).map(start.minusDays(_)).map(_.toString(format))
+
+    val hdfs_files = days
+      .map(day => path + "day=%s/country=%s".format(day, country))
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    val data = spark.read
+                    .option("basePath", path)
+                    .parquet(hdfs_files: _*)
+                    .filter("device_type != 'web'") // get only madids
+                    .withColumnRenamed("device_id","madid")
+                    .select("madid")
+    data
+
+  }
+
   def report_etermax(spark:SparkSession){
+    val current_month = DateTime.now().toString("yyyyMM")
+
+     val madids_etermax = spark.read.format("csv")
+                              .load("/datascience/data_tapad/madids_etermax.csv")
+                              .withColumnRenamed("_c0","madids")
+                              .withColumn("madids",lower(col("madids")))
+
+    val madids_factual = spark.read.format("csv").option("sep","\t")
+                              .load("/datascience/devicer/processed/madids_factual_%s/".format(current_month))
+                              .withColumnRenamed("_c1","madids")
+                              .select("madids")
+
+    val madids_startapp = spark.read.format("csv").option("sep","\t")
+                              .load("/datascience/devicer/processed/madids_startapp_%s/".format(current_month))
+                              .withColumnRenamed("_c1","madids")
+                              .select("madids")
+    // GEO
+    val madids_geo_ar = get_monthly_data_homes(spark,"AR")
+
+    val madids_geo_mx = get_monthly_data_homes(spark,"MX")
+
+    val madids_geo_cl = get_monthly_data_homes(spark,"CL")
+
+    val madids_geo_co = get_monthly_data_homes(spark,"CO")
+
+    val rest = madids_factual.union(madids_startapp)
+              .union(madids_geo_ar)
+              .union(madids_geo_mx)
+              .union(madids_geo_cl)
+              .union(madids_geo_co)
+              .withColumn("madids",lower(col("madids")))
+
+    println("Devices Unicos Etermax:  %s".format(madids_etermax.select("madids").distinct.count))
+    println("Devices Totales Etermax:  %s".format(madids_etermax.select("madids").count))
+    println("Devices En comun:  %s".format(madids_etermax.join(rest,Seq("madids"),"inner").select("madids").distinct.count))
 
   }
 
@@ -3415,8 +3475,8 @@ object RandomTincho {
     //                       .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
     //                       .withColumnRenamed("geo_hashote","geo_hash_join")
     // coronavirus_barrios(spark,"argentina",barrios,"NAM")
-    generate_kepler(spark,"CO")
+    //generate_kepler(spark,"CO")
 
-    //report_etermax(spark)
+    report_etermax(spark)
   }
 }
