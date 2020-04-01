@@ -386,6 +386,7 @@ def getDataPipeline(
         .withColumnRenamed("_c1", "device_id")
         .withColumnRenamed("_c2", "device_type")
         .withColumnRenamed("_c4", "category")
+        .withColumn("segment", lit(302479))
         .withColumn("device_type", when(col("device_type")==="and", "android").otherwise(when(col("device_type")==="ios", "ios").otherwise("web")))
         .select("device_type", "device_id", "segment")
         .distinct()
