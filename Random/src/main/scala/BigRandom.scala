@@ -366,7 +366,7 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    val xd = spark.read.format("parquet")
+    val df = spark.read.format("parquet")
     .load("/datascience/custom/cl_geo_movement")
     .filter("geohashes<=3 AND occurrences>5")
     .withColumn("device_type", lit("android"))
@@ -390,7 +390,7 @@ def getDataPipeline(
         .distinct()
 
     println(df_xd.show())
-    df.write
+    df_xd.write
     .format("csv")
     .option("sep", "\t")
     .mode("append")
