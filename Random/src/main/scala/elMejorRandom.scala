@@ -1322,14 +1322,16 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 val today = (java.time.LocalDate.now).toString
 
 val raw1 = get_safegraph_data(spark,"30","1","AR")
+.select("utc_timestamp","device_id")
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-.select("utc_timestamp","device_id")
+
 
 val raw2 = get_safegraph_data(spark,"30","1","argentina")
+.select("utc_timestamp","device_id")
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-.select("utc_timestamp","device_id")
+
 
 val raw = List(raw1,raw2).reduce(_.unionByName (_))
 
@@ -1344,10 +1346,12 @@ day_data
     .save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Detecciones_Por_Dia".format(today))
 
 val raw_small_1 = get_safegraph_data(spark,"5","15","AR")
+.select("utc_timestamp","device_id")
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
 
 val raw_small_2 = get_safegraph_data(spark,"5","15","argentina")
+.select("utc_timestamp","device_id")
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
 
