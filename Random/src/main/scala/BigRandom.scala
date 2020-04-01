@@ -367,14 +367,14 @@ def getDataPipeline(
     .getOrCreate()
 
 
-    val getSeg = udf((list: List[Integer]) =>
-     if (list.length == 1)
-     list.last
+    val getSeg = udf((lista: List[Integer]) =>
+     if (lista.length == 1)
+     lista.last.toInt
      else
-      {if (list.contains(303353)) 303353
-        else if(list.contains(303361)) 303361
-        else if(list.contains(303357)) 303357
-        else list.last}
+      {if (lista.contains(303353)) 303353.toInt
+        else if(lista.contains(303361)) 303361.toInt
+        else if(lista.contains(303357)) 303357.toInt
+        else lista.last.toInt}
         )   
     
     //val countries = "AR,BR,CL,CO,MX,PE".split(",").toList
