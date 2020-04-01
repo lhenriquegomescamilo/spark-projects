@@ -366,12 +366,55 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    
+    val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
+    for (country <- countries) {    
 
+    println(country)  
+    
+    var df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/misc/covid_%s_to_push".format(country))  
+    .toDF("device_type","device_id","segment")
+    .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_original"))    
+
+    println("TO PUSH COUNT")
+    println(df)
+  
+    var db = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/misc/covid_%s_to_remove".format(country))
+    .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_to_remove"))
+
+    println("COUNT WHEN REMOVED")
+    println(df.join(db,Seq("segment")).withColumn("Result", col("devices_original")-col("devices_to_remove"))))
+
+    var dc = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/data_lookalike/expansion/ondemand/jobId=coronavius%s".format(country.toUpperCase()))
+    .toDF("device_type","device_id","segment")
+    .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("LALS"))    
+
+    println("LAL COUNT")
+
+    println(dc)
+       
+    }
+
+    
+
+    //'/datascience/data_lookalike/expansion/ondemand/jobId=coronavius{}
+
+
+    /**
     val countries = "ar,BR,CL,CO,MX,PE".split(",").toList
     for (country <- countries) {    
     println(country)  
+    println("volumen")
     println(spark.read.format("csv").option("sep", "\t").load("/datascience/misc/covid_%s_to_remove".format(country)).count())
     }
+
+    **/    
 
     /**
 
@@ -389,7 +432,7 @@ def getDataPipeline(
     df.join(db,Seq("device_id"))
     .select("device_type", "device_id", "segment")
     .write
-    .format("csv")
+    .format("csv")  
     .option("sep", "\t")
     .save("/datascience/misc/covid_%s_to_remove".format(country))    
 
