@@ -1329,6 +1329,7 @@ val raw = get_safegraph_data(spark,"30","1","AR")
 val day_data = raw.groupBy("Day").agg(countDistinct("device_id") as "devices",count("utc_timestamp") as "detections")
 
 day_data
+.repartition(1)
 .write
     .mode(SaveMode.Overwrite)
     .format("csv")
@@ -1344,6 +1345,7 @@ val one_day_data = raw_small
 .groupBy("Day","detections").agg(count("device_id") as "devices_total")
 
 one_day_data
+.repartition(1)
 .write
     .mode(SaveMode.Overwrite)
     .format("csv")
@@ -1358,6 +1360,7 @@ val entidad = spark.read.format("csv").option("header",true).option("delimiter",
 
 
 hash_user.join(entidad,Seq("geo_hash_7")).groupBy("Day","PROVCODE").agg(countDistinct("device_id") as "devices")
+    .repartition(1)
     .write
     .mode(SaveMode.Overwrite)
     .format("csv")
