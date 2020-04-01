@@ -325,7 +325,7 @@ match_sample_to_polygons(spark,
 
       match_sample_to_polygons(spark,
         "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-31/geohashes_by_user_mexico",
-        "/home/data/retargetly/dataset/GeoData/Shapefiles/shapefiles_mexico/municipal/MX_municipal_Updated.json",
+        "/datascience/geo/POIs/MX_municipal_Updated.json",
         "mexico")
 
   }
