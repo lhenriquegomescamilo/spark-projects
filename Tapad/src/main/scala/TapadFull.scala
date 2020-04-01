@@ -47,32 +47,28 @@ import scala.util.Random.shuffle
 object TapadFull {
   
   def full_madid_report(spark:SparkSession){
+    val date_bridge = DateTime.now.minusDays(2).toString("MM_yyyy") // Use previous month date
     val today = DateTime.now.toString("yyyyMMdd")
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
-    val path = "/data/providers/Bridge/"
-    val dfs = fs
-      .listStatus(new Path(path))
-      .map(x =>  spark.read.format("csv").option("header","true").load(path + x.getPath.toString.split("/").last))
-      .toList
-
-
+    
     val mapping = Map("android" -> "HARDWARE_ANDROID_AD_ID", "ios" -> "HARDWARE_IDFA", "AAID" ->"HARDWARE_ANDROID_AD_ID", "IDFA" -> "HARDWARE_IDFA")
     val udfDeviceType = udf((device_type: String) => mapping(device_type))
 
-    val df_union = dfs.reduce((df1, df2) => df1.unionAll(df2))
-                      .select("Timestamp","IP_Address","Device_ID","Device_Type")
-                      .withColumn("Timestamp",unix_timestamp(col("Timestamp")))
-                      .filter("Device_Type is not null")
-                      .withColumn("Device_Type",udfDeviceType(col("Device_Type")))
-                      .withColumn("Platform",lit(""))
-                      .select("Timestamp","Device_ID","IP_Address","Device_Type","platform")
+    val data_bridge = spark.read
+                            .format("csv")
+                            .option("header","true")
+                            .load("/data/providers/Bridge/files_-_Retargetly_Bridge_Linkage_LATAM_%s.csv".format(date_bridge))
+                            .select("Timestamp","IP_Address","Device_ID","Device_Type")
+                            .withColumn("Timestamp",unix_timestamp(col("Timestamp")))
+                            .filter("Device_Type is not null")
+                            .withColumn("Device_Type",udfDeviceType(col("Device_Type")))
+                            .withColumn("Platform",lit(""))
+                            .select("Timestamp","Device_ID","IP_Address","Device_Type","platform")
 
-    df_union.write
-            .format("csv")
-            .option("sep","\t")
-            .mode(SaveMode.Overwrite)
-            .save("/datascience/data_tapad/full_report/%s".format(today))
+    data_bridge.write
+              .format("csv")
+              .option("sep","\t")
+              .mode(SaveMode.Overwrite)
+              .save("/datascience/data_tapad/full_report/%s".format(today))
   }
 
 
