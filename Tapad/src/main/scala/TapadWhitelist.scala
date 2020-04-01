@@ -72,16 +72,16 @@ object TapadWhitelist {
   }
 
   def whitelist_madids_report(spark: SparkSession,date:String){
-    val current_month = DateTime.now().toString("yyyyMM")
+    val last_month = DateTime.now().minusDays(30).toString("yyyyMM")
 
     val today = DateTime.now.toString("yyyyMMdd")
     val madids_factual = spark.read.format("csv").option("sep","\t")
-                              .load("/datascience/devicer/processed/madids_factual_%s/".format(current_month))
+                              .load("/datascience/devicer/processed/madids_factual_%s/".format(last_month))
                               .withColumnRenamed("_c1","madids")
                               .select("madids")
 
     val madids_startapp = spark.read.format("csv").option("sep","\t")
-                              .load("/datascience/devicer/processed/madids_startapp_%s/".format(current_month))
+                              .load("/datascience/devicer/processed/madids_startapp_%s/".format(last_month))
                               .withColumnRenamed("_c1","madids")
                               .select("madids")
     // GEO
