@@ -257,7 +257,7 @@ object Coronavirus {
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
     val since = 1
-    val ndays = 20
+    val ndays = 15
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since + ndays)
     val end = DateTime.now.minusDays(since)
