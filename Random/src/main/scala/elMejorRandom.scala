@@ -1351,7 +1351,7 @@ val raw_small_2 = get_safegraph_data(spark,"5","15","argentina")
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
 
-val raw = List(raw_small_1,raw_small_2).reduce(_.unionByName (_))
+val raw_small = List(raw_small_1,raw_small_2).reduce(_.unionByName (_))
 
 val one_day_data = raw_small
 .groupBy("Day","device_id").agg(count("utc_timestamp") as "detections")
