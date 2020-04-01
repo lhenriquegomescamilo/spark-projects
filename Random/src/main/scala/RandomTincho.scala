@@ -3198,7 +3198,7 @@ object RandomTincho {
     val start = DateTime.now.minusDays(0)
 
     //val days = (0 until 24).map(start.minusDays(_)).map(_.toString(format))
-    val days = List("20200326","20200325","20200324","20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200314","20200313","20200312","20200311","20200310",
+    val days = List("20200331","20200330","20200329","20200328","20200327","20200326","20200325","20200324","20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200314","20200313","20200312","20200311","20200310",
                     "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
     val path = "/datascience/geo/safegraph/"
     val dfs = days
@@ -3261,12 +3261,12 @@ object RandomTincho {
         Seq("geo_hash", "window")
       )
       .withColumn("day", udfDay(col("window")))
-      .groupBy("original_id", "day",name)
+      .groupBy("original_id", "day",name,"FNA")
       .agg(collect_set(col("device_id")).as("devices"))
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_barrios_%s".format(country))
+      .save("/datascience/custom/coronavirus_contacts_partidos_%s".format(country))
 
   }
 
@@ -3366,8 +3366,8 @@ object RandomTincho {
                     .withColumn("timestamp_airport", col("timestamp_airport").cast(IntegerType))
                     .filter("timestamp_raw > timestamp_airport") // filter timestamp
                     .groupBy("geohash")
-                    .agg(first(col("latitude")).as("lat"),
-                        first(col("longitude")).as("lon"),
+                    .agg(first(col("latitude")).as("latitude"),
+                        first(col("longitude")).as("longitude"),
                         first(col("timestamp_raw")).as("timestamp"),
                         approx_count_distinct(col("device_id"), 0.02).as("device_unique")
                     )
@@ -3401,15 +3401,15 @@ object RandomTincho {
     //                     .withColumnRenamed("geo_hash_7","geo_hash_join")
 
       
-    // generate_seed(spark,"argentina")
-    // get_coronavirus(spark,"argentina")
-    // val barrios =  spark.read.format("csv")
-    //                 .option("header",true)
-    //                 .option("delimiter",",")
-    //                 .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-    //                 .withColumnRenamed("geo_hashote","geo_hash_join")
-    // coronavirus_barrios(spark,"argentina",barrios,"BARRIO")
-    //report_dh_fede(spark)
-    generate_kepler(spark,"CO")
+    generate_seed(spark,"argentina")
+    get_coronavirus(spark,"argentina")
+     val barrios =  spark.read
+                          .format("csv")
+                          .option("sep","\t")
+                          .option("header","true")
+                          .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+                          .withColumnRenamed("geo_hashote","geo_hash_join")
+    coronavirus_barrios(spark,"argentina",barrios,"NAM")
+    //generate_kepler(spark,"CO")
   }
 }
