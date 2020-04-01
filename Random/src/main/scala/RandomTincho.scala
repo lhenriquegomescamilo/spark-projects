@@ -3330,6 +3330,7 @@ object RandomTincho {
         .drop("rn")
         .withColumnRenamed("timestamp","timestamp_airport")
         .select("device_id","timestamp_airport","audience")
+        .withColumn("device_id", lower(col("device_id")))
         .write
         .format("parquet")
         .mode(SaveMode.Overwrite)
@@ -3379,6 +3380,10 @@ object RandomTincho {
           .save("/datascience/custom/kepler_%s".format(country))
   }
 
+  def report_etermax(spark:SparkSession){
+
+  }
+
   def main(args: Array[String]) {
 
     // Setting logger config
@@ -3401,15 +3406,17 @@ object RandomTincho {
     //                     .withColumnRenamed("geo_hash_7","geo_hash_join")
 
       
-    generate_seed(spark,"argentina")
-    get_coronavirus(spark,"argentina")
-     val barrios =  spark.read
-                          .format("csv")
-                          .option("sep","\t")
-                          .option("header","true")
-                          .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
-                          .withColumnRenamed("geo_hashote","geo_hash_join")
-    coronavirus_barrios(spark,"argentina",barrios,"NAM")
-    //generate_kepler(spark,"CO")
+    // generate_seed(spark,"argentina")
+    // get_coronavirus(spark,"argentina")
+    //  val barrios =  spark.read
+    //                       .format("csv")
+    //                       .option("sep","\t")
+    //                       .option("header","true")
+    //                       .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+    //                       .withColumnRenamed("geo_hashote","geo_hash_join")
+    // coronavirus_barrios(spark,"argentina",barrios,"NAM")
+    generate_kepler(spark,"CO")
+
+    //report_etermax(spark)
   }
 }
