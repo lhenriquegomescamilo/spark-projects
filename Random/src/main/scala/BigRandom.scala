@@ -366,7 +366,16 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    spark.read.format("parquet")
+    .load("/datascience/custom/cl_geo_movement")
+    .filter("geohashes<=3 AND occurrences>5")
+    .withColumn("type", lit("android"))
+    .write.format("csv")
+    .option("sep", "\t")
+    .mode("overwrite")
+    .save("/datascience/custom/cl_geo_movement_csv")
 
+/**
     val getSeg = udf((lista: Seq[Integer]) =>
     if (lista.contains(303353)) 303353
     else if(lista.contains(303361)) 303361
@@ -388,7 +397,7 @@ def getDataPipeline(
 
     }   
 
-
+*/
     /**
     for (country <- countries) {    
 
