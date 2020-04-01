@@ -305,7 +305,7 @@ val raw = get_safegraph_data(spark,"30","1",country)
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
-withColumn(
+.withColumn(
 "geo_hash_7",
 ((abs(col("latitude").cast("float")) * 1000)
 .cast("long") * 100000) + (abs(
