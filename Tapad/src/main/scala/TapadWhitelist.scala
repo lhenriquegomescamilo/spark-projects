@@ -47,6 +47,10 @@ import scala.util.Random.shuffle
 object TapadWhitelist {
 
   def get_monthly_data_homes(spark:SparkSession, country:String): DataFrame = {
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(0)
     val path = "/datascience/data_insights/homes/"
