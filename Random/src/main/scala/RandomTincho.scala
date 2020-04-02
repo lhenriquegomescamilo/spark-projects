@@ -3365,7 +3365,7 @@ object RandomTincho {
                     .join(users_airport,Seq("device_id"),"inner")
                     .withColumn("timestamp_raw", col("timestamp_raw").cast(IntegerType))
                     .withColumn("timestamp_airport", col("timestamp_airport").cast(IntegerType))
-                    .filter("timestamp_raw > timestamp_airport") // filter timestamp
+                    .filter("timestamp_raw >= timestamp_airport") // filter timestamp
                     .groupBy("geohash")
                     .agg(first(col("latitude")).as("latitude"),
                         first(col("longitude")).as("longitude"),
@@ -3423,25 +3423,13 @@ object RandomTincho {
                               .withColumnRenamed("_c1","madids")
                               .select("madids")
     // GEO
-    val madids_geo_ar = spark.read.format("csv").option("delimiter","\t")
-                              .load("/datascience/geo/NSEHomes/argentina_365d_home_21-1-2020-12h")
-                              .withColumnRenamed("_c0","madids")
-                              .select("madids")
+    val madids_geo_ar = get_monthly_data_homes(spark,"AR")
 
-    val madids_geo_mx = spark.read.format("csv").option("delimiter","\t")
-                          .load("/datascience/geo/NSEHomes/mexico_200d_home_29-1-2020-12h")
-                          .withColumnRenamed("_c0","madids")
-                          .select("madids")
+    val madids_geo_mx = get_monthly_data_homes(spark,"MX")
 
-    val madids_geo_cl = spark.read.format("csv").option("delimiter","\t")
-                                  .load("/datascience/geo/NSEHomes/CL_90d_home_29-1-2020-12h")
-                                  .withColumnRenamed("_c0","madids")
-                                  .select("madids")
+    val madids_geo_cl = get_monthly_data_homes(spark,"CL")
 
-    val madids_geo_co = spark.read.format("csv").option("delimiter","\t")
-                              .load("/datascience/geo/NSEHomes/CO_90d_home_18-2-2020-12h")
-                              .withColumnRenamed("_c0","madids")
-                              .select("madids")
+    val madids_geo_co = get_monthly_data_homes(spark,"CO")
 
     val rest = madids_factual.union(madids_startapp)
               .union(madids_geo_ar)
@@ -3487,8 +3475,8 @@ object RandomTincho {
     //                       .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
     //                       .withColumnRenamed("geo_hashote","geo_hash_join")
     // coronavirus_barrios(spark,"argentina",barrios,"NAM")
-    //generate_kepler(spark,"CO")
+    generate_kepler(spark,"CO")
 
-    report_etermax(spark)
+    //report_etermax(spark)
   }
 }
