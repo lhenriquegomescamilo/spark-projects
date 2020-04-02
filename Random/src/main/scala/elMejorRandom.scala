@@ -1374,7 +1374,8 @@ val total30_detections = raw.count()
 val day_data = raw.groupBy("Day").agg(countDistinct("device_id") as "devices",count("utc_timestamp") as "detections")
 
 day_data
-.withColumn("total30",lit(total30))
+.withColumn("total30_users",lit(total30_users))
+.withColumn("total30_detections",lit(total30_detections))
 .repartition(1)
 .write
     .mode(SaveMode.Overwrite)
