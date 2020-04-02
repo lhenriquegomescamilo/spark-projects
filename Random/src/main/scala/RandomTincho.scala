@@ -3479,26 +3479,7 @@ object RandomTincho {
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/coronavirus_contacts_%s".format(country))
-
-    val joint = spark.read.load("/datascience/custom/coronavirus_contacts_%s".format(country))
-
-    // Calculate it by day
-    val udfDay = udf((d: String) => d.substring(0, 8))
-
-    joint
-      .join(
-        initial_seed.withColumnRenamed("device_id", "original_id"),
-        Seq("geo_hash", "window")
-      )
-      .withColumn("day", udfDay(col("window")))
-      .groupBy("original_id", "day","geo_hash","window")
-      .agg(collect_set(col("device_id")).as("devices"))
-      .write
-      .format("parquet")
-      .mode(SaveMode.Overwrite)
       .save("/datascience/custom/%s".format(output))
-
   }
 
   def main(args: Array[String]) {
@@ -3547,7 +3528,6 @@ object RandomTincho {
     get_contacts(spark,"CO",initial_seed,"first_level_co")
 
     val first_level = spark.read.load("/datascience/custom/first_level_co")
-                          .withColumn("device_id",explode(col("devices")))
                           .select("device_id","geo_hash","window")
     
     get_contacts(spark,"CO",first_level,"second_level_co")
