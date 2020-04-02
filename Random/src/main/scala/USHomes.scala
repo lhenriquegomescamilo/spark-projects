@@ -88,18 +88,18 @@ object USHomes {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    getApproximatePlacePerId(spark)
-    getHomes(spark)
-    getEstidMap(
-      spark = spark
-    )
+    // getApproximatePlacePerId(spark)
+    // getHomes(spark)
+    // getEstidMap(
+    //   spark = spark
+    // )
 
     spark.read
       .format("parquet")
       .load(
         "/datascience/custom/us_homes"
       )
-      .groupBy("zipplus4")
+      .groupBy("zip4")
       .agg(approxCountDistinct("estid", 0.02) as "device_unique")
       .write
       .format("csv")

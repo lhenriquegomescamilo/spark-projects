@@ -5038,9 +5038,9 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val id1 = 1
-    val id2 = 2
-    val id3 = 3
+    val id1 = 306279
+    val id2 = 306281
+    val id3 = 306283
 
     for ((country, path) <- List("AR", "MX") zip List(
            "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_argentina",
@@ -5053,6 +5053,7 @@ object Random {
         .agg(approxCountDistinct("geo_hash_7", 0.02) as "cuadras")
         .write
         .format("parquet")
+        .mode("overwrite")
         .save("/datascience/custom/cuadras_per_user_%s".format(country))
 
       spark.read
@@ -5061,12 +5062,13 @@ object Random {
         .withColumn(
           "segment",
           when(col("cuadras") < 3, id1)
-            .otherwise(when(col("segment") < 40, id2).otherwise(id3))
+            .otherwise(when(col("cuadras") < 40, id2).otherwise(id3))
         )
         .select("device_type", "device_id", "segment")
         .write
         .format("csv")
         .option("sep", "\t")
+        .mode("overwrite")
         .save("/datascience/custom/cuadras_per_user_%s_csv".format(country))
     }
   }
