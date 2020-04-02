@@ -149,7 +149,7 @@ def get_safegraph_data(
 
 //Esta función obtiene los geohashes los últimos 30 días y mira una desagregacióon por barrio para Argentina. 
 
-val country = "UY"
+val country = "PE"
 
 
 val timezone = Map("argentina" -> "GMT-3",
