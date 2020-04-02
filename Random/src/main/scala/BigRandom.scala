@@ -374,11 +374,12 @@ def getDataPipeline(
 
     val countries = "AR,MX".split(",").toList
     for (country <- countries) {    
-    println(country)  
+    println(country)
+    var final_path = "/datascience/custom/cuadras_per_user_%s_to_push".format(country) 
     var path1 = "/datascience/custom/cuadras_per_user_%s_csv".format(country)
     var df = spark.read.format("csv")
         .option("sep", "\t")
-        .load(path)  
+        .load(path1)  
         .toDF("device_type","device_id","segment")
         .groupBy("device_type","device_id")
         .agg(collect_list("segment").as("segment"))
@@ -391,7 +392,7 @@ def getDataPipeline(
     .format("csv")
     .option("sep", "\t")
     .mode("overwrite")
-    .save("/datascience/custom/cuadras_per_user_%s_to_push".format(country))
+    .save(final_path)
     
     var path2 = "/datascience/custom/cuadras_per_user_%s_csv_xd".format(country)
     var df_xd = spark.read.format("csv")
@@ -409,7 +410,7 @@ def getDataPipeline(
     .format("csv")
     .option("sep", "\t")
     .mode("append")
-    .save("/datascience/custom/cuadras_per_user_%s_to_push".format(country))
+    .save(final_path)
 
     }   
 
