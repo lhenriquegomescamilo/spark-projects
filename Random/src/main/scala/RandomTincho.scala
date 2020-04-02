@@ -3493,13 +3493,43 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    val users = spark.read.format("csv")
-                            .option("header",true)
-                            .option("delimiter","\t")
-                            .load("/datascience/geo/raw_output/airportsCO_30d_CO_30-3-2020-16h")
-                            .withColumn("device_id", lower(col("device_id")))
-                            .select("device_id")
-                            .distinct()
+    // val users = spark.read.format("csv")
+    //                         .option("header",true)
+    //                         .option("delimiter","\t")
+    //                         .load("/datascience/geo/raw_output/airportsCO_30d_CO_30-3-2020-16h")
+    //                         .withColumn("device_id", lower(col("device_id")))
+    //                         .select("device_id")
+    //                         .distinct()
+
+    // val initial_seed = spark.read.format("parquet").option("basePath", "/datascience/geo/safegraph/")
+    //                         .load("/datascience/geo/safegraph/day=202003*/country=%s/".format("CO"))
+    //                         .withColumnRenamed("ad_id", "device_id")
+    //                         .withColumn("device_id", lower(col("device_id")))
+    //                         .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+    //                         .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+    //                         .withColumn("window", date_format(col("Time"), "mm"))
+    //                         .withColumn("window",
+    //                           when(col("window") > 40, 3)
+    //                             .otherwise(when(col("window") > 20, 2).otherwise(1))
+    //                         )
+    //                         .withColumn("window", concat(col("Hour"), col("window")))
+    //                         .drop("Time")
+    //                         .withColumn(
+    //                                     "geo_hash",
+    //                                     ((abs(col("latitude").cast("float")) * 1000)
+    //                                     .cast("long") * 100000) + (abs(
+    //                                     col("longitude").cast("float") * 1000
+    //                                     ).cast("long"))
+    //                           )
+    //                         .join(users,Seq("device_id"),"inner")
+    //                         .select("device_id","geo_hash", "window")
+    //                         .distinct
+
+    //get_contacts(spark,"CO",initial_seed,"first_level_co")
+
+    val users = spark.read.load("/datascience/custom/first_level_co")
+                          .select("device_id")
+                          .distinct()
 
     val initial_seed = spark.read.format("parquet").option("basePath", "/datascience/geo/safegraph/")
                             .load("/datascience/geo/safegraph/day=202003*/country=%s/".format("CO"))
@@ -3524,11 +3554,6 @@ object RandomTincho {
                             .join(users,Seq("device_id"),"inner")
                             .select("device_id","geo_hash", "window")
                             .distinct
-
-    get_contacts(spark,"CO",initial_seed,"first_level_co")
-
-    val first_level = spark.read.load("/datascience/custom/first_level_co")
-                          .select("device_id","geo_hash","window")
     
     get_contacts(spark,"CO",first_level,"second_level_co")
   }
