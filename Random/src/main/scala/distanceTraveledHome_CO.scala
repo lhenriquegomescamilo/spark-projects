@@ -350,7 +350,7 @@ hash_user
 
 //Levantamos la tabla de equivalencias
 val geo_hash_table = spark.read.format("csv").option("header",true)
-.load("/datascience/geo/geohashes_tables/CO_GeoHash_to_Entity.csv")
+.load("/datascience/geo/geohashes_tables/%s_GeoHash_to_Entity.csv".format(country))
 
 //Levantamos la data
 val geo_labeled_users = spark.read.format("parquet")
