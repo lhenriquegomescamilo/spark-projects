@@ -17,7 +17,7 @@ import org.apache.spark.sql.functions.input_file_name
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object distanceTraveledHome_MX {
+object distanceTraveled_CL {
   
 
 
@@ -47,40 +47,6 @@ def getDataPipeline(
 
     df
   }
-
-def get_ua_segments(spark:SparkSession) = {
-
-//
-//val ua = spark.read.format("parquet")
-//        .load("/datascience/data_useragents/day=*/country=AR")
- //       .filter("model != ''") //con esto filtramos los desktop
-  //      .withColumn("device_id",upper(col("device_id")))
-   //     .drop("user_agent","event_type","url")
-    //    .dropDuplicates("device_id")
-
-
-
-val ua = getDataPipeline(spark,"/datascience/data_useragents/","30","1","MX")
-        .filter("model != ''") //con esto filtramos los desktop
-        .withColumn("device_id",upper(col("device_id")))
-        .drop("user_agent","event_type","url")
-        .dropDuplicates("device_id")        
-        //.filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
-
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","15","1","MX")
-              .withColumn("device_id",upper(col("device_id")))
-              .groupBy("device_id").agg(concat_ws(",",collect_set("feature")) as "segments")
-
-val joined = ua.join(segments,Seq("device_id"))
-.write.format("csv")
-.option("header",true)
-.option("delimiter","\t")
-.mode(SaveMode.Overwrite)
-.save("/datascience/misc/ua_w_segments_30d_MX_II")
-
-                                          }
-
-
 
 def get_safegraph_data(
       spark: SparkSession,
@@ -168,111 +134,6 @@ def get_safegraph_data(
     
   }
 
-/*
-
-
-/////////////////Distancia al hogar
-//Tenemos esta data que tenemos geohashadita y por hora, la agrupamos por geoh y por hora    
-//Esto es safegraph pelado los uĺtimos X dáis
-//Esto nos da todos los geocode donde estuvo un usuario, y además nos quedamos con un lat long representativo de cada uno
-val geo_hash_visits = raw.dropDuplicates("device_id","Day","geo_hash")
-
-
-//Path home ARG
-val path_homes = "/datascience/geo/NSEHomes/argentina_180d_home_27-2-2020--3h"
-val df_homes = spark.read.format("csv")
-    .option("delimiter","\t")
-    .option("header",false)
-    .load(path_homes)
-    .toDF("device_id","pii_type","freq","else","lat_home","lon_home")
-    .filter("lat_home != lon_home")
-    .withColumn( "lat_home",((col("lat_home").cast("float"))))
-    .withColumn( "lon_home",((col("lon_home").cast("float"))))
-    .select("device_id","lat_home","lon_home")
-    
-//Armamos el vs dataset: acá tenemos el hogar vs cada uno de los geohashes de un usuario
-    val device_vs_device = df_homes.join(geo_hash_visits,Seq("device_id"))
-
-// Using vincenty formula to calculate distance between user/device location and ITSELF.
-    device_vs_device.createOrReplaceTempView("joint")
-    
-val columns = device_vs_device.columns
-
-    val query =
-    """SELECT latitude,
-                longitude,
-                Day,
-                lat_home,
-                lon_home,
-                device_id,
-                geo_hash,
-                distance
-            FROM (
-            SELECT *,((1000*111.045)*DEGREES(ACOS(COS(RADIANS(latitude)) * COS(RADIANS(lat_home)) *
-            COS(RADIANS(longitude) - RADIANS(lon_home)) +
-            SIN(RADIANS(latitude)) * SIN(RADIANS(lat_home))))) as distance
-            FROM joint 
-            )
-            WHERE distance >= 0"""
-
-val sqlDF = spark.sql(query)
-
-
-//Acá tenemos la distancia de cada usuario cada vez que cambio de geohash    
-val distance_from_home = spark.sql(query)
-//Guardamos este raw sobre el que luego haremos operaciones para obtener métricas de distancia al hgoar
-distance_fom_home
-  .write
-  .mode(SaveMode.Overwrite)
-  .format("parquet")
-  .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_from_home_%s".format(today))//
-
-
-////////////////////////////////////////////////Distancia recorrida por día
-
-//Y acá empiezo a calcular la distancia recorrida por usuario. 
-val tipito = raw
-.withColumn("latituderad",toRadians(col("latitude")))
-.withColumn("longituderad",toRadians(col("longitude")))
-
-
-val windowSpec = Window.partitionBy("device_id").orderBy("utc_timestamp")
-
-val spacelapse = tipito
-.withColumn("deltaLat", col("latituderad") - lag("latituderad", 1).over(windowSpec))
-.withColumn("deltaLong", col("longituderad") - lag("longituderad", 1).over(windowSpec))
-.withColumn("a1", pow(sin(col("deltaLat")/2),2))
-.withColumn("a2", cos(col("latituderad")) * cos(lag("latituderad", 1).over(windowSpec)) * col("deltaLong")/2)
-.withColumn("a", pow(col("a1")+col("a2"),2))
-.withColumn("greatCircleDistance1",(sqrt(col("a"))*2))
-.withColumn("greatCircleDistance2",(sqrt(lit(1)-col("a"))))
-.withColumn("distance",atan2(col("greatCircleDistance1"),col("greatCircleDistance2"))*6371*1000)
-.withColumn("timeDelta", (col("utc_timestamp") - lag("utc_timestamp", 1).over(windowSpec)))
-//.withColumn("speed(km/h)",col("distance(m)") *3.6/ col("timeDelta(s)") )
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
-.select("device_id","utc_timestamp","latitude","longitude","distance","timeDelta","Day","geo_hash")
-
-//spacelapse
-
-//.groupBy("Day","device_id").agg(sum(col("distance(m)")) as "distance(m)",sum(col("timeDelta(s)")) as "timeDelta(s)")
-
-//Esto nos da por usuario por día, la distancia recorrida. //Esto lo guardaría.
-//también quiero un promedio de esto
-
-//val space_lapse_agg = spacelapse.groupBy("Day").agg(count("device_id") as "devices",avg(col("distance(m)")) as "distance_avg",avg(col("timeDelta(s)")) as "timeDelta_avg")
-
-
-spacelapse
-    .write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .option("header",true)
-    .save("/datascience/geo/Reports/GCBA/Coronavirus/distance_traveled_%s".format(today))
-
-
-
-*/
 
 
  /*****************************************************/
@@ -287,18 +148,17 @@ spacelapse
 
 //Esta función obtiene los geohashes los últimos 30 días y mira una desagregacióon por barrio para Argentina. 
 
-val country = "mexico"
+val country = "CL"
 
 val timezone = Map("argentina" -> "GMT-3",
                        "mexico" -> "GMT-5",
+                       "UY"->"GMT-3",
                        "CL"->"GMT-3",
                        "CO"-> "GMT-5",
                        "PE"-> "GMT-5")
     
     //setting timezone depending on country
 spark.conf.set("spark.sql.session.timeZone", timezone(country))
-
-
 
 val today = (java.time.LocalDate.now).toString
 
@@ -307,7 +167,13 @@ val raw = get_safegraph_data(spark,"30","1",country)
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
-.withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
+.withColumn(
+"geo_hash_7",
+((abs(col("latitude").cast("float")) * 1000)
+.cast("long") * 100000) + (abs(
+col("longitude").cast("float") * 1000
+).cast("long"))
+)
 
 //Vamos a usarlo para calcular velocidad y distancia al hogar
 raw.persist()
@@ -318,7 +184,6 @@ val geo_hash_visits = raw
 
 val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
 
-
 geo_hash_visits
  .write
     .mode(SaveMode.Overwrite)
@@ -327,6 +192,7 @@ geo_hash_visits
     .save(output_file)
 
 
+///////////Agregación Nivel 0
 //Queremos un cálculo general por país
 val hash_user = spark.read.format("parquet").load(output_file).withColumn("device_id",lower(col("device_id")))
 
@@ -340,18 +206,26 @@ hash_user
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
-//Desagregado por entidad y municipio
-val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/MX_municipal_Updated_mexico_sjoin_polygon")
+// Agregaciones geogŕaficas
 
+//Levantamos la tabla de equivalencias
+val geo_hash_table = spark.read.format("csv").option("header",true)
+.load("/datascience/geo/geohashes_tables/%s_GeoHash_to_Entity.csv".format(country))
 
-//Acá lo agregamos por estado
-val output_file_estado = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_estado_%s".format(today,country)
-val estado = spark.read.format("parquet")
+//Levantamos la data
+val geo_labeled_users = spark.read.format("parquet")
 .load(output_file)
-.join(entidad,Seq("geo_hash_7"))
-.groupBy("NOM_ENT","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("NOM_ENT","Day").agg(
+.join(geo_hash_table,Seq("geo_hash_7"))
+
+geo_labeled_users.persist()
+
+///////////Agregación Nivel 1
+//definimos el output
+val output_file_level_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_1_%s".format(today,country)
+
+geo_labeled_users
+.groupBy("Level1_Code","Level1_Name","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("Level1_Code","Level1_Name","Day").agg(
   count("device_id") as "devices",
   avg("geo_hash_7") as "geo_hash_7_avg",
   stddev_pop("geo_hash_7") as "geo_hash_7_std")
@@ -360,16 +234,17 @@ val estado = spark.read.format("parquet")
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save(output_file_estado)
+.save(output_file_level_1)
 
 
-//Acá lo agregamos por municipio
-val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_municipio_%s".format(today,country)
-val municipio = spark.read.format("parquet")
-.load(output_file)
-.join(entidad,Seq("geo_hash_7"))
-.groupBy("NOM_ENT","CVEGEO","NOM_MUN","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("NOM_ENT","CVEGEO","NOM_MUN","Day").agg(
+///////////Agregación Nivel 2
+
+//definimos el output
+val output_file_level_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_2_%s".format(today,country)
+
+geo_labeled_users
+.groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","Day").agg(
   count("device_id") as "devices",
   avg("geo_hash_7") as "geo_hash_7_avg",
   stddev_pop("geo_hash_7") as "geo_hash_7_std")
@@ -378,7 +253,24 @@ val municipio = spark.read.format("parquet")
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save(output_file_tipo_2)
+.save(output_file_level_2)
+
+//definimos el output
+val output_file_level_3 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_3_%s".format(today,country)
+
+geo_labeled_users
+.groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","Level3_Code","Level3_Name","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","Day").agg(
+  count("device_id") as "devices",
+  avg("geo_hash_7") as "geo_hash_7_avg",
+  stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save(output_file_level_3)
+
 
 
 }
