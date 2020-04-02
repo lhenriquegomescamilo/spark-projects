@@ -287,10 +287,12 @@ spacelapse
 
 //Esta función obtiene los geohashes los últimos 30 días y mira una desagregacióon por barrio para Argentina. 
 
-val country = "CO"
+val country = "PE"
+
 
 val timezone = Map("argentina" -> "GMT-3",
                        "mexico" -> "GMT-5",
+                       "UY"->"GMT-3",
                        "CL"->"GMT-3",
                        "CO"-> "GMT-5",
                        "PE"-> "GMT-5")
