@@ -3460,11 +3460,14 @@ object RandomTincho {
         when(col("window") > 40, 3)
           .otherwise(when(col("window") > 20, 2).otherwise(1))
       )
+      .withColumn("geo_hash",
+                                ((abs(col("latitude").cast("float")) * 10)
+                                  .cast("int") * 10000) + (abs(
+                                  col("longitude").cast("float") * 100
+                                ).cast("int"))
+                              )
       .withColumn("window", concat(col("Hour"), col("window")))
       .drop("Time")
-
-    val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
-
     
     val initial_seed = seed
                 .withColumn("device_id", lower(col("device_id")))
