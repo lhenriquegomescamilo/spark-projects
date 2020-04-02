@@ -5061,12 +5061,13 @@ object Random {
         .withColumn(
           "segment",
           when(col("cuadras") < 3, id1)
-            .otherwise(when(col("segment") < 40, id2).otherwise(id3))
+            .otherwise(when(col("cuadras") < 40, id2).otherwise(id3))
         )
         .select("device_type", "device_id", "segment")
         .write
         .format("csv")
         .option("sep", "\t")
+        .mode("overwrite")
         .save("/datascience/custom/cuadras_per_user_%s_csv".format(country))
     }
   }
