@@ -5042,7 +5042,7 @@ object Random {
     val id2 = 306281
     val id3 = 306283
 
-    for ((country, path) <- List("AR", "MX") zip List(
+    for ((country, path) <- List("UY", "PE", "CL", "CO") zip List(
            "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_argentina",
            "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_mexico"
          )) {
@@ -5071,5 +5071,30 @@ object Random {
         .mode("overwrite")
         .save("/datascience/custom/cuadras_per_user_%s_csv".format(country))
     }
+
+    val gender = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/BR_gender_202004_grouped/")
+    val age = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .load("/datascience/devicer/processed/BR_age_202004_grouped/")
+
+    val map = ((2 to 9) zip (0 to 7).map(149499 + _ * 8)).toMap
+    val udfMap = udf((segment: String) => map(segment.toInt))
+
+    gender
+      .unionAll(age)
+      .withColumn("_c2", udfMap(col("_c2")))
+      .groupBy("_c0", "_c1")
+      .agg(collect_set("_c2") as "_c2")
+      .withColumn("_c2", concat_ws(",", col("_c2")))
+      .select("_c0", "_c1", "_c2")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode("overwrite")
+      .save("/datascience/custom/BR_demo_segments")
   }
 }
