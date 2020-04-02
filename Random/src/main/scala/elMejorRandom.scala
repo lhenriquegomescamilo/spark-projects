@@ -1311,9 +1311,6 @@ space_lapse_agg
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-
-val today = (java.time.LocalDate.now).toString
-
 /*
 1- Total de Devices que tenemos en AR con data GEO.
 2- Total que tenemos de Devices en AR con data para poder hacer estudios de movimiento (si podemos dar total de puntos diarios, excelente).
@@ -1358,7 +1355,6 @@ raw.persist()
 //Calculamos geohashes por usuario porque nos sirve para l conteo y para asignar ubicacion
 val geo_hash_visits = raw
 .groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
-.withColumn("country",lit(country))
 
 val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/UBA/geohashes_by_user_AR_%s".format(today)
 
