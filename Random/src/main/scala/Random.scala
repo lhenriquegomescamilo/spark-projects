@@ -5088,8 +5088,8 @@ object Random {
       .unionAll(age)
       .withColumn("_c2", udfMap(col("_c2")))
       .groupBy("_c0", "_c1")
-      .agg(collect_set("_c2") as "_c2")
-      .withColumn("_c2", concat_ws(",", col("_c2")))
+      // .agg(collect_set("_c2") as "_c2")
+      // .withColumn("_c2", concat_ws(",", col("_c2")))
       .select("_c0", "_c1", "_c2")
       .write
       .format("csv")
