@@ -394,7 +394,7 @@ def getDataPipeline(
     .mode("overwrite")
     .save(final_path)
     
-    var path2 = "/datascience/custom/cuadras_per_user_%s_csv_xd".format(country)
+    var path2 = "/datascience/audiences/crossdeviced/cuadras_per_user_%s_csv_xd".format(country)
     var df_xd = spark.read.format("csv")
         .load(path2)
         .withColumnRenamed("_c1", "device_id")
