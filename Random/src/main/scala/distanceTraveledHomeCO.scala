@@ -354,8 +354,8 @@ val output_file_level_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashe
 
 //Levantamos la data
 val level_1_data = spark.read.format("parquet")
-.load(level_1_polygon)
-.join(entidad,Seq("geo_hash_7"))
+.load(output_file)
+.join(level_1_polygon,Seq("geo_hash_7"))
 .groupBy("GEOID","GEOID_Name","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
 .groupBy("GEOID","GEOID_Name","Day").agg(
   count("device_id") as "devices",
@@ -391,7 +391,7 @@ val level_2_data = spark.read.format("parquet")
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save(output_file_partido)
+.save(output_file_level_2)
 
 
 
