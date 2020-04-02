@@ -3444,7 +3444,7 @@ object RandomTincho {
 
   }
 
-  def get_contacts(spark: SparkSession,country:String, seed:DataFrame, output:String) {
+  def get_contacts(spark: SparkSession,country:String, initial_seed:DataFrame, output:String) {
 
     val raw = spark.read
       .format("parquet")
@@ -3470,27 +3470,6 @@ object RandomTincho {
       .withColumn("window", concat(col("Hour"), col("window")))
       .drop("Time")
     
-    val initial_seed = seed
-                .withColumn("device_id", lower(col("device_id")))
-                .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
-                .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
-                .withColumn("window", date_format(col("Time"), "mm"))
-                .withColumn(
-                  "window",
-                  when(col("window") > 40, 3)
-                    .otherwise(when(col("window") > 20, 2).otherwise(1))
-                )
-                .withColumn("window", concat(col("Hour"), col("window")))
-                .drop("Time")
-               .withColumn(
-                          "geo_hash",
-                          ((abs(col("latitude_user").cast("float")) * 1000)
-                          .cast("long") * 100000) + (abs(
-                          col("longitude_user").cast("float") * 1000
-                          ).cast("long"))
-                          )
-                .select("device_id","geo_hash", "window")
-
     // Get the distinct moments to filter the raw data
     val moments = initial_seed.select("geo_hash", "window").distinct()
 
@@ -3554,14 +3533,38 @@ object RandomTincho {
     //                       .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
     //                       .withColumnRenamed("geo_hashote","geo_hash_join")
     // coronavirus_barrios(spark,"argentina",barrios,"NAM")
-    val initial_seed = spark.read.format("csv")
-                            .option("header",true)
-                            .option("delimiter","\t")
-                            .load("/datascience/geo/raw_output/airportsCO_30d_CO_30-3-2020-16h")
-    initial_seed.cache()
 
-    get_contacts(spark,"CO",initial_seed,"first_level_co")
+    // val initial_seed = spark.read.format("csv")
+    //                         .option("header",true)
+    //                         .option("delimiter","\t")
+    //                         .load("/datascience/geo/raw_output/airportsCO_30d_CO_30-3-2020-16h")
+    //                         .withColumn("device_id", lower(col("device_id")))
+    //                         .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+    //                         .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+    //                         .withColumn("window", date_format(col("Time"), "mm"))
+    //                         .withColumn(
+    //                           "window",
+    //                           when(col("window") > 40, 3)
+    //                             .otherwise(when(col("window") > 20, 2).otherwise(1))
+    //                         )
+    //                         .withColumn("window", concat(col("Hour"), col("window")))
+    //                         .drop("Time")
+    //                       .withColumn(
+    //                                   "geo_hash",
+    //                                   ((abs(col("latitude_user").cast("float")) * 1000)
+    //                                   .cast("long") * 100000) + (abs(
+    //                                   col("longitude_user").cast("float") * 1000
+    //                                   ).cast("long"))
+    //                                   )
+    //                         .select("device_id","geo_hash", "window")
+    // initial_seed.cache()
 
-    //report_etermax(spark)
+    // get_contacts(spark,"CO",initial_seed,"first_level_co")
+
+    val first_level = spark.read.load("/datascience/custom/first_level_co")
+                          .withColumn("device_id",explode(col("devices")))
+                          .select("device_id","geo_hash","window")
+    
+    get_contacts(spark,"CO",first_level,"second_level_co")
   }
 }
