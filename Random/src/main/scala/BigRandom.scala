@@ -400,8 +400,11 @@ def getDataPipeline(
         .withColumnRenamed("_c1", "device_id")
         .withColumnRenamed("_c2", "device_type")
         .withColumnRenamed("_c5", "segment")
-        .withColumn("segment",getSeg(col("segment"))) 
+        .withColumn("segment", df("segment").cast(IntegerType))
         .withColumn("device_type", when(col("device_type")==="and", "android").otherwise(when(col("device_type")==="ios", "ios").otherwise("web")))
+        .groupBy("device_type","device_id")
+        .agg(collect_list("segment").as("segment"))       
+        .withColumn("segment",getSeg(col("segment")))    
         .select("device_type", "device_id", "segment")
         .distinct()
 
