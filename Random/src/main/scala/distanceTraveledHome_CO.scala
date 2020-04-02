@@ -287,10 +287,12 @@ spacelapse
 
 //Esta función obtiene los geohashes los últimos 30 días y mira una desagregacióon por barrio para Argentina. 
 
-val country = "CO"
+val country = "UY"
+
 
 val timezone = Map("argentina" -> "GMT-3",
                        "mexico" -> "GMT-5",
+                       "UY"->"GMT-3",
                        "CL"->"GMT-3",
                        "CO"-> "GMT-5",
                        "PE"-> "GMT-5")
@@ -344,20 +346,26 @@ hash_user
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
-///////////Agregación Nivel 1
-//Levantamos el polígono
-val level_1_polygon = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/CO_Level_1_colombia_sjoin_polygon/")
+// Agregaciones geogŕaficas
 
+//Levantamos la tabla de equivalencias
+val geo_hash_table = spark.read.format("csv").option("header",true)
+.load("/datascience/geo/geohashes_tables/%s_GeoHash_to_Entity.csv".format(country))
+
+//Levantamos la data
+val geo_labeled_users = spark.read.format("parquet")
+.load(output_file)
+.join(geo_hash_table,Seq("geo_hash_7"))
+
+geo_labeled_users.persist()
+
+///////////Agregación Nivel 1
 //definimos el output
 val output_file_level_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_1_%s".format(today,country)
 
-//Levantamos la data
-val level_1_data = spark.read.format("parquet")
-.load(output_file)
-.join(level_1_polygon,Seq("geo_hash_7"))
-.groupBy("GEOID","GEOID_Name","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("GEOID","GEOID_Name","Day").agg(
+geo_labeled_users
+.groupBy("Level1_Code","Level1_Name","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("Level1_Code","Level1_Name","Day").agg(
   count("device_id") as "devices",
   avg("geo_hash_7") as "geo_hash_7_avg",
   stddev_pop("geo_hash_7") as "geo_hash_7_std")
@@ -370,19 +378,13 @@ val level_1_data = spark.read.format("parquet")
 
 
 ///////////Agregación Nivel 2
-//Levantamos el polígono
-val level_2_polygon = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/CO_Level_2_colombia_sjoin_polygon/")
 
 //definimos el output
 val output_file_level_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_2_%s".format(today,country)
 
-//Levantamos la data
-val level_2_data = spark.read.format("parquet")
-.load(output_file)
-.join(level_2_polygon,Seq("geo_hash_7"))
-.groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","Day").agg(
+geo_labeled_users
+.groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","Day").agg(
   count("device_id") as "devices",
   avg("geo_hash_7") as "geo_hash_7_avg",
   stddev_pop("geo_hash_7") as "geo_hash_7_std")

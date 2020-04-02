@@ -99,8 +99,6 @@ object Coronavirus {
       .withColumn("window", concat(col("Hour"), col("window")))
       .drop("Time")
 
-    val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
-
     // Select sample of 1000 users
     val initial_seed = spark.read
       .load("/datascience/coronavirus/coronavirus_seed/day=%s/country=%s".format(day,country))
@@ -169,7 +167,7 @@ object Coronavirus {
             .withColumnRenamed("ad_id", "device_id")
             .select("device_id")
             .distinct
-            .limit(10000)
+            .limit(20000)
       )
 
     val users = dfs.reduce((df1, df2) => df1.union(df2)).select("device_id").distinct
@@ -257,7 +255,7 @@ object Coronavirus {
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
     val since = 1
-    val ndays = 15
+    val ndays = 10
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since + ndays)
     val end = DateTime.now.minusDays(since)
@@ -276,6 +274,7 @@ object Coronavirus {
                           .option("sep","\t")
                           .option("header","true")
                           .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
+                          .withColumnRenamed("geo_hash_7","geo_hash_join")
 
 
     for (day <- days){
