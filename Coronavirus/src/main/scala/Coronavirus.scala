@@ -274,6 +274,7 @@ object Coronavirus {
                           .option("sep","\t")
                           .option("header","true")
                           .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
+                          .withColumnRenamed("geo_hash_7","geo_hash_join")
 
 
     for (day <- days){
