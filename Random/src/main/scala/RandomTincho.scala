@@ -3460,12 +3460,13 @@ object RandomTincho {
         when(col("window") > 40, 3)
           .otherwise(when(col("window") > 20, 2).otherwise(1))
       )
-      .withColumn("geo_hash",
-                                ((abs(col("latitude").cast("float")) * 10)
-                                  .cast("int") * 10000) + (abs(
-                                  col("longitude").cast("float") * 100
-                                ).cast("int"))
-                              )
+      .withColumn(
+                  "geo_hash",
+                  ((abs(col("latitude").cast("float")) * 1000)
+                  .cast("long") * 100000) + (abs(
+                  col("longitude").cast("float") * 1000
+                  ).cast("long"))
+)
       .withColumn("window", concat(col("Hour"), col("window")))
       .drop("Time")
     
@@ -3481,12 +3482,13 @@ object RandomTincho {
                 )
                 .withColumn("window", concat(col("Hour"), col("window")))
                 .drop("Time")
-                .withColumn("geo_hash",
-                                ((abs(col("latitude_user").cast("float")) * 10)
-                                  .cast("int") * 10000) + (abs(
-                                  col("longitude_user").cast("float") * 100
-                                ).cast("int"))
-                              )
+               .withColumn(
+                          "geo_hash",
+                          ((abs(col("latitude_user").cast("float")) * 1000)
+                          .cast("long") * 100000) + (abs(
+                          col("longitude_user").cast("float") * 1000
+                          ).cast("long"))
+                          )
                 .select("device_id","geo_hash", "window")
 
     // Get the distinct moments to filter the raw data
