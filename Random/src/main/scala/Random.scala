@@ -5082,7 +5082,7 @@ object Random {
       .load("/datascience/devicer/processed/BR_age_202004_grouped/")
 
     val map = ((2 to 9).map(_.toString) zip (0 to 7).map(149499 + _ * 8)).toMap
-    val udfMap = udf((segment: String) => if (map.contains(segment)) map(segment.toInt) else -1 )
+    val udfMap = udf((segment: String) => if (map.contains(segment)) map(segment) else -1 )
 
     gender
       .unionAll(age)
