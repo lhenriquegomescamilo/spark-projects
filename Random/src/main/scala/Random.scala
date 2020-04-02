@@ -5026,24 +5026,52 @@ object Random {
 
   // }
 
-  /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder
-        .appName("Spark devicer")
-        .config("spark.sql.files.ignoreCorruptFiles", "true")
-        .getOrCreate()
+  def get_piis_cl(spark: SparkSession) {
+    val xd = spark.read
+      .format("csv")
+      .option("sep", ",")
+      .load("/datascience/audiences/crossdeviced/CL_90d_home_29-1-2020-12h_xd")
+      .withColumnRenamed("_c0", "madid")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+      .withColumnRenamed("_c7", "lat")
+      .withColumnRenamed("_c8", "lon")
+      .select("madid", "lat", "lon", "device_id")
 
-    Logger.getRootLogger.setLevel(Level.WARN)
+    val pii = spark.read
+      .load("/datascience/pii_matching/pii_tuples/")
+      .filter("country = 'CL'")
+      .withColumn("device_id", lower(col("device_id")))
 
+    xd.join(pii, Seq("device_id"), "inner")
+      .select("madid", "lat", "lon", "ml_sh2", "nid_sh2", "mb_sh2")
+      .groupBy("maid")
+      .agg(
+        first("lat"),
+        first("lon"),
+        collect_list("ml_sh2") as "mails",
+        collect_list("nid_sh2") as "nids",
+        collect_list("mb_sh2") as "mobiles"
+      )
+      .withColumn("nids", concat_ws(";", col("nids")))
+      .withColumn("mobiles", concat_ws(";", col("mobiles")))
+      .withColumn("mails", concat_ws(";", col("mails")))
+      .repartition(50)
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/piis_madids_cl")
+  }
+
+  def getGeoAudiences(spark: SparkSession) = {
     val id1 = 306279
     val id2 = 306281
     val id3 = 306283
 
     for (country <- List("UY", "PE", "CL", "CO")) {
-      val path = "/datascience/geo/Reports/GCBA/Coronavirus/2020-04-02/geohashes_by_user_%s".format(country)
+      val path =
+        "/datascience/geo/Reports/GCBA/Coronavirus/2020-04-02/geohashes_by_user_%s"
+          .format(country)
       spark.read
         .format("parquet")
         .load(path)
@@ -5069,6 +5097,20 @@ object Random {
         .mode("overwrite")
         .save("/datascience/custom/cuadras_per_user_%s_csv".format(country))
     }
+  }
 
+  /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder
+        .appName("Spark devicer")
+        .config("spark.sql.files.ignoreCorruptFiles", "true")
+        .getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+    get_piis_cl(spark)
   }
 }
