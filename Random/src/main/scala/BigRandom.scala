@@ -366,6 +366,21 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val countries = "AR,MX".split(",").toList
+    for (country <- countries) {    
+    println(country)
+    var df = spark.read.format("csv")
+        .option("sep", "\t")
+        .load("/datascience/custom/cuadras_per_user_%s_to_push".format(country) )  
+        .toDF("device_type","device_id","segment")
+        .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("total_devices"))    
+
+    println(df.show())
+
+    }
+
+    /**
+
     val getSeg = udf((lista: Seq[Integer]) =>
         if (lista.contains(306283)) 306283
         else if(lista.contains(306281)) 306281
@@ -415,6 +430,8 @@ def getDataPipeline(
     .save(final_path)
 
     }   
+
+*/
 
 /**
     val countries = "AR,MX".split(",").toList
