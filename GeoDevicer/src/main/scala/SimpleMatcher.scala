@@ -175,9 +175,8 @@ val spatialRDD = GeoJsonReader.readToGeometryRDD(spark.sparkContext, inputLocati
 
 //Transform the polygon to DF
 var rawSpatialDf = Adapter.toDf(spatialRDD,spark)
-.withColumnRenamed("_c1","CVEGEO")
-.withColumnRenamed("_c2","NOM_ENT")
-.withColumnRenamed("_c3","NOM_MUN")
+.withColumnRenamed("_c1","GEOID")
+.withColumnRenamed("_c2","GEOID_Name")
 
 
 /*
@@ -316,9 +315,15 @@ match_sample_to_polygons(spark,
 
 
  match_sample_to_polygons(spark,
-        "/datascience/geo/geohashes/Mexico/precision_7",
-        "/datascience/geo/POIs/MX_municipal_Updated.json",
-        "mexico")
+        "/datascience/geo/geohashes/CO/precision_custom",
+        "/datascience/geo/POIs/Country_Maps_Level/CO_Level_1.json",
+        "colombia")
+
+ match_sample_to_polygons(spark,
+        "/datascience/geo/geohashes/CO/precision_custom",
+        "/datascience/geo/POIs/Country_Maps_Level/CO_Level_2.json",
+        "colombia")
+
 
   }
 }
