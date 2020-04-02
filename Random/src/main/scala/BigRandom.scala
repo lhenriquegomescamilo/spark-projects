@@ -406,7 +406,6 @@ def getDataPipeline(
         .agg(collect_list("segment").as("segment"))       
         .withColumn("segment",getSeg(col("segment")))    
         .select("device_type", "device_id", "segment")
-        .distinct()
 
     println(df_xd.show())
     df_xd.write
