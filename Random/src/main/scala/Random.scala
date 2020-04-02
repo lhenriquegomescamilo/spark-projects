@@ -5045,7 +5045,7 @@ object Random {
 
     xd.join(pii, Seq("device_id"), "inner")
       .select("madid", "lat", "lon", "ml_sh2", "nid_sh2", "mb_sh2")
-      .groupBy("maid")
+      .groupBy("madid")
       .agg(
         first("lat"),
         first("lon"),
