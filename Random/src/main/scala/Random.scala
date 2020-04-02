@@ -5038,9 +5038,9 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val id1 = 1
-    val id2 = 2
-    val id3 = 3
+    val id1 = 306279
+    val id2 = 306281
+    val id3 = 306283
 
     for ((country, path) <- List("AR", "MX") zip List(
            "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_argentina",
