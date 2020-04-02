@@ -3509,7 +3509,7 @@ object RandomTincho {
         Seq("geo_hash", "window")
       )
       .withColumn("day", udfDay(col("window")))
-      .groupBy("original_id", "day")
+      .groupBy("original_id", "day","geo_hash","window")
       .agg(collect_set(col("device_id")).as("devices"))
       .write
       .format("parquet")
