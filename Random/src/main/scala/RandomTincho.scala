@@ -3189,7 +3189,7 @@ object RandomTincho {
       .save("/datascience/custom/coronavirus_contacts_per_day_%s".format(country))
 
   }
-  def generate_seed(spark:SparkSession,country:String){
+  def generate_seed(spark:SparkSession,country:String,name:String){
     val sc = spark.sparkContext
     val conf = sc.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
@@ -3198,7 +3198,7 @@ object RandomTincho {
     val start = DateTime.now.minusDays(0)
 
     //val days = (0 until 24).map(start.minusDays(_)).map(_.toString(format))
-    val days = List("20200331","20200330","20200329","20200328","20200327","20200326","20200325","20200324","20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200314","20200313","20200312","20200311","20200310",
+    val days = List("20200402","20200401","20200331","20200330","20200329","20200328","20200327","20200326","20200325","20200324","20200323","20200322","20200321","20200320","20200319","20200318","20200317","20200316","20200315","20200314","20200313","20200312","20200311","20200310",
                     "20200309","20200308","20200307","20200306","20200305","20200304","20200303","20200302","20200301")
     val path = "/datascience/geo/safegraph/"
     val dfs = days
@@ -3235,7 +3235,7 @@ object RandomTincho {
           .write
           .format("parquet")
           .mode(SaveMode.Overwrite)
-          .save("/datascience/custom/coronavirus_seed_%s".format(country))
+          .save("/datascience/custom/%s".format(name))
 
   }
 
@@ -3444,6 +3444,80 @@ object RandomTincho {
 
   }
 
+  def get_contacts(spark: SparkSession,country:String, seed:DataFrame, output:String) {
+
+    val raw = spark.read
+      .format("parquet")
+      .option("basePath", "/datascience/geo/safegraph/")
+      .load("/datascience/geo/safegraph/day=202003*/country=%s/".format(country))
+      .withColumnRenamed("ad_id", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+      .withColumn("window", date_format(col("Time"), "mm"))
+      .withColumn(
+        "window",
+        when(col("window") > 40, 3)
+          .otherwise(when(col("window") > 20, 2).otherwise(1))
+      )
+      .withColumn("window", concat(col("Hour"), col("window")))
+      .drop("Time")
+
+    val udfFeature = udf((r: Double) => if (r > 0.5) 1 else 0)
+
+    
+    val initial_seed = seed
+                .withColumn("device_id", lower(col("device_id")))
+                .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+                .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
+                .withColumn("window", date_format(col("Time"), "mm"))
+                .withColumn(
+                  "window",
+                  when(col("window") > 40, 3)
+                    .otherwise(when(col("window") > 20, 2).otherwise(1))
+                )
+                .withColumn("window", concat(col("Hour"), col("window")))
+                .drop("Time")
+                .withColumn("geohash",
+                                ((abs(col("latitude_user").cast("float")) * 10)
+                                  .cast("int") * 10000) + (abs(
+                                  col("longitude_user").cast("float") * 100
+                                ).cast("int"))
+                              )
+                .select("device_id","geo_hash", "window")
+
+    // Get the distinct moments to filter the raw data
+    val moments = initial_seed.select("geo_hash", "window").distinct()
+
+
+    // Join raw data with the moments and store
+    raw
+      .join(moments, Seq("geo_hash", "window"))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/coronavirus_contacts_%s".format(country))
+
+    val joint = spark.read.load("/datascience/custom/coronavirus_contacts_%s".format(country))
+
+    // Calculate it by day
+    val udfDay = udf((d: String) => d.substring(0, 8))
+
+    joint
+      .join(
+        initial_seed.withColumnRenamed("device_id", "original_id"),
+        Seq("geo_hash", "window")
+      )
+      .withColumn("day", udfDay(col("window")))
+      .groupBy("original_id", "day")
+      .agg(collect_set(col("device_id")).as("devices"))
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/%s".format(output))
+
+  }
+
   def main(args: Array[String]) {
 
     // Setting logger config
@@ -3475,7 +3549,13 @@ object RandomTincho {
     //                       .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
     //                       .withColumnRenamed("geo_hashote","geo_hash_join")
     // coronavirus_barrios(spark,"argentina",barrios,"NAM")
-    generate_kepler(spark,"CO")
+    val initial_seed = spark.read.format("csv")
+                            .option("header",true)
+                            .option("delimiter","\t")
+                            .load("/datascience/geo/raw_output/airportsCO_30d_CO_30-3-2020-16h")
+    initial_seed.cache()
+
+    get_contacts(spark,"CO",initial_seed,"first_level_co")
 
     //report_etermax(spark)
   }
