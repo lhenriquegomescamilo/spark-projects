@@ -216,9 +216,12 @@ object UpdateSafeGraphData {
     val dfs = hdfs_files.map(
       file =>
         spark.read
-          .option("header", "true")
-          .schema(schema)
-          .csv(file)
+          .format("parquet")
+          .load(file)
+          .withColumn("horizontal_accuracy", col("horizontal_accuracy").cast("float"))
+          // .option("header", "true")
+          // .schema(schema)
+          // .csv(file)
           .withColumn(
             "day",
             lit(file.slice(file.length - 11, file.length).replace("/", "")) // Here we obtain the day from the file name.
