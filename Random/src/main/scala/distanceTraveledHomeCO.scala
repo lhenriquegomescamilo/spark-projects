@@ -330,6 +330,7 @@ geo_hash_visits
     .save(output_file)
 
 
+///////////Agregación Nivel 0
 //Queremos un cálculo general por país
 val hash_user = spark.read.format("parquet").load(output_file).withColumn("device_id",lower(col("device_id")))
 
@@ -343,22 +344,20 @@ hash_user
 .option("header",true)
 .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
-///////////Partidos
-//QUeremos un cálculo por municipio:
-//Desagregado por entidad y municipio
-/*
-val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
-.withColumnRenamed("geo_hashote","geo_hash_7")
+///////////Agregación Nivel 1
+//Levantamos el polígono
+val level_1_polygon = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/geo_processed/CO_Level_1_colombia_sjoin_polygon/")
 
+//definimos el output
+val output_file_level_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_1_%s".format(today,country)
 
-//Acá por provincia
-val output_file_provincia = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_provincia_%s".format(today,country)
-val provincia = spark.read.format("parquet")
-.load(output_file)
+//Levantamos la data
+val level_1_data = spark.read.format("parquet")
+.load(level_1_polygon)
 .join(entidad,Seq("geo_hash_7"))
-.groupBy("PROVCODE","PROVINCIA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("PROVCODE","PROVINCIA","Day").agg(
+.groupBy("GEOID","GEOID_Name","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("GEOID","GEOID_Name","Day").agg(
   count("device_id") as "devices",
   avg("geo_hash_7") as "geo_hash_7_avg",
   stddev_pop("geo_hash_7") as "geo_hash_7_std")
@@ -367,13 +366,21 @@ val provincia = spark.read.format("parquet")
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save(output_file_provincia)
+.save(output_file_level_1)
 
-//Acá por partido
-val output_file_partido = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_partido_%s".format(today,country)
-val partido = spark.read.format("parquet")
+
+///////////Agregación Nivel 2
+//Levantamos el polígono
+val level_2_polygon = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/geo_processed/CO_Level_2_colombia_sjoin_polygon/")
+
+//definimos el output
+val output_file_level_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_2_%s".format(today,country)
+
+//Levantamos la data
+val level_2_data = spark.read.format("parquet")
 .load(output_file)
-.join(entidad,Seq("geo_hash_7"))
+.join(level_2_polygon,Seq("geo_hash_7"))
 .groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
 .groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","Day").agg(
   count("device_id") as "devices",
@@ -385,56 +392,6 @@ val partido = spark.read.format("parquet")
 .format("csv")
 .option("header",true)
 .save(output_file_partido)
-
-///////////////barrios
-//Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
-val barrios = spark.read.format("csv").option("header",true).option("delimiter",",")
-.load("/datascience/geo/Reports/GCBA/Coronavirus/")
-.withColumnRenamed("geo_hashote","geo_hash_7")
-
-
-//Alternativa 1
-//Path home ARG
-
-//Nos quedamos con los usuarios de los homes que viven en caba
-val homes = spark.read.format("parquet").load("/datascience/data_insights/homes/day=2020-03/country=AR")
-val geocode_barrios = spark.read.format("csv").option("header",true).load("/datascience/geo/Reports/GCBA/Coronavirus/Geocode_Barrios_CABA.csv")
-
-val homes_barrio = homes.select("device_id","GEOID").join(geocode_barrios,Seq("GEOID")).drop("GEOID")
-
-val output_file_tipo_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_CLASE1_%s".format(today,country)
-
-spark.read.format("parquet")
-.load(output_file)
-.withColumn("device_id",lower(col("device_id")))
-.groupBy("device_id","Day").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.join(homes_barrio,Seq("device_id"))
-.groupBy("BARRIO","Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std",count("device_id") as "devices")
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save(output_file_tipo_1)
-
-
-
-//Alternativa 2
-val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_CLASE2_%s".format(today,country)
-val tipo2 = spark.read.format("parquet")
-.load(output_file)
-.join(barrios,Seq("geo_hash_7"))
-.groupBy("COMUNA","BARRIO","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("COMUNA","BARRIO","Day").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save(output_file_tipo_2)
-
-
-*/
 
 
 
