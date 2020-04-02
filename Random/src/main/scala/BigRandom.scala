@@ -366,38 +366,125 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    val df = spark.read.format("parquet")
-    .load("/datascience/custom/cl_geo_movement")
-    .filter("geohashes<=3 AND occurrences>5")
-    .withColumnRenamed("ad_id", "device_id")
-    .withColumn("device_type", lit("android"))
-    .withColumn("segment", lit(302479))
-    .select("device_type", "device_id", "segment")
+    val countries = "AR,MX".split(",").toList
+    for (country <- countries) {    
+    println(country)
+    var df = spark.read.format("csv")
+        .option("sep", "\t")
+        .load("/datascience/custom/cuadras_per_user_%s_to_push".format(country) )  
+        .toDF("device_type","device_id","segment")
+        .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("total_devices"))    
 
-    println(df.show()) 
+    println(df.show())
 
-    df.write.format("csv")
+    }
+
+    /**
+
+    val getSeg = udf((lista: Seq[Integer]) =>
+        if (lista.contains(306283)) 306283
+        else if(lista.contains(306281)) 306281
+        else if(lista.contains(306279)) 306279
+        else lista.last.toInt)
+
+    val countries = "AR,MX".split(",").toList
+    for (country <- countries) {    
+    println(country)
+    var final_path = "/datascience/custom/cuadras_per_user_%s_to_push".format(country) 
+    var path1 = "/datascience/custom/cuadras_per_user_%s_csv".format(country)
+    var df = spark.read.format("csv")
+        .option("sep", "\t")
+        .load(path1)  
+        .toDF("device_type","device_id","segment")
+        .groupBy("device_type","device_id")
+        .agg(collect_list("segment").as("segment"))
+        .withColumn("segment",getSeg(col("segment"))) 
+        .select("device_type", "device_id", "segment")
+
+    println(df.show())
+
+    df.write
+    .format("csv")
     .option("sep", "\t")
     .mode("overwrite")
-    .save("/datascience/custom/cl_geo_movement_to_push")
-
-    val df_xd = spark.read.format("csv")
-        .load("/datascience/audiences/crossdeviced/cl_geo_movement_csv_xd")
+    .save(final_path)
+    
+    var path2 = "/datascience/audiences/crossdeviced/cuadras_per_user_%s_csv_xd".format(country)
+    var df_xd = spark.read.format("csv")
+        .load(path2)
         .withColumnRenamed("_c1", "device_id")
         .withColumnRenamed("_c2", "device_type")
-        .withColumnRenamed("_c4", "category")
-        .withColumn("segment", lit(302479))
+        .withColumnRenamed("_c5", "segment")
+        .withColumn("segment", col("segment").cast(IntegerType))
         .withColumn("device_type", when(col("device_type")==="and", "android").otherwise(when(col("device_type")==="ios", "ios").otherwise("web")))
+        .groupBy("device_type","device_id")
+        .agg(collect_list("segment").as("segment"))       
+        .withColumn("segment",getSeg(col("segment")))    
         .select("device_type", "device_id", "segment")
-        .distinct()
 
     println(df_xd.show())
     df_xd.write
     .format("csv")
     .option("sep", "\t")
     .mode("append")
-    .save("/datascience/misc/cl_geo_movement_to_push")
+    .save(final_path)
 
+    }   
+
+*/
+
+/**
+    val countries = "AR,MX".split(",").toList
+    for (country <- countries) {    
+
+    println(country)  
+    
+    var df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/custom/cuadras_per_user_%s_csv".format(country))  
+    .toDF("device_type","device_id","segment")
+    .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("devices_original"))    
+
+    println("TO PUSH COUNT")
+    println(df.orderBy(asc("devices_original")).show())
+
+    }
+
+*/
+
+/**
+  val df = spark.read.format("parquet")
+  .load("/datascience/custom/cl_geo_movement")
+  .filter("geohashes<=3 AND occurrences>5")
+  .withColumnRenamed("ad_id", "device_id")
+  .withColumn("device_type", lit("android"))
+  .withColumn("segment", lit(302479))
+  .select("device_type", "device_id", "segment")
+
+  println(df.show()) 
+
+  df.write.format("csv")
+  .option("sep", "\t")
+  .mode("overwrite")
+  .save("/datascience/custom/cl_geo_movement_to_push")
+
+  val df_xd = spark.read.format("csv")
+      .load("/datascience/audiences/crossdeviced/cl_geo_movement_csv_xd")
+      .withColumnRenamed("_c1", "device_id")
+      .withColumnRenamed("_c2", "device_type")
+      .withColumnRenamed("_c4", "category")
+      .withColumn("segment", lit(302479))
+      .withColumn("device_type", when(col("device_type")==="and", "android").otherwise(when(col("device_type")==="ios", "ios").otherwise("web")))
+      .select("device_type", "device_id", "segment")
+      .distinct()
+
+  println(df_xd.show())
+  df_xd.write
+  .format("csv")
+  .option("sep", "\t")
+  .mode("append")
+  .save("/datascience/misc/cl_geo_movement_to_push")
+*/
 
 
 /**
