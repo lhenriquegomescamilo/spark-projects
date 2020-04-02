@@ -5053,6 +5053,7 @@ object Random {
         .agg(approxCountDistinct("geo_hash_7", 0.02) as "cuadras")
         .write
         .format("parquet")
+        .mode("overwrite")
         .save("/datascience/custom/cuadras_per_user_%s".format(country))
 
       spark.read
