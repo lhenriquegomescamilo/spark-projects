@@ -3478,7 +3478,7 @@ object RandomTincho {
                 )
                 .withColumn("window", concat(col("Hour"), col("window")))
                 .drop("Time")
-                .withColumn("geohash",
+                .withColumn("geo_hash",
                                 ((abs(col("latitude_user").cast("float")) * 10)
                                   .cast("int") * 10000) + (abs(
                                   col("longitude_user").cast("float") * 100
