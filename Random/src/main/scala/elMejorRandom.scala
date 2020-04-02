@@ -1323,9 +1323,6 @@ val today = (java.time.LocalDate.now).toString
 
 //Levantamos Startapp
 val raw1 = get_safegraph_data(spark,"30","1","AR")
-.select("utc_timestamp","device_id")
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
 .withColumn(
 "geo_hash_7",
 ((abs(col("latitude").cast("float")) * 1000)
@@ -1333,12 +1330,13 @@ val raw1 = get_safegraph_data(spark,"30","1","AR")
 col("longitude").cast("float") * 1000
 ).cast("long"))
 )
+.select("utc_timestamp","device_id","geo_hash_7")
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+
 
 //Levantamos Safegraph
 val raw2 = get_safegraph_data(spark,"30","1","argentina")
-.select("utc_timestamp","device_id")
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
 .withColumn(
 "geo_hash_7",
 ((abs(col("latitude").cast("float")) * 1000)
@@ -1346,6 +1344,9 @@ val raw2 = get_safegraph_data(spark,"30","1","argentina")
 col("longitude").cast("float") * 1000
 ).cast("long"))
 )
+.select("utc_timestamp","device_id","geo_hash_7")
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
 
 //Los juntamos
 val raw = List(raw1,raw2).reduce(_.unionByName (_)).distinct()
