@@ -1368,11 +1368,14 @@ geo_hash_visits
 
 //cálculos
 //Calculo por día y total
-val total30 = raw.select("device_id").distinct().count()
+val total30_users = raw.select("device_id").distinct().count()
+val total30_detections = raw.count()
+
 val day_data = raw.groupBy("Day").agg(countDistinct("device_id") as "devices",count("utc_timestamp") as "detections")
 
 day_data
-.withColumn("total30",lit(total30))
+.withColumn("total30_users",lit(total30_users))
+.withColumn("total30_detections",lit(total30_detections))
 .repartition(1)
 .write
     .mode(SaveMode.Overwrite)
@@ -1388,6 +1391,21 @@ val geo_hash_table = spark.read.format("csv").option("header",true)
 val geo_labeled_users = spark.read.format("parquet")
 .load(output_file)
 .join(geo_hash_table,Seq("geo_hash_7"))
+
+geo_labeled_users.persist()
+
+val total30_users_geo = geo_labeled_users
+.groupBy("Level1_Code","Level1_Name","device_id").agg(sum("detections") as "detections")
+.groupBy("Level1_Code","Level1_Name").agg(
+  count("device_id") as "devices",
+  avg("detections") as "detions")
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Detecciones_Por_Provincia_Total".format(today))
+
 
 
 geo_labeled_users
