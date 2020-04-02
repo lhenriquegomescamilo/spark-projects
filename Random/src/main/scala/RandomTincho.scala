@@ -3555,6 +3555,6 @@ object RandomTincho {
                             .select("device_id","geo_hash", "window")
                             .distinct
     
-    get_contacts(spark,"CO",first_level,"second_level_co")
+    get_contacts(spark,"CO",initial_seed,"second_level_co")
   }
 }
