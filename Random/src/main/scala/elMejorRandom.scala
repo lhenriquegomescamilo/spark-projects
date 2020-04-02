@@ -1314,26 +1314,97 @@ space_lapse_agg
 
 val today = (java.time.LocalDate.now).toString
 
-val country_list = List("AR","BR","CL","CO","EC","MX","PE","PY","UY")
+/*
+1- Total de Devices que tenemos en AR con data GEO.
+2- Total que tenemos de Devices en AR con data para poder hacer estudios de movimiento (si podemos dar total de puntos diarios, excelente).
+3- Si tenemos timestamp, y cuando devices por día tenemos con este dato y cuando por día!
+4- por ultimo cuantos del total de estos usuarios son de Caba y Provincia! del total
+*/
 
-for( country <- country_list) 
-        { 
-            println(country)
+spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+val today = (java.time.LocalDate.now).toString
 
-get_safegraph_data(spark,"30","1",country)
-  .withColumn("geo_hash_7",
-  ((abs(col("latitude").cast("float")) * 1000)
-  .cast("long") * 100000) + (abs(
-  col("longitude").cast("float") * 1000
-  ).cast("long")))
-  .select("geo_hash_7","latitude","longitude")
-  .dropDuplicates("geo_hash_7")
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("csv")
-      .option("header",true)
-      .save("/datascience/geo/geohashes/%s/precision_custom/".format(country)) 
-        } 
+//Levantamos Startapp
+val raw1 = get_safegraph_data(spark,"30","1","AR")
+.select("utc_timestamp","device_id")
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+.withColumn(
+"geo_hash_7",
+((abs(col("latitude").cast("float")) * 1000)
+.cast("long") * 100000) + (abs(
+col("longitude").cast("float") * 1000
+).cast("long"))
+)
+
+//Levantamos Safegraph
+val raw2 = get_safegraph_data(spark,"30","1","argentina")
+.select("utc_timestamp","device_id")
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "YY-MM-dd"))
+.withColumn(
+"geo_hash_7",
+((abs(col("latitude").cast("float")) * 1000)
+.cast("long") * 100000) + (abs(
+col("longitude").cast("float") * 1000
+).cast("long"))
+)
+
+//Los juntamos
+val raw = List(raw1,raw2).reduce(_.unionByName (_)).distinct()
+
+raw.persist()
+
+//Calculamos geohashes por usuario porque nos sirve para l conteo y para asignar ubicacion
+val geo_hash_visits = raw
+.groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
+.withColumn("country",lit(country))
+
+val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/UBA/geohashes_by_user_AR_%s".format(today)
+
+geo_hash_visits
+ .write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .option("header",true)
+    .save(output_file)
+
+//cálculos
+//Calculo por día y total
+val total30 = raw.select("device_id").distinct().count()
+val day_data = raw.groupBy("Day").agg(countDistinct("device_id") as "devices",count("utc_timestamp") as "detections")
+
+day_data
+.withColumn("total30",lit(total30))
+.repartition(1)
+.write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Detecciones_Por_Dia".format(today))
+
+//Calculo de ubicación
+//Levantamos la tabla de equivalencias
+val geo_hash_table = spark.read.format("csv").option("header",true)
+.load("/datascience/geo/geohashes_tables/AR_GeoHash_to_Entity.csv")
+
+val geo_labeled_users = spark.read.format("parquet")
+.load(output_file)
+.join(geo_hash_table,Seq("geo_hash_7"))
+
+
+geo_labeled_users
+.groupBy("Level1_Code","Level1_Name","Day","device_id").agg(sum("detections") as "detections")
+.groupBy("Level1_Code","Level1_Name","Day").agg(
+  count("device_id") as "devices",
+  avg("detections") as "deections")
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Detecciones_Por_Provincia".format(today))
+
 
       
 }
