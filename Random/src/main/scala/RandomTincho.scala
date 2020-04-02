@@ -3511,27 +3511,6 @@ object RandomTincho {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
-    
-    // generate_seed(spark,"mexico")
-    // get_coronavirus(spark,"mexico")
-    // get_users_coronavirus(spark,"mexico")
-    // val barrios = spark.read
-    //                     .format("csv")
-    //                     .option("header","true")
-    //                     .option("sep","\t")
-    //                     .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
-    //                     .withColumnRenamed("geo_hash_7","geo_hash_join")
-
-      
-    // generate_seed(spark,"argentina")
-    // get_coronavirus(spark,"argentina")
-    //  val barrios =  spark.read
-    //                       .format("csv")
-    //                       .option("sep","\t")
-    //                       .option("header","true")
-    //                       .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
-    //                       .withColumnRenamed("geo_hashote","geo_hash_join")
-    // coronavirus_barrios(spark,"argentina",barrios,"NAM")
 
     val users = spark.read.format("csv")
                             .option("header",true)
@@ -3542,7 +3521,7 @@ object RandomTincho {
                             .distinct()
 
     val initial_seed = spark.read.format("parquet").option("basePath", "/datascience/geo/safegraph/")
-                            .load("/datascience/geo/safegraph/day=202003*/country=%s/".format(country))
+                            .load("/datascience/geo/safegraph/day=202003*/country=%s/".format("CO"))
                             .withColumnRenamed("ad_id", "device_id")
                             .withColumn("device_id", lower(col("device_id")))
                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
