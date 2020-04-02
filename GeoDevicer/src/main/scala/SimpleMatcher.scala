@@ -314,12 +314,7 @@ match_sample_to_polygons(spark,
       */
 
 
- match_sample_to_polygons(spark,
-        "/datascience/geo/geohashes/CO/precision_custom",
-        "/datascience/geo/POIs/Country_Maps_Level/CO_Level_1.json",
-        "colombia")
-
- match_sample_to_polygons(spark,
+match_sample_to_polygons(spark,
         "/datascience/geo/geohashes/CO/precision_custom",
         "/datascience/geo/POIs/Country_Maps_Level/CO_Level_2.json",
         "colombia")
