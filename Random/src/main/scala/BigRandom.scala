@@ -366,7 +366,54 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val getSeg = udf((lista: Seq[Integer]) =>
+        if (lista.contains(306283)) 306283
+        else if(lista.contains(306281)) 306281
+        else if(lista.contains(306279)) 306279
+        else lista.last.toInt)
 
+    val countries = "AR,MX".split(",").toList
+    for (country <- countries) {    
+    println(country)  
+    var path1 = "/datascience/custom/cuadras_per_user_%s_csv".format(country)
+    var df = spark.read.format("csv")
+        .option("sep", "\t")
+        .load(path)  
+        .toDF("device_type","device_id","segment")
+        .groupBy("device_type","device_id")
+        .agg(collect_list("segment").as("segment"))
+        .withColumn("segment",getSeg(col("segment"))) 
+        .select("device_type", "device_id", "segment")
+
+    println(df.show())
+
+    df.write
+    .format("csv")
+    .option("sep", "\t")
+    .mode("overwrite")
+    .save("/datascience/custom/cuadras_per_user_%s_to_push".format(country))
+    
+    var path2 = "/datascience/custom/cuadras_per_user_%s_csv_xd".format(country)
+    var df_xd = spark.read.format("csv")
+        .load(path2)
+        .withColumnRenamed("_c1", "device_id")
+        .withColumnRenamed("_c2", "device_type")
+        .withColumnRenamed("_c5", "segment")
+        .withColumn("segment",getSeg(col("segment"))) 
+        .withColumn("device_type", when(col("device_type")==="and", "android").otherwise(when(col("device_type")==="ios", "ios").otherwise("web")))
+        .select("device_type", "device_id", "segment")
+        .distinct()
+
+    println(df_xd.show())
+    df_xd.write
+    .format("csv")
+    .option("sep", "\t")
+    .mode("append")
+    .save("/datascience/custom/cuadras_per_user_%s_to_push".format(country))
+
+    }   
+
+/**
     val countries = "AR,MX".split(",").toList
     for (country <- countries) {    
 
@@ -383,6 +430,7 @@ def getDataPipeline(
 
     }
 
+*/
 
 /**
   val df = spark.read.format("parquet")
