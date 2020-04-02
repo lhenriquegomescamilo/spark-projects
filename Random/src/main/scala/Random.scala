@@ -5081,15 +5081,15 @@ object Random {
       .option("sep", "\t")
       .load("/datascience/devicer/processed/BR_age_202004_grouped/")
 
-    val map = ((2 to 9) zip (0 to 7).map(149499 + _ * 8)).toMap
-    val udfMap = udf((segment: String) => if (map.contains(segment.toInt)) map(segment.toInt) else -1 )
+    val map = ((2 to 9).map(_.toString) zip (0 to 7).map(149499 + _ * 8)).toMap
+    val udfMap = udf((segment: String) => if (map.contains(segment)) map(segment.toInt) else -1 )
 
     gender
       .unionAll(age)
       .withColumn("_c2", udfMap(col("_c2")))
-      // .groupBy("_c0", "_c1")
-      // .agg(collect_set("_c2") as "_c2")
-      // .withColumn("_c2", concat_ws(",", col("_c2")))
+      .groupBy("_c0", "_c1")
+      .agg(collect_set("_c2") as "_c2")
+      .withColumn("_c2", concat_ws(",", col("_c2")))
       .select("_c0", "_c1", "_c2")
       .write
       .format("csv")
