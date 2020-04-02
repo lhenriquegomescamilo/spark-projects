@@ -5042,35 +5042,35 @@ object Random {
     val id2 = 306281
     val id3 = 306283
 
-    for ((country, path) <- List("UY", "PE", "CL", "CO") zip List(
-           "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_argentina",
-           "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_mexico"
-         )) {
-      spark.read
-        .format("parquet")
-        .load(path)
-        .groupBy("device_id")
-        .agg(approxCountDistinct("geo_hash_7", 0.02) as "cuadras")
-        .write
-        .format("parquet")
-        .mode("overwrite")
-        .save("/datascience/custom/cuadras_per_user_%s".format(country))
+    // for ((country, path) <- List("UY", "PE", "CL", "CO") zip List(
+    //        "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_argentina",
+    //        "/datascience/geo/Reports/GCBA/Coronavirus/2020-03-30/geohashes_by_user_mexico"
+    //      )) {
+    //   spark.read
+    //     .format("parquet")
+    //     .load(path)
+    //     .groupBy("device_id")
+    //     .agg(approxCountDistinct("geo_hash_7", 0.02) as "cuadras")
+    //     .write
+    //     .format("parquet")
+    //     .mode("overwrite")
+    //     .save("/datascience/custom/cuadras_per_user_%s".format(country))
 
-      spark.read
-        .load("/datascience/custom/cuadras_per_user_%s".format(country))
-        .withColumn("device_type", lit("android"))
-        .withColumn(
-          "segment",
-          when(col("cuadras") < 3, id1)
-            .otherwise(when(col("cuadras") < 40, id2).otherwise(id3))
-        )
-        .select("device_type", "device_id", "segment")
-        .write
-        .format("csv")
-        .option("sep", "\t")
-        .mode("overwrite")
-        .save("/datascience/custom/cuadras_per_user_%s_csv".format(country))
-    }
+    //   spark.read
+    //     .load("/datascience/custom/cuadras_per_user_%s".format(country))
+    //     .withColumn("device_type", lit("android"))
+    //     .withColumn(
+    //       "segment",
+    //       when(col("cuadras") < 3, id1)
+    //         .otherwise(when(col("cuadras") < 40, id2).otherwise(id3))
+    //     )
+    //     .select("device_type", "device_id", "segment")
+    //     .write
+    //     .format("csv")
+    //     .option("sep", "\t")
+    //     .mode("overwrite")
+    //     .save("/datascience/custom/cuadras_per_user_%s_csv".format(country))
+    // }
 
     val gender = spark.read
       .format("csv")
@@ -5082,7 +5082,7 @@ object Random {
       .load("/datascience/devicer/processed/BR_age_202004_grouped/")
 
     val map = ((2 to 9) zip (0 to 7).map(149499 + _ * 8)).toMap
-    val udfMap = udf((segment: String) => map(segment.toInt))
+    val udfMap = udf((segment: String) => if (map.contains(segment.toInt)) map(segment.toInt) else -1 )
 
     gender
       .unionAll(age)
