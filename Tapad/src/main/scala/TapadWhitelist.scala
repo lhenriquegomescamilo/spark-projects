@@ -98,7 +98,7 @@ object TapadWhitelist {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .filter("device_type != 'web'")
+      .filter("device_type = 'android' or device_type = 'and' or device_type = 'ios'")
       .select("device_id")
       .withColumnRenamed("device_id","madids")
 
