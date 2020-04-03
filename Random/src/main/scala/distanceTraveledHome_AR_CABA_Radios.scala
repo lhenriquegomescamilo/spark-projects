@@ -203,8 +203,6 @@ val raw = get_safegraph_data(spark,"40","1",country)
 .withColumn("Hour", date_format(col("Time"), "HH"))
 .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
 
-//Vamos a usarlo para calcular velocidad y distancia al hogar
-raw.persist()
 
 val geo_hash_visits = raw
 .groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
@@ -220,19 +218,24 @@ geo_hash_visits
     .save(output_file)
 
 
-///////////////barrios
-//Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
+///////////////barrios y radios censales
+
 val barrios = spark.read.format("csv")
 .option("header",true)
 .option("delimiter",",")
 .load("/datascience/geo/geohashes_tables/AR_CABA_GeoHash_to_Entity.csv")
 
+//Levantamos la data y la pegamos a los barrios
+val geo_labeled_users = spark.read.format("parquet")
+.load(output_file)
+.join(geo_hash_table,Seq("geo_hash_7"))
+
+geo_labeled_users.persist()
 
 //Agregamos por día
 val output_file_tipo_2a = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s".format(today,country)
-val tipo2a = spark.read.format("parquet")
-.load(output_file)
-.join(barrios,Seq("geo_hash_7"))
+
+geo_labeled_users
 .groupBy("BARRIO","RADIO","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
 .groupBy("COMUNA","BARRIO","Day").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 .repartition(1)
@@ -245,9 +248,8 @@ val tipo2a = spark.read.format("parquet")
 
 //Agregamos por día y horario
 val output_file_tipo_2b = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_hourly_%s".format(today,country)
-val tipo2b = spark.read.format("parquet")
-.load(output_file)
-.join(barrios,Seq("geo_hash_7"))
+
+geo_labeled_users
 .groupBy("BARRIO","RADIO","Day","Hour","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
 .groupBy("COMUNA","BARRIO","Day","Hour").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 .repartition(1)
