@@ -371,6 +371,7 @@ def getDataPipeline(
     val path3 = "/datascience/devicer/processed/CO_302875_2020-04-02T20-38-08-364538"    
 
     println(path1)
+    println(spark.read.format("csv").option("sep", "\t").load(path1).toDF("device_type","device_id","segment").count())    
     val df1= spark.read.format("csv")
             .option("sep", "\t")
             .load(path1)  
@@ -382,6 +383,7 @@ def getDataPipeline(
     println(df1.count())
 
     println(path2)
+    println(spark.read.format("csv").option("sep", "\t").load(path2).toDF("device_type","device_id","segment").count())    
     val df2= spark.read.format("csv")
             .option("sep", "\t")
             .load(path2)  
@@ -393,6 +395,7 @@ def getDataPipeline(
     println(df2.count())
 
     println(path3)
+    println(spark.read.format("csv").option("sep", "\t").load(path3).toDF("device_type","device_id","segment").count())    
     val df3= spark.read.format("csv")
             .option("sep", "\t")
             .load(path3)  
