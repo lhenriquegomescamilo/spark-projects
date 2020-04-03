@@ -137,7 +137,9 @@ object TapadWhitelist {
                   .withColumn("madids",lower(col("madids")))
                   .distinct
                   .repartition(1)
-                  .write.format("csv")
+                  .write
+                  .format("csv")
+                  .mode(SaveMode.Overwrite)
                   .save("/datascience/data_tapad/whitelist/%s".format(today))
 
   }
