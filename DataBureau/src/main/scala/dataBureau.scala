@@ -19,14 +19,12 @@ import org.apache.spark.sql.types._
 
 object dataBureau {
   
-  private val SALT: String =
-    "RgpWo8h8aHJFkZ_TEwybsnvmWe3rgn8L"
-
-  private val KEY: String = "YE67YVcgE@Wm6TeZ"
+  val key = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("key").take(1)(0)(0).toString
+  val salt = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("salt").take(1)(0)(0).toString
 
   def keyToSpec(): SecretKeySpec = {
     var keyBytes: Array[Byte] =
-      ("RgpWo8h8aHJFkZ_TEwybsnvmWe3rgn8L" + "YE67YVcgE")
+      (key + salt)
         .getBytes("UTF-8")
     val sha: MessageDigest = MessageDigest.getInstance("SHA-1")
     keyBytes = sha.digest(keyBytes)
