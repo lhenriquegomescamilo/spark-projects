@@ -525,6 +525,7 @@ def get_safegraph_data(
           count("device_id") as "devices",
           avg("geo_hash_7") as "geo_hash_7_avg",
           stddev_pop("geo_hash_7") as "geo_hash_7_std")
+        .withColumn("country",lit(country))
         .repartition(1)
         .write
         .mode(SaveMode.Overwrite)
@@ -532,6 +533,104 @@ def get_safegraph_data(
         .option("header","true")
         .partitionBy("day","country")
         .save("/datascience/coronavirus/geohashes_by_municipio")
+
+  }
+
+  def distance_traveled_rest(spark:SparkSession,day:String,country:String){
+    
+    val raw = get_safegraph_data(spark,1,1,country)
+                    .withColumnRenamed("ad_id","device_id")
+                    .withColumn("device_id",lower(col("device_id")))
+                    .withColumn("day",lit(day))
+                    .withColumn("day",lit(country))
+                    .withColumn(
+                    "geo_hash_7",
+                    ((abs(col("latitude").cast("float")) * 1000)
+                    .cast("long") * 100000) + (abs(
+                    col("longitude").cast("float") * 1000
+                    ).cast("long"))
+                    )
+
+
+    //Vamos a usarlo para calcular velocidad y distancia al hogar
+    raw.persist()
+
+    val geo_hash_visits = raw.groupBy("device_id","day","geo_hash_7")
+                              .agg(count("utc_timestamp") as "detections")
+    
+
+    val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
+
+    geo_hash_visits
+    .write
+        .mode(SaveMode.Overwrite)
+        .format("parquet")
+        .option("header",true)
+        .save(output_file)
+
+
+    ///////////Agregación Nivel 0
+    //Queremos un cálculo general por país
+    val hash_user = spark.read.format("parquet").load(output_file).withColumn("device_id",lower(col("device_id")))
+
+    hash_user
+    .groupBy("Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+    .groupBy("Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std",count("device_id") as "devices")
+    .repartition(1)
+    .write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
+
+    // Agregaciones geogŕaficas
+
+    //Levantamos la tabla de equivalencias
+    val geo_hash_table = spark.read.format("csv").option("header",true)
+    .load("/datascience/geo/geohashes_tables/%s_GeoHash_to_Entity.csv".format(country))
+
+    //Levantamos la data
+    val geo_labeled_users = spark.read.format("parquet")
+    .load(output_file)
+    .join(geo_hash_table,Seq("geo_hash_7"))
+
+    geo_labeled_users.persist()
+
+    ///////////Agregación Nivel 1
+    //definimos el output
+    val output_file_level_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_1_%s".format(today,country)
+
+    geo_labeled_users
+    .groupBy("Level1_Code","Level1_Name","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+    .groupBy("Level1_Code","Level1_Name","Day").agg(
+      count("device_id") as "devices",
+      avg("geo_hash_7") as "geo_hash_7_avg",
+      stddev_pop("geo_hash_7") as "geo_hash_7_std")
+    .repartition(1)
+    .write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save(output_file_level_1)
+
+
+    ///////////Agregación Nivel 2
+
+    //definimos el output
+    val output_file_level_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_2_%s".format(today,country)
+
+    geo_labeled_users
+    .groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+    .groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","Day").agg(
+      count("device_id") as "devices",
+      avg("geo_hash_7") as "geo_hash_7_avg",
+      stddev_pop("geo_hash_7") as "geo_hash_7_std")
+    .repartition(1)
+    .write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save(output_file_level_2)
 
   }
 
