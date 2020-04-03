@@ -440,6 +440,101 @@ def get_safegraph_data(
                     .save("/datascience/coronavirus/geohash_travel_barrio_CLASE2")
   }
 
+  def distance_traveled_mx(spark:SparkSession, day:String){
+    val country = "mexico"
+
+    val raw = get_safegraph_data(spark,1,1,country)
+                      .withColumnRenamed("ad_id","device_id")
+                      .withColumn("device_id",lower(col("device_id")))
+                      .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
+                      .withColumn("day",lit(day))
+
+
+    //Vamos a usarlo para calcular velocidad y distancia al hogar
+    raw.persist()
+
+    val geo_hash_visits = raw.groupBy("device_id","day","geo_hash_7")
+                              .agg(count("utc_timestamp") as "detections")
+                              .withColumn("country",lit(country))
+
+
+    geo_hash_visits.write
+                  .mode(SaveMode.Overwrite)
+                  .format("parquet")
+                  .option("header","true")
+                  .partitionBy("day","country")
+                  .save("/datascience/coronavirus/geohashes_by_user")
+
+
+    //Queremos un cálculo general por país
+    val hash_user = spark.read
+                          .format("parquet")
+                          .load("/datascience/coronavirus/geohashes_by_user/day=%s/country=%s".format(day,country))
+                          .withColumn("device_id",lower(col("device_id")))
+                          .withColumn("day",lit(day))
+
+    hash_user.groupBy("day","device_id")
+              .agg(countDistinct("geo_hash_7") as "geo_hash_7")
+              .groupBy("day")
+              .agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std",count("device_id") as "devices")
+              .withColumn("country",lit(country))
+              .repartition(1)
+              .write
+              .mode(SaveMode.Overwrite)
+              .format("csv")
+              .option("header","true")
+              .partitionBy("day","country")
+              .save("/datascience/coronavirus/geohashes_by_country")
+
+    //Desagregado por entidad y municipio
+    val entidad = spark.read
+                      .format("csv")
+                      .option("header","true")
+                      .option("delimiter","\t")
+                      .load("/datascience/geo/geo_processed/MX_municipal_Updated_mexico_sjoin_polygon")
+
+    //Acá lo agregamos por estado
+    spark.read
+        .format("parquet")
+        .load("/datascience/coronavirus/geohashes_by_user/day=%s/country=%s".format(day,country))
+        .withColumn("day",lit(day))
+        .join(entidad,Seq("geo_hash_7"))
+        .groupBy("NOM_ENT","day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+        .groupBy("NOM_ENT","day").agg(
+          count("device_id") as "devices",
+          avg("geo_hash_7") as "geo_hash_7_avg",
+          stddev_pop("geo_hash_7") as "geo_hash_7_std")
+        .withColumn("country",lit(country))
+        .repartition(1)
+        .write
+        .mode(SaveMode.Overwrite)
+        .format("csv")
+        .option("header","true")
+        .partitionBy("day","country")
+        .save("/datascience/coronavirus/geohashes_by_estado")
+
+
+    //Acá lo agregamos por municipio
+    spark.read
+        .format("parquet")
+        .load("/datascience/coronavirus/geohashes_by_user/day=%s/country=%s".format(day,country))
+        .withColumn("day",lit(day))
+        .join(entidad,Seq("geo_hash_7"))
+        .groupBy("NOM_ENT","CVEGEO","NOM_MUN","day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+        .groupBy("NOM_ENT","CVEGEO","NOM_MUN","day").agg(
+          count("device_id") as "devices",
+          avg("geo_hash_7") as "geo_hash_7_avg",
+          stddev_pop("geo_hash_7") as "geo_hash_7_std")
+        .repartition(1)
+        .write
+        .mode(SaveMode.Overwrite)
+        .format("csv")
+        .option("header","true")
+        .partitionBy("day","country")
+        .save("/datascience/coronavirus/geohashes_by_municipio")
+
+  }
+
   def main(args: Array[String]) {
 
     Logger.getRootLogger.setLevel(Level.WARN)
@@ -492,6 +587,6 @@ def get_safegraph_data(
 
     // }
 
-    distance_traveled_ar(spark,"20200402")
+    distance_traveled_mx(spark,"20200402")
   }
 }
