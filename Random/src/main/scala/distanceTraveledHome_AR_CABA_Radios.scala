@@ -220,7 +220,7 @@ geo_hash_visits
 
 ///////////////barrios y radios censales
 
-val barrios = spark.read.format("csv")
+val geo_hash_table = spark.read.format("csv")
 .option("header",true)
 .option("delimiter",",")
 .load("/datascience/geo/geohashes_tables/AR_CABA_GeoHash_to_Entity.csv")
