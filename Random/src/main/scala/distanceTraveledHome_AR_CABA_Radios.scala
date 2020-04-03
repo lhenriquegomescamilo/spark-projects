@@ -205,7 +205,7 @@ val raw = get_safegraph_data(spark,"40","1",country)
 
 
 val geo_hash_visits = raw
-.groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
+.groupBy("device_id","Day","Hour","geo_hash_7").agg(count("utc_timestamp") as "detections")
 .withColumn("country",lit(country))
 
 val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_hourly_%s".format(today,country)
