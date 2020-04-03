@@ -3,6 +3,13 @@ import org.apache.spark.sql.SparkSession
 import org.joda.time.Days
 import org.joda.time.DateTime
 import org.apache.spark.sql.SaveMode
+import java.security.MessageDigest
+import java.util
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
+import org.apache.commons.codec.binary.Base64
+import java.time.DateTimeException
+import java.sql.Savepoint
 
 object dataBureau {
   
