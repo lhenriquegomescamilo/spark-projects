@@ -241,6 +241,204 @@ object Coronavirus {
 
   }
 
+
+def get_safegraph_data(
+      spark: SparkSession,
+      nDays: Int,
+      since: Int,
+      country: String
+     
+  ) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+   
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+      
+
+    // Now we obtain the list of hdfs files to be read
+    val path = "/datascience/geo/safegraph/"
+    val hdfs_files = days
+      .map(day => path +  "day=%s/country=%s/".format(day,country))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
+      .map(day => day + "*.snappy.parquet")
+
+
+    // Finally we read, filter by country, rename the columns and return the data
+    val df_safegraph = spark.read
+      .option("header", "true")
+      .parquet(hdfs_files: _*)
+      .dropDuplicates("ad_id", "latitude", "longitude")
+      .withColumnRenamed("ad_id","device_id")
+      .withColumnRenamed("id_type","device_type")
+      .withColumn("device_id",upper(col("device_id")))
+
+     df_safegraph                    
+    
+  }
+
+  def distance_traveled_ar(spark:SparkSession, day:String){
+    //Esta función obtiene los geohashes los últimos 30 días y mira una desagregacióon por barrio para Argentina. 
+
+    val country = "argentina"
+
+    val raw = get_safegraph_data(spark,1,0,country)
+                .withColumnRenamed("ad_id","device_id")
+                .withColumn("device_id",lower(col("device_id")))
+                .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
+                .withColumn("day",lit(day))
+
+    //Vamos a usarlo para calcular velocidad y distancia al hogar
+    raw.persist()
+
+    val geo_hash_visits = raw.groupBy("device_id","day","geo_hash_7")
+                              .agg(count("utc_timestamp") as "detections")
+                              .withColumn("country",lit(country))
+
+    ///val output_file = "/datascience/coronavirus/geohashes_by_user/"
+
+    geo_hash_visits.write
+                    .mode(SaveMode.Overwrite)
+                    .format("parquet")
+                    .partitionBy("day","country")
+                    .save("/datascience/coronavirus/geohashes_by_user")
+
+    //Queremos un cálculo general por país
+    val hash_user = spark.read
+                          .format("parquet")
+                          .load("/datascience/coronavirus/geohashes_by_user/day=%s/country=%s".format(day,country))
+                          .withColumn("device_id",lower(col("device_id")))
+                          .withColumn("day",lit(day))
+
+    hash_user.groupBy("day","device_id")
+              .agg(countDistinct("geo_hash_7") as "geo_hash_7")
+              .groupBy("day")
+              .agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std",count("device_id") as "devices")
+              .withColumn("country",lit(country))
+              .repartition(1)
+              .write
+              .mode(SaveMode.Overwrite)
+              .format("csv")
+              .option("header","true")
+              .partitionBy("day","country")
+              .save("/datascience/coronavirus/geohashes_by_country")
+
+    ///////////Partidos
+    //QUeremos un cálculo por municipio:
+    //Desagregado por entidad y municipio
+    val entidad = spark.read
+                      .format("csv")
+                      .option("header",true)
+                      .option("delimiter","\t")
+                      .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+                      .withColumnRenamed("geo_hashote","geo_hash_7")
+
+
+    //Acá por provincia
+    val output_file_provincia = "/datascience/coronavirus/geohashes_by_provincia"
+    val provincia = spark.read
+                          .format("parquet")
+                          .load("/datascience/coronavirus/geohashes_by_user/day=%s/country=%s".format(day,country))
+                          .withColumn("day",lit(day))
+                          .withColumn("country",lit(country))
+                          .join(entidad,Seq("geo_hash_7"))
+                          .groupBy("PROVCODE","PROVINCIA","day","device_id")
+                          .agg(countDistinct("geo_hash_7") as "geo_hash_7")
+                          .groupBy("PROVCODE","PROVINCIA","day").agg(
+                            count("device_id") as "devices",
+                            avg("geo_hash_7") as "geo_hash_7_avg",
+                            stddev_pop("geo_hash_7") as "geo_hash_7_std")
+                          .repartition(1)
+                          .write
+                          .mode(SaveMode.Overwrite)
+                          .format("csv")
+                          .option("header",true)
+                          .partitionBy("day","country")
+                          .save("/datascience/coronavirus/geohashes_by_provincia")
+
+    //Acá por partido
+    val output_file_partido = "/datascience/coronavirus/geohashes_by_partido"
+    val partido = spark.read.format("parquet")
+                .load("/datascience/coronavirus/geohashes_by_user/day=%s/country=%s".format(day,country))
+                .withColumn("day",lit(day))
+                .join(entidad,Seq("geo_hash_7"))
+                .groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+                .groupBy("PROVCODE","IN1","PROVINCIA","NAM","FNA","day").agg(
+                  count("device_id") as "devices",
+                  avg("geo_hash_7") as "geo_hash_7_avg",
+                  stddev_pop("geo_hash_7") as "geo_hash_7_std")  
+                .withColumn("country",lit(country))
+                .repartition(1)
+                .write
+                .mode(SaveMode.Overwrite)
+                .format("csv")
+                .option("header",true)
+                .partitionBy("day","country")
+                .save("/datascience/coronavirus/geohashes_by_partido")
+
+    ///////////////barrios
+    //Con esto de abajo calculamos para barrios, por ahroa sólo funciona para Argentina
+    val barrios = spark.read
+                      .format("csv")
+                      .option("header",true).option("delimiter",",")
+                      .load("/datascience/geo/Reports/GCBA/Coronavirus/")
+                      .withColumnRenamed("geo_hashote","geo_hash_7")
+
+    //Alternativa 1
+    //Path home ARG
+
+    //Nos quedamos con los usuarios de los homes que viven en caba
+    val homes = spark.read.format("parquet").load("/datascience/data_insights/homes/day=2020-03/country=AR")
+    val geocode_barrios = spark.read.format("csv").option("header",true).load("/datascience/geo/Reports/GCBA/Coronavirus/Geocode_Barrios_CABA.csv")
+
+    val homes_barrio = homes.select("device_id","GEOID").join(geocode_barrios,Seq("GEOID")).drop("GEOID")
+
+    val output_file_tipo_1 = "/datascience/coronavirus/geohash_travel_barrio_CLASE1"
+
+    spark.read.format("parquet")
+        .load("/datascience/coronavirus/geohashes_by_user/day=%s/country=%s".format(day,country))
+        .withColumn("day",lit(day))
+        .withColumn("device_id",lower(col("device_id")))
+        .groupBy("device_id","day").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+        .join(homes_barrio,Seq("device_id"))
+        .groupBy("BARRIO","day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std",count("device_id") as "devices")
+        .withColumn("country",lit(country))
+        .repartition(1)
+        .write
+        .mode(SaveMode.Overwrite)
+        .format("csv")
+        .option("header",true)
+        .partitionBy("day","country")
+        .save("/datascience/coronavirus/geohash_travel_barrio_CLASE1")
+
+
+
+    //Alternativa 2
+    val output_file_tipo_2 = "/datascience/coronavirus/geohash_travel_barrio_CLASE2"
+    val tipo2 = spark.read
+                    .format("parquet")
+                    .load("/datascience/coronavirus/geohashes_by_user/day=%s/country=%s".format(day,country))
+                    .withColumn("day",lit(day))
+                    .join(barrios,Seq("geo_hash_7"))
+                    .groupBy("COMUNA","BARRIO","day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+                    .groupBy("COMUNA","BARRIO","day").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+                    .repartition(1)
+                    .write
+                    .mode(SaveMode.Overwrite)
+                    .format("csv")
+                    .option("header",true)
+                    .partitionBy("day","country")
+                    .save("/datascience/coronavirus/geohash_travel_barrio_CLASE2")
+  }
+
   def main(args: Array[String]) {
 
     Logger.getRootLogger.setLevel(Level.WARN)
@@ -254,46 +452,45 @@ object Coronavirus {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-    val since = 1
-    val ndays = 10
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(since + ndays)
-    val end = DateTime.now.minusDays(since)
+    // val since = 1
+    // val ndays = 10
+    // val format = "yyyyMMdd"
+    // val start = DateTime.now.minusDays(since + ndays)
+    // val end = DateTime.now.minusDays(since)
 
-    val daysCount = Days.daysBetween(start, end).getDays()
-    val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+    // val daysCount = Days.daysBetween(start, end).getDays()
+    // val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
     
-    val barrios_ar =  spark.read.format("csv")
-                        .option("header",true)
-                        .option("delimiter",",")
-                        .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-                        .withColumnRenamed("geo_hashote","geo_hash_join")
+    // val barrios_ar =  spark.read.format("csv")
+    //                     .option("header",true)
+    //                     .option("delimiter",",")
+    //                     .load("/datascience/geo/Reports/GCBA/Coronavirus/")
+    //                     .withColumnRenamed("geo_hashote","geo_hash_join")
 
-    val barrios_mx = spark.read
-                          .format("csv")
-                          .option("sep","\t")
-                          .option("header","true")
-                          .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
-                          .withColumnRenamed("geo_hash_7","geo_hash_join")
+    // val barrios_mx = spark.read
+    //                       .format("csv")
+    //                       .option("sep","\t")
+    //                       .option("header","true")
+    //                       .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
+    //                       .withColumnRenamed("geo_hash_7","geo_hash_join")
 
 
-    for (day <- days){
-      println(day)
-      println("\tAR")
-      // AR
-      generate_seed(spark,"argentina",day)
-      get_coronavirus(spark,"argentina",day)  
-      coronavirus_barrios(spark,"argentina",barrios_ar,"BARRIO",day)
-      println("\tMX")
+    // for (day <- days){
+    //   println(day)
+    //   println("\tAR")
+    //   // AR
+    //   generate_seed(spark,"argentina",day)
+    //   get_coronavirus(spark,"argentina",day)  
+    //   coronavirus_barrios(spark,"argentina",barrios_ar,"BARRIO",day)
+    //   println("\tMX")
 
-      // MX
-      generate_seed(spark,"mexico",day)
-      get_coronavirus(spark,"mexico",day)  
-      coronavirus_barrios(spark,"mexico",barrios_mx,"NOM_MUN",day)
+    //   // MX
+    //   generate_seed(spark,"mexico",day)
+    //   get_coronavirus(spark,"mexico",day)  
+    //   coronavirus_barrios(spark,"mexico",barrios_mx,"NOM_MUN",day)
 
-    }
+    // }
 
-    
-
+    distance_traveled_ar(spark,"20200403")
   }
 }
