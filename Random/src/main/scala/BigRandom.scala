@@ -366,6 +366,43 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val path1 = "/datascience/devicer/processed/BR_302875_2020-04-02T20-38-12-262987"
+    val path2 = "/datascience/devicer/processed/CL_302875_2020-04-02T20-38-16-018111"
+    val path3 = "/datascience/devicer/processed/CO_302875_2020-04-02T20-38-08-364538"    
+
+    println(path1)
+    val df1= spark.read.format("csv")
+            .option("sep", "\t")
+            .load(path1)  
+            .toDF("device_type","device_id","segment")
+            .groupBy("device_id")
+            .agg(countDistinct(col("segment"), 0.02).as("segment_count"))
+            .filter("segment_count>1")        
+
+    println(df1.count())
+
+    println(path2)
+    val df2= spark.read.format("csv")
+            .option("sep", "\t")
+            .load(path2)  
+            .toDF("device_type","device_id","segment")
+            .groupBy("device_id")
+            .agg(countDistinct(col("segment"), 0.02).as("segment_count"))
+            .filter("segment_count>1")        
+
+    println(df2.count())
+
+    println(path3)
+    val df3= spark.read.format("csv")
+            .option("sep", "\t")
+            .load(path3)  
+            .toDF("device_type","device_id","segment")
+            .groupBy("device_id")
+            .agg(countDistinct(col("segment"), 0.02).as("segment_count"))
+            .filter("segment_count>1")        
+
+    println(df3.count())        
+
     /**
 
     val countries = "AR,MX".split(",").toList
@@ -383,7 +420,7 @@ def getDataPipeline(
 
     */
 
-  
+  /**
 
     val getSeg = udf((lista: Seq[Integer]) =>
         if (lista.contains(306283)) 306283
@@ -445,7 +482,7 @@ def getDataPipeline(
 
     }   
 
-
+*/
 
 /**
     val countries = "AR,MX".split(",").toList
