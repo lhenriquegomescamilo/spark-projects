@@ -10,6 +10,12 @@ import javax.crypto.spec.SecretKeySpec
 import org.apache.commons.codec.binary.Base64
 import java.time.DateTimeException
 import java.sql.Savepoint
+import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
+import org.apache.spark.sql.functions._
+import org.joda.time.{Days, DateTime}
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.types._
 
 object dataBureau {
   
