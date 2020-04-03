@@ -290,7 +290,7 @@ def get_safegraph_data(
 
     val country = "argentina"
 
-    val raw = get_safegraph_data(spark,1,0,country)
+    val raw = get_safegraph_data(spark,1,1,country)
                 .withColumnRenamed("ad_id","device_id")
                 .withColumn("device_id",lower(col("device_id")))
                 .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
@@ -491,6 +491,6 @@ def get_safegraph_data(
 
     // }
 
-    distance_traveled_ar(spark,"20200403")
+    distance_traveled_ar(spark,"20200402")
   }
 }
