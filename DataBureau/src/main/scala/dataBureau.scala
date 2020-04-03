@@ -61,7 +61,7 @@ object dataBureau {
           .withColumnRenamed("utc_timestamp","timestamp")
           .withColumnRenamed("latitude","lat")
           .withColumnRenamed("longitude","lon")
-          .withColumn("device_id",encriptador(col("device_id"),spark))
+          .withColumn("device_id",encriptador(col("device_id"),lit(spark)))
           .withColumn("day",lit(day))
           .write
           .format("parquet")
