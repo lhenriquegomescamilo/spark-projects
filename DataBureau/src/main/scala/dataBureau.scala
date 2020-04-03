@@ -68,6 +68,7 @@ object dataBureau {
           .write
           .format("parquet")
           .partitionBy("day")
+          .mode(SaveMode.Overwrite)
           .save("/datascience/data_bureau")
   }
 
