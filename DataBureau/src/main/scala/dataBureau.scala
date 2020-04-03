@@ -19,10 +19,12 @@ import org.apache.spark.sql.types._
 
 object dataBureau {
   
-  val key = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("key").take(1)(0)(0).toString
-  val salt = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("salt").take(1)(0)(0).toString
-
   def keyToSpec(): SecretKeySpec = {
+    val spark = SparkSession.builder.appName("Data Bureau BR")
+                                    .config("spark.sql.files.ignoreCorruptFiles", "true")
+                                    .getOrCreate()
+    val key = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("key").take(1)(0)(0).toString
+    val salt = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("salt").take(1)(0)(0).toString
     var keyBytes: Array[Byte] =
       (key + salt)
         .getBytes("UTF-8")
@@ -69,7 +71,6 @@ object dataBureau {
           .mode(SaveMode.Overwrite)
           .save("/datascience/data_bureau")
   }
-
 
   def main(args: Array[String]) {
     /// Configuracion spark
