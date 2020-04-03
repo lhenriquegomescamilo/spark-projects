@@ -604,9 +604,6 @@ def get_safegraph_data(
     geo_labeled_users.persist()
 
     ///////////Agregación Nivel 1
-    //definimos el output
-    val output_file_level_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_1_%s".format(today,country)
-
     geo_labeled_users
             .groupBy("Level1_Code","Level1_Name","day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
             .groupBy("Level1_Code","Level1_Name","day").agg(
@@ -624,24 +621,20 @@ def get_safegraph_data(
 
 
     ///////////Agregación Nivel 2
-
-    //definimos el output
-    val output_file_level_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_level_2_%s".format(today,country)
-
     geo_labeled_users
-    .groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-    .groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","day").agg(
-      count("device_id") as "devices",
-      avg("geo_hash_7") as "geo_hash_7_avg",
-      stddev_pop("geo_hash_7") as "geo_hash_7_std")
-    .withColumn("country",lit(country))
-    .repartition(1)
-    .write
-    .mode(SaveMode.Overwrite)
-    .format("csv")
-    .option("header","true")
-    .partitionBy("day","country")
-    .save("/datascience/coronavirus/geohashes_by_level_2")
+            .groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+            .groupBy("Level1_Code","Level1_Name","Level2_Code","Level2_Name","day").agg(
+              count("device_id") as "devices",
+              avg("geo_hash_7") as "geo_hash_7_avg",
+              stddev_pop("geo_hash_7") as "geo_hash_7_std")
+            .withColumn("country",lit(country))
+            .repartition(1)
+            .write
+            .mode(SaveMode.Overwrite)
+            .format("csv")
+            .option("header","true")
+            .partitionBy("day","country")
+            .save("/datascience/coronavirus/geohashes_by_level_2")
 
   }
 
