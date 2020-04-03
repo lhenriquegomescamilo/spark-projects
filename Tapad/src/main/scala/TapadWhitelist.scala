@@ -110,9 +110,9 @@ object TapadWhitelist {
     
     val today = DateTime.now.toString("yyyyMMdd")
 
-    val madids_factual = get_madids_partner(spark,"1008", 1, 45)
+    val madids_factual = get_madids_partner(spark,"1008", 1, 30)
 
-    val madids_startapp = get_madids_partner(spark,"1139", 1, 45)
+    val madids_startapp = get_madids_partner(spark,"1139", 1, 30)
 
     // GEO
     val madids_geo_ar = get_monthly_data_homes(spark,"AR")
