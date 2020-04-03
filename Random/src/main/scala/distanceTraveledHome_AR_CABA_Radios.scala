@@ -201,11 +201,17 @@ val raw = get_safegraph_data(spark,"40","1",country)
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
 .withColumn("Hour", date_format(col("Time"), "HH"))
+.withColumn("DayPeriod", 
+                when(col("Hour")>=0 && col("Hour")<6, "0 - EarlyMorning")
+     .otherwise(when(col("Hour")>=6 && col("Hour")<11, "1 - Morning")
+     .otherwise(when(col("Hour")>=11 && col("Hour")<14, "2 - Noon")
+     .otherwise(when(col("Hour")>=14 && col("Hour")<18, "3 - Evening")
+     .otherwise(when(col("Hour")>=18, "4 - Night"))))))
 .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
 
 
 val geo_hash_visits = raw
-.groupBy("device_id","Day","Hour","geo_hash_7").agg(count("utc_timestamp") as "detections")
+.groupBy("device_id","Day","DayPeriod","Hour","geo_hash_7").agg(count("utc_timestamp") as "detections")
 .withColumn("country",lit(country))
 
 val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_hourly_%s".format(today,country)
@@ -236,8 +242,10 @@ geo_labeled_users.persist()
 val output_file_tipo_2a = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s".format(today,country)
 
 geo_labeled_users
-.groupBy("BARRIO","RADIO","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("BARRIO","RADIO","Day").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.groupBy("BARRIO","RADIO","Day","device_id")
+        .agg(countDistinct("geo_hash_7") as "geo_hash_7",sum("detections") as "detections")
+.groupBy("BARRIO","RADIO","Day")
+        .agg(count("device_id") as "devices",avg("detections") as "detections_avg",avg("geo_hash_7") as "geo_hash_7_avg")
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
@@ -250,8 +258,10 @@ geo_labeled_users
 val output_file_tipo_2b = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_hourly_%s".format(today,country)
 
 geo_labeled_users
-.groupBy("BARRIO","RADIO","Day","Hour","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("BARRIO","RADIO","Day","Hour").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.groupBy("BARRIO","RADIO","Day","DayPeriod","device_id")
+        .agg(countDistinct("geo_hash_7") as "geo_hash_7",sum("detections") as "detections")
+.groupBy("BARRIO","RADIO","Day","DayPeriod")
+        .agg(count("device_id") as "devices",avg("detections") as "detections_avg",avg("geo_hash_7") as "geo_hash_7_avg")
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
