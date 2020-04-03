@@ -348,7 +348,6 @@ def get_safegraph_data(
                           .format("parquet")
                           .load("/datascience/coronavirus/geohashes_by_user/day=%s/country=%s".format(day,country))
                           .withColumn("day",lit(day))
-                          .withColumn("country",lit(country))
                           .join(entidad,Seq("geo_hash_7"))
                           .groupBy("PROVCODE","PROVINCIA","day","device_id")
                           .agg(countDistinct("geo_hash_7") as "geo_hash_7")
@@ -356,6 +355,7 @@ def get_safegraph_data(
                             count("device_id") as "devices",
                             avg("geo_hash_7") as "geo_hash_7_avg",
                             stddev_pop("geo_hash_7") as "geo_hash_7_std")
+                          .withColumn("country",lit(country))
                           .repartition(1)
                           .write
                           .mode(SaveMode.Overwrite)
