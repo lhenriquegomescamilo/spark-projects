@@ -237,7 +237,7 @@ val output_file_tipo_2a = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_
 
 geo_labeled_users
 .groupBy("BARRIO","RADIO","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("COMUNA","BARRIO","Day").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.groupBy("BARRIO","RADIO","Day").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
@@ -251,7 +251,7 @@ val output_file_tipo_2b = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_
 
 geo_labeled_users
 .groupBy("BARRIO","RADIO","Day","Hour","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("COMUNA","BARRIO","Day","Hour").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
+.groupBy("BARRIO","RADIO","Day","Hour").agg(count("device_id") as "devices",avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std")
 .repartition(1)
 .write
 .mode(SaveMode.Overwrite)
