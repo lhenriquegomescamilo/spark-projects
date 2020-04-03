@@ -17,7 +17,7 @@ import org.apache.spark.sql.functions.input_file_name
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object distanceTraveled_AR {
+object distanceTraveled_AR_CABA_Radios {
   
 
 
