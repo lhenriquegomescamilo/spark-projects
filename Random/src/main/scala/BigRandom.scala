@@ -366,45 +366,27 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
-    val path1 = "/datascience/devicer/processed/BR_302875_2020-04-02T20-38-12-262987"
-    val path2 = "/datascience/devicer/processed/CL_302875_2020-04-02T20-38-16-018111"
-    val path3 = "/datascience/devicer/processed/CO_302875_2020-04-02T20-38-08-364538"    
+    val files = "BR_302875_2020-04-02T20-38-12-262987,CL_302875_2020-04-02T20-38-16-018111,CO_302875_2020-04-02T20-38-08-364538".split(",").toList
+    for (file <- files) {    
 
-    println(path1)
-    println(spark.read.format("csv").option("sep", "\t").load(path1).toDF("device_type","device_id","segment").count())    
-    val df1= spark.read.format("csv")
-            .option("sep", "\t")
-            .load(path1)  
-            .toDF("device_type","device_id","segment")
+    var path =  "/datascience/devicer/processed/%s".format(file) 
+    println(path)
+
+    var df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load(path)
+    .toDF("device_type","device_id","segment")
+
+    println(df.count())        
+
+    var df_grouped = df
             .groupBy("device_id")
-            .agg(countDistinct(col("segment"), 0.02).as("segment_count"))
+            .agg(countDistinct(col("segment")).as("segment_count"))
             .filter("segment_count>1")        
 
-    println(df1.count())
+    println(df_grouped.count())
 
-    println(path2)
-    println(spark.read.format("csv").option("sep", "\t").load(path2).toDF("device_type","device_id","segment").count())    
-    val df2= spark.read.format("csv")
-            .option("sep", "\t")
-            .load(path2)  
-            .toDF("device_type","device_id","segment")
-            .groupBy("device_id")
-            .agg(countDistinct(col("segment"), 0.02).as("segment_count"))
-            .filter("segment_count>1")        
-
-    println(df2.count())
-
-    println(path3)
-    println(spark.read.format("csv").option("sep", "\t").load(path3).toDF("device_type","device_id","segment").count())    
-    val df3= spark.read.format("csv")
-            .option("sep", "\t")
-            .load(path3)  
-            .toDF("device_type","device_id","segment")
-            .groupBy("device_id")
-            .agg(countDistinct(col("segment"), 0.02).as("segment_count"))
-            .filter("segment_count>1")        
-
-    println(df3.count())        
+    }
 
     /**
 
