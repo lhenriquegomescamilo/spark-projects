@@ -71,19 +71,49 @@ object TapadWhitelist {
 
   }
 
+  def get_madids_partner(spark:SparkSession,partner:String, since: Int, ndays:Int): DataFrame = {
+    /// Configuraciones de spark
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_partner_streaming"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .flatMap(
+        day =>
+          (0 until 24).map(
+            hour =>
+              path + "/hour=%s%02d/id_partner=%s"
+                .format(day, hour, partner)
+          )
+      )
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .filter("device_type != 'web'")
+      .select("device_id")
+      .withColumnRenamed("device_id","madids")
+
+    df
+
+  }
+   
   def whitelist_madids_report(spark: SparkSession,date:String){
-    val current_month = DateTime.now().toString("yyyyMM")
-
+    
     val today = DateTime.now.toString("yyyyMMdd")
-    val madids_factual = spark.read.format("csv").option("sep","\t")
-                              .load("/datascience/devicer/processed/madids_factual_%s/".format(current_month))
-                              .withColumnRenamed("_c1","madids")
-                              .select("madids")
 
-    val madids_startapp = spark.read.format("csv").option("sep","\t")
-                              .load("/datascience/devicer/processed/madids_startapp_%s/".format(current_month))
-                              .withColumnRenamed("_c1","madids")
-                              .select("madids")
+    val madids_factual = get_madids_partner(spark,"1008", 1, 45)
+
+    val madids_startapp = get_madids_partner(spark,"1139", 1, 45)
+
     // GEO
     val madids_geo_ar = get_monthly_data_homes(spark,"AR")
 
@@ -106,6 +136,7 @@ object TapadWhitelist {
                   .union(madids_etermax)
                   .withColumn("madids",lower(col("madids")))
                   .distinct
+                  .repartition(1)
                   .write.format("csv")
                   .save("/datascience/data_tapad/whitelist/%s".format(today))
 
