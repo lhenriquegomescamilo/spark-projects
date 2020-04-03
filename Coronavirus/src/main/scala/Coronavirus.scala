@@ -690,6 +690,24 @@ def get_safegraph_data(
 
     // }
 
-    distance_traveled_rest(spark,"20200402","PE")
+    //val format = "yyyyMMdd"
+    //val date = DateTime.now.minusDays(1).toString(format)
+
+    val since = 2
+    val ndays = 10
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since + ndays)
+    val end = DateTime.now.minusDays(since)
+    val daysCount = Days.daysBetween(start, end).getDays()
+    val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+    
+    for (day <- days){
+      println(day)
+      distance_traveled_ar(spark,day)
+      distance_traveled_mx(spark,day)
+    //  distance_traveled_rest(spark,date,"PE")
+    //  distance_traveled_rest(spark,date,"CO")
+    //  distance_traveled_rest(spark,date,"CL")
+    }
   }
 }
