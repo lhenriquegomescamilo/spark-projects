@@ -263,6 +263,7 @@ geo_labeled_users
 .groupBy("BARRIO","RADIO","Day","DayPeriod")
         .agg(count("device_id") as "devices",avg("detections") as "detections_avg",avg("geo_hash_7") as "geo_hash_7_avg")
 .repartition(1)
+.write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
