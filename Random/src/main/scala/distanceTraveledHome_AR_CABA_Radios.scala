@@ -230,7 +230,7 @@ val barrios = spark.read.format("csv")
 
 //Agregamos por día
 val output_file_tipo_2a = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s".format(today,country)
-val tipo2 = spark.read.format("parquet")
+val tipo2a = spark.read.format("parquet")
 .load(output_file)
 .join(barrios,Seq("geo_hash_7"))
 .groupBy("BARRIO","RADIO","Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
@@ -245,7 +245,7 @@ val tipo2 = spark.read.format("parquet")
 
 //Agregamos por día y horario
 val output_file_tipo_2b = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_hourly_%s".format(today,country)
-val tipo2 = spark.read.format("parquet")
+val tipo2b = spark.read.format("parquet")
 .load(output_file)
 .join(barrios,Seq("geo_hash_7"))
 .groupBy("BARRIO","RADIO","Day","Hour","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
