@@ -19,10 +19,8 @@ import org.apache.spark.sql.types._
 
 object dataBureau {
   
-  def keyToSpec(): SecretKeySpec = {
-    val spark = SparkSession.builder.appName("Data Bureau BR")
-                                    .config("spark.sql.files.ignoreCorruptFiles", "true")
-                                    .getOrCreate()
+  def keyToSpec(spark:SparkSession): SecretKeySpec = {
+
     val key = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("key").take(1)(0)(0).toString
     val salt = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("salt").take(1)(0)(0).toString
     var keyBytes: Array[Byte] =
@@ -34,9 +32,9 @@ object dataBureau {
     new SecretKeySpec(keyBytes, "AES")
   }
 
-  def encrypt(value: String): String = {
+  def encrypt(value: String, spark:SparkSession): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
-    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec())
+    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec(spark))
     Base64.encodeBase64String(cipher.doFinal(value.getBytes("UTF-8")))
   }
 
@@ -46,8 +44,8 @@ object dataBureau {
     new String(cipher.doFinal(Base64.decodeBase64(encryptedValue)))
   }
 
-  val encriptador = udf { (device_id: String) =>
-    encrypt(device_id)
+  val encriptador = udf { (device_id: String, spark:SparkSession) =>
+    encrypt(device_id,spark)
   }
 
   val desencriptador = udf { (device_id: String) =>
@@ -63,7 +61,7 @@ object dataBureau {
           .withColumnRenamed("utc_timestamp","timestamp")
           .withColumnRenamed("latitude","lat")
           .withColumnRenamed("longitude","lon")
-          .withColumn("device_id",encriptador(col("device_id")))
+          .withColumn("device_id",encriptador(col("device_id"),spark))
           .withColumn("day",lit(day))
           .write
           .format("parquet")
