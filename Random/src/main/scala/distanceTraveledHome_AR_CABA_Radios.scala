@@ -278,7 +278,7 @@ object distanceTraveled_AR_CABA_Radios {
         avg("detections") as "detections_avg",
         avg("geo_hash_7") as "geo_hash_7_avg",
         avg("geo_hash") as "geo_hash_avg",
-        sum("geo_hash_2") as "geo_hash_1",
+        sum("geo_hash_1") as "geo_hash_1",
         sum("geo_hash_2") as "geo_hash_2",
         sum("geo_hash_3") as "geo_hash_3",
         sum("geo_hash_4") as "geo_hash_4",
