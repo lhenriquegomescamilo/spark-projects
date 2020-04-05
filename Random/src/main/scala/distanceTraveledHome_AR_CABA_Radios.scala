@@ -267,12 +267,20 @@ object distanceTraveled_AR_CABA_Radios {
         approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7",
         sum("detections") as "detections"
       )
+      .withColumn("geo_hash_2", when(col("geo_hash")>=2, 1).otherwise(0))
+      .withColumn("geo_hash_3", when(col("geo_hash")>=3, 1).otherwise(0))
+      .withColumn("geo_hash_4", when(col("geo_hash")>=4, 1).otherwise(0))
+      .withColumn("geo_hash_5", when(col("geo_hash")>=5, 1).otherwise(0))
       .groupBy("BARRIO", "RADIO", "Day")
       .agg(
         count("device_id") as "devices",
         avg("detections") as "detections_avg",
         avg("geo_hash_7") as "geo_hash_7_avg",
-        avg("geo_hash") as "geo_hash_avg"
+        avg("geo_hash") as "geo_hash_avg",
+        sum("geo_hash_2") as "geo_hash_2",
+        sum("geo_hash_3") as "geo_hash_3",
+        sum("geo_hash_4") as "geo_hash_4",
+        sum("geo_hash_5") as "geo_hash_5"
       )
       .repartition(1)
       .write
@@ -281,29 +289,29 @@ object distanceTraveled_AR_CABA_Radios {
       .option("header", true)
       .save(output_file_tipo_2a)
 
-    //Agregamos por día y horario
-    val output_file_tipo_2b =
-      "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_hourly_%s"
-        .format(today, country)
+    // //Agregamos por día y horario
+    // val output_file_tipo_2b =
+    //   "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_hourly_%s"
+    //     .format(today, country)
 
-    geo_labeled_users
-      .groupBy("BARRIO", "RADIO", "Day", "DayPeriod", "device_id")
-      .agg(
-        countDistinct("geo_hash_7") as "geo_hash_7",
-        sum("detections") as "detections"
-      )
-      .groupBy("BARRIO", "RADIO", "Day", "DayPeriod")
-      .agg(
-        count("device_id") as "devices",
-        avg("detections") as "detections_avg",
-        avg("geo_hash_7") as "geo_hash_7_avg"
-      )
-      .repartition(1)
-      .write
-      .mode(SaveMode.Overwrite)
-      .format("csv")
-      .option("header", true)
-      .save(output_file_tipo_2b)
+    // geo_labeled_users
+    //   .groupBy("BARRIO", "RADIO", "Day", "DayPeriod", "device_id")
+    //   .agg(
+    //     countDistinct("geo_hash_7") as "geo_hash_7",
+    //     sum("detections") as "detections"
+    //   )
+    //   .groupBy("BARRIO", "RADIO", "Day", "DayPeriod")
+    //   .agg(
+    //     count("device_id") as "devices",
+    //     avg("detections") as "detections_avg",
+    //     avg("geo_hash_7") as "geo_hash_7_avg"
+    //   )
+    //   .repartition(1)
+    //   .write
+    //   .mode(SaveMode.Overwrite)
+    //   .format("csv")
+    //   .option("header", true)
+    //   .save(output_file_tipo_2b)
 
   }
 
