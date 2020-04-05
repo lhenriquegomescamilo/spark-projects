@@ -267,6 +267,7 @@ object distanceTraveled_AR_CABA_Radios {
         approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7",
         sum("detections") as "detections"
       )
+      .withColumn("geo_hash_1", when(col("geo_hash")==1, 1).otherwise(0))
       .withColumn("geo_hash_2", when(col("geo_hash")>=2, 1).otherwise(0))
       .withColumn("geo_hash_3", when(col("geo_hash")>=3, 1).otherwise(0))
       .withColumn("geo_hash_4", when(col("geo_hash")>=4, 1).otherwise(0))
@@ -277,6 +278,7 @@ object distanceTraveled_AR_CABA_Radios {
         avg("detections") as "detections_avg",
         avg("geo_hash_7") as "geo_hash_7_avg",
         avg("geo_hash") as "geo_hash_avg",
+        sum("geo_hash_2") as "geo_hash_1",
         sum("geo_hash_2") as "geo_hash_2",
         sum("geo_hash_3") as "geo_hash_3",
         sum("geo_hash_4") as "geo_hash_4",
