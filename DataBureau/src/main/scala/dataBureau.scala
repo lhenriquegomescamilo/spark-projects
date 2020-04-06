@@ -45,7 +45,7 @@ object dataBureau {
   }
 
   val encriptador = udf { (device_id: String) =>
-    encrypt(device_id,spark)
+    encrypt(device_id)
   }
 
   val desencriptador = udf { (device_id: String) =>
