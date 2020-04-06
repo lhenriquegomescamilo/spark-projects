@@ -19,12 +19,10 @@ import org.apache.spark.sql.types._
 
 object dataBureau {
   
-  def keyToSpec(): SecretKeySpec = {
+  def keyToSpec(key:String,salt:String): SecretKeySpec = {
 
-    //val key = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("key").take(1)(0)(0).toString
-    //val salt = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("salt").take(1)(0)(0).toString
     var keyBytes: Array[Byte] =
-      ("RgpWo8h8aHJFkZ_TEwybsnvmWe3rgn8L" + "YE67YVcgE@Wm6TeZ")
+      (key + salt)
         .getBytes("UTF-8")
     val sha: MessageDigest = MessageDigest.getInstance("SHA-1")
     keyBytes = sha.digest(keyBytes)
@@ -32,9 +30,9 @@ object dataBureau {
     new SecretKeySpec(keyBytes, "AES")
   }
 
-  def encrypt(value: String): String = {
+  def encrypt(value: String,key:String,salt:String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
-    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec())
+    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec(key,salt))
     Base64.encodeBase64String(cipher.doFinal(value.getBytes("UTF-8")))
   }
 
@@ -44,8 +42,8 @@ object dataBureau {
     new String(cipher.doFinal(Base64.decodeBase64(encryptedValue)))
   }
 
-  val encriptador = udf { (device_id: String) =>
-    encrypt(device_id)
+  val encriptador = udf { (device_id: String,key: String,salt: String) =>
+    encrypt(device_id,key,salt)
   }
 
   val desencriptador = udf { (device_id: String) =>
@@ -53,6 +51,8 @@ object dataBureau {
   }
   
   def process_day(spark: SparkSession, day: String) {
+    val key = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("key").take(1)(0)(0).toString
+    val salt = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("salt").take(1)(0)(0).toString
      
     spark.read
           .load("/datascience/geo/safegraph/day=%s/country=BR/".format(day))
@@ -61,7 +61,7 @@ object dataBureau {
           .withColumnRenamed("utc_timestamp","timestamp")
           .withColumnRenamed("latitude","lat")
           .withColumnRenamed("longitude","lon")
-          .withColumn("device_id",encriptador(col("device_id")))
+          .withColumn("device_id",encriptador(col("device_id"),lit(key),lit(salt)))
           .withColumn("day",lit(day))
           .write
           .format("parquet")
@@ -77,8 +77,8 @@ object dataBureau {
                                     .getOrCreate()
 
     /// Parseo de parametros
-    val since = if (args.length > 0) args(0).toInt else 2
-    val ndays = if (args.length > 1) args(1).toInt else 1
+    val since = if (args.length > 0) args(0).toInt else 1
+    val ndays = if (args.length > 1) args(1).toInt else 5
 
     val format = "YYYYMMdd"
     val start = DateTime.now.minusDays(since + ndays)
