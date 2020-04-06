@@ -40,7 +40,7 @@ object dataBureau {
 
   def decrypt(encryptedValue: String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING")
-    cipher.init(Cipher.DECRYPT_MODE, keyToSpec(spark))
+    cipher.init(Cipher.DECRYPT_MODE, keyToSpec())
     new String(cipher.doFinal(Base64.decodeBase64(encryptedValue)))
   }
 
