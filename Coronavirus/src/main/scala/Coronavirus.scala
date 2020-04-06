@@ -693,7 +693,7 @@ def get_safegraph_data(
     //val format = "yyyyMMdd"
     //val date = DateTime.now.minusDays(1).toString(format)
 
-    val since = 1
+    val since = 2
     val ndays = 10
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since + ndays)
@@ -705,9 +705,28 @@ def get_safegraph_data(
       println(day)
       //distance_traveled_ar(spark,day)
       //distance_traveled_mx(spark,day)
-      distance_traveled_rest(spark,day,"PE")
-      distance_traveled_rest(spark,day,"CO")
-      distance_traveled_rest(spark,day,"CL")
+      try {
+        distance_traveled_rest(spark,day,"PE")
+      } catch {
+        case e: Throwable => {
+          println("Error: PE - %s".format(day))
+        }
+      }
+     try {
+        distance_traveled_rest(spark,day,"CO")
+      } catch {
+        case e: Throwable => {
+          println("Error: CO - %s".format(day))
+        }
+      }
+      try {
+        distance_traveled_rest(spark,day,"CL")
+      } catch {
+        case e: Throwable => {
+          println("Error: CL - %s".format(day))
+        }
+      }
+      
     }
   }
 }
