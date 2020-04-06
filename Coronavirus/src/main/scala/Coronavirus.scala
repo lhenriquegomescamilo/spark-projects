@@ -705,9 +705,9 @@ def get_safegraph_data(
       println(day)
       //distance_traveled_ar(spark,day)
       //distance_traveled_mx(spark,day)
-      distance_traveled_rest(spark,date,"PE")
-      distance_traveled_rest(spark,date,"CO")
-      distance_traveled_rest(spark,date,"CL")
+      distance_traveled_rest(spark,day,"PE")
+      distance_traveled_rest(spark,day,"CO")
+      distance_traveled_rest(spark,day,"CL")
     }
   }
 }
