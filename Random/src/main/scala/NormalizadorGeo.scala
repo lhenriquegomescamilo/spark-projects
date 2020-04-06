@@ -78,14 +78,28 @@ object normalizadorGeo {
 
 val today = (java.time.LocalDate.now).toString
 
-get_safegraph_all_country(spark,"25","1")
+val raw_to_aggregate = get_safegraph_all_country(spark,"30","1")
+
+raw_to_aggregate.persist()
+
+raw_to_aggregate
 .groupBy("day","country").agg(countDistinct("device_id") as "devices",count("utc_timestamp") as "detections")
 .repartition(1)
 .write
     .mode(SaveMode.Overwrite)
     .format("csv")
     .option("header",true)
-    .save("/datascience/geo/Reports/Normalizador/%s".format(today))
+    .save("/datascience/geo/Reports/Normalizador/%s/Geo_Counts_daily".format(today))
+
+raw_to_aggregate
+.groupBy("country").agg(countDistinct("device_id") as "devices",count("utc_timestamp") as "detections")
+.repartition(1)
+.write
+    .mode(SaveMode.Overwrite)
+    .format("csv")
+    .option("header",true)
+    .save("/datascience/geo/Reports/Normalizador/%s/Geo_Counts_monthly".format(today))
+
 
 
 
