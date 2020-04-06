@@ -55,7 +55,7 @@ object GeoVolumes {
   }
 
   def getStats(spark: SparkSession, country: String) = {
-    val data = get_safegraph(spark, 30, 1, country)
+    val data = get_safegraph(spark, 40, 1, country)
 
     data
       .unionAll(data.withColumn("day", lit("monthly")))
