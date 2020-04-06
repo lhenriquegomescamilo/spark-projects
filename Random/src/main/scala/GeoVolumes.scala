@@ -46,6 +46,9 @@ object GeoVolumes {
     val df_safegraph = spark.read
       .option("header", "true")
       .parquet(hdfs_files: _*)
+      .withColumn("input", input_file_name)
+      .withColumn("day", split(col("input"), "/").getItem(6))
+      .drop("input")
 
     df_safegraph
 
