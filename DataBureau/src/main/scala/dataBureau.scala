@@ -74,6 +74,8 @@ object dataBureau {
     /// Configuracion spark
     val spark = SparkSession.builder.appName("Data Bureau BR")
                                     .config("spark.sql.files.ignoreCorruptFiles", "true")
+                                    .config("spark.sql.files.ignoreCorruptFiles", "true")
+                                    .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
                                     .getOrCreate()
 
     /// Parseo de parametros
