@@ -48,6 +48,7 @@ object GeoVolumes {
       .parquet(hdfs_files: _*)
       .withColumn("input", input_file_name)
       .withColumn("day", split(col("input"), "/").getItem(6))
+      .withColumn("day", split(col("day"), "=").getItem(1))
       .drop("input")
 
     df_safegraph
@@ -65,6 +66,7 @@ object GeoVolumes {
         approxCountDistinct("ad_id", 0.02) as "device_unique",
         count("ad_id") as "detections"
       )
+      .repartition(1)
       .write
       .format("csv")
       .option("header", "true")
