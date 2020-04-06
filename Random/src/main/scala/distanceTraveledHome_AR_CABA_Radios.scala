@@ -21,6 +21,7 @@ import org.apache.spark.sql.SaveMode
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.input_file_name
+//import com.github.davidallsopp.geohash.GeoHash._
 
 /**
   * The idea of this script is to run random stuff. Most of the times, the idea is
@@ -200,8 +201,12 @@ object distanceTraveled_AR_CABA_Radios {
     spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
     val today = (java.time.LocalDate.now).toString
+    val getGeoHash = udf(
+      (latitude: Double, longitude: Double) => com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
+    )
 
-    val raw = get_safegraph_data(spark, "30", "1", country)
+    val raw = get_safegraph_data(spark, "36", "1", "AR")
+      .unionAll(get_safegraph_data(spark, "36", "1", country))
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -221,6 +226,7 @@ object distanceTraveled_AR_CABA_Radios {
               )
           )
       )
+      .withColumn("geo_hash", getGeoHash(col("latitude"), col("longitude")))
       .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
 
     val geo_hash_visits = raw
@@ -267,11 +273,11 @@ object distanceTraveled_AR_CABA_Radios {
         approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7",
         sum("detections") as "detections"
       )
-      .withColumn("geo_hash_1", when(col("geo_hash")===1, 1).otherwise(0))
-      .withColumn("geo_hash_2", when(col("geo_hash")>=2, 1).otherwise(0))
-      .withColumn("geo_hash_3", when(col("geo_hash")>=3, 1).otherwise(0))
-      .withColumn("geo_hash_4", when(col("geo_hash")>=4, 1).otherwise(0))
-      .withColumn("geo_hash_5", when(col("geo_hash")>=5, 1).otherwise(0))
+      .withColumn("geo_hash_1", when(col("geo_hash") === 1, 1).otherwise(0))
+      .withColumn("geo_hash_2", when(col("geo_hash") >= 2, 1).otherwise(0))
+      .withColumn("geo_hash_3", when(col("geo_hash") >= 3, 1).otherwise(0))
+      .withColumn("geo_hash_4", when(col("geo_hash") >= 4, 1).otherwise(0))
+      .withColumn("geo_hash_5", when(col("geo_hash") >= 5, 1).otherwise(0))
       .groupBy("BARRIO", "RADIO", "Day")
       .agg(
         count("device_id") as "devices",
