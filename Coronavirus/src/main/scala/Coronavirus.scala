@@ -705,9 +705,28 @@ def get_safegraph_data(
       println(day)
       //distance_traveled_ar(spark,day)
       //distance_traveled_mx(spark,day)
-      distance_traveled_rest(spark,day,"PE")
-      distance_traveled_rest(spark,day,"CO")
-      distance_traveled_rest(spark,day,"CL")
+      try {
+        distance_traveled_rest(spark,day,"PE")
+      } catch {
+        case e: Throwable => {
+          errorMessage = e.toString()
+        }
+      }
+     try {
+        distance_traveled_rest(spark,day,"CO")
+      } catch {
+        case e: Throwable => {
+          errorMessage = e.toString()
+        }
+      }
+      try {
+        distance_traveled_rest(spark,day,"CL")
+      } catch {
+        case e: Throwable => {
+          errorMessage = e.toString()
+        }
+      }
+      
     }
   }
 }
