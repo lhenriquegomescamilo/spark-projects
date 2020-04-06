@@ -30,15 +30,15 @@ object dataBureau {
     new SecretKeySpec(keyBytes, "AES")
   }
 
-  def encrypt(value: String,key:String,salt:String): String = {
+  def encrypt(value: String, key:String, salt:String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
     cipher.init(Cipher.ENCRYPT_MODE, keyToSpec(key,salt))
     Base64.encodeBase64String(cipher.doFinal(value.getBytes("UTF-8")))
   }
 
-  def decrypt(encryptedValue: String): String = {
+  def decrypt(encryptedValue: String, key:String, salt:String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING")
-    cipher.init(Cipher.DECRYPT_MODE, keyToSpec())
+    cipher.init(Cipher.DECRYPT_MODE, keyToSpec(key,salt))
     new String(cipher.doFinal(Base64.decodeBase64(encryptedValue)))
   }
 
@@ -46,8 +46,8 @@ object dataBureau {
     encrypt(device_id,key,salt)
   }
 
-  val desencriptador = udf { (device_id: String) =>
-    decrypt(device_id)
+  val desencriptador = udf { (device_id: String,key:String, salt:String) =>
+    decrypt(device_id,key,salt)
   }
   
   def process_day(spark: SparkSession, day: String) {
