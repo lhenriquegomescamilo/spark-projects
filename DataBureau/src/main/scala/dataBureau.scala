@@ -19,12 +19,12 @@ import org.apache.spark.sql.types._
 
 object dataBureau {
   
-  def keyToSpec(spark:SparkSession): SecretKeySpec = {
+  def keyToSpec(): SecretKeySpec = {
 
-    val key = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("key").take(1)(0)(0).toString
-    val salt = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("salt").take(1)(0)(0).toString
+    //val key = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("key").take(1)(0)(0).toString
+    //val salt = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("salt").take(1)(0)(0).toString
     var keyBytes: Array[Byte] =
-      (key + salt)
+      ("RgpWo8h8aHJFkZ_TEwybsnvmWe3rgn8L" + "YE67YVcgE@Wm6TeZ")
         .getBytes("UTF-8")
     val sha: MessageDigest = MessageDigest.getInstance("SHA-1")
     keyBytes = sha.digest(keyBytes)
@@ -32,19 +32,19 @@ object dataBureau {
     new SecretKeySpec(keyBytes, "AES")
   }
 
-  def encrypt(value: String, spark:SparkSession): String = {
+  def encrypt(value: String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
-    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec(spark))
+    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec())
     Base64.encodeBase64String(cipher.doFinal(value.getBytes("UTF-8")))
   }
 
   def decrypt(encryptedValue: String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING")
-    cipher.init(Cipher.DECRYPT_MODE, keyToSpec())
+    cipher.init(Cipher.DECRYPT_MODE, keyToSpec(spark))
     new String(cipher.doFinal(Base64.decodeBase64(encryptedValue)))
   }
 
-  val encriptador = udf { (device_id: String, spark:SparkSession) =>
+  val encriptador = udf { (device_id: String) =>
     encrypt(device_id,spark)
   }
 
@@ -61,7 +61,7 @@ object dataBureau {
           .withColumnRenamed("utc_timestamp","timestamp")
           .withColumnRenamed("latitude","lat")
           .withColumnRenamed("longitude","lon")
-          .withColumn("device_id",encriptador(col("device_id"),lit(spark)))
+          .withColumn("device_id",encriptador(col("device_id")))
           .withColumn("day",lit(day))
           .write
           .format("parquet")
@@ -77,7 +77,7 @@ object dataBureau {
                                     .getOrCreate()
 
     /// Parseo de parametros
-    val since = if (args.length > 0) args(0).toInt else 1
+    val since = if (args.length > 0) args(0).toInt else 2
     val ndays = if (args.length > 1) args(1).toInt else 1
 
     val format = "YYYYMMdd"
