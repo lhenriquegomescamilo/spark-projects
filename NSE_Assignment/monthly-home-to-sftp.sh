@@ -4,7 +4,7 @@
 #Acá creamos variables que vamos a usar abajo
 #Nota, cuidado con la empujada, porque si se crea a fin de mes, va a buscar EL MES. Si se ereo el 30-02 y empujas el 01-03 va a fallar
 source /home/rely/.bashrc
-TEMP_PATH="/home/rely/tmp_data/equifax_homes/"
+TEMP_PATH="/home/rely/tmp/equifax_homes/"
 fecha=$(date +"%Y-%m")
 
 #Creamos archivo tempoeral
