@@ -202,7 +202,8 @@ object distanceTraveled_AR_CABA_Radios {
 
     val today = (java.time.LocalDate.now).toString
     val getGeoHash = udf(
-      (latitude: Double, longitude: Double) => com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
+      (latitude: Double, longitude: Double) =>
+        com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
     )
 
     val raw = get_safegraph_data(spark, "36", "1", "AR")
@@ -238,11 +239,11 @@ object distanceTraveled_AR_CABA_Radios {
       "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_hourly_%s"
         .format(today, country)
 
-    geo_hash_visits.write
-      .mode(SaveMode.Overwrite)
-      .format("parquet")
-      .option("header", true)
-      .save(output_file)
+    // geo_hash_visits.write
+    //   .mode(SaveMode.Overwrite)
+    //   .format("parquet")
+    //   .option("header", true)
+    //   .save(output_file)
 
     ///////////////barrios y radios censales
 
@@ -266,37 +267,58 @@ object distanceTraveled_AR_CABA_Radios {
       "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s"
         .format(today, country)
 
+    // geo_labeled_users
+    //   .groupBy("BARRIO", "RADIO", "Day", "device_id")
+    //   .agg(
+    //     approxCountDistinct("geo_hash", 0.02) as "geo_hash",
+    //     approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7",
+    //     sum("detections") as "detections"
+    //   )
+    //   .withColumn("geo_hash_1", when(col("geo_hash") === 1, 1).otherwise(0))
+    //   .withColumn("geo_hash_2", when(col("geo_hash") >= 2, 1).otherwise(0))
+    //   .withColumn("geo_hash_3", when(col("geo_hash") >= 3, 1).otherwise(0))
+    //   .withColumn("geo_hash_4", when(col("geo_hash") >= 4, 1).otherwise(0))
+    //   .withColumn("geo_hash_5", when(col("geo_hash") >= 5, 1).otherwise(0))
+    //   .groupBy("BARRIO", "RADIO", "Day")
+    //   .agg(
+    //     count("device_id") as "devices",
+    //     avg("detections") as "detections_avg",
+    //     avg("geo_hash_7") as "geo_hash_7_avg",
+    //     avg("geo_hash") as "geo_hash_avg",
+    //     sum("geo_hash_1") as "geo_hash_1",
+    //     sum("geo_hash_2") as "geo_hash_2",
+    //     sum("geo_hash_3") as "geo_hash_3",
+    //     sum("geo_hash_4") as "geo_hash_4",
+    //     sum("geo_hash_5") as "geo_hash_5"
+    //   )
+    //   .repartition(1)
+    //   .write
+    //   .mode(SaveMode.Overwrite)
+    //   .format("csv")
+    //   .option("header", true)
+    //   .save(output_file_tipo_2a)
+
     geo_labeled_users
-      .groupBy("BARRIO", "RADIO", "Day", "device_id")
-      .agg(
-        approxCountDistinct("geo_hash", 0.02) as "geo_hash",
-        approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7",
-        sum("detections") as "detections"
-      )
-      .withColumn("geo_hash_1", when(col("geo_hash") === 1, 1).otherwise(0))
-      .withColumn("geo_hash_2", when(col("geo_hash") >= 2, 1).otherwise(0))
-      .withColumn("geo_hash_3", when(col("geo_hash") >= 3, 1).otherwise(0))
-      .withColumn("geo_hash_4", when(col("geo_hash") >= 4, 1).otherwise(0))
-      .withColumn("geo_hash_5", when(col("geo_hash") >= 5, 1).otherwise(0))
-      .groupBy("BARRIO", "RADIO", "Day")
-      .agg(
-        count("device_id") as "devices",
-        avg("detections") as "detections_avg",
-        avg("geo_hash_7") as "geo_hash_7_avg",
-        avg("geo_hash") as "geo_hash_avg",
-        sum("geo_hash_1") as "geo_hash_1",
-        sum("geo_hash_2") as "geo_hash_2",
-        sum("geo_hash_3") as "geo_hash_3",
-        sum("geo_hash_4") as "geo_hash_4",
-        sum("geo_hash_5") as "geo_hash_5"
-      )
+      .select("BARRIO", "RADIO", "Day", "device_id")
+      .distinct()
+      .join(
+        geo_labeled_users
+          .select("BARRIO", "Day", "device_id")
+          .distinct()
+          .withColumnRenamed("BARRIO", "BARRIO2"),
+        Seq("device_id", "Day")
+      ) // BARRIO, RADIO, Day, device_id, BARRIO2
+      .groupBy("BARRIO", "RADIO", "Day", "BARRIO2")
+      .agg(approxCountDistinct("device_id", 0.02) as "device_unique")
       .repartition(1)
       .write
       .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", true)
-      .save(output_file_tipo_2a)
-
+      .save(
+        "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s_otros_barrios"
+          .format(today, country)
+      )
     // //Agregamos por día y horario
     // val output_file_tipo_2b =
     //   "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_hourly_%s"
