@@ -18,8 +18,8 @@ object GeoVolumes {
 
   def get_safegraph(
       spark: SparkSession,
-      nDays: String,
-      since: String,
+      nDays: Int,
+      since: Int,
       country: String
   ) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
