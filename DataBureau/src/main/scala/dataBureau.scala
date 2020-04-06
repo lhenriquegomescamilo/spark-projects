@@ -19,10 +19,8 @@ import org.apache.spark.sql.types._
 
 object dataBureau {
   
-  def keyToSpec(spark:SparkSession): SecretKeySpec = {
+  def keyToSpec(key:String,salt:String): SecretKeySpec = {
 
-    val key = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("key").take(1)(0)(0).toString
-    val salt = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("salt").take(1)(0)(0).toString
     var keyBytes: Array[Byte] =
       (key + salt)
         .getBytes("UTF-8")
@@ -32,27 +30,29 @@ object dataBureau {
     new SecretKeySpec(keyBytes, "AES")
   }
 
-  def encrypt(value: String, spark:SparkSession): String = {
+  def encrypt(value: String, key:String, salt:String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
-    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec(spark))
+    cipher.init(Cipher.ENCRYPT_MODE, keyToSpec(key,salt))
     Base64.encodeBase64String(cipher.doFinal(value.getBytes("UTF-8")))
   }
 
-  def decrypt(encryptedValue: String): String = {
+  def decrypt(encryptedValue: String, key:String, salt:String): String = {
     val cipher: Cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING")
-    cipher.init(Cipher.DECRYPT_MODE, keyToSpec())
+    cipher.init(Cipher.DECRYPT_MODE, keyToSpec(key,salt))
     new String(cipher.doFinal(Base64.decodeBase64(encryptedValue)))
   }
 
-  val encriptador = udf { (device_id: String, spark:SparkSession) =>
-    encrypt(device_id,spark)
+  val encriptador = udf { (device_id: String,key: String,salt: String) =>
+    encrypt(device_id,key,salt)
   }
 
-  val desencriptador = udf { (device_id: String) =>
-    decrypt(device_id)
+  val desencriptador = udf { (device_id: String,key:String, salt:String) =>
+    decrypt(device_id,key,salt)
   }
   
   def process_day(spark: SparkSession, day: String) {
+    val key = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("key").take(1)(0)(0).toString
+    val salt = spark.read.format("json").load("/datascience/custom/keys_bureau.json").select("salt").take(1)(0)(0).toString
      
     spark.read
           .load("/datascience/geo/safegraph/day=%s/country=BR/".format(day))
@@ -61,7 +61,7 @@ object dataBureau {
           .withColumnRenamed("utc_timestamp","timestamp")
           .withColumnRenamed("latitude","lat")
           .withColumnRenamed("longitude","lon")
-          .withColumn("device_id",encriptador(col("device_id"),lit(spark)))
+          .withColumn("device_id",encriptador(col("device_id"),lit(key),lit(salt)))
           .withColumn("day",lit(day))
           .write
           .format("parquet")
@@ -78,7 +78,7 @@ object dataBureau {
 
     /// Parseo de parametros
     val since = if (args.length > 0) args(0).toInt else 1
-    val ndays = if (args.length > 1) args(1).toInt else 1
+    val ndays = if (args.length > 1) args(1).toInt else 5
 
     val format = "YYYYMMdd"
     val start = DateTime.now.minusDays(since + ndays)

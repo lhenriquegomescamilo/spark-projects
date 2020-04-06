@@ -693,8 +693,8 @@ def get_safegraph_data(
     //val format = "yyyyMMdd"
     //val date = DateTime.now.minusDays(1).toString(format)
 
-    val since = 2
-    val ndays = 10
+    val since = 0
+    val ndays = 5
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since + ndays)
     val end = DateTime.now.minusDays(since)
