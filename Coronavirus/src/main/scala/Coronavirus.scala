@@ -709,21 +709,21 @@ def get_safegraph_data(
         distance_traveled_rest(spark,day,"PE")
       } catch {
         case e: Throwable => {
-          errorMessage = e.toString()
+          println("Error: PE - %s".format(day))
         }
       }
      try {
         distance_traveled_rest(spark,day,"CO")
       } catch {
         case e: Throwable => {
-          errorMessage = e.toString()
+          println("Error: CO - %s".format(day))
         }
       }
       try {
         distance_traveled_rest(spark,day,"CL")
       } catch {
         case e: Throwable => {
-          errorMessage = e.toString()
+          println("Error: CL - %s".format(day))
         }
       }
       
