@@ -298,6 +298,10 @@ object distanceTraveled_AR_CABA_Radios {
     //   .option("header", true)
     //   .save(output_file_tipo_2a)
 
+
+    // Obtenemos el listado de barrios que recorrieron los usuarios de un radio censal particular.
+    val w = Window.partitionBy(col("BARRIO"), col("RADIO"), col("Day")).orderBy(col("device_unique").desc)
+
     geo_labeled_users
       .select("BARRIO", "RADIO", "Day", "device_id")
       .distinct()
@@ -310,6 +314,10 @@ object distanceTraveled_AR_CABA_Radios {
       ) // BARRIO, RADIO, Day, device_id, BARRIO2
       .groupBy("BARRIO", "RADIO", "Day", "BARRIO2")
       .agg(approxCountDistinct("device_id", 0.02) as "device_unique")
+      .filter("BARRIO != BARRIO2")
+      .withColumn("rn", row_number.over(w))
+      .where(col("rn") < 6)
+      .drop("rn")
       .repartition(1)
       .write
       .mode(SaveMode.Overwrite)
