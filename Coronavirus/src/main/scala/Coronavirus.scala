@@ -557,14 +557,14 @@ def get_safegraph_data(
 
     val geo_hash_visits = raw.groupBy("device_id","day","geo_hash_7")
                               .agg(count("utc_timestamp") as "detections")
+                              .withColumn("country",lit(country))
 
-    geo_hash_visits
-    .write
-        .mode(SaveMode.Overwrite)
-        .format("parquet")
-        .option("header","true")
-        .partitionBy("day","country")
-        .save("/datascience/coronavirus/geohashes_by_user")
+    geo_hash_visits.write
+                    .mode(SaveMode.Overwrite)
+                    .format("parquet")
+                    .option("header","true")
+                    .partitionBy("day","country")
+                    .save("/datascience/coronavirus/geohashes_by_user")
 
     ///////////Agregación Nivel 0
     //Queremos un cálculo general por país
