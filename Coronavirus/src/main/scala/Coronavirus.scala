@@ -704,8 +704,9 @@ def get_safegraph_data(
     
     for (day <- days){
       println(day)
-      distance_traveled_ar(spark,day)
-      distance_traveled_mx(spark,day)
+      //distance_traveled_ar(spark,day)
+      //distance_traveled_mx(spark,day)
+      distance_traveled_rest(spark,day,"PE")
       try {
         distance_traveled_rest(spark,day,"PE")
       } catch {
