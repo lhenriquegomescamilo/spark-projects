@@ -206,8 +206,9 @@ object distanceTraveled_AR_CABA_Radios {
         com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
     )
 
-    val raw = get_safegraph_data(spark, "36", "1", "AR")
-      .unionAll(get_safegraph_data(spark, "36", "1", country))
+    // Primero obtenemos la data raw que sera de utilidad para los calculos siguientes
+    val raw = get_safegraph_data(spark, "40", "0", "AR")
+      .unionAll(get_safegraph_data(spark, "40", "0", country))
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -239,13 +240,13 @@ object distanceTraveled_AR_CABA_Radios {
       "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_hourly_%s"
         .format(today, country)
 
-    // geo_hash_visits.write
-    //   .mode(SaveMode.Overwrite)
-    //   .format("parquet")
-    //   .option("header", true)
-    //   .save(output_file)
+    geo_hash_visits.write
+      .mode(SaveMode.Overwrite)
+      .format("parquet")
+      .option("header", true)
+      .save(output_file)
 
-    ///////////////barrios y radios censales
+    // Barrios y radios censales
 
     val geo_hash_table = spark.read
       .format("csv")
@@ -253,7 +254,7 @@ object distanceTraveled_AR_CABA_Radios {
       .option("delimiter", ",")
       .load("/datascience/geo/geohashes_tables/AR_CABA_GeoHash_to_Entity.csv")
 
-    //Levantamos la data y la pegamos a los barrios
+    // Levantamos la data y la pegamos a los barrios
     val geo_labeled_users = spark.read
       .format("parquet")
       .load(output_file)
@@ -267,36 +268,36 @@ object distanceTraveled_AR_CABA_Radios {
       "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s"
         .format(today, country)
 
-    // geo_labeled_users
-    //   .groupBy("BARRIO", "RADIO", "Day", "device_id")
-    //   .agg(
-    //     approxCountDistinct("geo_hash", 0.02) as "geo_hash",
-    //     approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7",
-    //     sum("detections") as "detections"
-    //   )
-    //   .withColumn("geo_hash_1", when(col("geo_hash") === 1, 1).otherwise(0))
-    //   .withColumn("geo_hash_2", when(col("geo_hash") >= 2, 1).otherwise(0))
-    //   .withColumn("geo_hash_3", when(col("geo_hash") >= 3, 1).otherwise(0))
-    //   .withColumn("geo_hash_4", when(col("geo_hash") >= 4, 1).otherwise(0))
-    //   .withColumn("geo_hash_5", when(col("geo_hash") >= 5, 1).otherwise(0))
-    //   .groupBy("BARRIO", "RADIO", "Day")
-    //   .agg(
-    //     count("device_id") as "devices",
-    //     avg("detections") as "detections_avg",
-    //     avg("geo_hash_7") as "geo_hash_7_avg",
-    //     avg("geo_hash") as "geo_hash_avg",
-    //     sum("geo_hash_1") as "geo_hash_1",
-    //     sum("geo_hash_2") as "geo_hash_2",
-    //     sum("geo_hash_3") as "geo_hash_3",
-    //     sum("geo_hash_4") as "geo_hash_4",
-    //     sum("geo_hash_5") as "geo_hash_5"
-    //   )
-    //   .repartition(1)
-    //   .write
-    //   .mode(SaveMode.Overwrite)
-    //   .format("csv")
-    //   .option("header", true)
-    //   .save(output_file_tipo_2a)
+    geo_labeled_users
+      .groupBy("BARRIO", "RADIO", "Day", "device_id")
+      .agg(
+        approxCountDistinct("geo_hash", 0.02) as "geo_hash",
+        approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7",
+        sum("detections") as "detections"
+      )
+      .withColumn("geo_hash_1", when(col("geo_hash") === 1, 1).otherwise(0))
+      .withColumn("geo_hash_2", when(col("geo_hash") >= 2, 1).otherwise(0))
+      .withColumn("geo_hash_3", when(col("geo_hash") >= 3, 1).otherwise(0))
+      .withColumn("geo_hash_4", when(col("geo_hash") >= 4, 1).otherwise(0))
+      .withColumn("geo_hash_5", when(col("geo_hash") >= 5, 1).otherwise(0))
+      .groupBy("BARRIO", "RADIO", "Day")
+      .agg(
+        count("device_id") as "devices",
+        avg("detections") as "detections_avg",
+        avg("geo_hash_7") as "geo_hash_7_avg",
+        avg("geo_hash") as "geo_hash_avg",
+        sum("geo_hash_1") as "geo_hash_1",
+        sum("geo_hash_2") as "geo_hash_2",
+        sum("geo_hash_3") as "geo_hash_3",
+        sum("geo_hash_4") as "geo_hash_4",
+        sum("geo_hash_5") as "geo_hash_5"
+      )
+      .repartition(1)
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("header", true)
+      .save(output_file_tipo_2a)
 
 
     // Obtenemos el listado de barrios que recorrieron los usuarios de un radio censal particular.
