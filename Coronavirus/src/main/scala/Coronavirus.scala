@@ -557,14 +557,14 @@ def get_safegraph_data(
 
     val geo_hash_visits = raw.groupBy("device_id","day","geo_hash_7")
                               .agg(count("utc_timestamp") as "detections")
+                              .withColumn("country",lit(country))
 
-    geo_hash_visits
-    .write
-        .mode(SaveMode.Overwrite)
-        .format("parquet")
-        .option("header","true")
-        .partitionBy("day","country")
-        .save("/datascience/coronavirus/geohashes_by_user")
+    geo_hash_visits.write
+                    .mode(SaveMode.Overwrite)
+                    .format("parquet")
+                    .option("header","true")
+                    .partitionBy("day","country")
+                    .save("/datascience/coronavirus/geohashes_by_user")
 
     ///////////Agregación Nivel 0
     //Queremos un cálculo general por país
@@ -692,9 +692,10 @@ def get_safegraph_data(
 
     //val format = "yyyyMMdd"
     //val date = DateTime.now.minusDays(1).toString(format)
-
-    val since = 2
-    val ndays = 10
+    
+    val since = if (args.length > 0) args(0).toInt else 0
+    val ndays = if (args.length > 1) args(1).toInt else 1
+    
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since + ndays)
     val end = DateTime.now.minusDays(since)
@@ -705,6 +706,7 @@ def get_safegraph_data(
       println(day)
       //distance_traveled_ar(spark,day)
       //distance_traveled_mx(spark,day)
+      distance_traveled_rest(spark,day,"PE")
       try {
         distance_traveled_rest(spark,day,"PE")
       } catch {
