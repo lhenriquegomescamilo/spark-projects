@@ -379,6 +379,7 @@ def getDataPipeline(
     .option("sep", "\t")
     .load("/datascience/ipg/month=202003/IPG_maids_enriched_gz")
     .toDF("rely_id","segments")
+    .withColumn("segments", split(col("segments"), ","))
     .withColumn("segment", explode(col("segments")))
     .withColumn("segment", col("segment").cast(IntegerType))
 
