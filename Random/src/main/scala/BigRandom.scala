@@ -366,6 +366,36 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+
+    val segments = spark.read
+      .format("csv")
+      .option("header", "true")
+      .load("/datascience/misc/axciom_segs.csv")
+      .select("segmentId","cluster")
+      .withColumnRenamed("segmentId", "segment")
+      .withColumn("segment", col("segment").cast(IntegerType))
+
+    val df = spark.read.format("csv")
+    .option("sep", "\t")
+    .load("/datascience/ipg/month=202003/IPG_maids_enriched_gz")
+    .toDF("rely_id","segments")
+    .withColumn("segment", explode(col("segments")))
+    .withColumn("segment", col("segment").cast(IntegerType))
+
+    df.join(segments,Seq("segment"),"outer").na.fill("Custom")
+    .groupBy("cluster")
+    .agg(approx_count_distinct(col("segment"), 0.02).as("approx_count"))
+    .write
+    .format("csv")
+    .option("sep", "\t")
+    .mode("overwrite")
+    .save("/datascience/misc/axciom_count")
+
+
+
+
+    /**
+
     val files = "BR_302875_2020-04-02T20-38-12-262987,CL_302875_2020-04-02T20-38-16-018111,CO_302875_2020-04-02T20-38-08-364538".split(",").toList
     for (file <- files) {    
 
@@ -388,6 +418,8 @@ def getDataPipeline(
 
     }
 
+    */
+
     /**
 
     val countries = "AR,MX".split(",").toList
@@ -397,7 +429,8 @@ def getDataPipeline(
         .option("sep", "\t")
         .load("/datascience/custom/cuadras_per_user_%s_to_push".format(country) )  
         .toDF("device_type","device_id","segment")
-        .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("total_devices"))    
+        .groupBy("segment").agg(approx_count_distinct(col("device_id"), 0.02).as("total_devices"))  
+          
 
     println(df.show())
 
