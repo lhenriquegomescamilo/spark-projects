@@ -90,6 +90,14 @@ object dataBureau {
     val days =
       (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
 
-    days.map(day => process_day(spark, day))
+    for (day <- days){
+      try {
+        process_day(spark,day)
+      } catch {
+        case e: Throwable => {
+          println("No Data: %s".format(day))
+        }
+      }
+    }
   }
 }
