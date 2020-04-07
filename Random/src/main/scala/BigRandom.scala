@@ -385,7 +385,7 @@ def getDataPipeline(
 
     df.join(segments,Seq("segment"),"outer").na.fill("Custom")
     .groupBy("cluster")
-    .agg(approx_count_distinct(col("segment"), 0.02).as("approx_count"))
+    .agg(approx_count_distinct(col("rely_id"), 0.02).as("approx_count"))
     .write
     .format("csv")
     .option("sep", "\t")
