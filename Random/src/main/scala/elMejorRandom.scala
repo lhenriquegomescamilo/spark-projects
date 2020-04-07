@@ -1338,7 +1338,7 @@ val raw = List(raw1,raw2).reduce(_.unionByName (_)).distinct()
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Sample_data_%".format(today,today))
+.save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Sample_data_%s".format(today,today))
 
 
       
