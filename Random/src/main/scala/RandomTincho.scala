@@ -3482,7 +3482,7 @@ object RandomTincho {
       .save("/datascience/custom/%s".format(output))
   }
 
-  def data_gcba_factual(spark:SparkSession){
+  def data_gcba_apps(spark:SparkSession){
     val segments_factual = List(105264, // Restaurantes
                                 105331, // Travel
                                 105259, // Movie Theaters
@@ -3502,7 +3502,7 @@ object RandomTincho {
                               182799, // Finance
                               182801, // Finance
                               182803, // Finance
-                              182805, // Finance
+                              182805 // Finance
                               )
     val segments =  segments_factual ++ apps_startapp
 
@@ -3548,7 +3548,8 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    println(spark.read.load("/datascience/custom/second_level_co").select("device_id").distinct.count)
+    data_gcba_apps(spark)
+
     // val users = spark.read.format("csv")
     //                         .option("header",true)
     //                         .option("delimiter","\t")
