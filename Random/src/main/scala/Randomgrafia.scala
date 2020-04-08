@@ -216,7 +216,7 @@ def getURLSegmentPred(
     // calcula cantidad de dispositivos por cada par de destinos y fecha/hora
     var df_mov = df.groupBy("Day", "Hour", "NAM_org", "NAM_dest").agg(count(col("device_id")).as("devices"))
 
-    df_mov.
+    df_mov
       .write
       .mode("overwrite")
       .format("parquet")
