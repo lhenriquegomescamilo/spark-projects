@@ -3548,8 +3548,22 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    data_gcba_apps(spark)
+    //data_gcba_apps(spark)
 
+    val geohashes_user = spark.read
+                              .load("/datascience/geo/Reports/GCBA/Coronavirus/2020-04-06/geohashes_by_user_argentina")
+                              .withColumn("device_id",lower(col("device_id")))
+
+    val user_apps = spark.read
+                        .load("/datascience/custom/apps_gcba")
+                        .withColumn("device_id",lower(col("device_id")))
+
+    geohashes_user.join(user_apps,Seq("device_id"),"inner")
+                  .write
+                  .format("parquet")
+                  .mode(SaveMode.Overwrite)
+                  .save("/datascience/custom/join_users_gcba_apps")
+    
     // val users = spark.read.format("csv")
     //                         .option("header",true)
     //                         .option("delimiter","\t")
