@@ -1333,12 +1333,12 @@ val raw2 = get_safegraph_data(spark,"1","1","argentina")
 val raw = List(raw1,raw2).reduce(_.unionByName (_)).distinct()
 .withColumn("device_id_hash", sha2(col("device_id"),256))
 .drop("device_id")
-.repartition(1)
+.repartition(20)
 .write
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Sample_data_%".format(today,today))
+.save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Sample_data_%s".format(today,today))
 
 
       
