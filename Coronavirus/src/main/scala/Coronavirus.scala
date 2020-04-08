@@ -244,8 +244,7 @@ object Coronavirus {
 
 def get_safegraph_data(
       spark: SparkSession,
-      nDays: Int,
-      since: Int,
+      day: String,
       country: String
      
   ) = {
@@ -255,31 +254,28 @@ def get_safegraph_data(
 
    
     // Get the days to be loaded
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays)
-      .map(end.minusDays(_))
-      .map(_.toString(format))
+    // val format = "yyyyMMdd"
+    // val end = DateTime.now.minusDays(since)
+    // val days = (0 until nDays)
+    //   .map(end.minusDays(_))
+    //   .map(_.toString(format))
       
 
     // Now we obtain the list of hdfs files to be read
-    val path = "/datascience/geo/safegraph/"
-    val hdfs_files = days
-      .map(day => path +  "day=%s/country=%s/".format(day,country))
-      .filter(
-        path => fs.exists(new org.apache.hadoop.fs.Path(path))
-      )
-      .map(day => day + "*.snappy.parquet")
-
+    // val path = "/datascience/geo/safegraph/"
+    // val hdfs_files = days
+    //   .map(day => path +  "day=%s/country=%s/".format(day,country))
+    //   .filter(
+    //     path => fs.exists(new org.apache.hadoop.fs.Path(path))
+    //   )
+     
 
     // Finally we read, filter by country, rename the columns and return the data
-    val df_safegraph = spark.read
-      .option("header", "true")
-      .parquet(hdfs_files: _*)
-      .dropDuplicates("ad_id", "latitude", "longitude")
-      .withColumnRenamed("ad_id","device_id")
-      .withColumnRenamed("id_type","device_type")
-      .withColumn("device_id",upper(col("device_id")))
+    val df_safegraph = spark.read.load("/datascience/geo/safegraph/day=%s/country=%s".format(day,country))
+                            .dropDuplicates("ad_id", "latitude", "longitude")
+                            .withColumnRenamed("ad_id","device_id")
+                            .withColumnRenamed("id_type","device_type")
+                            .withColumn("device_id",upper(col("device_id")))
 
      df_safegraph                    
     
@@ -290,7 +286,7 @@ def get_safegraph_data(
 
     val country = "argentina"
 
-    val raw = get_safegraph_data(spark,1,1,country)
+    val raw = get_safegraph_data(spark,day,country)
                 .withColumnRenamed("ad_id","device_id")
                 .withColumn("device_id",lower(col("device_id")))
                 .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
@@ -443,7 +439,7 @@ def get_safegraph_data(
   def distance_traveled_mx(spark:SparkSession, day:String){
     val country = "mexico"
 
-    val raw = get_safegraph_data(spark,1,1,country)
+    val raw = get_safegraph_data(spark,day,country)
                       .withColumnRenamed("ad_id","device_id")
                       .withColumn("device_id",lower(col("device_id")))
                       .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
@@ -538,7 +534,7 @@ def get_safegraph_data(
 
   def distance_traveled_rest(spark:SparkSession,day:String,country:String){
     
-    val raw = get_safegraph_data(spark,1,1,country)
+    val raw = get_safegraph_data(spark,day,country)
                     .withColumnRenamed("ad_id","device_id")
                     .withColumn("device_id",lower(col("device_id")))
                     .withColumn("day",lit(day))
@@ -704,8 +700,8 @@ def get_safegraph_data(
     
     for (day <- days){
       println(day)
-      //distance_traveled_ar(spark,day)
-      //distance_traveled_mx(spark,day)
+      distance_traveled_ar(spark,day)
+      distance_traveled_mx(spark,day)
       try {
         distance_traveled_rest(spark,day,"PE")
       } catch {
