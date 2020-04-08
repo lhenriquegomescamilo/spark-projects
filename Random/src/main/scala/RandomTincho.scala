@@ -3482,6 +3482,61 @@ object RandomTincho {
       .save("/datascience/custom/%s".format(output))
   }
 
+  def data_gcba_factual(spark:SparkSession){
+    val segments_factual = List(105264, // Restaurantes
+                                105331, // Travel
+                                105259, // Movie Theaters
+                                105260, // Music venues
+                                105261 //  Night clubs
+                                )
+    val apps_startapp = List(182761, //18-24
+                              182763, //25-34
+                              182765, //35-44
+                              182767, //45-54
+                              182769, // 55+
+                              182819, // Female
+                              182821,  // Male
+                              183119, // Food Delivery
+                              183209, // Gamers online
+                              182797, // Finance 
+                              182799, // Finance
+                              182801, // Finance
+                              182803, // Finance
+                              182805, // Finance
+                              )
+    val segments =  segments_factual ++ apps_startapp
+
+    // Get Triplets data
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    val since = 1
+    val ndays = 30
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since)
+    val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments/"
+    val dfs = days
+      .map(day => path + "day=%s/".format(day) + "country=AR")
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(
+        x =>
+          spark.read
+            .option("basePath", "/datascience/data_triplets/segments/")
+            .parquet(x)
+            .select("device_id", "feature")
+      )
+
+    val triplets = dfs
+      .reduce((df1, df2) => df1.union(df2))
+      .filter(col("feature").isin(segments: _*))
+      .select("device_id", "feature")
+      .distinct()
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/apps_gcba")
+  }
+
   def main(args: Array[String]) {
 
     // Setting logger config
