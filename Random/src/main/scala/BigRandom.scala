@@ -408,7 +408,7 @@ def getDataPipeline(
 
     for (aud <- audiences){
 
-    df.filter("audience == %s".format(aud))
+    df.filter("audience == '%s'".format(aud))
       .select("device_id")
       .write
       .format("csv")
