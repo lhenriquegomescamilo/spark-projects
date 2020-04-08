@@ -366,6 +366,64 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+
+    val typeMap = Map(
+          "web" -> "web",
+          "coo" -> "web",
+          "and" -> "android",
+          "maid" -> "android",
+          "ios" -> "ios",
+          "con" -> "TV",
+          "dra" -> "drawbridge",
+          "idfa" -> "ios",
+          "aaid"->"android",
+          "android"->"android",
+          "unknown"->"unknown")
+    val mapUDF = udf((dev_type: String) => typeMap(dev_type))
+
+    val path = "/datascience/geo/raw_output/BASE_DE_DATOS_EDIFICIOS_TELECENTRO_Pois_180d_argentina_8-4-2020-16h"
+    spark.conf.set("spark.sql.session.timeZone",  "GMT-3")
+    val db = spark.read.format("csv")
+    .option("delimiter","\t")
+    .option("header",true)
+    .load(path)
+    .withColumn("device_type",mapUDF(col("device_type")))
+    .filter("device_type IN ('android', 'ios')")
+
+    val distances = List(10,20)
+    val audiences = "bajo,medio,alto".split(",").toList
+
+    for (distance <- distances) {    
+    var df = db.filter("distance <= %d".format(distance))
+    .withColumn("Time", to_timestamp(from_unixtime(col("timestamp"))))
+    .withColumn("Hour", date_format(col("Time"), "HH"))
+    .filter(
+      !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"): _*)
+    )
+    .withColumn(
+      "Period",
+      when((col("Hour") >= 24 || col("Hour") <= 6), "Hogar")
+        .otherwise("Trabajo")
+    ).filter("Period = 'Hogar'")
+
+    for (aud <- audiences){
+
+    df.filter("audience == %s".format(aud))
+      .select("device_id")
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode("overwrite")
+      .save("/datascience/custom/telecentro_buildings_%d_%s".format(distance,aud))
+
+      }
+
+    }
+
+
+
+    /**
+
     val countries = "AR,MX,CL,CO,PE,UY".split(",").toList
     val audiences = List(306279,306281,306283)
 
@@ -387,7 +445,9 @@ def getDataPipeline(
           
       }   
           
-    }    
+    }
+
+    */    
 
 /**
     val segments = spark.read
