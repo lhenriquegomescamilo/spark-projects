@@ -366,7 +366,30 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val countries = "AR,MX,CL,CO,PE,UY".split(",").toList
+    val audiences = List(306279,306281,306283)
 
+    for (country <- countries) {    
+      println(country)
+      var df = spark.read.format("csv")
+          .option("sep", "\t")
+          .load("/datascience/custom/cuadras_per_user_%s_to_push".format(country) )  
+          .toDF("device_type","device_id","segment")
+          .filter("device_type IN ('android', 'ios')")
+      for (aud <- audiences) {
+        df.filter("segment == %d".format(aud))
+        .select("device_id")
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode("append")
+        .save("/datascience/custom/cuadras_per_user_madids_%d".format(aud))
+          
+      }   
+          
+    }    
+
+/**
     val segments = spark.read
       .format("csv")
       .option("header", "true")
@@ -393,7 +416,7 @@ def getDataPipeline(
     .save("/datascience/misc/axciom_count")
 
 
-
+  */
 
     /**
 
