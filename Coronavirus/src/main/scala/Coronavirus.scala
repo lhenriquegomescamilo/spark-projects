@@ -309,7 +309,7 @@ object Coronavirus {
 
     val country = "argentina"
     val format = "dd-MM-YY"
-    val day = DateTime.now.minusDays(since).toString(format)
+    val day = DateTime.now.minusDays(since+2).toString(format)
 
     val raw = get_safegraph_data(spark,since,4, country)
       .withColumnRenamed("ad_id", "device_id")
@@ -388,17 +388,17 @@ object Coronavirus {
           country
         )
       )
+      .withColumn("day", lit(day))
       .join(entidad, Seq("geo_hash_7"))
-      .groupBy("PROVCODE", "PROVINCIA", "Day", "device_id")
+      .groupBy("PROVCODE", "PROVINCIA", "day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("PROVCODE", "PROVINCIA", "Day")
+      .groupBy("PROVCODE", "PROVINCIA", "day")
       .agg(
         count("device_id") as "devices",
         avg("geo_hash_7") as "geo_hash_7_avg",
         stddev_pop("geo_hash_7") as "geo_hash_7_std"
       )
       .withColumn("country", lit(country))
-      .withColumn("day", lit(day))
       .repartition(1)
       .write
       .mode(SaveMode.Overwrite)
@@ -417,17 +417,17 @@ object Coronavirus {
           country
         )
       )
+      .withColumn("day", lit(day))
       .join(entidad, Seq("geo_hash_7"))
-      .groupBy("PROVCODE", "IN1", "PROVINCIA", "NAM", "FNA", "Day", "device_id")
+      .groupBy("PROVCODE", "IN1", "PROVINCIA", "NAM", "FNA", "day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("PROVCODE", "IN1", "PROVINCIA", "NAM", "FNA", "Day")
+      .groupBy("PROVCODE", "IN1", "PROVINCIA", "NAM", "FNA", "day")
       .agg(
         count("device_id") as "devices",
         avg("geo_hash_7") as "geo_hash_7_avg",
         stddev_pop("geo_hash_7") as "geo_hash_7_std"
       )
       .withColumn("country", lit(country))
-      .withColumn("day", lit(day))
       .repartition(1)
       .write
       .mode(SaveMode.Overwrite)
@@ -506,10 +506,11 @@ object Coronavirus {
           country
         )
       )
+      .withColumn("day", lit(day))
       .join(barrios, Seq("geo_hash_7"))
-      .groupBy("COMUNA", "BARRIO", "Day", "device_id")
+      .groupBy("COMUNA", "BARRIO", "day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("COMUNA", "BARRIO", "Day")
+      .groupBy("COMUNA", "BARRIO", "day")
       .agg(
         count("device_id") as "devices",
         avg("geo_hash_7") as "geo_hash_7_avg",
@@ -517,7 +518,6 @@ object Coronavirus {
       )
       .withColumn("country", lit(country))
       .repartition(1)
-      .withColumn("day", lit(day))
       .write
       .mode(SaveMode.Overwrite)
       .format("csv")
@@ -530,7 +530,7 @@ object Coronavirus {
     
     val country = "mexico"
     val format = "dd-MM-YY"
-    val day = DateTime.now.minusDays(since).toString(format)
+    val day = DateTime.now.minusDays(since+2).toString(format)
 
     val raw = get_safegraph_data(spark,since,4, country)
       .withColumnRenamed("ad_id", "device_id")
@@ -546,7 +546,7 @@ object Coronavirus {
     raw.persist()
 
     val geo_hash_visits = raw
-      .groupBy("device_id", "Day", "geo_hash_7")
+      .groupBy("device_id", "day", "geo_hash_7")
       .agg(count("utc_timestamp") as "detections")
       .withColumn("country", lit(country))
       .withColumn("day", lit(day))
@@ -566,11 +566,12 @@ object Coronavirus {
           .format(day, country)
       )
       .withColumn("device_id", lower(col("device_id")))
+      .withColumn("day", lit(day))
 
     hash_user
-      .groupBy("Day", "device_id")
+      .groupBy("day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("Day")
+      .groupBy("day")
       .agg(
         avg("geo_hash_7") as "geo_hash_7_avg",
         stddev_pop("geo_hash_7") as "geo_hash_7_std",
@@ -659,7 +660,7 @@ object Coronavirus {
       country: String
   ) {
     val format = "dd-MM-YY"
-    val day = DateTime.now.minusDays(since).toString(format)
+    val day = DateTime.now.minusDays(since+1).toString(format)
 
     val raw = get_safegraph_data(spark,since,2, country)
       .withColumnRenamed("ad_id", "device_id")
@@ -810,44 +811,6 @@ object Coronavirus {
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-
-    // val since = 1
-    // val ndays = 10
-    // val format = "yyyyMMdd"
-    // val start = DateTime.now.minusDays(since + ndays)
-    // val end = DateTime.now.minusDays(since)
-
-    // val daysCount = Days.daysBetween(start, end).getDays()
-    // val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
-    // val barrios_ar =  spark.read.format("csv")
-    //                     .option("header",true)
-    //                     .option("delimiter",",")
-    //                     .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-    //                     .withColumnRenamed("geo_hashote","geo_hash_join")
-
-    // val barrios_mx = spark.read
-    //                       .format("csv")
-    //                       .option("sep","\t")
-    //                       .option("header","true")
-    //                       .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
-    //                       .withColumnRenamed("geo_hash_7","geo_hash_join")
-
-    // for (day <- days){
-    //   println(day)
-    //   println("\tAR")
-    //   // AR
-    //   generate_seed(spark,"argentina",day)
-    //   get_coronavirus(spark,"argentina",day)
-    //   coronavirus_barrios(spark,"argentina",barrios_ar,"BARRIO",day)
-    //   println("\tMX")
-
-    //   // MX
-    //   generate_seed(spark,"mexico",day)
-    //   get_coronavirus(spark,"mexico",day)
-    //   coronavirus_barrios(spark,"mexico",barrios_mx,"NOM_MUN",day)
-
-    // }
 
     //val format = "yyyyMMdd"
     //val date = DateTime.now.minusDays(1).toString(format)
