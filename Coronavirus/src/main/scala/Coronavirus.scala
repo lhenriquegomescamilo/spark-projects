@@ -475,18 +475,18 @@ object Coronavirus {
           country
         )
       )
+      .withColumn("day", lit(day))
       .withColumn("device_id", lower(col("device_id")))
-      .groupBy("device_id", "Day")
+      .groupBy("device_id", "day")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
       .join(homes_barrio, Seq("device_id"))
-      .groupBy("BARRIO", "Day")
+      .groupBy("BARRIO", "day")
       .agg(
         avg("geo_hash_7") as "geo_hash_7_avg",
         stddev_pop("geo_hash_7") as "geo_hash_7_std",
         count("device_id") as "devices"
       )
       .withColumn("country", lit(country))
-      .withColumn("day", lit(day))
       .repartition(1)
       .write
       .mode(SaveMode.Overwrite)
