@@ -808,29 +808,30 @@ object Coronavirus {
       .getOrCreate()
 
     var since = if (args.length > 0) args(0).toInt else 0
+    for (since <- 4 to 40){
+      distance_traveled_ar(spark,since)
+      distance_traveled_mx(spark,since)
 
-    distance_traveled_ar(spark,since)
-    distance_traveled_mx(spark,since)
-
-    try {
-      distance_traveled_rest(spark, since, "PE")
-    } catch {
-      case e: Throwable => {
-        println("Error: PE - %s".format(since))
+      try {
+        distance_traveled_rest(spark, since, "PE")
+      } catch {
+        case e: Throwable => {
+          println("Error: PE - %s".format(since))
+        }
       }
-    }
-    try {
-      distance_traveled_rest(spark, since, "CO")
-    } catch {
-      case e: Throwable => {
-        println("Error: CO - %s".format(since))
+      try {
+        distance_traveled_rest(spark, since, "CO")
+      } catch {
+        case e: Throwable => {
+          println("Error: CO - %s".format(since))
+        }
       }
-    }
-    try {
-      distance_traveled_rest(spark, since, "CL")
-    } catch {
-      case e: Throwable => {
-        println("Error: CL - %s".format(since))
+      try {
+        distance_traveled_rest(spark, since, "CL")
+      } catch {
+        case e: Throwable => {
+          println("Error: CL - %s".format(since))
+        }
       }
     }
   }
