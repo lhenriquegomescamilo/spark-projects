@@ -807,52 +807,33 @@ object Coronavirus {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-
-    //val format = "yyyyMMdd"
-    //val date = DateTime.now.minusDays(1).toString(format)
-
     var since = if (args.length > 0) args(0).toInt else 0
 
-    // val format = "yyyyMMdd"
-    // val start = DateTime.now.minusDays(since + ndays)
-    // val end = DateTime.now.minusDays(since)
-    // val daysCount = Days.daysBetween(start, end).getDays()
-    // val days =
-    //   (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
+    println(DateTime.now.minusDays(since).toString(format))
 
-    // for (day <- days) {
-    //   println(day)
-    //   distance_traveled_ar(spark, day)
-    //   distance_traveled_mx(spark, day)
-    //   try {
-    //     distance_traveled_rest(spark, day, "PE")
-    //   } catch {
-    //     case e: Throwable => {
-    //       println("Error: PE - %s".format(day))
-    //     }
-    //   }
-    //   try {
-    //     distance_traveled_rest(spark, day, "CO")
-    //   } catch {
-    //     case e: Throwable => {
-    //       println("Error: CO - %s".format(day))
-    //     }
-    //   }
-    //   try {
-    //     distance_traveled_rest(spark, day, "CL")
-    //   } catch {
-    //     case e: Throwable => {
-    //       println("Error: CL - %s".format(day))
-    //     }
-    //   }
-        
-    val format = "dd-MM-YY"
-    for (since <- 11 to 20) {
-      println(DateTime.now.minusDays(since).toString(format))
-      distance_traveled_ar(spark,since)
-      distance_traveled_mx(spark,since)
+    distance_traveled_ar(spark,since)
+    distance_traveled_mx(spark,since)
+
+    try {
+      distance_traveled_rest(spark, since, "PE")
+    } catch {
+      case e: Throwable => {
+        println("Error: PE - %s".format(since))
+      }
+    }
+    try {
+      distance_traveled_rest(spark, since, "CO")
+    } catch {
+      case e: Throwable => {
+        println("Error: CO - %s".format(since))
+      }
+    }
+    try {
+      distance_traveled_rest(spark, since, "CL")
+    } catch {
+      case e: Throwable => {
+        println("Error: CL - %s".format(since))
+      }
     }
   }
 }
