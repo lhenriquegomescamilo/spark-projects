@@ -809,8 +809,6 @@ object Coronavirus {
 
     var since = if (args.length > 0) args(0).toInt else 0
 
-    println(DateTime.now.minusDays(since).toString(format))
-
     distance_traveled_ar(spark,since)
     distance_traveled_mx(spark,since)
 
