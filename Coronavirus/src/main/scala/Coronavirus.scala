@@ -850,7 +850,7 @@ object Coronavirus {
     //   }
         
     val format = "dd-MM-YY"
-    for (since <- 0 to 10) {
+    for (since <- 1 to 10) {
       println(DateTime.now.minusDays(since).toString(format))
       distance_traveled_ar(spark,since)
       distance_traveled_mx(spark,since)
