@@ -308,7 +308,8 @@ object Coronavirus {
     //Esta función obtiene los geohashes los últimos 30 días y mira una desagregacióon por barrio para Argentina.
 
     val country = "argentina"
-    val day = DateTime.now.minusDays(since).toString(format).format("dd-MM-YY")
+    val format = "dd-MM-YY"
+    val day = DateTime.now.minusDays(since).toString(format)
 
     val raw = get_safegraph_data(spark,since,4, country)
       .withColumnRenamed("ad_id", "device_id")
@@ -528,7 +529,8 @@ object Coronavirus {
   def distance_traveled_mx(spark: SparkSession, since: Int) {
     
     val country = "mexico"
-    val day = DateTime.now.minusDays(since).toString(format).format("dd-MM-YY")
+    val format = "dd-MM-YY"
+    val day = DateTime.now.minusDays(since).toString(format)
 
     val raw = get_safegraph_data(spark,since,4, country)
       .withColumnRenamed("ad_id", "device_id")
