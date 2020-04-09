@@ -887,6 +887,5 @@ object Coronavirus {
       val since = 1
       distance_traveled_ar(spark,since)
 
-    }
   }
 }
