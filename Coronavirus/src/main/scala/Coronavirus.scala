@@ -660,7 +660,7 @@ object Coronavirus {
     val format = "dd-MM-YY"
     val day = DateTime.now.minusDays(since+1).toString(format)
 
-    val raw = get_safegraph_data(spark,since,2, country)
+    val raw = get_safegraph_data(spark,since,3, country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -848,10 +848,12 @@ object Coronavirus {
     //       println("Error: CL - %s".format(day))
     //     }
     //   }
-
-      val since = 0
+        
+    val format = "dd-MM-YY"
+    for (since <- 0 to 10) {
+      println(DateTime.now.minusDays(since).toString(format))
       distance_traveled_ar(spark,since)
       distance_traveled_mx(spark,since)
-
+    }
   }
 }
