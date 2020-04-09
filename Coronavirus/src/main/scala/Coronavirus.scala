@@ -658,6 +658,8 @@ object Coronavirus {
       since: Int,
       country: String
   ) {
+    val format = "dd-MM-YY"
+    val day = DateTime.now.minusDays(since).toString(format)
 
     val raw = get_safegraph_data(spark,since,2, country)
       .withColumnRenamed("ad_id", "device_id")
