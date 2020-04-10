@@ -3552,7 +3552,7 @@ object RandomTincho {
     data_gcba_apps(spark)
 
     val geohashes_user = spark.read
-                              .load("/datascience/geo/Reports/GCBA/Coronavirus/2020-04-06/geohashes_by_user_argentina")
+                              .load("/datascience/geo/Reports/GCBA/Coronavirus/2020-04-10/geohashes_by_user_hourly_argentina")
                               .withColumn("device_id",lower(col("device_id")))
 
     val user_apps = spark.read
