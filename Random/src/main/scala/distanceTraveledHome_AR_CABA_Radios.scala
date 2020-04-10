@@ -206,10 +206,17 @@ object distanceTraveled_AR_CABA_Radios {
         com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
     )
 
+    val risky_devices = spark.read
+      .format("csv")
+      .load("/datascience/custom/devices_risk_generation.csv")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+
     // Primero obtenemos la data raw que sera de utilidad para los calculos siguientes
     val raw = get_safegraph_data(spark, "60", "0", "AR")
       .unionAll(get_safegraph_data(spark, "60", "0", country))
       .withColumnRenamed("ad_id", "device_id")
+      .join(broadcast(risky_devices), Seq("device_id"))
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
       .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
@@ -237,7 +244,7 @@ object distanceTraveled_AR_CABA_Radios {
       .withColumn("country", lit(country))
 
     val output_file =
-      "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_hourly_%s"
+      "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_hourly_%s_risky"
         .format(today, country)
 
     geo_hash_visits.write
@@ -265,7 +272,7 @@ object distanceTraveled_AR_CABA_Radios {
 
     //Agregamos por día
     val output_file_tipo_2a =
-      "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s"
+      "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s_risky"
         .format(today, country)
 
     geo_labeled_users
@@ -299,9 +306,10 @@ object distanceTraveled_AR_CABA_Radios {
       .option("header", true)
       .save(output_file_tipo_2a)
 
-
     // Obtenemos el listado de barrios que recorrieron los usuarios de un radio censal particular.
-    val w = Window.partitionBy(col("BARRIO"), col("RADIO"), col("Day")).orderBy(col("device_unique").desc)
+    val w = Window
+      .partitionBy(col("BARRIO"), col("RADIO"), col("Day"))
+      .orderBy(col("device_unique").desc)
 
     geo_labeled_users
       .select("BARRIO", "RADIO", "Day", "device_id")
@@ -325,7 +333,7 @@ object distanceTraveled_AR_CABA_Radios {
       .format("csv")
       .option("header", true)
       .save(
-        "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s_otros_barrios"
+        "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s_otros_barrios_risky"
           .format(today, country)
       )
     // //Agregamos por día y horario
