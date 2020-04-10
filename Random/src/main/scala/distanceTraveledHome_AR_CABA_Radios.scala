@@ -277,7 +277,7 @@ object distanceTraveled_AR_CABA_Radios {
         .format(today, country)
 
     geo_labeled_users
-      .groupBy("BARRIO", "RADIO", "Day", "device_id")
+      .groupBy("BARRIO", "Day", "device_id")
       .agg(
         approxCountDistinct("geo_hash", 0.02) as "geo_hash",
         approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7",
@@ -288,7 +288,7 @@ object distanceTraveled_AR_CABA_Radios {
       .withColumn("geo_hash_3", when(col("geo_hash") >= 3, 1).otherwise(0))
       .withColumn("geo_hash_4", when(col("geo_hash") >= 4, 1).otherwise(0))
       .withColumn("geo_hash_5", when(col("geo_hash") >= 5, 1).otherwise(0))
-      .groupBy("BARRIO", "RADIO", "Day")
+      .groupBy("BARRIO", "Day")
       .agg(
         count("device_id") as "devices",
         avg("detections") as "detections_avg",
