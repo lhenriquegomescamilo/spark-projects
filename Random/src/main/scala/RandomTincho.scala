@@ -3529,7 +3529,6 @@ object RandomTincho {
     val triplets = dfs
       .reduce((df1, df2) => df1.union(df2))
       .filter(col("feature").isin(segments: _*))
-      .filter("device_type IN ('android', 'ios')")
       .select("device_id", "feature")
       .distinct()
       .write
