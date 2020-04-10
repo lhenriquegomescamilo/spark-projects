@@ -82,7 +82,7 @@ object Coronavirus {
         .write
         .format("parquet")
         .partitionBy("day", "country")
-        .mode("append")
+        .mode(SaveMode.Overwrite)
         .save("/datascience/coronavirus/data_pois/")
     }
 
@@ -128,7 +128,7 @@ object Coronavirus {
       .write
       .format("parquet")
       .partitionBy("day", "country")
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .save("/datascience/coronavirus/coronavirus_contacts/")
 
     val joint = spark.read.load(
@@ -154,7 +154,7 @@ object Coronavirus {
       .write
       .format("parquet")
       .partitionBy("day", "country")
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .save("/datascience/coronavirus/coronavirus_contacts_per_day/")
 
   }
@@ -216,7 +216,7 @@ object Coronavirus {
       .write
       .format("parquet")
       .partitionBy("day", "country")
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .save("/datascience/coronavirus/coronavirus_seed/")
 
   }
@@ -265,14 +265,15 @@ object Coronavirus {
       .write
       .format("parquet")
       .partitionBy("day", "country")
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .save("/datascience/coronavirus/coronavirus_contacts_barrios")
 
   }
 
   def get_safegraph_data(
       spark: SparkSession,
-      day: String,
+      since: Int,
+      nDays:Int,
       country: String
   ) = {
     // First we obtain the configuration to be allowed to watch if a file exists or not
@@ -280,38 +281,35 @@ object Coronavirus {
     val fs = FileSystem.get(conf)
 
     // Get the days to be loaded
-    // val format = "yyyyMMdd"
-    // val end = DateTime.now.minusDays(since)
-    // val days = (0 until nDays)
-    //   .map(end.minusDays(_))
-    //   .map(_.toString(format))
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
 
-    // Now we obtain the list of hdfs files to be read
-    // val path = "/datascience/geo/safegraph/"
-    // val hdfs_files = days
-    //   .map(day => path +  "day=%s/country=%s/".format(day,country))
-    //   .filter(
-    //     path => fs.exists(new org.apache.hadoop.fs.Path(path))
-    //   )
+    //Now we obtain the list of hdfs files to be read
+    val path = "/datascience/geo/safegraph/"
+    val hdfs_files = days
+      .map(day => path +  "day=%s/country=%s/".format(day,country))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
 
     // Finally we read, filter by country, rename the columns and return the data
     val df_safegraph = spark.read
-      .load("/datascience/geo/safegraph/day=%s/country=%s".format(day, country))
-      .dropDuplicates("ad_id", "latitude", "longitude")
-      .withColumnRenamed("ad_id", "device_id")
-      .withColumnRenamed("id_type", "device_type")
-      .withColumn("device_id", upper(col("device_id")))
+                            .option("header", "true")
+                            .parquet(hdfs_files: _*)
+                            .dropDuplicates("ad_id", "latitude", "longitude")
 
     df_safegraph
-
   }
 
-  def distance_traveled_ar(spark: SparkSession, day: String) {
-    //Esta función obtiene los geohashes los últimos 30 días y mira una desagregacióon por barrio para Argentina.
-
+  def distance_traveled_ar(spark: SparkSession, since:Int) {
     val country = "argentina"
+    val format = "dd-MM-YY"
+    val day = DateTime.now.minusDays(since+2).toString(format)
 
-    val raw = get_safegraph_data(spark, day, country)
+    val raw = get_safegraph_data(spark,since,4, country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -319,19 +317,20 @@ object Coronavirus {
       .drop("Time")
       .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
       .withColumn("day", lit(day))
+      .filter(col("day") === col("Day"))
 
     //Vamos a usarlo para calcular velocidad y distancia al hogar
     raw.persist()
 
     val geo_hash_visits = raw
       .groupBy("device_id", "day", "geo_hash_7")
-      .agg(count("utc_timestamp") as "detections", first("Day") as "Day")
+      .agg(count("utc_timestamp") as "detections")
       .withColumn("country", lit(country))
 
     ///val output_file = "/datascience/coronavirus/geohashes_by_user/"
 
     geo_hash_visits.write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("parquet")
       .partitionBy("day", "country")
       .save("/datascience/coronavirus/geohashes_by_user")
@@ -347,9 +346,9 @@ object Coronavirus {
       .withColumn("day", lit(day))
 
     hash_user
-      .groupBy("Day", "device_id")
+      .groupBy("day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("Day")
+      .groupBy("day")
       .agg(
         avg("geo_hash_7") as "geo_hash_7_avg",
         stddev_pop("geo_hash_7") as "geo_hash_7_std",
@@ -358,7 +357,7 @@ object Coronavirus {
       .withColumn("country", lit(country))
       .repartition(1)
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", "true")
       .partitionBy("day", "country")
@@ -387,20 +386,20 @@ object Coronavirus {
           country
         )
       )
+      .withColumn("day", lit(day))
       .join(entidad, Seq("geo_hash_7"))
-      .groupBy("PROVCODE", "PROVINCIA", "Day", "device_id")
+      .groupBy("PROVCODE", "PROVINCIA", "day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("PROVCODE", "PROVINCIA", "Day")
+      .groupBy("PROVCODE", "PROVINCIA", "day")
       .agg(
         count("device_id") as "devices",
         avg("geo_hash_7") as "geo_hash_7_avg",
         stddev_pop("geo_hash_7") as "geo_hash_7_std"
       )
       .withColumn("country", lit(country))
-      .withColumn("day", lit(day))
       .repartition(1)
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", true)
       .partitionBy("day", "country")
@@ -416,20 +415,20 @@ object Coronavirus {
           country
         )
       )
+      .withColumn("day", lit(day))
       .join(entidad, Seq("geo_hash_7"))
-      .groupBy("PROVCODE", "IN1", "PROVINCIA", "NAM", "FNA", "Day", "device_id")
+      .groupBy("PROVCODE", "IN1", "PROVINCIA", "NAM", "FNA", "day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("PROVCODE", "IN1", "PROVINCIA", "NAM", "FNA", "Day")
+      .groupBy("PROVCODE", "IN1", "PROVINCIA", "NAM", "FNA", "day")
       .agg(
         count("device_id") as "devices",
         avg("geo_hash_7") as "geo_hash_7_avg",
         stddev_pop("geo_hash_7") as "geo_hash_7_std"
       )
       .withColumn("country", lit(country))
-      .withColumn("day", lit(day))
       .repartition(1)
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", true)
       .partitionBy("day", "country")
@@ -474,21 +473,21 @@ object Coronavirus {
           country
         )
       )
+      .withColumn("day", lit(day))
       .withColumn("device_id", lower(col("device_id")))
-      .groupBy("device_id", "Day")
+      .groupBy("device_id", "day")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
       .join(homes_barrio, Seq("device_id"))
-      .groupBy("BARRIO", "Day")
+      .groupBy("BARRIO", "day")
       .agg(
         avg("geo_hash_7") as "geo_hash_7_avg",
         stddev_pop("geo_hash_7") as "geo_hash_7_std",
         count("device_id") as "devices"
       )
       .withColumn("country", lit(country))
-      .withColumn("day", lit(day))
       .repartition(1)
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", true)
       .partitionBy("day", "country")
@@ -505,10 +504,11 @@ object Coronavirus {
           country
         )
       )
+      .withColumn("day", lit(day))
       .join(barrios, Seq("geo_hash_7"))
-      .groupBy("COMUNA", "BARRIO", "Day", "device_id")
+      .groupBy("COMUNA", "BARRIO", "day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("COMUNA", "BARRIO", "Day")
+      .groupBy("COMUNA", "BARRIO", "day")
       .agg(
         count("device_id") as "devices",
         avg("geo_hash_7") as "geo_hash_7_avg",
@@ -516,37 +516,41 @@ object Coronavirus {
       )
       .withColumn("country", lit(country))
       .repartition(1)
-      .withColumn("day", lit(day))
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", true)
       .partitionBy("day", "country")
       .save("/datascience/coronavirus/geohash_travel_barrio_CLASE2")
   }
 
-  def distance_traveled_mx(spark: SparkSession, day: String) {
+  def distance_traveled_mx(spark: SparkSession, since: Int) {
+    
     val country = "mexico"
+    val format = "dd-MM-YY"
+    val day = DateTime.now.minusDays(since+2).toString(format)
 
-    val raw = get_safegraph_data(spark, day, country)
+    val raw = get_safegraph_data(spark,since,4, country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
-      .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
       .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
       .drop("Time")
+      .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
+      .withColumn("day", lit(day))
+      .filter(col("day") === col("Day"))
 
     //Vamos a usarlo para calcular velocidad y distancia al hogar
     raw.persist()
 
     val geo_hash_visits = raw
-      .groupBy("device_id", "Day", "geo_hash_7")
+      .groupBy("device_id", "day", "geo_hash_7")
       .agg(count("utc_timestamp") as "detections")
       .withColumn("country", lit(country))
       .withColumn("day", lit(day))
 
     geo_hash_visits.write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("parquet")
       .option("header", "true")
       .partitionBy("day", "country")
@@ -560,11 +564,12 @@ object Coronavirus {
           .format(day, country)
       )
       .withColumn("device_id", lower(col("device_id")))
+      .withColumn("day", lit(day))
 
     hash_user
-      .groupBy("Day", "device_id")
+      .groupBy("day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("Day")
+      .groupBy("day")
       .agg(
         avg("geo_hash_7") as "geo_hash_7_avg",
         stddev_pop("geo_hash_7") as "geo_hash_7_std",
@@ -574,7 +579,7 @@ object Coronavirus {
       .withColumn("day", lit(day))
       .repartition(1)
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", "true")
       .partitionBy("day", "country")
@@ -611,7 +616,7 @@ object Coronavirus {
       .withColumn("country", lit(country))
       .repartition(1)
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", "true")
       .partitionBy("day", "country")
@@ -639,7 +644,7 @@ object Coronavirus {
       .withColumn("country", lit(country))
       .repartition(1)
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", "true")
       .partitionBy("day", "country")
@@ -649,11 +654,13 @@ object Coronavirus {
 
   def distance_traveled_rest(
       spark: SparkSession,
-      day: String,
+      since: Int,
       country: String
   ) {
+    val format = "dd-MM-YY"
+    val day = DateTime.now.minusDays(since+1).toString(format)
 
-    val raw = get_safegraph_data(spark, day, country)
+    val raw = get_safegraph_data(spark,since,4, country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -678,7 +685,7 @@ object Coronavirus {
       .withColumn("day", lit(day))
 
     geo_hash_visits.write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("parquet")
       .option("header", "true")
       .partitionBy("day", "country")
@@ -707,7 +714,7 @@ object Coronavirus {
       .withColumn("day", lit(day))
       .repartition(1)
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", "true")
       .partitionBy("day", "country")
@@ -749,7 +756,7 @@ object Coronavirus {
       .withColumn("day", lit(day))
       .repartition(1)
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", "true")
       .partitionBy("day", "country")
@@ -782,7 +789,7 @@ object Coronavirus {
       .withColumn("day", lit(day))
       .repartition(1)
       .write
-      .mode("append")
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", "true")
       .partitionBy("day", "country")
@@ -800,86 +807,31 @@ object Coronavirus {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    var since = if (args.length > 0) args(0).toInt else 0
+    
+    distance_traveled_ar(spark,since)
+    distance_traveled_mx(spark,since)
 
-    // val since = 1
-    // val ndays = 10
-    // val format = "yyyyMMdd"
-    // val start = DateTime.now.minusDays(since + ndays)
-    // val end = DateTime.now.minusDays(since)
-
-    // val daysCount = Days.daysBetween(start, end).getDays()
-    // val days = (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
-    // val barrios_ar =  spark.read.format("csv")
-    //                     .option("header",true)
-    //                     .option("delimiter",",")
-    //                     .load("/datascience/geo/Reports/GCBA/Coronavirus/")
-    //                     .withColumnRenamed("geo_hashote","geo_hash_join")
-
-    // val barrios_mx = spark.read
-    //                       .format("csv")
-    //                       .option("sep","\t")
-    //                       .option("header","true")
-    //                       .load("/datascience/geo/geo_processed/MX_municipal_mexico_sjoin_polygon")
-    //                       .withColumnRenamed("geo_hash_7","geo_hash_join")
-
-    // for (day <- days){
-    //   println(day)
-    //   println("\tAR")
-    //   // AR
-    //   generate_seed(spark,"argentina",day)
-    //   get_coronavirus(spark,"argentina",day)
-    //   coronavirus_barrios(spark,"argentina",barrios_ar,"BARRIO",day)
-    //   println("\tMX")
-
-    //   // MX
-    //   generate_seed(spark,"mexico",day)
-    //   get_coronavirus(spark,"mexico",day)
-    //   coronavirus_barrios(spark,"mexico",barrios_mx,"NOM_MUN",day)
-
-    // }
-
-    //val format = "yyyyMMdd"
-    //val date = DateTime.now.minusDays(1).toString(format)
-
-    val since = if (args.length > 0) args(0).toInt else 0
-    val ndays = if (args.length > 1) args(1).toInt else 1
-
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(since + ndays)
-    val end = DateTime.now.minusDays(since)
-    val daysCount = Days.daysBetween(start, end).getDays()
-    val days =
-      (0 until daysCount).map(start.plusDays(_)).map(_.toString(format))
-
-    for (day <- days) {
-      println(day)
-      distance_traveled_ar(spark, day)
-      distance_traveled_mx(spark, day)
-      try {
-        distance_traveled_rest(spark, day, "PE")
-      } catch {
-        case e: Throwable => {
-          println("Error: PE - %s".format(day))
-        }
+    try {
+      distance_traveled_rest(spark, since, "PE")
+    } catch {
+      case e: Throwable => {
+        println("Error: PE - %s".format(since))
       }
-      try {
-        distance_traveled_rest(spark, day, "CO")
-      } catch {
-        case e: Throwable => {
-          println("Error: CO - %s".format(day))
-        }
+    }
+    try {
+      distance_traveled_rest(spark, since, "CO")
+    } catch {
+      case e: Throwable => {
+        println("Error: CO - %s".format(since))
       }
-      try {
-        distance_traveled_rest(spark, day, "CL")
-      } catch {
-        case e: Throwable => {
-          println("Error: CL - %s".format(day))
-        }
+    }
+    try {
+      distance_traveled_rest(spark, since, "CL")
+    } catch {
+      case e: Throwable => {
+        println("Error: CL - %s".format(since))
       }
-
     }
   }
 }
