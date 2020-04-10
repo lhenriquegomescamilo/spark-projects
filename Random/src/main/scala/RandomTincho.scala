@@ -3510,7 +3510,7 @@ object RandomTincho {
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     val since = 1
-    val ndays = 30
+    val ndays = 90
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since)
     val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
@@ -3529,6 +3529,7 @@ object RandomTincho {
     val triplets = dfs
       .reduce((df1, df2) => df1.union(df2))
       .filter(col("feature").isin(segments: _*))
+      .filter("device_type IN ('android', 'ios')")
       .select("device_id", "feature")
       .distinct()
       .write
@@ -3548,7 +3549,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    //data_gcba_apps(spark)
+    data_gcba_apps(spark)
 
     val geohashes_user = spark.read
                               .load("/datascience/geo/Reports/GCBA/Coronavirus/2020-04-06/geohashes_by_user_argentina")
