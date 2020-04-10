@@ -216,6 +216,7 @@ object distanceTraveled_AR_CABA_Radios {
     val raw = get_safegraph_data(spark, "60", "0", "AR")
       .unionAll(get_safegraph_data(spark, "60", "0", country))
       .withColumnRenamed("ad_id", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
       .join(broadcast(risky_devices), Seq("device_id"))
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
