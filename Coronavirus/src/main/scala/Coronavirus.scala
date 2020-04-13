@@ -813,7 +813,7 @@ object Coronavirus {
 
     //var since = if (args.length > 0) args(0).toInt else 0
     
-    for( since <- 38 to 40){
+    for( since <- 36 to 40){
       distance_traveled_ar(spark,since)
       distance_traveled_mx(spark,since)
       //distance_traveled_rest(spark, since, "PE")
