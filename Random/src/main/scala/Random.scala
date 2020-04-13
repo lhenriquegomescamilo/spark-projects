@@ -5170,6 +5170,8 @@ object Random {
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .join(broadcast(risky_devices), Seq("device_id"))
+      .withColumn("Day", date_format(col("Time"), "ddMMYY"))
+      .withColumn("quarantine", when(col("Day")<="130320", 0).otherwise(1))
       .withColumn("geo_hash", getGeoHash(col("latitude"), col("longitude")))
       .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
       .cache()
