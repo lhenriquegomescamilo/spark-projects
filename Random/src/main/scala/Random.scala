@@ -5099,6 +5099,121 @@ object Random {
     }
   }
 
+  def get_maids_risky_ar(spark: SparkSession) = {
+    def get_safegraph_data(
+        spark: SparkSession,
+        nDays: String,
+        since: String,
+        country: String
+    ) = {
+      // First we obtain the configuration to be allowed to watch if a file exists or not
+      val conf = spark.sparkContext.hadoopConfiguration
+      val fs = FileSystem.get(conf)
+
+      // Get the days to be loaded
+      val format = "yyyyMMdd"
+      val end = DateTime.now.minusDays(since.toInt)
+      val days = (0 until nDays.toInt)
+        .map(end.minusDays(_))
+        .map(_.toString(format))
+
+      // Now we obtain the list of hdfs files to be read
+      val path = "/datascience/geo/safegraph/"
+      val hdfs_files = days
+        .map(day => path + "day=%s/country=%s/".format(day, country))
+        .filter(
+          path => fs.exists(new org.apache.hadoop.fs.Path(path))
+        )
+        .map(day => day + "*.snappy.parquet")
+
+      // Finally we read, filter by country, rename the columns and return the data
+      val df_safegraph = spark.read
+        .option("header", "true")
+        .parquet(hdfs_files: _*)
+        .dropDuplicates("ad_id", "latitude", "longitude")
+        .withColumnRenamed("ad_id", "device_id")
+        .withColumnRenamed("id_type", "device_type")
+        .withColumn("device_id", upper(col("device_id")))
+
+      df_safegraph
+
+    }
+
+    val country = "argentina"
+
+    val timezone = Map(
+      "argentina" -> "GMT-3",
+      "mexico" -> "GMT-5",
+      "CL" -> "GMT-3",
+      "CO" -> "GMT-5",
+      "PE" -> "GMT-5"
+    )
+
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+
+    val today = (java.time.LocalDate.now).toString
+    val getGeoHash = udf(
+      (latitude: Double, longitude: Double) =>
+        com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
+    )
+
+    val risky_devices = spark.read
+      .format("csv")
+      .load("/datascience/custom/devices_risk_generation.csv")
+      .withColumnRenamed("_c0", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+
+    // Primero obtenemos la data raw que sera de utilidad para los calculos siguientes
+    val raw = get_safegraph_data(spark, "60", "0", "AR")
+      .unionAll(get_safegraph_data(spark, "60", "0", country))
+      .withColumnRenamed("ad_id", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+      .join(broadcast(risky_devices), Seq("device_id"))
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("Day", date_format(col("Time"), "ddMMYY"))
+      .withColumn("quarantine", when(col("Day") <= "130320", 0).otherwise(1))
+      .withColumn("geo_hash", getGeoHash(col("latitude"), col("longitude")))
+      .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
+      .cache()
+
+    val geo_hash_table = spark.read
+      .format("csv")
+      .option("header", true)
+      .option("delimiter", ",")
+      .load("/datascience/geo/geohashes_tables/AR_CABA_GeoHash_to_Entity.csv")
+
+    raw
+      .join(geo_hash_table, Seq("geo_hash_7"))
+      .groupBy("BARRIO", "device_id", "quarantine")
+      .agg(
+        approxCountDistinct("geo_hash", 0.02) as "geo_hash",
+        approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7"
+      )
+      .withColumn("geo_hash_1", when(col("geo_hash") === 1, 1).otherwise(0))
+      .withColumn("geo_hash_2", when(col("geo_hash") >= 2, 1).otherwise(0))
+      .withColumn("geo_hash_3", when(col("geo_hash") >= 3, 1).otherwise(0))
+      .withColumn("geo_hash_4", when(col("geo_hash") >= 4, 1).otherwise(0))
+      .withColumn("geo_hash_5", when(col("geo_hash") >= 5, 1).otherwise(0))
+      .groupBy("BARRIO", "quarantine")
+      .agg(
+        count("device_id") as "devices",
+        avg("geo_hash_7") as "geo_hash_7_avg",
+        avg("geo_hash") as "geo_hash_avg",
+        sum("geo_hash_1") as "geo_hash_1",
+        sum("geo_hash_2") as "geo_hash_2",
+        sum("geo_hash_3") as "geo_hash_3",
+        sum("geo_hash_4") as "geo_hash_4",
+        sum("geo_hash_5") as "geo_hash_5"
+      )
+      .repartition(1)
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("csv")
+      .option("header", true)
+      .save("/datascience/custom/risky_population_before_after")
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -5111,6 +5226,6 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_piis_cl(spark)
+    get_maids_risky_ar(spark)
   }
 }
