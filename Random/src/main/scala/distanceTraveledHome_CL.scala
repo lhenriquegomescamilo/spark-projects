@@ -162,7 +162,7 @@ spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
 val today = (java.time.LocalDate.now).toString
 
-val raw = get_safegraph_data(spark,"30","1",country)
+val raw = get_safegraph_data(spark,"60","1",country)
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
