@@ -529,7 +529,7 @@ object Coronavirus {
     val country = "mexico"
     val format = "dd-MM-YY"
     val day = DateTime.now.minusDays(since+2).toString(format)
-
+    println("Working on day %s".format(day))
     val raw = get_safegraph_data(spark,since,4, country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
@@ -674,12 +674,14 @@ object Coronavirus {
           col("longitude").cast("float") * 1000
         ).cast("long"))
       )
+      .withColumn("day", lit(day))
+      .filter(col("day") === col("Day"))
 
     //Vamos a usarlo para calcular velocidad y distancia al hogar
     raw.persist()
 
     val geo_hash_visits = raw
-      .groupBy("device_id", "Day", "geo_hash_7")
+      .groupBy("device_id", "day", "geo_hash_7")
       .agg(count("utc_timestamp") as "detections")
       .withColumn("country", lit(country))
       .withColumn("day", lit(day))
@@ -700,11 +702,12 @@ object Coronavirus {
           .format(day, country)
       )
       .withColumn("device_id", lower(col("device_id")))
+      .withColumn("day", lit(day))
 
     hash_user
-      .groupBy("Day", "device_id")
+      .groupBy("day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("Day")
+      .groupBy("day")
       .agg(
         avg("geo_hash_7") as "geo_hash_7_avg",
         stddev_pop("geo_hash_7") as "geo_hash_7_std",
@@ -738,15 +741,16 @@ object Coronavirus {
         "/datascience/coronavirus/geohashes_by_user/day=%s/country=%s"
           .format(day, country)
       )
+      .withColumn("day",lit(day))
       .join(geo_hash_table, Seq("geo_hash_7"))
 
     geo_labeled_users.persist()
 
     ///////////Agregación Nivel 1
     geo_labeled_users
-      .groupBy("Level1_Code", "Level1_Name", "Day", "device_id")
+      .groupBy("Level1_Code", "Level1_Name", "day", "device_id")
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
-      .groupBy("Level1_Code", "Level1_Name", "Day")
+      .groupBy("Level1_Code", "Level1_Name", "day")
       .agg(
         count("device_id") as "devices",
         avg("geo_hash_7") as "geo_hash_7_avg",
@@ -769,7 +773,7 @@ object Coronavirus {
         "Level1_Name",
         "Level2_Code",
         "Level2_Name",
-        "Day",
+        "day",
         "device_id"
       )
       .agg(countDistinct("geo_hash_7") as "geo_hash_7")
@@ -778,7 +782,7 @@ object Coronavirus {
         "Level1_Name",
         "Level2_Code",
         "Level2_Name",
-        "Day"
+        "day"
       )
       .agg(
         count("device_id") as "devices",
@@ -807,30 +811,31 @@ object Coronavirus {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    var since = if (args.length > 0) args(0).toInt else 0
+    //var since = if (args.length > 0) args(0).toInt else 0
     
-    distance_traveled_ar(spark,since)
-    distance_traveled_mx(spark,since)
-
-    try {
-      distance_traveled_rest(spark, since, "PE")
-    } catch {
-      case e: Throwable => {
-        println("Error: PE - %s".format(since))
+    //distance_traveled_ar(spark,since)
+    //distance_traveled_mx(spark,since)
+    for( since <- 2 to 46){
+      try {
+        distance_traveled_rest(spark, since, "PE")
+      } catch {
+        case e: Throwable => {
+          println("Error: PE - %s".format(since))
+        }
       }
-    }
-    try {
-      distance_traveled_rest(spark, since, "CO")
-    } catch {
-      case e: Throwable => {
-        println("Error: CO - %s".format(since))
+      try {
+        distance_traveled_rest(spark, since, "CO")
+      } catch {
+        case e: Throwable => {
+          println("Error: CO - %s".format(since))
+        }
       }
-    }
-    try {
-      distance_traveled_rest(spark, since, "CL")
-    } catch {
-      case e: Throwable => {
-        println("Error: CL - %s".format(since))
+      try {
+        distance_traveled_rest(spark, since, "CL")
+      } catch {
+        case e: Throwable => {
+          println("Error: CL - %s".format(since))
+        }
       }
     }
   }

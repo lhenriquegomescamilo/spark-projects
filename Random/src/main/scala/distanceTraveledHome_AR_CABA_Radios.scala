@@ -131,6 +131,7 @@ object distanceTraveled_AR_CABA_Radios {
       .withColumnRenamed("ad_id", "device_id")
       .withColumnRenamed("id_type", "device_type")
       .withColumn("device_id", upper(col("device_id")))
+      .filter("geo_hash != 'gcba'")
 
     df_safegraph
 

@@ -120,6 +120,7 @@ def get_safegraph_data(
       .withColumnRenamed("ad_id","device_id")
       .withColumnRenamed("id_type","device_type")
       .withColumn("device_id",upper(col("device_id")))
+      .filter("geo_hash != 'gcba'")
 
      df_safegraph                    
     
