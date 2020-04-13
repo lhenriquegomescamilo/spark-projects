@@ -5165,14 +5165,44 @@ object Random {
       .withColumn("device_id", lower(col("device_id")))
 
     // Primero obtenemos la data raw que sera de utilidad para los calculos siguientes
-    val raw = get_safegraph_data(spark, "65", "0", "AR")
-      .unionAll(get_safegraph_data(spark, "65", "0", country))
+    val raw = get_safegraph_data(spark, "60", "0", "AR")
+      .unionAll(get_safegraph_data(spark, "60", "0", country))
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .join(broadcast(risky_devices), Seq("device_id"))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
       .withColumn("Day", date_format(col("Time"), "ddMMYY"))
-      .withColumn("quarantine", when(col("Day") <= "130313", 0).otherwise(1))
+      .withColumn(
+        "Week",
+        when(
+          col("Day") >= DateTime.now
+            .minusDays(since.toInt - 9)
+            .toString("ddMMYY"),
+          0
+        ).otherwise(
+          when(
+            col("Day") >= DateTime.now
+              .minusDays(since.toInt - 16)
+              .toString("ddMMYY"),
+            1
+          ).otherwise(
+            when(
+              col("Day") >= DateTime.now
+                .minusDays(since.toInt - 23)
+                .toString("ddMMYY"),
+              2
+            ).otherwise(
+              when(
+                col("Day") >= DateTime.now
+                  .minusDays(since.toInt - 30)
+                  .toString("ddMMYY"),
+                3
+              ).otherwise(4)
+            )
+          )
+        )
+      )
+      // .withColumn("quarantine", when(col("Day") <= "130320", 0).otherwise(1))
       .withColumn("geo_hash", getGeoHash(col("latitude"), col("longitude")))
       .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
       .cache()
@@ -5185,7 +5215,7 @@ object Random {
 
     raw
       .join(geo_hash_table, Seq("geo_hash_7"))
-      .groupBy("BARRIO", "device_id", "quarantine")
+      .groupBy("BARRIO", "device_id", "Week")
       .agg(
         approxCountDistinct("geo_hash", 0.02) as "geo_hash",
         approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7"
@@ -5195,7 +5225,7 @@ object Random {
       .withColumn("geo_hash_3", when(col("geo_hash") >= 3, 1).otherwise(0))
       .withColumn("geo_hash_4", when(col("geo_hash") >= 4, 1).otherwise(0))
       .withColumn("geo_hash_5", when(col("geo_hash") >= 5, 1).otherwise(0))
-      .groupBy("BARRIO", "quarantine")
+      .groupBy("BARRIO", "Week")
       .agg(
         count("device_id") as "devices",
         avg("geo_hash_7") as "geo_hash_7_avg",
