@@ -5177,25 +5177,25 @@ object Random {
         "Week",
         when(
           col("Day") >= DateTime.now
-            .minusDays(since.toInt - 9)
+            .minusDays(since.toInt + 9)
             .toString("YYMMdd"),
           0
         ).otherwise(
           when(
             col("Day") >= DateTime.now
-              .minusDays(since.toInt - 16)
+              .minusDays(since.toInt + 16)
               .toString("YYMMdd"),
             1
           ).otherwise(
             when(
               col("Day") >= DateTime.now
-                .minusDays(since.toInt - 23)
+                .minusDays(since.toInt + 23)
                 .toString("YYMMdd"),
               2
             ).otherwise(
               when(
                 col("Day") >= DateTime.now
-                  .minusDays(since.toInt - 30)
+                  .minusDays(since.toInt + 30)
                   .toString("YYMMdd"),
                 3
               ).otherwise(4)
@@ -5221,11 +5221,11 @@ object Random {
         approxCountDistinct("geo_hash", 0.02) as "geo_hash",
         approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7"
       )
-      .withColumn("geo_hash_1", when(col("geo_hash") === 1, 1).otherwise(0))
-      .withColumn("geo_hash_2", when(col("geo_hash") >= 2, 1).otherwise(0))
-      .withColumn("geo_hash_3", when(col("geo_hash") >= 3, 1).otherwise(0))
-      .withColumn("geo_hash_4", when(col("geo_hash") >= 4, 1).otherwise(0))
-      .withColumn("geo_hash_5", when(col("geo_hash") >= 5, 1).otherwise(0))
+      .withColumn("geo_hash_1", when(col("geo_hash_7") === 1, 1).otherwise(0))
+      .withColumn("geo_hash_2", when(col("geo_hash_7") >= 2, 1).otherwise(0))
+      .withColumn("geo_hash_3", when(col("geo_hash_7") >= 3, 1).otherwise(0))
+      .withColumn("geo_hash_4", when(col("geo_hash_7") >= 4, 1).otherwise(0))
+      .withColumn("geo_hash_5", when(col("geo_hash_7") >= 5, 1).otherwise(0))
       .groupBy("BARRIO", "Week")
       .agg(
         count("device_id") as "devices",
