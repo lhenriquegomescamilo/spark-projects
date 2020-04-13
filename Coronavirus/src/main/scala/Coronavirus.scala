@@ -674,12 +674,14 @@ object Coronavirus {
           col("longitude").cast("float") * 1000
         ).cast("long"))
       )
+      .withColumn("day", lit(day))
+      .filter(col("day") === col("Day"))
 
     //Vamos a usarlo para calcular velocidad y distancia al hogar
     raw.persist()
 
     val geo_hash_visits = raw
-      .groupBy("device_id", "Day", "geo_hash_7")
+      .groupBy("device_id", "day", "geo_hash_7")
       .agg(count("utc_timestamp") as "detections")
       .withColumn("country", lit(country))
       .withColumn("day", lit(day))
