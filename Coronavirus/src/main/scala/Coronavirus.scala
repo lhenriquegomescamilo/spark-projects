@@ -305,11 +305,22 @@ object Coronavirus {
   }
 
   def distance_traveled_ar(spark: SparkSession, since:Int) {
+
+    val timezone = Map("argentina" -> "GMT-3",
+                       "mexico" -> "GMT-5",
+                       "CL"->"GMT-3",
+                       "CO"-> "GMT-5",
+                       "PE"-> "GMT-5")
+    
     val country = "argentina"
+
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+    
     val format = "dd-MM-YY"
     val day = DateTime.now.minusDays(since+2).toString(format)
 
-    val raw = get_safegraph_data(spark,since,4, country)
+    val raw = get_safegraph_data(spark,since,6, country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -525,12 +536,21 @@ object Coronavirus {
   }
 
   def distance_traveled_mx(spark: SparkSession, since: Int) {
+    val timezone = Map("argentina" -> "GMT-3",
+                       "mexico" -> "GMT-5",
+                       "CL"->"GMT-3",
+                       "CO"-> "GMT-5",
+                       "PE"-> "GMT-5")
     
     val country = "mexico"
+
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+    
     val format = "dd-MM-YY"
     val day = DateTime.now.minusDays(since+2).toString(format)
     println("Working on day %s".format(day))
-    val raw = get_safegraph_data(spark,since,4, country)
+    val raw = get_safegraph_data(spark,since,6, country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -657,6 +677,18 @@ object Coronavirus {
       since: Int,
       country: String
   ) {
+
+    val timezone = Map("argentina" -> "GMT-3",
+                    "mexico" -> "GMT-5",
+                    "CL"->"GMT-3",
+                    "CO"-> "GMT-5",
+                    "PE"-> "GMT-5")
+    
+    val country = "mexico"
+
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+
     val format = "dd-MM-YY"
     val day = DateTime.now.minusDays(since+1).toString(format)
 
@@ -837,4 +869,4 @@ object Coronavirus {
         }
       }
     }
-}
+  }
