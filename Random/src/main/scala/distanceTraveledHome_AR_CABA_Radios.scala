@@ -213,7 +213,7 @@ object distanceTraveled_AR_CABA_Radios {
       .withColumn("device_id", lower(col("device_id")))
 
     // Primero obtenemos la data raw que sera de utilidad para los calculos siguientes
-    val raw = get_safegraph_data(spark, "60", "0", "AR")
+    val raw = get_safegraph_data(spark, "30", "33", "AR")
       .unionAll(get_safegraph_data(spark, "60", "0", country))
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
