@@ -5172,7 +5172,7 @@ object Random {
       .join(broadcast(risky_devices), Seq("device_id"))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
       .withColumn("Day", date_format(col("Time"), "ddMMYY"))
-      .withColumn("quarantine", when(col("Day")<="130320", 0).otherwise(1))
+      .withColumn("quarantine", when(col("Day") <= "130320", 0).otherwise(1))
       .withColumn("geo_hash", getGeoHash(col("latitude"), col("longitude")))
       .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
       .cache()
@@ -5185,7 +5185,7 @@ object Random {
 
     raw
       .join(geo_hash_table, Seq("geo_hash_7"))
-      .groupBy("BARRIO", "device_id")
+      .groupBy("BARRIO", "device_id", "quarantine")
       .agg(
         approxCountDistinct("geo_hash", 0.02) as "geo_hash",
         approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7"
@@ -5195,7 +5195,7 @@ object Random {
       .withColumn("geo_hash_3", when(col("geo_hash") >= 3, 1).otherwise(0))
       .withColumn("geo_hash_4", when(col("geo_hash") >= 4, 1).otherwise(0))
       .withColumn("geo_hash_5", when(col("geo_hash") >= 5, 1).otherwise(0))
-      .groupBy("BARRIO")
+      .groupBy("BARRIO", "quarantine")
       .agg(
         count("device_id") as "devices",
         avg("geo_hash_7") as "geo_hash_7_avg",
