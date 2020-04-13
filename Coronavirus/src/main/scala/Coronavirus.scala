@@ -529,7 +529,7 @@ object Coronavirus {
     val country = "mexico"
     val format = "dd-MM-YY"
     val day = DateTime.now.minusDays(since+2).toString(format)
-
+    println("Working on day %s".format(day))
     val raw = get_safegraph_data(spark,since,4, country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
@@ -809,9 +809,9 @@ object Coronavirus {
 
     var since = if (args.length > 0) args(0).toInt else 0
     
-    distance_traveled_ar(spark,since)
-    distance_traveled_mx(spark,since)
-
+    //distance_traveled_ar(spark,since)
+    //distance_traveled_mx(spark,since)
+    distance_traveled_rest(spark, since, "PE")
     try {
       distance_traveled_rest(spark, since, "PE")
     } catch {
