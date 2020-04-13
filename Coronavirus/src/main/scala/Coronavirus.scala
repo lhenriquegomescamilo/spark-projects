@@ -305,7 +305,18 @@ object Coronavirus {
   }
 
   def distance_traveled_ar(spark: SparkSession, since:Int) {
+
+    val timezone = Map("argentina" -> "GMT-3",
+                       "mexico" -> "GMT-5",
+                       "CL"->"GMT-3",
+                       "CO"-> "GMT-5",
+                       "PE"-> "GMT-5")
+    
     val country = "argentina"
+
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+    
     val format = "dd-MM-YY"
     val day = DateTime.now.minusDays(since+2).toString(format)
 
