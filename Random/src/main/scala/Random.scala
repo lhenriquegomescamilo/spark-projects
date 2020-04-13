@@ -5172,31 +5172,31 @@ object Random {
       .withColumn("device_id", lower(col("device_id")))
       .join(broadcast(risky_devices), Seq("device_id"))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-      .withColumn("Day", date_format(col("Time"), "ddMMYY"))
+      .withColumn("Day", date_format(col("Time"), "YYMMdd"))
       .withColumn(
         "Week",
         when(
           col("Day") >= DateTime.now
             .minusDays(since.toInt - 9)
-            .toString("ddMMYY"),
+            .toString("YYMMdd"),
           0
         ).otherwise(
           when(
             col("Day") >= DateTime.now
               .minusDays(since.toInt - 16)
-              .toString("ddMMYY"),
+              .toString("YYMMdd"),
             1
           ).otherwise(
             when(
               col("Day") >= DateTime.now
                 .minusDays(since.toInt - 23)
-                .toString("ddMMYY"),
+                .toString("YYMMdd"),
               2
             ).otherwise(
               when(
                 col("Day") >= DateTime.now
                   .minusDays(since.toInt - 30)
-                  .toString("ddMMYY"),
+                  .toString("YYMMdd"),
                 3
               ).otherwise(4)
             )
