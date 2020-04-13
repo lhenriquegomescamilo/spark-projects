@@ -5163,6 +5163,7 @@ object Random {
       .load("/datascience/custom/devices_risk_generation.csv")
       .withColumnRenamed("_c0", "device_id")
       .withColumn("device_id", lower(col("device_id")))
+    val since = 0
 
     // Primero obtenemos la data raw que sera de utilidad para los calculos siguientes
     val raw = get_safegraph_data(spark, "60", "0", "AR")
