@@ -5185,8 +5185,7 @@ object Random {
       .groupBy("BARRIO", "device_id")
       .agg(
         approxCountDistinct("geo_hash", 0.02) as "geo_hash",
-        approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7",
-        sum("detections") as "detections"
+        approxCountDistinct("geo_hash_7", 0.02) as "geo_hash_7"
       )
       .withColumn("geo_hash_1", when(col("geo_hash") === 1, 1).otherwise(0))
       .withColumn("geo_hash_2", when(col("geo_hash") >= 2, 1).otherwise(0))
@@ -5196,7 +5195,6 @@ object Random {
       .groupBy("BARRIO")
       .agg(
         count("device_id") as "devices",
-        avg("detections") as "detections_avg",
         avg("geo_hash_7") as "geo_hash_7_avg",
         avg("geo_hash") as "geo_hash_avg",
         sum("geo_hash_1") as "geo_hash_1",
