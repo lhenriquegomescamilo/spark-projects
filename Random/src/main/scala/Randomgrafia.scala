@@ -2,10 +2,10 @@ package main.scala
 import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.expressions.Window
 import org.joda.time.{Days, DateTime}
 import org.joda.time.format.DateTimeFormat
 import org.apache.hadoop.fs.{FileSystem, Path}
-
 
 object Randomgrafia {
 
@@ -171,14 +171,58 @@ def getURLSegmentPred(
       df_triplets = df_triplets
                     .select(col("device_id"), col("day"), explode(col("iab_segments_pred")).as("iab_seg_pred"))
 
-      df_triplets.groupBy("iab_seg_pred")
-          .agg(approx_count_distinct(col("device_id"), 0.03).as("devices"),
-              first("day").as("day"))
+      df_triplets.groupBy("iab_seg_pred", "day")
+          .agg(approx_count_distinct(col("device_id"), 0.03).as("devices"))
           .write
           .mode("overwrite")
           .format("parquet")
           .partitionBy("day")
           .save("/datascience/custom/url_classifier/segment_count/")
+  }
+
+
+  def queryCABAMovement(spark: SparkSession) {
+
+    import spark.implicits._
+
+    var barrios = spark.read.format("csv").option("header",true).option("delimiter","\t")
+        .load("/datascience/geo/geo_processed/AR_departamentos_barrios_mexico_sjoin_polygon")
+        .withColumnRenamed("geo_hashote","geo_hash_7")
+        .filter(col("PROVCODE") === "02")
+
+    // levanta datasets de geoghehes por device de ar a nivel de hora
+    var df = spark.read.load("/datascience/geo/Reports/GCBA/Coronavirus/2020-04-06/geohashes_by_user_hourly_argentina/")
+         .withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
+
+    // agrega barrios
+    df = df.join(barrios, Seq("geo_hash_7"), "inner")
+
+    // por cada hora y device, se queda con el geohash con mayor numeros de detecciones
+    df = df.groupBy("device_id", "Day", "Hour", "NAM").agg(sum(col("detections")).as("detections"))
+    val w = Window.partitionBy("device_id", "Day", "Hour")
+    df = df.withColumn("max_detectionst", max("detections").over(w))
+      .where(col("max_detectionst") === col("detections"))
+      .drop("max_detectionst", "detections")
+
+    // agrega columna con fecha, y calcula fecha de siguiente hora
+    df = df.withColumn("now", to_timestamp(concat(col("Day"), lit(" "), col("Hour")), "dd-MM-yy H"))
+       .withColumn("next", col("now") + expr("INTERVAL 1 HOURS"))  
+
+    // join por dispositivo, barrio origen (hora actual), barrio destino(siguiente hora)
+    df = df.as("before")
+    .join(df.as("after"), $"before.next" === $"after.now" && $"before.device_id" === $"after.device_id", "inner")
+    .select($"after.device_id", $"after.Day", $"after.Hour", $"before.NAM".as("NAM_org"), $"after.NAM".as("NAM_dest"))
+
+    // calcula cantidad de dispositivos por cada par de destinos y fecha/hora
+    var df_mov = df.groupBy("Day", "Hour", "NAM_org", "NAM_dest").agg(count(col("device_id")).as("devices"))
+
+    df_mov
+      .write
+      .mode("overwrite")
+      .format("parquet")
+      .save("/datascience/geo/Reports/GCBA/Coronavirus/2020-04-06/movement_barrios_caba")
+
+
   }
 
   def main(args: Array[String]) {
@@ -188,8 +232,8 @@ def getURLSegmentPred(
         //.config("spark.sql.files.ignoreCorruptFiles", "true")
         .config("spark.sql.sources.partitionOverwriteMode","dynamic")
         .getOrCreate()
-    
-    queryDeviceCountBySegmentPredicted(spark)
+    queryCABAMovement(spark)
+    //queryDeviceCountBySegmentPredicted(spark)
   }
 
 }
