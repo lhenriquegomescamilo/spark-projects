@@ -5174,7 +5174,14 @@ object Random {
       .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
       .cache()
 
+    val geo_hash_table = spark.read
+      .format("csv")
+      .option("header", true)
+      .option("delimiter", ",")
+      .load("/datascience/geo/geohashes_tables/AR_CABA_GeoHash_to_Entity.csv")
+
     raw
+      .join(geo_hash_table, Seq("geo_hash_7"))
       .groupBy("BARRIO", "device_id")
       .agg(
         approxCountDistinct("geo_hash", 0.02) as "geo_hash",
