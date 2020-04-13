@@ -811,11 +811,10 @@ object Coronavirus {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    //var since = if (args.length > 0) args(0).toInt else 0
+    var since = if (args.length > 0) args(0).toInt else 0
     
-    //distance_traveled_ar(spark,since)
-    //distance_traveled_mx(spark,since)
-    for( since <- 2 to 46){
+    distance_traveled_ar(spark,since)
+    distance_traveled_mx(spark,since)
       try {
         distance_traveled_rest(spark, since, "PE")
       } catch {
@@ -838,5 +837,4 @@ object Coronavirus {
         }
       }
     }
-  }
 }
