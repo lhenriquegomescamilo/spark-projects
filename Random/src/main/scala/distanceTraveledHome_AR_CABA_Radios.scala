@@ -131,7 +131,6 @@ object distanceTraveled_AR_CABA_Radios {
       .withColumnRenamed("ad_id", "device_id")
       .withColumnRenamed("id_type", "device_type")
       .withColumn("device_id", upper(col("device_id")))
-      .filter("geo_hash != 'gcba'")
 
     df_safegraph
 
@@ -214,11 +213,10 @@ object distanceTraveled_AR_CABA_Radios {
       .withColumn("device_id", lower(col("device_id")))
 
     // Primero obtenemos la data raw que sera de utilidad para los calculos siguientes
-    val raw = get_safegraph_data(spark, "30", "33", "AR")
+    val raw = get_safegraph_data(spark, "60", "0", "AR")
       .unionAll(get_safegraph_data(spark, "60", "0", country))
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
-      .join(broadcast(risky_devices), Seq("device_id"))
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
       .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
@@ -246,7 +244,7 @@ object distanceTraveled_AR_CABA_Radios {
       .withColumn("country", lit(country))
 
     val output_file =
-      "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_hourly_%s_risky"
+      "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_hourly_%s"
         .format(today, country)
 
     geo_hash_visits.write
@@ -274,7 +272,7 @@ object distanceTraveled_AR_CABA_Radios {
 
     //Agregamos por día
     val output_file_tipo_2a =
-      "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s_risky"
+      "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s"
         .format(today, country)
 
     geo_labeled_users
@@ -335,7 +333,7 @@ object distanceTraveled_AR_CABA_Radios {
       .format("csv")
       .option("header", true)
       .save(
-        "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s_otros_barrios_risky"
+        "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohash_travel_barrio_radio_CLASE2_%s_otros_barrios"
           .format(today, country)
       )
     // //Agregamos por día y horario
