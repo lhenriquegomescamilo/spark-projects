@@ -811,34 +811,32 @@ object Coronavirus {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    var since = if (args.length > 0) args(0).toInt else 1
+    //var since = if (args.length > 0) args(0).toInt else 0
     
     //distance_traveled_ar(spark,since)
     //distance_traveled_mx(spark,since)
-    distance_traveled_rest(spark, since, "PE")
-    distance_traveled_rest(spark, since, "CL")
-    distance_traveled_rest(spark, since, "CO")
-
-    // try {
-    //   distance_traveled_rest(spark, since, "PE")
-    // } catch {
-    //   case e: Throwable => {
-    //     println("Error: PE - %s".format(since))
-    //   }
-    // }
-    // try {
-    //   distance_traveled_rest(spark, since, "CO")
-    // } catch {
-    //   case e: Throwable => {
-    //     println("Error: CO - %s".format(since))
-    //   }
-    // }
-    // try {
-    //   distance_traveled_rest(spark, since, "CL")
-    // } catch {
-    //   case e: Throwable => {
-    //     println("Error: CL - %s".format(since))
-    //   }
-    // }
+    for( since <- 2 to 46){
+      try {
+        distance_traveled_rest(spark, since, "PE")
+      } catch {
+        case e: Throwable => {
+          println("Error: PE - %s".format(since))
+        }
+      }
+      try {
+        distance_traveled_rest(spark, since, "CO")
+      } catch {
+        case e: Throwable => {
+          println("Error: CO - %s".format(since))
+        }
+      }
+      try {
+        distance_traveled_rest(spark, since, "CL")
+      } catch {
+        case e: Throwable => {
+          println("Error: CL - %s".format(since))
+        }
+      }
+    }
   }
 }
