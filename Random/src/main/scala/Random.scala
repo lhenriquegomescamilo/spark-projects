@@ -5100,6 +5100,45 @@ object Random {
   }
 
   def get_maids_risky_ar(spark: SparkSession) = {
+    def get_safegraph_data(
+        spark: SparkSession,
+        nDays: String,
+        since: String,
+        country: String
+    ) = {
+      // First we obtain the configuration to be allowed to watch if a file exists or not
+      val conf = spark.sparkContext.hadoopConfiguration
+      val fs = FileSystem.get(conf)
+
+      // Get the days to be loaded
+      val format = "yyyyMMdd"
+      val end = DateTime.now.minusDays(since.toInt)
+      val days = (0 until nDays.toInt)
+        .map(end.minusDays(_))
+        .map(_.toString(format))
+
+      // Now we obtain the list of hdfs files to be read
+      val path = "/datascience/geo/safegraph/"
+      val hdfs_files = days
+        .map(day => path + "day=%s/country=%s/".format(day, country))
+        .filter(
+          path => fs.exists(new org.apache.hadoop.fs.Path(path))
+        )
+        .map(day => day + "*.snappy.parquet")
+
+      // Finally we read, filter by country, rename the columns and return the data
+      val df_safegraph = spark.read
+        .option("header", "true")
+        .parquet(hdfs_files: _*)
+        .dropDuplicates("ad_id", "latitude", "longitude")
+        .withColumnRenamed("ad_id", "device_id")
+        .withColumnRenamed("id_type", "device_type")
+        .withColumn("device_id", upper(col("device_id")))
+
+      df_safegraph
+
+    }
+
     val country = "argentina"
 
     val timezone = Map(
