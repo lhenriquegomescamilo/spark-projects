@@ -3547,7 +3547,7 @@ object RandomTincho {
     val users = spark.read
                       .load("/datascience/custom/us_homes_rely_ids")
 
-    users.join(segment,Seq("zip4"),"inner")
+    users.join(segments,Seq("zip4"),"inner")
           .select("device_id","Segments")
           .write
           .format("parquet")
