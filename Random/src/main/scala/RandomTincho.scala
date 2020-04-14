@@ -3593,7 +3593,7 @@ object RandomTincho {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .filter("segments = '314577' and event_type = 'tk'")
+      .filter("array_contains(segments, 314577) and event_type = 'tk'")
       .select("url","time","device_id")
 
     df.write
