@@ -3536,6 +3536,23 @@ object RandomTincho {
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/apps_gcba")
   }
+  def get_users_zipcode_us(spark:SparkSession){
+    val segments = spark.read
+                        .format("csv")
+                        .option("sep","\t")
+                        .option("header","true")
+                        .load("/datascience/custom/USA_aud_gen_20200408.tsv")
+                        .withColumnRenamed("Zipcode","zip4")
+
+    val users = spark.read
+                      .load("/datascience/custom/us_homes_rely_ids")
+
+    users.join(segment,Seq("zip4"),"inner")
+          .select("device_id","Segments")
+          .write
+          .format("parquet")
+          .save("/datascience/custom/users_segments_zip4")
+  }
 
   def main(args: Array[String]) {
 
@@ -3547,41 +3564,41 @@ object RandomTincho {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
+    get_users_zipcode_us(spark)
+    // /// Configuraciones de spark
+    // val sc = spark.sparkContext
+    // val conf = sc.hadoopConfiguration
+    // val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-    /// Configuraciones de spark
-    val sc = spark.sparkContext
-    val conf = sc.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    // val since = 0
+    // val ndays = 30
+    // // Get the days to be loaded
+    // val format = "yyyyMMdd"
+    // val end = DateTime.now.minusDays(since)
+    // val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
+    // val path = "/datascience/data_partner_streaming"
 
-    val since = 0
-    val ndays = 30
-    // Get the days to be loaded
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_partner_streaming"
+    // // Now we obtain the list of hdfs folders to be read
+    // val hdfs_files = days
+    //   .flatMap(
+    //     day =>
+    //       (0 until 24).map(
+    //         hour =>
+    //           path + "/hour=%s%02d/id_partner=349"
+    //             .format(day, hour)
+    //       )
+    //   )
+    //   .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days
-      .flatMap(
-        day =>
-          (0 until 24).map(
-            hour =>
-              path + "/hour=%s%02d/id_partner=349"
-                .format(day, hour)
-          )
-      )
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+    // val df = spark.read
+    //   .option("basePath", path)
+    //   .parquet(hdfs_files: _*)
+    //   .filter("event_type = 'tk' and campaign_id = 314577")
+    //   .select("url","time","device_id")
 
-    val df = spark.read
-      .option("basePath", path)
-      .parquet(hdfs_files: _*)
-      .filter("event_type = 'tk' and campaign_id = 314577")
-      .select("url","time","device_id")
-
-    df.write
-      .format("parquet")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/urls_314577")
+    // df.write
+    //   .format("parquet")
+    //   .mode(SaveMode.Overwrite)
+    //   .save("/datascience/custom/urls_314577")
   }
 }
