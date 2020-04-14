@@ -17,7 +17,7 @@ import org.apache.spark.sql.functions.input_file_name
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object distanceTraveled_CO {
+object distanceTraveled_Startapp {
   
 
 
@@ -256,7 +256,8 @@ geo_labeled_users
 
 
 }
-}
+
+
 
  /*****************************************************/
   /******************     MAIN     *********************/
@@ -269,8 +270,9 @@ geo_labeled_users
 
 
 
-run_things_of_coronavirus_for_country(spark,"60","1","UY")
+          run_things_of_coronavirus_for_country(spark,"60","1","UY")
 
 
   
+}
 }
