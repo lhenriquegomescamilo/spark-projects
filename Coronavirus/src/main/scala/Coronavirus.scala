@@ -320,7 +320,7 @@ object Coronavirus {
     val format = "dd-MM-YY"
     val day = DateTime.now.minusDays(since+2).toString(format)
 
-    val raw = get_safegraph_data(spark,since,6, country)
+    val raw = get_safegraph_data(spark,since,30, country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
