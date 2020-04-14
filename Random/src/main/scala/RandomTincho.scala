@@ -3564,7 +3564,7 @@ object RandomTincho {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
-    //get_users_zipcode_us(spark)
+
     /// Configuraciones de spark
     val sc = spark.sparkContext
     val conf = sc.hadoopConfiguration
@@ -3593,7 +3593,7 @@ object RandomTincho {
     val df = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
-      .filter("campaign_id = '314577' and event_type = 'tk'")
+      .filter("all_segments = '314577' and event_type = 'tk'")
       .select("url","time","device_id")
 
     df.write
