@@ -270,7 +270,7 @@ geo_labeled_users
 
 
 
-          run_things_of_coronavirus_for_country(spark,"60","1","UY")
+          run_things_of_coronavirus_for_country(spark,"60","1","PE")
 
 
   
