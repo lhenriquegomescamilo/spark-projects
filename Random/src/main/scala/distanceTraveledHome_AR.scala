@@ -116,7 +116,7 @@ def get_safegraph_data(
     val df_safegraph = spark.read
       .option("header", "true")
       .parquet(hdfs_files: _*)
-      .dropDuplicates("ad_id", "latitude", "longitude")
+      //.dropDuplicates("ad_id", "latitude", "longitude")
       .withColumnRenamed("ad_id","device_id")
       .withColumnRenamed("id_type","device_type")
       .withColumn("device_id",upper(col("device_id")))
@@ -301,7 +301,7 @@ spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
 val today = (java.time.LocalDate.now).toString
 
-val raw = get_safegraph_data(spark,"3","1",country)
+val raw = get_safegraph_data(spark,"60","0",country)
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -315,7 +315,7 @@ val geo_hash_visits = raw
 .groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
 .withColumn("country",lit(country))
 
-val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s_3D/geohashes_by_user_%s".format(today,country)
+val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s_SDD/geohashes_by_user_%s".format(today,country)
 
 geo_hash_visits
  .write
@@ -336,7 +336,7 @@ hash_user
 .mode(SaveMode.Overwrite)
 .format("csv")
 .option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/%s_3D/geohashes_by_country_%s".format(today,country))
+.save("/datascience/geo/Reports/GCBA/Coronavirus/%s_SDD/geohashes_by_country_%s".format(today,country))
 
 ///////////Partidos
 //QUeremos un cálculo por municipio:
@@ -347,7 +347,7 @@ val entidad = spark.read.format("csv").option("header",true).option("delimiter",
 
 
 //Acá por provincia
-val output_file_provincia = "/datascience/geo/Reports/GCBA/Coronavirus/%s_3D/geohashes_by_provincia_%s".format(today,country)
+val output_file_provincia = "/datascience/geo/Reports/GCBA/Coronavirus/%s_SDD/geohashes_by_provincia_%s".format(today,country)
 val provincia = spark.read.format("parquet")
 .load(output_file)
 .join(entidad,Seq("geo_hash_7"))
@@ -364,7 +364,7 @@ val provincia = spark.read.format("parquet")
 .save(output_file_provincia)
 
 //Acá por partido
-val output_file_partido = "/datascience/geo/Reports/GCBA/Coronavirus/%s_3D/geohashes_by_partido_%s".format(today,country)
+val output_file_partido = "/datascience/geo/Reports/GCBA/Coronavirus/%s_SDD/geohashes_by_partido_%s".format(today,country)
 val partido = spark.read.format("parquet")
 .load(output_file)
 .join(entidad,Seq("geo_hash_7"))
@@ -396,7 +396,7 @@ val geocode_barrios = spark.read.format("csv").option("header",true).load("/data
 
 val homes_barrio = homes.select("device_id","GEOID").join(geocode_barrios,Seq("GEOID")).drop("GEOID")
 
-val output_file_tipo_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s_3D/geohash_travel_barrio_CLASE1_%s".format(today,country)
+val output_file_tipo_1 = "/datascience/geo/Reports/GCBA/Coronavirus/%s_SDD/geohash_travel_barrio_CLASE1_%s".format(today,country)
 
 spark.read.format("parquet")
 .load(output_file)
@@ -414,7 +414,7 @@ spark.read.format("parquet")
 
 
 //Alternativa 2
-val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s_3D/geohash_travel_barrio_CLASE2_%s".format(today,country)
+val output_file_tipo_2 = "/datascience/geo/Reports/GCBA/Coronavirus/%s_SDD/geohash_travel_barrio_CLASE2_%s".format(today,country)
 val tipo2 = spark.read.format("parquet")
 .load(output_file)
 .join(barrios,Seq("geo_hash_7"))

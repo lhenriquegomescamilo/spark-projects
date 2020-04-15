@@ -36,6 +36,7 @@ import org.apache.spark.sql.types.{
 import org.apache.spark.sql.{Column, Row}
 import scala.util.Random.shuffle
 import org.apache.spark.sql.expressions.Window
+import java.time.DayOfWeek
 
 object Coronavirus {
 
@@ -299,7 +300,7 @@ object Coronavirus {
     val df_safegraph = spark.read
                             .option("header", "true")
                             .parquet(hdfs_files: _*)
-                            .dropDuplicates("ad_id", "latitude", "longitude")
+                            //.dropDuplicates("ad_id", "latitude", "longitude")
 
     df_safegraph
   }
@@ -320,15 +321,15 @@ object Coronavirus {
     val format = "dd-MM-YY"
     val day = DateTime.now.minusDays(since+2).toString(format)
 
-    val raw = get_safegraph_data(spark,since,6, country)
+    val raw = get_safegraph_data(spark,since,6,country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-      .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
+      .withColumn("day_original", date_format(col("Time"), "dd-MM-YY"))
       .drop("Time")
       .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
       .withColumn("day", lit(day))
-      .filter(col("day") === col("Day"))
+      .filter(col("day") === col("day_original"))
 
     //Vamos a usarlo para calcular velocidad y distancia al hogar
     raw.persist()
@@ -554,11 +555,11 @@ object Coronavirus {
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-      .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
+      .withColumn("day_original", date_format(col("Time"), "dd-MM-YY"))
       .drop("Time")
       .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
       .withColumn("day", lit(day))
-      .filter(col("day") === col("Day"))
+      .filter(col("day") === col("day_original"))
 
     //Vamos a usarlo para calcular velocidad y distancia al hogar
     raw.persist()
@@ -684,8 +685,6 @@ object Coronavirus {
                     "CO"-> "GMT-5",
                     "PE"-> "GMT-5")
     
-    val country = "mexico"
-
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
@@ -696,7 +695,7 @@ object Coronavirus {
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-      .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
+      .withColumn("day_original", date_format(col("Time"), "dd-MM-YY"))
       .drop("Time")
       .withColumn("country", lit(country))
       .withColumn(
@@ -707,7 +706,7 @@ object Coronavirus {
         ).cast("long"))
       )
       .withColumn("day", lit(day))
-      .filter(col("day") === col("Day"))
+      .filter(col("day") === col("day_original"))
 
     //Vamos a usarlo para calcular velocidad y distancia al hogar
     raw.persist()

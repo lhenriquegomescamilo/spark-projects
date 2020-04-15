@@ -3536,6 +3536,23 @@ object RandomTincho {
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/apps_gcba")
   }
+  def get_users_zipcode_us(spark:SparkSession){
+    val segments = spark.read
+                        .format("csv")
+                        .option("sep","\t")
+                        .option("header","true")
+                        .load("/datascience/custom/USA_aud_gen_20200408.tsv")
+                        .withColumnRenamed("Zipcode","zip4")
+
+    val users = spark.read
+                      .load("/datascience/custom/us_homes_rely_ids")
+
+    users.join(segments,Seq("zip4"),"inner")
+          .select("device_id","Segments")
+          .write
+          .format("parquet")
+          .save("/datascience/custom/users_segments_zip4")
+  }
 
   def main(args: Array[String]) {
 
@@ -3548,84 +3565,40 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    data_gcba_apps(spark)
+    /// Configuraciones de spark
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
 
-    val geohashes_user = spark.read
-                              .load("/datascience/geo/Reports/GCBA/Coronavirus/2020-04-10/geohashes_by_user_hourly_argentina")
-                              .withColumn("device_id",lower(col("device_id")))
+    val since = 0
+    val ndays = 30
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_partner_streaming"
 
-    val user_apps = spark.read
-                        .load("/datascience/custom/apps_gcba")
-                        .withColumn("device_id",lower(col("device_id")))
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .flatMap(
+        day =>
+          (0 until 24).map(
+            hour =>
+              path + "/hour=%s%02d/id_partner=349"
+                .format(day, hour)
+          )
+      )
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
 
-    geohashes_user.join(user_apps,Seq("device_id"),"inner")
-                  .write
-                  .format("parquet")
-                  .mode(SaveMode.Overwrite)
-                  .save("/datascience/custom/join_users_gcba_apps")
-    
-    // val users = spark.read.format("csv")
-    //                         .option("header",true)
-    //                         .option("delimiter","\t")
-    //                         .load("/datascience/geo/raw_output/airportsCO_30d_CO_30-3-2020-16h")
-    //                         .withColumn("device_id", lower(col("device_id")))
-    //                         .select("device_id")
-    //                         .distinct()
+    val df = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .filter("array_contains(segments, 314577) and event_type = 'tk'")
+      .select("url","time","device_id")
 
-    // val initial_seed = spark.read.format("parquet").option("basePath", "/datascience/geo/safegraph/")
-    //                         .load("/datascience/geo/safegraph/day=202003*/country=%s/".format("CO"))
-    //                         .withColumnRenamed("ad_id", "device_id")
-    //                         .withColumn("device_id", lower(col("device_id")))
-    //                         .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-    //                         .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
-    //                         .withColumn("window", date_format(col("Time"), "mm"))
-    //                         .withColumn("window",
-    //                           when(col("window") > 40, 3)
-    //                             .otherwise(when(col("window") > 20, 2).otherwise(1))
-    //                         )
-    //                         .withColumn("window", concat(col("Hour"), col("window")))
-    //                         .drop("Time")
-    //                         .withColumn(
-    //                                     "geo_hash",
-    //                                     ((abs(col("latitude").cast("float")) * 1000)
-    //                                     .cast("long") * 100000) + (abs(
-    //                                     col("longitude").cast("float") * 1000
-    //                                     ).cast("long"))
-    //                           )
-    //                         .join(users,Seq("device_id"),"inner")
-    //                         .select("device_id","geo_hash", "window")
-    //                         .distinct
-
-    //get_contacts(spark,"CO",initial_seed,"first_level_co")
-
-    // val users = spark.read.load("/datascience/custom/first_level_co")
-    //                       .select("device_id")
-    //                       .distinct()
-
-    // val initial_seed = spark.read.format("parquet").option("basePath", "/datascience/geo/safegraph/")
-    //                         .load("/datascience/geo/safegraph/day=202003*/country=%s/".format("CO"))
-    //                         .withColumnRenamed("ad_id", "device_id")
-    //                         .withColumn("device_id", lower(col("device_id")))
-    //                         .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-    //                         .withColumn("Hour", date_format(col("Time"), "YYYYMMddHH"))
-    //                         .withColumn("window", date_format(col("Time"), "mm"))
-    //                         .withColumn("window",
-    //                           when(col("window") > 40, 3)
-    //                             .otherwise(when(col("window") > 20, 2).otherwise(1))
-    //                         )
-    //                         .withColumn("window", concat(col("Hour"), col("window")))
-    //                         .drop("Time")
-    //                         .withColumn(
-    //                                     "geo_hash",
-    //                                     ((abs(col("latitude").cast("float")) * 1000)
-    //                                     .cast("long") * 100000) + (abs(
-    //                                     col("longitude").cast("float") * 1000
-    //                                     ).cast("long"))
-    //                           )
-    //                         .join(users,Seq("device_id"),"inner")
-    //                         .select("device_id","geo_hash", "window")
-    //                         .distinct
-    
-    // get_contacts(spark,"CO",initial_seed,"second_level_co")
+    df.write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/urls_314577")
   }
 }
