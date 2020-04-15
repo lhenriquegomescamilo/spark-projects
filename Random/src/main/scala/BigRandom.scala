@@ -395,6 +395,10 @@ def getDataPipeline(
     .withColumnRenamed("device_id", "phone")
     .dropDuplicates()
 
+    println(nids.count())
+    println(phones.count())
+    
+    /**
     val phones_match = pii_table
     .select("phone","device_id")
     .distinct
@@ -413,6 +417,8 @@ def getDataPipeline(
 
     println("Total devices:")
     println(phones_match.select("device_id").union(nids_match.select("device_id")).distinct().count())
+
+    */
 
   /**
 
