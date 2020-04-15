@@ -369,7 +369,7 @@ def getDataPipeline(
     val pii_table =  spark.read
                           .load("/datascience/pii_matching/pii_tuples/")
                           .filter("country = 'MX'")
-                          .select("device_id","ml_sh2" "nid_sh2", "mb_sh2")
+                          .select("device_id","ml_sh2","nid_sh2", "mb_sh2")
                           .withColumnRenamed("ml_sh2", "email")
                           .withColumnRenamed("nid_sh2", "dni")
                           .withColumnRenamed("mb_sh2", "phone")
@@ -397,7 +397,7 @@ def getDataPipeline(
     
     val joint = df_all.join(pii_table,Seq("device_id"))
 
-    print(joint.groupby("type").approx_count_distinct(col("device_id"), 0.03).as("devices"))
+    print(joint.groupBy("type").approx_count_distinct(col("device_id"), 0.03).as("devices"))
 
     print(joint.select("device_id").distinct().count())
         
