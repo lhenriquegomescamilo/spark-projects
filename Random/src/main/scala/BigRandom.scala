@@ -397,7 +397,7 @@ def getDataPipeline(
     
     val joint = df_all.join(pii_table,Seq("device_id"))
 
-    print(joint.groupby("type").approx_count_distinct(col("device_id"), 0.03).as("devices"))
+    print(joint.groupBy("type").approx_count_distinct(col("device_id"), 0.03).as("devices"))
 
     print(joint.select("device_id").distinct().count())
         
