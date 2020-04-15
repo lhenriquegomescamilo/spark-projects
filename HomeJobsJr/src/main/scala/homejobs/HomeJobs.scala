@@ -7,6 +7,15 @@ import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.joda.time.DateTime
 import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime,count, avg}
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
+import org.apache.spark.sql.types.IntegerType
+import org.apache.spark.sql.expressions.Window
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.joda.time.{Days, DateTime}
+import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
+import org.apache.spark.sql.functions.input_file_name
+
+
 
 case class Record(ad_id: String, id_type: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
 
