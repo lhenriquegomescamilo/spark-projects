@@ -96,14 +96,14 @@ object HomeJobsJr {
             .getOrElse("")
             .toString
             .length > 0) query("since").toString
-      else "19"
+      else "20"
 
     val HourTo = 
       if (query.contains("HourTo") && Option(query("HourTo"))
             .getOrElse("")
             .toString
             .length > 0) query("HourTo").toString
-      else "7"
+      else "6"
 
     val UseType = 
       if (query.contains("UseType") && Option(query("UseType"))

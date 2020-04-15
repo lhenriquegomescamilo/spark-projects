@@ -126,6 +126,9 @@ object HomeJobs {
 
 
     geo_hour
+    .withColumn("HourFrom",lit(value_dictionary("HourFrom")))
+    .withColumn("HourTo",lit(value_dictionary("HourTo")))
+    .withColumn("UseType",lit(value_dictionary("UseType")))
     .write.format("parquet")
       .mode(SaveMode.Overwrite)
       .save("/datascience/geo/%s_exploded".format(value_dictionary("output_file")))
