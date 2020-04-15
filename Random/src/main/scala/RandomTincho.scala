@@ -3554,7 +3554,6 @@ object RandomTincho {
           .save("/datascience/custom/users_segments_zip4")
   }
   def enrichment_experian(spark:SparkSession){
-    val base_emails = spark.read. ..
 
     val pii_table =  spark.read
                           .load("/datascience/pii_matching/pii_tuples/")
@@ -3606,7 +3605,7 @@ object RandomTincho {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
-      
+
     enrichment_experian(spark)
 
 
