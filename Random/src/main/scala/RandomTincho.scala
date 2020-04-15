@@ -3572,6 +3572,8 @@ object RandomTincho {
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since)
 
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_triplets/segments/"
     val dfs = days
