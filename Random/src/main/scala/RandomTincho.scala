@@ -3554,12 +3554,11 @@ object RandomTincho {
           .save("/datascience/custom/users_segments_zip4")
   }
   def enrichment_experian(spark:SparkSession){
-    val base_emails = spark.read. ..
 
     val pii_table =  spark.read
                           .load("/datascience/pii_matching/pii_tuples/")
                           .filter("country = 'BR'")
-                          .select("ml_sh2")
+                          .select("ml_sh2","device_id")
                           .withColumnRenamed("ml_sh2", "email")
                           .withColumn("email", lower(col("email")))
                           .select("email","device_id")
@@ -3573,6 +3572,8 @@ object RandomTincho {
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since)
 
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_triplets/segments/"
     val dfs = days
@@ -3606,7 +3607,7 @@ object RandomTincho {
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
-      
+
     enrichment_experian(spark)
 
 
