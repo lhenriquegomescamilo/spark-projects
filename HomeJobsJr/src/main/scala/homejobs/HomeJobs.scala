@@ -125,7 +125,8 @@ object HomeJobs {
     
 
 
-    geo_hour.write.format("parquet")
+    geo_hour
+    .write.format("parquet")
       .mode(SaveMode.Overwrite)
       .save("/datascience/geo/%s_exploded".format(value_dictionary("output_file")))
 
@@ -156,7 +157,6 @@ object HomeJobs {
 
     final_users
     .write.format("csv")
-    .repartition(20)
       .option("header", true)
       .option("sep", "\t")
       .mode(SaveMode.Overwrite)
