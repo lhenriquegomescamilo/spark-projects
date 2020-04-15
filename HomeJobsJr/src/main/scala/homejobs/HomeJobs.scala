@@ -124,7 +124,8 @@ object HomeJobs {
 
     val geo_hour = df_users.select("ad_id","id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
                                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-                                            .withColumn("Hour", date_format(col("Time"), "HH")).cast("IntegerType")
+                                            .withColumn("Hour", date_format(col("Time"), "HH"))
+                                            .withColumn("Hour",col("Hour").cast(IntegerType))
                                                 .filter(
                                                     if (value_dictionary("UseType")=="home") { 
                                                                 col("Hour") >= value_dictionary("HourFrom").toInt || col("Hour") <= value_dictionary("HourTo").toInt 
