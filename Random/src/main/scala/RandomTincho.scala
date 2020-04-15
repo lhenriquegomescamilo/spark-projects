@@ -3558,7 +3558,7 @@ object RandomTincho {
     val pii_table =  spark.read
                           .load("/datascience/pii_matching/pii_tuples/")
                           .filter("country = 'BR'")
-                          .select("ml_sh2")
+                          .select("ml_sh2","device_id")
                           .withColumnRenamed("ml_sh2", "email")
                           .withColumn("email", lower(col("email")))
                           .select("email","device_id")
