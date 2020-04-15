@@ -192,7 +192,6 @@ def get_safegraph_data(
     val df_safegraph = spark.read
       .option("header", "true")
       .parquet(hdfs_files: _*)
-      .dropDuplicates("ad_id", "latitude", "longitude")
       .withColumnRenamed("ad_id","device_id")
       .withColumnRenamed("id_type","device_type")
       .withColumn("device_id",lower(col("device_id")))
@@ -1319,31 +1318,47 @@ space_lapse_agg
 */
 
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+
 val today = (java.time.LocalDate.now).toString
+val output_file = "/datascience/geo/Reports/InStorePlus/"
 
-//Levantamos Startapp
-val raw1 = get_safegraph_data(spark,"1","1","AR")
+val country1 = "argentina"
+val country2 = "AR"
+val nDays = "14"
+val since = "3"
 
+val safe = get_safegraph_data(spark,nDays,since,country1).withColumn("provider",lit("SafeGraph"))
+val sapp = get_safegraph_data(spark,nDays,since,country2).withColumn("provider",lit("StartApp"))
 
-//Levantamos Safegraph
-val raw2 = get_safegraph_data(spark,"1","1","argentina")
+val all = safe.unionAll(sapp).withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
 
+all.persist()
 
-//Los juntamos
-val raw = List(raw1,raw2).reduce(_.unionByName (_)).distinct()
-.withColumn("device_id_hash", sha2(col("device_id"),256))
-.drop("device_id")
-.repartition(20)
+all.groupBy("device_id","device_type").agg(
+  count("timestamp") as "detections",
+  approx_count_distinct(col("geo_hash"), rsd = 0.03) as "geo_hash",
+    approx_count_distinct(col("geo_hash_7"), rsd = 0.03) as "geo_hash_7")
+ .write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .option("header",true)
+    .save(output_file+"/%s/%s_%sD_period".format(today,country2,nDays))
+
+all
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
+.groupBy("device_id","device_type","Day").agg(
+  count("timestamp") as "detections",
+  approx_count_distinct(col("geo_hash"), rsd = 0.03) as "geo_hash",
+    approx_count_distinct(col("geo_hash_7"), rsd = 0.03) as "geo_hash_7")
 .write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/UBA/%s/Sample_data_%s".format(today,today))
-
-
-      
-}
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .option("header",true)
+    .save(output_file+"/%s/%s_%sD_daily".format(today,country2,nDays))
 
 
   
+}
+
 }

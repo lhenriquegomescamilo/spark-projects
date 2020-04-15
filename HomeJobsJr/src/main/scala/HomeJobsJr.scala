@@ -95,7 +95,7 @@ object HomeJobsJr {
       if (query.contains("HourFrom") && Option(query("HourFrom"))
             .getOrElse("")
             .toString
-            .length > 0) query("since").toString
+            .length > 0) query("HourFrom").toString
       else "20"
 
     val HourTo = 
