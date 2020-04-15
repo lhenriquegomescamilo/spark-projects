@@ -369,7 +369,7 @@ def getDataPipeline(
     val pii_table =  spark.read
                           .load("/datascience/pii_matching/pii_tuples/")
                           .filter("country = 'MX'")
-                          .select("device_id","ml_sh2" "nid_sh2", "mb_sh2")
+                          .select("device_id","ml_sh2","nid_sh2", "mb_sh2")
                           .withColumnRenamed("ml_sh2", "email")
                           .withColumnRenamed("nid_sh2", "dni")
                           .withColumnRenamed("mb_sh2", "phone")
