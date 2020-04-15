@@ -5167,10 +5167,10 @@ object Random {
       .load("/datascience/custom/risky_in_quarantine_expanded")
       .withColumn("device_id", lower(col("device_id")))
       .select("device_id", "audience")
-      // .join(risky_devices, Seq("device_id"))
-      // .groupBy("audience", "BARRIO")
-      // .agg(approxCountDistinct(col("device_id"), 0.02) as "device_unique")
-      // .orderBy("BARRIO", "device_unique")
+    // .join(risky_devices, Seq("device_id"))
+    // .groupBy("audience", "BARRIO")
+    // .agg(approxCountDistinct(col("device_id"), 0.02) as "device_unique")
+    // .orderBy("BARRIO", "device_unique")
     val since = 0
 
     // Primero obtenemos la data raw que sera de utilidad para los calculos siguientes
@@ -5263,6 +5263,31 @@ object Random {
       .save("/datascience/custom/risky_population_before_after")
   }
 
+  def get_devices_per_zip_code(spark: SparkSession) = {
+    val zipcodes = List(33146, 33145, 33147, 33150, 33149, 33154, 33153, 33156,
+      33155, 33158, 33157, 33160, 33162, 33161, 33166, 33165, 33168, 33167,
+      33170, 33169, 33173, 33172, 33175, 33174, 33177, 33176, 33179, 33178,
+      33181, 33180, 33183, 33182, 33185, 33184, 33187, 33186, 33189, 33188,
+      33190, 33194, 33193, 33196, 33199, 33242, 33239, 33106, 33191, 33206,
+      33010, 33013, 33012, 33015, 33014, 33016, 33018, 33027, 33031, 33030,
+      33033, 33032, 33035, 33034, 33039, 33055, 33054, 33056, 33195, 33090,
+      33092, 33101, 33109, 33112, 33116, 33114, 33119, 33122, 33126, 33125,
+      33128, 33127, 33130, 33129, 33132, 33131, 33134, 33133, 33136, 33135,
+      33138, 33137, 33140, 33139, 33142, 33141, 33144, 33143)
+
+    println(
+      spark.read
+        .format("parquet")
+        .load(
+          "/data/providers/sharethis/processed/"
+        )
+        .filter(col("de_geo_pulseplus_postal_code").isin(zipcodes: _*))
+        .select("estid")
+        .distinct()
+        .count()
+    )
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -5275,6 +5300,6 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_maids_risky_ar(spark)
+    get_devices_per_zip_code(spark)
   }
 }
