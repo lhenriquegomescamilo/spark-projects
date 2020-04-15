@@ -384,6 +384,7 @@ def getDataPipeline(
     .load("/datascience/custom/Mx0902.tsv.gz")
     .select("device_id")
     .withColumnRenamed("device_id", "dni")
+    .withColumn("dni", lower(col("dni")))
     .dropDuplicates()
 
     val phones = spark.read
@@ -393,12 +394,9 @@ def getDataPipeline(
     .load("/datascience/custom/Mx1402.tsv")
     .select("device_id")
     .withColumnRenamed("device_id", "phone")
+    .withColumn("phone", lower(col("phone")))   
     .dropDuplicates()
 
-    println(nids.count())
-    println(phones.count())
-    
-    /**
     val phones_match = pii_table
     .select("phone","device_id")
     .distinct
@@ -413,12 +411,12 @@ def getDataPipeline(
     .join(nids,Seq("dni"))
 
     println("Nids match:")
-    println(nids_match.count())
+    println(nids_match.count())  
 
     println("Total devices:")
     println(phones_match.select("device_id").union(nids_match.select("device_id")).distinct().count())
 
-    */
+  
 
   /**
 
