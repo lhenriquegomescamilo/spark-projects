@@ -377,6 +377,8 @@ def getDataPipeline(
                           .withColumn("dni", lower(col("dni")))
                           .withColumn("phone", lower(col("phone")))
 
+    println(pii_table.show())                      
+
     val nids = spark.read
     .format("csv")
     .option("sep", "\t")
@@ -393,14 +395,21 @@ def getDataPipeline(
     .select("device_id")
     .withColumn("type", lit("phones"))
 
+    println(nids.show())
+    println(phones.show())    
+
     val df_all = nids.union(phones)
+
+    println(df_all.show())  
     
     val joint = df_all.join(pii_table,Seq("device_id"))
 
-    println(joint.groupBy("type").agg(approx_count_distinct(col("device_id"), 0.02).as("devices")).show())
+    println(joint.show())  
 
-    println("totales:")
-    println(joint.select("device_id").distinct().count())
+    //println(joint.groupBy("type").agg(approx_count_distinct(col("device_id"), 0.02).as("devices")).show())
+
+    //println("totales:")
+    //println(joint.select("device_id").distinct().count())
         
 
   /**
