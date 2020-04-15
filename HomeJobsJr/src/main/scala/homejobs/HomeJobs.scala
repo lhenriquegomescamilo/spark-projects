@@ -120,17 +120,19 @@ object HomeJobs {
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(value_dictionary("country")))
 
+
+    
     val geo_hour = df_users.select("ad_id","id_type", "latitude_user", "longitude_user","utc_timestamp","geocode")
                                             .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-                                            .withColumn("Hour", date_format(col("Time"), "HH"))
+                                            .withColumn("Hour", date_format(col("Time"), "HH")).cast("Integer")
                                                 .filter(
                                                     if (value_dictionary("UseType")=="home") { 
-                                                                col("Hour") >= value_dictionary("HourFrom") || col("Hour") <= value_dictionary("HourTo") 
+                                                                col("Hour") >= value_dictionary("HourFrom").toInt || col("Hour") <= value_dictionary("HourTo").toInt 
                                                                             } 
                                                     else {
-                                                          (col("Hour") <= value_dictionary("HourFrom") && col("Hour") >= value_dictionary("HourTo")) && 
+                                                          (col("Hour") <= value_dictionary("HourFrom").toInt && col("Hour") >= value_dictionary("HourTo").toInt) && 
                                                                 !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_*) })
-    
+
 
 
     geo_hour
