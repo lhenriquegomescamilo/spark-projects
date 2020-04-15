@@ -375,9 +375,7 @@ def getDataPipeline(
                           .withColumnRenamed("mb_sh2", "phone")
                           .withColumn("email", lower(col("email")))
                           .withColumn("dni", lower(col("dni")))
-                          .withColumn("phone", lower(col("phone")))
-
-    println(pii_table.show())                      
+                          .withColumn("phone", lower(col("phone")))                  
 
     val nids = spark.read
     .format("csv")
@@ -385,7 +383,8 @@ def getDataPipeline(
     .option("header", "true")
     .load("/datascience/custom/Mx0902.tsv.gz")
     .select("device_id")
-    .withColumn("type", lit("nids"))
+    .withColumnRenamed("device_id", "dni")
+    .dropDuplicates()
 
     val phones = spark.read
     .format("csv")
@@ -393,24 +392,27 @@ def getDataPipeline(
     .option("header", "true")
     .load("/datascience/custom/Mx1402.tsv")
     .select("device_id")
-    .withColumn("type", lit("phones"))
+    .withColumnRenamed("device_id", "phone")
+    .dropDuplicates()
 
-    println(nids.show())
-    println(phones.show())    
+    val phones_match = pii_table
+    .select("phone","device_id")
+    .distinct
+    .join(phones,Seq("phone"))
 
-    val df_all = nids.union(phones)
+    println("Phones match:")
+    println(phones_match.count())
 
-    println(df_all.show())  
-    
-    val joint = df_all.join(pii_table,Seq("device_id"))
+    val nids_match = pii_table
+    .select("dni","device_id")
+    .distinct
+    .join(nids,Seq("dni"))
 
-    println(joint.show())  
+    println("Nids match:")
+    println(nids_match.count())
 
-    //println(joint.groupBy("type").agg(approx_count_distinct(col("device_id"), 0.02).as("devices")).show())
-
-    //println("totales:")
-    //println(joint.select("device_id").distinct().count())
-        
+    println("Total devices:")
+    prinln(phones_match.select("device_id").union(nids_match.select("device_id")).distinct().count())
 
   /**
 

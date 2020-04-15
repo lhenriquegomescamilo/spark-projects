@@ -1335,7 +1335,7 @@ val all = safe.unionAll(sapp).withColumn("geo_hash_7",substring(col("geo_hash"),
 all.persist()
 
 all.groupBy("device_id","device_type").agg(
-  count("timestamp") as "detections",
+  count("utc_timestamp") as "detections",
   approx_count_distinct(col("geo_hash"), rsd = 0.03) as "geo_hash",
     approx_count_distinct(col("geo_hash_7"), rsd = 0.03) as "geo_hash_7")
  .write
@@ -1348,7 +1348,7 @@ all
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
 .withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
 .groupBy("device_id","device_type","Day").agg(
-  count("timestamp") as "detections",
+  count("utc_timestamp") as "detections",
   approx_count_distinct(col("geo_hash"), rsd = 0.03) as "geo_hash",
     approx_count_distinct(col("geo_hash_7"), rsd = 0.03) as "geo_hash_7")
 .write
