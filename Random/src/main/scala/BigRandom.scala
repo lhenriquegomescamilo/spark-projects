@@ -412,7 +412,7 @@ def getDataPipeline(
     println(nids_match.count())
 
     println("Total devices:")
-    prinln(phones_match.select("device_id").union(nids_match.select("device_id")).distinct().count())
+    println(phones_match.select("device_id").union(nids_match.select("device_id")).distinct().count())
 
   /**
 
