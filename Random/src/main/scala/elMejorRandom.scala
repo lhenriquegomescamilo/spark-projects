@@ -1318,6 +1318,7 @@ space_lapse_agg
 */
 
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+
 val today = (java.time.LocalDate.now).toString
 val output_file = "/datascience/geo/Reports/InStorePlus/"
 
@@ -1358,4 +1359,6 @@ all
 
 
   
+}
+
 }
