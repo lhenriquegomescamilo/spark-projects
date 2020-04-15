@@ -33,7 +33,6 @@ object HomeJobs {
                             .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path))).map(day => day+"*.gz")
 
     val df_safegraph = spark.read.option("header", "true").csv(hdfs_files:_*)
-                                  .dropDuplicates("ad_id","latitude","longitude")
                                   .filter("country = '%s'".format(country))
                                   .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
                                   .withColumnRenamed("latitude", "latitude_user")

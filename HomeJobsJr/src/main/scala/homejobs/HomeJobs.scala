@@ -5,8 +5,16 @@ import main.scala.HomeJobsJr
 import org.apache.spark.sql.SparkSession
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.joda.time.DateTime
-import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime,count, avg}
+import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime,count, avg,lit,input_file_name}
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{SparkSession, Row, SaveMode, DataFrame}
+import org.apache.spark.sql.types.IntegerType
+import org.apache.spark.sql.expressions.Window
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.joda.time.{Days, DateTime}
+import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
+
+
 
 case class Record(ad_id: String, id_type: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
 
@@ -122,8 +130,18 @@ object HomeJobs {
                                                     else {
                                                           (col("Hour") <= value_dictionary("HourFrom") && col("Hour") >= value_dictionary("HourTo")) && 
                                                                 !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_*) })
+    
 
-    val df_count  = geo_hour.groupBy(col("ad_id"),col("id_type"),col("geocode"))
+
+    geo_hour
+    .withColumn("HourFrom",lit(value_dictionary("HourFrom")))
+    .withColumn("HourTo",lit(value_dictionary("HourTo")))
+    .withColumn("UseType",lit(value_dictionary("UseType")))
+    .write.format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/geo/%s_exploded".format(value_dictionary("output_file")))
+
+    val final_users  = geo_hour.groupBy(col("ad_id"),col("id_type"),col("geocode"))
                         .agg(count(col("latitude_user")).as("freq"),
                             round(avg(col("latitude_user")),4).as("avg_latitude"),
                             (round(avg(col("longitude_user")),4)).as("avg_longitude"))
@@ -134,7 +152,7 @@ object HomeJobs {
     
        
     //case class Record(ad_id: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
-
+    /*
     val dataset_users = df_count.as[Record].groupByKey(_.ad_id).reduceGroups((x, y) => if (x.freq > y.freq) x else y)
 
     val final_users = dataset_users.map(
@@ -145,8 +163,7 @@ object HomeJobs {
                                     row._2.avg_latitude,
                                     row._2.avg_longitude )).toDF("ad_id","id_type","freq","geocode","avg_latitude","avg_longitude")
 
-
-
+    */
 
 
     final_users

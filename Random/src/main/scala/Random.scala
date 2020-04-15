@@ -5163,6 +5163,14 @@ object Random {
       .load("/datascience/custom/devices_risk_generation.csv")
       .withColumnRenamed("_c0", "device_id")
       .withColumn("device_id", lower(col("device_id")))
+    val pois = spark.read
+      .load("/datascience/custom/risky_in_quarantine_expanded")
+      .withColumn("device_id", lower(col("device_id")))
+      .select("device_id", "audience")
+      // .join(risky_devices, Seq("device_id"))
+      // .groupBy("audience", "BARRIO")
+      // .agg(approxCountDistinct(col("device_id"), 0.02) as "device_unique")
+      // .orderBy("BARRIO", "device_unique")
     val since = 0
 
     // Primero obtenemos la data raw que sera de utilidad para los calculos siguientes
@@ -5213,6 +5221,16 @@ object Random {
       .option("header", true)
       .option("delimiter", ",")
       .load("/datascience/geo/geohashes_tables/AR_CABA_GeoHash_to_Entity.csv")
+
+    raw
+      .join(pois, Seq("device_id"))
+      .groupBy("BARRIO", "audience", "Week")
+      .agg(approxCountDistinct("device_id", 0.02) as "device_unique")
+      .repartition(1)
+      .write
+      .format("csv")
+      .mode("overwrite")
+      .save("/datascience/custom/pois_week_gcba")
 
     raw
       .join(geo_hash_table, Seq("geo_hash_7"))

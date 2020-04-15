@@ -63,9 +63,8 @@ object POICrossDevicerJson {
     val df_safegraph = spark.read
         .option("header", "true")
         .csv(hdfs_files:_*)
-        .dropDuplicates("ad_id","latitude","longitude")
         .filter("country = '%s'".format(value_dictionary("country")))
-        .select("ad_id","id_type", "latitude", "longitude","utc_timestamp")
+        .select("ad_id","id_type", "latitude", "longitude","utc_timestamp","geo_hash")
         .withColumnRenamed("latitude", "latitude_user")
         .withColumnRenamed("longitude", "longitude_user")
         .withColumn("geocode",
@@ -102,7 +101,7 @@ object POICrossDevicerJson {
       .option("header", "true")
       .parquet(hdfs_files: _*)
       .dropDuplicates("ad_id", "latitude", "longitude")
-      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp")
+      .select("ad_id", "id_type", "latitude", "longitude", "utc_timestamp","geo_hash")
       .withColumnRenamed("latitude", "latitude_user")
       .withColumnRenamed("longitude", "longitude_user")
       .withColumn(
@@ -199,6 +198,7 @@ object POICrossDevicerJson {
                 longitude_user,
                 latitude_poi,
                 longitude_poi,
+                geo_hash,
                 %s,
                 distance
             FROM (

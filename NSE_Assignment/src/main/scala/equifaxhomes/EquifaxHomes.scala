@@ -53,7 +53,9 @@ object EquifaxHomes {
       "CL" -> "CL", 
       "mexico" -> "MX",
       "CO"-> "CO",
-      "PE"-> "PE")
+      "PE"-> "PE",
+      "PY"-> "PY",
+      "UY"-> "UY")
 
     val actual_country = country_output_dict(value_dictionary("country")).toString
  
