@@ -3553,6 +3553,49 @@ object RandomTincho {
           .format("parquet")
           .save("/datascience/custom/users_segments_zip4")
   }
+  def enrichment_experian(spark:SparkSession){
+
+    val pii_table =  spark.read
+                          .load("/datascience/pii_matching/pii_tuples/")
+                          .filter("country = 'BR'")
+                          .select("ml_sh2","device_id")
+                          .withColumnRenamed("ml_sh2", "email")
+                          .withColumn("email", lower(col("email")))
+                          .select("email","device_id")
+                          .distinct
+                          .limit(100)
+
+
+    // Get device_id, segment from segments triplets using 30 days
+    val since = 0
+    val ndays = 30
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(since)
+
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments/"
+    val dfs = days
+      .map(day => path + "day=%s/".format(day) + "country=BR")
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
+      .map(
+        x =>
+          spark.read
+            .option("basePath", "/datascience/data_triplets/segments/")
+            .parquet(x)
+            .select("device_id", "feature")
+      )
+
+    val segments = dfs.reduce((df1, df2) => df1.union(df2)).withColumnRenamed("feature","segment")
+
+    pii_table.join(segments,Seq("device_id"),"inner")
+                .write
+                .format("parquet")
+                .mode(SaveMode.Overwrite)
+                .save("/datascience/custom/enrichment_experian")
+
+  }
 
   def main(args: Array[String]) {
 
@@ -3565,40 +3608,8 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    /// Configuraciones de spark
-    val sc = spark.sparkContext
-    val conf = sc.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    enrichment_experian(spark)
 
-    val since = 0
-    val ndays = 30
-    // Get the days to be loaded
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_partner_streaming"
 
-    // Now we obtain the list of hdfs folders to be read
-    val hdfs_files = days
-      .flatMap(
-        day =>
-          (0 until 24).map(
-            hour =>
-              path + "/hour=%s%02d/id_partner=349"
-                .format(day, hour)
-          )
-      )
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-
-    val df = spark.read
-      .option("basePath", path)
-      .parquet(hdfs_files: _*)
-      .filter("array_contains(segments, 314577) and event_type = 'tk'")
-      .select("url","time","device_id")
-
-    df.write
-      .format("parquet")
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/urls_314577")
   }
 }

@@ -366,6 +366,59 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val pii_table =  spark.read
+                          .load("/datascience/pii_matching/pii_tuples/")
+                          .filter("country = 'MX'")
+                          .select("device_id","ml_sh2","nid_sh2", "mb_sh2")
+                          .withColumnRenamed("ml_sh2", "email")
+                          .withColumnRenamed("nid_sh2", "dni")
+                          .withColumnRenamed("mb_sh2", "phone")
+                          .withColumn("email", lower(col("email")))
+                          .withColumn("dni", lower(col("dni")))
+                          .withColumn("phone", lower(col("phone")))                  
+
+    val nids = spark.read
+    .format("csv")
+    .option("sep", "\t")
+    .option("header", "true")
+    .load("/datascience/custom/Mx0902.tsv.gz")
+    .select("device_id")
+    .withColumnRenamed("device_id", "dni")
+    .withColumn("dni", lower(col("dni")))
+    .dropDuplicates()
+
+    val phones = spark.read
+    .format("csv")
+    .option("sep", "\t")
+    .option("header", "true")
+    .load("/datascience/custom/Mx1402.tsv")
+    .select("device_id")
+    .withColumnRenamed("device_id", "phone")
+    .withColumn("phone", lower(col("phone")))   
+    .dropDuplicates()
+
+    val phones_match = pii_table
+    .select("phone","device_id")
+    .distinct
+    .join(phones,Seq("phone"))
+
+    println("Phones match:")
+    println(phones_match.count())
+
+    val nids_match = pii_table
+    .select("dni","device_id")
+    .distinct
+    .join(nids,Seq("dni"))
+
+    println("Nids match:")
+    println(nids_match.count())  
+
+    println("Total devices:")
+    println(phones_match.select("device_id").union(nids_match.select("device_id")).distinct().count())
+
+  
+
+  /**
 
     val typeMap = Map(
           "web" -> "web",
@@ -420,7 +473,7 @@ def getDataPipeline(
 
     }
 
-
+  */
 
     /**
 
