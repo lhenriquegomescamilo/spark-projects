@@ -1476,11 +1476,11 @@ val startapp =  get_homes_from_geo_hash(spark,
 
 val safe = spark.read.format("csv").option("header",true)
   .load("/datascience/geo/Reports/HomesGeoHash/2020-04-16/homes_by_geohashes_30D_argentina/")
-  .withColumn("provider","SafeGraph")
+  .withColumn("provider",lit("SafeGraph"))
 
 val sapp = spark.read.format("csv").option("header",true)
   .load("/datascience/geo/Reports/HomesGeoHash/2020-04-16/homes_by_geohashes_30D_AR/")
-  .withColumn("provider","StartApp")
+  .withColumn("provider",lit("StartApp"))
 
 val all = safe.unionAll(sapp)
 
