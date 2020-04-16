@@ -3569,28 +3569,25 @@ object RandomTincho {
     // Get device_id, segment from segments triplets using 30 days
     val since = 0
     val ndays = 30
-    val format = "yyyyMMdd"
-    val start = DateTime.now.minusDays(since)
-
     val conf = spark.sparkContext.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-    val days = (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/data_triplets/segments/"
-    val dfs = days
-      .map(day => path + "day=%s/".format(day) + "country=BR")
-      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
-      .map(
-        x =>
-          spark.read
-            .option("basePath", "/datascience/data_triplets/segments/")
-            .parquet(x)
-            .select("device_id", "feature")
-      )
+    val fs = FileSystem.get(conf)
 
-    val segments = dfs.reduce((df1, df2) => df1.union(df2))
-                      .select("device_id","feature")
-                      .withColumnRenamed("feature","segment")
-                      .distinct()
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_triplets/segments"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/country=BR".format(day)) 
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
+      
+    val segments = spark.read
+      .option("basePath", path)
+      .parquet(hdfs_files: _*)
+      .select("device_id", "feature")
+      .distinct
 
     pii_table.join(segments,Seq("device_id"),"inner")
                 .write
