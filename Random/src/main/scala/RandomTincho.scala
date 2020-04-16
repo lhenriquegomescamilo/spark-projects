@@ -3576,7 +3576,7 @@ object RandomTincho {
 
     // Get device_id, segment from segments triplets using 30 days
     val since = 0
-    val ndays = 20
+    val ndays = 5
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
@@ -3595,21 +3595,12 @@ object RandomTincho {
       .option("basePath", path)
       .parquet(hdfs_files: _*)
       .select("device_id", "feature")
+      .join(broadcast(pii_table),Seq("device_id"),"inner")
       .filter(col("feature").isin(taxo: _*))
-      .distinct
       .write
       .format("parquet")
       .mode(SaveMode.Overwrite)
-      .save("/datascience/custom/tmp_experian")
-
-    val segments = spark.read.load("/datascience/custom/tmp_experian")
-    segments.persist()
-
-    segments.join(broadcast(pii_table),Seq("device_id"),"inner")
-                .write
-                .format("parquet")
-                .mode(SaveMode.Overwrite)
-                .save("/datascience/custom/enrichment_experian")
+      .save("/datascience/custom/enrichment_experian")
   }
 
   def main(args: Array[String]) {
