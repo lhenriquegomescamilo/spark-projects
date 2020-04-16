@@ -3568,7 +3568,7 @@ object RandomTincho {
 
     // Get device_id, segment from segments triplets using 30 days
     val since = 0
-    val ndays = 30
+    val ndays = 20
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since)
 
