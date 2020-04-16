@@ -3583,14 +3583,19 @@ object RandomTincho {
       .map(day => path + "/day=%s/country=BR".format(day)) 
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
 
-    val segments = spark.read
+    spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
       .select("device_id", "feature")
       .distinct
+      .write
+      .format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/custom/tmp_experian")
 
+    val segments = spark.read.load("/datascience/custom/tmp_experian")
     segments.persist()
-
+    
     segments.join(broadcast(pii_table),Seq("device_id"),"inner")
                 .write
                 .format("parquet")
