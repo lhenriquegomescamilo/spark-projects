@@ -5311,7 +5311,7 @@ object Random {
       )
       .orderBy(desc("estid_unique"))
       .collect()
-      .foreach(row => prinln("%s,%s".format(row(0), row(1))))
+      .foreach(row => println("%s,%s".format(row(0), row(1))))
   }
 
   /*****************************************************/
