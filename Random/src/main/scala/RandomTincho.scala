@@ -3576,7 +3576,7 @@ object RandomTincho {
 
     // Get device_id, segment from segments triplets using 30 days
     val since = 0
-    val ndays = 20
+    val ndays = 7
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
