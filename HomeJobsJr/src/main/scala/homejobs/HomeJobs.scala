@@ -14,6 +14,16 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.{Days, DateTime}
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.apache.spark.sql.types.IntegerType
+import org.apache.spark.sql.functions._
+import org.joda.time.{Days, DateTime}
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime,count, avg}
+import org.apache.spark.sql.SaveMode
+import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.functions.input_file_name
+import org.apache.spark.sql.functions.{stddev_samp, stddev_pop}
 
 
 case class Record(ad_id: String, id_type: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
@@ -158,7 +168,7 @@ object HomeJobs {
    case class Record(ad_id: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
   
     val dataset_users = df_count.as[Record].groupByKey(_.ad_id).reduceGroups((x, y) => if (x.freq > y.freq) x else y)
-    
+
     val final_users = dataset_users.map(
                             row =>  (row._2.ad_id,
                                     row._2.id_type,
