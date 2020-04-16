@@ -3563,7 +3563,7 @@ object RandomTincho {
                           .withColumn("email", lower(col("email")))
                           .select("email","device_id")
                           .distinct
-                          .limit(100)
+                          .limit(1000)
 
 
     // Get device_id, segment from segments triplets using 30 days
