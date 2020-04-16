@@ -419,6 +419,7 @@ df_count
 
                 }
 
+/*
 def get_homes_from_geo_hash( spark: SparkSession) {
 val df_users = spark.read.format("csv").option("delimiter","\t")
 .load("/datascience/geo/geospark_debugging/sample_w_rdd_30_points_first_RDD_part*")
@@ -461,7 +462,7 @@ df_count
 .save("/datascience/geo/geospark_debugging/homes_from_polygons_AR_180")
 
                 }
-
+*/
 
 
 

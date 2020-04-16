@@ -13,15 +13,9 @@ import org.apache.spark.sql.expressions.Window
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.joda.time.{Days, DateTime}
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
-import org.apache.spark.sql.types.IntegerType
 import org.apache.spark.sql.functions._
-import org.joda.time.{Days, DateTime}
-import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.functions.{round, broadcast, col, abs, to_date, to_timestamp, hour, date_format, from_unixtime,count, avg}
-import org.apache.spark.sql.SaveMode
-import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
-import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.input_file_name
 import org.apache.spark.sql.functions.{stddev_samp, stddev_pop}
 
