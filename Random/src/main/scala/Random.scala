@@ -5278,8 +5278,9 @@ object Random {
     println(
       spark.read
         .format("parquet")
+        .option("basePath", "/data/providers/sharethis/processed")
         .load(
-          "/data/providers/sharethis/processed/"
+          "/data/providers/sharethis/processed/day=202003*"
         )
         .filter(col("de_geo_pulseplus_postal_code").isin(zipcodes: _*))
         .select("estid")
