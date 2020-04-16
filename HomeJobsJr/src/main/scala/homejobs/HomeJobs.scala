@@ -151,11 +151,11 @@ object HomeJobs {
 
 
     val w = Window.partitionBy(col("ad_id")).orderBy(col("freq").desc)
-    val final_users = dataset_users.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn")
+    val final_users = df_count.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn")
     
     /*
 
-      case class Record(ad_id: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
+   case class Record(ad_id: String, freq: BigInt, geocode: BigInt ,avg_latitude: Double, avg_longitude:Double)
   
     val dataset_users = df_count.as[Record].groupByKey(_.ad_id).reduceGroups((x, y) => if (x.freq > y.freq) x else y)
     
