@@ -5298,18 +5298,20 @@ object Random {
       33128, 33127, 33130, 33129, 33132, 33131, 33134, 33133, 33136, 33135,
       33138, 33137, 33140, 33139, 33142, 33141, 33144, 33143)
 
-    println(
-      spark.read
-        .format("parquet")
-        .option("basePath", "/data/providers/sharethis/processed")
-        .load(
-          "/data/providers/sharethis/processed/day=202003*"
-        )
-        .filter(col("de_geo_pulseplus_postal_code").isin(zipcodes: _*))
-        .select("estid")
-        .distinct()
-        .count()
-    )
+    spark.read
+      .format("parquet")
+      .option("basePath", "/data/providers/sharethis/processed")
+      .load(
+        "/data/providers/sharethis/processed/day=202003*"
+      )
+      .filter(col("de_geo_pulseplus_postal_code").isin(zipcodes: _*))
+      .groupBy("de_geo_pulseplus_postal_code")
+      .agg(
+        approxCountDistinct("de_geo_pulseplus_postal_code", 0.02) as "estid_unique"
+      )
+      .orderBy(desc("estid_unique"))
+      .collect()
+      .foreach(row => prinln("%s,%s".format(row(0), row(1))))
   }
 
   /*****************************************************/
@@ -5324,6 +5326,6 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_piis_cl(spark)
+    get_devices_per_zip_code(spark)
   }
 }
