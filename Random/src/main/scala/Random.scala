@@ -5307,7 +5307,7 @@ object Random {
       .filter(col("de_geo_pulseplus_postal_code").isin(zipcodes: _*))
       .groupBy("de_geo_pulseplus_postal_code")
       .agg(
-        approxCountDistinct("de_geo_pulseplus_postal_code", 0.02) as "estid_unique"
+        approxCountDistinct("estid", 0.02) as "estid_unique"
       )
       .orderBy(desc("estid_unique"))
       .collect()
