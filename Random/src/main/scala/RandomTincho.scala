@@ -3557,7 +3557,7 @@ object RandomTincho {
 
     val pii_table =  spark.read
                           .load("/datascience/pii_matching/pii_tuples/")
-                          .filter("country = 'BR'")
+                          .filter("country = 'BR' and ml_sh2 is not null")
                           .select("ml_sh2","device_id")
                           .withColumnRenamed("ml_sh2", "email")
                           .withColumn("email", lower(col("email")))
@@ -3587,14 +3587,16 @@ object RandomTincho {
             .select("device_id", "feature")
       )
 
-    val segments = dfs.reduce((df1, df2) => df1.union(df2)).withColumnRenamed("feature","segment")
+    val segments = dfs.reduce((df1, df2) => df1.union(df2))
+                      .select("device_id","feature")
+                      .withColumnRenamed("feature","segment")
+                      .distinct()
 
     pii_table.join(segments,Seq("device_id"),"inner")
                 .write
                 .format("parquet")
                 .mode(SaveMode.Overwrite)
                 .save("/datascience/custom/enrichment_experian")
-
   }
 
   def main(args: Array[String]) {
