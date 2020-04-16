@@ -3587,7 +3587,7 @@ object RandomTincho {
             .select("device_id", "feature")
       )
 
-    val segments = dfs.reduce((df1, df2) => df1.union(df2)).withColumnRenamed("feature","segment")
+    val segments = dfs.reduce((df1, df2) => df1.union(df2)).withColumnRenamed("feature","segment").distinct()
 
     pii_table.join(segments,Seq("device_id"),"inner")
                 .write
