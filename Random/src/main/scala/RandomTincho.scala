@@ -3588,10 +3588,10 @@ object RandomTincho {
       .parquet(hdfs_files: _*)
       .select("device_id", "feature")
       .distinct
-      
+
     segments.persist()
 
-    pii_table.join(segments,Seq("device_id"),"inner")
+    segments.join(broadcast(pii_table),Seq("device_id"),"inner")
                 .write
                 .format("parquet")
                 .mode(SaveMode.Overwrite)
