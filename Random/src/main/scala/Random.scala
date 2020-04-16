@@ -5070,6 +5070,8 @@ object Random {
       .agg(
         first("lat"),
         first("lon"),
+        first("lat_work"),
+        first("long_work"),
         collect_set("ml_sh2") as "mails",
         collect_set("nid_sh2") as "nids",
         collect_set("mb_sh2") as "mobiles"
