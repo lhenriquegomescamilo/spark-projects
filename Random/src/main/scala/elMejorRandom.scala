@@ -377,7 +377,53 @@ category_locations.write.format("csv")
 */
 
 def get_homes_from_radius( spark: SparkSession) {
-val df_users = spark.read.format("csv").option("delimiter","\t").load("/datascience/geo/geospark_debugging/sample_w_rdd_30_points_first_RDD_part*").dropDuplicates().toDF("device_id","utc_timestamp","radio")
+val df_users = spark.read.format("csv").option("delimiter","\t")
+.load("/datascience/geo/geospark_debugging/sample_w_rdd_30_points_first_RDD_part*")
+.dropDuplicates()
+.toDF("device_id","utc_timestamp","radio")
+
+  val value_dictionary: Map[String, String] = Map(
+      "country" -> "argentina",
+      "HourFrom" -> "19",
+      "HourTo" -> "7",
+      "UseType" -> "home",
+      "minFreq" -> "0")
+
+
+//dictionary for timezones
+val timezone = Map("argentina" -> "GMT-3", "mexico" -> "GMT-5")
+    
+//setting timezone depending on country
+spark.conf.set("spark.sql.session.timeZone", timezone(value_dictionary("country")))
+
+val geo_hour = df_users     .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+                                            .withColumn("Hour", date_format(col("Time"), "HH"))
+                                                .filter(
+                                                    if (value_dictionary("UseType")=="home") { 
+                                                                col("Hour") >= value_dictionary("HourFrom") || col("Hour") <= value_dictionary("HourTo") 
+                                                                            } 
+                                                    else {
+                                                          (col("Hour") <= value_dictionary("HourFrom") && col("Hour") >= value_dictionary("HourTo")) && 
+                                                                !date_format(col("Time"), "EEEE").isin(List("Saturday", "Sunday"):_*) })
+
+
+val df_count  = geo_hour.groupBy(col("device_id"),col("radio"))
+                        .agg(count(col("utc_timestamp")).as("freq"))
+
+df_count
+.write.format("csv")
+.option("header",true)
+.option("delimiter","\t")
+.mode(SaveMode.Overwrite)
+.save("/datascience/geo/geospark_debugging/homes_from_polygons_AR_180")
+
+                }
+
+def get_homes_from_geo_hash( spark: SparkSession) {
+val df_users = spark.read.format("csv").option("delimiter","\t")
+.load("/datascience/geo/geospark_debugging/sample_w_rdd_30_points_first_RDD_part*")
+.dropDuplicates()
+.toDF("device_id","utc_timestamp","radio")
 
   val value_dictionary: Map[String, String] = Map(
       "country" -> "argentina",
@@ -1301,22 +1347,59 @@ space_lapse_agg
 */
 
 
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
 
-    Logger.getRootLogger.setLevel(Level.WARN)
+def get_homes_from_geo_hash( spark: SparkSession,
+      nDays: String,
+      since: String,
+      country: String) {
 
-/*
-1- Total de Devices que tenemos en AR con data GEO.
-2- Total que tenemos de Devices en AR con data para poder hacer estudios de movimiento (si podemos dar total de puntos diarios, excelente).
-3- Si tenemos timestamp, y cuando devices por día tenemos con este dato y cuando por día!
-4- por ultimo cuantos del total de estos usuarios son de Caba y Provincia! del total
-*/
 
+val today = (java.time.LocalDate.now).toString
+val output_file = "/datascience/geo/Reports/HomesGeoHash/"
+
+val getGeoHash = udf(
+      (latitude: Double, longitude: Double) =>
+        com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
+    )
+
+val geo_data = get_safegraph_data(spark,nDays,since,country)
+  .withColumn("geo_hash", getGeoHash(col("latitude"), col("longitude")))
+  .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
+  .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+  .withColumn("Day", date_format(col("Time"), "YYMMdd"))
+ 
+
+ //Cuántos días distintos estuvo en ese geo_hash y la lat long promedio
+val where_was = geo_data.groupBy("device_id","geo_hash_7") //"geo_hash"
+  .agg(approxCountDistinct("Day", 0.02) as "Days",
+    round(avg(col("latitude")),6).as("latitude"),
+    round(avg(col("longitude")),6).as("longitude"))
+
+//Lo Guardo      
+where_was
+.write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .save(output_file+"/%s/exploded_users_geohashes".format(today))
+
+//Lo relevanto
+val reload = spark.read.format("parquet").load(output_file+"/%s/exploded_users_geohashes".format(today))
+
+//Me quedo con el top
+val w = Window.partitionBy(col("device_id")).orderBy(col("Days").desc)
+val final_homes = reload.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn")
+
+final_homes
+.write.format("csv")
+      .option("header", true)
+      .mode(SaveMode.Overwrite)
+      .save(output_file+"/%s/homes_by_geohashes".format(today))
+  
+
+
+                }
+
+                /*
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
@@ -1357,7 +1440,31 @@ all
     .option("header",true)
     .save(output_file+"/%s/%s_%sD_daily".format(today,country2,nDays))
 
+                */
 
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+/*
+1- Total de Devices que tenemos en AR con data GEO.
+2- Total que tenemos de Devices en AR con data para poder hacer estudios de movimiento (si podemos dar total de puntos diarios, excelente).
+3- Si tenemos timestamp, y cuando devices por día tenemos con este dato y cuando por día!
+4- por ultimo cuantos del total de estos usuarios son de Caba y Provincia! del total
+*/
+
+
+get_homes_from_geo_hash(spark,
+      "5",
+      "1",
+      "argentina") 
   
 }
 
