@@ -3554,14 +3554,14 @@ object RandomTincho {
           .save("/datascience/custom/users_segments_zip4")
   }
   def enrichment_experian(spark:SparkSession){
-      val taxo = spark.read
-              .format("csv")
-              .option("header", "true")
-              .load("/datascience/misc/taxo_gral.csv")
-              .select("seg_id")
-              .collect()
-              .map(_(0).toString.toInt)
-              .toSeq
+      val taxo =  List(26,   32,   36,   59,   61,   82,   85,   92,  104,  118,  129,
+                          131,  141,  144,  145,  147,  149,  150,  152,  154,  155,  158,
+                          160,  165,  166,  177,  178,  210,  213,  218,  224,  225,  226,
+                          230,  245,  247,  250,  264,  265,  270,  275,  276,  302,  305,
+                          311,  313,  314,  315,  316,  317,  318,  322,  323,  325,  326,
+                          2635, 2636, 2660, 2719, 2743, 3010, 3011, 3012, 3013, 3014, 3015,
+                          3016, 3017, 3018, 3019, 3020, 3021, 3022, 3055, 3076, 3077, 3086,
+                          3087, 3913, 4097)     
 
     val pii_table =  spark.read
                           .load("/datascience/pii_matching/pii_tuples/")
