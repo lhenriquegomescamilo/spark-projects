@@ -5050,12 +5050,12 @@ object Random {
       .load("/datascience/geo/CL_180d_job_15-4-2020-21h")
       .withColumnRenamed("avg_latitude", "lat_work")
       .withColumnRenamed("avg_longitude", "long_work")
-      .withColumnRenamed("ad_id", "maid")
-      .select("maid", "lat_work", "long_work")
+      .withColumnRenamed("ad_id", "madid")
+      .select("madid", "lat_work", "long_work")
 
     xd.join(pii, Seq("device_id"), "inner")
       .select("madid", "lat", "lon", "ml_sh2", "nid_sh2", "mb_sh2")
-      .join(work, Seq("maid"), "left")
+      .join(work, Seq("madid"), "left")
       .select(
         "madid",
         "lat",
