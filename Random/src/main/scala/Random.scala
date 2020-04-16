@@ -5043,15 +5043,36 @@ object Random {
       .filter("country = 'CL'")
       .withColumn("device_id", lower(col("device_id")))
 
+    val work = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load("/datascience/geo/CL_180d_job_15-4-2020-21h")
+      .withColumnRenamed("avg_latitude", "lat_work")
+      .withColumnRenamed("avg_longitude", "long_work")
+      .withColumnRenamed("ad_id", "maid")
+      .select("maid", "lat_work", "long_work")
+
     xd.join(pii, Seq("device_id"), "inner")
       .select("madid", "lat", "lon", "ml_sh2", "nid_sh2", "mb_sh2")
+      .join(work, Seq("maid"), "left")
+      .select(
+        "madid",
+        "lat",
+        "lon",
+        "lat_work",
+        "long_work",
+        "ml_sh2",
+        "nid_sh2",
+        "mb_sh2"
+      )
       .groupBy("madid")
       .agg(
         first("lat"),
         first("lon"),
-        collect_list("ml_sh2") as "mails",
-        collect_list("nid_sh2") as "nids",
-        collect_list("mb_sh2") as "mobiles"
+        collect_set("ml_sh2") as "mails",
+        collect_set("nid_sh2") as "nids",
+        collect_set("mb_sh2") as "mobiles"
       )
       .withColumn("nids", concat_ws(";", col("nids")))
       .withColumn("mobiles", concat_ws(";", col("mobiles")))
@@ -5301,6 +5322,6 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_devices_per_zip_code(spark)
+    get_piis_cl(spark)
   }
 }
