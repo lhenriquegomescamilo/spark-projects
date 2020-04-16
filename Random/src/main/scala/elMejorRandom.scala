@@ -1381,7 +1381,7 @@ where_was
 .write
     .mode(SaveMode.Overwrite)
     .format("parquet")
-    .save(output_file+"/%s/exploded_users_geohashes".format(today))
+    .save(output_file+"/%s/exploded_users_geohashes_%sD_%s".format(today,nDays,country))
 
 //Lo relevanto
 val reload = spark.read.format("parquet").load(output_file+"/%s/exploded_users_geohashes".format(today))
@@ -1391,13 +1391,6 @@ val w = Window.partitionBy(col("device_id")).orderBy(col("Days").desc)
 val final_homes = reload.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn")
 
 final_homes
-.write.format("csv")
-      .option("header", true)
-      .mode(SaveMode.Overwrite)
-      .save(output_file+"/%s/homes_by_geohashes".format(today))
-  
-
-
                 }
 
                 /*
@@ -1461,11 +1454,29 @@ all
 4- por ultimo cuantos del total de estos usuarios son de Caba y Provincia! del total
 */
 
-
-get_homes_from_geo_hash(spark,
-      "5",
+val safegraph = get_homes_from_geo_hash(spark,
+      "30",
       "1",
-      "argentina") 
+      "argentina")
+.withColumn("provider","SafeGraph")
+
+
+val startapp =  get_homes_from_geo_hash(spark,
+      "30",
+      "1",
+      "AR") 
+.withColumn("provider","StartApp")
+
+val today = (java.time.LocalDate.now).toString
+val output_file = "/datascience/geo/Reports/HomesGeoHash/"
+
+
+val all = safe.unionAll(sapp)
+.write.format("csv")
+.option("header", true)
+.mode(SaveMode.Overwrite)
+.save(output_file+"/%s/homes_by_geohashes_AR_30D".format(today))
+
   
 }
 
