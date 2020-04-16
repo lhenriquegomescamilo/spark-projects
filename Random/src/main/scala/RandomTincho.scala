@@ -3554,6 +3554,14 @@ object RandomTincho {
           .save("/datascience/custom/users_segments_zip4")
   }
   def enrichment_experian(spark:SparkSession){
+      val taxo = spark.read
+              .format("csv")
+              .option("header", "true")
+              .load("/datascience/misc/taxo_gral.csv")
+              .select("seg_id")
+              .collect()
+              .map(_(0).toString.toInt)
+              .toSeq
 
     val pii_table =  spark.read
                           .load("/datascience/pii_matching/pii_tuples/")
@@ -3587,6 +3595,7 @@ object RandomTincho {
       .option("basePath", path)
       .parquet(hdfs_files: _*)
       .select("device_id", "feature")
+      .filter(col("feature").isin(taxo: _*))
       .distinct
       .write
       .format("parquet")
@@ -3595,7 +3604,7 @@ object RandomTincho {
 
     val segments = spark.read.load("/datascience/custom/tmp_experian")
     segments.persist()
-    
+
     segments.join(broadcast(pii_table),Seq("device_id"),"inner")
                 .write
                 .format("parquet")
