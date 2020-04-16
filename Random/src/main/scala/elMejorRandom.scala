@@ -1458,24 +1458,24 @@ val safegraph = get_homes_from_geo_hash(spark,
       "30",
       "1",
       "argentina")
-.withColumn("provider","SafeGraph")
+.withColumn("provider",lit("SafeGraph"))
 
 
 val startapp =  get_homes_from_geo_hash(spark,
       "30",
       "1",
       "AR") 
-.withColumn("provider","StartApp")
+.withColumn("provider",lit("StartApp"))
 
 val today = (java.time.LocalDate.now).toString
 val output_file = "/datascience/geo/Reports/HomesGeoHash/"
 
 
-val all = safe.unionAll(sapp)
-.write.format("csv")
-.option("header", true)
-.mode(SaveMode.Overwrite)
-.save(output_file+"/%s/homes_by_geohashes_AR_30D".format(today))
+val all = safegraph.unionAll(startapp)
+  .write.format("csv")
+  .option("header", true)
+  .mode(SaveMode.Overwrite)
+  .save(output_file+"/%s/homes_by_geohashes_AR_30D".format(today))
 
   
 }
