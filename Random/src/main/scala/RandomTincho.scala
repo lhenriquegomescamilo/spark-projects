@@ -3556,19 +3556,18 @@ object RandomTincho {
   def enrichment_experian(spark:SparkSession){
 
     val pii_table =  spark.read
-                          .load("/datascience/pii_matching/pii_tuples/")
-                          .filter("country = 'BR'")
+                          .load("/datascience/pii_matching/pii_tuples/*/country=BR")
                           .select("ml_sh2","device_id")
                           .withColumnRenamed("ml_sh2", "email")
                           .withColumn("email", lower(col("email")))
                           .select("email","device_id")
                           .distinct
-                          .limit(100)
+                          .limit(1000)
 
 
     // Get device_id, segment from segments triplets using 30 days
     val since = 0
-    val ndays = 30
+    val ndays = 20
     val format = "yyyyMMdd"
     val start = DateTime.now.minusDays(since)
 
