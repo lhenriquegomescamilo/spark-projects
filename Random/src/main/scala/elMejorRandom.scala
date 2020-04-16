@@ -1381,7 +1381,7 @@ where_was
 .write
     .mode(SaveMode.Overwrite)
     .format("parquet")
-    .save(output_file+"/%s/exploded_users_geohashes".format(today))
+    .save(output_file+"/%s/exploded_users_geohashes_%sD_%s".format(today,nDays,country))
 
 //Lo relevanto
 val reload = spark.read.format("parquet").load(output_file+"/%s/exploded_users_geohashes_%sD_%s".format(today,nDays,country))
