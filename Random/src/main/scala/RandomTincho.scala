@@ -3568,7 +3568,7 @@ object RandomTincho {
 
     // Get device_id, segment from segments triplets using 30 days
     val since = 0
-    val ndays = 30
+    val ndays = 20
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
 
@@ -3582,12 +3582,13 @@ object RandomTincho {
     val hdfs_files = days
       .map(day => path + "/day=%s/country=BR".format(day)) 
       .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
-      
+
     val segments = spark.read
       .option("basePath", path)
       .parquet(hdfs_files: _*)
       .select("device_id", "feature")
       .distinct
+    segments.persist()
 
     pii_table.join(segments,Seq("device_id"),"inner")
                 .write
