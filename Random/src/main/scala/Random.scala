@@ -5043,15 +5043,36 @@ object Random {
       .filter("country = 'CL'")
       .withColumn("device_id", lower(col("device_id")))
 
+    val work = spark.read
+      .format("csv")
+      .option("sep", "\t")
+      .option("header", "true")
+      .load("/datascience/geo/CL_180d_job_15-4-2020-21h")
+      .withColumnRenamed("avg_latitude", "lat_work")
+      .withColumnRenamed("avg_longitude", "long_work")
+      .withColumnRenamed("ad_id", "maid")
+      .select("maid", "lat_work", "long_work")
+
     xd.join(pii, Seq("device_id"), "inner")
       .select("madid", "lat", "lon", "ml_sh2", "nid_sh2", "mb_sh2")
+      .join(work, Seq("maid"), "left")
+      .select(
+        "madid",
+        "lat",
+        "lon",
+        "lat_work",
+        "long_work",
+        "ml_sh2",
+        "nid_sh2",
+        "mb_sh2"
+      )
       .groupBy("madid")
       .agg(
         first("lat"),
         first("lon"),
-        collect_list("ml_sh2") as "mails",
-        collect_list("nid_sh2") as "nids",
-        collect_list("mb_sh2") as "mobiles"
+        collect_set("ml_sh2") as "mails",
+        collect_set("nid_sh2") as "nids",
+        collect_set("mb_sh2") as "mobiles"
       )
       .withColumn("nids", concat_ws(";", col("nids")))
       .withColumn("mobiles", concat_ws(";", col("mobiles")))
@@ -5167,10 +5188,10 @@ object Random {
       .load("/datascience/custom/risky_in_quarantine_expanded")
       .withColumn("device_id", lower(col("device_id")))
       .select("device_id", "audience")
-      // .join(risky_devices, Seq("device_id"))
-      // .groupBy("audience", "BARRIO")
-      // .agg(approxCountDistinct(col("device_id"), 0.02) as "device_unique")
-      // .orderBy("BARRIO", "device_unique")
+    // .join(risky_devices, Seq("device_id"))
+    // .groupBy("audience", "BARRIO")
+    // .agg(approxCountDistinct(col("device_id"), 0.02) as "device_unique")
+    // .orderBy("BARRIO", "device_unique")
     val since = 0
 
     // Primero obtenemos la data raw que sera de utilidad para los calculos siguientes
@@ -5263,6 +5284,32 @@ object Random {
       .save("/datascience/custom/risky_population_before_after")
   }
 
+  def get_devices_per_zip_code(spark: SparkSession) = {
+    val zipcodes = List(33146, 33145, 33147, 33150, 33149, 33154, 33153, 33156,
+      33155, 33158, 33157, 33160, 33162, 33161, 33166, 33165, 33168, 33167,
+      33170, 33169, 33173, 33172, 33175, 33174, 33177, 33176, 33179, 33178,
+      33181, 33180, 33183, 33182, 33185, 33184, 33187, 33186, 33189, 33188,
+      33190, 33194, 33193, 33196, 33199, 33242, 33239, 33106, 33191, 33206,
+      33010, 33013, 33012, 33015, 33014, 33016, 33018, 33027, 33031, 33030,
+      33033, 33032, 33035, 33034, 33039, 33055, 33054, 33056, 33195, 33090,
+      33092, 33101, 33109, 33112, 33116, 33114, 33119, 33122, 33126, 33125,
+      33128, 33127, 33130, 33129, 33132, 33131, 33134, 33133, 33136, 33135,
+      33138, 33137, 33140, 33139, 33142, 33141, 33144, 33143)
+
+    println(
+      spark.read
+        .format("parquet")
+        .option("basePath", "/data/providers/sharethis/processed")
+        .load(
+          "/data/providers/sharethis/processed/day=202003*"
+        )
+        .filter(col("de_geo_pulseplus_postal_code").isin(zipcodes: _*))
+        .select("estid")
+        .distinct()
+        .count()
+    )
+  }
+
   /*****************************************************/
   /******************     MAIN     *********************/
   /*****************************************************/
@@ -5275,6 +5322,6 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_maids_risky_ar(spark)
+    get_piis_cl(spark)
   }
 }
