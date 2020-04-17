@@ -1457,7 +1457,7 @@ val output_file = "/datascience/geo/Reports/InStorePlus/"
 val country1 = "argentina"
 val country2 = "AR"
 val nDays = "14"
-val since = "3"
+val since = "60"
 
 
 val getGeoHash = udf(
@@ -1477,7 +1477,7 @@ val all = safe.unionAll(sapp)
 
 all.persist()
 
-all.groupBy("device_id","device_type").agg(
+all.groupBy("device_id","device_type","provider").agg(
   count("utc_timestamp") as "detections",
   approx_count_distinct(col("geo_hash"), rsd = 0.03) as "geo_hash",
     approx_count_distinct(col("geo_hash_7"), rsd = 0.03) as "geo_hash_7")
@@ -1485,7 +1485,7 @@ all.groupBy("device_id","device_type").agg(
     .mode(SaveMode.Overwrite)
     .format("parquet")
     .option("header",true)
-    .save(output_file+"/%s/%s_%sD_period".format(today,country2,nDays))
+    .save(output_file+"/%s/%s/%sDsince%sD_period".format(today,country2,nDays,since))
 
 all
 .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
@@ -1498,7 +1498,7 @@ all
     .mode(SaveMode.Overwrite)
     .format("parquet")
     .option("header",true)
-    .save(output_file+"/%s/%s_%sD_daily".format(today,country2,nDays))
+    .save(output_file+"/%s/%s/%sDsince%sD_daily".format(today,country2,nDays,since))
 
 
 
