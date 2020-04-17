@@ -1457,7 +1457,7 @@ val output_file = "/datascience/geo/Reports/InStorePlus/"
 val country1 = "argentina"
 val country2 = "AR"
 val nDays = "14"
-val since = "60"
+val since = "30"
 
 
 val getGeoHash = udf(
