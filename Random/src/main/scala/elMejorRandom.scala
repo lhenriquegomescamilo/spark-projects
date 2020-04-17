@@ -1454,11 +1454,9 @@ spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 val today = (java.time.LocalDate.now).toString
 val output_file = "/datascience/geo/Reports/InStorePlus/"
 
-val country1 = "argentina"
-val country2 = "AR"
+val country1 = "CL"
 val nDays = "180"
 val since = "1"
-
 
 val getGeoHash = udf(
       (latitude: Double, longitude: Double) =>
@@ -1466,21 +1464,18 @@ val getGeoHash = udf(
     )
 
 
-val safe = get_safegraph_data(spark,nDays,since,country1)
-
-val sapp = get_safegraph_data(spark,nDays,since,country2)
-
-val all = safe.unionAll(sapp)
-  
+val sapp = get_safegraph_data(spark,nDays,since,country1)
 
 
 
-all.select("device_id").distinct()
+
+
+sapp.select("device_id").distinct()
     .write
     .mode(SaveMode.Overwrite)
     .format("parquet")
     .option("header",true)
-    .save("/datascience/geo/NSEHomes/AR_180D_all_devices_w_geo_17_04_20")
+    .save("/datascience/geo/NSEHomes/CL_180D_all_devices_w_geo_17_04_20")
 
 
 
