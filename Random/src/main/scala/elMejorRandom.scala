@@ -1456,8 +1456,8 @@ val output_file = "/datascience/geo/Reports/InStorePlus/"
 
 val country1 = "argentina"
 val country2 = "AR"
-val nDays = "14"
-val since = "30"
+val nDays = "180"
+val since = "1"
 
 
 val getGeoHash = udf(
@@ -1466,39 +1466,21 @@ val getGeoHash = udf(
     )
 
 
-val safe = get_safegraph_data(spark,nDays,since,country1).withColumn("provider",lit("SafeGraph"))
+val safe = get_safegraph_data(spark,nDays,since,country1)
 
-val sapp = get_safegraph_data(spark,nDays,since,country2).withColumn("provider",lit("StartApp"))
+val sapp = get_safegraph_data(spark,nDays,since,country2)
 
 val all = safe.unionAll(sapp)
-  .withColumn("geo_hash", getGeoHash(col("latitude"), col("longitude")))
-  .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
   
 
-all.persist()
 
-all.groupBy("device_id","device_type","provider").agg(
-  count("utc_timestamp") as "detections",
-  approx_count_distinct(col("geo_hash"), rsd = 0.03) as "geo_hash",
-    approx_count_distinct(col("geo_hash_7"), rsd = 0.03) as "geo_hash_7")
- .write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .option("header",true)
-    .save(output_file+"/%s/%s/%sDsince%sD_period".format(today,country2,nDays,since))
 
-all
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
-.groupBy("device_id","device_type","Day").agg(
-  count("utc_timestamp") as "detections",
-  approx_count_distinct(col("geo_hash"), rsd = 0.03) as "geo_hash",
-    approx_count_distinct(col("geo_hash_7"), rsd = 0.03) as "geo_hash_7")
+all.select("device_id").distinct()
     .write
     .mode(SaveMode.Overwrite)
     .format("parquet")
     .option("header",true)
-    .save(output_file+"/%s/%s/%sDsince%sD_daily".format(today,country2,nDays,since))
+    .save("/datascience/geo/NSEHomes/AR_180D_all_devices_w_geo_17_04_20")
 
 
 
