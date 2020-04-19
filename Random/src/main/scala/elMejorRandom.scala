@@ -1401,65 +1401,8 @@ final_homes
                 }
 
                 /*
-spark.conf.set("spark.sql.session.timeZone", "GMT-3")
-
-val today = (java.time.LocalDate.now).toString
-val output_file = "/datascience/geo/Reports/InStorePlus/"
-
-val country1 = "argentina"
-val country2 = "AR"
-val nDays = "14"
-val since = "3"
-
-val safe = get_safegraph_data(spark,nDays,since,country1).withColumn("provider",lit("SafeGraph"))
-val sapp = get_safegraph_data(spark,nDays,since,country2).withColumn("provider",lit("StartApp"))
-
-val all = safe.unionAll(sapp).withColumn("geo_hash_7",substring(col("geo_hash"), 0, 7))
-
-all.persist()
-
-all.groupBy("device_id","device_type").agg(
-  count("utc_timestamp") as "detections",
-  approx_count_distinct(col("geo_hash"), rsd = 0.03) as "geo_hash",
-    approx_count_distinct(col("geo_hash_7"), rsd = 0.03) as "geo_hash_7")
- .write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .option("header",true)
-    .save(output_file+"/%s/%s_%sD_period".format(today,country2,nDays))
-
-all
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
-.groupBy("device_id","device_type","Day").agg(
-  count("utc_timestamp") as "detections",
-  approx_count_distinct(col("geo_hash"), rsd = 0.03) as "geo_hash",
-    approx_count_distinct(col("geo_hash_7"), rsd = 0.03) as "geo_hash_7")
-.write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .option("header",true)
-    .save(output_file+"/%s/%s_%sD_daily".format(today,country2,nDays))
-
-                */
 
 
-
- /*****************************************************/
-  /******************     MAIN     *********************/
-  /*****************************************************/
-  def main(args: Array[String]) {
-    val spark =
-      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
-
-    Logger.getRootLogger.setLevel(Level.WARN)
-
-/*
-1- Total de Devices que tenemos en AR con data GEO.
-2- Total que tenemos de Devices en AR con data para poder hacer estudios de movimiento (si podemos dar total de puntos diarios, excelente).
-3- Si tenemos timestamp, y cuando devices por día tenemos con este dato y cuando por día!
-4- por ultimo cuantos del total de estos usuarios son de Caba y Provincia! del total
-*/
 
 
 val safegraph = get_homes_from_geo_hash(spark,
@@ -1490,6 +1433,28 @@ all.write
     .option("header",true)
     .save("/datascience/geo/Reports/HomesGeoHash/2020-04-16/homes_by_geohashes_30D_ARGENTINA_TOTAL/")
 
+
+
+
+                */
+
+
+
+ /*****************************************************/
+  /******************     MAIN     *********************/
+  /*****************************************************/
+  def main(args: Array[String]) {
+    val spark =
+      SparkSession.builder.appName("Spark devicer").config("spark.sql.files.ignoreCorruptFiles", "true").getOrCreate()
+
+    Logger.getRootLogger.setLevel(Level.WARN)
+
+spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+
+val today = (java.time.LocalDate.now).toString
+val output_file = "/datascience/geo/Reports/InStorePlus/"
+
+get_homes_from_geo_hash(spark,"30","1","CL")
 
 
 }
