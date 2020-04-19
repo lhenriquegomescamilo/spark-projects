@@ -5326,6 +5326,17 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_piis_cl(spark)
+    val data = spark.read
+      .format("json")
+      .load(
+        "/datascience/data_publicis/memb/full/dt=20200320/"
+      )
+    data
+      .withColumn("segids", explode(col("segids")))
+      .withColumn("segment", col("segids").getItem("segid"))
+      .filter("segment IN (2, 3)")
+      .groupBy("segment")
+      .count()
+      .show()
   }
 }
