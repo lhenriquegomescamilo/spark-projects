@@ -120,7 +120,13 @@ object OrganicSegments {
               when(
                 col("feature") === 2 && col("id_partner") === 1139,
                 when(rand() > 0.3, 1).otherwise(0)
-              ).otherwise(0)
+              ).otherwise(
+                  when(
+                    col("feature") === 4 && col("id_partner") === 1139,
+                    when(rand() > 0.4, 1).otherwise(0)
+                  )
+                .otherwise(0)
+                )
             )
             .filter("to_delete = 0")
             .withColumn("day", lit(x))
