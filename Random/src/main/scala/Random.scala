@@ -5334,7 +5334,7 @@ object Random {
     data
       .withColumn("segids", explode(col("segids")))
       .withColumn("segment", col("segids").getItem("segid"))
-      .filter("segment IN (2, 3)")
+      .filter("segment IN (2, 3, 4, 5, 6, 7, 8, 9)")
       .groupBy("segment")
       .count()
       .show()
