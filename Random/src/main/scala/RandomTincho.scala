@@ -3652,7 +3652,7 @@ object RandomTincho {
       .option("header", "false")
       .option("delimiter", "\t")
       .schema(customSchema)
-      .load("/dat")
+      .load(hdfs_files: _*)
       .withColumn("geo_hash", lit("startapp"))
       .withColumn("utc_timestamp", unix_timestamp(col("date")))
       .withColumn(
