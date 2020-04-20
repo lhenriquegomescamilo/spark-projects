@@ -205,6 +205,32 @@ object UrlIngester {
       )
   }
 
+  def get_processed_urls(spark:SparkSession,since:Int,ndays:Int): DataFrame = {
+    // Get device_id, segment from segments triplets using 30 days
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/scraper/selected_keywords/"
+
+    // Now we obtain the list of hdfs folders to be read
+    val hdfs_files = days
+      .map(day => path + "/day=%s/".format(day)) 
+      .filter(file_path => fs.exists(new org.apache.hadoop.fs.Path(file_path)))
+
+    val df = spark.read
+                  .format("csv")
+                  .option("basePath", path)
+                  .parquet(hdfs_files: _*)
+                  .withColumnRenamed("_c0", "url")
+                  .select("url")
+                  .distinct
+    df
+  }
+
   /**
     *
     *         \\\\\\\\\\\\\\\\\\\\\     METHODS FOR SAVING DATA     //////////////////////
@@ -261,17 +287,14 @@ object UrlIngester {
     /**  Load data */
     val db = getDataUrls(spark = spark, nDays = nDays, since = since)
 
-    val temppath = "/datascience/url_ingester/db_tmp"
-
     /** Preprocess URLS and checkpoint */
     val df = processURLHTTP(db)
 
-    // df.write
-    //   .format("parquet")
-    //   .mode(SaveMode.Overwrite)
-    //   .save(temppath)
+    /** Filter Urls processed within 7 days */
+    val processed_urls = get_processed_urls(spark,0,7)
+    val df_filtered = df.join(processed_urls,Seq("url"),"inner")
 
-    df.cache()
+    df_filtered.cache()
 
     /** Process and store the Data for each country */
     val countries = "AR,BO,BR,CL,CO,EC,MX,PE,US,UY,VE".split(",").toList
@@ -281,7 +304,7 @@ object UrlIngester {
     val replicationFactor = 8
 
     for (country <- countries) {
-      df.filter("country = '%s'".format(country))
+      df_filtered.filter("country = '%s'".format(country))
         .withColumn(
           "composite_key",
           concat(
@@ -342,7 +365,7 @@ object UrlIngester {
     val since = if (options.contains('since)) options('since) else 1
     val urls_limit =
       if (options.contains('urls_limit)) options('urls_limit)
-      else 1000000 //500000
+      else 1000000 
     // Setting logger config
     Logger.getRootLogger.setLevel(Level.WARN)
 
