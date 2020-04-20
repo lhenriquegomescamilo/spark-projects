@@ -214,7 +214,7 @@ object UrlIngester {
     val format = "yyyyMMdd"
     val end = DateTime.now.minusDays(since)
     val days = (0 until ndays).map(end.minusDays(_)).map(_.toString(format))
-    val path = "/datascience/scraper/selected_keywords/"
+    val path = "/datascience/scraper/selected_keywords"
 
     // Now we obtain the list of hdfs folders to be read
     val hdfs_files = days
@@ -224,7 +224,7 @@ object UrlIngester {
     val df = spark.read
                   .format("csv")
                   .option("basePath", path)
-                  .parquet(hdfs_files: _*)
+                  .load(hdfs_files: _*)
                   .withColumnRenamed("_c0", "url")
                   .select("url")
                   .distinct
@@ -382,6 +382,5 @@ object UrlIngester {
       since = since,
       urls_limit = urls_limit
     )
-
   }
 }
