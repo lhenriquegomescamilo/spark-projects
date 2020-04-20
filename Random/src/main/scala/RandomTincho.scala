@@ -3616,7 +3616,7 @@ object RandomTincho {
     val hdfs_files = days
       .flatMap(
         day =>
-          (0 to 5).map(
+          (6 to 20).map(
             node =>
               path + "location_-_%s_-_startapp_location_%s16_v_soda_node00%s.tsv.gz"
                 .format(
