@@ -112,6 +112,23 @@ object OrganicSegments {
             .option("basePath", "/datascience/data_triplets/segments/")
             .parquet("/datascience/data_triplets/segments/day=%s".format(x))
             .filter("country = 'MX'")
+            /**
+              * This section of the code manually removes 70% of the males coming from Startapp
+              */
+            .withColumn(
+              "to_delete",
+              when(
+                col("feature") === 2 && col("id_partner") === 1139,
+                when(rand() > 0.3, 1).otherwise(0)
+              ).otherwise(
+                  when(
+                    col("feature") === 4 && col("id_partner") === 1139,
+                    when(rand() > 0.4, 1).otherwise(0)
+                  )
+                .otherwise(0)
+                )
+            )
+            .filter("to_delete = 0")
             .withColumn("day", lit(x))
             .withColumnRenamed("feature", "segment")
             .select("device_id", "day", "segment")
@@ -270,7 +287,7 @@ object OrganicSegments {
     )
 
     val userSegments = df
-      // Filter out the segments that are not part of the Publicis taxonomy
+    // Filter out the segments that are not part of the Publicis taxonomy
       .filter(col("segment").isin(taxo_general_b.value: _*))
       .withColumn("segment", col("segment").cast("string"))
       .withColumn("segment", concat(col("prefix"), col("segment")))

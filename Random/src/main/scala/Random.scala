@@ -5047,7 +5047,7 @@ object Random {
       .format("csv")
       .option("sep", "\t")
       .option("header", "true")
-      .load("/datascience/geo/CL_180d_job_15-4-2020-21h")
+      .load("/datascience/geo/CL_180d_job_15-4-2020-Equifax")
       .withColumnRenamed("avg_latitude", "lat_work")
       .withColumnRenamed("avg_longitude", "long_work")
       .withColumnRenamed("ad_id", "madid")
@@ -5326,6 +5326,17 @@ object Random {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    get_devices_per_zip_code(spark)
+    val data = spark.read
+      .format("json")
+      .load(
+        "/datascience/data_publicis/memb/full/dt=20200320/"
+      )
+    data
+      .withColumn("segids", explode(col("segids")))
+      .withColumn("segment", col("segids").getItem("segid"))
+      .filter("segment IN (2, 3, 4, 5, 6, 7, 8, 9)")
+      .groupBy("segment")
+      .count()
+      .show()
   }
 }
