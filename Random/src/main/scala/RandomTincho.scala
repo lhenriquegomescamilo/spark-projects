@@ -3602,6 +3602,90 @@ object RandomTincho {
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/enrichment_experian")
   }
+  def process_file_startapp(spark:SparkSession){
+    val since = 2
+    val ndays = 1
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+
+    // Now we obtain the list of hdfs files to be read
+    val path = "/data/providers/Startapp_Geo/"
+    val hdfs_files = days
+      .flatMap(
+        day =>
+          (0 to 5).map(
+            node =>
+              path + "location_-_%s_-_startapp_location_%s16_v_soda_node00%s.tsv.gz"
+                .format(
+                  day,
+                  day,
+                  if (node >= 10) node
+                  else "0" + node.toString
+                )
+          )
+      )
+      .filter(
+        dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath))
+      )
+
+    hdfs_files.foreach(println)
+    
+    // This is the Safegraph data schema
+    val customSchema = StructType(
+      Array(
+        StructField("ad_id", StringType, true),
+        StructField("id_type", StringType, true),
+        StructField("country", StringType, true),
+        StructField("latitude", DoubleType, true),
+        StructField("longitude", DoubleType, true),
+        StructField("horizontal_accuracy", FloatType, true),
+        StructField("date", StringType, true)
+      )
+    )
+
+    // Finally we read, filter by country, rename the columns and return the data
+    val df_startapp = spark.read
+      .format("csv")
+      .option("header", "false")
+      .option("delimiter", "\t")
+      .schema(customSchema)
+      .load("/dat")
+      .withColumn("geo_hash", lit("startapp"))
+      .withColumn("utc_timestamp", unix_timestamp(col("date")))
+      .withColumn(
+        "day",
+        regexp_replace(regexp_replace(col("date"), "-", ""), " .*", "")
+      )
+      .drop("date")
+      .select(
+        "utc_timestamp",
+        "ad_id",
+        "id_type",
+        "geo_hash",
+        "latitude",
+        "longitude",
+        "horizontal_accuracy",
+        "country",
+        "day"
+      )
+    
+    df_startapp.write
+      .format("parquet")
+      .partitionBy("day", "country")
+      .mode("append")
+      .save("/datascience/geo/safegraph/")
+
+
+
+  }
 
   def main(args: Array[String]) {
 
@@ -3614,7 +3698,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    enrichment_experian(spark)
+    process_file_startapp(spark)
 
 
   }
