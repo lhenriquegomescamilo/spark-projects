@@ -26,15 +26,10 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.types.{
-  StructType,
-  StructField,
-  StringType,
-  IntegerType
-}
 import org.apache.spark.sql.{Column, Row}
 import scala.util.Random.shuffle
 import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.types._
 
 object RandomTincho {
 
@@ -3604,7 +3599,7 @@ object RandomTincho {
   }
   def process_file_startapp(spark:SparkSession){
     val since = 2
-    val ndays = 1
+    val nDays = 1
     // First we obtain the configuration to be allowed to watch if a file exists or not
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = FileSystem.get(conf)
