@@ -294,7 +294,7 @@ object UrlIngester {
 
     /** Filter Urls processed within 7 days */
     val processed_urls = get_processed_urls(spark,0,7)
-    val df_filtered = df.join(processed_urls,Seq("url"),"inner")
+    val df_filtered = df.join(processed_urls,Seq("url"),"left_anti")
     println("Count del dataframe despues de filtrar urls: %s".format(df_filtered.select("url").distinct.count))
 
     df_filtered.cache()
