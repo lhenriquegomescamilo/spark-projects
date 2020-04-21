@@ -109,8 +109,7 @@ def get_safegraph_data(
 
 def get_unique_geo_hashes( spark: SparkSession,
       nDays: String,
-      since: String,
-      country: String) {
+      since: String) {
 
 
 val today = (java.time.LocalDate.now).toString
