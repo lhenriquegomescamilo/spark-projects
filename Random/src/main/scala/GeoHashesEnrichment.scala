@@ -157,7 +157,7 @@ precision_7
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-get_unique_geo_hashes(spark,"2","1")
+get_unique_geo_hashes(spark,"30","1")
 
 
 }
