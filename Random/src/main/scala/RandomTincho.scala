@@ -3622,7 +3622,8 @@ object RandomTincho {
     )
         
     for (filename <- files) {
-        println(filename)
+      println(filename)
+      try {
         // Finally we read, filter by country, rename the columns and return the data
         spark.read
           .format("csv")
@@ -3652,6 +3653,13 @@ object RandomTincho {
           .partitionBy("day", "country")
           .mode("append")
           .save("/datascience/geo/safegraph/")
+
+      } catch {
+        case e: Throwable => {
+          println("Error con el file: %s".format(filename))
+        }
+      }
+        
     }
 
 
