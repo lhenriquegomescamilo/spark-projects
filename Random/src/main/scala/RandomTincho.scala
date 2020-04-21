@@ -3598,41 +3598,16 @@ object RandomTincho {
       .save("/datascience/custom/enrichment_experian")
   }
   def process_file_startapp(spark:SparkSession){
-    val since = 2
-    val nDays = 1
-    // First we obtain the configuration to be allowed to watch if a file exists or not
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = FileSystem.get(conf)
+    val files = List("/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0006.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0008.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0009.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0010.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0011.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0012.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0013.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0014.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0015.tsv.gz")
 
-    // Get the days to be loaded
-    val format = "yyyyMMdd"
-    val end = DateTime.now.minusDays(since)
-    val days = (0 until nDays)
-      .map(end.minusDays(_))
-      .map(_.toString(format))
-
-    // Now we obtain the list of hdfs files to be read
-    val path = "/data/providers/Startapp_Geo/"
-    val hdfs_files = days
-      .flatMap(
-        day =>
-          (6 to 20).map(
-            node =>
-              path + "location_-_%s_-_startapp_location_%s16_v_soda_node00%s.tsv.gz"
-                .format(
-                  day,
-                  day,
-                  if (node >= 10) node
-                  else "0" + node.toString
-                )
-          )
-      )
-      .filter(
-        dayPath => fs.exists(new org.apache.hadoop.fs.Path(dayPath))
-      )
-
-    hdfs_files.foreach(println)
-    
     // This is the Safegraph data schema
     val customSchema = StructType(
       Array(
@@ -3645,38 +3620,39 @@ object RandomTincho {
         StructField("date", StringType, true)
       )
     )
-
-    // Finally we read, filter by country, rename the columns and return the data
-    val df_startapp = spark.read
-      .format("csv")
-      .option("header", "false")
-      .option("delimiter", "\t")
-      .schema(customSchema)
-      .load(hdfs_files: _*)
-      .withColumn("geo_hash", lit("startapp"))
-      .withColumn("utc_timestamp", unix_timestamp(col("date")))
-      .withColumn(
-        "day",
-        regexp_replace(regexp_replace(col("date"), "-", ""), " .*", "")
-      )
-      .drop("date")
-      .select(
-        "utc_timestamp",
-        "ad_id",
-        "id_type",
-        "geo_hash",
-        "latitude",
-        "longitude",
-        "horizontal_accuracy",
-        "country",
-        "day"
-      )
-    
-    df_startapp.write
-      .format("parquet")
-      .partitionBy("day", "country")
-      .mode("append")
-      .save("/datascience/geo/safegraph/")
+        
+    for (filename <- files) {
+        println(filename)
+        // Finally we read, filter by country, rename the columns and return the data
+        spark.read
+          .format("csv")
+          .option("header", "false")
+          .option("delimiter", "\t")
+          .schema(customSchema)
+          .load(filename)
+          .withColumn("geo_hash", lit("startapp"))
+          .withColumn("utc_timestamp", unix_timestamp(col("date")))
+          .withColumn(
+            "day",
+            regexp_replace(regexp_replace(col("date"), "-", ""), " .*", "")
+          )
+          .drop("date")
+          .select(
+            "utc_timestamp",
+            "ad_id",
+            "id_type",
+            "geo_hash",
+            "latitude",
+            "longitude",
+            "horizontal_accuracy",
+            "country",
+            "day"
+          ).write
+          .format("parquet")
+          .partitionBy("day", "country")
+          .mode("append")
+          .save("/datascience/geo/safegraph/")
+    }
 
 
 
