@@ -97,9 +97,8 @@ def get_safegraph_data(
     val df_safegraph = spark.read
       .option("header", "true")
       .parquet(hdfs_files: _*)
-      .withColumn("input",input_file_name)
-      //.withColumn("day",split(col("input"),"/").getItem(6))
       .withColumn("country",split(col("input"),"/").getItem(7))
+      .withColumn("country",split(col("country"),"=")(1))
       
      df_safegraph                    
     
@@ -127,7 +126,7 @@ val geo_data = get_safegraph_all_country(spark,nDays,since)
 
 geo_data.persist()
 
-  val precision_8 = geo_data.dropDuplicates("geo_hash")
+  val precision_8 = geo_data.drop("geo_hash_7").dropDuplicates("geo_hash")
   val precision_7 = geo_data.dropDuplicates("geo_hash_7")
  
 precision_8
@@ -156,9 +155,8 @@ precision_7
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
-get_unique_geo_hashes(spark,"5","1")
+get_unique_geo_hashes(spark,"2","1")
 
 
 }
