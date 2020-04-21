@@ -158,9 +158,6 @@ precision_7
 
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
-val today = (java.time.LocalDate.now).toString
-val output_file = "/datascience/geo/Reports/InStorePlus/"
-
 get_unique_geo_hashes(spark,"5","1")
 
 
