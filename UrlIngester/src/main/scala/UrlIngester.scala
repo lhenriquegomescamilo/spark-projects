@@ -288,14 +288,15 @@ object UrlIngester {
     val db = getDataUrls(spark = spark, nDays = nDays, since = since)
     println("Count del dataframe inicial: %s".format(db.select("url").distinct.count))
 
-    /** Preprocess URLS and checkpoint */
-    val df = processURLHTTP(db)
-    println("Count del dataframe despues de procesar urls: %s".format(df.select("url").distinct.count))
+    /** Preprocess URLS and removes urls that are too long*/
+    val url_limit = 500
+    val df = processURLHTTP(db).withColumn("len",length(col("url")))
+                                .filter("len <= %s".format(url_limit))
 
     /** Filter Urls processed within 7 days */
     val processed_urls = get_processed_urls(spark,0,7)
     val df_filtered = df.join(processed_urls,Seq("url"),"left_anti")
-    println("Count del dataframe despues de filtrar urls: %s".format(df_filtered.select("url").distinct.count))
+    
 
     df_filtered.cache()
 
