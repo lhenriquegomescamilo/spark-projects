@@ -26,15 +26,10 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{SaveMode, DataFrame}
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.types.{
-  StructType,
-  StructField,
-  StringType,
-  IntegerType
-}
 import org.apache.spark.sql.{Column, Row}
 import scala.util.Random.shuffle
 import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.types._
 
 object RandomTincho {
 
@@ -3602,6 +3597,74 @@ object RandomTincho {
       .mode(SaveMode.Overwrite)
       .save("/datascience/custom/enrichment_experian")
   }
+  def process_file_startapp(spark:SparkSession){
+    val files = List("/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0006.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0008.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0009.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0010.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0011.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0012.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0013.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0014.tsv.gz",
+                    "/data/providers/Startapp_Geo/location_-_20200418_-_startapp_location_2020041816_v_soda_node0015.tsv.gz")
+
+    // This is the Safegraph data schema
+    val customSchema = StructType(
+      Array(
+        StructField("ad_id", StringType, true),
+        StructField("id_type", StringType, true),
+        StructField("country", StringType, true),
+        StructField("latitude", DoubleType, true),
+        StructField("longitude", DoubleType, true),
+        StructField("horizontal_accuracy", FloatType, true),
+        StructField("date", StringType, true)
+      )
+    )
+        
+    for (filename <- files) {
+      println(filename)
+      try {
+        // Finally we read, filter by country, rename the columns and return the data
+        spark.read
+          .format("csv")
+          .option("header", "false")
+          .option("delimiter", "\t")
+          .schema(customSchema)
+          .load(filename)
+          .withColumn("geo_hash", lit("startapp"))
+          .withColumn("utc_timestamp", unix_timestamp(col("date")))
+          .withColumn(
+            "day",
+            regexp_replace(regexp_replace(col("date"), "-", ""), " .*", "")
+          )
+          .drop("date")
+          .select(
+            "utc_timestamp",
+            "ad_id",
+            "id_type",
+            "geo_hash",
+            "latitude",
+            "longitude",
+            "horizontal_accuracy",
+            "country",
+            "day"
+          ).write
+          .format("parquet")
+          .partitionBy("day", "country")
+          .mode("append")
+          .save("/datascience/geo/safegraph/")
+
+      } catch {
+        case e: Throwable => {
+          println("Error con el file: %s".format(filename))
+        }
+      }
+        
+    }
+
+
+
+  }
 
   def main(args: Array[String]) {
 
@@ -3614,7 +3677,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    enrichment_experian(spark)
+    process_file_startapp(spark)
 
 
   }

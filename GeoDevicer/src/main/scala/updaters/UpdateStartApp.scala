@@ -71,13 +71,13 @@ object UpdateStartApp {
     val hdfs_files = days
       .flatMap(
         day =>
-          (0 to 10).map(
+          (0 to 20).map(
             node =>
               path + "location_-_%s_-_startapp_location_%s16_v_soda_node00%s.tsv.gz"
                 .format(
                   day,
                   day,
-                  if (node == 10) node
+                  if (node >= 10) node
                   else "0" + node.toString
                 )
           )
