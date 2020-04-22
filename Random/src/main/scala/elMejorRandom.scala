@@ -1505,49 +1505,36 @@ all.write
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
-val result = spark.read.format("parquet").load("/datascience/geo/Reports/Pitchs/Viasat/2020-04-22/Rich_Hashes_Days")
+val data = spark.read.format("parquet").load("/datascience/geo/Reports/Pitchs/Viasat/2020-04-22/Rich_Segments_by_user")
 
-//Esto me cuenta dispositivos por día por audiencia
-val day = result
-  .groupBy("geo_hash_7", "audience", "Day","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
-  .agg(approxCountDistinct("device_id", 0.05)as "devices")
+val model = data.groupBy("audience","brand","model").agg(countDistinct("device_id") as "devices")
+val segments = data.groupBy("audience","feature").agg(countDistinct("device_id") as "devices")
 
+val model_total = data.groupBy("brand","model").agg(countDistinct("device_id") as "devices")
+val segments_total = data.groupBy("feature").agg(countDistinct("device_id") as "devices")
 
-//Acá voy a tomar lo de arriba y sumar todo antes de la cuarentena
-val before = result.filter("Day<'20-03-20'").groupBy("geo_hash_7", "audience","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
-  .agg(approxCountDistinct("device_id", 0.05)as "devices")
-
-//Acá voy a tomar lo de arriba y sumar todo DESPUES de la cuarentena
-val after = result.filter("Day>'20-03-20'").groupBy("geo_hash_7", "audience","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
-  .agg(approxCountDistinct("device_id", 0.05)as "devices")
-
-//Acá todo junto
-val all = result
-  .groupBy("geo_hash_7", "audience","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
-  .agg(approxCountDistinct("device_id", 0.05)as "devices")
-
-
-
-//Esto me devuelve en qué geohashes estuvo esta gente
-day.write
+model.write
     .mode(SaveMode.Overwrite)
     .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Daily_Audience".format(today))
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Model_Audience".format(today))
 
-before.write
+segments.write
     .mode(SaveMode.Overwrite)
     .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Before_Audience".format(today))
-
-after.write
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Features_Audience".format(today))
+    
+model_total.write
     .mode(SaveMode.Overwrite)
     .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_After_Audience".format(today))
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Model_Total".format(today))
 
-all.write
+segments_total.write
     .mode(SaveMode.Overwrite)
     .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Period_Audience".format(today))
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Features_total".format(today))
+
+//val reup = spark.read.format("parquet")
+//              .load("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Segments_by_user".format(today))
 
 
 }

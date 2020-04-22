@@ -52,9 +52,9 @@ object KeysSegment {
     .load(hdfs_files: _*)
     .toDF("url_raw","hits","country","kw","TFIDF","domain","stem_kw","day")
     .withColumnRenamed("url_raw","url")
-    .select("url","kw")
-    .withColumn("kw", split(col("kw"), " "))
-    .withColumn("kw", explode(col("kw")))
+    .select("url","kw","TFIDF")
+    //.withColumn("kw", split(col("kw"), " "))
+    //.withColumn("kw", explode(col("kw")))
 
     df_selected
   }
@@ -139,6 +139,36 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
   def MainProcess(
       spark: SparkSession) = {
 
+    val udfZip = udf((kws: Seq[String], tfidf: Seq[String]) => kws zip tfidf)
+    val udfGet = udf((words: Row, index:String ) => words.getAs[String](index))
+
+    val selected_keywords = getSelectedKeywords(spark,30,0)
+    .withColumn("kw", split(col("kw"), " "))
+    .withColumn("TFIDF", split(col("TFIDF"), " "))
+    .withColumn("zipped",udfZip(col("kw"),col("TFIDF")))
+    .withColumn("zipped", explode(col("zipped")))
+    .withColumn("kw",udfGet(col("zipped"),lit("_1")))
+    .withColumn("TFIDF",udfGet(col("zipped"),lit("_2")))
+
+
+    val urls = spark.read.format("csv")
+    .option("delimiter","\t")
+    .load("/datascience/misc/kws_NSE_MX")
+    .toDF("url","segment","device_unique")
+
+    val df = selected_keywords.join(urls,Seq("url"))
+    .select("url","segment","kw","TFIDF")
+    
+    df
+    .write
+    .format("csv")
+    .option("sep", "\t")
+    .mode("overwrite")
+    .save("/datascience/misc/kws_NSE_MX_scrapper")
+
+   
+
+/**
     val from = 1
     val nDays = 30    
 
@@ -193,6 +223,11 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     .option("sep", "\t")      
     .mode(SaveMode.Overwrite)
     .save("/datascience/misc/kws_NSE_MX")    
+
+
+    */
+
+
 
     }      
       
