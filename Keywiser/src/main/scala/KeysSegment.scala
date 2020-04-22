@@ -144,7 +144,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     val urls_NSE_alto = getDataUrls(spark,"MX",30,0)
     .select("url", "segments")
     .withColumn("segment", explode(col("segments")))
-    .filter("segment = 104014")
+    .filter("segment == 104014")
     .select("url")
     .dropDuplicates()
 
@@ -158,7 +158,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     val urls_NSE_bajo = getDataUrls(spark,"MX",30,0)
     .select("url", "segments")
     .withColumn("segment", explode(col("segments")))
-    .filter("segment = 104015")
+    .filter("segment == 104015")
     .select("url")
     .dropDuplicates()
 
