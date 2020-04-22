@@ -366,6 +366,22 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+  spark.read.format("csv")
+      .option("delimiter","\t")
+      .load("/datascience/misc/kws_NSE_MX_scrapper")
+      .toDF("url","segment","kw","TFIDF")
+      .limit(10)
+      .withColumn("TFIDF", col("TFIDF").cast("double"))
+      .orderBy(desc("TFIDF"))
+      .limit(5000)
+      .write
+      .format("csv")
+      .option("sep", "\t")
+      .mode("overwrite")
+      .save("/datascience/misc/kws_NSE_MX_scrapper")
+      
+    /**
+
     val pii_table =  spark.read
                           .load("/datascience/pii_matching/pii_tuples/")
                           .filter("country = 'MX'")
@@ -416,7 +432,7 @@ def getDataPipeline(
     println("Total devices:")
     println(phones_match.select("device_id").union(nids_match.select("device_id")).distinct().count())
 
-  
+  */
 
   /**
 
