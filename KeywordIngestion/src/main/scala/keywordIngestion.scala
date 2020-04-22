@@ -2,6 +2,7 @@ package main.scala
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
+import org.apache.commons.lang3.StringUtils
 import org.apache.spark.sql.{SaveMode, DataFrame, Row}
 import org.joda.time.Days
 import org.joda.time.DateTime
@@ -23,6 +24,9 @@ object keywordIngestion {
     *
     * The URL is parsed in such a way that it is easier to join with data_audiences.
     */
+
+  val udfStrip = udf((colValue: String) => {StringUtils.stripAccents(colValue)})
+
   def getKeywordsByURL(
       spark: SparkSession,
       ndays: Int,
@@ -85,6 +89,8 @@ object keywordIngestion {
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
       )
       .withColumn("url", regexp_replace(col("url"), "'", ""))
+      .withColumn("url",udfStrip(col("url")))
+
   }
 
   /**
@@ -110,6 +116,7 @@ object keywordIngestion {
         regexp_replace(col("url"), "http.*://(.\\.)*(www\\.){0,1}", "")
       )
       .withColumn("url", regexp_replace(col("url"), "'", ""))
+      .withColumn("url",udfStrip(col("url")))
   }
 
   /**

@@ -5,6 +5,7 @@ import org.apache.spark.sql.types._
 
 import org.joda.time.{Days, DateTime}
 import org.joda.time.format.DateTimeFormat
+import org.apache.commons.lang3.StringUtils
 
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.conf.Configuration
@@ -288,20 +289,22 @@ object UrlIngester {
     val db = getDataUrls(spark = spark, nDays = nDays, since = since)
     println("Count del dataframe inicial: %s".format(db.select("url").distinct.count))
 
-    /** Preprocess URLS and removes urls that are too long*/
+    /** Preprocess URLS **/
+    val udfStrip = udf((colValue: String) => {StringUtils.stripAccents(colValue)})
+
     val url_limit = 500
     val df = processURLHTTP(db).withColumn("len",length(col("url")))
-                                .filter("len <= %s".format(url_limit))
+                                .filter("len <= %s".format(url_limit))  // removes urls that are too long
+                                .withColumn("url",udfStrip(col("url"))) // remove accents
 
     /** Filter Urls processed within 7 days */
     val processed_urls = get_processed_urls(spark,0,7)
     val df_filtered = df.join(processed_urls,Seq("url"),"left_anti")
     
-
     df_filtered.cache()
 
     /** Process and store the Data for each country */
-    val countries = "AR,BO,BR,CL,CO,EC,MX,PE,US,UY,VE".split(",").toList
+    val countries = "AR,BO,BR,CL,CO,EC,MX,PE,UY,VE,US".split(",").toList
 
     val savepath = "/datascience/url_ingester/data"
 
