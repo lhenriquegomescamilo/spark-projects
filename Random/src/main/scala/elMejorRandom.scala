@@ -1505,49 +1505,35 @@ all.write
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
-val result = spark.read.format("parquet").load("/datascience/geo/Reports/Pitchs/Viasat/2020-04-22/Rich_Hashes_Days")
 
-//Esto me cuenta dispositivos por día por audiencia
-val day = result
-  .groupBy("geo_hash_7", "audience", "Day","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
-  .agg(approxCountDistinct("device_id", 0.05)as "devices")
+//Esta es la audiencia de ricos
+val devices = spark.read.format("csv")
+.option("delimiter","\t")
+.load("/datascience/audiences/crossdeviced/MX_Reporte_Clase_Alta_21_04_20_xd/")
+.toDF("device_type","device_id","audience")
+.withColumn("device_id",lower(col("device_id")))
 
+val ua = getDataPipeline(spark,"/datascience/data_useragents/","10","1","MX")
+        .filter("model != ''") //con esto filtramos los desktop
+        .withColumn("device_id",lower(col("device_id")))
+        .drop("user_agent","event_type","url")
+        .dropDuplicates("device_id")        
+        //.filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
 
-//Acá voy a tomar lo de arriba y sumar todo antes de la cuarentena
-val before = result.filter("Day<'20-03-20'").groupBy("geo_hash_7", "audience","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
-  .agg(approxCountDistinct("device_id", 0.05)as "devices")
+val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30","MX")
+                          .withColumn("device_id",lower(col("device_id")))
 
-//Acá voy a tomar lo de arriba y sumar todo DESPUES de la cuarentena
-val after = result.filter("Day>'20-03-20'").groupBy("geo_hash_7", "audience","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
-  .agg(approxCountDistinct("device_id", 0.05)as "devices")
+val data = devices
+  .join(segments,Seq("device_id"),"outer")
+  .join(ua,Seq("device_id"),"outer")
 
-//Acá todo junto
-val all = result
-  .groupBy("geo_hash_7", "audience","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
-  .agg(approxCountDistinct("device_id", 0.05)as "devices")
-
-
-
-//Esto me devuelve en qué geohashes estuvo esta gente
-day.write
+data.write
     .mode(SaveMode.Overwrite)
     .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Daily_Audience".format(today))
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Segments_by_user".format(today))
 
-before.write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Before_Audience".format(today))
-
-after.write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_After_Audience".format(today))
-
-all.write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Period_Audience".format(today))
+//val reup = spark.read.format("parquet")
+//              .load("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Segments_by_user".format(today))
 
 
 }
