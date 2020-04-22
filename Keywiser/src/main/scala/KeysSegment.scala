@@ -284,6 +284,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
   spark.read.format("csv")
     .option("delimiter","\t")
     .load("/datascience/misc/kws_NSE_MX")
+    .toDF("device_type","device_id","segment","url")
     .select("url","segment")
     .dropDuplicates()
     .write
