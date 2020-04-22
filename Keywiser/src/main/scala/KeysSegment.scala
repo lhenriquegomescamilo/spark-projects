@@ -183,7 +183,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     devices.join(df,Seq("device_id"),"left")
       .write
       .format("csv")
-      .option("sep", "\t"      
+      .option("sep", "\t")      
       .mode(SaveMode.Overwrite)
       .save("/datascience/misc/kws_NSE_MX")    
 
