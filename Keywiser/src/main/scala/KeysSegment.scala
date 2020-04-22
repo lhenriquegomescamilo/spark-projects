@@ -152,7 +152,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     val start = DateTime.now.minusDays(from)
 
     val days =
-      (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+      (0 until nDays).map(start.minusDays(_)).map(_.toString(format))
     val path = "/datascience/data_audiences_streaming"
     val dfs = days
       .flatMap(
