@@ -3710,7 +3710,7 @@ object RandomTincho {
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
-    val raw = get_safegraph_data(spark,since,30, country)
+    val raw = get_safegraph_data(spark,1,30, country)
       .withColumnRenamed("ad_id", "device_id")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
