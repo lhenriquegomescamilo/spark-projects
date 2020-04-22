@@ -3662,9 +3662,86 @@ object RandomTincho {
         
     }
 
-
-
   }
+
+  def get_safegraph_data(
+      spark: SparkSession,
+      since: Int,
+      nDays:Int,
+      country: String
+  ) = {
+    // First we obtain the configuration to be allowed to watch if a file exists or not
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = FileSystem.get(conf)
+
+    // Get the days to be loaded
+    val format = "yyyyMMdd"
+    val end = DateTime.now.minusDays(since)
+    val days = (0 until nDays)
+      .map(end.minusDays(_))
+      .map(_.toString(format))
+
+    //Now we obtain the list of hdfs files to be read
+    val path = "/datascience/geo/safegraph/"
+    val hdfs_files = days
+      .map(day => path +  "day=%s/country=%s/".format(day,country))
+      .filter(
+        path => fs.exists(new org.apache.hadoop.fs.Path(path))
+      )
+
+    // Finally we read, filter by country, rename the columns and return the data
+    val df_safegraph = spark.read
+                            .option("header", "true")
+                            .parquet(hdfs_files: _*)
+                            //.dropDuplicates("ad_id", "latitude", "longitude")
+
+    df_safegraph
+  }
+
+  def audiences_geo_covid_BR(spark:SparkSession){
+    val country = "BR"
+    val timezone = Map("argentina" -> "GMT-3",
+                    "mexico" -> "GMT-5",
+                    "CL"->"GMT-3",
+                    "CO"-> "GMT-5",
+                    "BR" -> "GMT-3",
+                    "PE"-> "GMT-5")
+    
+    //setting timezone depending on country
+    spark.conf.set("spark.sql.session.timeZone", timezone(country))
+
+    val raw = get_safegraph_data(spark,1,30, country)
+      .withColumnRenamed("ad_id", "device_id")
+      .withColumn("device_id", lower(col("device_id")))
+      .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+      .withColumn("day", date_format(col("Time"), "dd-MM-YY"))
+      .drop("Time")
+      .withColumn("country", lit(country))
+      .withColumn(
+        "geo_hash_7",
+        ((abs(col("latitude").cast("float")) * 1000)
+          .cast("long") * 100000) + (abs(
+          col("longitude").cast("float") * 1000
+        ).cast("long"))
+      )
+
+    //Vamos a usarlo para calcular velocidad y distancia al hogar
+    raw.persist()
+
+    val geo_hash_visits = raw
+      .groupBy("device_id", "day")
+      .agg(approx_count_distinct(col("geo_hash_7"), 0.01).as("detections"))
+      .groupBy("device_id")
+      .agg(mean(col("detections")).as("mean_detections"))
+      .withColumn("cluster", when(col("mean_detections") <= 2,"306279")
+                            .when(col("mean_detections") >= 11,"306283")
+                            .otherwise("306281"))
+      .write
+      .mode(SaveMode.Overwrite)
+      .format("parquet")
+      .save("/datascience/custom/clusters_covid_BR")
+
+    }
 
   def main(args: Array[String]) {
 
@@ -3677,8 +3754,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    process_file_startapp(spark)
-
+    audiences_geo_covid_BR(spark)
 
   }
 }
