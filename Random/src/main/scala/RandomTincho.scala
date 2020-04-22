@@ -3724,11 +3724,6 @@ object RandomTincho {
           col("longitude").cast("float") * 1000
         ).cast("long"))
       )
-
-    //Vamos a usarlo para calcular velocidad y distancia al hogar
-    raw.persist()
-
-    val geo_hash_visits = raw
       .groupBy("device_id", "day")
       .agg(approx_count_distinct(col("geo_hash_7"), 0.01).as("detections"))
       .groupBy("device_id")
