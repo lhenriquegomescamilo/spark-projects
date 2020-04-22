@@ -296,6 +296,7 @@ object UrlIngester {
     val df = processURLHTTP(db).withColumn("len",length(col("url")))
                                 .filter("len <= %s".format(url_limit))  // removes urls that are too long
                                 .withColumn("url",udfStrip(col("url"))) // remove accents
+                                .withColumn("url",regexp_replace(col("url"), "./", "/") //replace . before / for urls like https://www.ambito.com./
 
     /** Filter Urls processed within 7 days */
     val processed_urls = get_processed_urls(spark,0,7)
