@@ -13,6 +13,8 @@ import org.apache.log4j.{Level, Logger}
 
 import scala.collection.mutable.ListBuffer
 
+import scala.math.log
+
 /**
   * The idea of this script is to generate audiences based on keywords obtained from url content. 
   */
@@ -87,7 +89,7 @@ object KeysSegment {
   }
 
 
-def getTFIDF(df_clean: DataFrame, spark:SparkSession ){
+def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     val docCount = df_clean.select("url").distinct.count
 
     val unfoldedDocs = df_clean.withColumn("count",lit(1))
