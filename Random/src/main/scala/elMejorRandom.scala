@@ -1505,36 +1505,33 @@ all.write
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
+val data = spark.read.format("parquet").load("/datascience/geo/Reports/Pitchs/Viasat/2020-04-22/Rich_Segments_by_user")
 
-//Esta es la audiencia de ricos
-val devices = spark.read.format("csv")
-.option("delimiter","\t")
-.load("/datascience/audiences/crossdeviced/MX_Reporte_Clase_Alta_21_04_20_xd/")
-.toDF("device_type","device_id","audience")
-.withColumn("device_id",lower(col("device_id")))
+val model = data.groupBy("audience","brand","model").agg(countDistinct("device_id") as "devices")
+val segments = data.groupBy("audience","feature").agg(countDistinct("device_id") as "devices")
 
-val ua = getDataPipeline(spark,"/datascience/data_useragents/","10","1","MX")
-        .filter("model != ''") //con esto filtramos los desktop
-        .withColumn("device_id",lower(col("device_id")))
-        .drop("user_agent","event_type","url")
-        .dropDuplicates("device_id")   
-        .drop("country","device_type","Day")     
-        .distinct()    
-        //.filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
+val model_total = data.groupBy("brand","model").agg(countDistinct("device_id") as "devices")
+val segments_total = data.groupBy("feature").agg(countDistinct("device_id") as "devices")
 
-val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30","MX")
-                          .withColumn("device_id",lower(col("device_id")))
-                          .drop("country","device_type","Day") 
-                          .distinct()    
-
-val data = devices
-  .join(segments,Seq("device_id"),"outer")
-  .join(ua,Seq("device_id"),"outer")
-
-data.write
+model.write
     .mode(SaveMode.Overwrite)
     .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Segments_by_user".format(today))
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Model_Audience".format(today))
+
+segments.write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Features_Audience".format(today))
+    
+model_total.write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Model_Total".format(today))
+
+segments_total.write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Features_total".format(today))
 
 //val reup = spark.read.format("parquet")
 //              .load("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Segments_by_user".format(today))
