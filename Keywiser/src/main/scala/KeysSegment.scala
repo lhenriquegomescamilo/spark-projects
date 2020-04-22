@@ -183,9 +183,11 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     .toDF("device_type","device_id","segment")
     .withColumn("device_id", lower(col("device_id")))
 
-    devices.join(df,Seq("device_id"))
+    val joint = devices.join(df,Seq("device_id"))
     .select("url","segment")
-    .dropDuplicates()
+    //.dropDuplicates()
+
+    joint.groupBy("url","segment").agg(approx_count_distinct(col("url"), 0.02).as("device_unique"))
     .write
     .format("csv")
     .option("sep", "\t")      
