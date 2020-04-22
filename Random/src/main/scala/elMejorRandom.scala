@@ -1502,39 +1502,66 @@ all.write
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-spark.conf.set("spark.sql.session.timeZone", "GMT-3")
+
+val country = "BR"
+
+
+val timezone = Map("argentina" -> "GMT-3",
+                       "mexico" -> "GMT-5",
+                       "UY"->"GMT-3",
+                       "CL"->"GMT-3",
+                       "BR"->"GMT-3",
+                       "CO"-> "GMT-5",
+                       "PE"-> "GMT-5")
+    
+    //setting timezone depending on country
+spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
 val today = (java.time.LocalDate.now).toString
-val data = spark.read.format("parquet").load("/datascience/geo/Reports/Pitchs/Viasat/2020-04-22/Rich_Segments_by_user")
 
-val model = data.groupBy("audience","brand","model").agg(countDistinct("device_id") as "devices")
-val segments = data.groupBy("audience","feature").agg(countDistinct("device_id") as "devices")
+val raw = get_safegraph_data(spark,"60","1",country)
+.withColumnRenamed("ad_id","device_id")
+.withColumn("device_id",lower(col("device_id")))
+.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+.withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
+.withColumn(
+"geo_hash_7",
+((abs(col("latitude").cast("float")) * 1000)
+.cast("long") * 100000) + (abs(
+col("longitude").cast("float") * 1000
+).cast("long"))
+)
 
-val model_total = data.groupBy("brand","model").agg(countDistinct("device_id") as "devices")
-val segments_total = data.groupBy("feature").agg(countDistinct("device_id") as "devices")
+//Vamos a usarlo para calcular velocidad y distancia al hogar
+raw.persist()
 
-model.write
+val geo_hash_visits = raw
+.groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
+.withColumn("country",lit(country))
+
+val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
+
+geo_hash_visits
+ .write
     .mode(SaveMode.Overwrite)
     .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Model_Audience".format(today))
+    .option("header",true)
+    .save(output_file)
 
-segments.write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Features_Audience".format(today))
-    
-model_total.write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Model_Total".format(today))
 
-segments_total.write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Features_total".format(today))
+///////////Agregación Nivel 0
+//Queremos un cálculo general por país
+val hash_user = spark.read.format("parquet").load(output_file).withColumn("device_id",lower(col("device_id")))
 
-//val reup = spark.read.format("parquet")
-//              .load("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Segments_by_user".format(today))
+hash_user
+.groupBy("Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
+.groupBy("Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std",count("device_id") as "devices")
+.repartition(1)
+.write
+.mode(SaveMode.Overwrite)
+.format("csv")
+.option("header",true)
+.save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
 
 }
