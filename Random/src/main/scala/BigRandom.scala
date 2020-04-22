@@ -377,7 +377,7 @@ def getDataPipeline(
       .format("csv")
       .option("sep", "\t")
       .mode("overwrite")
-      .save("/datascience/misc/kws_NSE_MX_scrapper")
+      .save("/datascience/misc/kws_NSE_MX_scrapper_2")
       
     /**
 
