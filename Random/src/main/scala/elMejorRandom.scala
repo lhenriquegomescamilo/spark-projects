@@ -1505,31 +1505,49 @@ all.write
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
+val result = spark.read.format("parquet").load("/datascience/geo/Reports/Pitchs/Viasat/2020-04-22/Rich_Hashes_Days")
 
-//Esta es la audiencia de ricos
-val devices = spark.read.format("csv")
-.option("delimiter","\t")
-.load("/datascience/audiences/crossdeviced/MX_Reporte_Clase_Alta_21_04_20_xd/")
-.filter("_c0!='web'")
-.drop("_c0")
-.toDF("device_id","audience")
+//Esto me cuenta dispositivos por día por audiencia
+val day = result
+  .groupBy("geo_hash_7", "audience", "Day","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
+  .agg(approxCountDistinct("device_id", 0.05)as "devices")
 
-//Estos son los geohashes precision 7 de México
-val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
-.load("/datascience/geo/geo_processed/MX_municipal_Updated_mexico_sjoin_polygon")
 
-//Estos son los geohashes de todos los usuarios de méxico durante el 1-3 y el 31-3
-val hashes_mex = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/2020-04-14/geohashes_by_user_mexico")
+//Acá voy a tomar lo de arriba y sumar todo antes de la cuarentena
+val before = result.filter("Day<'20-03-20'").groupBy("geo_hash_7", "audience","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
+  .agg(approxCountDistinct("device_id", 0.05)as "devices")
 
-//Ahora tenemos todos los buildin blocks para hacer...algo
+//Acá voy a tomar lo de arriba y sumar todo DESPUES de la cuarentena
+val after = result.filter("Day>'20-03-20'").groupBy("geo_hash_7", "audience","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
+  .agg(approxCountDistinct("device_id", 0.05)as "devices")
+
+//Acá todo junto
+val all = result
+  .groupBy("geo_hash_7", "audience","CVEGEO", "NOM_ENT", "NOM_MUN", "latitude", "longitude")
+  .agg(approxCountDistinct("device_id", 0.05)as "devices")
+
+
 
 //Esto me devuelve en qué geohashes estuvo esta gente
-devices.join(hashes_mex,Seq("device_id"))
-    .join(entidad,Seq("geo_hash_7"))
-    .write
+day.write
     .mode(SaveMode.Overwrite)
     .format("parquet")
-    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Days".format(today))
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Daily_Audience".format(today))
+
+before.write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Before_Audience".format(today))
+
+after.write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_After_Audience".format(today))
+
+all.write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Period_Audience".format(today))
 
 
 }
