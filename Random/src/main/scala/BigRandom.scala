@@ -370,7 +370,6 @@ def getDataPipeline(
       .option("delimiter","\t")
       .load("/datascience/misc/kws_NSE_MX_scrapper")
       .toDF("url","segment","kw","TFIDF")
-      .limit(10)
       .withColumn("TFIDF", col("TFIDF").cast("double"))
       .orderBy(desc("TFIDF"))
       .limit(5000)
