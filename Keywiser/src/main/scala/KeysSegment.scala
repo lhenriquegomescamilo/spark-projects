@@ -279,7 +279,18 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    MainProcess(spark)
+    //MainProcess(spark)
+
+  spark.read.format("csv")
+    .option("delimiter","\t")
+    .load("/datascience/misc/kws_NSE_MX")
+    .select("url","segment")
+    .dropDuplicates()
+    .write
+    .format("csv")
+    .option("sep", "\t")      
+    .mode(SaveMode.Overwrite)
+    .save("/datascience/misc/kws_NSE_MX_2")    
   
 
   }
