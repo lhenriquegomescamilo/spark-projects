@@ -223,7 +223,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
 
     // First we obtain the Spark session
     val spark = SparkSession.builder
-      .appName("KeysSearch")
+      .appName("KeysSegment")
       .config("spark.sql.files.ignoreCorruptFiles", "true")
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
