@@ -185,7 +185,9 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
       .format("csv")
       .option("sep", "\t"      
       .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/kws_NSE_MX")        
+      .save("/datascience/misc/kws_NSE_MX")    
+
+    }      
       
     /**
     val urls_NSE_alto = getDataUrls(spark,"MX",30,0)
@@ -238,7 +240,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
 
     */
 
-  }
+  
 
 
   type OptionMap = Map[Symbol, Int]
