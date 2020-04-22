@@ -138,9 +138,56 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
 
   def MainProcess(
       spark: SparkSession) = {
+
+    val from = 1
+    val nDays = 30    
+
+    /// Configuraciones de spark
+    val sc = spark.sparkContext
+    val conf = sc.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+
+    /// Obtenemos la data de los ultimos ndays
+    val format = "yyyyMMdd"
+    val start = DateTime.now.minusDays(from)
+
+    val days =
+      (0 until ndays).map(start.minusDays(_)).map(_.toString(format))
+    val path = "/datascience/data_audiences_streaming"
+    val dfs = days
+      .flatMap(
+        day =>
+          (0 until 24).map(
+            hour =>
+              path + "/hour=%s%02d/"
+                .format(day, hour)
+          )
+      )
+      .filter(path => fs.exists(new org.apache.hadoop.fs.Path(path)))
       
-    import spark.implicits._
-    
+    val df = spark.read
+                  .option("basePath", "/datascience/data_audiences_streaming/")
+                  .parquet(dfs: _*)
+                  .filter("url is not null AND event_type IN ('retroactive', 'xd', 'xp')")
+                  //.filter("id_partner IN (119, 1, 1139, 1122, 704)")
+                  //.withColumn("day", lit(DateTime.now.minusDays(from).toString(format)))
+                  .select("device_id", "url")
+                  //.select("device_id", "url", "referer", "event_type","country","day","segments","time","share_data","id_partner")
+
+
+    val devices = spark.read.format("csv")
+    .option("delimiter","\t")
+    .load("/datascience/audiences/crossdeviced/MX_Reporte_Clase_Alta_21_04_20_xd/")
+    .toDF("device_type","device_id","segment")
+
+    devices.join(df,Seq("device_id"),"left")
+      .write
+      .format("csv")
+      .option("sep", "\t"      
+      .mode(SaveMode.Overwrite)
+      .save("/datascience/misc/kws_NSE_MX")        
+      
+    /**
     val urls_NSE_alto = getDataUrls(spark,"MX",30,0)
     .select("url", "segments")
     .withColumn("segment", explode(col("segments")))
@@ -188,6 +235,8 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     .option("sep", "\t")
     .mode("overwrite")
     .save("/datascience/misc/kws_NSE_bajo_MX")
+
+    */
 
   }
 
