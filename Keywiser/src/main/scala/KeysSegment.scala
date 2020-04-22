@@ -153,7 +153,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
 
     val urls = spark.read.format("csv")
     .option("delimiter","\t")
-    .load("/datascience/misc/kws_NSE_bajo_MX")
+    .load("/datascience/misc/kws_NSE_MX")
     .toDF("url","segment","device_unique")
 
     val df = selected_keywords.join(urls,Seq("url"))
@@ -164,7 +164,7 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     .format("csv")
     .option("sep", "\t")
     .mode("overwrite")
-    .save("/datascience/misc/kws_NSE_MX")
+    .save("/datascience/misc/kws_NSE_MX_scrapper")
 
    
 
