@@ -168,10 +168,12 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     val df = spark.read
                   .option("basePath", "/datascience/data_audiences_streaming/")
                   .parquet(dfs: _*)
-                  .filter("url is not null AND event_type IN ('retroactive', 'xd', 'xp')")
+                  //.filter("url is not null AND event_type IN ('retroactive', 'xd', 'xp')")
+                  .filter("url is not null")                  
                   //.filter("id_partner IN (119, 1, 1139, 1122, 704)")
                   //.withColumn("day", lit(DateTime.now.minusDays(from).toString(format)))
                   .select("device_id", "url")
+                  .withColumn("device_id", lower(col("device_id")))
                   //.select("device_id", "url", "referer", "event_type","country","day","segments","time","share_data","id_partner")
 
 
@@ -179,13 +181,16 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
     .option("delimiter","\t")
     .load("/datascience/audiences/crossdeviced/MX_Reporte_Clase_Alta_21_04_20_xd/")
     .toDF("device_type","device_id","segment")
+    .withColumn("device_id", lower(col("device_id")))
 
-    devices.join(df,Seq("device_id"),"left")
-      .write
-      .format("csv")
-      .option("sep", "\t")      
-      .mode(SaveMode.Overwrite)
-      .save("/datascience/misc/kws_NSE_MX")    
+    devices.join(df,Seq("device_id"))
+    .select("url","segment")
+    .dropDuplicates()
+    .write
+    .format("csv")
+    .option("sep", "\t")      
+    .mode(SaveMode.Overwrite)
+    .save("/datascience/misc/kws_NSE_MX")    
 
     }      
       
@@ -279,19 +284,9 @@ def getTFIDF(df_clean: DataFrame, spark:SparkSession ): DataFrame = {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    //MainProcess(spark)
+    MainProcess(spark)
 
-  spark.read.format("csv")
-    .option("delimiter","\t")
-    .load("/datascience/misc/kws_NSE_MX")
-    .toDF("device_type","device_id","segment","url")
-    .select("url","segment")
-    .dropDuplicates()
-    .write
-    .format("csv")
-    .option("sep", "\t")      
-    .mode(SaveMode.Overwrite)
-    .save("/datascience/misc/kws_NSE_MX_2")    
+
   
 
   }
