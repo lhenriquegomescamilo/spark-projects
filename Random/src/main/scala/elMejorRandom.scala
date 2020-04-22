@@ -1400,6 +1400,59 @@ final_homes
 
                 }
 
+def get_unique_geo_hashes( spark: SparkSession,
+      nDays: String,
+      since: String,
+      country: String) {
+
+
+val today = (java.time.LocalDate.now).toString
+val output_file = "/datascience/geo/Reports/HomesGeoHash/"
+
+val getGeoHash = udf(
+      (latitude: Double, longitude: Double) =>
+        com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
+    )
+
+val geo_data = get_safegraph_data(spark,nDays,since,country)
+  .withColumn("geo_hash", getGeoHash(col("latitude"), col("longitude")))
+  .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
+  .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+  .withColumn("Day", date_format(col("Time"), "YYMMdd"))
+ 
+
+ //Cuántos días distintos estuvo en ese geo_hash y la lat long promedio
+val where_was = geo_data.groupBy("device_id","geo_hash_7") //"geo_hash"
+  .agg(approxCountDistinct("Day", 0.02) as "Days",
+    round(avg(col("latitude")),6).as("latitude"),
+    round(avg(col("longitude")),6).as("longitude"))
+
+//Lo Guardo      
+where_was
+.write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .save(output_file+"/%s/exploded_users_geohashes_%sD_%s".format(today,nDays,country))
+
+//Lo relevanto
+val reload = spark.read.format("parquet").load(output_file+"/%s/exploded_users_geohashes_%sD_%s".format(today,nDays,country))
+
+//Me quedo con el top
+val w = Window.partitionBy(col("device_id")).orderBy(col("Days").desc)
+val final_homes = reload.withColumn("rn", row_number.over(w)).where(col("rn") === 1).drop("rn")
+
+final_homes
+.write.format("csv")
+      .option("header", true)
+      .mode(SaveMode.Overwrite)
+      .save(output_file+"/%s/homes_by_geohashes_%sD_%s".format(today,nDays,country))
+  
+
+
+                }
+
+
+
                 /*
 
 
@@ -1452,9 +1505,31 @@ all.write
 spark.conf.set("spark.sql.session.timeZone", "GMT-3")
 
 val today = (java.time.LocalDate.now).toString
-val output_file = "/datascience/geo/Reports/InStorePlus/"
 
-get_homes_from_geo_hash(spark,"30","1","CL")
+//Esta es la audiencia de ricos
+val devices = spark.read.format("csv")
+.option("delimiter","\t")
+.load("/datascience/audiences/crossdeviced/MX_Reporte_Clase_Alta_21_04_20_xd/")
+.filter("_c0!='web'")
+.drop("_c0")
+.toDF("device_id","audience")
+
+//Estos son los geohashes precision 7 de México
+val entidad = spark.read.format("csv").option("header",true).option("delimiter","\t")
+.load("/datascience/geo/geo_processed/MX_municipal_Updated_mexico_sjoin_polygon")
+
+//Estos son los geohashes de todos los usuarios de méxico durante el 1-3 y el 31-3
+val hashes_mex = spark.read.format("parquet").load("/datascience/geo/Reports/GCBA/Coronavirus/2020-04-14/geohashes_by_user_mexico")
+
+//Ahora tenemos todos los buildin blocks para hacer...algo
+
+//Esto me devuelve en qué geohashes estuvo esta gente
+devices.join(hashes_mex,Seq("device_id"))
+    .join(entidad,Seq("geo_hash_7"))
+    .write
+    .mode(SaveMode.Overwrite)
+    .format("parquet")
+    .save("/datascience/geo/Reports/Pitchs/Viasat/%s/Rich_Hashes_Days".format(today))
 
 
 }
