@@ -1517,11 +1517,15 @@ val ua = getDataPipeline(spark,"/datascience/data_useragents/","10","1","MX")
         .filter("model != ''") //con esto filtramos los desktop
         .withColumn("device_id",lower(col("device_id")))
         .drop("user_agent","event_type","url")
-        .dropDuplicates("device_id")        
+        .dropDuplicates("device_id")   
+        .drop("country","device_type","Day")     
+        .distinct()    
         //.filter("(country== 'AR') OR (country== 'CL') OR (country== 'MX')")
 
 val segments = getDataPipeline(spark,"/datascience/data_triplets/segments/","1","30","MX")
                           .withColumn("device_id",lower(col("device_id")))
+                          .drop("country","device_type","Day") 
+                          .distinct()    
 
 val data = devices
   .join(segments,Seq("device_id"),"outer")
