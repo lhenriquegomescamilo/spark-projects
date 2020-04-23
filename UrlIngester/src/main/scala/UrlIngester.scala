@@ -301,8 +301,8 @@ object UrlIngester {
                                 .filter("len <= %s".format(url_limit))  // removes urls that are too long
                                 .withColumn("url",udfStrip(col("url"))) // remove accents
                                 .withColumn("url", regexp_replace(col("url"), "'", "")) // removes simple quotes
-                                .withColumn("url",regexp_replace(col("url"), "./", "/")) //replace . before / for urls like https://www.ambito.com./
-                                .withColumn("url",regexp_replace(col("url"), "//", "://"))
+                                //.withColumn("url",regexp_replace(col("url"), "./", "/")) //replace . before / for urls like https://www.ambito.com./
+                                //.withColumn("url",regexp_replace(col("url"), "//", "://"))
 
     /** Filter Urls processed within 7 days */
     val processed_urls = get_processed_urls(spark,0,7)
