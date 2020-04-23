@@ -103,6 +103,9 @@ object UrlIngester {
     *
     * @return a DataFrame with processed urls.
    **/
+
+  val udfStrip = udf((colValue: String) => {StringUtils.stripAccents(colValue)})
+   
   def processURLHTTP(dfURL: DataFrame, field: String = "url"): DataFrame = {
     // First of all, we get the domains, and filter out those ones that are very generic
 
@@ -293,8 +296,6 @@ object UrlIngester {
     println("Count del dataframe inicial: %s".format(db.select("url").distinct.count))
 
     /** Preprocess URLS **/
-    val udfStrip = udf((colValue: String) => {StringUtils.stripAccents(colValue)})
-
     val url_limit = 500
     val df = processURLHTTP(db).withColumn("len",length(col("url")))
                                 .filter("len <= %s".format(url_limit))  // removes urls that are too long
