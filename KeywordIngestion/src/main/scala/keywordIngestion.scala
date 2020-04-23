@@ -91,6 +91,7 @@ object keywordIngestion {
       .withColumn("url", regexp_replace(col("url"), "'", ""))
       .withColumn("url",udfStrip(col("url")))
       .withColumn("url",regexp_replace(col("url"), "./", "/"))
+      .withColumn("url",regexp_replace(col("url"), "//", "://"))
 
   }
 
@@ -119,6 +120,7 @@ object keywordIngestion {
       .withColumn("url", regexp_replace(col("url"), "'", ""))
       .withColumn("url",udfStrip(col("url")))
       .withColumn("url",regexp_replace(col("url"), "./", "/"))
+      .withColumn("url",regexp_replace(col("url"), "//", "://"))
   }
 
   /**
