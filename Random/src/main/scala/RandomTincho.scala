@@ -3806,7 +3806,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    equifax_keywords(spark,"202002")
+    equifax_keywords(spark,"202003")
 
   }
 }
