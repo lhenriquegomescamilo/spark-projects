@@ -367,7 +367,7 @@ def getDataPipeline(
     .getOrCreate()
 
 
-    val path = "/datascience/misc/startapp/startapp_pp_2020042006_v_soda_node0001.tsv"
+    val path = "/datascience/misc/startapp/data/"
     spark.read
         .format("csv")
         .option("sep", " ")
@@ -390,7 +390,7 @@ def getDataPipeline(
         .format("csv")
         .option("sep", "\t")
         .mode("overwrite")
-        .save("/datascience/misc/startapp/volumes_2")
+        .save("/datascience/misc/startapp/volumes_full")
    /** 
 
   spark.read.format("csv")
