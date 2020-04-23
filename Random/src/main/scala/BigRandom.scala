@@ -366,6 +366,33 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+
+    val path = "/datascience/misc/startapp/startapp_pp_2020042006_v_soda_node0001.tsv"
+    spark.read
+        .format("csv")
+        .option("sep", " ")
+        .load(path)
+        .select("_c0")
+        .withColumn("_c0", regexp_replace(col("_c0"), "[ \t]+", "\u0020"))
+        .withColumn("_c0", split(col("_c0"), "\u0020"))
+        .withColumn("device_type", col("_c0").getItem(0))
+        .withColumn("device_id", col("_c0").getItem(1))
+        .withColumn("segments", col("_c0").getItem(2))
+        .withColumn("country", col("_c0").getItem(3))
+        .drop("_c0")
+        .filter("device_type!='device_type'")
+        .withColumn("segments", split(col("segments"), ","))
+        .withColumn("segment", explode(col("segments")))
+        .groupBy("segment")
+        .agg(approxCountDistinct("device_id", 0.03) as "device_unique")
+        .select("segment","device_unique")
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode("overwrite")
+        .save("/datascience/misc/startapp/volumes")
+   /** 
+
   spark.read.format("csv")
       .option("delimiter","\t")
       .load("/datascience/misc/kws_NSE_MX_scrapper")
@@ -378,7 +405,9 @@ def getDataPipeline(
       .option("sep", "\t")
       .mode("overwrite")
       .save("/datascience/misc/kws_NSE_MX_scrapper_2")
-      
+
+    */ 
+
     /**
 
     val pii_table =  spark.read
