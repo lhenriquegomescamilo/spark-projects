@@ -230,9 +230,9 @@ object UrlIngester {
                   .option("basePath", path)
                   .load(hdfs_files: _*)
                   .withColumnRenamed("_c0", "url")
-                  .withColumn("url",udfStrip(col("url"))) // remove accents
-                  .withColumn("url", regexp_replace(col("url"), "'", "")) // removes simple quotes
-                  .withColumn("url",regexp_replace(col("url"), "./", "/")) //replace . before / for urls like https://www.ambito.com./
+                  //.withColumn("url",udfStrip(col("url"))) // remove accents
+                  //.withColumn("url", regexp_replace(col("url"), "'", "")) // removes simple quotes
+                  //.withColumn("url",regexp_replace(col("url"), "./", "/")) //replace . before / for urls like https://www.ambito.com./
                   .select("url")
                   .distinct
     df
