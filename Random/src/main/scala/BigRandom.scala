@@ -383,14 +383,14 @@ def getDataPipeline(
         .filter("device_type!='device_type'")
         .withColumn("segments", split(col("segments"), ","))
         .withColumn("segment", explode(col("segments")))
-        .groupBy("segment")
+        .groupBy("segment","country")
         .agg(approxCountDistinct("device_id", 0.03) as "device_unique")
-        .select("segment","device_unique")
+        .select("segment","country","device_unique")
         .write
         .format("csv")
         .option("sep", "\t")
         .mode("overwrite")
-        .save("/datascience/misc/startapp/volumes")
+        .save("/datascience/misc/startapp/volumes_2")
    /** 
 
   spark.read.format("csv")
