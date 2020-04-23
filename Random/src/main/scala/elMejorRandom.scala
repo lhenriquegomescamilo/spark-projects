@@ -1519,18 +1519,22 @@ spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
 val today = (java.time.LocalDate.now).toString
 
+
+val getGeoHash = udf(
+      (latitude: Double, longitude: Double) =>
+        com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
+    )
+
+val geo_data = get_safegraph_data(spark,nDays,since,country)
+
+
 val raw = get_safegraph_data(spark,"60","1",country)
 .withColumnRenamed("ad_id","device_id")
 .withColumn("device_id",lower(col("device_id")))
-.withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-.withColumn("Day", date_format(col("Time"), "dd-MM-YY"))
-.withColumn(
-"geo_hash_7",
-((abs(col("latitude").cast("float")) * 1000)
-.cast("long") * 100000) + (abs(
-col("longitude").cast("float") * 1000
-).cast("long"))
-)
+.withColumn("geo_hash", getGeoHash(col("latitude"), col("longitude")))
+  .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
+  .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
+  .withColumn("Day", date_format(col("Time"), "YYMMdd"))
 
 //Vamos a usarlo para calcular velocidad y distancia al hogar
 raw.persist()
@@ -1549,19 +1553,6 @@ geo_hash_visits
     .save(output_file)
 
 
-///////////Agregación Nivel 0
-//Queremos un cálculo general por país
-val hash_user = spark.read.format("parquet").load(output_file).withColumn("device_id",lower(col("device_id")))
-
-hash_user
-.groupBy("Day","device_id").agg(countDistinct("geo_hash_7") as "geo_hash_7")
-.groupBy("Day").agg(avg("geo_hash_7") as "geo_hash_7_avg",stddev_pop("geo_hash_7") as "geo_hash_7_std",count("device_id") as "devices")
-.repartition(1)
-.write
-.mode(SaveMode.Overwrite)
-.format("csv")
-.option("header",true)
-.save("/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_country_%s".format(today,country))
 
 
 }
