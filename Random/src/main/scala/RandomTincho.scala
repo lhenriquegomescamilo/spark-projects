@@ -3710,8 +3710,9 @@ object RandomTincho {
     //setting timezone depending on country
     spark.conf.set("spark.sql.session.timeZone", timezone(country))
 
-    val raw = get_safegraph_data(spark,1,30, country)
+    get_safegraph_data(spark,1,30, country)
       .withColumnRenamed("ad_id", "device_id")
+      .withColumnRenamed("id_type","device_type")
       .withColumn("device_id", lower(col("device_id")))
       .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
       .withColumn("day", date_format(col("Time"), "dd-MM-YY"))
@@ -3724,9 +3725,9 @@ object RandomTincho {
           col("longitude").cast("float") * 1000
         ).cast("long"))
       )
-      .groupBy("device_id", "day")
+      .groupBy("device_id","device_type", "day")
       .agg(approx_count_distinct(col("geo_hash_7"), 0.01).as("detections"))
-      .groupBy("device_id")
+      .groupBy("device_id","device_type")
       .agg(mean(col("detections")).as("mean_detections"))
       .withColumn("cluster", when(col("mean_detections") <= 2,"306279")
                             .when(col("mean_detections") >= 11,"306283")
