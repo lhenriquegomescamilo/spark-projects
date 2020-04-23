@@ -103,6 +103,9 @@ object UrlIngester {
     *
     * @return a DataFrame with processed urls.
    **/
+
+  val udfStrip = udf((colValue: String) => {StringUtils.stripAccents(colValue)})
+   
   def processURLHTTP(dfURL: DataFrame, field: String = "url"): DataFrame = {
     // First of all, we get the domains, and filter out those ones that are very generic
 
@@ -227,6 +230,9 @@ object UrlIngester {
                   .option("basePath", path)
                   .load(hdfs_files: _*)
                   .withColumnRenamed("_c0", "url")
+                  .withColumn("url",udfStrip(col("url"))) // remove accents
+                  .withColumn("url", regexp_replace(col("url"), "'", "")) // removes simple quotes
+                  .withColumn("url",regexp_replace(col("url"), "./", "/")) //replace . before / for urls like https://www.ambito.com./
                   .select("url")
                   .distinct
     df
@@ -290,14 +296,13 @@ object UrlIngester {
     println("Count del dataframe inicial: %s".format(db.select("url").distinct.count))
 
     /** Preprocess URLS **/
-    val udfStrip = udf((colValue: String) => {StringUtils.stripAccents(colValue)})
-
     val url_limit = 500
     val df = processURLHTTP(db).withColumn("len",length(col("url")))
                                 .filter("len <= %s".format(url_limit))  // removes urls that are too long
                                 .withColumn("url",udfStrip(col("url"))) // remove accents
                                 .withColumn("url", regexp_replace(col("url"), "'", "")) // removes simple quotes
                                 .withColumn("url",regexp_replace(col("url"), "./", "/")) //replace . before / for urls like https://www.ambito.com./
+                                .withColumn("url",regexp_replace(col("url"), "//", "://"))
 
     /** Filter Urls processed within 7 days */
     val processed_urls = get_processed_urls(spark,0,7)
