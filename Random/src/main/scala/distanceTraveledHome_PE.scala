@@ -17,7 +17,7 @@ import org.apache.spark.sql.functions.input_file_name
   * The idea of this script is to run random stuff. Most of the times, the idea is
   * to run quick fixes, or tests.
   */
-object distanceTraveled_CL {
+object distanceTraveled_PE {
   
 
 
@@ -148,7 +148,7 @@ def get_safegraph_data(
 
 //Esta función obtiene los geohashes los últimos 30 días y mira una desagregacióon por barrio para Argentina. 
 
-val country = "CL"
+val country = "PE"
 
 
 val timezone = Map("argentina" -> "GMT-3",
