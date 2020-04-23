@@ -299,8 +299,8 @@ object UrlIngester {
     val url_limit = 500
     val df = processURLHTTP(db).withColumn("len",length(col("url")))
                                 .filter("len <= %s".format(url_limit))  // removes urls that are too long
-                                .withColumn("url",udfStrip(col("url"))) // remove accents
-                                .withColumn("url", regexp_replace(col("url"), "'", "")) // removes simple quotes
+                                //.withColumn("url",udfStrip(col("url"))) // remove accents
+                                //.withColumn("url", regexp_replace(col("url"), "'", "")) // removes simple quotes
                                 //.withColumn("url",regexp_replace(col("url"), "./", "/")) //replace . before / for urls like https://www.ambito.com./
                                 //.withColumn("url",regexp_replace(col("url"), "//", "://"))
 
