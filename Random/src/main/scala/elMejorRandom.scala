@@ -1525,8 +1525,6 @@ val getGeoHash = udf(
         com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
     )
 
-val geo_data = get_safegraph_data(spark,nDays,since,country)
-
 
 val raw = get_safegraph_data(spark,"60","1",country)
 .withColumnRenamed("ad_id","device_id")
