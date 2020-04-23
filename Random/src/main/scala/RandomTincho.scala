@@ -3738,6 +3738,62 @@ object RandomTincho {
       .save("/datascience/custom/clusters_covid_BR")
 
     }
+  def audiences_covid_br_xd(spark:SparkSession){
+    def minUdf = udf((arr: Seq[String])=> arr.filterNot(_ == "").map(_.toInt).min)
+
+    spark.read
+        .format("csv")
+        .load("/datascience/audiences/crossdeviced/audiences_covid_br_xd")
+        .withColumnRenamed("_c1","device_id")
+        .withColumnRenamed("_c2","device_type")
+        .groupBy("_c1","_c2")
+        .agg(collect_list(col("_c5")).as("segments"))
+        .withColumn("min",minUdf(col("segments")))
+        .select("device_type","device_id","segments")
+        .write.format("csv")
+        .option("sep","\t")
+        .save("/datascience/custom/audiences_covid_br_crossdevice")
+
+  }
+
+  def equifax_keywords(spark:SparkSession,month:String){
+
+    val nids = spark.read
+                  .load("/datascience/pii_matching/pii_tuples/")
+                  .filter("country = 'AR' and nid_sh2 is not null")
+                  .withColumnRenamed("nid_sh2","pii")
+                  .select("device_id", "pii")
+                  .distinct()
+
+    val emails = spark.read
+                  .load("/datascience/pii_matching/pii_tuples/")
+                  .filter("country = 'AR' and ml_sh2 is not null")
+                  .withColumnRenamed("ml_sh2","pii")
+                  .select("device_id", "pii")
+                  .distinct()
+
+    val piis = nids.union(emails)
+
+    val keywords_month = spark.read
+      .load("/datascience/data_keywords/day=%s*/country=AR/".format(month))
+      .select("device_id", "content_keys")
+      .distinct()
+
+    piis
+      .join(keywords_month, Seq("device_id"), "inner")
+      .select("pii", "content_keys")
+      .groupBy("pii")
+      .agg(collect_list(col("content_keys")).as("keywords"))
+      .withColumn("keywords", concat_ws(";", col("keywords")))
+      .select("pii", "keywords")
+      .withColumn("month",lit(month))
+      .repartition(1)
+      .write
+      .format("csv")
+      .mode(SaveMode.Overwrite)
+      .partitionBy("month")
+      .save("/datascience/keywords_equifax/")
+  }
 
   def main(args: Array[String]) {
 
@@ -3750,7 +3806,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    audiences_geo_covid_BR(spark)
+    equifax_keywords(spark,"202002")
 
   }
 }
