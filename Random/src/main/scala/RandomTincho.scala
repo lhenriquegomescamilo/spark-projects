@@ -3746,8 +3746,9 @@ object RandomTincho {
         .load("/datascience/audiences/crossdeviced/audiences_covid_br_xd")
         .withColumnRenamed("_c1","device_id")
         .withColumnRenamed("_c2","device_type")
-        .groupBy("_c1","_c2")
-        .agg(collect_list(col("_c5")).as("segments"))
+        .withColumnRenamed("_c5","segments")
+        .groupBy("device_id","device_type")
+        .agg(collect_list(col("segments")).as("segments"))
         .withColumn("min",minUdf(col("segments")))
         .select("device_type","device_id","segments")
         .write.format("csv")
@@ -3806,7 +3807,7 @@ object RandomTincho {
       .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
       .getOrCreate()
 
-    equifax_keywords(spark,"202003")
+    audiences_covid_br_xd(spark)
 
   }
 }
