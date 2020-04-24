@@ -366,7 +366,25 @@ def getDataPipeline(
     .config("spark.sql.files.ignoreCorruptFiles", "true")
     .getOrCreate()
 
+    val path = "/datascience/keywiser/processed/*fortnight*"
+    spark.read
+        .format("csv")
+        .option("sep", "\t")
+        .option("header", "false")
+        .load(path)
+        .toDF("device_type","device_id","segment")
+        .groupBy("segment")
+        .agg(approxCountDistinct("device_id", 0.03) as "device_unique")          
+        .write
+        .format("csv")
+        .option("sep", "\t")
+        .mode("overwrite")
+        .save("/datascience/misc/volumes_keywiser/202004")
 
+
+
+    /**
+    // PARA LEER Y CONTAR DATA DE STARTAPP PREVIA A LA INGESTA
     val path = "/datascience/misc/startapp/data/"
     spark.read
         .format("csv")
@@ -391,6 +409,9 @@ def getDataPipeline(
         .option("sep", "\t")
         .mode("overwrite")
         .save("/datascience/misc/startapp/volumes_full")
+
+    */
+
    /** 
 
   spark.read.format("csv")
