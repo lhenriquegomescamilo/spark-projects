@@ -372,7 +372,9 @@ def getDataPipeline(
         .option("sep", "\t")
         .option("header", "false")
         .load(path)
-        .toDF("device_type","device_id","segment")
+        .toDF("device_type","device_id","segments")
+        .withColumn("segments", split(col("segments"), ","))
+        .withColumn("segment", explode(col("segments")))
         .groupBy("segment")
         .agg(approxCountDistinct("device_id", 0.03) as "device_unique")          
         .write
