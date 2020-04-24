@@ -3749,7 +3749,7 @@ object RandomTincho {
         .withColumnRenamed("_c5","segments")
         .groupBy("device_id","device_type")
         .agg(collect_list(col("segments")).as("segments"))
-        .withColumn("min",minUdf(col("segments")))
+        .withColumn("segments",minUdf(col("segments")))
         .select("device_type","device_id","segments")
         .write.format("csv")
         .option("sep","\t")
