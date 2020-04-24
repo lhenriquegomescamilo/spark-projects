@@ -1503,53 +1503,16 @@ all.write
     Logger.getRootLogger.setLevel(Level.WARN)
 
 
-val country = "BR"
 
 
-val timezone = Map("argentina" -> "GMT-3",
-                       "mexico" -> "GMT-5",
-                       "UY"->"GMT-3",
-                       "CL"->"GMT-3",
-                       "BR"->"GMT-3",
-                       "CO"-> "GMT-5",
-                       "PE"-> "GMT-5")
-    
-    //setting timezone depending on country
-spark.conf.set("spark.sql.session.timeZone", timezone(country))
-
-val today = (java.time.LocalDate.now).toString
-
-
-val getGeoHash = udf(
-      (latitude: Double, longitude: Double) =>
-        com.github.davidallsopp.geohash.GeoHash.encode(latitude, longitude, 8)
-    )
-
-
-val raw = get_safegraph_data(spark,"60","1",country)
-.withColumnRenamed("ad_id","device_id")
-.withColumn("device_id",lower(col("device_id")))
-.withColumn("geo_hash", getGeoHash(col("latitude"), col("longitude")))
-  .withColumn("geo_hash_7", substring(col("geo_hash"), 0, 7))
-  .withColumn("Time", to_timestamp(from_unixtime(col("utc_timestamp"))))
-  .withColumn("Day", date_format(col("Time"), "YYMMdd"))
-
-//Vamos a usarlo para calcular velocidad y distancia al hogar
-raw.persist()
-
-val geo_hash_visits = raw
-.groupBy("device_id","Day","geo_hash_7").agg(count("utc_timestamp") as "detections")
-.withColumn("country",lit(country))
-
-val output_file = "/datascience/geo/Reports/GCBA/Coronavirus/%s/geohashes_by_user_%s".format(today,country)
-
-geo_hash_visits
- .write
-    .mode(SaveMode.Overwrite)
-    .format("parquet")
-    .option("header",true)
-    .save(output_file)
-
+spark.read
+.format("parquet")
+.load("/datascience/geo/Reports/GCBA/Coronavirus/2020-04-23/geohashes_by_user_BR")
+.write
+.mode(SaveMode.Overwrite)
+.format("parquet")
+.partitionBy("country","Day")
+.save("/datascience/geo/NSEHomes/GeoHashesCountry")
 
 
 
